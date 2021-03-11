@@ -3,10 +3,11 @@ package website
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 
+	"git.handmade.network/hmn/hmn/config"
 	"git.handmade.network/hmn/hmn/db"
+	"git.handmade.network/hmn/hmn/logging"
 	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/cobra"
 )
@@ -14,7 +15,17 @@ import (
 var WebsiteCommand = &cobra.Command{
 	Short: "Run the HMN website",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Hello, HMN!")
+		defer func() {
+			if r := recover(); r != nil {
+				if err, ok := r.(error); ok {
+					logging.Error().Err(err).Msg("recovered from panic")
+				} else {
+					logging.Error().Interface("recovered", r).Msg("recovered from panic")
+				}
+			}
+		}()
+
+		logging.Info().Msg("Hello, HMN!")
 
 		conn := db.NewConnPool(4, 8)
 
@@ -33,7 +44,7 @@ var WebsiteCommand = &cobra.Command{
 
 			rw.Write([]byte(fmt.Sprintf("(%s) %s\n", id, name)))
 		})
-		log.Print("serving stuff")
-		http.ListenAndServe(":9001", router)
+		logging.Info().Str("addr", config.Config.Addr).Msg("Serving the website")
+		http.ListenAndServe(config.Config.Addr, router)
 	},
 }
