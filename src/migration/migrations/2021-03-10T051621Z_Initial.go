@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"git.handmade.network/hmn/hmn/migration/types"
+	"git.handmade.network/hmn/hmn/src/migration/types"
 	"github.com/jackc/pgx/v4"
 )
 

@@ -9,9 +9,9 @@ import (
 	"os/signal"
 	"time"
 
-	"git.handmade.network/hmn/hmn/config"
-	"git.handmade.network/hmn/hmn/db"
-	"git.handmade.network/hmn/hmn/logging"
+	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/logging"
 	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/cobra"
 )

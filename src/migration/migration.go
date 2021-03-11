@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"git.handmade.network/hmn/hmn/db"
-	"git.handmade.network/hmn/hmn/migration/migrations"
-	"git.handmade.network/hmn/hmn/migration/types"
-	"git.handmade.network/hmn/hmn/website"
+	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/migration/migrations"
+	"git.handmade.network/hmn/hmn/src/migration/types"
+	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/jackc/pgx/v4"
 	"github.com/spf13/cobra"
 )

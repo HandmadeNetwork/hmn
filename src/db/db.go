@@ -3,8 +3,8 @@ package db
 import (
 	"context"
 
-	"git.handmade.network/hmn/hmn/config"
-	"git.handmade.network/hmn/hmn/oops"
+	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )

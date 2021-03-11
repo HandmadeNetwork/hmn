@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"git.handmade.network/hmn/hmn/color"
-	"git.handmade.network/hmn/hmn/oops"
+	"git.handmade.network/hmn/hmn/src/color"
+	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
