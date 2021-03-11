@@ -19,24 +19,16 @@ import (
 var WebsiteCommand = &cobra.Command{
 	Short: "Run the HMN website",
 	Run: func(cmd *cobra.Command, args []string) {
-		defer func() {
-			if r := recover(); r != nil {
-				if err, ok := r.(error); ok {
-					logging.Error().Err(err).Msg("recovered from panic")
-				} else {
-					logging.Error().Interface("recovered", r).Msg("recovered from panic")
-				}
-			}
-		}()
+		defer logging.LogPanics()
 
 		logging.Info().Msg("Hello, HMN!")
 
 		conn := db.NewConnPool(4, 8)
 
 		router := httprouter.New()
-		router.GET("/", func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			rw.Write([]byte("Hello, HMN!"))
-		})
+		router.GET("/", WithRequestLogger(func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+			rw.Write([]byte(fmt.Sprintf("Hello, HMN! The time is: %v\n", time.Now())))
+		}))
 		router.GET("/project/:id", func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 			id := p.ByName("id")
 			row := conn.QueryRow(context.Background(), "SELECT name FROM handmade_project WHERE id = $1", p.ByName("id"))
@@ -73,4 +65,18 @@ var WebsiteCommand = &cobra.Command{
 			logging.Error().Err(serverErr).Msg("Server shut down unexpectedly")
 		}
 	},
+}
+
+func WithRequestLogger(h httprouter.Handle) httprouter.Handle {
+	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		defer logging.LogPanics()
+
+		start := time.Now()
+		defer func() {
+			end := time.Now()
+			logging.Info().Dur("duration", end.Sub(start)).Msg("Completed request")
+		}()
+
+		h(rw, r, p)
+	}
 }

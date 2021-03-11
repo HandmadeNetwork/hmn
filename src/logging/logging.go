@@ -156,3 +156,13 @@ func (w *PrettyZerologWriter) Write(p []byte) (int, error) {
 
 	return os.Stderr.Write([]byte(b.String()))
 }
+
+func LogPanics() {
+	if r := recover(); r != nil {
+		if err, ok := r.(error); ok {
+			Error().Err(err).Msg("recovered from panic")
+		} else {
+			Error().Interface("recovered", r).Msg("recovered from panic")
+		}
+	}
+}
