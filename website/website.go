@@ -2,8 +2,12 @@ package website
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"git.handmade.network/hmn/hmn/config"
 	"git.handmade.network/hmn/hmn/db"
@@ -44,7 +48,29 @@ var WebsiteCommand = &cobra.Command{
 
 			rw.Write([]byte(fmt.Sprintf("(%s) %s\n", id, name)))
 		})
+
+		server := http.Server{
+			Addr:    config.Config.Addr,
+			Handler: router,
+		}
+
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, os.Interrupt)
+		go func() {
+			<-signals
+			logging.Info().Msg("Shutting down the website")
+			timeout, _ := context.WithTimeout(context.Background(), 30*time.Second)
+			server.Shutdown(timeout)
+
+			<-signals
+			logging.Warn().Msg("Forcibly killed the website")
+			os.Exit(1)
+		}()
+
 		logging.Info().Str("addr", config.Config.Addr).Msg("Serving the website")
-		http.ListenAndServe(config.Config.Addr, router)
+		serverErr := server.ListenAndServe()
+		if !errors.Is(serverErr, http.ErrServerClosed) {
+			logging.Error().Err(serverErr).Msg("Server shut down unexpectedly")
+		}
 	},
 }
