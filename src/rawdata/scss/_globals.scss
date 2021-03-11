@@ -1,0 +1,58 @@
+/*
+Inserts a CSS expression with one or more custom variables.
+You can provide an arbitrary number of strings in the second
+argument, separated by spaces. Any strings corresponding to
+variable names will be replaced by the correct values, while
+other strings are left untouched.
+
+Example usage:
+
+@include usevar(border-color, dimmer-color);
+@include usevar(background, "linear-gradient(" dim-background-transparent "," dim-background ")");
+
+For clarity and to avoid syntax issues, you are encouraged to
+use unquoted strings for variables and quoted strings for
+everything else.
+
+For convenience in common cases, if only a single argument
+is provided and it does not match an existing variable, this
+will throw an error.
+*/
+@mixin usevar($prop, $pieces) {
+  $maprule: ();
+  $varrule: ();
+
+  @each $piece in $pieces {
+    @if map-get($vars, $piece) != null {
+      $maprule: append($maprule, map-get($vars, $piece));
+      $varrule: append($varrule, var(--#{$piece}));
+    } @else {
+      @if length($pieces) == 1 {
+        @error "Var \"#{$piece}\" not defined";
+      }
+
+      $maprule: append($maprule, unquote($piece));
+      $varrule: append($varrule, unquote($piece));
+    }
+  }
+
+  #{$prop}: $maprule;
+  #{$prop}: $varrule;
+}
+
+@function px2rem($px) {
+  @return ($px / 16px) * 1rem;
+}
+
+@mixin lite-button {
+    border: none;
+    background: none;
+    font-weight: normal;
+}
+
+$buttons: "
+  button,
+  .button,
+  input[type=button],
+  input[type=submit]
+";
