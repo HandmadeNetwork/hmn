@@ -1,11 +1,13 @@
 package buildscss
 
 import (
+	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"git.handmade.network/hmn/hmn/src/color"
+	color "git.handmade.network/hmn/hmn/src/ansicolor"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/spf13/cobra"
@@ -15,6 +17,22 @@ import (
 var compressed bool
 
 func init() {
+	libsass.RegisterSassFunc("base64($filename)", func(ctx context.Context, in libsass.SassValue) (*libsass.SassValue, error) {
+		var filename string
+		err := libsass.Unmarshal(in, &filename)
+		if err != nil {
+			return nil, err
+		}
+
+		fileBytes, err := os.ReadFile(filename)
+		if err != nil {
+			return nil, err
+		}
+
+		encoded, _ := libsass.Marshal(base64.StdEncoding.EncodeToString(fileBytes))
+		return &encoded, nil
+	})
+
 	buildCommand := &cobra.Command{
 		Use:   "buildscss",
 		Short: "Build the website CSS",

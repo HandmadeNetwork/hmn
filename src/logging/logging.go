@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"git.handmade.network/hmn/hmn/src/color"
+	color "git.handmade.network/hmn/hmn/src/ansicolor"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -36,6 +36,14 @@ func Warn() *zerolog.Event {
 
 func Error() *zerolog.Event {
 	return log.Error().Timestamp().Stack()
+}
+
+func Panic() *zerolog.Event {
+	return log.Panic().Timestamp().Stack()
+}
+
+func Fatal() *zerolog.Event {
+	return log.Fatal().Timestamp().Stack()
 }
 
 type PrettyZerologWriter struct {

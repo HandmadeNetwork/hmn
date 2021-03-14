@@ -3,7 +3,6 @@ package website
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,6 +11,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/templates"
 	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/cobra"
 )
@@ -19,31 +19,17 @@ import (
 var WebsiteCommand = &cobra.Command{
 	Short: "Run the HMN website",
 	Run: func(cmd *cobra.Command, args []string) {
+		templates.Init()
+
 		defer logging.LogPanics()
 
 		logging.Info().Msg("Hello, HMN!")
 
 		conn := db.NewConnPool(4, 8)
 
-		router := httprouter.New()
-		router.GET("/", WithRequestLogger(func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			rw.Write([]byte(fmt.Sprintf("Hello, HMN! The time is: %v\n", time.Now())))
-		}))
-		router.GET("/project/:id", func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-			id := p.ByName("id")
-			row := conn.QueryRow(context.Background(), "SELECT name FROM handmade_project WHERE id = $1", p.ByName("id"))
-			var name string
-			err := row.Scan(&name)
-			if err != nil {
-				panic(err)
-			}
-
-			rw.Write([]byte(fmt.Sprintf("(%s) %s\n", id, name)))
-		})
-
 		server := http.Server{
 			Addr:    config.Config.Addr,
-			Handler: router,
+			Handler: NewWebsiteRoutes(conn),
 		}
 
 		signals := make(chan os.Signal, 1)
@@ -67,7 +53,7 @@ var WebsiteCommand = &cobra.Command{
 	},
 }
 
-func WithRequestLogger(h httprouter.Handle) httprouter.Handle {
+func withRequestLogger(h httprouter.Handle) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		defer logging.LogPanics()
 
@@ -80,3 +66,5 @@ func WithRequestLogger(h httprouter.Handle) httprouter.Handle {
 		h(rw, r, p)
 	}
 }
+
+// func handleRequestResults
