@@ -4,9 +4,11 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"net/url"
 	"strings"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"github.com/Masterminds/sprig"
 	"github.com/teacat/noire"
@@ -77,21 +79,38 @@ var HMNTemplateFuncs = template.FuncMap{
 		}
 		return noire.NewHex(hexColor).Shade(amount).Hex(), nil
 	},
-	// TODO: Actually put paths in here, duh
+	"projecturl": func(url string) string {
+		return hmnurl.Url(url, nil) // TODO: Use project subdomain
+	},
+	"projecturlq": func(url string, query string) string {
+		absUrl := hmnurl.Url(url, nil)
+		return fmt.Sprintf("%s?%s", absUrl, query) // TODO: Use project subdomain
+	},
+	"query": func(args ...string) string {
+		query := url.Values{}
+		for i := 0; i < len(args); i += 2 {
+			query.Set(args[i], args[i+1])
+		}
+		return query.Encode()
+	},
 	"static": func(filepath string) string {
-		return fmt.Sprintf("A static file at %v, busted with %v", filepath, cachebust)
+		return hmnurl.StaticUrl(filepath, []hmnurl.Q{{"v", cachebust}})
 	},
 	"staticnobust": func(filepath string) string {
-		return fmt.Sprintf("A static file at %v", filepath)
+		return hmnurl.StaticUrl(filepath, nil)
 	},
 	"statictheme": func(theme string, filepath string) string {
-		return fmt.Sprintf("A static file for the current theme at %v, busted with %v", filepath, cachebust)
+		return hmnurl.StaticThemeUrl(filepath, theme, []hmnurl.Q{{"v", cachebust}})
 	},
 	"staticthemenobust": func(theme string, filepath string) string {
-		return fmt.Sprintf("A static file for the current theme at %v", filepath)
+		return hmnurl.StaticThemeUrl(filepath, theme, nil)
 	},
 	"url": func(url string) string {
-		return "/" + url
+		return hmnurl.Url(url, nil)
+	},
+	"urlq": func(url string, query string) string {
+		absUrl := hmnurl.Url(url, nil)
+		return fmt.Sprintf("%s?%s", absUrl, query)
 	},
 }
 

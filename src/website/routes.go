@@ -28,6 +28,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	routes.GET("/", routes.Index)
 	routes.GET("/project/:id", routes.Project)
 	routes.GET("/assets/project.css", routes.ProjectCSS)
+	routes.ServeFiles("/public/*filepath", http.Dir("public"))
 
 	return routes
 }
@@ -42,10 +43,23 @@ This context should also provide a sub-logger with request fields so we can easi
 which URLs are having problems.
 */
 
+// TODO: Make all these routes automatically pull general template data
+// TODO:
+
 func (s *websiteRoutes) Index(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	err := templates.Templates["index.html"].Execute(rw, templates.BaseData{
-		ProjectColor: "cd4e31",
-		Theme:        "dark",
+		Project: templates.Project{
+			Name:  "Handmade Network",
+			Color: "cd4e31",
+
+			IsHMN: true,
+
+			HasBlog:    true,
+			HasForum:   true,
+			HasWiki:    true,
+			HasLibrary: true,
+		},
+		Theme: "dark",
 	})
 	if err != nil {
 		panic(err)
@@ -80,6 +94,7 @@ func (s *websiteRoutes) ProjectCSS(rw http.ResponseWriter, r *http.Request, p ht
 		Theme: "dark",
 	}
 
+	rw.Header().Add("Content-Type", "text/css")
 	err := templates.Templates["project.css"].Execute(rw, templateData)
 	if err != nil {
 		logging.Error().Err(err).Msg("failed to generate project CSS")

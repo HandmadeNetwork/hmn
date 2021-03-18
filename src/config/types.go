@@ -13,6 +13,7 @@ const (
 type HMNConfig struct {
 	Env      Environment
 	Addr     string
+	BaseUrl  string
 	Postgres PostgresConfig
 }
 

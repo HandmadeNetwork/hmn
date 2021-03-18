@@ -5,9 +5,22 @@ type BaseData struct {
 	CanonicalLink   string
 	OpenGraphItems  []OpenGraphItem
 	BackgroundImage BackgroundImage
-	ProjectColor    string
+	Project         Project
 	Theme           string
 	BodyClasses     []string
+}
+
+type Project struct {
+	Name      string
+	Subdomain string
+	Color     string
+
+	IsHMN bool
+
+	HasBlog    bool
+	HasForum   bool
+	HasWiki    bool
+	HasLibrary bool
 }
 
 type OpenGraphItem struct {
