@@ -46,6 +46,10 @@ func Fatal() *zerolog.Event {
 	return log.Fatal().Timestamp().Stack()
 }
 
+func With() zerolog.Context {
+	return log.With()
+}
+
 type PrettyZerologWriter struct {
 	wd string
 }

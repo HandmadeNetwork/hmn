@@ -14,15 +14,15 @@ import (
 )
 
 type websiteRoutes struct {
-	*httprouter.Router
+	*HMNRouter
 
 	conn *pgxpool.Pool
 }
 
 func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	routes := &websiteRoutes{
-		Router: httprouter.New(),
-		conn:   conn,
+		HMNRouter: &HMNRouter{HttpRouter: httprouter.New()},
+		conn:      conn,
 	}
 
 	routes.GET("/", routes.Index)
@@ -33,21 +33,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	return routes
 }
 
-/*
-TODO: Make a custom context thing so that routes won't directly use a response writer.
-
-This should store up a body, desired headers, status codes, etc. Doing this allows us to
-make middleware that can write headers after an aborted request.
-
-This context should also provide a sub-logger with request fields so we can easily see
-which URLs are having problems.
-*/
-
-// TODO: Make all these routes automatically pull general template data
-// TODO:
-
-func (s *websiteRoutes) Index(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	err := templates.Templates["index.html"].Execute(rw, templates.BaseData{
+func (s *websiteRoutes) Index(c *RequestContext, p httprouter.Params) {
+	err := c.WriteTemplate("index.html", templates.BaseData{
 		Project: templates.Project{
 			Name:  "Handmade Network",
 			Color: "cd4e31",
@@ -66,7 +53,7 @@ func (s *websiteRoutes) Index(rw http.ResponseWriter, r *http.Request, p httprou
 	}
 }
 
-func (s *websiteRoutes) Project(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (s *websiteRoutes) Project(c *RequestContext, p httprouter.Params) {
 	id := p.ByName("id")
 	row := s.conn.QueryRow(context.Background(), "SELECT name FROM handmade_project WHERE id = $1", p.ByName("id"))
 	var name string
@@ -75,14 +62,14 @@ func (s *websiteRoutes) Project(rw http.ResponseWriter, r *http.Request, p httpr
 		panic(err)
 	}
 
-	rw.Write([]byte(fmt.Sprintf("(%s) %s\n", id, name)))
+	c.Body.Write([]byte(fmt.Sprintf("(%s) %s\n", id, name)))
 }
 
-func (s *websiteRoutes) ProjectCSS(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	color := r.URL.Query().Get("color")
+func (s *websiteRoutes) ProjectCSS(c *RequestContext, p httprouter.Params) {
+	color := c.URL().Query().Get("color")
 	if color == "" {
-		rw.WriteHeader(http.StatusBadRequest)
-		rw.Write([]byte("You must provide a 'color' parameter.\n"))
+		c.StatusCode = http.StatusBadRequest
+		c.Body.Write([]byte("You must provide a 'color' parameter.\n"))
 		return
 	}
 
@@ -94,8 +81,8 @@ func (s *websiteRoutes) ProjectCSS(rw http.ResponseWriter, r *http.Request, p ht
 		Theme: "dark",
 	}
 
-	rw.Header().Add("Content-Type", "text/css")
-	err := templates.Templates["project.css"].Execute(rw, templateData)
+	c.Headers().Add("Content-Type", "text/css")
+	err := c.WriteTemplate("project.css", templateData)
 	if err != nil {
 		logging.Error().Err(err).Msg("failed to generate project CSS")
 		return
