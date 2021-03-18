@@ -2,13 +2,11 @@ package website
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"net/http"
 
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/templates"
-	_ "git.handmade.network/hmn/hmn/src/templates"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/julienschmidt/httprouter"
 )
