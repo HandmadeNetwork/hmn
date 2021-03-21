@@ -18,6 +18,10 @@ func init() {
 	log.Logger = log.Output(NewPrettyZerologWriter())
 }
 
+func GlobalLogger() *zerolog.Logger {
+	return &log.Logger
+}
+
 func Trace() *zerolog.Event {
 	return log.Trace().Timestamp().Stack()
 }
@@ -47,7 +51,7 @@ func Fatal() *zerolog.Event {
 }
 
 func With() zerolog.Context {
-	return log.With()
+	return log.With().Stack()
 }
 
 type PrettyZerologWriter struct {
@@ -169,12 +173,20 @@ func (w *PrettyZerologWriter) Write(p []byte) (int, error) {
 	return os.Stderr.Write([]byte(b.String()))
 }
 
-func LogPanics() {
+func LogPanics(logger *zerolog.Logger) {
 	if r := recover(); r != nil {
-		if err, ok := r.(error); ok {
-			Error().Err(err).Msg("recovered from panic")
-		} else {
-			Error().Interface("recovered", r).Msg("recovered from panic")
-		}
+		LogPanicValue(logger, r, "recovered from panic")
+	}
+}
+
+func LogPanicValue(logger *zerolog.Logger, val interface{}, msg string) {
+	if logger == nil {
+		logger = GlobalLogger()
+	}
+
+	if err, ok := val.(error); ok {
+		logger.Error().Err(err).Msg(msg)
+	} else {
+		logger.Error().Interface("recovered", val).Msg(msg)
 	}
 }

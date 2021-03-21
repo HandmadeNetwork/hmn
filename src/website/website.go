@@ -12,7 +12,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/templates"
-	"github.com/julienschmidt/httprouter"
 	"github.com/spf13/cobra"
 )
 
@@ -21,7 +20,7 @@ var WebsiteCommand = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		templates.Init()
 
-		defer logging.LogPanics()
+		defer logging.LogPanics(nil)
 
 		logging.Info().Msg("Hello, HMN!")
 
@@ -37,7 +36,8 @@ var WebsiteCommand = &cobra.Command{
 		go func() {
 			<-signals
 			logging.Info().Msg("Shutting down the website")
-			timeout, _ := context.WithTimeout(context.Background(), 30*time.Second)
+			timeout, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
 			server.Shutdown(timeout)
 
 			<-signals
@@ -52,19 +52,3 @@ var WebsiteCommand = &cobra.Command{
 		}
 	},
 }
-
-func withRequestLogger(h httprouter.Handle) httprouter.Handle {
-	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		defer logging.LogPanics()
-
-		start := time.Now()
-		defer func() {
-			end := time.Now()
-			logging.Info().Dur("duration", end.Sub(start)).Msg("Completed request")
-		}()
-
-		h(rw, r, p)
-	}
-}
-
-// func handleRequestResults

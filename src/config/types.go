@@ -1,6 +1,10 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/jackc/pgx/v4"
+)
 
 type Environment string
 
@@ -23,6 +27,7 @@ type PostgresConfig struct {
 	Hostname string
 	Port     int
 	DbName   string
+	LogLevel pgx.LogLevel
 }
 
 func (info PostgresConfig) DSN() string {
