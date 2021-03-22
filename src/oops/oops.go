@@ -50,7 +50,15 @@ var ZerologStackMarshaler = func(err error) interface{} {
 }
 
 func New(wrapped error, format string, args ...interface{}) error {
-	trace := stack.Trace().TrimRuntime()
+	return &Error{
+		Message: fmt.Sprintf(format, args...),
+		Wrapped: wrapped,
+		Stack:   Trace(),
+	}
+}
+
+func Trace() CallStack {
+	trace := stack.Trace().TrimRuntime()[1:]
 	frames := make(CallStack, len(trace))
 	for i, call := range trace {
 		callFrame := call.Frame()
@@ -61,9 +69,5 @@ func New(wrapped error, format string, args ...interface{}) error {
 		}
 	}
 
-	return &Error{
-		Message: fmt.Sprintf(format, args...),
-		Wrapped: wrapped,
-		Stack:   frames,
-	}
+	return frames
 }

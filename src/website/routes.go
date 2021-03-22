@@ -2,12 +2,16 @@ package website
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
+	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -23,14 +27,19 @@ type websiteRoutes struct {
 
 func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	routes := &websiteRoutes{
-		HMNRouter: &HMNRouter{HttpRouter: httprouter.New()},
-		conn:      conn,
+		HMNRouter: &HMNRouter{
+			HttpRouter: httprouter.New(),
+			Wrappers:   []HMNHandlerWrapper{ErrorLoggingWrapper},
+		},
+		conn: conn,
 	}
 
 	mainRoutes := routes.WithWrappers(routes.CommonWebsiteDataWrapper)
 	mainRoutes.GET("/", routes.Index)
 	mainRoutes.GET("/project/:id", routes.Project)
 	mainRoutes.GET("/assets/project.css", routes.ProjectCSS)
+
+	routes.POST("/login", routes.Login)
 
 	routes.ServeFiles("/public/*filepath", http.Dir("public"))
 
@@ -120,6 +129,63 @@ func (s *websiteRoutes) ProjectCSS(c *RequestContext, p httprouter.Params) {
 	}
 }
 
+func (s *websiteRoutes) Login(c *RequestContext, p httprouter.Params) {
+	bodyBytes, _ := io.ReadAll(c.Req.Body)
+
+	// TODO: Update this endpoint to give uniform responses on errors and to be resilient to timing attacks.
+
+	var body struct {
+		Username string
+		Password string
+	}
+	err := json.Unmarshal(bodyBytes, &body)
+	if err != nil {
+		panic(err)
+	}
+
+	var user models.User
+	err = db.QueryOneToStruct(c.Context(), s.conn, &user, "SELECT $columns FROM auth_user WHERE username = $1", body.Username)
+	if err != nil {
+		if errors.Is(err, db.ErrNoMatchingRows) {
+			c.StatusCode = http.StatusUnauthorized
+		} else {
+			c.Errored(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
+		}
+		return
+	}
+
+	logging.Debug().Interface("user", user).Msg("the user to check")
+
+	hashed, err := auth.ParseDjangoPasswordString(user.Password)
+	if err != nil {
+		c.Errored(http.StatusInternalServerError, oops.New(err, "failed to parse password string"))
+		return
+	}
+
+	passwordsMatch, err := auth.CheckPassword(body.Password, hashed)
+	if err != nil {
+		c.Errored(http.StatusInternalServerError, oops.New(err, "failed to check password against hash"))
+		return
+	}
+
+	if passwordsMatch {
+		c.Body.WriteString("ur good")
+	} else {
+		c.StatusCode = http.StatusUnauthorized
+		c.Body.WriteString("nope")
+	}
+}
+
+func ErrorLoggingWrapper(h HMNHandler) HMNHandler {
+	return func(c *RequestContext, p httprouter.Params) {
+		h(c, p)
+
+		for _, err := range c.Errors {
+			c.Logger.Error().Err(err).Msg("error occurred during request")
+		}
+	}
+}
+
 func (s *websiteRoutes) CommonWebsiteDataWrapper(h HMNHandler) HMNHandler {
 	return func(c *RequestContext, p httprouter.Params) {
 		slug := ""
@@ -130,7 +196,7 @@ func (s *websiteRoutes) CommonWebsiteDataWrapper(h HMNHandler) HMNHandler {
 
 		dbProject, err := FetchProjectBySlug(c.Context(), s.conn, slug)
 		if err != nil {
-			c.AbortWithErrors(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
+			c.Errored(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
 			return
 		}
 

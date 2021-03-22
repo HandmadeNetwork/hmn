@@ -3,11 +3,11 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/config"
-	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zerologadapter"
@@ -61,11 +61,19 @@ func (it *StructQueryIterator) Next(dest interface{}) bool {
 		panic(err)
 	}
 
+	fmt.Printf("%#v\n", vals)
+
 	for i, val := range vals {
 		field := v.Elem().Field(it.fieldIndices[i])
 		switch field.Kind() {
 		case reflect.Int:
 			field.SetInt(reflect.ValueOf(val).Int())
+		case reflect.Ptr:
+			// TODO: I'm pretty sure we don't handle nullable ints correctly lol. Maybe this needs to be a function somehow, and recurse onto itself?? Reflection + recursion sounds like a great idea
+			if val != nil {
+				field.Set(reflect.New(field.Type().Elem()))
+				field.Elem().Set(reflect.ValueOf(val))
+			}
 		default:
 			field.Set(reflect.ValueOf(val))
 		}
@@ -82,7 +90,15 @@ func QueryToStructs(ctx context.Context, conn *pgxpool.Pool, destType interface{
 	var fieldIndices []int
 	var columnNames []string
 
-	t := reflect.TypeOf(models.Project{})
+	t := reflect.TypeOf(destType)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	if t.Kind() != reflect.Struct {
+		return StructQueryIterator{}, oops.New(nil, "QueryToStructs requires a struct type or a pointer to a struct type")
+	}
+
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 		if columnName := f.Tag.Get("db"); columnName != "" {

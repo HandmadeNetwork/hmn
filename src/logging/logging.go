@@ -185,8 +185,15 @@ func LogPanicValue(logger *zerolog.Logger, val interface{}, msg string) {
 	}
 
 	if err, ok := val.(error); ok {
-		logger.Error().Err(err).Msg(msg)
+		l := logger.Error().Err(err)
+		if _, ok := err.(*oops.Error); !ok {
+			l = l.Interface(zerolog.ErrorStackFieldName, oops.Trace())
+		}
+		l.Msg(msg)
 	} else {
-		logger.Error().Interface("recovered", val).Msg(msg)
+		logger.Error().
+			Interface("recovered", val).
+			Interface(zerolog.ErrorStackFieldName, oops.Trace()).
+			Msg(msg)
 	}
 }

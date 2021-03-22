@@ -34,7 +34,11 @@ func (r *HMNRouter) GET(route string, handler HMNHandler) {
 	r.Handle(http.MethodGet, route, handler)
 }
 
-// TODO: POST, etc.
+func (r *HMNRouter) POST(route string, handler HMNHandler) {
+	r.Handle(http.MethodPost, route, handler)
+}
+
+// TODO: More methods
 
 func (r *HMNRouter) ServeFiles(path string, root http.FileSystem) {
 	r.HttpRouter.ServeFiles(path, root)
@@ -94,7 +98,7 @@ func (c *RequestContext) AddErrors(errs ...error) {
 	c.Errors = append(c.Errors, errs...)
 }
 
-func (c *RequestContext) AbortWithErrors(status int, errs ...error) {
+func (c *RequestContext) Errored(status int, errs ...error) {
 	c.StatusCode = status
 	c.AddErrors(errs...)
 }
