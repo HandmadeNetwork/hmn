@@ -3,9 +3,13 @@ package website
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"html"
 	"io"
 	"net/http"
 	"net/url"
+	"path"
+	"strings"
 
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -88,6 +92,80 @@ func (c *RequestContext) URL() *url.URL {
 
 func (c *RequestContext) Headers() http.Header {
 	return c.rw.Header()
+}
+
+func (c *RequestContext) SetCookie(cookie *http.Cookie) {
+	c.rw.Header().Add("Set-Cookie", cookie.String())
+}
+
+func (c *RequestContext) GetFormValues() (url.Values, error) {
+	err := c.Req.ParseForm()
+	if err != nil {
+		return nil, err
+	}
+
+	return c.Req.PostForm, nil
+}
+
+// The logic of this function is copy-pasted from the Go standard library.
+// https://golang.org/pkg/net/http/#Redirect
+func (c *RequestContext) Redirect(dest string, code int) {
+	if u, err := url.Parse(dest); err == nil {
+		// If url was relative, make its path absolute by
+		// combining with request path.
+		// The client would probably do this for us,
+		// but doing it ourselves is more reliable.
+		// See RFC 7231, section 7.1.2
+		if u.Scheme == "" && u.Host == "" {
+			oldpath := c.Req.URL.Path
+			if oldpath == "" { // should not happen, but avoid a crash if it does
+				oldpath = "/"
+			}
+
+			// no leading http://server
+			if dest == "" || dest[0] != '/' {
+				// make relative path absolute
+				olddir, _ := path.Split(oldpath)
+				dest = olddir + dest
+			}
+
+			var query string
+			if i := strings.Index(dest, "?"); i != -1 {
+				dest, query = dest[:i], dest[i:]
+			}
+
+			// clean up but preserve trailing slash
+			trailing := strings.HasSuffix(dest, "/")
+			dest = path.Clean(dest)
+			if trailing && !strings.HasSuffix(dest, "/") {
+				dest += "/"
+			}
+			dest += query
+		}
+	}
+
+	h := c.Headers()
+
+	// RFC 7231 notes that a short HTML body is usually included in
+	// the response because older user agents may not understand 301/307.
+	// Do it only if the request didn't already have a Content-Type header.
+	_, hadCT := h["Content-Type"]
+
+	// Escape stuff
+	destUrl, _ := url.Parse(dest)
+	dest = destUrl.String()
+
+	h.Set("Location", dest)
+	if !hadCT && (c.Req.Method == "GET" || c.Req.Method == "HEAD") {
+		h.Set("Content-Type", "text/html; charset=utf-8")
+	}
+	c.StatusCode = code
+
+	// Shouldn't send the body for POST or HEAD; that leaves GET.
+	if !hadCT && c.Req.Method == "GET" {
+		body := "<a href=\"" + html.EscapeString(dest) + "\">" + http.StatusText(code) + "</a>.\n"
+		fmt.Fprintln(c.Body, body)
+	}
 }
 
 func (c *RequestContext) WriteTemplate(name string, data interface{}) error {

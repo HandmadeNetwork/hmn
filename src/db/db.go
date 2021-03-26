@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -60,8 +59,6 @@ func (it *StructQueryIterator) Next(dest interface{}) bool {
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Printf("%#v\n", vals)
 
 	for i, val := range vals {
 		field := v.Elem().Field(it.fieldIndices[i])

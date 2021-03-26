@@ -2,10 +2,8 @@ package website
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 
@@ -130,21 +128,27 @@ func (s *websiteRoutes) ProjectCSS(c *RequestContext, p httprouter.Params) {
 }
 
 func (s *websiteRoutes) Login(c *RequestContext, p httprouter.Params) {
-	bodyBytes, _ := io.ReadAll(c.Req.Body)
-
 	// TODO: Update this endpoint to give uniform responses on errors and to be resilient to timing attacks.
 
-	var body struct {
-		Username string
-		Password string
-	}
-	err := json.Unmarshal(bodyBytes, &body)
+	form, err := c.GetFormValues()
 	if err != nil {
-		panic(err)
+		c.Errored(http.StatusBadRequest, NewSafeError(err, "request must contain form data"))
+		return
+	}
+
+	username := form.Get("username")
+	password := form.Get("password")
+	if username == "" || password == "" {
+		c.Errored(http.StatusBadRequest, NewSafeError(err, "you must provide both a username and password"))
+	}
+
+	redirect := form.Get("redirect")
+	if redirect == "" {
+		redirect = "/"
 	}
 
 	var user models.User
-	err = db.QueryOneToStruct(c.Context(), s.conn, &user, "SELECT $columns FROM auth_user WHERE username = $1", body.Username)
+	err = db.QueryOneToStruct(c.Context(), s.conn, &user, "SELECT $columns FROM auth_user WHERE username = $1", username)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			c.StatusCode = http.StatusUnauthorized
@@ -154,25 +158,26 @@ func (s *websiteRoutes) Login(c *RequestContext, p httprouter.Params) {
 		return
 	}
 
-	logging.Debug().Interface("user", user).Msg("the user to check")
-
-	hashed, err := auth.ParseDjangoPasswordString(user.Password)
+	hashed, err := auth.ParsePasswordString(user.Password)
 	if err != nil {
 		c.Errored(http.StatusInternalServerError, oops.New(err, "failed to parse password string"))
 		return
 	}
 
-	passwordsMatch, err := auth.CheckPassword(body.Password, hashed)
+	passwordsMatch, err := auth.CheckPassword(password, hashed)
 	if err != nil {
 		c.Errored(http.StatusInternalServerError, oops.New(err, "failed to check password against hash"))
 		return
 	}
 
 	if passwordsMatch {
-		c.Body.WriteString("ur good")
+		logging.Debug().Str("cookie", auth.NewAuthCookie(username).String()).Msg("logged in")
+		c.SetCookie(auth.NewAuthCookie(username))
+		c.Redirect(redirect, http.StatusSeeOther)
+		return
 	} else {
-		c.StatusCode = http.StatusUnauthorized
-		c.Body.WriteString("nope")
+		c.Redirect("/", http.StatusSeeOther) // TODO: Redirect to standalone login page with error
+		return
 	}
 }
 

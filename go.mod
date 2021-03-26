@@ -18,7 +18,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/teacat/noire v1.1.0
 	github.com/wellington/go-libsass v0.9.2
-	golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 )
 
 replace github.com/rs/zerolog v1.20.0 => github.com/bvisness/zerolog v1.20.1-0.20210321191248-05f63bf0e9e0

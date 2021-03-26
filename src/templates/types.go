@@ -5,9 +5,11 @@ type BaseData struct {
 	CanonicalLink   string
 	OpenGraphItems  []OpenGraphItem
 	BackgroundImage BackgroundImage
-	Project         Project
 	Theme           string
 	BodyClasses     []string
+
+	Project Project
+	User    *User
 }
 
 type Project struct {
@@ -21,6 +23,13 @@ type Project struct {
 	HasForum   bool
 	HasWiki    bool
 	HasLibrary bool
+}
+
+type User struct {
+	Username    string
+	Email       string
+	IsSuperuser bool
+	IsStaff     bool
 }
 
 type OpenGraphItem struct {

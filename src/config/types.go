@@ -15,10 +15,12 @@ const (
 )
 
 type HMNConfig struct {
-	Env      Environment
-	Addr     string
-	BaseUrl  string
-	Postgres PostgresConfig
+	Env          Environment
+	Addr         string
+	BaseUrl      string
+	Postgres     PostgresConfig
+	CookieDomain string
+	TokenSecret  string
 }
 
 type PostgresConfig struct {

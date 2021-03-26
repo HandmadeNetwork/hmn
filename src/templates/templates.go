@@ -49,10 +49,6 @@ func Init() {
 			Templates[f.Name()] = t
 		}
 	}
-
-	for name, t := range Templates {
-		fmt.Printf("%s: %v\n", name, names(t.Templates()))
-	}
 }
 
 func names(ts []*template.Template) []string {
