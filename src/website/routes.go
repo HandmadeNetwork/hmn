@@ -38,6 +38,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	mainRoutes.GET("/assets/project.css", routes.ProjectCSS)
 
 	routes.POST("/login", routes.Login)
+	routes.GET("/logout", routes.Logout)
 
 	routes.ServeFiles("/public/*filepath", http.Dir("public"))
 
@@ -195,6 +196,20 @@ func (s *websiteRoutes) Login(c *RequestContext, p httprouter.Params) {
 		c.Redirect("/", http.StatusSeeOther) // TODO: Redirect to standalone login page with error
 		return
 	}
+}
+
+func (s *websiteRoutes) Logout(c *RequestContext, p httprouter.Params) {
+	sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
+	if err == nil {
+		// clear the session from the db immediately, no expiration
+		err := auth.DeleteSession(c.Context(), s.conn, sessionCookie.Value)
+		if err != nil {
+			logging.Error().Err(err).Msg("failed to delete session on logout")
+		}
+	}
+
+	c.SetCookie(auth.DeleteSessionCookie)
+	c.Redirect("/", http.StatusSeeOther) // TODO: Redirect to the page the user was currently on, or if not authorized to view that page, immediately to the home page.
 }
 
 func ErrorLoggingWrapper(h HMNHandler) HMNHandler {

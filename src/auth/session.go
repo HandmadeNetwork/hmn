@@ -64,6 +64,17 @@ func CreateSession(ctx context.Context, conn *pgxpool.Pool, username string) (*m
 	return &session, nil
 }
 
+// Deletes a session by id. If no session with that id exists, no
+// error is returned.
+func DeleteSession(ctx context.Context, conn *pgxpool.Pool, id string) error {
+	_, err := conn.Exec(ctx, "DELETE FROM sessions WHERE id = $1", id)
+	if err != nil {
+		return oops.New(err, "failed to delete session")
+	}
+
+	return nil
+}
+
 func NewSessionCookie(session *models.Session) *http.Cookie {
 	return &http.Cookie{
 		Name:  SessionCookieName,
@@ -76,4 +87,10 @@ func NewSessionCookie(session *models.Session) *http.Cookie {
 		HttpOnly: true,
 		SameSite: http.SameSiteDefaultMode,
 	}
+}
+
+var DeleteSessionCookie = &http.Cookie{
+	Name:   SessionCookieName,
+	Domain: config.Config.Auth.CookieDomain,
+	MaxAge: -1,
 }
