@@ -246,7 +246,7 @@ func MakeMigration(name, description string) {
 
 	safeVersion := strings.ReplaceAll(types.MigrationVersion(now).String(), ":", "")
 	filename := fmt.Sprintf("%v_%v.go", safeVersion, name)
-	path := filepath.Join("migration", "migrations", filename)
+	path := filepath.Join("src", "migration", "migrations", filename)
 
 	err := os.WriteFile(path, []byte(result), 0644)
 	if err != nil {

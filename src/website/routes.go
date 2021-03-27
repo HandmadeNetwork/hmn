@@ -45,6 +45,16 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 }
 
 func (s *websiteRoutes) getBaseData(c *RequestContext) templates.BaseData {
+	var templateUser *templates.User
+	if c.currentUser != nil {
+		templateUser = &templates.User{
+			Username:    c.currentUser.Username,
+			Email:       c.currentUser.Email,
+			IsSuperuser: c.currentUser.IsSuperuser,
+			IsStaff:     c.currentUser.IsStaff,
+		}
+	}
+
 	return templates.BaseData{
 		Project: templates.Project{
 			Name:      c.currentProject.Name,
@@ -58,6 +68,7 @@ func (s *websiteRoutes) getBaseData(c *RequestContext) templates.BaseData {
 			HasWiki:    true,
 			HasLibrary: true,
 		},
+		User:  templateUser,
 		Theme: "dark",
 	}
 }
@@ -171,8 +182,13 @@ func (s *websiteRoutes) Login(c *RequestContext, p httprouter.Params) {
 	}
 
 	if passwordsMatch {
-		logging.Debug().Str("cookie", auth.NewAuthCookie(username).String()).Msg("logged in")
-		c.SetCookie(auth.NewAuthCookie(username))
+		session, err := auth.CreateSession(c.Context(), s.conn, username)
+		if err != nil {
+			c.Errored(http.StatusInternalServerError, oops.New(err, "failed to create session"))
+			return
+		}
+
+		c.SetCookie(auth.NewSessionCookie(session))
 		c.Redirect(redirect, http.StatusSeeOther)
 		return
 	} else {
@@ -193,20 +209,65 @@ func ErrorLoggingWrapper(h HMNHandler) HMNHandler {
 
 func (s *websiteRoutes) CommonWebsiteDataWrapper(h HMNHandler) HMNHandler {
 	return func(c *RequestContext, p httprouter.Params) {
-		slug := ""
-		hostParts := strings.SplitN(c.Req.Host, ".", 3)
-		if len(hostParts) >= 3 {
-			slug = hostParts[0]
+		// get project
+		{
+			slug := ""
+			hostParts := strings.SplitN(c.Req.Host, ".", 3)
+			if len(hostParts) >= 3 {
+				slug = hostParts[0]
+			}
+
+			dbProject, err := FetchProjectBySlug(c.Context(), s.conn, slug)
+			if err != nil {
+				c.Errored(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
+				return
+			}
+
+			c.currentProject = dbProject
 		}
 
-		dbProject, err := FetchProjectBySlug(c.Context(), s.conn, slug)
-		if err != nil {
-			c.Errored(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
-			return
-		}
+		sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
+		if err == nil {
+			user, err := s.getCurrentUserAndMember(c.Context(), sessionCookie.Value)
+			if err != nil {
+				c.Errored(http.StatusInternalServerError, oops.New(err, "failed to get current user and member"))
+				return
+			}
 
-		c.currentProject = dbProject
+			c.currentUser = user
+		}
+		// http.ErrNoCookie is the only error Cookie ever returns, so no further handling to do here.
 
 		h(c, p)
 	}
+}
+
+// Given a session id, fetches user and member data from the database. Will return nil for
+// both if neither can be found, and will only return an error if it's serious.
+//
+// TODO: actually return members :)
+func (s *websiteRoutes) getCurrentUserAndMember(ctx context.Context, sessionId string) (*models.User, error) {
+	session, err := auth.GetSession(ctx, s.conn, sessionId)
+	if err != nil {
+		if errors.Is(err, auth.ErrNoSession) {
+			return nil, nil
+		} else {
+			return nil, oops.New(err, "failed to get current session")
+		}
+	}
+
+	var user models.User
+	err = db.QueryOneToStruct(ctx, s.conn, &user, "SELECT $columns FROM auth_user WHERE username = $1", session.Username)
+	if err != nil {
+		if errors.Is(err, db.ErrNoMatchingRows) {
+			logging.Debug().Str("username", session.Username).Msg("returning no current user for this request because the user for the session couldn't be found")
+			return nil, nil // user was deleted or something
+		} else {
+			return nil, oops.New(err, "failed to get user for session")
+		}
+	}
+
+	// TODO: Also get the member model
+
+	return &user, nil
 }

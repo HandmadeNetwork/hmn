@@ -67,6 +67,8 @@ type RequestContext struct {
 	rw http.ResponseWriter
 
 	currentProject *models.Project
+	currentUser    *models.User
+	// currentMember *models.Member
 }
 
 func newRequestContext(rw http.ResponseWriter, req *http.Request, route string) *RequestContext {

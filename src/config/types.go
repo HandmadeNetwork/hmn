@@ -15,12 +15,11 @@ const (
 )
 
 type HMNConfig struct {
-	Env          Environment
-	Addr         string
-	BaseUrl      string
-	Postgres     PostgresConfig
-	CookieDomain string
-	TokenSecret  string
+	Env      Environment
+	Addr     string
+	BaseUrl  string
+	Postgres PostgresConfig
+	Auth     AuthConfig
 }
 
 type PostgresConfig struct {
@@ -30,6 +29,11 @@ type PostgresConfig struct {
 	Port     int
 	DbName   string
 	LogLevel pgx.LogLevel
+}
+
+type AuthConfig struct {
+	CookieDomain string
+	CookieSecure bool
 }
 
 func (info PostgresConfig) DSN() string {
