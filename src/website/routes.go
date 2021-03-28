@@ -183,6 +183,20 @@ func (s *websiteRoutes) Login(c *RequestContext, p httprouter.Params) {
 	}
 
 	if passwordsMatch {
+		// re-hash and save the user's password if necessary
+		if hashed.IsOutdated() {
+			newHashed, err := auth.HashPassword(password)
+			if err == nil {
+				err := auth.UpdatePassword(c.Context(), s.conn, username, newHashed)
+				if err != nil {
+					c.Logger.Error().Err(err).Msg("failed to update user's password")
+				}
+			} else {
+				c.Logger.Error().Err(err).Msg("failed to re-hash password")
+			}
+			// If errors happen here, we can still continue with logging them in
+		}
+
 		session, err := auth.CreateSession(c.Context(), s.conn, username)
 		if err != nil {
 			c.Errored(http.StatusInternalServerError, oops.New(err, "failed to create session"))

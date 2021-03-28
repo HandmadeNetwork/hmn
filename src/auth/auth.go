@@ -2,15 +2,18 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/oops"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/pbkdf2"
 )
@@ -52,6 +55,10 @@ func ParsePasswordString(s string) (HashedPassword, error) {
 
 func (p HashedPassword) String() string {
 	return fmt.Sprintf("%s$%s$%s$%s", p.Algorithm, p.AlgoConfig, p.Salt, p.Hash)
+}
+
+func (p HashedPassword) IsOutdated() bool {
+	return p.Algorithm != Argon2id
 }
 
 type Argon2idConfig struct {
@@ -152,7 +159,7 @@ func HashPassword(password string) (HashedPassword, error) {
 
 	cfg := Argon2idConfig{
 		Time:      1,
-		Memory:    40 * 1024 * 1024,
+		Memory:    40 * 1024, // this is in KiB for some reason
 		Threads:   1,
 		KeyLength: keyLength,
 	}
@@ -166,4 +173,17 @@ func HashPassword(password string) (HashedPassword, error) {
 		Salt:       saltEnc,
 		Hash:       keyEnc,
 	}, nil
+}
+
+var ErrUserDoesNotExist = errors.New("user does not exist")
+
+func UpdatePassword(ctx context.Context, conn *pgxpool.Pool, username string, hp HashedPassword) error {
+	tag, err := conn.Exec(ctx, "UPDATE auth_user SET password = $1 WHERE username = $2", hp.String(), username)
+	if err != nil {
+		return oops.New(err, "failed to update password")
+	} else if tag.RowsAffected() < 1 {
+		return ErrUserDoesNotExist
+	}
+
+	return nil
 }

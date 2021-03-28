@@ -49,7 +49,8 @@ func init() {
 		Short: "Create a new database migration file",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) < 2 {
-				fmt.Println("You must provide a name and a description.")
+				fmt.Printf("You must provide a name and a description.\n\n")
+				cmd.Usage()
 				os.Exit(1)
 			}
 
