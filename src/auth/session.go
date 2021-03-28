@@ -11,6 +11,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -93,4 +94,40 @@ var DeleteSessionCookie = &http.Cookie{
 	Name:   SessionCookieName,
 	Domain: config.Config.Auth.CookieDomain,
 	MaxAge: -1,
+}
+
+func DeleteExpiredSessions(ctx context.Context, conn *pgxpool.Pool) (int64, error) {
+	tag, err := conn.Exec(ctx, "DELETE FROM sessions WHERE expires_at <= CURRENT_TIMESTAMP")
+	if err != nil {
+		return 0, oops.New(err, "failed to delete expired sessions")
+	}
+
+	return tag.RowsAffected(), nil
+}
+
+func PeriodicallyDeleteExpiredSessions(ctx context.Context, conn *pgxpool.Pool) <-chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		t := time.NewTicker(1 * time.Minute)
+		for {
+			select {
+			case <-t.C:
+				n, err := DeleteExpiredSessions(ctx, conn)
+				if err == nil {
+					if n > 0 {
+						logging.Info().Int64("num deleted sessions", n).Msg("Deleted expired sessions")
+					} else {
+						logging.Debug().Msg("no sessions to delete")
+					}
+				} else {
+					logging.Error().Err(err).Msg("Failed to delete expired sessions")
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return done
 }

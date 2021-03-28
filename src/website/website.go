@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/logging"
@@ -31,6 +32,11 @@ var WebsiteCommand = &cobra.Command{
 			Handler: NewWebsiteRoutes(conn),
 		}
 
+		backgroundJobContext, cancelBackgroundJobs := context.WithCancel(context.Background())
+		backgroundJobsDone := zipJobs(
+			auth.PeriodicallyDeleteExpiredSessions(backgroundJobContext, conn),
+		)
+
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt)
 		go func() {
@@ -39,6 +45,7 @@ var WebsiteCommand = &cobra.Command{
 			timeout, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 			server.Shutdown(timeout)
+			cancelBackgroundJobs()
 
 			<-signals
 			logging.Warn().Msg("Forcibly killed the website")
@@ -50,5 +57,18 @@ var WebsiteCommand = &cobra.Command{
 		if !errors.Is(serverErr, http.ErrServerClosed) {
 			logging.Error().Err(serverErr).Msg("Server shut down unexpectedly")
 		}
+
+		<-backgroundJobsDone
 	},
+}
+
+func zipJobs(cs ...<-chan struct{}) <-chan struct{} {
+	out := make(chan struct{})
+	go func() {
+		for _, c := range cs {
+			<-c
+		}
+		close(out)
+	}()
+	return out
 }
