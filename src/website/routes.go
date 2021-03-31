@@ -33,7 +33,13 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	}
 
 	mainRoutes := routes.WithWrappers(routes.CommonWebsiteDataWrapper)
-	mainRoutes.GET("/", routes.Index)
+	mainRoutes.GET("/", func(c *RequestContext, p httprouter.Params) {
+		if c.currentProject.ID == models.HMNProjectID {
+			routes.Index(c, p)
+		} else {
+			// TODO: Return the project landing page
+		}
+	})
 	mainRoutes.GET("/project/:id", routes.Project)
 	mainRoutes.GET("/assets/project.css", routes.ProjectCSS)
 
@@ -58,8 +64,8 @@ func (s *websiteRoutes) getBaseData(c *RequestContext) templates.BaseData {
 
 	return templates.BaseData{
 		Project: templates.Project{
-			Name:      c.currentProject.Name,
-			Subdomain: c.currentProject.Slug,
+			Name:      *c.currentProject.Name,
+			Subdomain: *c.currentProject.Slug,
 			Color:     c.currentProject.Color1,
 
 			IsHMN: c.currentProject.IsHMN(),
@@ -75,16 +81,15 @@ func (s *websiteRoutes) getBaseData(c *RequestContext) templates.BaseData {
 }
 
 func FetchProjectBySlug(ctx context.Context, conn *pgxpool.Pool, slug string) (*models.Project, error) {
-	var subdomainProject models.Project
-	err := db.QueryOneToStruct(ctx, conn, &subdomainProject, "SELECT $columns FROM handmade_project WHERE slug = $1", slug)
+	subdomainProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE slug = $1", slug)
 	if err == nil {
+		subdomainProject := subdomainProjectRow.(models.Project)
 		return &subdomainProject, nil
 	} else if !errors.Is(err, db.ErrNoMatchingRows) {
 		return nil, oops.New(err, "failed to get projects by slug")
 	}
 
-	var defaultProject models.Project
-	err = db.QueryOneToStruct(ctx, conn, &defaultProject, "SELECT $columns FROM handmade_project WHERE id = $1", models.HMNProjectID)
+	defaultProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE id = $1", models.HMNProjectID)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			return nil, oops.New(nil, "default project didn't exist in the database")
@@ -92,15 +97,9 @@ func FetchProjectBySlug(ctx context.Context, conn *pgxpool.Pool, slug string) (*
 			return nil, oops.New(err, "failed to get default project")
 		}
 	}
+	defaultProject := defaultProjectRow.(*models.Project)
 
-	return &defaultProject, nil
-}
-
-func (s *websiteRoutes) Index(c *RequestContext, p httprouter.Params) {
-	err := c.WriteTemplate("index.html", s.getBaseData(c))
-	if err != nil {
-		panic(err)
-	}
+	return defaultProject, nil
 }
 
 func (s *websiteRoutes) Project(c *RequestContext, p httprouter.Params) {
@@ -159,8 +158,7 @@ func (s *websiteRoutes) Login(c *RequestContext, p httprouter.Params) {
 		redirect = "/"
 	}
 
-	var user models.User
-	err = db.QueryOneToStruct(c.Context(), s.conn, &user, "SELECT $columns FROM auth_user WHERE username = $1", username)
+	userRow, err := db.QueryOne(c.Context(), s.conn, models.User{}, "SELECT $columns FROM auth_user WHERE username = $1", username)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			c.StatusCode = http.StatusUnauthorized
@@ -169,6 +167,7 @@ func (s *websiteRoutes) Login(c *RequestContext, p httprouter.Params) {
 		}
 		return
 	}
+	user := userRow.(models.User)
 
 	hashed, err := auth.ParsePasswordString(user.Password)
 	if err != nil {
@@ -285,8 +284,7 @@ func (s *websiteRoutes) getCurrentUserAndMember(ctx context.Context, sessionId s
 		}
 	}
 
-	var user models.User
-	err = db.QueryOneToStruct(ctx, s.conn, &user, "SELECT $columns FROM auth_user WHERE username = $1", session.Username)
+	userRow, err := db.QueryOne(ctx, s.conn, models.User{}, "SELECT $columns FROM auth_user WHERE username = $1", session.Username)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			logging.Debug().Str("username", session.Username).Msg("returning no current user for this request because the user for the session couldn't be found")
@@ -295,8 +293,9 @@ func (s *websiteRoutes) getCurrentUserAndMember(ctx context.Context, sessionId s
 			return nil, oops.New(err, "failed to get user for session")
 		}
 	}
+	user := userRow.(*models.User)
 
 	// TODO: Also get the member model
 
-	return &user, nil
+	return user, nil
 }

@@ -25,7 +25,7 @@ var WebsiteCommand = &cobra.Command{
 
 		logging.Info().Msg("Hello, HMN!")
 
-		conn := db.NewConnPool(4, 8)
+		conn := db.NewConnPool(4, 128)
 
 		server := http.Server{
 			Addr:    config.Config.Addr,
@@ -42,10 +42,12 @@ var WebsiteCommand = &cobra.Command{
 		go func() {
 			<-signals
 			logging.Info().Msg("Shutting down the website")
-			timeout, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-			defer cancel()
-			server.Shutdown(timeout)
-			cancelBackgroundJobs()
+			go func() {
+				timeout, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				server.Shutdown(timeout)
+				cancelBackgroundJobs()
+			}()
 
 			<-signals
 			logging.Warn().Msg("Forcibly killed the website")

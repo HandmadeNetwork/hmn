@@ -34,8 +34,7 @@ func makeSessionId() string {
 var ErrNoSession = errors.New("no session found")
 
 func GetSession(ctx context.Context, conn *pgxpool.Pool, id string) (*models.Session, error) {
-	var sess models.Session
-	err := db.QueryOneToStruct(ctx, conn, &sess, "SELECT $columns FROM sessions WHERE id = $1", id)
+	row, err := db.QueryOne(ctx, conn, models.Session{}, "SELECT $columns FROM sessions WHERE id = $1", id)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			return nil, ErrNoSession
@@ -43,8 +42,9 @@ func GetSession(ctx context.Context, conn *pgxpool.Pool, id string) (*models.Ses
 			return nil, oops.New(err, "failed to get session")
 		}
 	}
+	sess := row.(*models.Session)
 
-	return &sess, nil
+	return sess, nil
 }
 
 func CreateSession(ctx context.Context, conn *pgxpool.Pool, username string) (*models.Session, error) {

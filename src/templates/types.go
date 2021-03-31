@@ -42,3 +42,6 @@ type BackgroundImage struct {
 	Url  string
 	Size string // A valid CSS background-size value
 }
+
+type Post struct {
+}

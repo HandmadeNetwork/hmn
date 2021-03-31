@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"reflect"
+	"time"
+)
+
+var UserType = reflect.TypeOf(User{})
 
 type User struct {
 	ID int `db:"id"`
