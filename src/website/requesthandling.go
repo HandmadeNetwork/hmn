@@ -27,11 +27,15 @@ func (r *HMNRouter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	r.HttpRouter.ServeHTTP(rw, req)
 }
 
-func (r *HMNRouter) Handle(method, route string, handler HMNHandler) {
+func (r *HMNRouter) WrapHandler(handler HMNHandler) HMNHandler {
 	for i := len(r.Wrappers) - 1; i >= 0; i-- {
 		handler = r.Wrappers[i](handler)
 	}
-	r.HttpRouter.Handle(method, route, handleHmnHandler(route, handler))
+	return handler
+}
+
+func (r *HMNRouter) Handle(method, route string, handler HMNHandler) {
+	r.HttpRouter.Handle(method, route, handleHmnHandler(route, r.WrapHandler(handler)))
 }
 
 func (r *HMNRouter) GET(route string, handler HMNHandler) {
@@ -56,6 +60,12 @@ func (r *HMNRouter) WithWrappers(wrappers ...HMNHandlerWrapper) *HMNRouter {
 
 type HMNHandler func(c *RequestContext, p httprouter.Params)
 type HMNHandlerWrapper func(h HMNHandler) HMNHandler
+
+func MakeStdHandler(h HMNHandler, name string) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		handleHmnHandler(name, h)(rw, req, nil)
+	})
+}
 
 type RequestContext struct {
 	StatusCode int

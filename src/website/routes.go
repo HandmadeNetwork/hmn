@@ -48,6 +48,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 
 	routes.ServeFiles("/public/*filepath", http.Dir("public"))
 
+	routes.HttpRouter.NotFound = MakeStdHandler(mainRoutes.WrapHandler(routes.FourOhFour), "404")
+
 	return routes
 }
 
@@ -223,6 +225,11 @@ func (s *websiteRoutes) Logout(c *RequestContext, p httprouter.Params) {
 
 	c.SetCookie(auth.DeleteSessionCookie)
 	c.Redirect("/", http.StatusSeeOther) // TODO: Redirect to the page the user was currently on, or if not authorized to view that page, immediately to the home page.
+}
+
+func (s *websiteRoutes) FourOhFour(c *RequestContext, p httprouter.Params) {
+	c.StatusCode = http.StatusNotFound
+	c.Body.Write([]byte("go away\n"))
 }
 
 func ErrorLoggingWrapper(h HMNHandler) HMNHandler {
