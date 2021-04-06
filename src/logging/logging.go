@@ -55,7 +55,8 @@ func With() zerolog.Context {
 }
 
 type PrettyZerologWriter struct {
-	wd string
+	wd                  string
+	wasLastLogMultiline bool
 }
 
 type PrettyLogEntry struct {
@@ -86,7 +87,8 @@ var ColorFromLevel = map[string]string{
 func NewPrettyZerologWriter() *PrettyZerologWriter {
 	wd, _ := os.Getwd()
 	return &PrettyZerologWriter{
-		wd: wd,
+		wd:                  wd,
+		wasLastLogMultiline: false,
 	}
 }
 
@@ -124,8 +126,12 @@ func (w *PrettyZerologWriter) Write(p []byte) (int, error) {
 		return strings.Compare(pretty.OtherFields[i].Name, pretty.OtherFields[j].Name) < 0
 	})
 
+	isMultiline := (pretty.Error != "" || pretty.StackTrace != nil || pretty.OtherFields != nil)
+
 	var b strings.Builder
-	b.WriteString("---------------------------------------\n")
+	if isMultiline || w.wasLastLogMultiline {
+		b.WriteString("---------------------------------------\n")
+	}
 	b.WriteString(pretty.Timestamp)
 	b.WriteString(" ")
 	if pretty.Level != "" {
@@ -169,6 +175,8 @@ func (w *PrettyZerologWriter) Write(p []byte) (int, error) {
 			b.WriteString(")\n")
 		}
 	}
+
+	w.wasLastLogMultiline = isMultiline
 
 	return os.Stderr.Write([]byte(b.String()))
 }
