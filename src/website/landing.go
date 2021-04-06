@@ -8,7 +8,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
-	"github.com/julienschmidt/httprouter"
 )
 
 type LandingTemplateData struct {
@@ -29,7 +28,7 @@ type LandingPagePost struct {
 	HasRead bool
 }
 
-func (s *websiteRoutes) Index(c *RequestContext, p httprouter.Params) {
+func (s *websiteRoutes) Index(c *RequestContext) ResponseData {
 	const maxPosts = 5
 	const numProjectsToGet = 7
 
@@ -38,8 +37,7 @@ func (s *websiteRoutes) Index(c *RequestContext, p httprouter.Params) {
 		models.HMNProjectID,
 	)
 	if err != nil {
-		c.Errored(http.StatusInternalServerError, oops.New(err, "failed to get projects for home page"))
-		return
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get projects for home page"))
 	}
 	defer iterProjects.Close()
 
@@ -132,8 +130,7 @@ func (s *websiteRoutes) Index(c *RequestContext, p httprouter.Params) {
 		models.CatTypeBlog,
 	)
 	if err != nil {
-		c.Errored(http.StatusInternalServerError, oops.New(err, "failed to fetch latest news post"))
-		return
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch latest news post"))
 	}
 	newsThread := newsThreadRow.(*newsThreadQuery)
 	_ = newsThread // TODO: NO
@@ -141,8 +138,11 @@ func (s *websiteRoutes) Index(c *RequestContext, p httprouter.Params) {
 	baseData := s.getBaseData(c)
 	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 
-	err = c.WriteTemplate("index.html", s.getBaseData(c))
+	var res ResponseData
+	err = res.WriteTemplate("index.html", s.getBaseData(c))
 	if err != nil {
 		panic(err)
 	}
+
+	return res
 }

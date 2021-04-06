@@ -3,7 +3,6 @@ package website
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"html"
 	"io"
 	"net/http"
@@ -35,7 +34,11 @@ func (r *HMNRouter) WrapHandler(handler HMNHandler) HMNHandler {
 }
 
 func (r *HMNRouter) Handle(method, route string, handler HMNHandler) {
-	r.HttpRouter.Handle(method, route, handleHmnHandler(route, r.WrapHandler(handler)))
+	h := r.WrapHandler(handler)
+	r.HttpRouter.Handle(method, route, func(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
+		c := NewRequestContext(rw, req, p)
+		doRequest(rw, c, h)
+	})
 }
 
 func (r *HMNRouter) GET(route string, handler HMNHandler) {
@@ -58,39 +61,29 @@ func (r *HMNRouter) WithWrappers(wrappers ...HMNHandlerWrapper) *HMNRouter {
 	return &result
 }
 
-type HMNHandler func(c *RequestContext, p httprouter.Params)
+type HMNHandler func(c *RequestContext) ResponseData
 type HMNHandlerWrapper func(h HMNHandler) HMNHandler
 
-func MakeStdHandler(h HMNHandler, name string) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		handleHmnHandler(name, h)(rw, req, nil)
-	})
+func (h HMNHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	c := NewRequestContext(rw, req, nil)
+	doRequest(rw, c, h)
 }
 
 type RequestContext struct {
-	StatusCode int
-	Body       *bytes.Buffer
 	Logger     *zerolog.Logger
 	Req        *http.Request
-	Errors     []error
+	PathParams httprouter.Params
 
-	rw http.ResponseWriter
-
-	currentProject *models.Project
-	currentUser    *models.User
-	// currentMember *models.Member
+	CurrentProject *models.Project
+	CurrentUser    *models.User
+	// CurrentMember *models.Member
 }
 
-func newRequestContext(rw http.ResponseWriter, req *http.Request, route string) *RequestContext {
-	logger := logging.With().Str("route", route).Logger()
-
+func NewRequestContext(rw http.ResponseWriter, req *http.Request, pathParams httprouter.Params) *RequestContext {
 	return &RequestContext{
-		StatusCode: http.StatusOK,
-		Body:       new(bytes.Buffer),
-		Logger:     &logger,
+		Logger:     logging.GlobalLogger(),
 		Req:        req,
-
-		rw: rw,
+		PathParams: pathParams,
 	}
 }
 
@@ -102,14 +95,6 @@ func (c *RequestContext) URL() *url.URL {
 	return c.Req.URL
 }
 
-func (c *RequestContext) Headers() http.Header {
-	return c.rw.Header()
-}
-
-func (c *RequestContext) SetCookie(cookie *http.Cookie) {
-	c.rw.Header().Add("Set-Cookie", cookie.String())
-}
-
 func (c *RequestContext) GetFormValues() (url.Values, error) {
 	err := c.Req.ParseForm()
 	if err != nil {
@@ -119,9 +104,39 @@ func (c *RequestContext) GetFormValues() (url.Values, error) {
 	return c.Req.PostForm, nil
 }
 
+type ResponseData struct {
+	StatusCode int
+	Body       *bytes.Buffer
+	Errors     []error
+
+	header http.Header
+}
+
+func (rd *ResponseData) Headers() http.Header {
+	if rd.header == nil {
+		rd.header = make(http.Header)
+	}
+
+	return rd.header
+}
+
+func (rd *ResponseData) Write(p []byte) (n int, err error) {
+	if rd.Body == nil {
+		rd.Body = new(bytes.Buffer)
+	}
+
+	return rd.Body.Write(p)
+}
+
+func (rd *ResponseData) SetCookie(cookie *http.Cookie) {
+	rd.Headers().Add("Set-Cookie", cookie.String())
+}
+
 // The logic of this function is copy-pasted from the Go standard library.
 // https://golang.org/pkg/net/http/#Redirect
-func (c *RequestContext) Redirect(dest string, code int) {
+func (c *RequestContext) Redirect(dest string, code int) ResponseData {
+	var res ResponseData
+
 	if u, err := url.Parse(dest); err == nil {
 		// If url was relative, make its path absolute by
 		// combining with request path.
@@ -156,60 +171,58 @@ func (c *RequestContext) Redirect(dest string, code int) {
 		}
 	}
 
-	h := c.Headers()
-
-	// RFC 7231 notes that a short HTML body is usually included in
-	// the response because older user agents may not understand 301/307.
-	// Do it only if the request didn't already have a Content-Type header.
-	_, hadCT := h["Content-Type"]
-
 	// Escape stuff
 	destUrl, _ := url.Parse(dest)
 	dest = destUrl.String()
 
-	h.Set("Location", dest)
-	if !hadCT && (c.Req.Method == "GET" || c.Req.Method == "HEAD") {
-		h.Set("Content-Type", "text/html; charset=utf-8")
+	res.Headers().Set("Location", dest)
+	if c.Req.Method == "GET" || c.Req.Method == "HEAD" {
+		res.Headers().Set("Content-Type", "text/html; charset=utf-8")
 	}
-	c.StatusCode = code
+	res.StatusCode = code
 
 	// Shouldn't send the body for POST or HEAD; that leaves GET.
-	if !hadCT && c.Req.Method == "GET" {
-		body := "<a href=\"" + html.EscapeString(dest) + "\">" + http.StatusText(code) + "</a>.\n"
-		fmt.Fprintln(c.Body, body)
+	if c.Req.Method == "GET" {
+		res.Write([]byte("<a href=\"" + html.EscapeString(dest) + "\">" + http.StatusText(code) + "</a>.\n"))
+	}
+
+	return res
+}
+
+func (rd *ResponseData) WriteTemplate(name string, data interface{}) error {
+	return templates.Templates[name].Execute(rd, data)
+}
+
+func ErrorResponse(status int, errs ...error) ResponseData {
+	return ResponseData{
+		StatusCode: status,
+		Errors:     errs,
 	}
 }
 
-func (c *RequestContext) WriteTemplate(name string, data interface{}) error {
-	return templates.Templates[name].Execute(c.Body, data)
-}
+func doRequest(rw http.ResponseWriter, c *RequestContext, h HMNHandler) {
+	defer func() {
+		/*
+			This panic recovery is the last resort. If you want to render
+			an error page or something, make it a request wrapper.
+		*/
+		if recovered := recover(); recovered != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			logging.LogPanicValue(c.Logger, recovered, "request panicked and was not handled")
+		}
+	}()
 
-func (c *RequestContext) AddErrors(errs ...error) {
-	c.Errors = append(c.Errors, errs...)
-}
+	res := h(c)
 
-func (c *RequestContext) Errored(status int, errs ...error) {
-	c.StatusCode = status
-	c.AddErrors(errs...)
-}
-
-func handleHmnHandler(route string, h HMNHandler) httprouter.Handle {
-	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		c := newRequestContext(rw, r, route)
-		defer func() {
-			/*
-				This panic recovery is the last resort. If you want to render
-				an error page or something, make it a request wrapper.
-			*/
-			if recovered := recover(); recovered != nil {
-				rw.WriteHeader(http.StatusInternalServerError)
-				logging.LogPanicValue(c.Logger, recovered, "request panicked and was not handled")
-			}
-		}()
-
-		h(c, p)
-
-		rw.WriteHeader(c.StatusCode)
-		io.Copy(rw, c.Body)
+	if res.StatusCode == 0 {
+		res.StatusCode = http.StatusOK
 	}
+
+	for name, vals := range res.Headers() {
+		for _, val := range vals {
+			rw.Header().Add(name, val)
+		}
+	}
+	rw.WriteHeader(res.StatusCode)
+	io.Copy(rw, res.Body)
 }
