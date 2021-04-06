@@ -29,6 +29,8 @@ type PostgresConfig struct {
 	Port     int
 	DbName   string
 	LogLevel pgx.LogLevel
+	MinConn  int32
+	MaxConn  int32
 }
 
 type AuthConfig struct {

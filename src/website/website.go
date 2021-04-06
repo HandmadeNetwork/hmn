@@ -25,7 +25,7 @@ var WebsiteCommand = &cobra.Command{
 
 		logging.Info().Msg("Hello, HMN!")
 
-		conn := db.NewConnPool(4, 128)
+		conn := db.NewConnPool(config.Config.Postgres.MinConn, config.Config.Postgres.MaxConn)
 
 		server := http.Server{
 			Addr:    config.Config.Addr,
