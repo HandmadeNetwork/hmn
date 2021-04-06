@@ -13,56 +13,28 @@ import (
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/zerolog"
 )
 
-type HMNRouter struct {
-	HttpRouter *httprouter.Router
-	Wrappers   []HMNHandlerWrapper
-}
-
-func (r *HMNRouter) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	r.HttpRouter.ServeHTTP(rw, req)
-}
-
-func (r *HMNRouter) WrapHandler(handler HMNHandler) HMNHandler {
-	for i := len(r.Wrappers) - 1; i >= 0; i-- {
-		handler = r.Wrappers[i](handler)
-	}
-	return handler
-}
-
-func (r *HMNRouter) Handle(method, route string, handler HMNHandler) {
-	h := r.WrapHandler(handler)
-	r.HttpRouter.Handle(method, route, func(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
-		c := NewRequestContext(rw, req, p)
-		doRequest(rw, c, h)
-	})
-}
-
-func (r *HMNRouter) GET(route string, handler HMNHandler) {
-	r.Handle(http.MethodGet, route, handler)
-}
-
-func (r *HMNRouter) POST(route string, handler HMNHandler) {
-	r.Handle(http.MethodPost, route, handler)
-}
-
-// TODO: More methods
-
-func (r *HMNRouter) ServeFiles(path string, root http.FileSystem) {
-	r.HttpRouter.ServeFiles(path, root)
-}
-
-func (r *HMNRouter) WithWrappers(wrappers ...HMNHandlerWrapper) *HMNRouter {
-	result := *r
-	result.Wrappers = append(result.Wrappers, wrappers...)
-	return &result
-}
-
+// The typical handler. Handles a request and returns data about the response.
 type HMNHandler func(c *RequestContext) ResponseData
-type HMNHandlerWrapper func(h HMNHandler) HMNHandler
+
+// A special handler that runs before the primary handler. Intended to set
+// information on the context for later handlers, or to give the request a
+// means to bail out early if preconditions are not met (like auth). If `ok`
+// is false, the request will immediately bail out, no further handlers will
+// be run, and it will respond with the provided response data.
+//
+// The response data from this function will still be fed through any after
+// handlers, to ensure that errors will get logged and whatnot.
+type HMNBeforeHandler func(c *RequestContext) (ok bool, res ResponseData)
+
+// A special handler that runs after the primary handler and can modify the
+// response information. Intended for error logging, error pages,
+// cleanup, etc.
+type HMNAfterHandler func(c *RequestContext, res ResponseData) ResponseData
 
 func (h HMNHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	c := NewRequestContext(rw, req, nil)
@@ -74,6 +46,7 @@ type RequestContext struct {
 	Req        *http.Request
 	PathParams httprouter.Params
 
+	Conn           *pgxpool.Pool
 	CurrentProject *models.Project
 	CurrentUser    *models.User
 	// CurrentMember *models.Member
@@ -102,34 +75,6 @@ func (c *RequestContext) GetFormValues() (url.Values, error) {
 	}
 
 	return c.Req.PostForm, nil
-}
-
-type ResponseData struct {
-	StatusCode int
-	Body       *bytes.Buffer
-	Errors     []error
-
-	header http.Header
-}
-
-func (rd *ResponseData) Headers() http.Header {
-	if rd.header == nil {
-		rd.header = make(http.Header)
-	}
-
-	return rd.header
-}
-
-func (rd *ResponseData) Write(p []byte) (n int, err error) {
-	if rd.Body == nil {
-		rd.Body = new(bytes.Buffer)
-	}
-
-	return rd.Body.Write(p)
-}
-
-func (rd *ResponseData) SetCookie(cookie *http.Cookie) {
-	rd.Headers().Add("Set-Cookie", cookie.String())
 }
 
 // The logic of this function is copy-pasted from the Go standard library.
@@ -189,8 +134,86 @@ func (c *RequestContext) Redirect(dest string, code int) ResponseData {
 	return res
 }
 
+type ResponseData struct {
+	StatusCode int
+	Body       *bytes.Buffer
+	Errors     []error
+
+	header http.Header
+}
+
+func (rd *ResponseData) Headers() http.Header {
+	if rd.header == nil {
+		rd.header = make(http.Header)
+	}
+
+	return rd.header
+}
+
+func (rd *ResponseData) Write(p []byte) (n int, err error) {
+	if rd.Body == nil {
+		rd.Body = new(bytes.Buffer)
+	}
+
+	return rd.Body.Write(p)
+}
+
+func (rd *ResponseData) SetCookie(cookie *http.Cookie) {
+	rd.Headers().Add("Set-Cookie", cookie.String())
+}
+
 func (rd *ResponseData) WriteTemplate(name string, data interface{}) error {
 	return templates.Templates[name].Execute(rd, data)
+}
+
+type RouteBuilder struct {
+	Router         *httprouter.Router
+	BeforeHandlers []HMNBeforeHandler
+	AfterHandlers  []HMNAfterHandler
+}
+
+func (b RouteBuilder) ChainHandlers(h HMNHandler) HMNHandler {
+	return func(c *RequestContext) ResponseData {
+		beforeOk := true
+		var res ResponseData
+		for _, before := range b.BeforeHandlers {
+			if ok, errorRes := before(c); !ok {
+				beforeOk = false
+				res = errorRes
+			}
+		}
+
+		if beforeOk {
+			res = h(c)
+		}
+
+		for _, after := range b.AfterHandlers {
+			res = after(c, res)
+		}
+		return res
+	}
+}
+
+func (b *RouteBuilder) Handle(method, route string, handler HMNHandler) {
+	h := b.ChainHandlers(handler)
+	b.Router.Handle(method, route, func(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
+		c := NewRequestContext(rw, req, p)
+		doRequest(rw, c, h)
+	})
+}
+
+func (b *RouteBuilder) GET(route string, handler HMNHandler) {
+	b.Handle(http.MethodGet, route, handler)
+}
+
+func (b *RouteBuilder) POST(route string, handler HMNHandler) {
+	b.Handle(http.MethodPost, route, handler)
+}
+
+// TODO: More methods
+
+func (b *RouteBuilder) ServeFiles(path string, root http.FileSystem) {
+	b.Router.ServeFiles(path, root)
 }
 
 func ErrorResponse(status int, errs ...error) ResponseData {

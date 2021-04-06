@@ -28,11 +28,11 @@ type LandingPagePost struct {
 	HasRead bool
 }
 
-func (s *websiteRoutes) Index(c *RequestContext) ResponseData {
+func Index(c *RequestContext) ResponseData {
 	const maxPosts = 5
 	const numProjectsToGet = 7
 
-	iterProjects, err := db.Query(c.Context(), s.conn, models.Project{},
+	iterProjects, err := db.Query(c.Context(), c.Conn, models.Project{},
 		"SELECT $columns FROM handmade_project WHERE flags = 0 OR id = $1",
 		models.HMNProjectID,
 	)
@@ -54,7 +54,7 @@ func (s *websiteRoutes) Index(c *RequestContext) ResponseData {
 		}
 
 		memberId := 3 // TODO: NO
-		projectPostIter, err := db.Query(c.Context(), s.conn, ProjectPost{},
+		projectPostIter, err := db.Query(c.Context(), c.Conn, ProjectPost{},
 			`
 			SELECT $columns
 			FROM
@@ -116,7 +116,7 @@ func (s *websiteRoutes) Index(c *RequestContext) ResponseData {
 	type newsThreadQuery struct {
 		Thread models.Thread `db:"thread"`
 	}
-	newsThreadRow, err := db.QueryOne(c.Context(), s.conn, newsThreadQuery{},
+	newsThreadRow, err := db.QueryOne(c.Context(), c.Conn, newsThreadQuery{},
 		`
 		SELECT $columns
 		FROM
@@ -135,11 +135,11 @@ func (s *websiteRoutes) Index(c *RequestContext) ResponseData {
 	newsThread := newsThreadRow.(*newsThreadQuery)
 	_ = newsThread // TODO: NO
 
-	baseData := s.getBaseData(c)
+	baseData := getBaseData(c)
 	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 
 	var res ResponseData
-	err = res.WriteTemplate("index.html", s.getBaseData(c))
+	err = res.WriteTemplate("index.html", getBaseData(c))
 	if err != nil {
 		panic(err)
 	}

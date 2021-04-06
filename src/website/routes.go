@@ -18,44 +18,67 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type websiteRoutes struct {
-	*HMNRouter
-
-	conn *pgxpool.Pool
-}
-
 func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
-	routes := &websiteRoutes{
-		HMNRouter: &HMNRouter{
-			HttpRouter: httprouter.New(),
-			Wrappers:   []HMNHandlerWrapper{ErrorLoggingWrapper},
+	router := httprouter.New()
+	routes := RouteBuilder{
+		Router: router,
+		BeforeHandlers: []HMNBeforeHandler{
+			func(c *RequestContext) (bool, ResponseData) {
+				c.Conn = conn
+				return true, ResponseData{}
+			},
 		},
-		conn: conn,
+		AfterHandlers: []HMNAfterHandler{ErrorLoggingHandler},
 	}
 
-	mainRoutes := routes.WithWrappers(routes.CommonWebsiteDataWrapper)
+	routes.POST("/login", Login)
+	routes.GET("/logout", Logout)
+	routes.ServeFiles("/public/*filepath", http.Dir("public"))
+
+	mainRoutes := routes
+	mainRoutes.BeforeHandlers = append(mainRoutes.BeforeHandlers,
+		CommonWebsiteDataWrapper,
+	)
+
 	mainRoutes.GET("/", func(c *RequestContext) ResponseData {
 		if c.CurrentProject.ID == models.HMNProjectID {
-			return routes.Index(c)
+			return Index(c)
 		} else {
 			// TODO: Return the project landing page
 			panic("route not implemented")
 		}
 	})
-	mainRoutes.GET("/project/:id", routes.Project)
-	mainRoutes.GET("/assets/project.css", routes.ProjectCSS)
+	mainRoutes.GET("/project/:id", Project)
+	mainRoutes.GET("/assets/project.css", ProjectCSS)
 
-	routes.POST("/login", routes.Login)
-	routes.GET("/logout", routes.Logout)
+	router.NotFound = mainRoutes.ChainHandlers(FourOhFour)
 
-	routes.ServeFiles("/public/*filepath", http.Dir("public"))
+	adminRoutes := routes
+	adminRoutes.BeforeHandlers = append(adminRoutes.BeforeHandlers,
+		func(c *RequestContext) (ok bool, res ResponseData) {
+			return false, ResponseData{
+				StatusCode: http.StatusUnauthorized,
+				Body:       bytes.NewBufferString("No one is allowed!\n"),
+			}
+		},
+	)
+	adminRoutes.AfterHandlers = append(adminRoutes.AfterHandlers,
+		func(c *RequestContext, res ResponseData) ResponseData {
+			res.Body.WriteString("Now go away. Sincerely, the after handler.\n")
+			return res
+		},
+	)
 
-	routes.HttpRouter.NotFound = mainRoutes.WrapHandler(routes.FourOhFour)
+	adminRoutes.GET("/admin", func(c *RequestContext) ResponseData {
+		return ResponseData{
+			Body: bytes.NewBufferString("Here are all the secrets.\n"),
+		}
+	})
 
-	return routes
+	return router
 }
 
-func (s *websiteRoutes) getBaseData(c *RequestContext) templates.BaseData {
+func getBaseData(c *RequestContext) templates.BaseData {
 	var templateUser *templates.User
 	if c.CurrentUser != nil {
 		templateUser = &templates.User{
@@ -106,9 +129,9 @@ func FetchProjectBySlug(ctx context.Context, conn *pgxpool.Pool, slug string) (*
 	return defaultProject, nil
 }
 
-func (s *websiteRoutes) Project(c *RequestContext) ResponseData {
+func Project(c *RequestContext) ResponseData {
 	id := c.PathParams.ByName("id")
-	row := s.conn.QueryRow(context.Background(), "SELECT name FROM handmade_project WHERE id = $1", c.PathParams.ByName("id"))
+	row := c.Conn.QueryRow(context.Background(), "SELECT name FROM handmade_project WHERE id = $1", c.PathParams.ByName("id"))
 	var name string
 	err := row.Scan(&name)
 	if err != nil {
@@ -121,7 +144,7 @@ func (s *websiteRoutes) Project(c *RequestContext) ResponseData {
 	return res
 }
 
-func (s *websiteRoutes) ProjectCSS(c *RequestContext) ResponseData {
+func ProjectCSS(c *RequestContext) ResponseData {
 	color := c.URL().Query().Get("color")
 	if color == "" {
 		return ErrorResponse(http.StatusBadRequest, NewSafeError(nil, "You must provide a 'color' parameter.\n"))
@@ -145,7 +168,7 @@ func (s *websiteRoutes) ProjectCSS(c *RequestContext) ResponseData {
 	return res
 }
 
-func (s *websiteRoutes) Login(c *RequestContext) ResponseData {
+func Login(c *RequestContext) ResponseData {
 	// TODO: Update this endpoint to give uniform responses on errors and to be resilient to timing attacks.
 
 	form, err := c.GetFormValues()
@@ -164,7 +187,7 @@ func (s *websiteRoutes) Login(c *RequestContext) ResponseData {
 		redirect = "/"
 	}
 
-	userRow, err := db.QueryOne(c.Context(), s.conn, models.User{}, "SELECT $columns FROM auth_user WHERE username = $1", username)
+	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{}, "SELECT $columns FROM auth_user WHERE username = $1", username)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			return ResponseData{
@@ -191,7 +214,7 @@ func (s *websiteRoutes) Login(c *RequestContext) ResponseData {
 		if hashed.IsOutdated() {
 			newHashed, err := auth.HashPassword(password)
 			if err == nil {
-				err := auth.UpdatePassword(c.Context(), s.conn, username, newHashed)
+				err := auth.UpdatePassword(c.Context(), c.Conn, username, newHashed)
 				if err != nil {
 					c.Logger.Error().Err(err).Msg("failed to update user's password")
 				}
@@ -201,7 +224,7 @@ func (s *websiteRoutes) Login(c *RequestContext) ResponseData {
 			// If errors happen here, we can still continue with logging them in
 		}
 
-		session, err := auth.CreateSession(c.Context(), s.conn, username)
+		session, err := auth.CreateSession(c.Context(), c.Conn, username)
 		if err != nil {
 			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create session"))
 		}
@@ -215,11 +238,11 @@ func (s *websiteRoutes) Login(c *RequestContext) ResponseData {
 	}
 }
 
-func (s *websiteRoutes) Logout(c *RequestContext) ResponseData {
+func Logout(c *RequestContext) ResponseData {
 	sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
 	if err == nil {
 		// clear the session from the db immediately, no expiration
-		err := auth.DeleteSession(c.Context(), s.conn, sessionCookie.Value)
+		err := auth.DeleteSession(c.Context(), c.Conn, sessionCookie.Value)
 		if err != nil {
 			logging.Error().Err(err).Msg("failed to delete session on logout")
 		}
@@ -231,64 +254,58 @@ func (s *websiteRoutes) Logout(c *RequestContext) ResponseData {
 	return res
 }
 
-func (s *websiteRoutes) FourOhFour(c *RequestContext) ResponseData {
+func FourOhFour(c *RequestContext) ResponseData {
 	return ResponseData{
 		StatusCode: http.StatusNotFound,
-		Body:       bytes.NewBuffer([]byte("go away\n")),
+		Body:       bytes.NewBufferString("go away\n"),
 	}
 }
 
-func ErrorLoggingWrapper(h HMNHandler) HMNHandler {
-	return func(c *RequestContext) ResponseData {
-		res := h(c)
-
-		for _, err := range res.Errors {
-			c.Logger.Error().Err(err).Msg("error occurred during request")
-		}
-
-		return res
+func ErrorLoggingHandler(c *RequestContext, res ResponseData) ResponseData {
+	for _, err := range res.Errors {
+		c.Logger.Error().Err(err).Msg("error occurred during request")
 	}
+
+	return res
 }
 
-func (s *websiteRoutes) CommonWebsiteDataWrapper(h HMNHandler) HMNHandler {
-	return func(c *RequestContext) ResponseData {
-		// get project
-		{
-			slug := ""
-			hostParts := strings.SplitN(c.Req.Host, ".", 3)
-			if len(hostParts) >= 3 {
-				slug = hostParts[0]
-			}
-
-			dbProject, err := FetchProjectBySlug(c.Context(), s.conn, slug)
-			if err != nil {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
-			}
-
-			c.CurrentProject = dbProject
+func CommonWebsiteDataWrapper(c *RequestContext) (bool, ResponseData) {
+	// get project
+	{
+		slug := ""
+		hostParts := strings.SplitN(c.Req.Host, ".", 3)
+		if len(hostParts) >= 3 {
+			slug = hostParts[0]
 		}
 
-		sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
-		if err == nil {
-			user, err := s.getCurrentUserAndMember(c.Context(), sessionCookie.Value)
-			if err != nil {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user and member"))
-			}
-
-			c.CurrentUser = user
+		dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, slug)
+		if err != nil {
+			return false, ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
 		}
-		// http.ErrNoCookie is the only error Cookie ever returns, so no further handling to do here.
 
-		return h(c)
+		c.CurrentProject = dbProject
 	}
+
+	sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
+	if err == nil {
+		user, err := getCurrentUserAndMember(c, sessionCookie.Value)
+		if err != nil {
+			return false, ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user and member"))
+		}
+
+		c.CurrentUser = user
+	}
+	// http.ErrNoCookie is the only error Cookie ever returns, so no further handling to do here.
+
+	return true, ResponseData{}
 }
 
 // Given a session id, fetches user and member data from the database. Will return nil for
 // both if neither can be found, and will only return an error if it's serious.
 //
 // TODO: actually return members :)
-func (s *websiteRoutes) getCurrentUserAndMember(ctx context.Context, sessionId string) (*models.User, error) {
-	session, err := auth.GetSession(ctx, s.conn, sessionId)
+func getCurrentUserAndMember(c *RequestContext, sessionId string) (*models.User, error) {
+	session, err := auth.GetSession(c.Context(), c.Conn, sessionId)
 	if err != nil {
 		if errors.Is(err, auth.ErrNoSession) {
 			return nil, nil
@@ -297,7 +314,7 @@ func (s *websiteRoutes) getCurrentUserAndMember(ctx context.Context, sessionId s
 		}
 	}
 
-	userRow, err := db.QueryOne(ctx, s.conn, models.User{}, "SELECT $columns FROM auth_user WHERE username = $1", session.Username)
+	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{}, "SELECT $columns FROM auth_user WHERE username = $1", session.Username)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			logging.Debug().Str("username", session.Username).Msg("returning no current user for this request because the user for the session couldn't be found")
