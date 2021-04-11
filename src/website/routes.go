@@ -27,6 +27,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 				c.Conn = conn
 				return true, ResponseData{}
 			},
+			// TODO: Add a timeout? We don't want routes hanging forever
 		},
 		AfterHandlers: []HMNAfterHandler{ErrorLoggingHandler},
 	}
@@ -90,20 +91,9 @@ func getBaseData(c *RequestContext) templates.BaseData {
 	}
 
 	return templates.BaseData{
-		Project: templates.Project{
-			Name:      *c.CurrentProject.Name,
-			Subdomain: *c.CurrentProject.Slug,
-			Color:     c.CurrentProject.Color1,
-
-			IsHMN: c.CurrentProject.IsHMN(),
-
-			HasBlog:    true,
-			HasForum:   true,
-			HasWiki:    true,
-			HasLibrary: true,
-		},
-		User:  templateUser,
-		Theme: "dark",
+		Project: templates.ProjectToTemplate(c.CurrentProject),
+		User:    templateUser,
+		Theme:   "dark",
 	}
 }
 

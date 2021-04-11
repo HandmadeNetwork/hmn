@@ -1,6 +1,9 @@
 package models
 
-import "reflect"
+import (
+	"reflect"
+	"time"
+)
 
 const HMNProjectID = 1
 
@@ -16,6 +19,8 @@ type Project struct {
 
 	Color1 string `db:"color_1"`
 	Color2 string `db:"color_2"`
+
+	AllLastUpdated time.Time `db:"all_last_updated"`
 }
 
 func (p *Project) IsHMN() bool {

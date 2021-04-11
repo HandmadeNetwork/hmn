@@ -5,7 +5,6 @@ import (
 	"errors"
 	"reflect"
 	"strings"
-	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -94,6 +93,10 @@ func (it *StructQueryIterator) ToSlice() []interface{} {
 	for {
 		row, ok := it.Next()
 		if !ok {
+			err := it.rows.Err()
+			if err != nil {
+				panic(oops.New(err, "error while iterating through db results"))
+			}
 			break
 		}
 		result = append(result, row)
@@ -119,14 +122,11 @@ func followPathThroughStructs(structVal reflect.Value, path []int) reflect.Value
 	return val
 }
 
-func Query(ctx context.Context, conn *pgxpool.Pool, destExample interface{}, query string, args ...interface{}) (StructQueryIterator, error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
+func Query(ctx context.Context, conn *pgxpool.Pool, destExample interface{}, query string, args ...interface{}) (*StructQueryIterator, error) {
 	destType := reflect.TypeOf(destExample)
 	columnNames, fieldPaths, err := getColumnNamesAndPaths(destType, nil, "")
 	if err != nil {
-		return StructQueryIterator{}, oops.New(err, "failed to generate column names")
+		return nil, oops.New(err, "failed to generate column names")
 	}
 
 	columnNamesString := strings.Join(columnNames, ", ")
@@ -137,10 +137,10 @@ func Query(ctx context.Context, conn *pgxpool.Pool, destExample interface{}, que
 		if errors.Is(err, context.DeadlineExceeded) {
 			panic("query exceeded its deadline")
 		}
-		return StructQueryIterator{}, err
+		return nil, err
 	}
 
-	return StructQueryIterator{
+	return &StructQueryIterator{
 		fieldPaths: fieldPaths,
 		rows:       rows,
 		destType:   destType,

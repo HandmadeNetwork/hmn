@@ -69,18 +69,25 @@ var HMNTemplateFuncs = template.FuncMap{
 	"cachebust": func() string {
 		return cachebust
 	},
+	"currentprojecturl": func(url string) string {
+		return hmnurl.Url(url, nil) // TODO: Use project subdomain
+	},
+	"currentprojecturlq": func(url string, query string) string {
+		absUrl := hmnurl.Url(url, nil)
+		return fmt.Sprintf("%s?%s", absUrl, query) // TODO: Use project subdomain
+	},
 	"darken": func(hexColor string, amount float64) (string, error) {
 		if len(hexColor) < 6 {
 			return "", fmt.Errorf("couldn't darken invalid hex color: %v", hexColor)
 		}
 		return noire.NewHex(hexColor).Shade(amount).Hex(), nil
 	},
-	"projecturl": func(url string) string {
-		return hmnurl.Url(url, nil) // TODO: Use project subdomain
+	"projecturl": func(url string, proj interface{}) string {
+		return hmnurl.ProjectUrl(url, nil, getProjectSubdomain(proj))
 	},
-	"projecturlq": func(url string, query string) string {
-		absUrl := hmnurl.Url(url, nil)
-		return fmt.Sprintf("%s?%s", absUrl, query) // TODO: Use project subdomain
+	"projecturlq": func(url string, proj interface{}, query string) string {
+		absUrl := hmnurl.ProjectUrl(url, nil, getProjectSubdomain(proj))
+		return fmt.Sprintf("%s?%s", absUrl, query)
 	},
 	"query": func(args ...string) string {
 		query := url.Values{}
@@ -116,4 +123,18 @@ type ErrInvalidHexColor struct {
 
 func (e ErrInvalidHexColor) Error() string {
 	return fmt.Sprintf("invalid hex color: %s", e.color)
+}
+
+func getProjectSubdomain(proj interface{}) string {
+	subdomain := ""
+	switch p := proj.(type) {
+	case Project:
+		subdomain = p.Subdomain
+	case int:
+		// TODO: Look up project from the database
+	default:
+		panic(fmt.Errorf("projecturl requires either a templates.Project or a project ID, got %+v", proj))
+	}
+
+	return subdomain
 }

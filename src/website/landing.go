@@ -33,8 +33,17 @@ func Index(c *RequestContext) ResponseData {
 	const numProjectsToGet = 7
 
 	iterProjects, err := db.Query(c.Context(), c.Conn, models.Project{},
-		"SELECT $columns FROM handmade_project WHERE flags = 0 OR id = $1",
+		`
+		SELECT $columns
+		FROM handmade_project
+		WHERE
+			flags = 0
+			OR id = $1
+		ORDER BY all_last_updated DESC
+		LIMIT $2
+		`,
 		models.HMNProjectID,
+		numProjectsToGet*2, // hedge your bets against projects that don't have any content
 	)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get projects for home page"))
@@ -42,9 +51,11 @@ func Index(c *RequestContext) ResponseData {
 	defer iterProjects.Close()
 
 	var pageProjects []LandingPageProject
-	_ = pageProjects // TODO: NO
 
-	for _, projRow := range iterProjects.ToSlice() {
+	allProjects := iterProjects.ToSlice()
+	c.Logger.Info().Interface("allProjects", allProjects).Msg("all the projects")
+
+	for _, projRow := range allProjects {
 		proj := projRow.(*models.Project)
 
 		type ProjectPost struct {
@@ -89,11 +100,7 @@ func Index(c *RequestContext) ResponseData {
 		projectPosts := projectPostIter.ToSlice()
 
 		landingPageProject := LandingPageProject{
-			Project: templates.Project{ // TODO: Use a common function to map from model to template data
-				Name:      *proj.Name,
-				Subdomain: *proj.Slug,
-				// ...
-			},
+			Project: templates.ProjectToTemplate(proj),
 		}
 
 		for _, projectPostRow := range projectPosts {
@@ -107,9 +114,17 @@ func Index(c *RequestContext) ResponseData {
 			}
 
 			landingPageProject.Posts = append(landingPageProject.Posts, LandingPagePost{
-				Post:    templates.Post{}, // TODO: Use a common function to map from model to template again
+				Post:    templates.PostToTemplate(&projectPost.Post),
 				HasRead: hasRead,
 			})
+		}
+
+		if len(projectPosts) > 0 {
+			pageProjects = append(pageProjects, landingPageProject)
+		}
+
+		if len(pageProjects) >= numProjectsToGet {
+			break
 		}
 	}
 
@@ -139,7 +154,10 @@ func Index(c *RequestContext) ResponseData {
 	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 
 	var res ResponseData
-	err = res.WriteTemplate("index.html", getBaseData(c))
+	err = res.WriteTemplate("index.html", LandingTemplateData{
+		BaseData:    getBaseData(c),
+		PostColumns: [][]LandingPageProject{pageProjects}, // TODO: NO
+	})
 	if err != nil {
 		panic(err)
 	}

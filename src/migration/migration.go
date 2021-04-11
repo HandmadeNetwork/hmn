@@ -193,8 +193,8 @@ func Migrate(targetVersion types.MigrationVersion) {
 		// roll forward
 		for i := currentIndex + 1; i <= targetIndex; i++ {
 			version := allVersions[i]
-			fmt.Printf("Applying migration %v\n", version)
 			migration := migrations.All[version]
+			fmt.Printf("Applying migration %v (%v)\n", version, migration.Name())
 
 			tx, err := conn.Begin(context.Background())
 			if err != nil {

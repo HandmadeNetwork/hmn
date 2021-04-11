@@ -12,10 +12,34 @@ type BaseData struct {
 	User    *User
 }
 
+type Member struct {
+	Name      string
+	Blurb     string
+	Signature string
+	// Avatar??
+
+	DarkTheme     bool
+	Timezone      string
+	ProfileColor1 string
+	ProfileColor2 string
+
+	CanEditLibrary                      bool
+	DiscordSaveShowcase                 bool
+	DiscordDeleteSnippetOnMessageDelete bool
+}
+
+type Post struct {
+	Preview  string
+	ReadOnly bool
+
+	IP string
+}
+
 type Project struct {
 	Name      string
 	Subdomain string
-	Color     string
+	Color1    string
+	Color2    string
 
 	IsHMN bool
 
@@ -41,7 +65,4 @@ type OpenGraphItem struct {
 type BackgroundImage struct {
 	Url  string
 	Size string // A valid CSS background-size value
-}
-
-type Post struct {
 }

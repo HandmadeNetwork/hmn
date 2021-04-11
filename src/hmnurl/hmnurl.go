@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/oops"
 )
 
 const StaticPath = "/public"
@@ -14,12 +15,35 @@ type Q struct {
 	Value string
 }
 
-func Url(path string, query []Q) string {
-	result := config.Config.BaseUrl + "/" + trim(path)
-	if q := encodeQuery(query); q != "" {
-		result += "?" + q
+var baseUrlParsed url.URL
+
+func init() {
+	parsed, err := url.Parse(config.Config.BaseUrl)
+	if err != nil {
+		panic(oops.New(err, "could not parse base URL"))
 	}
-	return result
+
+	baseUrlParsed = *parsed
+}
+
+func Url(path string, query []Q) string {
+	return ProjectUrl(path, query, "")
+}
+
+func ProjectUrl(path string, query []Q, subdomain string) string {
+	host := baseUrlParsed.Host
+	if len(subdomain) > 0 {
+		host = subdomain + "." + host
+	}
+
+	url := url.URL{
+		Scheme:   baseUrlParsed.Scheme,
+		Host:     host,
+		Path:     trim(path),
+		RawQuery: encodeQuery(query),
+	}
+
+	return url.String()
 }
 
 func StaticUrl(path string, query []Q) string {

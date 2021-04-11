@@ -1,7 +1,98 @@
 {{ template "base.html" . }}
 
 {{ define "content" }}
-    This is the index page.
+<div class="content-block">
+    <div class="optionbar pb2">
+        <div class="tc tl-l w-100">
+            <h2 class="di-l mr2-l">Around the Network</h2>
+            <ul class="list dib-l">
+                <li class="dib-ns ma0 ph2">
+                    <a href="{{ url "/feed" }}">View all posts on HMN</a>
+                </li>
+                <li class="dib-ns ma0 ph2">
+                    <a href="{{ url "/podcast" }}">Podcast</a>
+                </li>
+                {{/* TODO: Make a better IRC intro page because the current one is trash anyway */}}
+                {{/*
+                <li class="dib-ns ma0 ph2">
+                    <a href="{{ url "/streams" }}">See who's live</a>
+                </li>
+                <li class="dib-ns ma0 ph2">
+                    <a href="/blogs/p/1138-%5Btutorial%5D_handmade_network_irc" target="_blank">Chat in IRC</a>
+                </li>
+                */}}
+                <li class="dib-ns ma0 ph2">
+                    <a href="https://discord.gg/hxWxDee" target="_blank">Chat on Discord</a>
+                </li>
+                <li class="dib-ns ma0 ph2">
+                    <a href="https://handmadedev.show/" target="_blank">See the Show</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="content-block news cf">
+    {{ range $i, $col := .PostColumns }}
+        <div class="fl w-100 w-50-l">
+            <div class="mw7 mw-none-l center-layout">
+                {{ if eq $i 0 }}
+                    <div class="pt3">
+                        Wow, a featured post!
+                        {{/* {% include "blog_index_thread_list_entry.html" with post=featured_post align_top=True %} */}}
+                    </div>
+                {{ end }}
+
+                {{ range $entry := $col }}
+                    {{ $proj := $entry.Project }}
+                    {{ $posts := $entry.Posts }}
+                    <div class="pt3" id="p{{ $proj.Subdomain }}"> {{/* TODO: Is this ID used for anything? */}}
+                        <a {{/* TODO: Replace this special-case style with a CSS class */}}
+                            href="{{ projecturl "/" $proj }}"
+                            style="color: #{{ eq $.Theme "dark" | ternary (brighten $proj.Color1 0.1) (darken $proj.Color1 0.2) }}"
+                        >
+                            <h2 class="ph3">{{ $proj.Name }}</h2>
+                        </a>
+
+                        {{/* TODO: What is this?
+                        {% if entry.featured and proj.slug != "hmn" %}
+                            {% with post=entry.featured.0 has_read=entry.featured.1 %} 
+                                {% if post.category.kind == 5 and post.parent == None %}
+                                    {% include "thread_list_entry.html" with thread=post.thread %}
+                                {% else %}
+                                    {% include "blog_index_thread_list_entry.html" with align_top=True %}
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                        */}}
+
+                        {{ range $posts }}
+                            <div>
+                                {{ .Post.Preview }}
+                            </div>
+                            {{/*
+                            {% if forloop.counter0 < max_posts %}
+                                {% include "thread_list_entry.html" with thread=post.thread %}
+                            {% endif %}
+                            */}}
+                        {{ end }}
+                        {{/*
+                        {% with more=posts|length|add:-5|clamp_lower:0 %}
+                            {% if more > 0 %}
+                                <div class="ph3 thread unread more">
+                                    <a class="title" 
+                                        href="{% url 'project_forum' subdomain=proj.slug %}"
+                                    >{{ more }} more recently &rarr;</a>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
+                        */}}
+                    </div>
+                {{ end }}
+            </div>
+        </div>
+    {{ end }}
+</div>
 {{ end }}
 
 {{/*
