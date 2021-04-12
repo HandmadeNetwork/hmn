@@ -284,8 +284,7 @@ func MakeMigration(name, description string) {
 }
 
 // Applies a cloned db to the local db.
-// Drops the db and runs migrations from scratch.
-// Applies the seed after the migration specified in `afterMigration`, then runs the rest of the migrations.
+// Applies the seed after the migration specified in `afterMigration`.
 func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
 	file, err := os.Open(seedFile)
 	if err != nil {
