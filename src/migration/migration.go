@@ -283,34 +283,6 @@ func MakeMigration(name, description string) {
 	fmt.Println(path)
 }
 
-// Drops all tables
-func ClearDatabase() {
-	conn := db.NewConn()
-	defer conn.Close(context.Background())
-
-	dbName := config.Config.Postgres.DbName
-	rows, err := conn.Query(context.Background(), "SELECT tablename FROM pg_tables WHERE tableowner = $1", dbName)
-	if err != nil {
-		panic(fmt.Errorf("couldn't fetch the list of tables owned by %s: %w", dbName, err))
-	}
-
-	tablesToDrop := []string{}
-
-	for rows.Next() {
-		var tableName string
-		err = rows.Scan(&tableName)
-		if err != nil {
-			panic(fmt.Errorf("failed to fetch row from pg_tables: %w", err))
-		}
-		tablesToDrop = append(tablesToDrop, tableName)
-	}
-	rows.Close()
-
-	for _, tableName := range tablesToDrop {
-		conn.Exec(context.Background(), "DROP TABLE $1", tableName)
-	}
-}
-
 // Applies a cloned db to the local db.
 // Drops the db and runs migrations from scratch.
 // Applies the seed after the migration specified in `afterMigration`, then runs the rest of the migrations.
@@ -326,9 +298,6 @@ func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
 	if migration == nil {
 		panic(fmt.Errorf("could not find migration: %s", afterMigration))
 	}
-
-	fmt.Println("Clearing database...")
-	ClearDatabase()
 
 	fmt.Println("Running migrations...")
 	Migrate(afterMigration)
