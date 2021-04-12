@@ -5,11 +5,13 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/migration/migrations"
 	"git.handmade.network/hmn/hmn/src/migration/types"
@@ -61,8 +63,31 @@ func init() {
 		},
 	}
 
+	seedFromFileCommand := &cobra.Command{
+		Use:   "seedfile <filename> <after migration id>",
+		Short: "Resets the db, runs migrations up to and including <after migration id>, and runs the seed file.",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 2 {
+				fmt.Printf("You must provide a seed file and migration id.\n\n")
+				cmd.Usage()
+				os.Exit(1)
+			}
+
+			seedFile := args[0]
+
+			afterMigration, err := time.Parse(time.RFC3339, args[1])
+			if err != nil {
+				fmt.Printf("ERROR: bad version string: %v", err)
+				os.Exit(1)
+			}
+
+			SeedFromFile(seedFile, types.MigrationVersion(afterMigration))
+		},
+	}
+
 	website.WebsiteCommand.AddCommand(migrateCommand)
 	website.WebsiteCommand.AddCommand(makeMigrationCommand)
+	website.WebsiteCommand.AddCommand(seedFromFileCommand)
 }
 
 func getSortedMigrationVersions() []types.MigrationVersion {
@@ -256,4 +281,101 @@ func MakeMigration(name, description string) {
 
 	fmt.Println("Successfully created migration file:")
 	fmt.Println(path)
+}
+
+// Drops all tables
+func ClearDatabase() {
+	conn := db.NewConn()
+	defer conn.Close(context.Background())
+
+	dbName := config.Config.Postgres.DbName
+	rows, err := conn.Query(context.Background(), "SELECT tablename FROM pg_tables WHERE tableowner = $1", dbName)
+	if err != nil {
+		panic(fmt.Errorf("couldn't fetch the list of tables owned by %s: %w", dbName, err))
+	}
+
+	tablesToDrop := []string{}
+
+	for rows.Next() {
+		var tableName string
+		err = rows.Scan(&tableName)
+		if err != nil {
+			panic(fmt.Errorf("failed to fetch row from pg_tables: %w", err))
+		}
+		tablesToDrop = append(tablesToDrop, tableName)
+	}
+	rows.Close()
+
+	for _, tableName := range tablesToDrop {
+		conn.Exec(context.Background(), "DROP TABLE $1", tableName)
+	}
+}
+
+// Applies a cloned db to the local db.
+// Drops the db and runs migrations from scratch.
+// Applies the seed after the migration specified in `afterMigration`, then runs the rest of the migrations.
+func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
+	file, err := os.Open(seedFile)
+	if err != nil {
+		panic(fmt.Errorf("couldn't open seed file %s: %w", seedFile, err))
+	}
+	file.Close()
+
+	migration := migrations.All[afterMigration]
+
+	if migration == nil {
+		panic(fmt.Errorf("could not find migration: %s", afterMigration))
+	}
+
+	fmt.Println("Clearing database...")
+	ClearDatabase()
+
+	fmt.Println("Running migrations...")
+	Migrate(afterMigration)
+
+	fmt.Println("Executing seed...")
+	cmd := exec.Command("psql",
+		"--single-transaction",
+		"--dbname",
+		config.Config.Postgres.DbName,
+		"--host",
+		config.Config.Postgres.Hostname,
+		"--username",
+		config.Config.Postgres.User,
+		"--password",
+		"-f",
+		seedFile,
+	)
+	fmt.Println("Running command:", cmd)
+	if err = cmd.Run(); err != nil {
+		exitError, isExit := err.(*exec.ExitError)
+		if isExit {
+			panic(fmt.Errorf("failed to execute seed: %w\n%s", err, string(exitError.Stderr)))
+		} else {
+			panic(fmt.Errorf("failed to execute seed: %w", err))
+		}
+	}
+
+	fmt.Println("Done! You may want to migrate forward from here.")
+	ListMigrations()
+}
+
+// NOTE(asaf): This will be useful for open-sourcing the website, but is not yet necessary.
+// Creates only what's necessary for a fresh deployment with no data
+func BareMinimumSeed() {
+}
+
+// NOTE(asaf): This will be useful for open-sourcing the website, but is not yet necessary.
+// Creates enough data for development
+func SampleSeed() {
+	// admin := CreateAdminUser("admin", "12345678")
+	// user := CreateUser("regular_user", "12345678")
+	// hmnProject := CreateProject("hmn", "Handmade Network")
+	// Create category
+	// Create thread
+	// Create accepted user project
+	// Create pending user project
+	// Create showcase items
+	// Create codelanguages
+	// Create library and library resources
 }
