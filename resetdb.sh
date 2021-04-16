@@ -4,6 +4,8 @@
 # creates a new empty one, runs the initial migration to create the schema,
 # and then imports actual db content on top of that.
 
+# TODO(opensource): We should adapt Asaf's seedfile command and then delete this.
+
 THIS_PATH=$(pwd)
 BETA_PATH='/mnt/c/Users/bvisn/Developer/handmade/handmade-beta'
 

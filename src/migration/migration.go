@@ -330,11 +330,13 @@ func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
 
 // NOTE(asaf): This will be useful for open-sourcing the website, but is not yet necessary.
 // Creates only what's necessary for a fresh deployment with no data
+// TODO(opensource)
 func BareMinimumSeed() {
 }
 
 // NOTE(asaf): This will be useful for open-sourcing the website, but is not yet necessary.
 // Creates enough data for development
+// TODO(opensource)
 func SampleSeed() {
 	// admin := CreateAdminUser("admin", "12345678")
 	// user := CreateUser("regular_user", "12345678")
