@@ -50,18 +50,7 @@ func (m RemoveMemberAndExtended) Up(tx pgx.Tx) error {
 		}
 	}
 
-	/*
-		Models referencing handmade_member:
-		- CommunicationChoice
-		- CommunicationSubCategory
-		- CommunicationSubThread
-		- Discord
-		- CategoryLastReadInfo
-		- ThreadLastReadInfo
-		- PostTextVersion
-		- Post
-		- handmade_member_projects
-	*/
+	// Migrate a lot of simple foreign keys
 	createUserColumn(context.Background(), tx, "handmade_communicationchoice", "member_id", true)
 	createUserColumn(context.Background(), tx, "handmade_communicationsubcategory", "member_id", true)
 	createUserColumn(context.Background(), tx, "handmade_communicationsubthread", "member_id", true)
@@ -70,6 +59,121 @@ func (m RemoveMemberAndExtended) Up(tx pgx.Tx) error {
 	createUserColumn(context.Background(), tx, "handmade_threadlastreadinfo", "member_id", true)
 	createUserColumn(context.Background(), tx, "handmade_posttextversion", "editor_id", false)
 	createUserColumn(context.Background(), tx, "handmade_post", "author_id", false)
+	createUserColumn(context.Background(), tx, "handmade_member_projects", "member_id", true)
+
+	// Directly associate links with members
+	_, err := tx.Exec(context.Background(), `
+		ALTER TABLE handmade_links
+			ADD COLUMN user_id INTEGER DEFAULT 99999,
+			ADD COLUMN project_id INTEGER DEFAULT 99999;
+		
+		UPDATE handmade_links
+		SET (user_id) = (
+			SELECT mem.user_id
+			FROM
+				handmade_memberextended_links AS mlinks
+				JOIN handmade_memberextended AS memext ON memext.id = mlinks.memberextended_id
+				JOIN handmade_member AS mem ON mem.extended_id = memext.id
+			WHERE
+				mlinks.links_id = handmade_links.id
+		);
+
+		UPDATE handmade_links
+		SET (project_id) = (
+			SELECT proj.id
+			FROM
+				handmade_project_links AS plinks
+				JOIN handmade_project AS proj ON proj.id = plinks.project_id
+			WHERE
+				plinks.links_id = handmade_links.id
+		);
+	`)
+	if err != nil {
+		return oops.New(err, "failed to associate links with members and projects")
+	}
+
+	_, err = tx.Exec(context.Background(), `
+		ALTER TABLE auth_user
+			-- From handmade_member --
+			ADD blurb VARCHAR(140) NOT NULL DEFAULT '',
+			ADD name VARCHAR(255) NOT NULL DEFAULT '',
+			ADD signature TEXT NOT NULL DEFAULT '',
+			ADD avatar VARCHAR(100),
+			ADD location VARCHAR(100) NOT NULL DEFAULT '',
+			-- ordering is dropped
+			-- posts is dropped
+			-- profileviews is dropped
+			-- thanked is dropped
+			ADD timezone VARCHAR(255),
+			ADD color_1 VARCHAR(6),
+			ADD color_2 VARCHAR(6),
+			ADD darktheme BOOLEAN NOT NULL DEFAULT FALSE,
+			-- extended_id is dropped
+			-- project_count_all is dropped
+			-- project_count_public is dropped
+			-- matrix_username is dropped
+			-- set_matrix_display_name is dropped
+			ADD edit_library BOOLEAN NOT NULL DEFAULT FALSE,
+			ADD discord_delete_snippet_on_message_delete BOOLEAN NOT NULL DEFAULT TRUE,
+			ADD discord_save_showcase BOOLEAN NOT NULL DEFAULT TRUE,
+
+			-- From handmade_memberextended --
+			ADD bio TEXT NOT NULL DEFAULT '',
+			ADD showemail BOOLEAN NOT NULL DEFAULT FALSE;
+			-- sendemail is dropped
+			-- joomlaid is dropped
+			-- lastResetTime is dropped
+			-- resetCount is dropped
+			-- requireReset is dropped
+			-- birthdate is dropped
+		
+		UPDATE auth_user
+		SET (
+			blurb,
+			name,
+			signature,
+			avatar,
+			location,
+			timezone,
+			color_1,
+			color_2,
+			darktheme,
+			edit_library,
+			discord_delete_snippet_on_message_delete,
+			discord_save_showcase,
+			bio,
+			showemail
+		) = (
+			SELECT
+				COALESCE(blurb, ''),
+				COALESCE(name, ''),
+				COALESCE(signature, ''),
+				avatar,
+				COALESCE(location, ''),
+				timezone,
+				color_1,
+				color_2,
+				darktheme,
+				edit_library,
+				discord_delete_snippet_on_message_delete,
+				discord_save_showcase,
+				COALESCE(bio, ''),
+				showemail
+			FROM
+				handmade_member AS mem
+				JOIN handmade_memberextended AS mext ON mem.extended_id = mext.id
+			WHERE
+				mem.user_id = auth_user.id
+		);
+		
+		ALTER TABLE auth_user
+			ALTER timezone SET NOT NULL,
+			ALTER color_1 SET NOT NULL,
+			ALTER color_2 SET NOT NULL;
+	`)
+	if err != nil {
+		return oops.New(err, "failed to copy fields to auth_user")
+	}
 
 	return nil
 }

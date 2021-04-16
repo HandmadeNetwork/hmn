@@ -56,6 +56,54 @@ func (m RemoveMemberAndExtended2) Up(tx pgx.Tx) error {
 	dropOldColumn(context.Background(), tx, "handmade_threadlastreadinfo", "member_id", "user_id", "CASCADE")
 	dropOldColumn(context.Background(), tx, "handmade_posttextversion", "editor_id", "editor_id", "SET NULL")
 	dropOldColumn(context.Background(), tx, "handmade_post", "author_id", "author_id", "SET NULL")
+	dropOldColumn(context.Background(), tx, "handmade_member_projects", "member_id", "user_id", "SET NULL")
+
+	_, err := tx.Exec(context.Background(), `
+		ALTER TABLE handmade_member_projects
+			RENAME TO handmade_user_projects;
+	`)
+	if err != nil {
+		return oops.New(err, "failed to rename member projects table")
+	}
+
+	_, err = tx.Exec(context.Background(), `
+		ALTER TABLE handmade_links
+			ADD FOREIGN KEY (user_id) REFERENCES auth_user ON DELETE CASCADE,
+			ALTER user_id DROP DEFAULT,
+			ADD FOREIGN KEY (project_id) REFERENCES handmade_project ON DELETE CASCADE,
+			ALTER project_id DROP DEFAULT,
+			ADD CONSTRAINT exactly_one_foreign_key CHECK (
+				(
+					CASE WHEN user_id IS NOT NULL THEN 1 ELSE 0 END
+					+ CASE WHEN project_id IS NOT NULL THEN 1 ELSE 0 END
+				) = 1
+			);
+
+		DROP TABLE handmade_memberextended_links;
+		DROP TABLE handmade_project_links;
+	`)
+	if err != nil {
+		return oops.New(err, "failed to add constraints to new handmade_links columns")
+	}
+
+	// And now, the moment you've all been waiting for:
+	_, err = tx.Exec(context.Background(), `
+		DROP TABLE handmade_member;
+		DROP TABLE handmade_memberextended;
+	`)
+	if err != nil {
+		return oops.New(err, "failed to delete those damn tables")
+	}
+
+	// And finally, a little cleanup.
+	_, err = tx.Exec(context.Background(), `
+		ALTER INDEX handmade_member_projects_b098ad43 RENAME TO user_projects_btree;
+		ALTER SEQUENCE handmade_member_projects_id_seq RENAME TO user_projects_id_seq;
+		ALTER INDEX handmade_member_projects_pkey RENAME TO user_projects_pkey;
+	`)
+	if err != nil {
+		return oops.New(err, "failed to rename some indexes and stuff")
+	}
 
 	return nil
 }

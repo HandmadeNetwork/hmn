@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script is for use in local development only. It wipes the existing db,
+# creates a new empty one, runs the initial migration to create the schema,
+# and then imports actual db content on top of that.
+
 THIS_PATH=$(pwd)
 BETA_PATH='/mnt/c/Users/bvisn/Developer/handmade/handmade-beta'
 
