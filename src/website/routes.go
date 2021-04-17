@@ -278,9 +278,9 @@ func CommonWebsiteDataWrapper(c *RequestContext) (bool, ResponseData) {
 
 	sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
 	if err == nil {
-		user, err := getCurrentUserAndMember(c, sessionCookie.Value)
+		user, err := getCurrentUser(c, sessionCookie.Value)
 		if err != nil {
-			return false, ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user and member"))
+			return false, ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user"))
 		}
 
 		c.CurrentUser = user
@@ -290,11 +290,9 @@ func CommonWebsiteDataWrapper(c *RequestContext) (bool, ResponseData) {
 	return true, ResponseData{}
 }
 
-// Given a session id, fetches user and member data from the database. Will return nil for
-// both if neither can be found, and will only return an error if it's serious.
-//
-// TODO: actually return members :)
-func getCurrentUserAndMember(c *RequestContext, sessionId string) (*models.User, error) {
+// Given a session id, fetches user data from the database. Will return nil if
+// the user cannot be found, and will only return an error if it's serious.
+func getCurrentUser(c *RequestContext, sessionId string) (*models.User, error) {
 	session, err := auth.GetSession(c.Context(), c.Conn, sessionId)
 	if err != nil {
 		if errors.Is(err, auth.ErrNoSession) {
@@ -314,8 +312,6 @@ func getCurrentUserAndMember(c *RequestContext, sessionId string) (*models.User,
 		}
 	}
 	user := userRow.(*models.User)
-
-	// TODO: Also get the member model
 
 	return user, nil
 }

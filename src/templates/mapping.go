@@ -2,23 +2,6 @@ package templates
 
 import "git.handmade.network/hmn/hmn/src/models"
 
-func MemberToTemplate(m *models.Member) Member {
-	return Member{
-		Name:      maybeString(m.Name),
-		Blurb:     maybeString(m.Blurb),
-		Signature: maybeString(m.Signature),
-
-		DarkTheme:     m.DarkTheme,
-		Timezone:      m.Timezone,
-		ProfileColor1: m.ProfileColor1,
-		ProfileColor2: m.ProfileColor2,
-
-		CanEditLibrary:                      m.CanEditLibrary,
-		DiscordSaveShowcase:                 m.DiscordSaveShowcase,
-		DiscordDeleteSnippetOnMessageDelete: m.DiscordDeleteSnippetOnMessageDelete,
-	}
-}
-
 func PostToTemplate(p *models.Post) Post {
 	return Post{
 		Preview:  p.Preview,
@@ -48,6 +31,19 @@ func UserToTemplate(u *models.User) User {
 		Email:       u.Email,
 		IsSuperuser: u.IsSuperuser,
 		IsStaff:     u.IsStaff,
+
+		Name:      u.Name,
+		Blurb:     u.Blurb,
+		Signature: u.Signature,
+
+		DarkTheme:     u.DarkTheme,
+		Timezone:      u.Timezone,
+		ProfileColor1: u.ProfileColor1,
+		ProfileColor2: u.ProfileColor2,
+
+		CanEditLibrary:                      u.CanEditLibrary,
+		DiscordSaveShowcase:                 u.DiscordSaveShowcase,
+		DiscordDeleteSnippetOnMessageDelete: u.DiscordDeleteSnippetOnMessageDelete,
 	}
 }
 

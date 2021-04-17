@@ -49,7 +49,6 @@ type RequestContext struct {
 	Conn           *pgxpool.Pool
 	CurrentProject *models.Project
 	CurrentUser    *models.User
-	// CurrentMember *models.Member
 }
 
 func NewRequestContext(rw http.ResponseWriter, req *http.Request, pathParams httprouter.Params) *RequestContext {

@@ -12,22 +12,6 @@ type BaseData struct {
 	User    *User
 }
 
-type Member struct {
-	Name      string
-	Blurb     string
-	Signature string
-	// Avatar??
-
-	DarkTheme     bool
-	Timezone      string
-	ProfileColor1 string
-	ProfileColor2 string
-
-	CanEditLibrary                      bool
-	DiscordSaveShowcase                 bool
-	DiscordDeleteSnippetOnMessageDelete bool
-}
-
 type Post struct {
 	Preview  string
 	ReadOnly bool
@@ -54,6 +38,20 @@ type User struct {
 	Email       string
 	IsSuperuser bool
 	IsStaff     bool
+
+	Name      string
+	Blurb     string
+	Signature string
+	// TODO: Avatar??
+
+	DarkTheme     bool
+	Timezone      string
+	ProfileColor1 string
+	ProfileColor2 string
+
+	CanEditLibrary                      bool
+	DiscordSaveShowcase                 bool
+	DiscordDeleteSnippetOnMessageDelete bool
 }
 
 type OpenGraphItem struct {

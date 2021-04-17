@@ -55,6 +55,11 @@ func Index(c *RequestContext) ResponseData {
 	allProjects := iterProjects.ToSlice()
 	c.Logger.Info().Interface("allProjects", allProjects).Msg("all the projects")
 
+	var currentUserId *int
+	if c.CurrentUser != nil {
+		currentUserId = &c.CurrentUser.ID
+	}
+
 	for _, projRow := range allProjects {
 		proj := projRow.(*models.Project)
 
@@ -64,7 +69,6 @@ func Index(c *RequestContext) ResponseData {
 			CatLastReadTime    *time.Time  `db:"clri.lastread"`
 		}
 
-		memberId := 3 // TODO: NO
 		projectPostIter, err := db.Query(c.Context(), c.Conn, ProjectPost{},
 			`
 			SELECT $columns
@@ -74,11 +78,11 @@ func Index(c *RequestContext) ResponseData {
 				JOIN handmade_category AS cat ON cat.id = thread.category_id
 				LEFT OUTER JOIN handmade_threadlastreadinfo AS tlri ON (
 					tlri.thread_id = thread.id
-					AND tlri.member_id = $1
+					AND tlri.user_id = $1
 				)
 				LEFT OUTER JOIN handmade_categorylastreadinfo AS clri ON (
 					clri.category_id = cat.id
-					AND clri.member_id = $1
+					AND clri.user_id = $1
 				)
 			WHERE
 				cat.project_id = $2
@@ -88,7 +92,7 @@ func Index(c *RequestContext) ResponseData {
 			ORDER BY postdate DESC
 			LIMIT $7
 			`,
-			memberId,
+			currentUserId,
 			proj.ID,
 			models.CatTypeBlog, models.CatTypeForum, models.CatTypeWiki, models.CatTypeLibraryResource,
 			maxPosts,
