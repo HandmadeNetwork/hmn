@@ -14,6 +14,13 @@ import (
 	"github.com/teacat/noire"
 )
 
+const (
+	Dayish   = time.Hour * 24
+	Weekish  = Dayish * 7
+	Monthish = Dayish * 30
+	Yearish  = Dayish * 365
+)
+
 //go:embed src
 var templateFs embed.FS
 var Templates map[string]*template.Template
@@ -95,6 +102,44 @@ var HMNTemplateFuncs = template.FuncMap{
 			query.Set(args[i], args[i+1])
 		}
 		return query.Encode()
+	},
+	"relativedate": func(t time.Time) string {
+		// TODO: Support relative future dates
+
+		// NOTE(asaf): Months and years aren't exactly accurate, but good enough for now I guess.
+		str := func(primary int, primaryName string, secondary int, secondaryName string) string {
+			result := fmt.Sprintf("%d %s", primary, primaryName)
+			if primary != 1 {
+				result += "s"
+			}
+			if secondary > 0 {
+				result += fmt.Sprintf(", %d %s", secondary, secondaryName)
+
+				if secondary != 1 {
+					result += "s"
+				}
+			}
+
+			return result + " ago"
+		}
+
+		delta := time.Now().Sub(t)
+
+		if delta < time.Minute {
+			return "Less than a minute ago"
+		} else if delta < time.Hour {
+			return str(int(delta.Minutes()), "minute", 0, "")
+		} else if delta < Dayish {
+			return str(int(delta/time.Hour), "hour", int((delta%time.Hour)/time.Minute), "minute")
+		} else if delta < Weekish {
+			return str(int(delta/Dayish), "day", int((delta%Dayish)/time.Hour), "hour")
+		} else if delta < Monthish {
+			return str(int(delta/Weekish), "week", int((delta%Weekish)/Dayish), "day")
+		} else if delta < Yearish {
+			return str(int(delta/Monthish), "month", int((delta%Monthish)/Weekish), "week")
+		} else {
+			return str(int(delta/Yearish), "year", int((delta%Yearish)/Monthish), "month")
+		}
 	},
 	"static": func(filepath string) string {
 		return hmnurl.StaticUrl(filepath, []hmnurl.Q{{"v", cachebust}})

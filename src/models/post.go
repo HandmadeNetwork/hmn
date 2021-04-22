@@ -17,7 +17,7 @@ type Post struct {
 
 	Depth        int       `db:"depth"`
 	Slug         string    `db:"slug"`
-	AuthorName   string    `db:"author_name"`
+	AuthorName   string    `db:"author_name"` // TODO: Drop this.
 	PostDate     time.Time `db:"postdate"`
 	IP           net.IPNet `db:"ip"`
 	Sticky       bool      `db:"sticky"`

@@ -246,5 +246,8 @@ func doRequest(rw http.ResponseWriter, c *RequestContext, h HMNHandler) {
 		}
 	}
 	rw.WriteHeader(res.StatusCode)
-	io.Copy(rw, res.Body)
+
+	if res.Body != nil {
+		io.Copy(rw, res.Body)
+	}
 }

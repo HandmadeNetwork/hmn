@@ -1,6 +1,9 @@
 package templates
 
-import "git.handmade.network/hmn/hmn/src/models"
+import (
+	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/models"
+)
 
 func PostToTemplate(p *models.Post) Post {
 	return Post{
@@ -12,7 +15,7 @@ func PostToTemplate(p *models.Post) Post {
 func ProjectToTemplate(p *models.Project) Project {
 	return Project{
 		Name:      maybeString(p.Name),
-		Subdomain: maybeString(p.Slug),
+		Subdomain: p.Subdomain(),
 		Color1:    p.Color1,
 		Color2:    p.Color2,
 
@@ -26,15 +29,27 @@ func ProjectToTemplate(p *models.Project) Project {
 }
 
 func UserToTemplate(u *models.User) User {
+	avatar := ""
+	if u.Avatar != nil {
+		avatar = hmnurl.StaticUrl(*u.Avatar, nil)
+	}
+
+	name := u.Name
+	if u.Name == "" {
+		name = u.Username
+	}
+
 	return User{
 		Username:    u.Username,
 		Email:       u.Email,
 		IsSuperuser: u.IsSuperuser,
 		IsStaff:     u.IsStaff,
 
-		Name:      u.Name,
-		Blurb:     u.Blurb,
-		Signature: u.Signature,
+		Name:       name,
+		Blurb:      u.Blurb,
+		Signature:  u.Signature,
+		AvatarUrl:  avatar, // TODO
+		ProfileUrl: hmnurl.Url("m/"+u.Username, nil),
 
 		DarkTheme:     u.DarkTheme,
 		Timezone:      u.Timezone,

@@ -26,3 +26,11 @@ type Project struct {
 func (p *Project) IsHMN() bool {
 	return p.ID == HMNProjectID
 }
+
+func (p *Project) Subdomain() string {
+	if p.IsHMN() {
+		return ""
+	}
+
+	return *p.Slug
+}

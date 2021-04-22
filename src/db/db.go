@@ -169,7 +169,7 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix strin
 				fieldType = destType.Elem()
 			}
 
-			_, isRecognizedByPgtype := connInfo.DataTypeForValue(reflect.New(fieldType)) // if pgtype recognizes it, we don't need to dig in further for more `db` tags
+			_, isRecognizedByPgtype := connInfo.DataTypeForValue(reflect.New(fieldType).Elem().Interface()) // if pgtype recognizes it, we don't need to dig in further for more `db` tags
 			// NOTE: boy it would be nice if we didn't have to do reflect.New here, considering that pgtype is just doing reflection on the value anyway
 
 			if fieldType.Kind() == reflect.Struct && !isRecognizedByPgtype {

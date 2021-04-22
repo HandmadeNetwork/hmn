@@ -55,7 +55,7 @@ func StaticThemeUrl(path string, theme string, query []Q) string {
 }
 
 func trim(path string) string {
-	if path[0] == '/' {
+	if len(path) > 0 && path[0] == '/' {
 		return path[1:]
 	}
 	return path

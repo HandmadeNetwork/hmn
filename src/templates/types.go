@@ -1,5 +1,7 @@
 package templates
 
+import "time"
+
 type BaseData struct {
 	Title           string
 	CanonicalLink   string
@@ -12,7 +14,16 @@ type BaseData struct {
 	User    *User
 }
 
+type Thread struct {
+	Title string
+
+	Locked    bool
+	Sticky    bool
+	Moderated bool
+}
+
 type Post struct {
+	Author   User
 	Preview  string
 	ReadOnly bool
 
@@ -39,10 +50,11 @@ type User struct {
 	IsSuperuser bool
 	IsStaff     bool
 
-	Name      string
-	Blurb     string
-	Signature string
-	// TODO: Avatar??
+	Name       string
+	Blurb      string
+	Signature  string
+	AvatarUrl  string
+	ProfileUrl string
 
 	DarkTheme     bool
 	Timezone      string
@@ -63,4 +75,18 @@ type OpenGraphItem struct {
 type BackgroundImage struct {
 	Url  string
 	Size string // A valid CSS background-size value
+}
+
+// Data from post_list_item.html
+type PostListItem struct {
+	Title       string
+	Url         string
+	Breadcrumbs []Breadcrumb
+	User        User
+	Date        time.Time
+	Unread      bool
+}
+
+type Breadcrumb struct {
+	Name, Url string
 }

@@ -19,13 +19,8 @@ type LandingTemplateData struct {
 
 type LandingPageProject struct {
 	Project      templates.Project
-	FeaturedPost *LandingPagePost
-	Posts        []LandingPagePost
-}
-
-type LandingPagePost struct {
-	Post    templates.Post
-	HasRead bool
+	FeaturedPost *templates.PostListItem
+	Posts        []templates.PostListItem
 }
 
 func Index(c *RequestContext) ResponseData {
@@ -64,9 +59,12 @@ func Index(c *RequestContext) ResponseData {
 		proj := projRow.(*models.Project)
 
 		type ProjectPost struct {
-			Post               models.Post `db:"post"`
-			ThreadLastReadTime *time.Time  `db:"tlri.lastread"`
-			CatLastReadTime    *time.Time  `db:"clri.lastread"`
+			Post               models.Post     `db:"post"`
+			Thread             models.Thread   `db:"thread"`
+			Cat                models.Category `db:"cat"`
+			User               models.User     `db:"auth_user"`
+			ThreadLastReadTime *time.Time      `db:"tlri.lastread"`
+			CatLastReadTime    *time.Time      `db:"clri.lastread"`
 		}
 
 		projectPostIter, err := db.Query(c.Context(), c.Conn, ProjectPost{},
@@ -84,6 +82,7 @@ func Index(c *RequestContext) ResponseData {
 					clri.category_id = cat.id
 					AND clri.user_id = $1
 				)
+				LEFT OUTER JOIN auth_user ON post.author_id = auth_user.id
 			WHERE
 				cat.project_id = $2
 				AND cat.kind IN ($3, $4, $5, $6)
@@ -117,9 +116,14 @@ func Index(c *RequestContext) ResponseData {
 				hasRead = true
 			}
 
-			landingPageProject.Posts = append(landingPageProject.Posts, LandingPagePost{
-				Post:    templates.PostToTemplate(&projectPost.Post),
-				HasRead: hasRead,
+			c.Logger.Debug().Time("post date", projectPost.Post.PostDate).Msg("")
+
+			landingPageProject.Posts = append(landingPageProject.Posts, templates.PostListItem{
+				Title:  projectPost.Thread.Title,
+				Url:    templates.PostUrl(projectPost.Post, projectPost.Cat.Kind, proj.Subdomain()), // TODO
+				User:   templates.UserToTemplate(&projectPost.User),
+				Date:   projectPost.Post.PostDate,
+				Unread: !hasRead,
 			})
 		}
 

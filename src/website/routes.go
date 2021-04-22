@@ -42,7 +42,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	)
 
 	mainRoutes.GET("/", func(c *RequestContext) ResponseData {
-		if c.CurrentProject.ID == models.HMNProjectID {
+		if c.CurrentProject.IsHMN() {
 			return Index(c)
 		} else {
 			// TODO: Return the project landing page
