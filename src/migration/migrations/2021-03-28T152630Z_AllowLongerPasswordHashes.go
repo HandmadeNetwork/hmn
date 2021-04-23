@@ -26,16 +26,16 @@ func (m AllowLongerPasswordHashes) Description() string {
 	return "Increase the storage size limit on hashed passwords"
 }
 
-func (m AllowLongerPasswordHashes) Up(tx pgx.Tx) error {
-	_, err := tx.Exec(context.Background(), `
+func (m AllowLongerPasswordHashes) Up(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, `
 		ALTER TABLE auth_user
 			ALTER COLUMN password TYPE VARCHAR(256)
 	`)
 	return err
 }
 
-func (m AllowLongerPasswordHashes) Down(tx pgx.Tx) error {
-	_, err := tx.Exec(context.Background(), `
+func (m AllowLongerPasswordHashes) Down(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, `
 		ALTER TABLE auth_user
 			ALTER COLUMN password TYPE VARCHAR(128)
 	`)

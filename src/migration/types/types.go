@@ -1,6 +1,7 @@
 package types
 
 import (
+	"context"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -10,8 +11,8 @@ type Migration interface {
 	Version() MigrationVersion
 	Name() string
 	Description() string
-	Up(conn pgx.Tx) error
-	Down(conn pgx.Tx) error
+	Up(ctx context.Context, conn pgx.Tx) error
+	Down(ctx context.Context, conn pgx.Tx) error
 }
 
 type MigrationVersion time.Time

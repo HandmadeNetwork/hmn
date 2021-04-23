@@ -102,9 +102,9 @@ func getSortedMigrationVersions() []types.MigrationVersion {
 	return allVersions
 }
 
-func getCurrentVersion(conn *pgx.Conn) (types.MigrationVersion, error) {
+func getCurrentVersion(ctx context.Context, conn *pgx.Conn) (types.MigrationVersion, error) {
 	var currentVersion time.Time
-	row := conn.QueryRow(context.Background(), "SELECT version FROM hmn_migration")
+	row := conn.QueryRow(ctx, "SELECT version FROM hmn_migration")
 	err := row.Scan(&currentVersion)
 	if err != nil {
 		return types.MigrationVersion{}, err
@@ -115,10 +115,12 @@ func getCurrentVersion(conn *pgx.Conn) (types.MigrationVersion, error) {
 }
 
 func ListMigrations() {
-	conn := db.NewConn()
-	defer conn.Close(context.Background())
+	ctx := context.Background()
 
-	currentVersion, _ := getCurrentVersion(conn)
+	conn := db.NewConn()
+	defer conn.Close(ctx)
+
+	currentVersion, _ := getCurrentVersion(ctx, conn)
 	for _, version := range getSortedMigrationVersions() {
 		migration := migrations.All[version]
 		indicator := "  "
@@ -130,11 +132,13 @@ func ListMigrations() {
 }
 
 func Migrate(targetVersion types.MigrationVersion) {
+	ctx := context.Background() // In the future, this could actually do something cool.
+
 	conn := db.NewConn()
-	defer conn.Close(context.Background())
+	defer conn.Close(ctx)
 
 	// create migration table
-	_, err := conn.Exec(context.Background(), `
+	_, err := conn.Exec(ctx, `
 		CREATE TABLE IF NOT EXISTS hmn_migration (
 			version		TIMESTAMP WITH TIME ZONE
 		)
@@ -144,21 +148,21 @@ func Migrate(targetVersion types.MigrationVersion) {
 	}
 
 	// ensure there is a row
-	row := conn.QueryRow(context.Background(), "SELECT COUNT(*) FROM hmn_migration")
+	row := conn.QueryRow(ctx, "SELECT COUNT(*) FROM hmn_migration")
 	var numRows int
 	err = row.Scan(&numRows)
 	if err != nil {
 		panic(err)
 	}
 	if numRows < 1 {
-		_, err := conn.Exec(context.Background(), "INSERT INTO hmn_migration (version) VALUES ($1)", time.Time{})
+		_, err := conn.Exec(ctx, "INSERT INTO hmn_migration (version) VALUES ($1)", time.Time{})
 		if err != nil {
 			panic(fmt.Errorf("failed to insert initial migration row: %w", err))
 		}
 	}
 
 	// run migrations
-	currentVersion, err := getCurrentVersion(conn)
+	currentVersion, err := getCurrentVersion(ctx, conn)
 	if err != nil {
 		panic(fmt.Errorf("failed to get current version: %w", err))
 	}
@@ -196,25 +200,25 @@ func Migrate(targetVersion types.MigrationVersion) {
 			migration := migrations.All[version]
 			fmt.Printf("Applying migration %v (%v)\n", version, migration.Name())
 
-			tx, err := conn.Begin(context.Background())
+			tx, err := conn.Begin(ctx)
 			if err != nil {
 				panic(fmt.Errorf("failed to start transaction: %w", err))
 			}
-			defer tx.Rollback(context.Background())
+			defer tx.Rollback(ctx)
 
-			err = migration.Up(tx)
+			err = migration.Up(ctx, tx)
 			if err != nil {
 				fmt.Printf("MIGRATION FAILED for migration %v.\n", version)
 				fmt.Printf("Error: %v\n", err)
 				return
 			}
 
-			_, err = tx.Exec(context.Background(), "UPDATE hmn_migration SET version = $1", version)
+			_, err = tx.Exec(ctx, "UPDATE hmn_migration SET version = $1", version)
 			if err != nil {
 				panic(fmt.Errorf("failed to update version in migrations table: %w", err))
 			}
 
-			err = tx.Commit(context.Background())
+			err = tx.Commit(ctx)
 			if err != nil {
 				panic(fmt.Errorf("failed to commit transaction: %w", err))
 			}
@@ -228,27 +232,27 @@ func Migrate(targetVersion types.MigrationVersion) {
 				previousVersion = allVersions[i-1]
 			}
 
-			tx, err := conn.Begin(context.Background())
+			tx, err := conn.Begin(ctx)
 			if err != nil {
 				panic(fmt.Errorf("failed to start transaction: %w", err))
 			}
-			defer tx.Rollback(context.Background())
+			defer tx.Rollback(ctx)
 
 			fmt.Printf("Rolling back migration %v\n", version)
 			migration := migrations.All[version]
-			err = migration.Down(tx)
+			err = migration.Down(ctx, tx)
 			if err != nil {
 				fmt.Printf("MIGRATION FAILED for migration %v.\n", version)
 				fmt.Printf("Error: %v\n", err)
 				return
 			}
 
-			_, err = tx.Exec(context.Background(), "UPDATE hmn_migration SET version = $1", previousVersion)
+			_, err = tx.Exec(ctx, "UPDATE hmn_migration SET version = $1", previousVersion)
 			if err != nil {
 				panic(fmt.Errorf("failed to update version in migrations table: %w", err))
 			}
 
-			err = tx.Commit(context.Background())
+			err = tx.Commit(ctx)
 			if err != nil {
 				panic(fmt.Errorf("failed to commit transaction: %w", err))
 			}

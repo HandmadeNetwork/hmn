@@ -32,7 +32,7 @@ func (m RemoveMemberAndExtended) Description() string {
 	return "Remove the member and member extended records, collapsing their data into users"
 }
 
-func (m RemoveMemberAndExtended) Up(tx pgx.Tx) error {
+func (m RemoveMemberAndExtended) Up(ctx context.Context, tx pgx.Tx) error {
 	// Creates a column that will eventually be a foreign key to auth_user.
 	createUserColumn := func(ctx context.Context, tx pgx.Tx, table string, before string, notNull bool) {
 		nullConstraint := ""
@@ -51,18 +51,18 @@ func (m RemoveMemberAndExtended) Up(tx pgx.Tx) error {
 	}
 
 	// Migrate a lot of simple foreign keys
-	createUserColumn(context.Background(), tx, "handmade_communicationchoice", "member_id", true)
-	createUserColumn(context.Background(), tx, "handmade_communicationsubcategory", "member_id", true)
-	createUserColumn(context.Background(), tx, "handmade_communicationsubthread", "member_id", true)
-	createUserColumn(context.Background(), tx, "handmade_discord", "member_id", true)
-	createUserColumn(context.Background(), tx, "handmade_categorylastreadinfo", "member_id", true)
-	createUserColumn(context.Background(), tx, "handmade_threadlastreadinfo", "member_id", true)
-	createUserColumn(context.Background(), tx, "handmade_posttextversion", "editor_id", false)
-	createUserColumn(context.Background(), tx, "handmade_post", "author_id", false)
-	createUserColumn(context.Background(), tx, "handmade_member_projects", "member_id", true)
+	createUserColumn(ctx, tx, "handmade_communicationchoice", "member_id", true)
+	createUserColumn(ctx, tx, "handmade_communicationsubcategory", "member_id", true)
+	createUserColumn(ctx, tx, "handmade_communicationsubthread", "member_id", true)
+	createUserColumn(ctx, tx, "handmade_discord", "member_id", true)
+	createUserColumn(ctx, tx, "handmade_categorylastreadinfo", "member_id", true)
+	createUserColumn(ctx, tx, "handmade_threadlastreadinfo", "member_id", true)
+	createUserColumn(ctx, tx, "handmade_posttextversion", "editor_id", false)
+	createUserColumn(ctx, tx, "handmade_post", "author_id", false)
+	createUserColumn(ctx, tx, "handmade_member_projects", "member_id", true)
 
 	// Directly associate links with members
-	_, err := tx.Exec(context.Background(), `
+	_, err := tx.Exec(ctx, `
 		ALTER TABLE handmade_links
 			ADD COLUMN user_id INTEGER DEFAULT 99999,
 			ADD COLUMN project_id INTEGER DEFAULT 99999;
@@ -92,7 +92,7 @@ func (m RemoveMemberAndExtended) Up(tx pgx.Tx) error {
 		return oops.New(err, "failed to associate links with members and projects")
 	}
 
-	_, err = tx.Exec(context.Background(), `
+	_, err = tx.Exec(ctx, `
 		ALTER TABLE auth_user
 			-- From handmade_member --
 			ADD blurb VARCHAR(140) NOT NULL DEFAULT '',
@@ -178,6 +178,6 @@ func (m RemoveMemberAndExtended) Up(tx pgx.Tx) error {
 	return nil
 }
 
-func (m RemoveMemberAndExtended) Down(tx pgx.Tx) error {
+func (m RemoveMemberAndExtended) Down(ctx context.Context, tx pgx.Tx) error {
 	panic("Implement me")
 }

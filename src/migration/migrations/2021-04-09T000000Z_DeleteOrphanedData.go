@@ -28,9 +28,9 @@ func (m DeleteOrphanedData) Description() string {
 	return "Delete data that doesn't have other important associated records"
 }
 
-func (m DeleteOrphanedData) Up(tx pgx.Tx) error {
+func (m DeleteOrphanedData) Up(ctx context.Context, tx pgx.Tx) error {
 	// Delete orphaned users (no member)
-	res, err := tx.Exec(context.Background(), `
+	res, err := tx.Exec(ctx, `
 		DELETE FROM auth_user
 		WHERE
 			id IN (
@@ -58,7 +58,7 @@ func (m DeleteOrphanedData) Up(tx pgx.Tx) error {
 
 	// Delete memberextended<->links joins for memberextendeds that are about to die
 	// (my kingdom for ON DELETE CASCADE, I mean come on)
-	res, err = tx.Exec(context.Background(), `
+	res, err = tx.Exec(ctx, `
 		DELETE FROM handmade_memberextended_links
 		WHERE
 			memberextended_id IN (
@@ -71,7 +71,7 @@ func (m DeleteOrphanedData) Up(tx pgx.Tx) error {
 	fmt.Printf("Deleted %v memberextended<->links joins\n", res.RowsAffected())
 
 	// Delete orphaned memberextendeds (no member)
-	res, err = tx.Exec(context.Background(), `
+	res, err = tx.Exec(ctx, `
 		DELETE FROM handmade_memberextended
 		WHERE
 			id IN (
@@ -84,7 +84,7 @@ func (m DeleteOrphanedData) Up(tx pgx.Tx) error {
 	fmt.Printf("Deleted %v memberextendeds\n", res.RowsAffected())
 
 	// Delete orphaned links (no member or project)
-	res, err = tx.Exec(context.Background(), `
+	res, err = tx.Exec(ctx, `
 		DELETE FROM handmade_links
 		WHERE
 			id IN (
@@ -106,6 +106,6 @@ func (m DeleteOrphanedData) Up(tx pgx.Tx) error {
 	return nil
 }
 
-func (m DeleteOrphanedData) Down(tx pgx.Tx) error {
+func (m DeleteOrphanedData) Down(ctx context.Context, tx pgx.Tx) error {
 	panic("Implement me")
 }

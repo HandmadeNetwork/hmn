@@ -27,6 +27,8 @@ type Post struct {
 	Preview  string
 	ReadOnly bool
 
+	Content string
+
 	IP string
 }
 

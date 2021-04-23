@@ -26,8 +26,8 @@ func (m AddSessionTable) Description() string {
 	return "Adds a session table to replace the Django session table"
 }
 
-func (m AddSessionTable) Up(tx pgx.Tx) error {
-	_, err := tx.Exec(context.Background(), `
+func (m AddSessionTable) Up(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, `
 		CREATE TABLE sessions (
 			id VARCHAR(40) PRIMARY KEY,
 			username VARCHAR(150) NOT NULL,
@@ -37,8 +37,8 @@ func (m AddSessionTable) Up(tx pgx.Tx) error {
 	return err
 }
 
-func (m AddSessionTable) Down(tx pgx.Tx) error {
-	_, err := tx.Exec(context.Background(), `
+func (m AddSessionTable) Down(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, `
 		DROP TABLE sessions;
 	`)
 	return err

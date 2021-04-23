@@ -5,11 +5,23 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 )
 
-func PostToTemplate(p *models.Post) Post {
+func PostToTemplate(p *models.Post, author models.User) Post {
 	return Post{
+		Author:   UserToTemplate(&author),
 		Preview:  p.Preview,
 		ReadOnly: p.ReadOnly,
+
+		// No content. Do it yourself if you care.
+
+		IP: p.IP.String(),
 	}
+}
+
+func PostToTemplateWithContent(p *models.Post, author models.User, content string) Post {
+	post := PostToTemplate(p, author)
+	post.Content = content
+
+	return post
 }
 
 func ProjectToTemplate(p *models.Project) Project {

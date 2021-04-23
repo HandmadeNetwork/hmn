@@ -26,8 +26,8 @@ func (m Initial) Description() string {
 	return "Creates all the tables from the old site"
 }
 
-func (m Initial) Up(tx pgx.Tx) error {
-	_, err := tx.Exec(context.Background(), `
+func (m Initial) Up(ctx context.Context, tx pgx.Tx) error {
+	_, err := tx.Exec(ctx, `
 	--
 	-- PostgreSQL database dump
 	--
@@ -4648,6 +4648,6 @@ func (m Initial) Up(tx pgx.Tx) error {
 	return nil
 }
 
-func (m Initial) Down(tx pgx.Tx) error {
+func (m Initial) Down(ctx context.Context, tx pgx.Tx) error {
 	panic("nope, ha ha, I'm the initial migration. how did you even run this function anyway")
 }

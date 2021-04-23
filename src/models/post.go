@@ -29,3 +29,25 @@ type Post struct {
 	Preview  string `db:"preview"`
 	ReadOnly bool   `db:"readonly"`
 }
+
+type Parser int
+
+const (
+	ParserBBCode    Parser = 1
+	ParserCleanHTML        = 2
+	ParserMarkdown         = 3
+)
+
+type PostVersion struct {
+	ID     int `db:"id"`
+	PostID int `db:"post_id"`
+
+	TextRaw    string `db:"text_raw"`
+	TextParsed string `db:"text_parsed"`
+	Parser     Parser `db:"parser"`
+
+	EditIP     *net.IPNet `db:"edit_ip"`
+	EditDate   time.Time  `db:"edit_date"`
+	EditReason string     `db:"edit_reason"`
+	EditorID   *int       `db:"editor_id"`
+}

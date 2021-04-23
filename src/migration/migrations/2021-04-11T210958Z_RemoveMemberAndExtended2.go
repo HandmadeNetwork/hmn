@@ -32,7 +32,7 @@ func (m RemoveMemberAndExtended2) Description() string {
 	return "Phase 2 of the above"
 }
 
-func (m RemoveMemberAndExtended2) Up(tx pgx.Tx) error {
+func (m RemoveMemberAndExtended2) Up(ctx context.Context, tx pgx.Tx) error {
 	dropOldColumn := func(ctx context.Context, tx pgx.Tx, table string, before, after string, onDelete string) {
 		_, err := tx.Exec(ctx, `
 			ALTER TABLE `+table+`
@@ -48,17 +48,17 @@ func (m RemoveMemberAndExtended2) Up(tx pgx.Tx) error {
 		}
 	}
 
-	dropOldColumn(context.Background(), tx, "handmade_communicationchoice", "member_id", "user_id", "CASCADE")
-	dropOldColumn(context.Background(), tx, "handmade_communicationsubcategory", "member_id", "user_id", "CASCADE")
-	dropOldColumn(context.Background(), tx, "handmade_communicationsubthread", "member_id", "user_id", "CASCADE")
-	dropOldColumn(context.Background(), tx, "handmade_discord", "member_id", "hmn_user_id", "CASCADE")
-	dropOldColumn(context.Background(), tx, "handmade_categorylastreadinfo", "member_id", "user_id", "CASCADE")
-	dropOldColumn(context.Background(), tx, "handmade_threadlastreadinfo", "member_id", "user_id", "CASCADE")
-	dropOldColumn(context.Background(), tx, "handmade_posttextversion", "editor_id", "editor_id", "SET NULL")
-	dropOldColumn(context.Background(), tx, "handmade_post", "author_id", "author_id", "SET NULL")
-	dropOldColumn(context.Background(), tx, "handmade_member_projects", "member_id", "user_id", "SET NULL")
+	dropOldColumn(ctx, tx, "handmade_communicationchoice", "member_id", "user_id", "CASCADE")
+	dropOldColumn(ctx, tx, "handmade_communicationsubcategory", "member_id", "user_id", "CASCADE")
+	dropOldColumn(ctx, tx, "handmade_communicationsubthread", "member_id", "user_id", "CASCADE")
+	dropOldColumn(ctx, tx, "handmade_discord", "member_id", "hmn_user_id", "CASCADE")
+	dropOldColumn(ctx, tx, "handmade_categorylastreadinfo", "member_id", "user_id", "CASCADE")
+	dropOldColumn(ctx, tx, "handmade_threadlastreadinfo", "member_id", "user_id", "CASCADE")
+	dropOldColumn(ctx, tx, "handmade_posttextversion", "editor_id", "editor_id", "SET NULL")
+	dropOldColumn(ctx, tx, "handmade_post", "author_id", "author_id", "SET NULL")
+	dropOldColumn(ctx, tx, "handmade_member_projects", "member_id", "user_id", "SET NULL")
 
-	_, err := tx.Exec(context.Background(), `
+	_, err := tx.Exec(ctx, `
 		ALTER TABLE handmade_member_projects
 			RENAME TO handmade_user_projects;
 	`)
@@ -66,7 +66,7 @@ func (m RemoveMemberAndExtended2) Up(tx pgx.Tx) error {
 		return oops.New(err, "failed to rename member projects table")
 	}
 
-	_, err = tx.Exec(context.Background(), `
+	_, err = tx.Exec(ctx, `
 		ALTER TABLE handmade_links
 			ADD FOREIGN KEY (user_id) REFERENCES auth_user ON DELETE CASCADE,
 			ALTER user_id DROP DEFAULT,
@@ -87,7 +87,7 @@ func (m RemoveMemberAndExtended2) Up(tx pgx.Tx) error {
 	}
 
 	// And now, the moment you've all been waiting for:
-	_, err = tx.Exec(context.Background(), `
+	_, err = tx.Exec(ctx, `
 		DROP TABLE handmade_member;
 		DROP TABLE handmade_memberextended;
 	`)
@@ -96,7 +96,7 @@ func (m RemoveMemberAndExtended2) Up(tx pgx.Tx) error {
 	}
 
 	// And finally, a little cleanup.
-	_, err = tx.Exec(context.Background(), `
+	_, err = tx.Exec(ctx, `
 		ALTER INDEX handmade_member_projects_b098ad43 RENAME TO user_projects_btree;
 		ALTER SEQUENCE handmade_member_projects_id_seq RENAME TO user_projects_id_seq;
 		ALTER INDEX handmade_member_projects_pkey RENAME TO user_projects_pkey;
@@ -108,6 +108,6 @@ func (m RemoveMemberAndExtended2) Up(tx pgx.Tx) error {
 	return nil
 }
 
-func (m RemoveMemberAndExtended2) Down(tx pgx.Tx) error {
+func (m RemoveMemberAndExtended2) Down(ctx context.Context, tx pgx.Tx) error {
 	panic("Implement me")
 }

@@ -19,8 +19,17 @@ type LandingTemplateData struct {
 
 type LandingPageProject struct {
 	Project      templates.Project
-	FeaturedPost *templates.PostListItem
+	FeaturedPost *LandingPageFeaturedPost
 	Posts        []templates.PostListItem
+}
+
+type LandingPageFeaturedPost struct {
+	Title   string
+	Url     string
+	User    templates.User
+	Date    time.Time
+	Unread  bool
+	Content string
 }
 
 func Index(c *RequestContext) ResponseData {
@@ -116,15 +125,48 @@ func Index(c *RequestContext) ResponseData {
 				hasRead = true
 			}
 
-			c.Logger.Debug().Time("post date", projectPost.Post.PostDate).Msg("")
+			featurable := (!proj.IsHMN() &&
+				projectPost.Cat.Kind == models.CatTypeBlog &&
+				projectPost.Post.ParentID == nil &&
+				landingPageProject.FeaturedPost == nil)
 
-			landingPageProject.Posts = append(landingPageProject.Posts, templates.PostListItem{
-				Title:  projectPost.Thread.Title,
-				Url:    templates.PostUrl(projectPost.Post, projectPost.Cat.Kind, proj.Subdomain()), // TODO
-				User:   templates.UserToTemplate(&projectPost.User),
-				Date:   projectPost.Post.PostDate,
-				Unread: !hasRead,
-			})
+			if featurable {
+				type featuredContentResult struct {
+					Content string `db:"ver.text_parsed"`
+				}
+
+				contentResult, err := db.QueryOne(c.Context(), c.Conn, featuredContentResult{}, `
+					SELECT $columns
+					FROM
+						handmade_post AS post
+						JOIN handmade_postversion AS ver ON post.current_id = ver.id
+					WHERE
+						post.id = $1
+				`, projectPost.Post.ID)
+				if err != nil {
+					panic(err)
+				}
+				content := contentResult.(*featuredContentResult).Content
+
+				// c.Logger.Debug().Str("content", content).Msg("")
+
+				landingPageProject.FeaturedPost = &LandingPageFeaturedPost{
+					Title:   projectPost.Thread.Title,
+					Url:     templates.PostUrl(projectPost.Post, projectPost.Cat.Kind, proj.Subdomain()), // TODO
+					User:    templates.UserToTemplate(&projectPost.User),
+					Date:    projectPost.Post.PostDate,
+					Unread:  !hasRead,
+					Content: content,
+				}
+			} else {
+				landingPageProject.Posts = append(landingPageProject.Posts, templates.PostListItem{
+					Title:  projectPost.Thread.Title,
+					Url:    templates.PostUrl(projectPost.Post, projectPost.Cat.Kind, proj.Subdomain()), // TODO
+					User:   templates.UserToTemplate(&projectPost.User),
+					Date:   projectPost.Post.PostDate,
+					Unread: !hasRead,
+				})
+			}
 		}
 
 		if len(projectPosts) > 0 {
@@ -158,17 +200,61 @@ func Index(c *RequestContext) ResponseData {
 	newsThread := newsThreadRow.(*newsThreadQuery)
 	_ = newsThread // TODO: NO
 
+	/*
+		Columns are filled by placing projects into the least full column.
+		The fill array tracks the estimated sizes.
+
+		This is all hardcoded for two columns; deal with it.
+	*/
+	cols := [][]LandingPageProject{nil, nil}
+	fill := []int{4, 0}
+	featuredIndex := []int{0, 0}
+	for _, pageProject := range pageProjects {
+		leastFullColumnIndex := indexOfSmallestInt(fill)
+
+		numNewPosts := len(pageProject.Posts)
+		if numNewPosts > maxPosts {
+			numNewPosts = maxPosts
+		}
+
+		fill[leastFullColumnIndex] += numNewPosts
+
+		if pageProject.FeaturedPost != nil {
+			fill[leastFullColumnIndex] += 2 // featured posts add more to height
+
+			// projects with featured posts go at the top of the column
+			cols[leastFullColumnIndex] = append(cols[leastFullColumnIndex], pageProject)
+			featuredIndex[leastFullColumnIndex] += 1
+		} else {
+			cols[leastFullColumnIndex] = append(cols[leastFullColumnIndex], pageProject)
+		}
+	}
+
 	baseData := getBaseData(c)
 	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 
 	var res ResponseData
 	err = res.WriteTemplate("index.html", LandingTemplateData{
 		BaseData:    getBaseData(c),
-		PostColumns: [][]LandingPageProject{pageProjects}, // TODO: NO
+		PostColumns: cols,
 	})
 	if err != nil {
 		panic(err)
 	}
 
 	return res
+}
+
+func indexOfSmallestInt(s []int) int {
+	result := 0
+	min := s[result]
+
+	for i, val := range s {
+		if val < min {
+			result = i
+			min = val
+		}
+	}
+
+	return result
 }
