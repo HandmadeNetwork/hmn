@@ -72,11 +72,18 @@ func (it *StructQueryIterator) Next() (interface{}, bool) {
 			field = field.Elem()
 		}
 
+		// Some actual values still come through as pointers (like net.IPNet). Dunno why.
+		// Regardless, we know it's not nil, so we can get at the contents.
+		valReflected := reflect.ValueOf(val)
+		if valReflected.Kind() == reflect.Ptr {
+			valReflected = valReflected.Elem()
+		}
+
 		switch field.Kind() {
 		case reflect.Int:
-			field.SetInt(reflect.ValueOf(val).Int())
+			field.SetInt(valReflected.Int())
 		default:
-			field.Set(reflect.ValueOf(val))
+			field.Set(valReflected)
 		}
 	}
 

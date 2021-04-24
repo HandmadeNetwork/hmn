@@ -1,6 +1,7 @@
 package website
 
 import (
+	"html/template"
 	"net/http"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 type LandingTemplateData struct {
 	templates.BaseData
 
+	NewsPost             LandingPageFeaturedPost
 	PostColumns          [][]LandingPageProject
 	ShowcaseTimelineJson string
 }
@@ -29,7 +31,7 @@ type LandingPageFeaturedPost struct {
 	User    templates.User
 	Date    time.Time
 	Unread  bool
-	Content string
+	Content template.HTML
 }
 
 func Index(c *RequestContext) ResponseData {
@@ -67,7 +69,7 @@ func Index(c *RequestContext) ResponseData {
 	for _, projRow := range allProjects {
 		proj := projRow.(*models.Project)
 
-		type ProjectPost struct {
+		type projectPostQuery struct {
 			Post               models.Post     `db:"post"`
 			Thread             models.Thread   `db:"thread"`
 			Cat                models.Category `db:"cat"`
@@ -75,8 +77,7 @@ func Index(c *RequestContext) ResponseData {
 			ThreadLastReadTime *time.Time      `db:"tlri.lastread"`
 			CatLastReadTime    *time.Time      `db:"clri.lastread"`
 		}
-
-		projectPostIter, err := db.Query(c.Context(), c.Conn, ProjectPost{},
+		projectPostIter, err := db.Query(c.Context(), c.Conn, projectPostQuery{},
 			`
 			SELECT $columns
 			FROM
@@ -116,7 +117,7 @@ func Index(c *RequestContext) ResponseData {
 		}
 
 		for _, projectPostRow := range projectPosts {
-			projectPost := projectPostRow.(*ProjectPost)
+			projectPost := projectPostRow.(*projectPostQuery)
 
 			hasRead := false
 			if projectPost.ThreadLastReadTime != nil && projectPost.ThreadLastReadTime.After(projectPost.Post.PostDate) {
@@ -148,20 +149,18 @@ func Index(c *RequestContext) ResponseData {
 				}
 				content := contentResult.(*featuredContentResult).Content
 
-				// c.Logger.Debug().Str("content", content).Msg("")
-
 				landingPageProject.FeaturedPost = &LandingPageFeaturedPost{
 					Title:   projectPost.Thread.Title,
-					Url:     templates.PostUrl(projectPost.Post, projectPost.Cat.Kind, proj.Subdomain()), // TODO
+					Url:     templates.PostUrl(projectPost.Post, projectPost.Cat.Kind, proj.Subdomain()),
 					User:    templates.UserToTemplate(&projectPost.User),
 					Date:    projectPost.Post.PostDate,
 					Unread:  !hasRead,
-					Content: content,
+					Content: template.HTML(content),
 				}
 			} else {
 				landingPageProject.Posts = append(landingPageProject.Posts, templates.PostListItem{
 					Title:  projectPost.Thread.Title,
-					Url:    templates.PostUrl(projectPost.Post, projectPost.Cat.Kind, proj.Subdomain()), // TODO
+					Url:    templates.PostUrl(projectPost.Post, projectPost.Cat.Kind, proj.Subdomain()),
 					User:   templates.UserToTemplate(&projectPost.User),
 					Date:   projectPost.Post.PostDate,
 					Unread: !hasRead,
@@ -230,12 +229,51 @@ func Index(c *RequestContext) ResponseData {
 		}
 	}
 
+	type newsPostQuery struct {
+		Post        models.Post        `db:"post"`
+		PostVersion models.PostVersion `db:"ver"`
+		Thread      models.Thread      `db:"thread"`
+		User        models.User        `db:"auth_user"`
+	}
+	newsPostRow, err := db.QueryOne(c.Context(), c.Conn, newsPostQuery{},
+		`
+		SELECT $columns
+		FROM
+			handmade_post AS post
+			JOIN handmade_thread AS thread ON post.thread_id = thread.id
+			JOIN handmade_category AS cat ON thread.category_id = cat.id
+			JOIN auth_user ON post.author_id = auth_user.id
+			JOIN handmade_postversion AS ver ON post.current_id = ver.id
+		WHERE
+			cat.project_id = $1
+			AND cat.kind = $2
+			AND post.id = thread.first_id
+			AND thread.moderated = 0
+		ORDER BY post.postdate DESC
+		LIMIT 1
+		`,
+		models.HMNProjectID,
+		models.CatTypeBlog,
+	)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news post"))
+	}
+	newsPostResult := newsPostRow.(*newsPostQuery)
+
 	baseData := getBaseData(c)
 	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 
 	var res ResponseData
 	err = res.WriteTemplate("index.html", LandingTemplateData{
-		BaseData:    getBaseData(c),
+		BaseData: baseData,
+		NewsPost: LandingPageFeaturedPost{
+			Title:   newsPostResult.Thread.Title,
+			Url:     templates.PostUrl(newsPostResult.Post, models.CatTypeBlog, ""),
+			User:    templates.UserToTemplate(&newsPostResult.User),
+			Date:    newsPostResult.Post.PostDate,
+			Unread:  true, // TODO
+			Content: template.HTML(newsPostResult.PostVersion.TextParsed),
+		},
 		PostColumns: cols,
 	})
 	if err != nil {

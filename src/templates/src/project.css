@@ -1,43 +1,44 @@
-{{ $themeDim := eq .Theme "dark" | ternary (darken .Color 0.5) (brighten .Color 0.2) }}
-{{ $themeDimmer := eq .Theme "dark" | ternary (darken .Color 0.65) (brighten .Color 0.4) }}
-{{ $themeDimmest := eq .Theme "dark" | ternary (darken .Color 0.8) (brighten .Color 0.6) }}
+{{ $c := hex2color .Color }}
+{{ $themeDim := eq .Theme "dark" | ternary (lightness 0.35 $c) (lightness 0.75 $c) | color2css }}
+{{ $themeDimmer := eq .Theme "dark" | ternary (lightness 0.3 $c) (lightness 0.8 $c) | color2css }}
+{{ $themeDimmest := eq .Theme "dark" | ternary (lightness 0.2 $c) (lightness 0.85 $c) | color2css }}
 
-{{ $linkColor := eq .Theme "dark" | ternary (brighten .Color 0.1) (darken .Color 0.2) }}
-{{ $linkHoverColor := eq .Theme "dark" | ternary (brighten .Color 0.2) (darken .Color 0.1) }}
+{{ $linkColor := eq .Theme "dark" | ternary (lightness 0.55 $c) (lightness 0.35 $c) | color2css }}
+{{ $linkHoverColor := eq .Theme "dark" | ternary (lightness 0.65 $c) (lightness 0.45 $c) | color2css }}
 
 :root {
-    --theme-color: #{{ .Color }};
-    --theme-color-dim: #{{ $themeDim }};
-    --theme-color-dimmer: #{{ $themeDimmer }};
-    --theme-color-dimmest: #{{ $themeDimmest }};
+    --theme-color: {{ $c | color2css }};
+    --theme-color-dim: {{ $themeDim }};
+    --theme-color-dimmer: {{ $themeDimmer }};
+    --theme-color-dimmest: {{ $themeDimmest }};
 
-    --link-color: #{{ $linkColor }};
-    --link-color-hover: #{{ $linkHoverColor }};
+    --link-color: {{ $linkColor }};
+    --link-color-hover: {{ $linkHoverColor }};
 }
 
 .accent {
-    background-color: #{{ $themeDim }};
+    background-color: {{ $themeDim }};
     background-color: var(--theme-dim);
 }
 .user-bar {
-    border-bottom-color: #{{ $themeDim }};
+    border-bottom-color: {{ $themeDim }};
     border-bottom-color: var(--theme-dim);
 }
 header .content-title .subtitle {
-    border-top-color: #{{ $themeDim }};
+    border-top-color: {{ $themeDim }};
     border-top-color: var(--theme-dim);
 }
 
 a, .thread:before, button, .button, input[type=button], input[type=submit] { 
-    color: #{{ $linkColor }};
+    color: {{ $linkColor }};
     color: var(--link-color);
 }
 a:hover, button:hover, .button:hover, input[type=button]:hover, input[type=submit]:hover { 
-    color: #{{ $linkHoverColor }};
+    color: {{ $linkHoverColor }};
     color: var(--link-hover-color);
 }
 .unread .avatar-icon {
-    border: 2px solid #{{ $linkColor }};
+    border: 2px solid {{ $linkColor }};
     border: 2px solid var(--link-color);
 }
 
@@ -91,7 +92,7 @@ all of this CSS.
 {% endif %} */
 
 :root {
-    --background-even-background: #{{ eq .Theme "dark" | ternary (darken .Color 0.8) (brighten .Color 0.9) }};
+    --background-even-background: {{ eq .Theme "dark" | ternary (lightness 0.15 $c) (lightness 0.95 $c) | color2css }};
 }
 
 /* Assets */

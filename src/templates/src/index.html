@@ -1,5 +1,33 @@
 {{ template "base.html" . }}
 
+{{ define "extrahead" }}
+<link rel="stylesheet" type="text/css" href="{{ static "landing.css" }}"/>
+<script type="text/javascript" src="{{ static "util.js" }}"></script>
+<style type="text/css">
+    {{ $base := . }}
+    {{ range $col := .PostColumns }}
+        {{ range $entry := $col }}
+            {{ $c1 := hex2color .Project.Color1 }}
+            {{ $linkColor := eq $base.Theme "dark" | ternary (lightness 0.55 $c1) (lightness 0.35 $c1) | color2css }}
+            {{ $linkHoverColor := eq $base.Theme "dark" | ternary (lightness 0.65 $c1) (lightness 0.45 $c1) | color2css }}
+            {{ $projectPostBackground := eq $base.Theme "dark" | ternary (lightness 0.15 $c1) (lightness 0.95 $c1) | alpha 0.2 | color2css }}
+
+            #p{{ .Project.Subdomain }} a.project-title { color: {{ $linkColor }}; }
+            #p{{ .Project.Subdomain }} .unread a { color: {{ $linkColor }}; }
+            #p{{ .Project.Subdomain }} .unread a:hover { color: {{ $linkHoverColor }}  }
+            #p{{ .Project.Subdomain }} .unread .avatar-icon { border-color: {{ $linkColor }}; }
+            #p{{ .Project.Subdomain }} .post-list-item:nth-of-type(even) { background-color: {{ $projectPostBackground }}; }
+            #p{{ .Project.Subdomain }} .thread.more { background-color:transparent; }
+        {{ end }}
+    {{ end }}
+</style>
+{{/*
+<script type="text/javascript" src="{% static 'templates.js' %}?v={% cachebust %}"></script>
+<script type="text/javascript" src="{% static 'timeline.js' %}?v={% cachebust %}"></script>
+<script type="text/javascript" src="{% static 'showcase.js' %}?v={% cachebust %}"></script>
+*/}}
+{{ end }}
+
 {{ define "content" }}
 <div class="content-block">
     <div class="optionbar pb2">
@@ -33,58 +61,41 @@
 </div>
 
 <div class="content-block news cf">
+    {{ $newsPost := .NewsPost }}
     {{ range $i, $col := .PostColumns }}
         <div class="fl w-100 w-50-l">
             <div class="mw7 mw-none-l center-layout">
                 {{ if eq $i 0 }}
                     <div class="pt3">
-                        Wow, a featured post!
-                        {{/* {% include "blog_index_thread_list_entry.html" with post=featured_post align_top=True %} */}}
+                        {{ template "landing_page_featured_post" $newsPost}}
                     </div>
                 {{ end }}
 
                 {{ range $entry := $col }}
                     {{ $proj := $entry.Project }}
                     {{ $posts := $entry.Posts }}
-                    <div class="pt3" id="p{{ $proj.Subdomain }}"> {{/* TODO: Is this ID used for anything? */}}
-                        <a {{/* TODO: Replace this special-case style with a CSS class */}}
+                    <div class="pt3" id="p{{ $proj.Subdomain }}">
+                        {{ $c1 := hex2color $proj.Color1 }}
+                        <a
+                            class="project-title"
                             href="{{ projecturl "/" $proj }}"
-                            style="color: #{{ eq $.Theme "dark" | ternary (brighten $proj.Color1 0.1) (darken $proj.Color1 0.2) }}"
                         >
                             <h2 class="ph3">{{ $proj.Name }}</h2>
                         </a>
 
                         {{ with $entry.FeaturedPost }}
-                            <div class="flex items-start ph3 pv2">
-                                <img class="avatar-icon mr2" src="{{ .User.AvatarUrl }}">
-                                <div class="flex-grow-1">
-                                    <div class="overflow-hidden">
-                                        <div class="title nowrap truncate"><a href="{{ .Url }}">{{ .Title }}</a></div>
-                                        <div class="details">
-                                            <a class="user" href="{{ .User.ProfileUrl }}">{{ .User.Name }}</a> &mdash; <span class="datetime">{{ relativedate .Date }}</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        {{ .Content }}
-                                    </div>
-                                </div>
-                            </div>
+                            {{ template "landing_page_featured_post" . }}
                         {{ end }}
 
                         {{ range $post := $posts }}
                             {{ template "post_list_item.html" $post }}
                         {{ end }}
-                        {{/*
-                        {% with more=posts|length|add:-5|clamp_lower:0 %}
-                            {% if more > 0 %}
-                                <div class="ph3 thread unread more">
-                                    <a class="title" 
-                                        href="{% url 'project_forum' subdomain=proj.slug %}"
-                                    >{{ more }} more recently &rarr;</a>
-                                </div>
-                            {% endif %}
-                        {% endwith %}
-                        */}}
+
+                        <div class="ph3 thread unread more">
+                            <a class="title" href="{{ projecturl "/forums" $proj }}">
+                                More posts &rarr;
+                            </a>
+                        </div>
                     </div>
                 {{ end }}
             </div>
@@ -94,43 +105,6 @@
 {{ end }}
 
 {{/*
-{{ define "extrahead" }}
-<link rel="stylesheet" type="text/css" href="{{ static "landing.css" }}"/>
-<script type="text/javascript" src="{{ static "util.js" }}"></script>
-<style type="text/css">
-    {{ range _, $col := .RecentPostColumns }}
-        {{ range _, $entry := $col }}
-            {{ $themeDim := eq .Theme "dark" | ternary (darken .Color 0.5) (brighten .Color 0.2) }}
-            {{ $themeDimmer := eq .Theme "dark" | ternary (darken .Color 0.65) (brighten .Color 0.4) }}
-            {{ $themeDimmest := eq .Theme "dark" | ternary (darken .Color 0.8) (brighten .Color 0.6) }}
-
-            {{ $linkColor := eq .Theme "dark" | ternary (brighten .Color 0.1) (darken .Color 0.2) }}
-            {{ $linkHoverColor := eq .Theme "dark" | ternary (brighten .Color 0.2) (darken .Color 0.1) }}
-
-            {{ eq .Theme "dark" }}
-                #p{{ .Project.Subdomain }} .unread a { color: #{% rgb_accent entry.project.color_1 0.55 %}; }
-                #p{{ .Project.Subdomain }} .unread a:hover { color: #{% rgb_accent entry.project.color_1 0.65 %}; }
-                #p{{ .Project.Subdomain }} .unread .avatar-icon { border: 2px solid #{% rgb_accent entry.project.color_1 0.55 %}; }
-                #p{{ .Project.Subdomain }} .thread:nth-of-type(even) { background-color:#{% rgb_accent entry.project.color_1 0.14 False 0.03%}; }
-                #p{{ .Project.Subdomain }} .forum .post:nth-of-type(even) { background-color:#{% rgb_accent entry.project.color_1 0.14 False 0.03 %}; }
-                #p{{ .Project.Subdomain }} .blog .post:nth-of-type(even) { background-color:#{% rgb_accent entry.project.color_1 0.14 False 0.03 %}; }
-            {{ else }}
-                #p{{ .Project.Subdomain }} .unread a { color: #{% rgb_accent entry.project.color_1 0.35 %}; }
-                #p{{ .Project.Subdomain }} .unread a:hover { color: #{% rgb_accent entry.project.color_1 0.45 %};  }
-                #p{{ .Project.Subdomain }} .unread .avatar-icon { border: 2px solid #{% rgb_accent entry.project.color_1 0.35 %}; }
-                #p{{ .Project.Subdomain }} .thread:nth-of-type(even) { background-color:#{% rgb_accent entry.project.color_1 0.94 False 0.2 %}; }
-                #p{{ .Project.Subdomain }} .forum .post:nth-of-type(even) { background-color:#{% rgb_accent entry.project.color_1 0.94 False 0.2 %}; }
-                #p{{ .Project.Subdomain }} .blog .post:nth-of-type(even) { background-color:#{% rgb_accent entry.project.color_1 0.94 False 0.2 %}; }
-            {{ end }}
-            #p{{ .Project.Subdomain }} .thread.more { background-color:transparent; }
-        {{ end }}
-    {{ end }}
-</style>
-<script type="text/javascript" src="{% static 'templates.js' %}?v={% cachebust %}"></script>
-<script type="text/javascript" src="{% static 'timeline.js' %}?v={% cachebust %}"></script>
-<script type="text/javascript" src="{% static 'showcase.js' %}?v={% cachebust %}"></script>
-{{ end }}
-
 {% block columns %}
 {% include "showcase/js_templates.html" %}
 {% include "timeline/js_templates.html" %}
@@ -289,3 +263,27 @@
 {% endspaceless %}
 {% endblock %}
 */}}
+
+{{ define "landing_page_featured_post" }}
+{{/* Call this template with a LandingPageFeaturedPost. */}}
+<div class="flex items-start ph3 pv2 {{ if .Unread }}unread{{ else }}read{{ end }}">
+    <img class="avatar-icon mr2" src="{{ .User.AvatarUrl }}">
+    <div class="flex-grow-1">
+        <div class="overflow-hidden">
+            <div class="title nowrap truncate"><a href="{{ .Url }}">{{ .Title }}</a></div>
+            <div class="details">
+                <a class="user" href="{{ .User.ProfileUrl }}">{{ .User.Name }}</a> &mdash; <span class="datetime">{{ relativedate .Date }}</span>
+            </div>
+        </div>
+        <div class="overflow-hidden mh-5 mt2 relative">
+            <div>
+                {{ .Content }}
+            </div>
+            <div class="excerpt-fade absolute w-100 h4 bottom-0"></div>
+        </div>
+        <div class="mt2">
+            <a href="{{ .Url }}">Read More &rarr;</a>
+        </div>
+    </div>
+</div>
+{{ end }}

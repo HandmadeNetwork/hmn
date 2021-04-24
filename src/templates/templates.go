@@ -67,14 +67,18 @@ func names(ts []*template.Template) []string {
 }
 
 var HMNTemplateFuncs = template.FuncMap{
-	"brighten": func(hexColor string, amount float64) (string, error) {
-		if len(hexColor) < 6 {
-			return "", fmt.Errorf("couldn't brighten invalid hex color: %v", hexColor)
-		}
-		return noire.NewHex(hexColor).Tint(amount).Hex(), nil
+	"alpha": func(alpha float64, color noire.Color) noire.Color {
+		color.Alpha = alpha
+		return color
+	},
+	"brighten": func(amount float64, color noire.Color) noire.Color {
+		return color.Tint(amount)
 	},
 	"cachebust": func() string {
 		return cachebust
+	},
+	"color2css": func(color noire.Color) template.CSS {
+		return template.CSS(color.HTML())
 	},
 	"currentprojecturl": func(url string) string {
 		return hmnurl.Url(url, nil) // TODO: Use project subdomain
@@ -83,11 +87,18 @@ var HMNTemplateFuncs = template.FuncMap{
 		absUrl := hmnurl.Url(url, nil)
 		return fmt.Sprintf("%s?%s", absUrl, query) // TODO: Use project subdomain
 	},
-	"darken": func(hexColor string, amount float64) (string, error) {
-		if len(hexColor) < 6 {
-			return "", fmt.Errorf("couldn't darken invalid hex color: %v", hexColor)
+	"darken": func(amount float64, color noire.Color) noire.Color {
+		return color.Shade(amount)
+	},
+	"hex2color": func(hex string) (noire.Color, error) {
+		if len(hex) < 6 {
+			return noire.Color{}, fmt.Errorf("hex color was invalid: %v", hex)
 		}
-		return noire.NewHex(hexColor).Shade(amount).Hex(), nil
+		return noire.NewHex(hex), nil
+	},
+	"lightness": func(lightness float64, color noire.Color) noire.Color {
+		h, s, _, a := color.HSLA()
+		return noire.NewHSLA(h, s, lightness*100, a)
 	},
 	"projecturl": func(url string, proj interface{}) string {
 		return hmnurl.ProjectUrl(url, nil, getProjectSubdomain(proj))
