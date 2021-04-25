@@ -16,6 +16,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/migration/migrations"
 	"git.handmade.network/hmn/hmn/src/migration/types"
 	"git.handmade.network/hmn/hmn/src/website"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/spf13/cobra"
 )
@@ -289,6 +290,7 @@ func MakeMigration(name, description string) {
 
 // Applies a cloned db to the local db.
 // Applies the seed after the migration specified in `afterMigration`.
+// NOTE(asaf): The db role specified in the config must have the CREATEDB attribute! `ALTER ROLE hmn WITH CREATEDB;`
 func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
 	file, err := os.Open(seedFile)
 	if err != nil {
@@ -300,6 +302,37 @@ func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
 
 	if migration == nil {
 		panic(fmt.Errorf("could not find migration: %s", afterMigration))
+	}
+
+	fmt.Println("Resetting database...")
+	{
+		ctx := context.Background()
+		// NOTE(asaf): We connect to db "template1", because we have to connect to something other than our own db in order to drop it.
+		template1DSN := fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s",
+			config.Config.Postgres.User,
+			config.Config.Postgres.Password,
+			config.Config.Postgres.Hostname,
+			config.Config.Postgres.Port,
+			"template1", // NOTE(asaf): template1 must always exist in postgres, as it's the db that gets cloned when you create new DBs
+		)
+		// NOTE(asaf): We have to use the low-level API of pgconn, because the pgx Exec always wraps the query in a transaction.
+		lowLevelConn, err := pgconn.Connect(ctx, template1DSN)
+		defer lowLevelConn.Close(ctx)
+
+		result := lowLevelConn.ExecParams(ctx, "DROP DATABASE hmn", nil, nil, nil, nil)
+		_, err = result.Close()
+		pgErr, isPgError := err.(*pgconn.PgError)
+		if err != nil {
+			if !isPgError || pgErr.SQLState() != "3D000" { // NOTE(asaf): 3D000 means "Database does not exist"
+				panic(fmt.Errorf("failed to drop db: %w", err))
+			}
+		}
+
+		result = lowLevelConn.ExecParams(ctx, "CREATE DATABASE hmn", nil, nil, nil, nil)
+		_, err = result.Close()
+		if err != nil {
+			panic(fmt.Errorf("failed to create db: %w", err))
+		}
 	}
 
 	fmt.Println("Running migrations...")
