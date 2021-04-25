@@ -87,8 +87,20 @@ type PostListItem struct {
 	User        User
 	Date        time.Time
 	Unread      bool
+	Classes     string
+	Content     string
 }
 
 type Breadcrumb struct {
 	Name, Url string
+}
+
+type Pagination struct {
+	Current int
+	Total   int
+
+	FirstUrl    string
+	LastUrl     string
+	PreviousUrl string
+	NextUrl     string
 }

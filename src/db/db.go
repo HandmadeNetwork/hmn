@@ -212,3 +212,44 @@ func QueryOne(ctx context.Context, conn *pgxpool.Pool, destExample interface{}, 
 
 	return result, nil
 }
+
+func QueryScalar(ctx context.Context, conn *pgxpool.Pool, query string, args ...interface{}) (interface{}, error) {
+	rows, err := conn.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		vals, err := rows.Values()
+		if err != nil {
+			panic(err)
+		}
+
+		if len(vals) != 1 {
+			return nil, oops.New(nil, "you must query exactly one field with QueryScalar, not %v", len(vals))
+		}
+
+		return vals[0], nil
+	}
+
+	return nil, ErrNoMatchingRows
+}
+
+func QueryInt(ctx context.Context, conn *pgxpool.Pool, query string, args ...interface{}) (int, error) {
+	result, err := QueryScalar(ctx, conn, query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	switch r := result.(type) {
+	case int:
+		return r, nil
+	case int32:
+		return int(r), nil
+	case int64:
+		return int(r), nil
+	default:
+		return 0, oops.New(nil, "QueryInt got a non-int result: %v", result)
+	}
+}

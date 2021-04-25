@@ -41,6 +41,8 @@ func ProjectToTemplate(p *models.Project) Project {
 }
 
 func UserToTemplate(u *models.User) User {
+	// TODO: Handle deleted users. Maybe not here, but if not, at call sites of this function.
+
 	avatar := ""
 	if u.Avatar != nil {
 		avatar = hmnurl.StaticUrl(*u.Avatar, nil)
