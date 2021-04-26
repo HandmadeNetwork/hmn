@@ -93,9 +93,11 @@ func GetCategoryUrls(ctx context.Context, conn *pgxpool.Pool, cats ...*Category)
 
 	// TODO(inarray)!!!!!
 
-	for _, cat := range cats {
-		hierarchy := makeCategoryUrl(cat.GetHierarchy(ctx, conn))
-	}
+	//for _, cat := range cats {
+	//	hierarchy := makeCategoryUrl(cat.GetHierarchy(ctx, conn))
+	//}
+
+	return nil
 }
 
 func makeCategoryUrl(cats []*Category, subdomain string) string {
