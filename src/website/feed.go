@@ -127,7 +127,7 @@ func Feed(c *RequestContext) ResponseData {
 			hasRead = true
 		}
 
-		parents := postResult.Cat.GetParents(c.Context(), c.Conn)
+		parents := postResult.Cat.GetHierarchy(c.Context(), c.Conn)
 		logging.Debug().Interface("parents", parents).Msg("")
 
 		var breadcrumbs []templates.Breadcrumb
