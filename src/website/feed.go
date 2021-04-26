@@ -23,6 +23,7 @@ type FeedData struct {
 func Feed(c *RequestContext) ResponseData {
 	const postsPerPage = 30
 
+	c.Perf.StartBlock("SQL", "Count posts")
 	numPosts, err := db.QueryInt(c.Context(), c.Conn,
 		`
 		SELECT COUNT(*)
@@ -38,6 +39,7 @@ func Feed(c *RequestContext) ResponseData {
 		models.CatTypeWiki,
 		models.CatTypeLibraryResource,
 	) // TODO(inarray)
+	c.Perf.EndBlock()
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get count of feed posts"))
 	}
@@ -71,6 +73,7 @@ func Feed(c *RequestContext) ResponseData {
 		currentUserId = &c.CurrentUser.ID
 	}
 
+	c.Perf.StartBlock("SQL", "Fetch posts")
 	type feedPostQuery struct {
 		Post               models.Post     `db:"post"`
 		Thread             models.Thread   `db:"thread"`
@@ -112,6 +115,7 @@ func Feed(c *RequestContext) ResponseData {
 		postsPerPage,
 		howManyPostsToSkip,
 	) // TODO(inarray)
+	c.Perf.EndBlock()
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
 	}
@@ -163,7 +167,7 @@ func Feed(c *RequestContext) ResponseData {
 
 		Posts:      postItems,
 		Pagination: pagination,
-	})
+	}, c.Perf)
 
 	return res
 }

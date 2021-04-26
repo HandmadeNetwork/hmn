@@ -4,20 +4,23 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/julienschmidt/httprouter"
 )
 
-func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
+func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) http.Handler {
 	router := httprouter.New()
 	routes := RouteBuilder{
 		Router: router,
@@ -28,7 +31,25 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 			},
 			// TODO: Add a timeout? We don't want routes hanging forever
 		},
-		AfterHandlers: []HMNAfterHandler{ErrorLoggingHandler},
+		AfterHandlers: []HMNAfterHandler{
+			ErrorLoggingHandler,
+			func(c *RequestContext, res ResponseData) ResponseData {
+				// Do perf printout
+				c.Perf.EndRequest()
+				log := logging.Info()
+				blockStack := make([]time.Time, 0)
+				for _, block := range c.Perf.Blocks {
+					for len(blockStack) > 0 && block.End.After(blockStack[len(blockStack)-1]) {
+						blockStack = blockStack[:len(blockStack)-1]
+					}
+					log.Str(fmt.Sprintf("At %9.2fms", c.Perf.MsFromStart(&block)), fmt.Sprintf("%*.s[%s] %s (%.4fms)", len(blockStack)*2, "", block.Category, block.Description, block.DurationMs()))
+					blockStack = append(blockStack, block.End)
+				}
+				log.Msg(fmt.Sprintf("Served %s in %.4fms", c.Perf.Route, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
+				perfCollector.SubmitRun(c.Perf)
+				return res
+			},
+		},
 	}
 
 	routes.POST("/login", Login)
@@ -136,7 +157,7 @@ func ProjectCSS(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.Headers().Add("Content-Type", "text/css")
-	err := res.WriteTemplate("project.css", templateData)
+	err := res.WriteTemplate("project.css", templateData, c.Perf)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to generate project CSS"))
 	}
@@ -160,6 +181,8 @@ func ErrorLoggingHandler(c *RequestContext, res ResponseData) ResponseData {
 }
 
 func CommonWebsiteDataWrapper(c *RequestContext) (bool, ResponseData) {
+	c.Perf.StartBlock("MIDDLEWARE", "Load common website data")
+	defer c.Perf.EndBlock()
 	// get project
 	{
 		slug := ""
@@ -176,16 +199,18 @@ func CommonWebsiteDataWrapper(c *RequestContext) (bool, ResponseData) {
 		c.CurrentProject = dbProject
 	}
 
-	sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
-	if err == nil {
-		user, err := getCurrentUser(c, sessionCookie.Value)
-		if err != nil {
-			return false, ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user"))
-		}
+	{
+		sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
+		if err == nil {
+			user, err := getCurrentUser(c, sessionCookie.Value)
+			if err != nil {
+				return false, ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user"))
+			}
 
-		c.CurrentUser = user
+			c.CurrentUser = user
+		}
+		// http.ErrNoCookie is the only error Cookie ever returns, so no further handling to do here.
 	}
-	// http.ErrNoCookie is the only error Cookie ever returns, so no further handling to do here.
 
 	return true, ResponseData{}
 }

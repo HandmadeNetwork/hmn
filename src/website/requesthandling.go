@@ -12,6 +12,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/julienschmidt/httprouter"
@@ -37,7 +38,7 @@ type HMNBeforeHandler func(c *RequestContext) (ok bool, res ResponseData)
 type HMNAfterHandler func(c *RequestContext, res ResponseData) ResponseData
 
 func (h HMNHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	c := NewRequestContext(rw, req, nil)
+	c := NewRequestContext(rw, req, nil, "")
 	doRequest(rw, c, h)
 }
 
@@ -47,15 +48,17 @@ type RequestContext struct {
 	PathParams httprouter.Params
 
 	Conn           *pgxpool.Pool
+	Perf           *perf.RequestPerf
 	CurrentProject *models.Project
 	CurrentUser    *models.User
 }
 
-func NewRequestContext(rw http.ResponseWriter, req *http.Request, pathParams httprouter.Params) *RequestContext {
+func NewRequestContext(rw http.ResponseWriter, req *http.Request, pathParams httprouter.Params, route string) *RequestContext {
 	return &RequestContext{
 		Logger:     logging.GlobalLogger(),
 		Req:        req,
 		PathParams: pathParams,
+		Perf:       perf.MakeNewRequestPerf(route),
 	}
 }
 
@@ -161,7 +164,11 @@ func (rd *ResponseData) SetCookie(cookie *http.Cookie) {
 	rd.Headers().Add("Set-Cookie", cookie.String())
 }
 
-func (rd *ResponseData) WriteTemplate(name string, data interface{}) error {
+func (rd *ResponseData) WriteTemplate(name string, data interface{}, rp *perf.RequestPerf) error {
+	if rp != nil {
+		rp.StartBlock("TEMPLATE", name)
+		defer rp.EndBlock()
+	}
 	return templates.Templates[name].Execute(rd, data)
 }
 
@@ -196,7 +203,7 @@ func (b RouteBuilder) ChainHandlers(h HMNHandler) HMNHandler {
 func (b *RouteBuilder) Handle(method, route string, handler HMNHandler) {
 	h := b.ChainHandlers(handler)
 	b.Router.Handle(method, route, func(rw http.ResponseWriter, req *http.Request, p httprouter.Params) {
-		c := NewRequestContext(rw, req, p)
+		c := NewRequestContext(rw, req, p, route)
 		doRequest(rw, c, h)
 	})
 }

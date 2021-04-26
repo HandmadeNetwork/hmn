@@ -1,6 +1,7 @@
 package website
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
 	"time"
@@ -38,6 +39,7 @@ func Index(c *RequestContext) ResponseData {
 	const maxPosts = 5
 	const numProjectsToGet = 7
 
+	c.Perf.StartBlock("SQL", "Fetch projects")
 	iterProjects, err := db.Query(c.Context(), c.Conn, models.Project{},
 		`
 		SELECT $columns
@@ -59,6 +61,7 @@ func Index(c *RequestContext) ResponseData {
 	var pageProjects []LandingPageProject
 
 	allProjects := iterProjects.ToSlice()
+	c.Perf.EndBlock()
 	c.Logger.Info().Interface("allProjects", allProjects).Msg("all the projects")
 
 	var currentUserId *int
@@ -66,9 +69,11 @@ func Index(c *RequestContext) ResponseData {
 		currentUserId = &c.CurrentUser.ID
 	}
 
+	c.Perf.StartBlock("LANDING", "Process projects")
 	for _, projRow := range allProjects {
 		proj := projRow.(*models.Project)
 
+		c.Perf.StartBlock("SQL", fmt.Sprintf("Fetch posts for %s", *proj.Name))
 		type projectPostQuery struct {
 			Post               models.Post     `db:"post"`
 			Thread             models.Thread   `db:"thread"`
@@ -106,6 +111,7 @@ func Index(c *RequestContext) ResponseData {
 			models.CatTypeBlog, models.CatTypeForum, models.CatTypeWiki, models.CatTypeLibraryResource,
 			maxPosts,
 		)
+		c.Perf.EndBlock()
 		if err != nil {
 			c.Logger.Error().Err(err).Msg("failed to fetch project posts")
 			continue
@@ -136,6 +142,7 @@ func Index(c *RequestContext) ResponseData {
 					Content string `db:"ver.text_parsed"`
 				}
 
+				c.Perf.StartBlock("SQL", "Fetch featured post content")
 				contentResult, err := db.QueryOne(c.Context(), c.Conn, featuredContentResult{}, `
 					SELECT $columns
 					FROM
@@ -147,6 +154,7 @@ func Index(c *RequestContext) ResponseData {
 				if err != nil {
 					panic(err)
 				}
+				c.Perf.EndBlock()
 				content := contentResult.(*featuredContentResult).Content
 
 				landingPageProject.FeaturedPost = &LandingPageFeaturedPost{
@@ -176,7 +184,9 @@ func Index(c *RequestContext) ResponseData {
 			break
 		}
 	}
+	c.Perf.EndBlock()
 
+	c.Perf.StartBlock("SQL", "Get news")
 	type newsThreadQuery struct {
 		Thread models.Thread `db:"thread"`
 	}
@@ -196,6 +206,7 @@ func Index(c *RequestContext) ResponseData {
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch latest news post"))
 	}
+	c.Perf.EndBlock()
 	newsThread := newsThreadRow.(*newsThreadQuery)
 	_ = newsThread // TODO: NO
 
@@ -275,7 +286,7 @@ func Index(c *RequestContext) ResponseData {
 			Content: template.HTML(newsPostResult.PostVersion.TextParsed),
 		},
 		PostColumns: cols,
-	})
+	}, c.Perf)
 	if err != nil {
 		panic(err)
 	}

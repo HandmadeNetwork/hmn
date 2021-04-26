@@ -12,6 +12,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"github.com/spf13/cobra"
 )
@@ -25,16 +26,19 @@ var WebsiteCommand = &cobra.Command{
 
 		logging.Info().Msg("Hello, HMN!")
 
+		backgroundJobContext, cancelBackgroundJobs := context.WithCancel(context.Background())
+
 		conn := db.NewConnPool(config.Config.Postgres.MinConn, config.Config.Postgres.MaxConn)
+		perfCollector := perf.RunPerfCollector(backgroundJobContext)
 
 		server := http.Server{
 			Addr:    config.Config.Addr,
-			Handler: NewWebsiteRoutes(conn),
+			Handler: NewWebsiteRoutes(conn, perfCollector),
 		}
 
-		backgroundJobContext, cancelBackgroundJobs := context.WithCancel(context.Background())
 		backgroundJobsDone := zipJobs(
 			auth.PeriodicallyDeleteExpiredSessions(backgroundJobContext, conn),
+			perfCollector.Done,
 		)
 
 		signals := make(chan os.Signal, 1)
