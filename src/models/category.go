@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -22,18 +23,23 @@ type Category struct {
 	ID int `db:"id"`
 
 	ParentID  *int `db:"parent_id"`
-	ProjectID *int `db:"project_id"`
+	ProjectID *int `db:"project_id"` // TODO: Make not null
 
-	Slug   *string      `db:"slug"`
-	Name   *string      `db:"name"`
-	Blurb  *string      `db:"blurb"`
+	Slug   *string      `db:"slug"`  // TODO: Make not null
+	Name   *string      `db:"name"`  // TODO: Make not null
+	Blurb  *string      `db:"blurb"` // TODO: Make not null
 	Kind   CategoryType `db:"kind"`
 	Color1 string       `db:"color_1"`
 	Color2 string       `db:"color_2"`
 	Depth  int          `db:"depth"` // TODO: What is this?
 }
 
-func (c *Category) GetParents(ctx context.Context, conn *pgxpool.Pool) []Category {
+/*
+Gets the category and its parent categories, starting from the root and working toward the
+category itself. Useful for breadcrumbs and the like.
+*/
+func (c *Category) GetHierarchy(ctx context.Context, conn *pgxpool.Pool) []Category {
+	// TODO: Make this work for a whole set of categories at once. Should be doable.
 	type breadcrumbRow struct {
 		Cat Category `db:"cats"`
 	}
@@ -57,23 +63,58 @@ func (c *Category) GetParents(ctx context.Context, conn *pgxpool.Pool) []Categor
 		panic(err)
 	}
 
+	rowsSlice := rows.ToSlice()
 	var result []Category
-	for _, irow := range rows.ToSlice()[1:] {
-		row := irow.(*breadcrumbRow)
+	for i := len(rowsSlice) - 1; i >= 0; i-- {
+		row := rowsSlice[i].(*breadcrumbRow)
 		result = append(result, row.Cat)
 	}
 
 	return result
 }
 
-// func GetCategoryUrls(cats ...*Category) map[int]string {
+func GetCategoryUrls(ctx context.Context, conn *pgxpool.Pool, cats ...*Category) map[int]string {
+	var projectIds []int
+	for _, cat := range cats {
+		id := *cat.ProjectID
 
-// }
+		alreadyInList := false
+		for _, otherId := range projectIds {
+			if otherId == id {
+				alreadyInList = true
+				break
+			}
+		}
 
-// func makeCategoryUrl(cat *Category, subdomain string) string {
-// 	switch cat.Kind {
-// 	case CatTypeBlog:
-// 	case CatTypeForum:
-// 	}
-// 	return hmnurl.ProjectUrl("/flooger", nil, subdomain)
-// }
+		if !alreadyInList {
+			projectIds = append(projectIds, id)
+		}
+	}
+
+	// TODO(inarray)!!!!!
+
+	for _, cat := range cats {
+		hierarchy := makeCategoryUrl(cat.GetHierarchy(ctx, conn))
+	}
+}
+
+func makeCategoryUrl(cats []*Category, subdomain string) string {
+	path := ""
+	for i, cat := range cats {
+		if i == 0 {
+			switch cat.Kind {
+			case CatTypeBlog:
+				path += "/blogs"
+			case CatTypeForum:
+				path += "/forums"
+			// TODO: All cat types?
+			default:
+				return ""
+			}
+		} else {
+			path += "/" + *cat.Slug
+		}
+	}
+
+	return hmnurl.ProjectUrl(path, nil, subdomain)
+}
