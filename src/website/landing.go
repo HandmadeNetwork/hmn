@@ -75,34 +75,31 @@ func Index(c *RequestContext) ResponseData {
 
 		c.Perf.StartBlock("SQL", fmt.Sprintf("Fetch posts for %s", *proj.Name))
 		type projectPostQuery struct {
-			Post               models.Post     `db:"post"`
-			Thread             models.Thread   `db:"thread"`
-			Cat                models.Category `db:"cat"`
-			User               models.User     `db:"auth_user"`
-			ThreadLastReadTime *time.Time      `db:"tlri.lastread"`
-			CatLastReadTime    *time.Time      `db:"clri.lastread"`
+			Post               models.Post   `db:"post"`
+			Thread             models.Thread `db:"thread"`
+			User               models.User   `db:"auth_user"`
+			ThreadLastReadTime *time.Time    `db:"tlri.lastread"`
+			CatLastReadTime    *time.Time    `db:"clri.lastread"`
 		}
 		projectPostIter, err := db.Query(c.Context(), c.Conn, projectPostQuery{},
 			`
 			SELECT $columns
 			FROM
 				handmade_post AS post
-				JOIN handmade_thread AS thread ON thread.id = post.thread_id
-				JOIN handmade_category AS cat ON cat.id = thread.category_id
-				LEFT OUTER JOIN handmade_threadlastreadinfo AS tlri ON (
-					tlri.thread_id = thread.id
+				JOIN handmade_thread AS thread ON post.thread_id = thread.id
+				LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
+					tlri.thread_id = post.thread_id
 					AND tlri.user_id = $1
 				)
-				LEFT OUTER JOIN handmade_categorylastreadinfo AS clri ON (
-					clri.category_id = cat.id
+				LEFT JOIN handmade_categorylastreadinfo AS clri ON (
+					clri.category_id = post.category_id
 					AND clri.user_id = $1
 				)
-				LEFT OUTER JOIN auth_user ON post.author_id = auth_user.id
+				LEFT JOIN auth_user ON post.author_id = auth_user.id
 			WHERE
-				cat.project_id = $2
-				AND cat.kind IN ($3, $4, $5, $6)
+				post.project_id = $2
+				AND post.category_kind IN ($3, $4, $5, $6)
 				AND post.moderated = FALSE
-				AND post.thread_id IS NOT NULL
 			ORDER BY postdate DESC
 			LIMIT $7
 			`,
@@ -133,7 +130,7 @@ func Index(c *RequestContext) ResponseData {
 			}
 
 			featurable := (!proj.IsHMN() &&
-				projectPost.Cat.Kind == models.CatTypeBlog &&
+				projectPost.Post.CategoryType == models.CatTypeBlog &&
 				projectPost.Post.ParentID == nil &&
 				landingPageProject.FeaturedPost == nil)
 
@@ -159,7 +156,7 @@ func Index(c *RequestContext) ResponseData {
 
 				landingPageProject.FeaturedPost = &LandingPageFeaturedPost{
 					Title:   projectPost.Thread.Title,
-					Url:     templates.PostUrl(projectPost.Post, projectPost.Cat.Kind, proj.Subdomain()),
+					Url:     templates.PostUrl(projectPost.Post, projectPost.Post.CategoryType, proj.Subdomain()),
 					User:    templates.UserToTemplate(&projectPost.User),
 					Date:    projectPost.Post.PostDate,
 					Unread:  !hasRead,
@@ -168,7 +165,7 @@ func Index(c *RequestContext) ResponseData {
 			} else {
 				landingPageProject.Posts = append(landingPageProject.Posts, templates.PostListItem{
 					Title:  projectPost.Thread.Title,
-					Url:    templates.PostUrl(projectPost.Post, projectPost.Cat.Kind, proj.Subdomain()),
+					Url:    templates.PostUrl(projectPost.Post, projectPost.Post.CategoryType, proj.Subdomain()),
 					User:   templates.UserToTemplate(&projectPost.User),
 					Date:   projectPost.Post.PostDate,
 					Unread: !hasRead,

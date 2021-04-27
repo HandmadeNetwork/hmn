@@ -29,9 +29,8 @@ func Feed(c *RequestContext) ResponseData {
 		SELECT COUNT(*)
 		FROM
 			handmade_post AS post
-			JOIN handmade_category AS cat ON cat.id = post.category_id
 		WHERE
-			cat.kind IN ($1, $2, $3, $4)
+			post.category_kind IN ($1, $2, $3, $4)
 			AND NOT moderated
 		`,
 		models.CatTypeForum,
@@ -75,13 +74,12 @@ func Feed(c *RequestContext) ResponseData {
 
 	c.Perf.StartBlock("SQL", "Fetch posts")
 	type feedPostQuery struct {
-		Post               models.Post     `db:"post"`
-		Thread             models.Thread   `db:"thread"`
-		Cat                models.Category `db:"cat"`
-		Proj               models.Project  `db:"proj"`
-		User               models.User     `db:"auth_user"`
-		ThreadLastReadTime *time.Time      `db:"tlri.lastread"`
-		CatLastReadTime    *time.Time      `db:"clri.lastread"`
+		Post               models.Post    `db:"post"`
+		Thread             models.Thread  `db:"thread"`
+		Proj               models.Project `db:"proj"`
+		User               models.User    `db:"auth_user"`
+		ThreadLastReadTime *time.Time     `db:"tlri.lastread"`
+		CatLastReadTime    *time.Time     `db:"clri.lastread"`
 	}
 	posts, err := db.Query(c.Context(), c.Conn, feedPostQuery{},
 		`
@@ -89,19 +87,18 @@ func Feed(c *RequestContext) ResponseData {
 		FROM
 			handmade_post AS post
 			JOIN handmade_thread AS thread ON thread.id = post.thread_id
-			JOIN handmade_category AS cat ON cat.id = thread.category_id
-			JOIN handmade_project AS proj ON proj.id = cat.project_id
+			JOIN handmade_project AS proj ON proj.id = post.project_id
 			LEFT OUTER JOIN handmade_threadlastreadinfo AS tlri ON (
-				tlri.thread_id = thread.id
+				tlri.thread_id = post.thread_id
 				AND tlri.user_id = $1
 			)
 			LEFT OUTER JOIN handmade_categorylastreadinfo AS clri ON (
-				clri.category_id = cat.id
+				clri.category_id = post.category_id
 				AND clri.user_id = $1
 			)
 			LEFT OUTER JOIN auth_user ON post.author_id = auth_user.id
 		WHERE
-			cat.kind IN ($2, $3, $4, $5)
+			post.category_kind IN ($2, $3, $4, $5)
 			AND post.moderated = FALSE
 			AND post.thread_id IS NOT NULL
 		ORDER BY postdate DESC
@@ -131,7 +128,8 @@ func Feed(c *RequestContext) ResponseData {
 			hasRead = true
 		}
 
-		parents := postResult.Cat.GetHierarchy(c.Context(), c.Conn)
+		var parents []models.Category
+		// parents := postResult.Cat.GetHierarchy(c.Context(), c.Conn)
 		logging.Debug().Interface("parents", parents).Msg("")
 
 		var breadcrumbs []templates.Breadcrumb
@@ -148,7 +146,7 @@ func Feed(c *RequestContext) ResponseData {
 
 		postItems = append(postItems, templates.PostListItem{
 			Title:       postResult.Thread.Title,
-			Url:         templates.PostUrl(postResult.Post, postResult.Cat.Kind, postResult.Proj.Subdomain()),
+			Url:         templates.PostUrl(postResult.Post, postResult.Post.CategoryType, postResult.Proj.Subdomain()),
 			User:        templates.UserToTemplate(&postResult.User),
 			Date:        postResult.Post.PostDate,
 			Breadcrumbs: breadcrumbs,

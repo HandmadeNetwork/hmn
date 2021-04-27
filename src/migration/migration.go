@@ -317,18 +317,21 @@ func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
 		)
 		// NOTE(asaf): We have to use the low-level API of pgconn, because the pgx Exec always wraps the query in a transaction.
 		lowLevelConn, err := pgconn.Connect(ctx, template1DSN)
+		if err != nil {
+			panic(fmt.Errorf("failed to connect to db: %w", err))
+		}
 		defer lowLevelConn.Close(ctx)
 
-		result := lowLevelConn.ExecParams(ctx, "DROP DATABASE hmn", nil, nil, nil, nil)
+		result := lowLevelConn.ExecParams(ctx, fmt.Sprintf("DROP DATABASE %s", config.Config.Postgres.DbName), nil, nil, nil, nil)
 		_, err = result.Close()
 		pgErr, isPgError := err.(*pgconn.PgError)
 		if err != nil {
-			if !isPgError || pgErr.SQLState() != "3D000" { // NOTE(asaf): 3D000 means "Database does not exist"
+			if !(isPgError && pgErr.SQLState() == "3D000") { // NOTE(asaf): 3D000 means "Database does not exist"
 				panic(fmt.Errorf("failed to drop db: %w", err))
 			}
 		}
 
-		result = lowLevelConn.ExecParams(ctx, "CREATE DATABASE hmn", nil, nil, nil, nil)
+		result = lowLevelConn.ExecParams(ctx, fmt.Sprintf("CREATE DATABASE %s", config.Config.Postgres.DbName), nil, nil, nil, nil)
 		_, err = result.Close()
 		if err != nil {
 			panic(fmt.Errorf("failed to create db: %w", err))

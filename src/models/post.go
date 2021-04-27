@@ -12,8 +12,11 @@ type Post struct {
 	AuthorID   *int `db:"author_id"`
 	CategoryID int  `db:"category_id"`
 	ParentID   *int `db:"parent_id"`
-	ThreadID   *int `db:"thread_id"` // TODO: This is only null for posts that are actually static pages. Which probably shouldn't be posts anyway. Plz make not null thanks
+	ThreadID   int  `db:"thread_id"`
 	CurrentID  int  `db:"current_id"`
+	ProjectID  int  `db:"project_id"`
+
+	CategoryType CategoryType `db:"category_kind"`
 
 	Depth        int       `db:"depth"`
 	Slug         string    `db:"slug"`
