@@ -30,7 +30,7 @@ func Login(c *RequestContext) ResponseData {
 		redirect = "/"
 	}
 
-	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{}, "SELECT $columns FROM auth_user WHERE username = $1", username)
+	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{}, "SELECT $columns FROM auth_user WHERE LOWER(username) = LOWER($1)", username)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			return ResponseData{
@@ -57,7 +57,7 @@ func Login(c *RequestContext) ResponseData {
 		if hashed.IsOutdated() {
 			newHashed, err := auth.HashPassword(password)
 			if err == nil {
-				err := auth.UpdatePassword(c.Context(), c.Conn, username, newHashed)
+				err := auth.UpdatePassword(c.Context(), c.Conn, user.Username, newHashed)
 				if err != nil {
 					c.Logger.Error().Err(err).Msg("failed to update user's password")
 				}
@@ -67,7 +67,7 @@ func Login(c *RequestContext) ResponseData {
 			// If errors happen here, we can still continue with logging them in
 		}
 
-		session, err := auth.CreateSession(c.Context(), c.Conn, username)
+		session, err := auth.CreateSession(c.Context(), c.Conn, user.Username)
 		if err != nil {
 			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create session"))
 		}
