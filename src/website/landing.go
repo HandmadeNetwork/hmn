@@ -64,6 +64,8 @@ func Index(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 	c.Logger.Info().Interface("allProjects", allProjects).Msg("all the projects")
 
+	categoryUrls := GetAllCategoryUrls(c.Context(), c.Conn)
+
 	var currentUserId *int
 	if c.CurrentUser != nil {
 		currentUserId = &c.CurrentUser.ID
@@ -105,7 +107,7 @@ func Index(c *RequestContext) ResponseData {
 			`,
 			currentUserId,
 			proj.ID,
-			models.CatTypeBlog, models.CatTypeForum, models.CatTypeWiki, models.CatTypeLibraryResource,
+			models.CatKindBlog, models.CatKindForum, models.CatKindWiki, models.CatKindLibraryResource,
 			maxPosts,
 		)
 		c.Perf.EndBlock()
@@ -130,7 +132,7 @@ func Index(c *RequestContext) ResponseData {
 			}
 
 			featurable := (!proj.IsHMN() &&
-				projectPost.Post.CategoryType == models.CatTypeBlog &&
+				projectPost.Post.CategoryKind == models.CatKindBlog &&
 				projectPost.Post.ParentID == nil &&
 				landingPageProject.FeaturedPost == nil)
 
@@ -156,7 +158,7 @@ func Index(c *RequestContext) ResponseData {
 
 				landingPageProject.FeaturedPost = &LandingPageFeaturedPost{
 					Title:   projectPost.Thread.Title,
-					Url:     templates.PostUrl(projectPost.Post, projectPost.Post.CategoryType, proj.Subdomain()),
+					Url:     PostUrl(projectPost.Post, projectPost.Post.CategoryKind, categoryUrls[projectPost.Post.CategoryID]),
 					User:    templates.UserToTemplate(&projectPost.User),
 					Date:    projectPost.Post.PostDate,
 					Unread:  !hasRead,
@@ -165,7 +167,7 @@ func Index(c *RequestContext) ResponseData {
 			} else {
 				landingPageProject.Posts = append(landingPageProject.Posts, templates.PostListItem{
 					Title:  projectPost.Thread.Title,
-					Url:    templates.PostUrl(projectPost.Post, projectPost.Post.CategoryType, proj.Subdomain()),
+					Url:    PostUrl(projectPost.Post, projectPost.Post.CategoryKind, categoryUrls[projectPost.Post.CategoryID]),
 					User:   templates.UserToTemplate(&projectPost.User),
 					Date:   projectPost.Post.PostDate,
 					Unread: !hasRead,
@@ -198,7 +200,7 @@ func Index(c *RequestContext) ResponseData {
 			AND cat.kind = $2
 		`,
 		models.HMNProjectID,
-		models.CatTypeBlog,
+		models.CatKindBlog,
 	)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch latest news post"))
@@ -261,7 +263,7 @@ func Index(c *RequestContext) ResponseData {
 		LIMIT 1
 		`,
 		models.HMNProjectID,
-		models.CatTypeBlog,
+		models.CatKindBlog,
 	)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news post"))
@@ -272,11 +274,11 @@ func Index(c *RequestContext) ResponseData {
 	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 
 	var res ResponseData
-	err = res.WriteTemplate("index.html", LandingTemplateData{
+	err = res.WriteTemplate("landing.html", LandingTemplateData{
 		BaseData: baseData,
 		NewsPost: LandingPageFeaturedPost{
 			Title:   newsPostResult.Thread.Title,
-			Url:     templates.PostUrl(newsPostResult.Post, models.CatTypeBlog, ""),
+			Url:     PostUrl(newsPostResult.Post, models.CatKindBlog, ""),
 			User:    templates.UserToTemplate(&newsPostResult.User),
 			Date:    newsPostResult.Post.PostDate,
 			Unread:  true, // TODO

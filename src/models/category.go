@@ -4,19 +4,18 @@ import (
 	"context"
 
 	"git.handmade.network/hmn/hmn/src/db"
-	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
-type CategoryType int
+type CategoryKind int
 
 const (
-	CatTypeBlog CategoryType = iota + 1
-	CatTypeForum
-	CatTypeStatic
-	CatTypeAnnotation
-	CatTypeWiki
-	CatTypeLibraryResource
+	CatKindBlog CategoryKind = iota + 1
+	CatKindForum
+	CatKindStatic
+	CatKindAnnotation
+	CatKindWiki
+	CatKindLibraryResource
 )
 
 type Category struct {
@@ -28,7 +27,7 @@ type Category struct {
 	Slug   *string      `db:"slug"`  // TODO: Make not null
 	Name   *string      `db:"name"`  // TODO: Make not null
 	Blurb  *string      `db:"blurb"` // TODO: Make not null
-	Kind   CategoryType `db:"kind"`
+	Kind   CategoryKind `db:"kind"`
 	Color1 string       `db:"color_1"`
 	Color2 string       `db:"color_2"`
 	Depth  int          `db:"depth"` // TODO: What is this?
@@ -71,52 +70,4 @@ func (c *Category) GetHierarchy(ctx context.Context, conn *pgxpool.Pool) []Categ
 	}
 
 	return result
-}
-
-func GetCategoryUrls(ctx context.Context, conn *pgxpool.Pool, cats ...*Category) map[int]string {
-	var projectIds []int
-	for _, cat := range cats {
-		id := *cat.ProjectID
-
-		alreadyInList := false
-		for _, otherId := range projectIds {
-			if otherId == id {
-				alreadyInList = true
-				break
-			}
-		}
-
-		if !alreadyInList {
-			projectIds = append(projectIds, id)
-		}
-	}
-
-	// TODO(inarray)!!!!!
-
-	//for _, cat := range cats {
-	//	hierarchy := makeCategoryUrl(cat.GetHierarchy(ctx, conn))
-	//}
-
-	return nil
-}
-
-func makeCategoryUrl(cats []*Category, subdomain string) string {
-	path := ""
-	for i, cat := range cats {
-		if i == 0 {
-			switch cat.Kind {
-			case CatTypeBlog:
-				path += "/blogs"
-			case CatTypeForum:
-				path += "/forums"
-			// TODO: All cat types?
-			default:
-				return ""
-			}
-		} else {
-			path += "/" + *cat.Slug
-		}
-	}
-
-	return hmnurl.ProjectUrl(path, nil, subdomain)
 }

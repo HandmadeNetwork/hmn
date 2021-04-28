@@ -16,7 +16,7 @@ type Post struct {
 	CurrentID  int  `db:"current_id"`
 	ProjectID  int  `db:"project_id"`
 
-	CategoryType CategoryType `db:"category_kind"`
+	CategoryKind CategoryKind `db:"category_kind"`
 
 	Depth        int       `db:"depth"`
 	Slug         string    `db:"slug"`
