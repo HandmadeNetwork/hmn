@@ -44,8 +44,8 @@ func Feed(c *RequestContext) ResponseData {
 	numPages := int(math.Ceil(float64(numPosts) / 30))
 
 	page := 1
-	pageString := c.PathParams.ByName("page")
-	if pageString != "" {
+	pageString, hasPage := c.PathParams["page"]
+	if hasPage && pageString != "" {
 		if pageParsed, err := strconv.Atoi(pageString); err == nil {
 			page = pageParsed
 		} else {

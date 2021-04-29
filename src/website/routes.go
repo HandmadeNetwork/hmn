@@ -17,51 +17,52 @@ import (
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/julienschmidt/httprouter"
 )
 
 func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) http.Handler {
-	router := httprouter.New()
+	router := &Router{}
 	routes := RouteBuilder{
 		Router: router,
-		BeforeHandlers: []HMNBeforeHandler{
-			func(c *RequestContext) (bool, ResponseData) {
+		Middleware: func(h Handler) Handler {
+			return func(c *RequestContext) (res ResponseData) {
 				c.Conn = conn
-				return true, ResponseData{}
-			},
-			// TODO: Add a timeout? We don't want routes hanging forever
-		},
-		AfterHandlers: []HMNAfterHandler{
-			ErrorLoggingHandler,
-			func(c *RequestContext, res ResponseData) ResponseData {
-				// Do perf printout
-				c.Perf.EndRequest()
-				log := logging.Info()
-				blockStack := make([]time.Time, 0)
-				for _, block := range c.Perf.Blocks {
-					for len(blockStack) > 0 && block.End.After(blockStack[len(blockStack)-1]) {
-						blockStack = blockStack[:len(blockStack)-1]
-					}
-					log.Str(fmt.Sprintf("At %9.2fms", c.Perf.MsFromStart(&block)), fmt.Sprintf("%*.s[%s] %s (%.4fms)", len(blockStack)*2, "", block.Category, block.Description, block.DurationMs()))
-					blockStack = append(blockStack, block.End)
-				}
-				log.Msg(fmt.Sprintf("Served %s in %.4fms", c.Perf.Route, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
-				perfCollector.SubmitRun(c.Perf)
-				return res
-			},
+
+				logPerf := TrackRequestPerf(c, perfCollector)
+				defer logPerf()
+
+				defer LogContextErrors(c, res)
+
+				return h(c)
+			}
 		},
 	}
 
-	routes.POST("/login", Login)
-	routes.GET("/logout", Logout)
-	routes.ServeFiles("/public/*filepath", http.Dir("public"))
-
 	mainRoutes := routes
-	mainRoutes.BeforeHandlers = append(mainRoutes.BeforeHandlers,
-		CommonWebsiteDataWrapper,
+	mainRoutes.Middleware = func(h Handler) Handler {
+		return func(c *RequestContext) (res ResponseData) {
+			c.Conn = conn
+
+			logPerf := TrackRequestPerf(c, perfCollector)
+			defer logPerf()
+
+			defer LogContextErrors(c, res)
+
+			ok, errRes := LoadCommonWebsiteData(c)
+			if !ok {
+				return errRes
+			}
+
+			return h(c)
+		}
+	}
+
+	routes.POST("^/login$", Login)
+	routes.GET("^/logout$", Logout)
+	routes.StdHandler("^/public/.*$",
+		http.StripPrefix("/public/", http.FileServer(http.Dir("public"))),
 	)
 
-	mainRoutes.GET("/", func(c *RequestContext) ResponseData {
+	mainRoutes.GET("^/$", func(c *RequestContext) ResponseData {
 		if c.CurrentProject.IsHMN() {
 			return Index(c)
 		} else {
@@ -69,34 +70,11 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			panic("route not implemented")
 		}
 	})
-	mainRoutes.GET("/feed", Feed)
-	mainRoutes.GET("/feed/:page", Feed)
+	mainRoutes.GET(`^/feed(/(?P<page>.+)?)?$`, Feed)
 
-	mainRoutes.GET("/assets/project.css", ProjectCSS)
+	mainRoutes.GET("^/assets/project.css$", ProjectCSS)
 
-	router.NotFound = mainRoutes.ChainHandlers(FourOhFour)
-
-	adminRoutes := routes
-	adminRoutes.BeforeHandlers = append(adminRoutes.BeforeHandlers,
-		func(c *RequestContext) (ok bool, res ResponseData) {
-			return false, ResponseData{
-				StatusCode: http.StatusUnauthorized,
-				Body:       bytes.NewBufferString("No one is allowed!\n"),
-			}
-		},
-	)
-	adminRoutes.AfterHandlers = append(adminRoutes.AfterHandlers,
-		func(c *RequestContext, res ResponseData) ResponseData {
-			res.Body.WriteString("Now go away. Sincerely, the after handler.\n")
-			return res
-		},
-	)
-
-	adminRoutes.GET("/admin", func(c *RequestContext) ResponseData {
-		return ResponseData{
-			Body: bytes.NewBufferString("Here are all the secrets.\n"),
-		}
-	})
+	mainRoutes.AnyMethod("", FourOhFour)
 
 	return router
 }
@@ -156,7 +134,7 @@ func ProjectCSS(c *RequestContext) ResponseData {
 	}
 
 	var res ResponseData
-	res.Headers().Add("Content-Type", "text/css")
+	res.Header().Add("Content-Type", "text/css")
 	err := res.WriteTemplate("project.css", templateData, c.Perf)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to generate project CSS"))
@@ -172,15 +150,7 @@ func FourOhFour(c *RequestContext) ResponseData {
 	}
 }
 
-func ErrorLoggingHandler(c *RequestContext, res ResponseData) ResponseData {
-	for _, err := range res.Errors {
-		c.Logger.Error().Err(err).Msg("error occurred during request")
-	}
-
-	return res
-}
-
-func CommonWebsiteDataWrapper(c *RequestContext) (bool, ResponseData) {
+func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 	c.Perf.StartBlock("MIDDLEWARE", "Load common website data")
 	defer c.Perf.EndBlock()
 	// get project
@@ -239,4 +209,28 @@ func getCurrentUser(c *RequestContext, sessionId string) (*models.User, error) {
 	user := userRow.(*models.User)
 
 	return user, nil
+}
+
+func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (after func()) {
+	c.Perf = perf.MakeNewRequestPerf(c.Route)
+	return func() {
+		c.Perf.EndRequest()
+		log := logging.Info()
+		blockStack := make([]time.Time, 0)
+		for _, block := range c.Perf.Blocks {
+			for len(blockStack) > 0 && block.End.After(blockStack[len(blockStack)-1]) {
+				blockStack = blockStack[:len(blockStack)-1]
+			}
+			log.Str(fmt.Sprintf("At %9.2fms", c.Perf.MsFromStart(&block)), fmt.Sprintf("%*.s[%s] %s (%.4fms)", len(blockStack)*2, "", block.Category, block.Description, block.DurationMs()))
+			blockStack = append(blockStack, block.End)
+		}
+		log.Msg(fmt.Sprintf("Served %s in %.4fms", c.Perf.Route, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
+		perfCollector.SubmitRun(c.Perf)
+	}
+}
+
+func LogContextErrors(c *RequestContext, res ResponseData) {
+	for _, err := range res.Errors {
+		c.Logger.Error().Err(err).Msg("error occurred during request")
+	}
 }
