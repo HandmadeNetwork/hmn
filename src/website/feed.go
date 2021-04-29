@@ -32,7 +32,7 @@ func Feed(c *RequestContext) ResponseData {
 			handmade_post AS post
 		WHERE
 			post.category_kind = ANY ($1)
-			AND NOT moderated
+			AND NOT deleted
 		`,
 		[]models.CategoryKind{models.CatKindForum, models.CatKindBlog, models.CatKindWiki, models.CatKindLibraryResource},
 	)
@@ -41,7 +41,7 @@ func Feed(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get count of feed posts"))
 	}
 
-	numPages := int(math.Ceil(float64(numPosts) / 30))
+	numPages := int(math.Ceil(float64(numPosts) / postsPerPage))
 
 	page := 1
 	pageString, hasPage := c.PathParams["page"]
@@ -102,7 +102,7 @@ func Feed(c *RequestContext) ResponseData {
 			LEFT OUTER JOIN auth_user ON post.author_id = auth_user.id
 		WHERE
 			post.category_kind = ANY ($2)
-			AND post.moderated = FALSE
+			AND post.deleted = FALSE
 			AND post.thread_id IS NOT NULL
 		ORDER BY postdate DESC
 		LIMIT $3 OFFSET $4

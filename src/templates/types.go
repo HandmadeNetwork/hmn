@@ -17,9 +17,8 @@ type BaseData struct {
 type Thread struct {
 	Title string
 
-	Locked    bool
-	Sticky    bool
-	Moderated bool
+	Locked bool
+	Sticky bool
 }
 
 type Post struct {

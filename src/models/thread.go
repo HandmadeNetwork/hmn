@@ -10,7 +10,7 @@ type Thread struct {
 	ReplyCount int    `db:"reply_count"`
 	Sticky     bool   `db:"sticky"`
 	Locked     bool   `db:"locked"`
-	Moderated  int    `db:"moderated"`
+	Deleted    bool   `db:"deleted"`
 
 	FirstID *int `db:"first_id"`
 	LastID  *int `db:"last_id"`

@@ -72,7 +72,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	})
 	mainRoutes.GET(`^/feed(/(?P<page>.+)?)?$`, Feed)
 
-	// mainRoutes.GET(`^/(?P<cats>forums(/cat)*)$`, Category)
+	mainRoutes.GET(`^/(?P<cats>forums(/.+?)*)$`, ForumCategory)
 	// mainRoutes.GET(`^/(?P<cats>forums(/cat)*)/t/(?P<threadid>\d+)/p/(?P<postid>\d+)$`, ForumPost)
 
 	mainRoutes.GET("^/assets/project.css$", ProjectCSS)

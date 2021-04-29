@@ -101,7 +101,7 @@ func Index(c *RequestContext) ResponseData {
 			WHERE
 				post.project_id = $2
 				AND post.category_kind IN ($3, $4, $5, $6)
-				AND post.moderated = FALSE
+				AND post.deleted = FALSE
 			ORDER BY postdate DESC
 			LIMIT $7
 			`,
@@ -258,7 +258,7 @@ func Index(c *RequestContext) ResponseData {
 			cat.project_id = $1
 			AND cat.kind = $2
 			AND post.id = thread.first_id
-			AND thread.moderated = 0
+			AND NOT thread.deleted
 		ORDER BY post.postdate DESC
 		LIMIT 1
 		`,

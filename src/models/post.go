@@ -24,7 +24,7 @@ type Post struct {
 	PostDate     time.Time `db:"postdate"`
 	IP           net.IPNet `db:"ip"`
 	Sticky       bool      `db:"sticky"`
-	Moderated    bool      `db:"moderated"` // TODO: I'm not sure this is ever meaningfully used. It always seems to be 0 / false?
+	Deleted      bool      `db:"deleted"` // TODO: I'm not sure this is ever meaningfully used. It always seems to be 0 / false?
 	Hits         int       `db:"hits"`
 	Featured     bool      `db:"featured"`
 	FeatureVotes int       `db:"featurevotes"` // TODO: Remove this column from the db, it's never used
