@@ -72,6 +72,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	})
 	mainRoutes.GET(`^/feed(/(?P<page>.+)?)?$`, Feed)
 
+	// mainRoutes.GET(`^/(?P<cats>forums(/cat)*)$`, Category)
+	// mainRoutes.GET(`^/(?P<cats>forums(/cat)*)/t/(?P<threadid>\d+)/p/(?P<postid>\d+)$`, ForumPost)
+
 	mainRoutes.GET("^/assets/project.css$", ProjectCSS)
 
 	mainRoutes.AnyMethod("", FourOhFour)
@@ -212,7 +215,7 @@ func getCurrentUser(c *RequestContext, sessionId string) (*models.User, error) {
 }
 
 func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (after func()) {
-	c.Perf = perf.MakeNewRequestPerf(c.Route)
+	c.Perf = perf.MakeNewRequestPerf(c.Route, c.Req.URL.Path)
 	return func() {
 		c.Perf.EndRequest()
 		log := logging.Info()
@@ -224,7 +227,7 @@ func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (aft
 			log.Str(fmt.Sprintf("At %9.2fms", c.Perf.MsFromStart(&block)), fmt.Sprintf("%*.s[%s] %s (%.4fms)", len(blockStack)*2, "", block.Category, block.Description, block.DurationMs()))
 			blockStack = append(blockStack, block.End)
 		}
-		log.Msg(fmt.Sprintf("Served %s in %.4fms", c.Perf.Route, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
+		log.Msg(fmt.Sprintf("Served %s in %.4fms", c.Perf.Path, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
 		perfCollector.SubmitRun(c.Perf)
 	}
 }

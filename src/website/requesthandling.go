@@ -68,11 +68,7 @@ func (rb *RouteBuilder) POST(regexStr string, h Handler) {
 }
 
 func (rb *RouteBuilder) StdHandler(regexStr string, h http.Handler) {
-	rb.Router.Routes = append(rb.Router.Routes, Route{
-		Method:  "",
-		Regex:   regexp.MustCompile(regexStr),
-		Handler: WrapStdHandler(h),
-	})
+	rb.Handle("", regexStr, WrapStdHandler(h))
 }
 
 func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -88,7 +84,7 @@ func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		}
 
 		c := &RequestContext{
-			Route:  "", // TODO
+			Route:  route.Regex.String(),
 			Logger: logging.GlobalLogger(),
 			Req:    req,
 		}

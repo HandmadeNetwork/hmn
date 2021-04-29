@@ -1,6 +1,7 @@
 package website
 
 import (
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
@@ -8,7 +9,6 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
-	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -62,7 +62,10 @@ func Feed(c *RequestContext) ResponseData {
 		Current: page,
 		Total:   numPages,
 
-		// TODO: urls
+		FirstUrl:    hmnurl.Url("/feed", nil),
+		LastUrl:     hmnurl.Url(fmt.Sprintf("/feed/%d", numPages), nil),
+		NextUrl:     hmnurl.Url(fmt.Sprintf("/feed/%d", page+1), nil),
+		PreviousUrl: hmnurl.Url(fmt.Sprintf("/feed/%d", page-1), nil),
 	}
 
 	var currentUserId *int
@@ -128,7 +131,6 @@ func Feed(c *RequestContext) ResponseData {
 		}
 
 		parents := postResult.Cat.GetHierarchy(c.Context(), c.Conn)
-		logging.Debug().Interface("parents", parents).Msg("")
 
 		var breadcrumbs []templates.Breadcrumb
 		breadcrumbs = append(breadcrumbs, templates.Breadcrumb{

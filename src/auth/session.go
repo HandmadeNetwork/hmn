@@ -118,8 +118,6 @@ func PeriodicallyDeleteExpiredSessions(ctx context.Context, conn *pgxpool.Pool) 
 				if err == nil {
 					if n > 0 {
 						logging.Info().Int64("num deleted sessions", n).Msg("Deleted expired sessions")
-					} else {
-						logging.Debug().Msg("no sessions to delete")
 					}
 				} else {
 					logging.Error().Err(err).Msg("Failed to delete expired sessions")
