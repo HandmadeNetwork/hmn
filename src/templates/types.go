@@ -9,6 +9,7 @@ type BaseData struct {
 	BackgroundImage BackgroundImage
 	Theme           string
 	BodyClasses     []string
+	Breadcrumbs     []Breadcrumb
 
 	Project Project
 	User    *User
@@ -110,6 +111,7 @@ type ThreadListItem struct {
 
 type Breadcrumb struct {
 	Name, Url string
+	Current   bool
 }
 
 type Pagination struct {

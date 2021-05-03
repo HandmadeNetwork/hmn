@@ -64,7 +64,7 @@ func (rb *RouteBuilder) GET(regexStr string, h Handler) {
 }
 
 func (rb *RouteBuilder) POST(regexStr string, h Handler) {
-	rb.Handle(http.MethodGet, regexStr, h)
+	rb.Handle(http.MethodPost, regexStr, h)
 }
 
 func (rb *RouteBuilder) StdHandler(regexStr string, h http.Handler) {

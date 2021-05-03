@@ -2,12 +2,14 @@ package website
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/templates"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -20,7 +22,9 @@ import (
 type forumCategoryData struct {
 	templates.BaseData
 
-	Threads []templates.ThreadListItem
+	CategoryUrl string
+	Threads     []templates.ThreadListItem
+	Pagination  templates.Pagination
 }
 
 func ForumCategory(c *RequestContext) ResponseData {
@@ -162,13 +166,37 @@ func ForumCategory(c *RequestContext) ResponseData {
 	//_ = itSubcats // TODO: Actually query subcategory post data
 
 	baseData := getBaseData(c)
-	baseData.Title = "yeet"
+	baseData.Title = *c.CurrentProject.Name + " Forums"
+	baseData.Breadcrumbs = []templates.Breadcrumb{
+		{
+			Name: *c.CurrentProject.Name,
+			Url:  hmnurl.ProjectUrl("/", nil, c.CurrentProject.Subdomain()),
+		},
+		{
+			Name:    "Forums",
+			Url:     categoryUrls[currentCatId],
+			Current: true,
+		},
+	}
 
 	var res ResponseData
-	res.WriteTemplate("forum_category.html", forumCategoryData{
-		BaseData: baseData,
-		Threads:  threads,
+	err = res.WriteTemplate("forum_category.html", forumCategoryData{
+		BaseData:    baseData,
+		CategoryUrl: categoryUrls[currentCatId],
+		Threads:     threads,
+		Pagination: templates.Pagination{
+			Current: page,
+			Total:   numPages,
+
+			FirstUrl:    categoryUrls[currentCatId],
+			LastUrl:     fmt.Sprintf("%s/%d", categoryUrls[currentCatId], numPages),
+			NextUrl:     fmt.Sprintf("%s/%d", categoryUrls[currentCatId], page+1),
+			PreviousUrl: fmt.Sprintf("%s/%d", categoryUrls[currentCatId], page-1),
+		},
 	}, c.Perf)
+	if err != nil {
+		panic(err)
+	}
 
 	return res
 }

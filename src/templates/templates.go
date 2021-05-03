@@ -80,13 +80,6 @@ var HMNTemplateFuncs = template.FuncMap{
 	"color2css": func(color noire.Color) template.CSS {
 		return template.CSS(color.HTML())
 	},
-	"currentprojecturl": func(url string) string {
-		return hmnurl.Url(url, nil) // TODO: Use project subdomain
-	},
-	"currentprojecturlq": func(url string, query string) string {
-		absUrl := hmnurl.Url(url, nil)
-		return fmt.Sprintf("%s?%s", absUrl, query) // TODO: Use project subdomain
-	},
 	"darken": func(amount float64, color noire.Color) noire.Color {
 		return color.Shade(amount)
 	},

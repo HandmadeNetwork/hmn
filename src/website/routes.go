@@ -17,6 +17,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/teacat/noire"
 )
 
 func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) http.Handler {
@@ -72,7 +73,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	})
 	mainRoutes.GET(`^/feed(/(?P<page>.+)?)?$`, Feed)
 
-	mainRoutes.GET(`^/(?P<cats>forums(/.+?)*)$`, ForumCategory)
+	mainRoutes.GET(`^/(?P<cats>forums(/[a-zA-Z]+?)*)(/(?P<page>\d+))?$`, ForumCategory)
 	// mainRoutes.GET(`^/(?P<cats>forums(/cat)*)/t/(?P<threadid>\d+)/p/(?P<postid>\d+)$`, ForumPost)
 
 	mainRoutes.GET("^/assets/project.css$", ProjectCSS)
@@ -96,7 +97,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 	return templates.BaseData{
 		Project: templates.ProjectToTemplate(c.CurrentProject),
 		User:    templateUser,
-		Theme:   "dark",
+		Theme:   "light",
 	}
 }
 
@@ -128,12 +129,28 @@ func ProjectCSS(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusBadRequest, NewSafeError(nil, "You must provide a 'color' parameter.\n"))
 	}
 
+	baseData := getBaseData(c)
+
+	bgColor := noire.NewHex(color)
+	h, s, l := bgColor.HSL()
+	if baseData.Theme == "dark" {
+		l = 15
+	} else {
+		l = 95
+	}
+	if s > 20 {
+		s = 20
+	}
+	bgColor = noire.NewHSL(h, s, l)
+
 	templateData := struct {
-		Color string
-		Theme string
+		templates.BaseData
+		Color           string
+		PostListBgColor string
 	}{
-		Color: color,
-		Theme: "dark",
+		BaseData:        baseData,
+		Color:           color,
+		PostListBgColor: bgColor.HTML(),
 	}
 
 	var res ResponseData
