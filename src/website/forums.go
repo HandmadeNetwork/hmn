@@ -117,6 +117,13 @@ func ForumCategory(c *RequestContext) ResponseData {
 	for _, irow := range itMainThreads.ToSlice() {
 		row := irow.(*mainPostsQueryResult)
 
+		hasRead := false
+		if row.ThreadLastReadTime != nil && row.ThreadLastReadTime.After(row.LastPost.PostDate) {
+			hasRead = true
+		} else if row.CatLastReadTime != nil && row.CatLastReadTime.After(row.LastPost.PostDate) {
+			hasRead = true
+		}
+
 		threads = append(threads, templates.ThreadListItem{
 			Title: row.Thread.Title,
 			Url:   ThreadUrl(row.Thread, models.CatKindForum, categoryUrls[currentCatId]),
@@ -125,6 +132,8 @@ func ForumCategory(c *RequestContext) ResponseData {
 			FirstDate: row.FirstPost.PostDate,
 			LastUser:  templates.UserToTemplate(row.LastUser),
 			LastDate:  row.LastPost.PostDate,
+
+			Unread: !hasRead,
 		})
 	}
 
