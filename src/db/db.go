@@ -3,10 +3,12 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
@@ -14,6 +16,40 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/rs/zerolog/log"
 )
+
+/*
+Values of these kinds are ok to query even if they are not directly understood by pgtype.
+This is common for custom types like:
+
+	type CategoryKind int
+*/
+var queryableKinds = []reflect.Kind{
+	reflect.Int,
+}
+
+/*
+Checks if we are able to handle a particular type in a database query. This applies only to
+primitive types and not structs, since the database only returns individual primitive types
+and it is our job to stitch them back together into structs later.
+*/
+func typeIsQueryable(t reflect.Type) bool {
+	_, isRecognizedByPgtype := connInfo.DataTypeForValue(reflect.New(t).Elem().Interface()) // if pgtype recognizes it, we don't need to dig in further for more `db` tags
+	// NOTE: boy it would be nice if we didn't have to do reflect.New here, considering that pgtype is just doing reflection on the value anyway
+
+	if isRecognizedByPgtype {
+		return true
+	}
+
+	// pgtype doesn't recognize it, but maybe it's a primitive type we can deal with
+	k := t.Kind()
+	for _, qk := range queryableKinds {
+		if k == qk {
+			return true
+		}
+	}
+
+	return false
+}
 
 var connInfo = pgtype.NewConnInfo()
 
@@ -61,12 +97,35 @@ func (it *StructQueryIterator) Next() (interface{}, bool) {
 		panic(err)
 	}
 
+	// Better logging of panics in this confusing reflection process
+	var currentField reflect.StructField
+	var currentValue reflect.Value
+	defer func() {
+		if r := recover(); r != nil {
+			if currentValue.IsValid() {
+				logging.Error().
+					Str("field name", currentField.Name).
+					Stringer("field type", currentField.Type).
+					Interface("value", currentValue.Interface()).
+					Stringer("value type", currentValue.Type()).
+					Msg("panic in iterator")
+			}
+
+			if currentField.Name != "" {
+				panic(fmt.Errorf("panic while processing field '%s': %v", currentField.Name, r))
+			} else {
+				panic(r)
+			}
+		}
+	}()
+
 	for i, val := range vals {
 		if val == nil {
 			continue
 		}
 
-		field := followPathThroughStructs(result, it.fieldPaths[i])
+		var field reflect.Value
+		field, currentField = followPathThroughStructs(result, it.fieldPaths[i])
 		if field.Kind() == reflect.Ptr {
 			field.Set(reflect.New(field.Type().Elem()))
 			field = field.Elem()
@@ -78,6 +137,7 @@ func (it *StructQueryIterator) Next() (interface{}, bool) {
 		if valReflected.Kind() == reflect.Ptr {
 			valReflected = valReflected.Elem()
 		}
+		currentValue = valReflected
 
 		switch field.Kind() {
 		case reflect.Int:
@@ -85,6 +145,9 @@ func (it *StructQueryIterator) Next() (interface{}, bool) {
 		default:
 			field.Set(valReflected)
 		}
+
+		currentField = reflect.StructField{}
+		currentValue = reflect.Value{}
 	}
 
 	return result.Interface(), true
@@ -111,22 +174,35 @@ func (it *StructQueryIterator) ToSlice() []interface{} {
 	return result
 }
 
-func followPathThroughStructs(structVal reflect.Value, path []int) reflect.Value {
+func followPathThroughStructs(structPtrVal reflect.Value, path []int) (reflect.Value, reflect.StructField) {
 	if len(path) < 1 {
-		panic("can't follow an empty path")
+		panic(oops.New(nil, "can't follow an empty path"))
 	}
 
-	val := structVal
+	if structPtrVal.Kind() != reflect.Ptr || structPtrVal.Elem().Kind() != reflect.Struct {
+		panic(oops.New(nil, "structPtrVal must be a pointer to a struct; got value of type %s", structPtrVal.Type()))
+	}
+
+	// more informative panic recovery
+	var field reflect.StructField
+	defer func() {
+		if r := recover(); r != nil {
+			panic(oops.New(nil, "panic at field '%s': %v", field.Name, r))
+		}
+	}()
+
+	val := structPtrVal
 	for _, i := range path {
 		if val.Kind() == reflect.Ptr && val.Type().Elem().Kind() == reflect.Struct {
 			if val.IsNil() {
-				val.Set(reflect.New(val.Type()))
+				val.Set(reflect.New(val.Type().Elem()))
 			}
 			val = val.Elem()
 		}
+		field = val.Type().Field(i)
 		val = val.Field(i)
 	}
-	return val
+	return val, field
 }
 
 func Query(ctx context.Context, conn *pgxpool.Pool, destExample interface{}, query string, args ...interface{}) (*StructQueryIterator, error) {
@@ -154,7 +230,7 @@ func Query(ctx context.Context, conn *pgxpool.Pool, destExample interface{}, que
 	}, nil
 }
 
-func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix string) ([]string, [][]int, error) {
+func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix string) (names []string, paths [][]int, err error) {
 	var columnNames []string
 	var fieldPaths [][]int
 
@@ -172,14 +248,14 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix strin
 
 		if columnName := field.Tag.Get("db"); columnName != "" {
 			fieldType := field.Type
-			if destType.Kind() == reflect.Ptr {
-				fieldType = destType.Elem()
+			if fieldType.Kind() == reflect.Ptr {
+				fieldType = fieldType.Elem()
 			}
 
-			_, isRecognizedByPgtype := connInfo.DataTypeForValue(reflect.New(fieldType).Elem().Interface()) // if pgtype recognizes it, we don't need to dig in further for more `db` tags
-			// NOTE: boy it would be nice if we didn't have to do reflect.New here, considering that pgtype is just doing reflection on the value anyway
-
-			if fieldType.Kind() == reflect.Struct && !isRecognizedByPgtype {
+			if typeIsQueryable(fieldType) {
+				columnNames = append(columnNames, prefix+columnName)
+				fieldPaths = append(fieldPaths, path)
+			} else if fieldType.Kind() == reflect.Struct {
 				subCols, subPaths, err := getColumnNamesAndPaths(fieldType, path, columnName+".")
 				if err != nil {
 					return nil, nil, err
@@ -187,8 +263,7 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix strin
 				columnNames = append(columnNames, subCols...)
 				fieldPaths = append(fieldPaths, subPaths...)
 			} else {
-				columnNames = append(columnNames, prefix+columnName)
-				fieldPaths = append(fieldPaths, path)
+				return nil, nil, oops.New(nil, "field '%s' in type %s has invalid type '%s'", field.Name, destType, field.Type)
 			}
 		}
 	}

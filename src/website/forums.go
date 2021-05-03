@@ -1,46 +1,35 @@
 package website
 
 import (
-	"fmt"
+	"context"
 	"math"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/templates"
+
+	"github.com/jackc/pgx/v4/pgxpool"
+
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 )
+
+type forumCategoryData struct {
+	templates.BaseData
+
+	Threads []templates.ThreadListItem
+}
 
 func ForumCategory(c *RequestContext) ResponseData {
 	const threadsPerPage = 25
 
 	catPath := c.PathParams["cats"]
 	catSlugs := strings.Split(catPath, "/")
-
-	catSlug := catSlugs[len(catSlugs)-1]
-	if len(catSlugs) == 1 {
-		catSlug = ""
-	}
-
-	// TODO: Is this query right? Do we need to do a better special case for when it's the root category?
-	currentCatId, err := db.QueryInt(c.Context(), c.Conn,
-		`
-		SELECT id
-		FROM handmade_category
-		WHERE
-			slug = $1
-			AND kind = $2
-			AND project_id = $3
-		`,
-		catSlug,
-		models.CatKindForum,
-		c.CurrentProject.ID,
-	)
-	if err != nil {
-		panic(oops.New(err, "failed to get current category id"))
-	}
+	currentCatId := fetchCatIdFromSlugs(c.Context(), c.Conn, catSlugs, c.CurrentProject.ID)
+	categoryUrls := GetProjectCategoryUrls(c.Context(), c.Conn, c.CurrentProject.ID)
 
 	numThreads, err := db.QueryInt(c.Context(), c.Conn,
 		`
@@ -82,6 +71,8 @@ func ForumCategory(c *RequestContext) ResponseData {
 		Thread             models.Thread `db:"thread"`
 		FirstPost          models.Post   `db:"firstpost"`
 		LastPost           models.Post   `db:"lastpost"`
+		FirstUser          *models.User  `db:"firstuser"`
+		LastUser           *models.User  `db:"lastuser"`
 		ThreadLastReadTime *time.Time    `db:"tlri.lastread"`
 		CatLastReadTime    *time.Time    `db:"clri.lastread"`
 	}
@@ -92,15 +83,16 @@ func ForumCategory(c *RequestContext) ResponseData {
 			handmade_thread AS thread
 			JOIN handmade_post AS firstpost ON thread.first_id = firstpost.id
 			JOIN handmade_post AS lastpost ON thread.last_id = lastpost.id
-			LEFT OUTER JOIN handmade_threadlastreadinfo AS tlri ON (
+			LEFT JOIN auth_user AS firstuser ON firstpost.author_id = firstuser.id
+			LEFT JOIN auth_user AS lastuser ON lastpost.author_id = lastuser.id
+			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
 				tlri.thread_id = thread.id
 				AND tlri.user_id = $2
 			)
-			LEFT OUTER JOIN handmade_categorylastreadinfo AS clri ON (
+			LEFT JOIN handmade_categorylastreadinfo AS clri ON (
 				clri.category_id = $1
 				AND clri.user_id = $2
 			)
-			-- LEFT OUTER JOIN auth_user ON post.author_id = auth_user.id
 		WHERE
 			thread.category_id = $1
 			AND NOT thread.deleted
@@ -115,50 +107,112 @@ func ForumCategory(c *RequestContext) ResponseData {
 	if err != nil {
 		panic(oops.New(err, "failed to fetch threads"))
 	}
+	defer itMainThreads.Close()
 
-	var res ResponseData
-
+	var threads []templates.ThreadListItem
 	for _, irow := range itMainThreads.ToSlice() {
 		row := irow.(*mainPostsQueryResult)
-		res.Write([]byte(fmt.Sprintf("%s\n", row.Thread.Title)))
+
+		threads = append(threads, templates.ThreadListItem{
+			Title: row.Thread.Title,
+			Url:   ThreadUrl(row.Thread, models.CatKindForum, categoryUrls[currentCatId]),
+
+			FirstUser: templates.UserToTemplate(row.FirstUser),
+			FirstDate: row.FirstPost.PostDate,
+			LastUser:  templates.UserToTemplate(row.LastUser),
+			LastDate:  row.LastPost.PostDate,
+		})
 	}
 
 	// ---------------------
 	// Subcategory things
 	// ---------------------
 
-	c.Perf.StartBlock("SQL", "Fetch subcategories")
-	type queryResult struct {
-		Cat models.Category `db:"cat"`
-	}
-	itSubcats, err := db.Query(c.Context(), c.Conn, queryResult{},
-		`
-		WITH current AS (
+	//c.Perf.StartBlock("SQL", "Fetch subcategories")
+	//type queryResult struct {
+	//	Cat models.Category `db:"cat"`
+	//}
+	//itSubcats, err := db.Query(c.Context(), c.Conn, queryResult{},
+	//	`
+	//	WITH current AS (
+	//		SELECT id
+	//		FROM handmade_category
+	//		WHERE
+	//			slug = $1
+	//			AND kind = $2
+	//			AND project_id = $3
+	//	)
+	//	SELECT $columns
+	//	FROM
+	//		handmade_category AS cat,
+	//		current
+	//	WHERE
+	//		cat.id = current.id
+	//		OR cat.parent_id = current.id
+	//	`,
+	//	catSlug,
+	//	models.CatKindForum,
+	//	c.CurrentProject.ID,
+	//)
+	//if err != nil {
+	//	panic(oops.New(err, "failed to fetch subcategories"))
+	//}
+	//c.Perf.EndBlock()
+
+	//_ = itSubcats // TODO: Actually query subcategory post data
+
+	baseData := getBaseData(c)
+	baseData.Title = "yeet"
+
+	var res ResponseData
+	res.WriteTemplate("forum_category.html", forumCategoryData{
+		BaseData: baseData,
+		Threads:  threads,
+	}, c.Perf)
+
+	return res
+}
+
+func fetchCatIdFromSlugs(ctx context.Context, conn *pgxpool.Pool, catSlugs []string, projectId int) int {
+	if len(catSlugs) == 1 {
+		var err error
+		currentCatId, err := db.QueryInt(ctx, conn,
+			`
+			SELECT cat.id
+			FROM
+				handmade_category AS cat
+				JOIN handmade_project AS proj ON proj.forum_id = cat.id
+			WHERE
+				proj.id = $1
+				AND cat.kind = $2
+			`,
+			projectId,
+			models.CatKindForum,
+		)
+		if err != nil {
+			panic(oops.New(err, "failed to get root category id"))
+		}
+
+		return currentCatId
+	} else {
+		var err error
+		currentCatId, err := db.QueryInt(ctx, conn,
+			`
 			SELECT id
 			FROM handmade_category
 			WHERE
 				slug = $1
 				AND kind = $2
 				AND project_id = $3
+			`,
+			catSlugs[len(catSlugs)-1],
+			models.CatKindForum,
+			projectId,
 		)
-		SELECT $columns
-		FROM
-			handmade_category AS cat,
-			current
-		WHERE
-			cat.id = current.id
-			OR cat.parent_id = current.id
-		`,
-		catSlug,
-		models.CatKindForum,
-		c.CurrentProject.ID,
-	)
-	if err != nil {
-		panic(oops.New(err, "failed to fetch subcategories"))
+		if err != nil {
+			panic(oops.New(err, "failed to get current category id"))
+		}
+
+		return currentCatId
 	}
-	c.Perf.EndBlock()
-
-	_ = itSubcats // TODO: Actually query subcategory post data
-
-	return res
 }

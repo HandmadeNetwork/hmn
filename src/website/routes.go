@@ -103,8 +103,8 @@ func getBaseData(c *RequestContext) templates.BaseData {
 func FetchProjectBySlug(ctx context.Context, conn *pgxpool.Pool, slug string) (*models.Project, error) {
 	subdomainProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE slug = $1", slug)
 	if err == nil {
-		subdomainProject := subdomainProjectRow.(models.Project)
-		return &subdomainProject, nil
+		subdomainProject := subdomainProjectRow.(*models.Project)
+		return subdomainProject, nil
 	} else if !errors.Is(err, db.ErrNoMatchingRows) {
 		return nil, oops.New(err, "failed to get projects by slug")
 	}

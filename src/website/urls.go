@@ -124,3 +124,17 @@ func PostUrl(post models.Post, catKind models.CategoryKind, categoryUrl string) 
 
 	return ""
 }
+
+func ThreadUrl(thread models.Thread, catKind models.CategoryKind, categoryUrl string) string {
+	categoryUrl = strings.TrimRight(categoryUrl, "/")
+
+	switch catKind {
+	// TODO: All the relevant post types. Maybe it doesn't make sense to lump them all together here.
+	case models.CatKindBlog:
+		return fmt.Sprintf("%s/p/%d", categoryUrl, thread.ID)
+	case models.CatKindForum:
+		return fmt.Sprintf("%s/t/%d", categoryUrl, thread.ID)
+	}
+
+	return ""
+}

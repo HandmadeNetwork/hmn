@@ -83,11 +83,29 @@ type PostListItem struct {
 	Title       string
 	Url         string
 	Breadcrumbs []Breadcrumb
-	User        User
-	Date        time.Time
-	Unread      bool
-	Classes     string
-	Content     string
+
+	User User
+	Date time.Time
+
+	Unread  bool
+	Classes string
+	Content string
+}
+
+// Data from thread_list_item.html
+type ThreadListItem struct {
+	Title       string
+	Url         string
+	Breadcrumbs []Breadcrumb
+
+	FirstUser User
+	FirstDate time.Time
+	LastUser  User
+	LastDate  time.Time
+
+	Unread  bool
+	Classes string
+	Content string
 }
 
 type Breadcrumb struct {
