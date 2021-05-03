@@ -9,22 +9,28 @@ import (
 	"strings"
 	"time"
 
-	"git.handmade.network/hmn/hmn/src/hmnurl"
-	"git.handmade.network/hmn/hmn/src/templates"
-
-	"github.com/jackc/pgx/v4/pgxpool"
-
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/templates"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type forumCategoryData struct {
 	templates.BaseData
 
-	CategoryUrl string
-	Threads     []templates.ThreadListItem
-	Pagination  templates.Pagination
+	CategoryUrl   string
+	Threads       []templates.ThreadListItem
+	Pagination    templates.Pagination
+	Subcategories []forumSubcategoryData
+}
+
+type forumSubcategoryData struct {
+	Name         string
+	Url          string
+	Threads      []templates.ThreadListItem
+	TotalThreads int
 }
 
 func ForumCategory(c *RequestContext) ResponseData {
@@ -35,6 +41,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 	currentCatId := fetchCatIdFromSlugs(c.Context(), c.Conn, catSlugs, c.CurrentProject.ID)
 	categoryUrls := GetProjectCategoryUrls(c.Context(), c.Conn, c.CurrentProject.ID)
 
+	c.Perf.StartBlock("SQL", "Fetch count of page threads")
 	numThreads, err := db.QueryInt(c.Context(), c.Conn,
 		`
 		SELECT COUNT(*)
@@ -48,6 +55,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 	if err != nil {
 		panic(oops.New(err, "failed to get count of threads"))
 	}
+	c.Perf.EndBlock()
 
 	numPages := int(math.Ceil(float64(numThreads) / threadsPerPage))
 
@@ -71,7 +79,8 @@ func ForumCategory(c *RequestContext) ResponseData {
 		currentUserId = &c.CurrentUser.ID
 	}
 
-	type mainPostsQueryResult struct {
+	c.Perf.StartBlock("SQL", "Fetch page threads")
+	type threadQueryResult struct {
 		Thread             models.Thread `db:"thread"`
 		FirstPost          models.Post   `db:"firstpost"`
 		LastPost           models.Post   `db:"lastpost"`
@@ -80,7 +89,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 		ThreadLastReadTime *time.Time    `db:"tlri.lastread"`
 		CatLastReadTime    *time.Time    `db:"clri.lastread"`
 	}
-	itMainThreads, err := db.Query(c.Context(), c.Conn, mainPostsQueryResult{},
+	itMainThreads, err := db.Query(c.Context(), c.Conn, threadQueryResult{},
 		`
 		SELECT $columns
 		FROM
@@ -111,12 +120,10 @@ func ForumCategory(c *RequestContext) ResponseData {
 	if err != nil {
 		panic(oops.New(err, "failed to fetch threads"))
 	}
+	c.Perf.EndBlock()
 	defer itMainThreads.Close()
 
-	var threads []templates.ThreadListItem
-	for _, irow := range itMainThreads.ToSlice() {
-		row := irow.(*mainPostsQueryResult)
-
+	makeThreadListItem := func(row *threadQueryResult) templates.ThreadListItem {
 		hasRead := false
 		if row.ThreadLastReadTime != nil && row.ThreadLastReadTime.After(row.LastPost.PostDate) {
 			hasRead = true
@@ -124,7 +131,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 			hasRead = true
 		}
 
-		threads = append(threads, templates.ThreadListItem{
+		return templates.ThreadListItem{
 			Title: row.Thread.Title,
 			Url:   ThreadUrl(row.Thread, models.CatKindForum, categoryUrls[currentCatId]),
 
@@ -134,45 +141,111 @@ func ForumCategory(c *RequestContext) ResponseData {
 			LastDate:  row.LastPost.PostDate,
 
 			Unread: !hasRead,
-		})
+		}
+	}
+
+	var threads []templates.ThreadListItem
+	for _, irow := range itMainThreads.ToSlice() {
+		row := irow.(*threadQueryResult)
+		threads = append(threads, makeThreadListItem(row))
 	}
 
 	// ---------------------
 	// Subcategory things
 	// ---------------------
 
-	//c.Perf.StartBlock("SQL", "Fetch subcategories")
-	//type queryResult struct {
-	//	Cat models.Category `db:"cat"`
-	//}
-	//itSubcats, err := db.Query(c.Context(), c.Conn, queryResult{},
-	//	`
-	//	WITH current AS (
-	//		SELECT id
-	//		FROM handmade_category
-	//		WHERE
-	//			slug = $1
-	//			AND kind = $2
-	//			AND project_id = $3
-	//	)
-	//	SELECT $columns
-	//	FROM
-	//		handmade_category AS cat,
-	//		current
-	//	WHERE
-	//		cat.id = current.id
-	//		OR cat.parent_id = current.id
-	//	`,
-	//	catSlug,
-	//	models.CatKindForum,
-	//	c.CurrentProject.ID,
-	//)
-	//if err != nil {
-	//	panic(oops.New(err, "failed to fetch subcategories"))
-	//}
-	//c.Perf.EndBlock()
+	var subcats []forumSubcategoryData
+	if page == 1 {
+		c.Perf.StartBlock("SQL", "Fetch subcategories")
+		type subcatQueryResult struct {
+			Cat models.Category `db:"cat"`
+		}
+		itSubcats, err := db.Query(c.Context(), c.Conn, subcatQueryResult{},
+			`
+			SELECT $columns
+			FROM
+				handmade_category AS cat
+			WHERE
+				cat.parent_id = $1
+			`,
+			currentCatId,
+		)
+		if err != nil {
+			panic(oops.New(err, "failed to fetch subcategories"))
+		}
+		defer itSubcats.Close()
+		c.Perf.EndBlock()
 
-	//_ = itSubcats // TODO: Actually query subcategory post data
+		for _, irow := range itSubcats.ToSlice() {
+			catRow := irow.(*subcatQueryResult)
+
+			c.Perf.StartBlock("SQL", "Fetch count of subcategory threads")
+			numThreads, err := db.QueryInt(c.Context(), c.Conn,
+				`
+				SELECT COUNT(*)
+				FROM handmade_thread AS thread
+				WHERE
+					thread.category_id = $1
+					AND NOT thread.deleted
+				`,
+				catRow.Cat.ID,
+			)
+			if err != nil {
+				panic(oops.New(err, "failed to get count of threads"))
+			}
+			c.Perf.EndBlock()
+
+			c.Perf.StartBlock("SQL", "Fetch subcategory threads")
+			itThreads, err := db.Query(c.Context(), c.Conn, threadQueryResult{},
+				`
+				SELECT $columns
+				FROM
+					handmade_thread AS thread
+					JOIN handmade_post AS firstpost ON thread.first_id = firstpost.id
+					JOIN handmade_post AS lastpost ON thread.last_id = lastpost.id
+					LEFT JOIN auth_user AS firstuser ON firstpost.author_id = firstuser.id
+					LEFT JOIN auth_user AS lastuser ON lastpost.author_id = lastuser.id
+					LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
+						tlri.thread_id = thread.id
+						AND tlri.user_id = $2
+					)
+					LEFT JOIN handmade_categorylastreadinfo AS clri ON (
+						clri.category_id = $1
+						AND clri.user_id = $2
+					)
+				WHERE
+					thread.category_id = $1
+					AND NOT thread.deleted
+				ORDER BY lastpost.postdate DESC
+				LIMIT 3
+				`,
+				catRow.Cat.ID,
+				currentUserId,
+			)
+			if err != nil {
+				panic(err)
+			}
+			defer itThreads.Close()
+			c.Perf.EndBlock()
+
+			var threads []templates.ThreadListItem
+			for _, irow := range itThreads.ToSlice() {
+				threadRow := irow.(*threadQueryResult)
+				threads = append(threads, makeThreadListItem(threadRow))
+			}
+
+			subcats = append(subcats, forumSubcategoryData{
+				Name:         *catRow.Cat.Name,
+				Url:          categoryUrls[catRow.Cat.ID],
+				Threads:      threads,
+				TotalThreads: numThreads,
+			})
+		}
+	}
+
+	// ---------------------
+	// Template assembly
+	// ---------------------
 
 	baseData := getBaseData(c)
 	baseData.Title = *c.CurrentProject.Name + " Forums"
@@ -202,6 +275,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 			NextUrl:     fmt.Sprintf("%s/%d", categoryUrls[currentCatId], page+1),
 			PreviousUrl: fmt.Sprintf("%s/%d", categoryUrls[currentCatId], page-1),
 		},
+		Subcategories: subcats,
 	}, c.Perf)
 	if err != nil {
 		panic(err)

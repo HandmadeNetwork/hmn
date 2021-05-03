@@ -2,21 +2,46 @@
 
 {{ define "content" }}
 <div class="content-block">
-    <div class="optionbar">
-        <div class="options">
-            {{ if .User }}
-                <a class="button new-thread" href="{{ printf "%s/t/new" .CategoryUrl }}"><span class="big">+</span> New Thread</a>
-                <a class="button" href="{{ printf "%s/markread" .CategoryUrl }}"><span class="big">&#x2713;</span> Mark threads here as read</a>
-            {{ else }}
-                <a class="button" href="{% url 'member_login' subdomain=request.subdomain %}">Log in to post a new thread</a>
+    {{ range .Subcategories }}
+        <div class="pv3">
+            <h2 class="ma0 ph3 pb2">
+                <a href="{{ .Url }}">
+                    {{ .Name }} &raquo;<br/>
+                </a>
+            </h2>
+            {{ range .Threads }}
+                {{ template "thread_list_item.html" . }}
+            {{ end }}
+            {{ $more := sub .TotalThreads 3 }}
+            {{ if gt $more 0 }}
+                <div class="ph3 pv1">
+                    <a class="title" href="{{ .Url }}">{{ $more }} more &raquo;</a>
+                </div>
             {{ end }}
         </div>
-        <div class="options">
-            {{ template "pagination.html" .Pagination }}
-        </div>
+    {{ end }}
+    <div class="optionbar">
+        {{ template "forum_category_options" . }}
     </div>
     {{ range .Threads }}
         {{ template "thread_list_item.html" . }}
     {{ end }}
+    <div class="optionbar bottom">
+        {{ template "forum_category_options" . }}
+    </div>
+</div>
+{{ end }}
+
+{{ define "forum_category_options" }}
+<div class="options">
+    {{ if .User }}
+        <a class="button new-thread" href="{{ printf "%s/t/new" .CategoryUrl }}"><span class="big">+</span> New Thread</a>
+        <a class="button" href="{{ printf "%s/markread" .CategoryUrl }}"><span class="big">&#x2713;</span> Mark threads here as read</a>
+    {{ else }}
+        <a class="button" href="{% url 'member_login' subdomain=request.subdomain %}">Log in to post a new thread</a>
+    {{ end }}
+</div>
+<div class="options">
+    {{ template "pagination.html" .Pagination }}
 </div>
 {{ end }}
