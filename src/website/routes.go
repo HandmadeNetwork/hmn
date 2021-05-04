@@ -1,7 +1,6 @@
 package website
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -90,6 +89,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 	if c.CurrentUser != nil {
 		templateUser = &templates.User{
 			Username:    c.CurrentUser.Username,
+			Name:        c.CurrentUser.Name,
 			Email:       c.CurrentUser.Email,
 			IsSuperuser: c.CurrentUser.IsSuperuser,
 			IsStaff:     c.CurrentUser.IsStaff,
@@ -166,10 +166,17 @@ func ProjectCSS(c *RequestContext) ResponseData {
 }
 
 func FourOhFour(c *RequestContext) ResponseData {
-	return ResponseData{
-		StatusCode: http.StatusNotFound,
-		Body:       bytes.NewBufferString("go away\n"),
+	templateData := struct {
+		templates.BaseData
+		Wanted string
+	}{
+		BaseData: getBaseData(c),
+		Wanted:   c.FullUrl(),
 	}
+	var res ResponseData
+	res.StatusCode = http.StatusNotFound
+	res.WriteTemplate("404.html", templateData, c.Perf)
+	return res
 }
 
 func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {

@@ -133,6 +133,16 @@ func (c *RequestContext) URL() *url.URL {
 	return c.Req.URL
 }
 
+func (c *RequestContext) FullUrl() string {
+	var scheme string // TODO(asaf): BEFORE RELEASE!! Fetch scheme from X-Forwarded-* headers or Forwarded header
+	if c.Req.TLS != nil {
+		scheme = "https://"
+	} else {
+		scheme = "http://"
+	}
+	return scheme + c.Req.Host + c.Req.URL.String()
+}
+
 func (c *RequestContext) GetFormValues() (url.Values, error) {
 	err := c.Req.ParseForm()
 	if err != nil {
