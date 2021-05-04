@@ -73,6 +73,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	})
 	mainRoutes.GET(`^/feed(/(?P<page>.+)?)?$`, Feed)
 
+	// TODO(asaf): Trailing slashes break these
 	mainRoutes.GET(`^/(?P<cats>forums(/[^\d]+?)*)/t/(?P<threadid>\d+)(/(?P<page>\d+))?$`, ForumThread)
 	// mainRoutes.GET(`^/(?P<cats>forums(/cat)*)/t/(?P<threadid>\d+)/p/(?P<postid>\d+)$`, ForumPost)
 	mainRoutes.GET(`^/(?P<cats>forums(/[^\d]+?)*)(/(?P<page>\d+))?$`, ForumCategory)

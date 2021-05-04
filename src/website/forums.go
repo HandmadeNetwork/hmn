@@ -37,9 +37,18 @@ type forumSubcategoryData struct {
 func ForumCategory(c *RequestContext) ResponseData {
 	const threadsPerPage = 25
 
+	// TODO(asaf): Consider making this more robust.
+	// Right now this code allows for weird urls like:
+	// "/forums/asdf/wip" which doesn't verify the lineage and displays the wip forums
+	// "/forums/wip///" which fetches the main forums page because it happens to have a blank slug
+	// "/forums/wip/" which fetches the main forums page because Split returns an extra blank string
+	// "/forums/wip/1" this one fetches the wip forums because the regex matches the `/1` as part of the page group
+	// "/forums/wip/1/" 404 - doesn't match the regex
+	// "/forums/" 404 - doesn't match the regex
 	catPath := c.PathParams["cats"]
 	catSlugs := strings.Split(catPath, "/")
 	currentCatId := fetchCatIdFromSlugs(c.Context(), c.Conn, catSlugs, c.CurrentProject.ID)
+	// TODO(asaf): 404 if we can't find our cat.
 	categoryUrls := GetProjectCategoryUrls(c.Context(), c.Conn, c.CurrentProject.ID)
 
 	c.Perf.StartBlock("SQL", "Fetch count of page threads")
@@ -134,7 +143,8 @@ func ForumCategory(c *RequestContext) ResponseData {
 
 		return templates.ThreadListItem{
 			Title: row.Thread.Title,
-			Url:   ThreadUrl(row.Thread, models.CatKindForum, categoryUrls[currentCatId]),
+			// TODO(asaf): Use thread.category_id instead of currentCatId. At the moment this is generating wrong urls for threads in subcats.
+			Url: ThreadUrl(row.Thread, models.CatKindForum, categoryUrls[currentCatId]),
 
 			FirstUser: templates.UserToTemplate(row.FirstUser),
 			FirstDate: row.FirstPost.PostDate,
@@ -181,6 +191,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 			catRow := irow.(*subcatQueryResult)
 
 			c.Perf.StartBlock("SQL", "Fetch count of subcategory threads")
+			// TODO(asaf): [PERF] [MINOR] Consider replacing querying count per subcat with a single query for all cats with GROUP BY.
 			numThreads, err := db.QueryInt(c.Context(), c.Conn,
 				`
 				SELECT COUNT(*)
@@ -197,6 +208,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 			c.Perf.EndBlock()
 
 			c.Perf.StartBlock("SQL", "Fetch subcategory threads")
+			// TODO(asaf): [PERF] [MINOR] Consider batching these.
 			itThreads, err := db.Query(c.Context(), c.Conn, threadQueryResult{},
 				`
 				SELECT $columns
@@ -293,6 +305,7 @@ type forumThreadData struct {
 
 func ForumThread(c *RequestContext) ResponseData {
 	const postsPerPage = 15
+	// TODO(asaf): Verify that the requested thread is not deleted, and only fetch non-deleted posts.
 
 	threadId, err := strconv.Atoi(c.PathParams["threadid"])
 	if err != nil {
@@ -365,6 +378,8 @@ func ForumThread(c *RequestContext) ResponseData {
 	}
 
 	baseData := getBaseData(c)
+	// TODO(asaf): Replace page title with thread title
+	// TODO(asaf): Set breadcrumbs
 
 	var res ResponseData
 	err = res.WriteTemplate("forum_thread.html", forumThreadData{
