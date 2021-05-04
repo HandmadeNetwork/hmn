@@ -1,0 +1,112 @@
+{{ template "base.html" . }}
+
+{{ define "content" }}
+<div class="content-block">
+    {{ range .Posts }}
+        <div class="post background-even pa3 bbcode"> {{/* TODO: Dynamically switch between bbcode and markdown */}}
+            <div class="fl w-100 w-25-l pt3 pa3-l flex tc-l">
+                {{ if .Author }}
+                    <div class="fl w-20 mw3 dn-l w3">
+                        <!-- Mobile avatar -->
+                        <div class="aspect-ratio--1x1 contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
+                    </div>
+                    <div class="w-100-l pl3 pl0-l flex flex-column items-center-l">
+                        <div>
+                            <a class="username" href="{{ .Author.ProfileUrl }}" target="_blank">{{ .Author.Username }}</a> {{/* TODO: Text scale stuff? Seems unnecessary. */}}
+                            <!-- Mobile badges -->
+                            <div class="di dn-l ph1">
+                                {{ if .Author.IsStaff }}
+                                    <div class="badge staff"></div>
+                                {{ end }}
+                            </div>
+                        </div>
+                        {{ if and .Author.Name (ne .Author.Name .Author.Username) }}
+                            <div class="c--dim f7"> {{ .Author.Name }} </div>
+                        {{ end }}
+                        <!-- Large avatar -->
+                        <div class="dn db-l w-60 pv2">
+                            <div class="aspect-ratio--1x1 contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
+                        </div>
+                        {{/* TODO: Aggregate user data
+                        <div class="c--dim f7">
+                            {{ post.author.posts }} posts
+                            {% if post.author.public_projects.values|length > 0 %}
+                                / {{ post.author.public_projects.values|length }} project{%if post.author.public_projects.values|length > 1 %}s{% endif %}
+                            {% endif %}
+                        </div> */}}
+                        <!-- Large badges -->
+                        <div class="dn db-l pv2">
+                            {{ if .Author.IsStaff }}
+                                <div class="badge staff"></div>
+                            {{ end }}
+                        </div>
+                        <div class="i c--dim f7">
+                            {{ if .Author.Blurb }}
+                                {{ .Author.Blurb }} {{/* TODO: Linebreaks? */}}
+                            {{ else if .Author.Bio }}
+                                {{ .Author.Bio }}
+                            {{ end }}
+                        </div>
+                    </div>
+                {{ else }}
+                    <div class="username">Deleted member</div>
+                    <div class="avatar" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
+                {{ end }}
+            </div>
+            <div class="fl w-100 w-75-l pv3 pa3-l">
+                <div class="w-100 flex-l flex-row-reverse-l">
+                    <div class="inline-flex flex-row-reverse pl3-l pb3 items-center">
+                        <span class="postid">
+                            <a name="{{ .ID }}" href="{{ .Url }}">#{{ .ID }}</a>
+                        </span>
+                        {{ if $.User }}
+                            <div class="flex pr3">
+                                {{ if or (eq .Author.ID $.User.ID) $.User.IsStaff }}
+                                    <a class="delete action button" href="{{ .Url }}/delete" title="Delete">&#10006;</a>&nbsp;
+                                    <a class="edit action button" href="{{ .Url }}/edit" title="Edit">&#9998;</a>&nbsp;
+                                {{ end }}
+                                {{ if or (not $.Thread.Locked) $.User.IsStaff }}
+                                    {{ if $.Thread.Locked }}
+                                        WARNING: locked thread - use power responsibly!
+                                    {{ end }}
+                                    <a class="reply action button" href="{{ .Url }}/reply" title="Reply">&hookrightarrow;</a>&nbsp;
+                                    <a class="quote action button" href="{{ .Url }}/quote" title="Quote">&#10077;</a>
+                                {{ end }}
+                            </div>
+                        {{ end }}
+                    </div>
+                    <div class="w-100 pb3">
+                        <div class="b" role="heading" aria-level="2">{{ $.Thread.Title }}</div>
+                        <span>{{ relativedate .PostDate }} ago</span>
+                        {{ if .Editor }}
+                            <span class="pl3">
+                                Edited by
+                                <a class="name" href="{{ .Editor.ProfileUrl }}" target="_blank">{{ coalesce .Editor.Name .Editor.Username }}</a>
+                                {{ if and $.User.IsStaff .EditIP }}<span class="ip">[{{ .EditIP }}]</span>{{ end }}
+                                on <span class="editdate">{{ .EditDate }}</span>
+                                {{ with .EditReason }}
+                                    Reason: {{ . }}
+                                {{ end }}
+                            </span>
+                        {{ end }}
+                        {{ if $.User }}
+                            {{ if $.User.IsStaff }}
+                                <span>[{{ .IP }}]</span>
+                            {{ end }}
+                        {{ end }}
+                    </div>
+                </div>
+                <div class="contents overflow-x-auto">
+                    {{ .Content }}
+                </div>
+                {{/* {% if post.author.signature|length %}
+                    <div class="signature"><hr />
+                        {{ post.author.signature|bbdecode|safe }}
+                    </div>
+                {% endif %} */}}
+            </div>
+            <div class="cb"></div>
+        </div>
+    {{ end }}
+</div>
+{{ end }}

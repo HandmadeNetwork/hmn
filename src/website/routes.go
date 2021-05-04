@@ -73,8 +73,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	})
 	mainRoutes.GET(`^/feed(/(?P<page>.+)?)?$`, Feed)
 
-	mainRoutes.GET(`^/(?P<cats>forums(/[^\d]+?)*)(/(?P<page>\d+))?$`, ForumCategory)
+	mainRoutes.GET(`^/(?P<cats>forums(/[^\d]+?)*)/t/(?P<threadid>\d+)(/(?P<page>\d+))?$`, ForumThread)
 	// mainRoutes.GET(`^/(?P<cats>forums(/cat)*)/t/(?P<threadid>\d+)/p/(?P<postid>\d+)$`, ForumPost)
+	mainRoutes.GET(`^/(?P<cats>forums(/[^\d]+?)*)(/(?P<page>\d+))?$`, ForumCategory)
 
 	mainRoutes.GET("^/assets/project.css$", ProjectCSS)
 
@@ -145,12 +146,12 @@ func ProjectCSS(c *RequestContext) ResponseData {
 
 	templateData := struct {
 		templates.BaseData
-		Color           string
-		PostListBgColor string
+		Color       string
+		PostBgColor string
 	}{
-		BaseData:        baseData,
-		Color:           color,
-		PostListBgColor: bgColor.HTML(),
+		BaseData:    baseData,
+		Color:       color,
+		PostBgColor: bgColor.HTML(),
 	}
 
 	var res ResponseData

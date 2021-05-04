@@ -1,6 +1,9 @@
 package templates
 
-import "time"
+import (
+	"html/template"
+	"time"
+)
 
 type BaseData struct {
 	Title           string
@@ -23,11 +26,20 @@ type Thread struct {
 }
 
 type Post struct {
-	Author   User
+	ID  int
+	Url string
+
 	Preview  string
 	ReadOnly bool
 
-	Content string
+	Author   *User
+	Content  template.HTML
+	PostDate time.Time
+
+	Editor     *User
+	EditDate   time.Time
+	EditIP     string
+	EditReason string
 
 	IP string
 }
@@ -47,6 +59,7 @@ type Project struct {
 }
 
 type User struct {
+	ID          int
 	Username    string
 	Email       string
 	IsSuperuser bool
@@ -54,6 +67,7 @@ type User struct {
 
 	Name       string
 	Blurb      string
+	Bio        string
 	Signature  string
 	AvatarUrl  string
 	ProfileUrl string

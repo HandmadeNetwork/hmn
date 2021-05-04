@@ -2,6 +2,7 @@ package website
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -276,6 +277,100 @@ func ForumCategory(c *RequestContext) ResponseData {
 			PreviousUrl: fmt.Sprintf("%s/%d", categoryUrls[currentCatId], page-1),
 		},
 		Subcategories: subcats,
+	}, c.Perf)
+	if err != nil {
+		panic(err)
+	}
+
+	return res
+}
+
+type forumThreadData struct {
+	templates.BaseData
+	Thread templates.Thread
+	Posts  []templates.Post
+}
+
+func ForumThread(c *RequestContext) ResponseData {
+	const postsPerPage = 15
+
+	threadId, err := strconv.Atoi(c.PathParams["threadid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	c.Perf.StartBlock("SQL", "Fetch current thread")
+	type threadQueryResult struct {
+		Thread models.Thread `db:"thread"`
+	}
+	irow, err := db.QueryOne(c.Context(), c.Conn, threadQueryResult{},
+		`
+		SELECT $columns
+		FROM handmade_thread AS thread
+		WHERE thread.id = $1
+		`,
+		threadId,
+	)
+	c.Perf.EndBlock()
+	if err != nil {
+		if errors.Is(err, db.ErrNoMatchingRows) {
+			return FourOhFour(c)
+		} else {
+			panic(err)
+		}
+	}
+	thread := irow.(*threadQueryResult).Thread
+
+	categoryUrls := GetProjectCategoryUrls(c.Context(), c.Conn, c.CurrentProject.ID)
+
+	page, numPages, ok := getPageInfo(c.PathParams["page"], 100, postsPerPage) // TODO: Not 100
+	if !ok {
+		urlNoPage := ThreadUrl(thread, models.CatKindForum, categoryUrls[thread.CategoryID])
+		return c.Redirect(urlNoPage, http.StatusSeeOther)
+	}
+	_ = numPages // TODO
+
+	c.Perf.StartBlock("SQL", "Fetch posts")
+	type postsQueryResult struct {
+		Post    models.Post  `db:"post"`
+		Content string       `db:"ver.text_parsed"`
+		Author  *models.User `db:"author"`
+	}
+	itPosts, err := db.Query(c.Context(), c.Conn, postsQueryResult{},
+		`
+		SELECT $columns
+		FROM
+			handmade_post AS post
+			JOIN handmade_postversion AS ver ON post.current_id = ver.id
+			LEFT JOIN auth_user AS author ON post.author_id = author.id
+		WHERE
+			post.thread_id = $1
+		ORDER BY postdate
+		LIMIT $2 OFFSET $3
+		`,
+		thread.ID,
+		postsPerPage,
+		(page-1)*postsPerPage,
+	)
+	c.Perf.EndBlock()
+	if err != nil {
+		panic(err)
+	}
+	defer itPosts.Close()
+
+	var posts []templates.Post
+	for _, irow := range itPosts.ToSlice() {
+		row := irow.(*postsQueryResult)
+		posts = append(posts, templates.PostToTemplateWithContent(&row.Post, row.Author, row.Content))
+	}
+
+	baseData := getBaseData(c)
+
+	var res ResponseData
+	err = res.WriteTemplate("forum_thread.html", forumThreadData{
+		BaseData: baseData,
+		Thread:   templates.ThreadToTemplate(&thread),
+		Posts:    posts,
 	}, c.Perf)
 	if err != nil {
 		panic(err)
