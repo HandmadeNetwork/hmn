@@ -19,13 +19,27 @@ func CodeOfConduct(c *RequestContext) ResponseData {
 	res.WriteTemplate("code_of_conduct.html", getBaseData(c), c.Perf)
 	return res
 }
+
 func CommunicationGuidelines(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.WriteTemplate("communication_guidelines.html", getBaseData(c), c.Perf)
 	return res
 }
+
 func ContactPage(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.WriteTemplate("contact.html", getBaseData(c), c.Perf)
+	return res
+}
+
+func MonthlyUpdatePolicy(c *RequestContext) ResponseData {
+	var res ResponseData
+	res.WriteTemplate("monthly_update_policy.html", getBaseData(c), c.Perf)
+	return res
+}
+
+func ProjectSubmissionGuidelines(c *RequestContext) ResponseData {
+	var res ResponseData
+	res.WriteTemplate("project_submission_guidelines.html", getBaseData(c), c.Perf)
 	return res
 }

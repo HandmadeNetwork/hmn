@@ -95,21 +95,13 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			panic("route not implemented")
 		}
 	})
-	staticPages.GET("^/manifesto$", func(c *RequestContext) ResponseData {
-		return Manifesto(c)
-	})
-	staticPages.GET("^/about$", func(c *RequestContext) ResponseData {
-		return About(c)
-	})
-	staticPages.GET("^/code-of-conduct$", func(c *RequestContext) ResponseData {
-		return CodeOfConduct(c)
-	})
-	staticPages.GET("^/communication-guidelines$", func(c *RequestContext) ResponseData {
-		return CommunicationGuidelines(c)
-	})
-	staticPages.GET("^/contact$", func(c *RequestContext) ResponseData {
-		return ContactPage(c)
-	})
+	staticPages.GET("^/manifesto$", Manifesto)
+	staticPages.GET("^/about$", About)
+	staticPages.GET("^/code-of-conduct$", CodeOfConduct)
+	staticPages.GET("^/communication-guidelines$", CommunicationGuidelines)
+	staticPages.GET("^/contact$", ContactPage)
+	staticPages.GET("^/monthly-update-policy$", MonthlyUpdatePolicy)
+	staticPages.GET("^/project-guidelines$", ProjectSubmissionGuidelines)
 
 	mainRoutes.GET(`^/feed(/(?P<page>.+)?)?$`, Feed)
 
