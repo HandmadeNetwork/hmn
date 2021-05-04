@@ -166,16 +166,21 @@ func ProjectCSS(c *RequestContext) ResponseData {
 }
 
 func FourOhFour(c *RequestContext) ResponseData {
-	templateData := struct {
-		templates.BaseData
-		Wanted string
-	}{
-		BaseData: getBaseData(c),
-		Wanted:   c.FullUrl(),
-	}
 	var res ResponseData
 	res.StatusCode = http.StatusNotFound
-	res.WriteTemplate("404.html", templateData, c.Perf)
+
+	if c.Req.Header["Accept"] != nil && strings.Contains(c.Req.Header["Accept"][0], "text/html") {
+		templateData := struct {
+			templates.BaseData
+			Wanted string
+		}{
+			BaseData: getBaseData(c),
+			Wanted:   c.FullUrl(),
+		}
+		res.WriteTemplate("404.html", templateData, c.Perf)
+	} else {
+		res.Write([]byte("Not Found"))
+	}
 	return res
 }
 
