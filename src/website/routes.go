@@ -10,6 +10,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -56,6 +57,30 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 		}
 	}
 
+	staticPages := routes
+	staticPages.Middleware = func(h Handler) Handler {
+		return func(c *RequestContext) (res ResponseData) {
+			c.Conn = conn
+
+			logPerf := TrackRequestPerf(c, perfCollector)
+			defer logPerf()
+
+			defer LogContextErrors(c, res)
+
+			ok, errRes := LoadCommonWebsiteData(c)
+			if !ok {
+				return errRes
+			}
+
+			if !c.CurrentProject.IsHMN() {
+				res := c.Redirect(hmnurl.Url(c.URL().String(), nil), http.StatusMovedPermanently)
+				return res
+			}
+
+			return h(c)
+		}
+	}
+
 	routes.POST("^/login$", Login)
 	routes.GET("^/logout$", Logout)
 	routes.StdHandler("^/public/.*$",
@@ -70,6 +95,22 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			panic("route not implemented")
 		}
 	})
+	staticPages.GET("^/manifesto$", func(c *RequestContext) ResponseData {
+		return Manifesto(c)
+	})
+	staticPages.GET("^/about$", func(c *RequestContext) ResponseData {
+		return About(c)
+	})
+	staticPages.GET("^/code-of-conduct$", func(c *RequestContext) ResponseData {
+		return CodeOfConduct(c)
+	})
+	staticPages.GET("^/communication-guidelines$", func(c *RequestContext) ResponseData {
+		return CommunicationGuidelines(c)
+	})
+	staticPages.GET("^/contact$", func(c *RequestContext) ResponseData {
+		return ContactPage(c)
+	})
+
 	mainRoutes.GET(`^/feed(/(?P<page>.+)?)?$`, Feed)
 
 	// TODO(asaf): Trailing slashes break these
