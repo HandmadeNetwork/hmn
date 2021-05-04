@@ -22,6 +22,9 @@ func init() {
 	if err != nil {
 		panic(oops.New(err, "could not parse base URL"))
 	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		panic(oops.New(nil, "Website is misconfigured. Config should include a full BaseUrl (e.g. \"http://handmade.local:9001\")"))
+	}
 
 	baseUrlParsed = *parsed
 }
