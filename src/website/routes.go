@@ -31,9 +31,10 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 				logPerf := TrackRequestPerf(c, perfCollector)
 				defer logPerf()
 
-				defer LogContextErrors(c, res)
+				res = h(c)
 
-				return h(c)
+				LogContextErrors(c, res)
+				return
 			}
 		},
 	}
@@ -46,14 +47,15 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			logPerf := TrackRequestPerf(c, perfCollector)
 			defer logPerf()
 
-			defer LogContextErrors(c, res)
-
 			ok, errRes := LoadCommonWebsiteData(c)
 			if !ok {
 				return errRes
 			}
 
-			return h(c)
+			res = h(c)
+
+			LogContextErrors(c, res)
+			return
 		}
 	}
 
@@ -65,29 +67,31 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			logPerf := TrackRequestPerf(c, perfCollector)
 			defer logPerf()
 
-			defer LogContextErrors(c, res)
-
 			ok, errRes := LoadCommonWebsiteData(c)
 			if !ok {
 				return errRes
 			}
 
 			if !c.CurrentProject.IsHMN() {
-				res := c.Redirect(hmnurl.Url(c.URL().String(), nil), http.StatusMovedPermanently)
-				return res
+				res = c.Redirect(hmnurl.Url(c.URL().String(), nil), http.StatusMovedPermanently)
+				return
 			}
 
-			return h(c)
+			res = h(c)
+
+			LogContextErrors(c, res)
+			return
 		}
 	}
 
-	routes.POST("^/login$", Login)
-	routes.GET("^/logout$", Logout)
-	routes.StdHandler("^/public/.*$",
+	// TODO(asaf): login/logout shouldn't happen on subdomains. We should verify that in the middleware.
+	routes.POST(hmnurl.RegexLogin, Login)
+	routes.GET(hmnurl.RegexLogout, Logout)
+	routes.StdHandler(hmnurl.RegexPublic,
 		http.StripPrefix("/public/", http.FileServer(http.Dir("public"))),
 	)
 
-	mainRoutes.GET("^/$", func(c *RequestContext) ResponseData {
+	mainRoutes.GET(hmnurl.RegexHomepage, func(c *RequestContext) ResponseData {
 		if c.CurrentProject.IsHMN() {
 			return Index(c)
 		} else {
@@ -95,24 +99,24 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			panic("route not implemented")
 		}
 	})
-	staticPages.GET("^/manifesto$", Manifesto)
-	staticPages.GET("^/about$", About)
-	staticPages.GET("^/code-of-conduct$", CodeOfConduct)
-	staticPages.GET("^/communication-guidelines$", CommunicationGuidelines)
-	staticPages.GET("^/contact$", ContactPage)
-	staticPages.GET("^/monthly-update-policy$", MonthlyUpdatePolicy)
-	staticPages.GET("^/project-guidelines$", ProjectSubmissionGuidelines)
+	staticPages.GET(hmnurl.RegexManifesto, Manifesto)
+	staticPages.GET(hmnurl.RegexAbout, About)
+	staticPages.GET(hmnurl.RegexCodeOfConduct, CodeOfConduct)
+	staticPages.GET(hmnurl.RegexCommunicationGuidelines, CommunicationGuidelines)
+	staticPages.GET(hmnurl.RegexContactPage, ContactPage)
+	staticPages.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
+	staticPages.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
 
-	mainRoutes.GET(`^/feed(/(?P<page>.+)?)?$`, Feed)
+	mainRoutes.GET(hmnurl.RegexFeed, Feed)
 
 	// TODO(asaf): Trailing slashes break these
-	mainRoutes.GET(`^/(?P<cats>forums(/[^\d]+?)*)/t/(?P<threadid>\d+)(/(?P<page>\d+))?$`, ForumThread)
+	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)
 	// mainRoutes.GET(`^/(?P<cats>forums(/cat)*)/t/(?P<threadid>\d+)/p/(?P<postid>\d+)$`, ForumPost)
-	mainRoutes.GET(`^/(?P<cats>forums(/[^\d]+?)*)(/(?P<page>\d+))?$`, ForumCategory)
+	mainRoutes.GET(hmnurl.RegexForumCategory, ForumCategory)
 
-	mainRoutes.GET("^/assets/project.css$", ProjectCSS)
+	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 
-	mainRoutes.AnyMethod("", FourOhFour)
+	mainRoutes.AnyMethod(hmnurl.RegexCatchAll, FourOhFour)
 
 	return router
 }

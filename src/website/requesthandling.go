@@ -46,29 +46,29 @@ func WrapStdHandler(h http.Handler) Handler {
 
 type Middleware func(h Handler) Handler
 
-func (rb *RouteBuilder) Handle(method string, regexStr string, h Handler) {
+func (rb *RouteBuilder) Handle(method string, regex *regexp.Regexp, h Handler) {
 	h = rb.Middleware(h)
 	rb.Router.Routes = append(rb.Router.Routes, Route{
 		Method:  method,
-		Regex:   regexp.MustCompile(regexStr),
+		Regex:   regex,
 		Handler: h,
 	})
 }
 
-func (rb *RouteBuilder) AnyMethod(regexStr string, h Handler) {
-	rb.Handle("", regexStr, h)
+func (rb *RouteBuilder) AnyMethod(regex *regexp.Regexp, h Handler) {
+	rb.Handle("", regex, h)
 }
 
-func (rb *RouteBuilder) GET(regexStr string, h Handler) {
-	rb.Handle(http.MethodGet, regexStr, h)
+func (rb *RouteBuilder) GET(regex *regexp.Regexp, h Handler) {
+	rb.Handle(http.MethodGet, regex, h)
 }
 
-func (rb *RouteBuilder) POST(regexStr string, h Handler) {
-	rb.Handle(http.MethodPost, regexStr, h)
+func (rb *RouteBuilder) POST(regex *regexp.Regexp, h Handler) {
+	rb.Handle(http.MethodPost, regex, h)
 }
 
-func (rb *RouteBuilder) StdHandler(regexStr string, h http.Handler) {
-	rb.Handle("", regexStr, WrapStdHandler(h))
+func (rb *RouteBuilder) StdHandler(regex *regexp.Regexp, h http.Handler) {
+	rb.Handle("", regex, WrapStdHandler(h))
 }
 
 func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {

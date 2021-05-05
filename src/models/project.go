@@ -9,6 +9,18 @@ const HMNProjectID = 1
 
 var ProjectType = reflect.TypeOf(Project{})
 
+type ProjectLifecycle int
+
+const (
+	ProjectLifecycleUnapproved = iota
+	ProjectLifecycleApprovalRequired
+	ProjectLifecycleActive
+	ProjectLifecycleHiatus
+	ProjectLifecycleDead
+	ProjectLifecycleLTSRequired
+	ProjectLifecycleLTS
+)
+
 type Project struct {
 	ID int `db:"id"`
 
@@ -16,6 +28,8 @@ type Project struct {
 	Name        *string `db:"name"`
 	Blurb       *string `db:"blurb"`
 	Description *string `db:"description"`
+
+	Lifecycle ProjectLifecycle `db:"lifecycle"`
 
 	Color1 string `db:"color_1"`
 	Color2 string `db:"color_2"`

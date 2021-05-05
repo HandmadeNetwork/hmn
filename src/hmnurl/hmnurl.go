@@ -18,7 +18,11 @@ type Q struct {
 var baseUrlParsed url.URL
 
 func init() {
-	parsed, err := url.Parse(config.Config.BaseUrl)
+	SetGlobalBaseUrl(config.Config.BaseUrl)
+}
+
+func SetGlobalBaseUrl(fullBaseUrl string) {
+	parsed, err := url.Parse(fullBaseUrl)
 	if err != nil {
 		panic(oops.New(err, "could not parse base URL"))
 	}

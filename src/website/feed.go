@@ -1,7 +1,6 @@
 package website
 
 import (
-	"fmt"
 	"math"
 	"net/http"
 	"strconv"
@@ -12,6 +11,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 type FeedData struct {
@@ -32,7 +32,8 @@ func Feed(c *RequestContext) ResponseData {
 			handmade_post AS post
 		WHERE
 			post.category_kind = ANY ($1)
-			AND NOT deleted
+			AND deleted = FALSE
+			AND post.thread_id IS NOT NULL
 		`,
 		[]models.CategoryKind{models.CatKindForum, models.CatKindBlog, models.CatKindWiki, models.CatKindLibraryResource},
 	)
@@ -49,11 +50,11 @@ func Feed(c *RequestContext) ResponseData {
 		if pageParsed, err := strconv.Atoi(pageString); err == nil {
 			page = pageParsed
 		} else {
-			return c.Redirect("/feed", http.StatusSeeOther)
+			return c.Redirect(hmnurl.BuildFeed(), http.StatusSeeOther)
 		}
 	}
 	if page < 1 || numPages < page {
-		return c.Redirect("/feed", http.StatusSeeOther)
+		return c.Redirect(hmnurl.BuildFeedWithPage(utils.IntClamp(1, page, numPages)), http.StatusSeeOther)
 	}
 
 	howManyPostsToSkip := (page - 1) * postsPerPage
@@ -62,10 +63,10 @@ func Feed(c *RequestContext) ResponseData {
 		Current: page,
 		Total:   numPages,
 
-		FirstUrl:    hmnurl.Url("/feed", nil),
-		LastUrl:     hmnurl.Url(fmt.Sprintf("/feed/%d", numPages), nil),
-		NextUrl:     hmnurl.Url(fmt.Sprintf("/feed/%d", page+1), nil),
-		PreviousUrl: hmnurl.Url(fmt.Sprintf("/feed/%d", page-1), nil),
+		FirstUrl:    hmnurl.BuildFeed(),
+		LastUrl:     hmnurl.BuildFeedWithPage(numPages),
+		NextUrl:     hmnurl.BuildFeedWithPage(utils.IntClamp(1, page+1, numPages)),
+		PreviousUrl: hmnurl.BuildFeedWithPage(utils.IntClamp(1, page-1, numPages)),
 	}
 
 	var currentUserId *int
@@ -117,8 +118,28 @@ func Feed(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
 	}
 
-	categoryUrls := GetAllCategoryUrls(c.Context(), c.Conn)
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
 
+	categoryUrlCache := make(map[int]string)
+	getCategoryUrl := func(subdomain string, cat *models.Category) string {
+		_, ok := categoryUrlCache[cat.ID]
+		if !ok {
+			lineageNames := lineageBuilder.GetLineageSlugs(cat.ID)
+			switch cat.Kind {
+			case models.CatKindForum:
+				categoryUrlCache[cat.ID] = hmnurl.BuildForumCategory(subdomain, lineageNames[1:], 1)
+				// TODO(asaf): Add more kinds!!!
+			default:
+				categoryUrlCache[cat.ID] = ""
+			}
+		}
+		return categoryUrlCache[cat.ID]
+	}
+
+	c.Perf.StartBlock("FEED", "Build post items")
 	var postItems []templates.PostListItem
 	for _, iPostResult := range posts.ToSlice() {
 		postResult := iPostResult.(*feedPostQuery)
@@ -130,32 +151,35 @@ func Feed(c *RequestContext) ResponseData {
 			hasRead = true
 		}
 
-		parents := postResult.Cat.GetHierarchy(c.Context(), c.Conn)
-
-		var breadcrumbs []templates.Breadcrumb
+		breadcrumbs := make([]templates.Breadcrumb, 0, len(lineageBuilder.GetLineage(postResult.Cat.ID)))
 		breadcrumbs = append(breadcrumbs, templates.Breadcrumb{
 			Name: *postResult.Proj.Name,
 			Url:  hmnurl.ProjectUrl("/", nil, postResult.Proj.Subdomain()),
 		})
-		for _, parent := range parents {
-			name := *parent.Name
-			if parent.ParentID == nil {
-				switch parent.Kind {
-				case models.CatKindForum:
-					name = "Forums"
-				case models.CatKindBlog:
-					name = "Blog"
+		if postResult.Post.CategoryKind == models.CatKindLibraryResource {
+			// TODO(asaf): Fetch library root topic for the project and construct breadcrumb for it
+		} else {
+			lineage := lineageBuilder.GetLineage(postResult.Cat.ID)
+			for i, cat := range lineage {
+				name := *cat.Name
+				if i == 0 {
+					switch cat.Kind {
+					case models.CatKindForum:
+						name = "Forums"
+					case models.CatKindBlog:
+						name = "Blog"
+					}
 				}
+				breadcrumbs = append(breadcrumbs, templates.Breadcrumb{
+					Name: name,
+					Url:  getCategoryUrl(postResult.Proj.Subdomain(), cat),
+				})
 			}
-			breadcrumbs = append(breadcrumbs, templates.Breadcrumb{
-				Name: name,
-				Url:  categoryUrls[parent.ID],
-			})
 		}
 
 		postItems = append(postItems, templates.PostListItem{
 			Title:       postResult.Thread.Title,
-			Url:         PostUrl(postResult.Post, postResult.Post.CategoryKind, categoryUrls[postResult.Post.CategoryID]),
+			Url:         hmnurl.BuildForumPost(postResult.Proj.Subdomain(), lineageBuilder.GetLineageSlugs(postResult.Cat.ID)[1:], postResult.Post.ID, postResult.Post.ThreadID),
 			User:        templates.UserToTemplate(&postResult.User),
 			Date:        postResult.Post.PostDate,
 			Breadcrumbs: breadcrumbs,
@@ -164,6 +188,7 @@ func Feed(c *RequestContext) ResponseData {
 			Content:     postResult.Post.Preview,
 		})
 	}
+	c.Perf.EndBlock()
 
 	baseData := getBaseData(c)
 	baseData.BodyClasses = append(baseData.BodyClasses, "feed")

@@ -23,7 +23,9 @@ func GetAllCategoryUrls(ctx context.Context, conn *pgxpool.Pool) map[int]string 
 		FROM
 			handmade_category AS cat
 			JOIN handmade_project AS project ON project.id = cat.project_id
-		`,
+		WHERE
+			cat.kind != 6
+		`, // TODO(asaf): Clean up the db and remove the cat.kind != 6 check
 	)
 	if err != nil {
 		panic(err)
@@ -42,7 +44,8 @@ func GetProjectCategoryUrls(ctx context.Context, conn *pgxpool.Pool, projectId .
 			JOIN handmade_project AS project ON project.id = cat.project_id
 		WHERE
 			project.id = ANY ($1)
-		`,
+			AND cat.kind != 6
+		`, // TODO(asaf): Clean up the db and remove the cat.kind != 6 check
 		projectId,
 	)
 	if err != nil {
@@ -91,24 +94,16 @@ func makeCategoryUrls(rows []interface{}) map[int]string {
 }
 
 func CategoryUrl(subdomain string, cats ...*models.Category) string {
-	path := ""
-	for i, cat := range cats {
-		if i == 0 {
-			switch cat.Kind {
-			case models.CatKindBlog:
-				path += "/blogs"
-			case models.CatKindForum:
-				path += "/forums"
-			// TODO: All cat types?
-			default:
-				return ""
-			}
-		} else {
-			path += "/" + *cat.Slug
-		}
+	catNames := make([]string, 0, len(cats))
+	for _, cat := range cats {
+		catNames = append(catNames, *cat.Name)
 	}
-
-	return hmnurl.ProjectUrl(path, nil, subdomain)
+	switch cats[0].Kind {
+	case models.CatKindForum:
+		return hmnurl.BuildForumCategory(subdomain, catNames[1:], 1)
+	default:
+		return ""
+	}
 }
 
 func PostUrl(post models.Post, catKind models.CategoryKind, categoryUrl string) string {
