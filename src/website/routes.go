@@ -31,10 +31,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 				logPerf := TrackRequestPerf(c, perfCollector)
 				defer logPerf()
 
-				res = h(c)
+				defer LogContextErrors(c, &res)
 
-				LogContextErrors(c, res)
-				return
+				return h(c)
 			}
 		},
 	}
@@ -47,15 +46,14 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			logPerf := TrackRequestPerf(c, perfCollector)
 			defer logPerf()
 
+			defer LogContextErrors(c, &res)
+
 			ok, errRes := LoadCommonWebsiteData(c)
 			if !ok {
 				return errRes
 			}
 
-			res = h(c)
-
-			LogContextErrors(c, res)
-			return
+			return h(c)
 		}
 	}
 
@@ -67,20 +65,18 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			logPerf := TrackRequestPerf(c, perfCollector)
 			defer logPerf()
 
+			defer LogContextErrors(c, &res)
+
 			ok, errRes := LoadCommonWebsiteData(c)
 			if !ok {
 				return errRes
 			}
 
 			if !c.CurrentProject.IsHMN() {
-				res = c.Redirect(hmnurl.Url(c.URL().String(), nil), http.StatusMovedPermanently)
-				return
+				return c.Redirect(hmnurl.Url(c.URL().String(), nil), http.StatusMovedPermanently)
 			}
 
-			res = h(c)
-
-			LogContextErrors(c, res)
-			return
+			return h(c)
 		}
 	}
 
@@ -300,7 +296,7 @@ func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (aft
 	}
 }
 
-func LogContextErrors(c *RequestContext, res ResponseData) {
+func LogContextErrors(c *RequestContext, res *ResponseData) {
 	for _, err := range res.Errors {
 		c.Logger.Error().Err(err).Msg("error occurred during request")
 	}
