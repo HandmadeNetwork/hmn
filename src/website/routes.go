@@ -31,7 +31,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 				logPerf := TrackRequestPerf(c, perfCollector)
 				defer logPerf()
 
-				defer LogContextErrors(c, res)
+				defer LogContextErrors(c, &res)
 
 				return h(c)
 			}
@@ -46,7 +46,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			logPerf := TrackRequestPerf(c, perfCollector)
 			defer logPerf()
 
-			defer LogContextErrors(c, res)
+			defer LogContextErrors(c, &res)
 
 			ok, errRes := LoadCommonWebsiteData(c)
 			if !ok {
@@ -65,7 +65,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			logPerf := TrackRequestPerf(c, perfCollector)
 			defer logPerf()
 
-			defer LogContextErrors(c, res)
+			defer LogContextErrors(c, &res)
 
 			ok, errRes := LoadCommonWebsiteData(c)
 			if !ok {
@@ -296,7 +296,7 @@ func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (aft
 	}
 }
 
-func LogContextErrors(c *RequestContext, res ResponseData) {
+func LogContextErrors(c *RequestContext, res *ResponseData) {
 	for _, err := range res.Errors {
 		c.Logger.Error().Err(err).Msg("error occurred during request")
 	}
