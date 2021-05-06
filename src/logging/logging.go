@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	color "git.handmade.network/hmn/hmn/src/ansicolor"
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -16,6 +17,7 @@ import (
 func init() {
 	zerolog.ErrorStackMarshaler = oops.ZerologStackMarshaler
 	log.Logger = log.Output(NewPrettyZerologWriter())
+	zerolog.SetGlobalLevel(config.Config.LogLevel)
 }
 
 func GlobalLogger() *zerolog.Logger {

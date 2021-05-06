@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
+	"github.com/rs/zerolog"
 )
 
 type Environment string
@@ -18,6 +19,7 @@ type HMNConfig struct {
 	Env      Environment
 	Addr     string
 	BaseUrl  string
+	LogLevel zerolog.Level
 	Postgres PostgresConfig
 	Auth     AuthConfig
 }

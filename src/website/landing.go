@@ -62,7 +62,7 @@ func Index(c *RequestContext) ResponseData {
 
 	allProjects := iterProjects.ToSlice()
 	c.Perf.EndBlock()
-	c.Logger.Info().Interface("allProjects", allProjects).Msg("all the projects")
+	c.Logger.Debug().Interface("allProjects", allProjects).Msg("all the projects")
 
 	categoryUrls := GetAllCategoryUrls(c.Context(), c.Conn)
 
