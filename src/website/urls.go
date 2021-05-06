@@ -44,9 +44,10 @@ func GetProjectCategoryUrls(ctx context.Context, conn *pgxpool.Pool, projectId .
 			JOIN handmade_project AS project ON project.id = cat.project_id
 		WHERE
 			project.id = ANY ($1)
-			AND cat.kind != 6
-		`, // TODO(asaf): Clean up the db and remove the cat.kind != 6 check
+			AND cat.kind != $2
+		`, // TODO(asaf): Clean up the db and remove the cat.kind != library resource check
 		projectId,
+		models.CatKindLibraryResource,
 	)
 	if err != nil {
 		panic(err)
@@ -94,13 +95,13 @@ func makeCategoryUrls(rows []interface{}) map[int]string {
 }
 
 func CategoryUrl(projectSlug string, cats ...*models.Category) string {
-	catNames := make([]string, 0, len(cats))
+	catSlugs := make([]string, 0, len(cats))
 	for _, cat := range cats {
-		catNames = append(catNames, *cat.Name)
+		catSlugs = append(catSlugs, *cat.Slug)
 	}
 	switch cats[0].Kind {
 	case models.CatKindForum:
-		return hmnurl.BuildForumCategory(projectSlug, catNames[1:], 1)
+		return hmnurl.BuildForumCategory(projectSlug, catSlugs[1:], 1)
 	default:
 		return ""
 	}

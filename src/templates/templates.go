@@ -67,6 +67,9 @@ func names(ts []*template.Template) []string {
 }
 
 var HMNTemplateFuncs = template.FuncMap{
+	"absolutedate": func(t time.Time) string {
+		return t.Format("January 2, 2006, 3:04pm")
+	},
 	"alpha": func(alpha float64, color noire.Color) noire.Color {
 		color.Alpha = alpha
 		return color
@@ -156,6 +159,10 @@ var HMNTemplateFuncs = template.FuncMap{
 	},
 	"staticthemenobust": func(theme string, filepath string) string {
 		return hmnurl.StaticThemeUrl(filepath, theme, nil)
+	},
+	"timehtml": func(formatted string, t time.Time) template.HTML {
+		iso := t.Format(time.RFC3339)
+		return template.HTML(fmt.Sprintf(`<time datetime="%s">%s</time>`, iso, formatted))
 	},
 	"url": func(url string) string {
 		return hmnurl.Url(url, nil)

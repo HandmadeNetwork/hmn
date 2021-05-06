@@ -26,8 +26,13 @@ type Thread struct {
 }
 
 type Post struct {
-	ID  int
-	Url string
+	ID int
+
+	Url       string
+	DeleteUrl string
+	EditUrl   string
+	ReplyUrl  string
+	QuoteUrl  string
 
 	Preview  string
 	ReadOnly bool
