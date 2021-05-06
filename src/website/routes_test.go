@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -33,7 +34,7 @@ func TestLogContextErrors(t *testing.T) {
 		},
 	}
 
-	routes.GET("^/test$", func(c *RequestContext) ResponseData {
+	routes.GET(regexp.MustCompile("^/test$"), func(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, err1, err2)
 	})
 

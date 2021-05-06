@@ -2,6 +2,10 @@
 
 {{ define "content" }}
 <div class="content-block">
+    <div class="optionbar">
+        <a class="button" href="{{ .CategoryUrl }}">&larr; Back to index</a>
+        {{ template "pagination.html" .Pagination }}
+    </div>
     {{ range .Posts }}
         <div class="post background-even pa3 bbcode"> {{/* TODO: Dynamically switch between bbcode and markdown */}}
             <div class="fl w-100 w-25-l pt3 pa3-l flex tc-l">
@@ -62,28 +66,28 @@
                         {{ if $.User }}
                             <div class="flex pr3">
                                 {{ if or (eq .Author.ID $.User.ID) $.User.IsStaff }}
-                                    <a class="delete action button" href="{{ .Url }}/delete" title="Delete">&#10006;</a>&nbsp;
-                                    <a class="edit action button" href="{{ .Url }}/edit" title="Edit">&#9998;</a>&nbsp;
+                                    <a class="delete action button" href="{{ .DeleteUrl }}" title="Delete">&#10006;</a>&nbsp;
+                                    <a class="edit action button" href="{{ .EditUrl }}" title="Edit">&#9998;</a>&nbsp;
                                 {{ end }}
                                 {{ if or (not $.Thread.Locked) $.User.IsStaff }}
                                     {{ if $.Thread.Locked }}
                                         WARNING: locked thread - use power responsibly!
                                     {{ end }}
-                                    <a class="reply action button" href="{{ .Url }}/reply" title="Reply">&hookrightarrow;</a>&nbsp;
-                                    <a class="quote action button" href="{{ .Url }}/quote" title="Quote">&#10077;</a>
+                                    <a class="reply action button" href="{{ .ReplyUrl }}" title="Reply">&hookrightarrow;</a>&nbsp;
+                                    <a class="quote action button" href="{{ .QuoteUrl }}" title="Quote">&#10077;</a>
                                 {{ end }}
                             </div>
                         {{ end }}
                     </div>
                     <div class="w-100 pb3">
                         <div class="b" role="heading" aria-level="2">{{ $.Thread.Title }}</div>
-                        <span>{{ relativedate .PostDate }} ago</span>
+                        {{ timehtml (relativedate .PostDate) .PostDate }}
                         {{ if .Editor }}
                             <span class="pl3">
                                 Edited by
                                 <a class="name" href="{{ .Editor.ProfileUrl }}" target="_blank">{{ coalesce .Editor.Name .Editor.Username }}</a>
                                 {{ if and $.User.IsStaff .EditIP }}<span class="ip">[{{ .EditIP }}]</span>{{ end }}
-                                on <span class="editdate">{{ .EditDate }}</span>
+                                on {{ timehtml (absolutedate .EditDate) .EditDate }}
                                 {{ with .EditReason }}
                                     Reason: {{ . }}
                                 {{ end }}
@@ -108,5 +112,20 @@
             <div class="cb"></div>
         </div>
     {{ end }}
+    <div class="optionbar bottom">
+        <div class="options order-1">
+            <a class="button" href="{{ .CategoryUrl }}">&larr; Back to index</a>
+            {{ if .Thread.Locked }}
+                <span>Thread is locked.</span>
+            {{ else if .User }}
+                <a class="button" href="{{ .ReplyUrl }}">&#10551; Reply to Thread</a>
+            {{ else }}
+                <span><a href="{% url 'member_login' subdomain=None %}">Log in</a> to reply</span>
+            {{ end }}
+        </div>
+        <div class="options order-0 order-last-ns">
+            {{ template "pagination.html" .Pagination }}
+        </div>
+    </div>
 </div>
 {{ end }}

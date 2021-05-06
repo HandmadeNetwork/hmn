@@ -1,73 +1,74 @@
 package hmnurl
 
 import (
-	"git.handmade.network/hmn/hmn/src/oops"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"git.handmade.network/hmn/hmn/src/oops"
 )
 
-var RegexHomepage *regexp.Regexp = regexp.MustCompile("^/$")
+var RegexHomepage = regexp.MustCompile("^/$")
 
 func BuildHomepage() string {
 	return Url("/", nil)
 }
 
-var RegexLogin *regexp.Regexp = regexp.MustCompile("^/login$")
+var RegexLogin = regexp.MustCompile("^/login$")
 
 func BuildLogin() string {
 	return Url("/login", nil)
 }
 
-var RegexLogout *regexp.Regexp = regexp.MustCompile("^/logout$")
+var RegexLogout = regexp.MustCompile("^/logout$")
 
 func BuildLogout() string {
 	return Url("/logout", nil)
 }
 
-var RegexManifesto *regexp.Regexp = regexp.MustCompile("^/manifesto$")
+var RegexManifesto = regexp.MustCompile("^/manifesto$")
 
 func BuildManifesto() string {
 	return Url("/manifesto", nil)
 }
 
-var RegexAbout *regexp.Regexp = regexp.MustCompile("^/about$")
+var RegexAbout = regexp.MustCompile("^/about$")
 
 func BuildAbout() string {
 	return Url("/about", nil)
 }
 
-var RegexCodeOfConduct *regexp.Regexp = regexp.MustCompile("^/code-of-conduct$")
+var RegexCodeOfConduct = regexp.MustCompile("^/code-of-conduct$")
 
 func BuildCodeOfConduct() string {
 	return Url("/code-of-conduct", nil)
 }
 
-var RegexCommunicationGuidelines *regexp.Regexp = regexp.MustCompile("^/communication-guidelines$")
+var RegexCommunicationGuidelines = regexp.MustCompile("^/communication-guidelines$")
 
 func BuildCommunicationGuidelines() string {
 	return Url("/communication-guidelines", nil)
 }
 
-var RegexContactPage *regexp.Regexp = regexp.MustCompile("^/contact$")
+var RegexContactPage = regexp.MustCompile("^/contact$")
 
 func BuildContactPage() string {
 	return Url("/contact", nil)
 }
 
-var RegexMonthlyUpdatePolicy *regexp.Regexp = regexp.MustCompile("^/monthly-update-policy$")
+var RegexMonthlyUpdatePolicy = regexp.MustCompile("^/monthly-update-policy$")
 
 func BuildMonthlyUpdatePolicy() string {
 	return Url("/monthly-update-policy", nil)
 }
 
-var RegexProjectSubmissionGuidelines *regexp.Regexp = regexp.MustCompile("^/project-guidelines$")
+var RegexProjectSubmissionGuidelines = regexp.MustCompile("^/project-guidelines$")
 
 func BuildProjectSubmissionGuidelines() string {
 	return Url("/project-guidelines", nil)
 }
 
-var RegexFeed *regexp.Regexp = regexp.MustCompile(`^/feed(/(?P<page>.+)?)?$`)
+var RegexFeed = regexp.MustCompile(`^/feed(/(?P<page>.+)?)?$`)
 
 func BuildFeed() string {
 	return Url("/feed", nil)
@@ -83,13 +84,9 @@ func BuildFeedWithPage(page int) string {
 	return Url("/feed/"+strconv.Itoa(page), nil)
 }
 
-var RegexForumThread *regexp.Regexp = regexp.MustCompile(`^/(?P<cats>forums(/[^\d]+?)*)/t/(?P<threadid>\d+)(/(?P<page>\d+))?$`)
+var RegexForumThread = regexp.MustCompile(`^/(?P<cats>forums(/[^\d]+?)*)/t/(?P<threadid>\d+)(/(?P<page>\d+))?$`)
 
 func BuildForumThread(projectSlug string, subforums []string, threadId int, page int) string {
-	if projectSlug == "hmn" {
-		projectSlug = ""
-	}
-
 	if page < 1 {
 		panic(oops.New(nil, "Invalid forum thread page (%d), must be >= 1", page))
 	}
@@ -117,13 +114,9 @@ func BuildForumThread(projectSlug string, subforums []string, threadId int, page
 	return ProjectUrl(builder.String(), nil, projectSlug)
 }
 
-var RegexForumCategory *regexp.Regexp = regexp.MustCompile(`^/(?P<cats>forums(/[^\d]+?)*)(/(?P<page>\d+))?$`)
+var RegexForumCategory = regexp.MustCompile(`^/(?P<cats>forums(/[^\d]+?)*)(/(?P<page>\d+))?$`)
 
 func BuildForumCategory(projectSlug string, subforums []string, page int) string {
-	if projectSlug == "hmn" {
-		projectSlug = ""
-	}
-
 	if page < 1 {
 		panic(oops.New(nil, "Invalid forum thread page (%d), must be >= 1", page))
 	}
@@ -149,13 +142,9 @@ func BuildForumCategory(projectSlug string, subforums []string, page int) string
 	return ProjectUrl(builder.String(), nil, projectSlug)
 }
 
-var RegexForumPost *regexp.Regexp = regexp.MustCompile(``) // TODO(asaf): Complete this and test it
+var RegexForumPost = regexp.MustCompile(``) // TODO(asaf): Complete this and test it
 
 func BuildForumPost(projectSlug string, subforums []string, threadId int, postId int) string {
-	if projectSlug == "hmn" {
-		projectSlug = ""
-	}
-
 	var builder strings.Builder
 	builder.WriteString("/forums")
 	for _, subforum := range subforums {
@@ -177,13 +166,38 @@ func BuildForumPost(projectSlug string, subforums []string, threadId int, postId
 	return ProjectUrl(builder.String(), nil, projectSlug)
 }
 
-var RegexProjectCSS *regexp.Regexp = regexp.MustCompile("^/assets/project.css$")
+var RegexForumPostDelete = regexp.MustCompile(``) // TODO
 
-func BuildProjectCSS(color string) string {
-	return Url("/assets/project.css", []Q{Q{"color", color}})
+func BuildForumPostDelete(projectSlug string, subforums []string, threadId int, postId int) string {
+	return BuildForumPost(projectSlug, subforums, threadId, postId) + "/delete"
 }
 
-var RegexPublic *regexp.Regexp = regexp.MustCompile("^/public/.+$")
+var RegexForumPostEdit = regexp.MustCompile(``) // TODO
+
+func BuildForumPostEdit(projectSlug string, subforums []string, threadId int, postId int) string {
+	return BuildForumPost(projectSlug, subforums, threadId, postId) + "/edit"
+}
+
+var RegexForumPostReply = regexp.MustCompile(``) // TODO(asaf): Ha ha! I, Ben, have played a trick on you, and forced you to do this regex as well!
+
+// TODO: It's kinda weird that we have "replies" to a specific post. That's not how the data works. I guess this just affects what you see as the "post you're replying to" on the post composer page?
+func BuildForumPostReply(projectSlug string, subforums []string, threadId int, postId int) string {
+	return BuildForumPost(projectSlug, subforums, threadId, postId) + "/reply"
+}
+
+var RegexForumPostQuote = regexp.MustCompile(``) // TODO
+
+func BuildForumPostQuote(projectSlug string, subforums []string, threadId int, postId int) string {
+	return BuildForumPost(projectSlug, subforums, threadId, postId) + "/quote"
+}
+
+var RegexProjectCSS = regexp.MustCompile("^/assets/project.css$")
+
+func BuildProjectCSS(color string) string {
+	return Url("/assets/project.css", []Q{{"color", color}})
+}
+
+var RegexPublic = regexp.MustCompile("^/public/.+$")
 
 func BuildPublic(filepath string) string {
 	filepath = strings.Trim(filepath, "/")
@@ -204,4 +218,4 @@ func BuildPublic(filepath string) string {
 	return Url(builder.String(), nil)
 }
 
-var RegexCatchAll *regexp.Regexp = regexp.MustCompile("")
+var RegexCatchAll = regexp.MustCompile("")

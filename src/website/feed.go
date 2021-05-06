@@ -124,13 +124,13 @@ func Feed(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	categoryUrlCache := make(map[int]string)
-	getCategoryUrl := func(subdomain string, cat *models.Category) string {
+	getCategoryUrl := func(projectSlug string, cat *models.Category) string {
 		_, ok := categoryUrlCache[cat.ID]
 		if !ok {
 			lineageNames := lineageBuilder.GetLineageSlugs(cat.ID)
 			switch cat.Kind {
 			case models.CatKindForum:
-				categoryUrlCache[cat.ID] = hmnurl.BuildForumCategory(subdomain, lineageNames[1:], 1)
+				categoryUrlCache[cat.ID] = hmnurl.BuildForumCategory(projectSlug, lineageNames[1:], 1)
 				// TODO(asaf): Add more kinds!!!
 			default:
 				categoryUrlCache[cat.ID] = ""
@@ -153,8 +153,8 @@ func Feed(c *RequestContext) ResponseData {
 
 		breadcrumbs := make([]templates.Breadcrumb, 0, len(lineageBuilder.GetLineage(postResult.Cat.ID)))
 		breadcrumbs = append(breadcrumbs, templates.Breadcrumb{
-			Name: *postResult.Proj.Name,
-			Url:  hmnurl.ProjectUrl("/", nil, postResult.Proj.Subdomain()),
+			Name: postResult.Proj.Name,
+			Url:  hmnurl.ProjectUrl("/", nil, postResult.Proj.Slug),
 		})
 		if postResult.Post.CategoryKind == models.CatKindLibraryResource {
 			// TODO(asaf): Fetch library root topic for the project and construct breadcrumb for it

@@ -34,13 +34,66 @@ type Category struct {
 	Depth  int          `db:"depth"` // TODO: What is this?
 }
 
+type CategoryTree map[int]*CategoryTreeNode
+
+type CategoryTreeNode struct {
+	Category
+	Parent *CategoryTreeNode
+}
+
+func (node *CategoryTreeNode) GetLineage() []*Category {
+	current := node
+	length := 0
+	for current != nil {
+		current = current.Parent
+		length += 1
+	}
+	result := make([]*Category, length)
+	current = node
+	for i := length - 1; i >= 0; i -= 1 {
+		result[i] = &current.Category
+		current = current.Parent
+	}
+	return result
+}
+
+func GetFullCategoryTree(ctx context.Context, conn *pgxpool.Pool) CategoryTree {
+	type categoryRow struct {
+		Cat Category `db:"cat"`
+	}
+	rows, err := db.Query(ctx, conn, categoryRow{},
+		`
+		SELECT $columns
+		FROM
+			handmade_category as cat
+		`,
+	)
+	if err != nil {
+		panic(oops.New(err, "Failed to fetch category tree"))
+	}
+
+	rowsSlice := rows.ToSlice()
+	catTreeMap := make(map[int]*CategoryTreeNode, len(rowsSlice))
+	for _, row := range rowsSlice {
+		cat := row.(*categoryRow).Cat
+		catTreeMap[cat.ID] = &CategoryTreeNode{Category: cat}
+	}
+
+	for _, node := range catTreeMap {
+		if node.ParentID != nil {
+			node.Parent = catTreeMap[*node.ParentID]
+		}
+	}
+	return catTreeMap
+}
+
 type CategoryLineageBuilder struct {
-	Tree          map[int]*CategoryTreeNode
+	Tree          CategoryTree
 	CategoryCache map[int][]*Category
 	SlugCache     map[int][]string
 }
 
-func MakeCategoryLineageBuilder(fullCategoryTree map[int]*CategoryTreeNode) *CategoryLineageBuilder {
+func MakeCategoryLineageBuilder(fullCategoryTree CategoryTree) *CategoryLineageBuilder {
 	return &CategoryLineageBuilder{
 		Tree:          fullCategoryTree,
 		CategoryCache: make(map[int][]*Category),
@@ -71,94 +124,4 @@ func (cl *CategoryLineageBuilder) GetLineageSlugs(catId int) []string {
 		cl.SlugCache[catId] = result
 	}
 	return cl.SlugCache[catId]
-}
-
-type CategoryTreeNode struct {
-	Category
-	Parent *CategoryTreeNode
-}
-
-func (node *CategoryTreeNode) GetLineage() []*Category {
-	current := node
-	length := 0
-	for current != nil {
-		current = current.Parent
-		length += 1
-	}
-	result := make([]*Category, length)
-	current = node
-	for i := length - 1; i >= 0; i -= 1 {
-		result[i] = &current.Category
-		current = current.Parent
-	}
-	return result
-}
-
-func GetFullCategoryTree(ctx context.Context, conn *pgxpool.Pool) map[int]*CategoryTreeNode {
-	type categoryRow struct {
-		Cat Category `db:"cat"`
-	}
-	rows, err := db.Query(ctx, conn, categoryRow{},
-		`
-		SELECT $columns
-		FROM
-			handmade_category as cat
-		`,
-	)
-	if err != nil {
-		panic(oops.New(err, "Failed to fetch category tree"))
-	}
-
-	rowsSlice := rows.ToSlice()
-	catTreeMap := make(map[int]*CategoryTreeNode, len(rowsSlice))
-	for _, row := range rowsSlice {
-		cat := row.(*categoryRow).Cat
-		catTreeMap[cat.ID] = &CategoryTreeNode{Category: cat}
-	}
-
-	for _, node := range catTreeMap {
-		if node.ParentID != nil {
-			node.Parent = catTreeMap[*node.ParentID]
-		}
-	}
-	return catTreeMap
-}
-
-/*
-Gets the category and its parent categories, starting from the root and working toward the
-category itself. Useful for breadcrumbs and the like.
-*/
-func (c *Category) GetHierarchy(ctx context.Context, conn *pgxpool.Pool) []Category {
-	// TODO: Make this work for a whole set of categories at once. Should be doable.
-	type breadcrumbRow struct {
-		Cat Category `db:"cats"`
-	}
-	rows, err := db.Query(ctx, conn, breadcrumbRow{},
-		`
-		WITH RECURSIVE cats AS (
-				SELECT *
-				FROM handmade_category AS cat
-				WHERE cat.id = $1
-			UNION ALL
-				SELECT parentcat.*
-				FROM
-					handmade_category AS parentcat
-					JOIN cats ON cats.parent_id = parentcat.id
-		)
-		SELECT $columns FROM cats;
-		`,
-		c.ID,
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	rowsSlice := rows.ToSlice()
-	var result []Category
-	for i := len(rowsSlice) - 1; i >= 0; i-- {
-		row := rowsSlice[i].(*breadcrumbRow)
-		result = append(result, row.Cat)
-	}
-
-	return result
 }

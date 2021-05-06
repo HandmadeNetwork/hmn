@@ -2,6 +2,7 @@ package templates
 
 import (
 	"html/template"
+	"net"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -15,30 +16,44 @@ func PostToTemplate(p *models.Post, author *models.User) Post {
 	}
 
 	return Post{
-		ID:  p.ID,
-		Url: "nope", // TODO
+		ID: p.ID,
+
+		// Urls not set here. See AddUrls.
 
 		Preview:  p.Preview,
 		ReadOnly: p.ReadOnly,
 
 		Author: authorUser,
-		// No content. Do it yourself if you care.
+		// No content. A lot of the time we don't have this handy and don't need it. See AddContentVersion.
 		PostDate: p.PostDate,
 
 		IP: p.IP.String(),
 	}
 }
 
-func PostToTemplateWithContent(p *models.Post, author *models.User, content string) Post {
-	post := PostToTemplate(p, author)
-	post.Content = template.HTML(content)
+func (p *Post) AddContentVersion(ver models.PostVersion, editor *models.User) {
+	p.Content = template.HTML(ver.TextParsed)
 
-	return post
+	if editor != nil {
+		editorTmpl := UserToTemplate(editor)
+		p.Editor = &editorTmpl
+		p.EditDate = ver.EditDate
+		p.EditIP = maybeIp(ver.EditIP)
+		p.EditReason = ver.EditReason
+	}
+}
+
+func (p *Post) AddUrls(projectSlug string, subforums []string, threadId int, postId int) {
+	p.Url = hmnurl.BuildForumPost(projectSlug, subforums, threadId, postId)
+	p.DeleteUrl = hmnurl.BuildForumPostDelete(projectSlug, subforums, threadId, postId)
+	p.EditUrl = hmnurl.BuildForumPostEdit(projectSlug, subforums, threadId, postId)
+	p.ReplyUrl = hmnurl.BuildForumPostReply(projectSlug, subforums, threadId, postId)
+	p.QuoteUrl = hmnurl.BuildForumPostQuote(projectSlug, subforums, threadId, postId)
 }
 
 func ProjectToTemplate(p *models.Project) Project {
 	return Project{
-		Name:      maybeString(p.Name),
+		Name:      p.Name,
 		Subdomain: p.Subdomain(),
 		Color1:    p.Color1,
 		Color2:    p.Color2,
@@ -102,4 +117,12 @@ func maybeString(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func maybeIp(ip *net.IPNet) string {
+	if ip == nil {
+		return ""
+	}
+
+	return ip.String()
 }

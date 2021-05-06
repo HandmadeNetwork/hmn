@@ -75,7 +75,7 @@ func Index(c *RequestContext) ResponseData {
 	for _, projRow := range allProjects {
 		proj := projRow.(*models.Project)
 
-		c.Perf.StartBlock("SQL", fmt.Sprintf("Fetch posts for %s", *proj.Name))
+		c.Perf.StartBlock("SQL", fmt.Sprintf("Fetch posts for %s", proj.Name))
 		type projectPostQuery struct {
 			Post               models.Post   `db:"post"`
 			Thread             models.Thread `db:"thread"`

@@ -15,6 +15,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -261,11 +262,11 @@ func ForumCategory(c *RequestContext) ResponseData {
 	// ---------------------
 
 	baseData := getBaseData(c)
-	baseData.Title = *c.CurrentProject.Name + " Forums"
-	baseData.Breadcrumbs = []templates.Breadcrumb{
+	baseData.Title = c.CurrentProject.Name + " Forums"
+	baseData.Breadcrumbs = []templates.Breadcrumb{ // TODO(ben): This is wrong; it needs to account for subcategories.
 		{
-			Name: *c.CurrentProject.Name,
-			Url:  hmnurl.ProjectUrl("/", nil, c.CurrentProject.Subdomain()),
+			Name: c.CurrentProject.Name,
+			Url:  hmnurl.ProjectUrl("/", nil, c.CurrentProject.Slug),
 		},
 		{
 			Name:    "Forums",
@@ -299,13 +300,17 @@ func ForumCategory(c *RequestContext) ResponseData {
 
 type forumThreadData struct {
 	templates.BaseData
+
 	Thread templates.Thread
 	Posts  []templates.Post
+
+	CategoryUrl string
+	ReplyUrl    string
+	Pagination  templates.Pagination
 }
 
 func ForumThread(c *RequestContext) ResponseData {
 	const postsPerPage = 15
-	// TODO(asaf): Verify that the requested thread is not deleted, and only fetch non-deleted posts.
 
 	threadId, err := strconv.Atoi(c.PathParams["threadid"])
 	if err != nil {
@@ -319,10 +324,16 @@ func ForumThread(c *RequestContext) ResponseData {
 	irow, err := db.QueryOne(c.Context(), c.Conn, threadQueryResult{},
 		`
 		SELECT $columns
-		FROM handmade_thread AS thread
-		WHERE thread.id = $1
+		FROM
+			handmade_thread AS thread
+			JOIN handmade_category AS cat ON cat.id = thread.category_id
+		WHERE
+			thread.id = $1
+			AND NOT thread.deleted
+			AND cat.project_id = $2
 		`,
 		threadId,
+		c.CurrentProject.ID,
 	)
 	c.Perf.EndBlock()
 	if err != nil {
@@ -336,18 +347,46 @@ func ForumThread(c *RequestContext) ResponseData {
 
 	categoryUrls := GetProjectCategoryUrls(c.Context(), c.Conn, c.CurrentProject.ID)
 
-	page, numPages, ok := getPageInfo(c.PathParams["page"], 100, postsPerPage) // TODO: Not 100
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	subforums := lineageBuilder.GetLineageSlugs(thread.CategoryID)[1:]
+	c.Perf.EndBlock()
+
+	numPosts, err := db.QueryInt(c.Context(), c.Conn,
+		`
+		SELECT COUNT(*)
+		FROM handmade_post
+		WHERE
+			thread_id = $1
+			AND NOT deleted
+		`,
+		thread.ID,
+	)
+	if err != nil {
+		panic(oops.New(err, "failed to get count of posts for thread"))
+	}
+	page, numPages, ok := getPageInfo(c.PathParams["page"], numPosts, postsPerPage)
 	if !ok {
 		urlNoPage := ThreadUrl(thread, models.CatKindForum, categoryUrls[thread.CategoryID])
 		return c.Redirect(urlNoPage, http.StatusSeeOther)
 	}
-	_ = numPages // TODO
+	pagination := templates.Pagination{
+		Current: page,
+		Total:   numPages,
+
+		FirstUrl:    hmnurl.BuildForumThread(c.CurrentProject.Slug, subforums, thread.ID, 1),
+		LastUrl:     hmnurl.BuildForumThread(c.CurrentProject.Slug, subforums, thread.ID, numPages),
+		NextUrl:     hmnurl.BuildForumThread(c.CurrentProject.Slug, subforums, thread.ID, utils.IntClamp(1, page+1, numPages)),
+		PreviousUrl: hmnurl.BuildForumThread(c.CurrentProject.Slug, subforums, thread.ID, utils.IntClamp(1, page-1, numPages)),
+	}
 
 	c.Perf.StartBlock("SQL", "Fetch posts")
 	type postsQueryResult struct {
-		Post    models.Post  `db:"post"`
-		Content string       `db:"ver.text_parsed"`
-		Author  *models.User `db:"author"`
+		Post   models.Post        `db:"post"`
+		Ver    models.PostVersion `db:"ver"`
+		Author *models.User       `db:"author"`
+		Editor *models.User       `db:"editor"`
 	}
 	itPosts, err := db.Query(c.Context(), c.Conn, postsQueryResult{},
 		`
@@ -356,8 +395,10 @@ func ForumThread(c *RequestContext) ResponseData {
 			handmade_post AS post
 			JOIN handmade_postversion AS ver ON post.current_id = ver.id
 			LEFT JOIN auth_user AS author ON post.author_id = author.id
+			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
 		WHERE
 			post.thread_id = $1
+			AND NOT post.deleted
 		ORDER BY postdate
 		LIMIT $2 OFFSET $3
 		`,
@@ -374,18 +415,26 @@ func ForumThread(c *RequestContext) ResponseData {
 	var posts []templates.Post
 	for _, irow := range itPosts.ToSlice() {
 		row := irow.(*postsQueryResult)
-		posts = append(posts, templates.PostToTemplateWithContent(&row.Post, row.Author, row.Content))
+
+		post := templates.PostToTemplate(&row.Post, row.Author)
+		post.AddContentVersion(row.Ver, row.Editor)
+		post.AddUrls(c.CurrentProject.Slug, subforums, thread.ID, post.ID)
+
+		posts = append(posts, post)
 	}
 
 	baseData := getBaseData(c)
-	// TODO(asaf): Replace page title with thread title
+	baseData.Title = thread.Title
 	// TODO(asaf): Set breadcrumbs
 
 	var res ResponseData
 	err = res.WriteTemplate("forum_thread.html", forumThreadData{
-		BaseData: baseData,
-		Thread:   templates.ThreadToTemplate(&thread),
-		Posts:    posts,
+		BaseData:    baseData,
+		Thread:      templates.ThreadToTemplate(&thread),
+		Posts:       posts,
+		CategoryUrl: categoryUrls[thread.CategoryID],
+		ReplyUrl:    hmnurl.BuildForumPostReply(c.CurrentProject.Slug, subforums, thread.ID, *thread.FirstID),
+		Pagination:  pagination,
 	}, c.Perf)
 	if err != nil {
 		panic(err)
