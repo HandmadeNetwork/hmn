@@ -87,20 +87,20 @@ func makeCategoryUrls(rows []interface{}) map[int]string {
 			hierarchy[len(hierarchyReverse)-1-i] = hierarchyReverse[i]
 		}
 
-		result[row.Cat.ID] = CategoryUrl(row.Project.Subdomain(), hierarchy...)
+		result[row.Cat.ID] = CategoryUrl(row.Project.Slug, hierarchy...)
 	}
 
 	return result
 }
 
-func CategoryUrl(subdomain string, cats ...*models.Category) string {
+func CategoryUrl(projectSlug string, cats ...*models.Category) string {
 	catNames := make([]string, 0, len(cats))
 	for _, cat := range cats {
 		catNames = append(catNames, *cat.Name)
 	}
 	switch cats[0].Kind {
 	case models.CatKindForum:
-		return hmnurl.BuildForumCategory(subdomain, catNames[1:], 1)
+		return hmnurl.BuildForumCategory(projectSlug, catNames[1:], 1)
 	default:
 		return ""
 	}

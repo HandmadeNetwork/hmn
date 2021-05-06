@@ -1,10 +1,11 @@
 package hmnurl
 
 import (
-	"git.handmade.network/hmn/hmn/src/oops"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"git.handmade.network/hmn/hmn/src/oops"
 )
 
 var RegexHomepage *regexp.Regexp = regexp.MustCompile("^/$")
@@ -86,10 +87,6 @@ func BuildFeedWithPage(page int) string {
 var RegexForumThread *regexp.Regexp = regexp.MustCompile(`^/(?P<cats>forums(/[^\d]+?)*)/t/(?P<threadid>\d+)(/(?P<page>\d+))?$`)
 
 func BuildForumThread(projectSlug string, subforums []string, threadId int, page int) string {
-	if projectSlug == "hmn" {
-		projectSlug = ""
-	}
-
 	if page < 1 {
 		panic(oops.New(nil, "Invalid forum thread page (%d), must be >= 1", page))
 	}
@@ -120,10 +117,6 @@ func BuildForumThread(projectSlug string, subforums []string, threadId int, page
 var RegexForumCategory *regexp.Regexp = regexp.MustCompile(`^/(?P<cats>forums(/[^\d]+?)*)(/(?P<page>\d+))?$`)
 
 func BuildForumCategory(projectSlug string, subforums []string, page int) string {
-	if projectSlug == "hmn" {
-		projectSlug = ""
-	}
-
 	if page < 1 {
 		panic(oops.New(nil, "Invalid forum thread page (%d), must be >= 1", page))
 	}
@@ -152,10 +145,6 @@ func BuildForumCategory(projectSlug string, subforums []string, page int) string
 var RegexForumPost *regexp.Regexp = regexp.MustCompile(``) // TODO(asaf): Complete this and test it
 
 func BuildForumPost(projectSlug string, subforums []string, threadId int, postId int) string {
-	if projectSlug == "hmn" {
-		projectSlug = ""
-	}
-
 	var builder strings.Builder
 	builder.WriteString("/forums")
 	for _, subforum := range subforums {
@@ -180,7 +169,7 @@ func BuildForumPost(projectSlug string, subforums []string, threadId int, postId
 var RegexProjectCSS *regexp.Regexp = regexp.MustCompile("^/assets/project.css$")
 
 func BuildProjectCSS(color string) string {
-	return Url("/assets/project.css", []Q{Q{"color", color}})
+	return Url("/assets/project.css", []Q{{"color", color}})
 }
 
 var RegexPublic *regexp.Regexp = regexp.MustCompile("^/public/.+$")

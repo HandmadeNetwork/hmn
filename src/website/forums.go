@@ -261,11 +261,11 @@ func ForumCategory(c *RequestContext) ResponseData {
 	// ---------------------
 
 	baseData := getBaseData(c)
-	baseData.Title = *c.CurrentProject.Name + " Forums"
+	baseData.Title = c.CurrentProject.Name + " Forums"
 	baseData.Breadcrumbs = []templates.Breadcrumb{
 		{
-			Name: *c.CurrentProject.Name,
-			Url:  hmnurl.ProjectUrl("/", nil, c.CurrentProject.Subdomain()),
+			Name: c.CurrentProject.Name,
+			Url:  hmnurl.ProjectUrl("/", nil, c.CurrentProject.Slug),
 		},
 		{
 			Name:    "Forums",

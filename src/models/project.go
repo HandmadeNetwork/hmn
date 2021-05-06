@@ -5,7 +5,10 @@ import (
 	"time"
 )
 
-const HMNProjectID = 1
+const (
+	HMNProjectID   = 1
+	HMNProjectSlug = "hmn"
+)
 
 var ProjectType = reflect.TypeOf(Project{})
 
@@ -24,10 +27,10 @@ const (
 type Project struct {
 	ID int `db:"id"`
 
-	Slug        *string `db:"slug"` // TODO: Migrate these to NOT NULL
-	Name        *string `db:"name"`
-	Blurb       *string `db:"blurb"`
-	Description *string `db:"description"`
+	Slug        string `db:"slug"`
+	Name        string `db:"name"`
+	Blurb       string `db:"blurb"`
+	Description string `db:"description"`
 
 	Lifecycle ProjectLifecycle `db:"lifecycle"`
 
@@ -46,5 +49,5 @@ func (p *Project) Subdomain() string {
 		return ""
 	}
 
-	return *p.Slug
+	return p.Slug
 }

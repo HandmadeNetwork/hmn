@@ -38,7 +38,7 @@ func PostToTemplateWithContent(p *models.Post, author *models.User, content stri
 
 func ProjectToTemplate(p *models.Project) Project {
 	return Project{
-		Name:      maybeString(p.Name),
+		Name:      p.Name,
 		Subdomain: p.Subdomain(),
 		Color1:    p.Color1,
 		Color2:    p.Color2,

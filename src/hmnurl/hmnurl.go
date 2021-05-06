@@ -4,6 +4,7 @@ import (
 	"net/url"
 
 	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 )
 
@@ -37,10 +38,15 @@ func Url(path string, query []Q) string {
 	return ProjectUrl(path, query, "")
 }
 
-func ProjectUrl(path string, query []Q, subdomain string) string {
+func ProjectUrl(path string, query []Q, slug string) string {
+	subdomain := slug
+	if slug == models.HMNProjectSlug {
+		subdomain = ""
+	}
+
 	host := baseUrlParsed.Host
 	if len(subdomain) > 0 {
-		host = subdomain + "." + host
+		host = slug + "." + host
 	}
 
 	url := url.URL{
