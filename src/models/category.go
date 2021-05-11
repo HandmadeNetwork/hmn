@@ -67,6 +67,7 @@ func GetFullCategoryTree(ctx context.Context, conn *pgxpool.Pool) CategoryTree {
 		SELECT $columns
 		FROM
 			handmade_category as cat
+		ORDER BY id ASC
 		`,
 	)
 	if err != nil {
