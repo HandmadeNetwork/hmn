@@ -1,7 +1,9 @@
 package hmnurl
 
 import (
+	"fmt"
 	"net/url"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -17,9 +19,11 @@ type Q struct {
 }
 
 var baseUrlParsed url.URL
+var cacheBust string
 
 func init() {
 	SetGlobalBaseUrl(config.Config.BaseUrl)
+	SetCacheBust(fmt.Sprint(time.Now().Unix()))
 }
 
 func SetGlobalBaseUrl(fullBaseUrl string) {
@@ -34,11 +38,19 @@ func SetGlobalBaseUrl(fullBaseUrl string) {
 	baseUrlParsed = *parsed
 }
 
+func SetCacheBust(newCacheBust string) {
+	cacheBust = newCacheBust
+}
+
 func Url(path string, query []Q) string {
 	return ProjectUrl(path, query, "")
 }
 
 func ProjectUrl(path string, query []Q, slug string) string {
+	return ProjectUrlWithFragment(path, query, slug, "")
+}
+
+func ProjectUrlWithFragment(path string, query []Q, slug string, fragment string) string {
 	subdomain := slug
 	if slug == models.HMNProjectSlug {
 		subdomain = ""
@@ -54,6 +66,7 @@ func ProjectUrl(path string, query []Q, slug string) string {
 		Host:     host,
 		Path:     trim(path),
 		RawQuery: encodeQuery(query),
+		Fragment: fragment,
 	}
 
 	return url.String()

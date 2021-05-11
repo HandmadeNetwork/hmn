@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -18,12 +19,21 @@ type LandingTemplateData struct {
 	NewsPost             LandingPageFeaturedPost
 	PostColumns          [][]LandingPageProject
 	ShowcaseTimelineJson string
+
+	FeedUrl     string
+	PodcastUrl  string
+	StreamsUrl  string
+	IRCUrl      string
+	DiscordUrl  string
+	ShowUrl     string
+	ShowcaseUrl string
 }
 
 type LandingPageProject struct {
 	Project      templates.Project
 	FeaturedPost *LandingPageFeaturedPost
 	Posts        []templates.PostListItem
+	ForumsUrl    string
 }
 
 type LandingPageFeaturedPost struct {
@@ -45,11 +55,12 @@ func Index(c *RequestContext) ResponseData {
 		SELECT $columns
 		FROM handmade_project
 		WHERE
-			flags = 0
-			OR id = $1
+			(flags = 0 AND NOT lifecycle = ANY($1))
+			OR id = $2
 		ORDER BY all_last_updated DESC
-		LIMIT $2
+		LIMIT $3
 		`,
+		[]models.ProjectLifecycle{models.ProjectLifecycleUnapproved, models.ProjectLifecycleApprovalRequired},
 		models.HMNProjectID,
 		numProjectsToGet*2, // hedge your bets against projects that don't have any content
 	)
@@ -62,9 +73,11 @@ func Index(c *RequestContext) ResponseData {
 
 	allProjects := iterProjects.ToSlice()
 	c.Perf.EndBlock()
-	c.Logger.Debug().Interface("allProjects", allProjects).Msg("all the projects")
 
-	categoryUrls := GetAllCategoryUrls(c.Context(), c.Conn)
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
 
 	var currentUserId *int
 	if c.CurrentUser != nil {
@@ -77,11 +90,12 @@ func Index(c *RequestContext) ResponseData {
 
 		c.Perf.StartBlock("SQL", fmt.Sprintf("Fetch posts for %s", proj.Name))
 		type projectPostQuery struct {
-			Post               models.Post   `db:"post"`
-			Thread             models.Thread `db:"thread"`
-			User               models.User   `db:"auth_user"`
-			ThreadLastReadTime *time.Time    `db:"tlri.lastread"`
-			CatLastReadTime    *time.Time    `db:"clri.lastread"`
+			Post               models.Post             `db:"post"`
+			Thread             models.Thread           `db:"thread"`
+			User               models.User             `db:"auth_user"`
+			LibraryResource    *models.LibraryResource `db:"lib_resource"`
+			ThreadLastReadTime *time.Time              `db:"tlri.lastread"`
+			CatLastReadTime    *time.Time              `db:"clri.lastread"`
 		}
 		projectPostIter, err := db.Query(c.Context(), c.Conn, projectPostQuery{},
 			`
@@ -98,6 +112,7 @@ func Index(c *RequestContext) ResponseData {
 					AND clri.user_id = $1
 				)
 				LEFT JOIN auth_user ON post.author_id = auth_user.id
+				LEFT JOIN handmade_libraryresource as lib_resource ON lib_resource.category_id = post.category_id
 			WHERE
 				post.project_id = $2
 				AND post.category_kind IN ($3, $4, $5, $6)
@@ -117,8 +132,16 @@ func Index(c *RequestContext) ResponseData {
 		}
 		projectPosts := projectPostIter.ToSlice()
 
+		forumsUrl := ""
+		if proj.ForumID != nil {
+			forumsUrl = hmnurl.BuildForumCategory(proj.Slug, lineageBuilder.GetSubforumLineageSlugs(*proj.ForumID), 1)
+		} else {
+			c.Logger.Error().Int("ProjectID", proj.ID).Str("ProjectName", proj.Name).Msg("Project fetched by landing page but it doesn't have forums")
+		}
+
 		landingPageProject := LandingPageProject{
-			Project: templates.ProjectToTemplate(proj),
+			Project:   templates.ProjectToTemplate(proj),
+			ForumsUrl: forumsUrl,
 		}
 
 		for _, projectPostRow := range projectPosts {
@@ -150,28 +173,35 @@ func Index(c *RequestContext) ResponseData {
 					WHERE
 						post.id = $1
 				`, projectPost.Post.ID)
-				if err != nil {
-					panic(err)
-				}
 				c.Perf.EndBlock()
+				if err != nil {
+					c.Logger.Error().Err(err).Msg("failed to fetch featured post content")
+					continue
+				}
 				content := contentResult.(*featuredContentResult).Content
 
 				landingPageProject.FeaturedPost = &LandingPageFeaturedPost{
 					Title:   projectPost.Thread.Title,
-					Url:     PostUrl(projectPost.Post, projectPost.Post.CategoryKind, categoryUrls[projectPost.Post.CategoryID]),
+					Url:     hmnurl.BuildBlogPost(proj.Slug, projectPost.Thread.ID, projectPost.Post.ID),
 					User:    templates.UserToTemplate(&projectPost.User),
 					Date:    projectPost.Post.PostDate,
 					Unread:  !hasRead,
 					Content: template.HTML(content),
 				}
 			} else {
-				landingPageProject.Posts = append(landingPageProject.Posts, templates.PostListItem{
-					Title:  projectPost.Thread.Title,
-					Url:    PostUrl(projectPost.Post, projectPost.Post.CategoryKind, categoryUrls[projectPost.Post.CategoryID]),
-					User:   templates.UserToTemplate(&projectPost.User),
-					Date:   projectPost.Post.PostDate,
-					Unread: !hasRead,
-				})
+				landingPageProject.Posts = append(
+					landingPageProject.Posts,
+					MakePostListItem(
+						lineageBuilder,
+						proj,
+						&projectPost.Thread,
+						&projectPost.Post,
+						&projectPost.User,
+						projectPost.LibraryResource,
+						!hasRead,
+						false,
+					),
+				)
 			}
 		}
 
@@ -184,30 +214,6 @@ func Index(c *RequestContext) ResponseData {
 		}
 	}
 	c.Perf.EndBlock()
-
-	c.Perf.StartBlock("SQL", "Get news")
-	type newsThreadQuery struct {
-		Thread models.Thread `db:"thread"`
-	}
-	newsThreadRow, err := db.QueryOne(c.Context(), c.Conn, newsThreadQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_thread as thread
-			JOIN handmade_category AS cat ON thread.category_id = cat.id
-		WHERE
-			cat.project_id = $1
-			AND cat.kind = $2
-		`,
-		models.HMNProjectID,
-		models.CatKindBlog,
-	)
-	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch latest news post"))
-	}
-	c.Perf.EndBlock()
-	newsThread := newsThreadRow.(*newsThreadQuery)
-	_ = newsThread // TODO: NO
 
 	/*
 		Columns are filled by placing projects into the least full column.
@@ -239,6 +245,7 @@ func Index(c *RequestContext) ResponseData {
 		}
 	}
 
+	c.Perf.StartBlock("SQL", "Get news")
 	type newsPostQuery struct {
 		Post        models.Post        `db:"post"`
 		PostVersion models.PostVersion `db:"ver"`
@@ -251,12 +258,11 @@ func Index(c *RequestContext) ResponseData {
 		FROM
 			handmade_post AS post
 			JOIN handmade_thread AS thread ON post.thread_id = thread.id
-			JOIN handmade_category AS cat ON thread.category_id = cat.id
 			JOIN auth_user ON post.author_id = auth_user.id
 			JOIN handmade_postversion AS ver ON post.current_id = ver.id
 		WHERE
-			cat.project_id = $1
-			AND cat.kind = $2
+			post.project_id = $1
+			AND post.category_kind = $2
 			AND post.id = thread.first_id
 			AND NOT thread.deleted
 		ORDER BY post.postdate DESC
@@ -269,16 +275,24 @@ func Index(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news post"))
 	}
 	newsPostResult := newsPostRow.(*newsPostQuery)
+	c.Perf.EndBlock()
 
 	baseData := getBaseData(c)
 	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 
 	var res ResponseData
 	err = res.WriteTemplate("landing.html", LandingTemplateData{
-		BaseData: baseData,
+		BaseData:    baseData,
+		FeedUrl:     hmnurl.BuildFeed(),
+		PodcastUrl:  hmnurl.BuildPodcast(models.HMNProjectSlug),
+		StreamsUrl:  hmnurl.BuildStreams(),
+		IRCUrl:      hmnurl.BuildBlogThread(models.HMNProjectSlug, 1138, "[Tutorial] Handmade Network IRC", 1),
+		DiscordUrl:  "https://discord.gg/hxWxDee",
+		ShowUrl:     "https://handmadedev.show/",
+		ShowcaseUrl: hmnurl.BuildShowcase(),
 		NewsPost: LandingPageFeaturedPost{
 			Title:   newsPostResult.Thread.Title,
-			Url:     PostUrl(newsPostResult.Post, models.CatKindBlog, ""),
+			Url:     hmnurl.BuildBlogPost(models.HMNProjectSlug, newsPostResult.Thread.ID, newsPostResult.Post.ID),
 			User:    templates.UserToTemplate(&newsPostResult.User),
 			Date:    newsPostResult.Post.PostDate,
 			Unread:  true, // TODO

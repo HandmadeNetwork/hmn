@@ -27,12 +27,14 @@ const (
 type Project struct {
 	ID int `db:"id"`
 
+	ForumID *int `db:"forum_id"`
+
 	Slug        string `db:"slug"`
 	Name        string `db:"name"`
 	Blurb       string `db:"blurb"`
 	Description string `db:"description"`
 
-	Lifecycle ProjectLifecycle `db:"lifecycle"`
+	Lifecycle ProjectLifecycle `db:"lifecycle"` // TODO(asaf): Ensure we only fetch projects in the correct lifecycle phase everywhere.
 
 	Color1 string `db:"color_1"`
 	Color2 string `db:"color_2"`

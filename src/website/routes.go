@@ -81,8 +81,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	}
 
 	// TODO(asaf): login/logout shouldn't happen on subdomains. We should verify that in the middleware.
-	routes.POST(hmnurl.RegexLogin, Login)
-	routes.GET(hmnurl.RegexLogout, Logout)
+	routes.POST(hmnurl.RegexLoginAction, Login)
+	routes.GET(hmnurl.RegexLogoutAction, Logout)
 	routes.StdHandler(hmnurl.RegexPublic,
 		http.StripPrefix("/public/", http.FileServer(http.Dir("public"))),
 	)
@@ -130,9 +130,39 @@ func getBaseData(c *RequestContext) templates.BaseData {
 	}
 
 	return templates.BaseData{
-		Project: templates.ProjectToTemplate(c.CurrentProject),
-		User:    templateUser,
-		Theme:   "light",
+		Project:       templates.ProjectToTemplate(c.CurrentProject),
+		LoginPageUrl:  hmnurl.BuildLoginPage(c.FullUrl()),
+		User:          templateUser,
+		Theme:         "light",
+		ProjectCSSUrl: hmnurl.BuildProjectCSS(c.CurrentProject.Color1),
+		Header: templates.Header{
+			AdminUrl:           hmnurl.BuildHomepage(), // TODO(asaf)
+			MemberSettingsUrl:  hmnurl.BuildHomepage(), // TODO(asaf)
+			LoginActionUrl:     hmnurl.BuildLoginAction(c.FullUrl()),
+			LogoutActionUrl:    hmnurl.BuildLogoutAction(),
+			RegisterUrl:        hmnurl.BuildHomepage(), // TODO(asaf)
+			HMNHomepageUrl:     hmnurl.BuildHomepage(), // TODO(asaf)
+			ProjectHomepageUrl: hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
+			BlogUrl:            hmnurl.BuildBlog(c.CurrentProject.Slug, 1),
+			ForumsUrl:          hmnurl.BuildForumCategory(c.CurrentProject.Slug, nil, 1),
+			WikiUrl:            hmnurl.BuildWiki(c.CurrentProject.Slug),
+			LibraryUrl:         hmnurl.BuildLibrary(c.CurrentProject.Slug),
+			ManifestoUrl:       hmnurl.BuildManifesto(),
+			EpisodeGuideUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
+			EditUrl:            hmnurl.BuildHomepage(), // TODO(asaf)
+			SearchActionUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
+		},
+		Footer: templates.Footer{
+			HomepageUrl:                hmnurl.BuildHomepage(),
+			AboutUrl:                   hmnurl.BuildAbout(),
+			ManifestoUrl:               hmnurl.BuildManifesto(),
+			CodeOfConductUrl:           hmnurl.BuildCodeOfConduct(),
+			CommunicationGuidelinesUrl: hmnurl.BuildCommunicationGuidelines(),
+			ProjectIndexUrl:            hmnurl.BuildProjectIndex(),
+			ForumsUrl:                  hmnurl.BuildForumCategory(models.HMNProjectSlug, nil, 1),
+			ContactUrl:                 hmnurl.BuildContactPage(),
+			SitemapUrl:                 hmnurl.BuildSiteMap(),
+		},
 	}
 }
 
@@ -284,11 +314,11 @@ func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (aft
 		c.Perf.EndRequest()
 		log := logging.Info()
 		blockStack := make([]time.Time, 0)
-		for _, block := range c.Perf.Blocks {
+		for i, block := range c.Perf.Blocks {
 			for len(blockStack) > 0 && block.End.After(blockStack[len(blockStack)-1]) {
 				blockStack = blockStack[:len(blockStack)-1]
 			}
-			log.Str(fmt.Sprintf("At %9.2fms", c.Perf.MsFromStart(&block)), fmt.Sprintf("%*.s[%s] %s (%.4fms)", len(blockStack)*2, "", block.Category, block.Description, block.DurationMs()))
+			log.Str(fmt.Sprintf("[%4.d] At %9.2fms", i, c.Perf.MsFromStart(&block)), fmt.Sprintf("%*.s[%s] %s (%.4fms)", len(blockStack)*2, "", block.Category, block.Description, block.DurationMs()))
 			blockStack = append(blockStack, block.End)
 		}
 		log.Msg(fmt.Sprintf("Served %s in %.4fms", c.Perf.Path, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
@@ -298,6 +328,6 @@ func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (aft
 
 func LogContextErrors(c *RequestContext, res *ResponseData) {
 	for _, err := range res.Errors {
-		c.Logger.Error().Err(err).Msg("error occurred during request")
+		c.Logger.Error().Timestamp().Stack().Str("Requested", c.FullUrl()).Err(err).Msg("error occurred during request")
 	}
 }

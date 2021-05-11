@@ -38,7 +38,8 @@ type CategoryTree map[int]*CategoryTreeNode
 
 type CategoryTreeNode struct {
 	Category
-	Parent *CategoryTreeNode
+	Parent   *CategoryTreeNode
+	Children []*CategoryTreeNode
 }
 
 func (node *CategoryTreeNode) GetLineage() []*Category {
@@ -84,6 +85,15 @@ func GetFullCategoryTree(ctx context.Context, conn *pgxpool.Pool) CategoryTree {
 			node.Parent = catTreeMap[*node.ParentID]
 		}
 	}
+
+	for _, row := range rowsSlice {
+		// NOTE(asaf): Doing this in a separate loop over rowsSlice to ensure that Children are in db order.
+		cat := row.(*categoryRow).Cat
+		node := catTreeMap[cat.ID]
+		if node.Parent != nil {
+			node.Parent.Children = append(node.Parent.Children, node)
+		}
+	}
 	return catTreeMap
 }
 
@@ -109,6 +119,10 @@ func (cl *CategoryLineageBuilder) GetLineage(catId int) []*Category {
 	return cl.CategoryCache[catId]
 }
 
+func (cl *CategoryLineageBuilder) GetSubforumLineage(catId int) []*Category {
+	return cl.GetLineage(catId)[1:]
+}
+
 func (cl *CategoryLineageBuilder) GetLineageSlugs(catId int) []string {
 	_, ok := cl.SlugCache[catId]
 	if !ok {
@@ -124,4 +138,17 @@ func (cl *CategoryLineageBuilder) GetLineageSlugs(catId int) []string {
 		cl.SlugCache[catId] = result
 	}
 	return cl.SlugCache[catId]
+}
+
+func (cl *CategoryLineageBuilder) GetSubforumLineageSlugs(catId int) []string {
+	return cl.GetLineageSlugs(catId)[1:]
+}
+
+func (cl *CategoryLineageBuilder) FindIdBySlug(projectId int, slug string) int {
+	for _, node := range cl.Tree {
+		if node.Slug != nil && *node.Slug == slug && node.ProjectID != nil && *node.ProjectID == projectId {
+			return node.ID
+		}
+	}
+	return -1
 }

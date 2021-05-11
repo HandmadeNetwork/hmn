@@ -17,8 +17,10 @@ import (
 type FeedData struct {
 	templates.BaseData
 
-	Posts      []templates.PostListItem
-	Pagination templates.Pagination
+	Posts          []templates.PostListItem
+	Pagination     templates.Pagination
+	AtomFeedUrl    string
+	MarkAllReadUrl string
 }
 
 func Feed(c *RequestContext) ResponseData {
@@ -76,13 +78,14 @@ func Feed(c *RequestContext) ResponseData {
 
 	c.Perf.StartBlock("SQL", "Fetch posts")
 	type feedPostQuery struct {
-		Post               models.Post     `db:"post"`
-		Thread             models.Thread   `db:"thread"`
-		Cat                models.Category `db:"cat"`
-		Proj               models.Project  `db:"proj"`
-		User               models.User     `db:"auth_user"`
-		ThreadLastReadTime *time.Time      `db:"tlri.lastread"`
-		CatLastReadTime    *time.Time      `db:"clri.lastread"`
+		Post               models.Post             `db:"post"`
+		Thread             models.Thread           `db:"thread"`
+		Cat                models.Category         `db:"cat"`
+		Proj               models.Project          `db:"proj"`
+		LibraryResource    *models.LibraryResource `db:"lib_resource"`
+		User               models.User             `db:"auth_user"`
+		ThreadLastReadTime *time.Time              `db:"tlri.lastread"`
+		CatLastReadTime    *time.Time              `db:"clri.lastread"`
 	}
 	posts, err := db.Query(c.Context(), c.Conn, feedPostQuery{},
 		`
@@ -92,15 +95,16 @@ func Feed(c *RequestContext) ResponseData {
 			JOIN handmade_thread AS thread ON thread.id = post.thread_id
 			JOIN handmade_category AS cat ON cat.id = post.category_id
 			JOIN handmade_project AS proj ON proj.id = post.project_id
-			LEFT OUTER JOIN handmade_threadlastreadinfo AS tlri ON (
+			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
 				tlri.thread_id = post.thread_id
 				AND tlri.user_id = $1
 			)
-			LEFT OUTER JOIN handmade_categorylastreadinfo AS clri ON (
+			LEFT JOIN handmade_categorylastreadinfo AS clri ON (
 				clri.category_id = post.category_id
 				AND clri.user_id = $1
 			)
-			LEFT OUTER JOIN auth_user ON post.author_id = auth_user.id
+			LEFT JOIN auth_user ON post.author_id = auth_user.id
+			LEFT JOIN handmade_libraryresource as lib_resource ON lib_resource.category_id = post.category_id
 		WHERE
 			post.category_kind = ANY ($2)
 			AND post.deleted = FALSE
@@ -123,22 +127,6 @@ func Feed(c *RequestContext) ResponseData {
 	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
 	c.Perf.EndBlock()
 
-	categoryUrlCache := make(map[int]string)
-	getCategoryUrl := func(projectSlug string, cat *models.Category) string {
-		_, ok := categoryUrlCache[cat.ID]
-		if !ok {
-			lineageNames := lineageBuilder.GetLineageSlugs(cat.ID)
-			switch cat.Kind {
-			case models.CatKindForum:
-				categoryUrlCache[cat.ID] = hmnurl.BuildForumCategory(projectSlug, lineageNames[1:], 1)
-				// TODO(asaf): Add more kinds!!!
-			default:
-				categoryUrlCache[cat.ID] = ""
-			}
-		}
-		return categoryUrlCache[cat.ID]
-	}
-
 	c.Perf.StartBlock("FEED", "Build post items")
 	var postItems []templates.PostListItem
 	for _, iPostResult := range posts.ToSlice() {
@@ -151,42 +139,16 @@ func Feed(c *RequestContext) ResponseData {
 			hasRead = true
 		}
 
-		breadcrumbs := make([]templates.Breadcrumb, 0, len(lineageBuilder.GetLineage(postResult.Cat.ID)))
-		breadcrumbs = append(breadcrumbs, templates.Breadcrumb{
-			Name: postResult.Proj.Name,
-			Url:  hmnurl.ProjectUrl("/", nil, postResult.Proj.Slug),
-		})
-		if postResult.Post.CategoryKind == models.CatKindLibraryResource {
-			// TODO(asaf): Fetch library root topic for the project and construct breadcrumb for it
-		} else {
-			lineage := lineageBuilder.GetLineage(postResult.Cat.ID)
-			for i, cat := range lineage {
-				name := *cat.Name
-				if i == 0 {
-					switch cat.Kind {
-					case models.CatKindForum:
-						name = "Forums"
-					case models.CatKindBlog:
-						name = "Blog"
-					}
-				}
-				breadcrumbs = append(breadcrumbs, templates.Breadcrumb{
-					Name: name,
-					Url:  getCategoryUrl(postResult.Proj.Subdomain(), cat),
-				})
-			}
-		}
-
-		postItems = append(postItems, templates.PostListItem{
-			Title:       postResult.Thread.Title,
-			Url:         hmnurl.BuildForumPost(postResult.Proj.Subdomain(), lineageBuilder.GetLineageSlugs(postResult.Cat.ID)[1:], postResult.Post.ID, postResult.Post.ThreadID),
-			User:        templates.UserToTemplate(&postResult.User),
-			Date:        postResult.Post.PostDate,
-			Breadcrumbs: breadcrumbs,
-			Unread:      !hasRead,
-			Classes:     "post-bg-alternate", // TODO: Should this be the default, and the home page can suppress it?
-			Content:     postResult.Post.Preview,
-		})
+		postItems = append(postItems, MakePostListItem(
+			lineageBuilder,
+			&postResult.Proj,
+			&postResult.Thread,
+			&postResult.Post,
+			&postResult.User,
+			postResult.LibraryResource,
+			!hasRead,
+			true,
+		))
 	}
 	c.Perf.EndBlock()
 
@@ -197,8 +159,10 @@ func Feed(c *RequestContext) ResponseData {
 	res.WriteTemplate("feed.html", FeedData{
 		BaseData: baseData,
 
-		Posts:      postItems,
-		Pagination: pagination,
+		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
+		MarkAllReadUrl: hmnurl.BuildMarkRead(0),
+		Posts:          postItems,
+		Pagination:     pagination,
 	}, c.Perf)
 
 	return res

@@ -14,8 +14,44 @@ type BaseData struct {
 	BodyClasses     []string
 	Breadcrumbs     []Breadcrumb
 
+	LoginPageUrl  string
+	ProjectCSSUrl string
+
 	Project Project
 	User    *User
+
+	Header Header
+	Footer Footer
+}
+
+type Header struct {
+	AdminUrl           string
+	MemberSettingsUrl  string
+	LoginActionUrl     string
+	LogoutActionUrl    string
+	RegisterUrl        string
+	HMNHomepageUrl     string
+	ProjectHomepageUrl string
+	BlogUrl            string
+	ForumsUrl          string
+	WikiUrl            string
+	LibraryUrl         string
+	ManifestoUrl       string
+	EpisodeGuideUrl    string
+	EditUrl            string
+	SearchActionUrl    string
+}
+
+type Footer struct {
+	HomepageUrl                string
+	AboutUrl                   string
+	ManifestoUrl               string
+	CodeOfConductUrl           string
+	CommunicationGuidelinesUrl string
+	ProjectIndexUrl            string
+	ForumsUrl                  string
+	ContactUrl                 string
+	SitemapUrl                 string
 }
 
 type Thread struct {
@@ -54,6 +90,7 @@ type Project struct {
 	Subdomain string
 	Color1    string
 	Color2    string
+	Url       string
 
 	IsHMN bool
 

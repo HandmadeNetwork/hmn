@@ -3,15 +3,15 @@
     <div class="user-options flex justify-center justify-end-ns">
         {{ if .User }}
             {{ if .User.IsSuperuser }}
-                <a class="admin-panel" href="{{ url "/admin_panel" }}"><span class="icon-settings"> Admin</span></a>
+                <a class="admin-panel" href="{{ .Header.AdminUrl }}"><span class="icon-settings"> Admin</span></a>
             {{ end }}
-            <a class="username settings" href="{{ url "/member_settings" }}"><span class="icon-settings"></span> {{ .User.Username }}</a>
-            <a class="logout" href="{{ url "/logout" }}"><span class="icon-logout"></span> Logout</a>
+            <a class="username settings" href="{{ .Header.MemberSettingsUrl }}"><span class="icon-settings"></span> {{ .User.Username }}</a>
+            <a class="logout" href="{{ .Header.LogoutActionUrl }}"><span class="icon-logout"></span> Logout</a>
         {{ else }}
-            <a class="register" id="register-link" href="{{ url "/member_register" }}">Register</a>
-            <a class="login" id="login-link" href="{{ projecturl "/login" .Project }}">Log in</a>
+            <a class="register" id="register-link" href="{{ .Header.RegisterUrl }}">Register</a>
+            <a class="login" id="login-link" href="{{ .LoginPageUrl }}">Log in</a>
             <div id="login-popup">
-                <form action="{{ projecturl "/login" .Project }}" method="post">
+                <form action="{{ .Header.LoginActionUrl }}" method="post">
                     {{/* TODO: CSRF */}}
                     <table>
                         <tr>
@@ -33,41 +33,41 @@
     </div>
     <div class="menu-bar flex flex-column flex-row-l justify-between {% if project and project.slug != 'hmn' %}project{% endif %}">
         <div class="flex flex-column flex-row-ns">
-            <a href="{{ url "/" }}" class="logo hmdev-logo">
+            <a href="{{ .Header.HMNHomepageUrl }}" class="logo hmdev-logo">
                 <div class="underscore"></div>
             </a>
             <div class="items flex items-center justify-center justify-start-ns">
                 {{ if not .Project.IsHMN }}
-                    <a class="project-logo" href="{{ projecturl "/" .Project }}">
+                    <a class="project-logo" href="{{ .Header.ProjectHomepageUrl }}">
                         <h1>{{ .Project.Name }}</h1>
                     </a>
                 {{ end }}
                 {{ if .Project.HasBlog }}
-                    <a href="{{ projecturl "/blog" .Project }}" class="blog">Blog</a>
+                    <a href="{{ .Header.BlogUrl }}" class="blog">Blog</a>
                 {{ end }}
                 {{ if .Project.HasForum }}
-                    <a href="{{ projecturl "/forums" .Project }}" class="forums">Forums</a>
+                    <a href="{{ .Header.ForumsUrl }}" class="forums">Forums</a>
                 {{ end }}
                 {{ if .Project.HasWiki }}
-                    <a href="{{ projecturl "/wiki" .Project }}" class="wiki">Wiki</a>
+                    <a href="{{ .Header.WikiUrl }}" class="wiki">Wiki</a>
                 {{ end }}
                 {{ if .Project.HasLibrary }}
-                    <a href="{{ projecturl "/library" .Project }}" class="library">Library</a>
+                    <a href="{{ .Header.LibraryUrl }}" class="library">Library</a>
                 {{ end }}
                 {{ if .Project.IsHMN }}
-                    <a href="{{ projecturl "/manifesto" .Project }}" class="misson">Mission</a>
+                    <a href="{{ .Header.ManifestoUrl }}" class="misson">Mission</a>
                 {{ end }}
                 {{/* {% if project.default_annotation_category %} */}}
                 {{ if false }}
-                    <a href="{% url 'episode_list_topic' project.slug project.default_annotation_category %}" class="annotations">Episode Guide</a>
+                    <a href="{{ .Header.EpisodeGuideUrl }}" class="annotations">Episode Guide</a>
                 {{ end }}
                 {{/* {% if showEditLink == True %} */}}
                 {{/* {{ if false }}
-                    <a class="edit" href="{{ EditLink }}" title="Edit {{ project.name }}"><span class="icon">0</span>&nbsp;Settings</a>
+                    <a class="edit" href="{{ .Header.EditUrl }}" title="Edit {{ project.name }}"><span class="icon">0</span>&nbsp;Settings</a>
                 {{ end }} */}}
             </div>
         </div>
-        <form class="dn ma0 flex-l flex-column justify-center items-end" method="post" action="{{ url "/search" }}" target="_blank">
+        <form class="dn ma0 flex-l flex-column justify-center items-end" method="post" action="{{ .Header.SearchActionUrl }}" target="_blank">
             {{/* TODO: CSRF? */}}
             <input class="site-search bn lite pa2 fira" type="text" name="term" value="" placeholder="Search with Google" size="17" />
             <input id="search_button_homepage" type="submit" value="Go"/>

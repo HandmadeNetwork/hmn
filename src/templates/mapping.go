@@ -57,6 +57,7 @@ func ProjectToTemplate(p *models.Project) Project {
 		Subdomain: p.Subdomain(),
 		Color1:    p.Color1,
 		Color2:    p.Color2,
+		Url:       hmnurl.BuildProjectHomepage(p.Slug),
 
 		IsHMN: p.IsHMN(),
 
