@@ -35,6 +35,14 @@ func TestProjectIndex(t *testing.T) {
 	AssertRegexMatch(t, BuildProjectIndex(), RegexProjectIndex, nil)
 }
 
+func TestShowcase(t *testing.T) {
+	AssertRegexMatch(t, BuildShowcase(), RegexShowcase, nil)
+}
+
+func TestStreams(t *testing.T) {
+	AssertRegexMatch(t, BuildStreams(), RegexStreams, nil)
+}
+
 func TestSiteMap(t *testing.T) {
 	AssertRegexMatch(t, BuildSiteMap(), RegexSiteMap, nil)
 }
@@ -77,6 +85,13 @@ func TestFeed(t *testing.T) {
 	AssertRegexMatch(t, BuildFeedWithPage(5), RegexFeed, map[string]string{"page": "5"})
 	assert.Panics(t, func() { BuildFeedWithPage(-1) })
 	assert.Panics(t, func() { BuildFeedWithPage(0) })
+}
+
+func TestPodcast(t *testing.T) {
+	AssertRegexMatch(t, BuildPodcast(""), RegexPodcast, nil)
+	AssertSubdomain(t, BuildPodcast(""), "")
+	AssertSubdomain(t, BuildPodcast("hmn"), "")
+	AssertSubdomain(t, BuildPodcast("hero"), "hero")
 }
 
 func TestForumCategory(t *testing.T) {
@@ -329,6 +344,8 @@ func TestMarkRead(t *testing.T) {
 }
 
 func AssertSubdomain(t *testing.T, fullUrl string, expectedSubdomain string) {
+	t.Helper()
+
 	parsed, err := url.Parse(fullUrl)
 	ok := assert.Nilf(t, err, "Full url could not be parsed: %s", fullUrl)
 	if !ok {
@@ -344,6 +361,8 @@ func AssertSubdomain(t *testing.T, fullUrl string, expectedSubdomain string) {
 }
 
 func AssertRegexMatch(t *testing.T, fullUrl string, regex *regexp.Regexp, paramsToVerify map[string]string) {
+	t.Helper()
+
 	parsed, err := url.Parse(fullUrl)
 	ok := assert.Nilf(t, err, "Full url could not be parsed: %s", fullUrl)
 	if !ok {
@@ -378,6 +397,8 @@ func AssertRegexMatch(t *testing.T, fullUrl string, regex *regexp.Regexp, params
 }
 
 func AssertRegexNoMatch(t *testing.T, fullUrl string, regex *regexp.Regexp) {
+	t.Helper()
+
 	parsed, err := url.Parse(fullUrl)
 	ok := assert.Nilf(t, err, "Full url could not be parsed: %s", fullUrl)
 	if !ok {
