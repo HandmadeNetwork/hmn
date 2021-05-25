@@ -896,6 +896,7 @@ func PathSafeTitle(title string) string {
 	return title
 }
 
+// TODO(asaf): Find a nicer solution that doesn't require adding a defer to every construction function while also not printing errors in tests.
 func CatchPanic() {
 	if !isTest {
 		if recovered := recover(); recovered != nil {
