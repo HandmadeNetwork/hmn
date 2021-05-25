@@ -167,25 +167,28 @@ func getBaseData(c *RequestContext) templates.BaseData {
 }
 
 func FetchProjectBySlug(ctx context.Context, conn *pgxpool.Pool, slug string) (*models.Project, error) {
-	subdomainProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE slug = $1", slug)
-	if err == nil {
-		subdomainProject := subdomainProjectRow.(*models.Project)
-		return subdomainProject, nil
-	} else if !errors.Is(err, db.ErrNoMatchingRows) {
-		return nil, oops.New(err, "failed to get projects by slug")
-	}
-
-	defaultProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE id = $1", models.HMNProjectID)
-	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
-			return nil, oops.New(nil, "default project didn't exist in the database")
+	if len(slug) > 0 && slug != models.HMNProjectSlug {
+		subdomainProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE slug = $1", slug)
+		if err == nil {
+			subdomainProject := subdomainProjectRow.(*models.Project)
+			return subdomainProject, nil
+		} else if !errors.Is(err, db.ErrNoMatchingRows) {
+			return nil, oops.New(err, "failed to get projects by slug")
 		} else {
-			return nil, oops.New(err, "failed to get default project")
+			return nil, nil
 		}
+	} else {
+		defaultProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE id = $1", models.HMNProjectID)
+		if err != nil {
+			if errors.Is(err, db.ErrNoMatchingRows) {
+				return nil, oops.New(nil, "default project didn't exist in the database")
+			} else {
+				return nil, oops.New(err, "failed to get default project")
+			}
+		}
+		defaultProject := defaultProjectRow.(*models.Project)
+		return defaultProject, nil
 	}
-	defaultProject := defaultProjectRow.(*models.Project)
-
-	return defaultProject, nil
 }
 
 func ProjectCSS(c *RequestContext) ResponseData {
@@ -261,6 +264,9 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, slug)
 		if err != nil {
 			return false, ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
+		}
+		if dbProject == nil {
+			return false, c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
 		}
 
 		c.CurrentProject = dbProject
