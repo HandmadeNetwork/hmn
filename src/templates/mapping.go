@@ -8,10 +8,10 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 )
 
-func PostToTemplate(p *models.Post, author *models.User) Post {
+func PostToTemplate(p *models.Post, author *models.User, currentTheme string) Post {
 	var authorUser *User
 	if author != nil {
-		authorTmpl := UserToTemplate(author)
+		authorTmpl := UserToTemplate(author, currentTheme)
 		authorUser = &authorTmpl
 	}
 
@@ -31,11 +31,11 @@ func PostToTemplate(p *models.Post, author *models.User) Post {
 	}
 }
 
-func (p *Post) AddContentVersion(ver models.PostVersion, editor *models.User) {
+func (p *Post) AddContentVersion(ver models.PostVersion, editor *models.User, currentTheme string) {
 	p.Content = template.HTML(ver.TextParsed)
 
 	if editor != nil {
-		editorTmpl := UserToTemplate(editor)
+		editorTmpl := UserToTemplate(editor, currentTheme)
 		p.Editor = &editorTmpl
 		p.EditDate = ver.EditDate
 		p.EditIP = maybeIp(ver.EditIP)
@@ -76,12 +76,14 @@ func ThreadToTemplate(t *models.Thread) Thread {
 	}
 }
 
-func UserToTemplate(u *models.User) User {
+func UserToTemplate(u *models.User, currentTheme string) User {
 	// TODO: Handle deleted users. Maybe not here, but if not, at call sites of this function.
 
 	avatar := ""
-	if u.Avatar != nil {
-		avatar = hmnurl.StaticUrl(*u.Avatar, nil)
+	if u.Avatar != nil && len(*u.Avatar) > 0 {
+		avatar = hmnurl.BuildPublic(*u.Avatar, false)
+	} else {
+		avatar = hmnurl.BuildTheme("empty-avatar.svg", currentTheme, true)
 	}
 
 	name := u.Name
@@ -99,7 +101,7 @@ func UserToTemplate(u *models.User) User {
 		Name:       name,
 		Blurb:      u.Blurb,
 		Signature:  u.Signature,
-		AvatarUrl:  avatar, // TODO
+		AvatarUrl:  avatar,
 		ProfileUrl: hmnurl.Url("m/"+u.Username, nil),
 
 		DarkTheme:     u.DarkTheme,

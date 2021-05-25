@@ -141,9 +141,9 @@ func ForumCategory(c *RequestContext) ResponseData {
 		return templates.ThreadListItem{
 			Title:     row.Thread.Title,
 			Url:       hmnurl.BuildForumThread(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(row.Thread.CategoryID), row.Thread.ID, row.Thread.Title, 1),
-			FirstUser: templates.UserToTemplate(row.FirstUser),
+			FirstUser: templates.UserToTemplate(row.FirstUser, c.Theme),
 			FirstDate: row.FirstPost.PostDate,
-			LastUser:  templates.UserToTemplate(row.LastUser),
+			LastUser:  templates.UserToTemplate(row.LastUser, c.Theme),
 			LastDate:  row.LastPost.PostDate,
 
 			Unread: !hasRead,
@@ -403,8 +403,8 @@ func ForumThread(c *RequestContext) ResponseData {
 	for _, irow := range itPosts.ToSlice() {
 		row := irow.(*postsQueryResult)
 
-		post := templates.PostToTemplate(&row.Post, row.Author)
-		post.AddContentVersion(row.Ver, row.Editor)
+		post := templates.PostToTemplate(&row.Post, row.Author, c.Theme)
+		post.AddContentVersion(row.Ver, row.Editor, c.Theme)
 		post.AddUrls(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
 
 		posts = append(posts, post)

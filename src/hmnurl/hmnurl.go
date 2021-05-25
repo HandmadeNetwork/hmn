@@ -72,14 +72,6 @@ func ProjectUrlWithFragment(path string, query []Q, slug string, fragment string
 	return url.String()
 }
 
-func StaticUrl(path string, query []Q) string {
-	return Url(StaticPath+"/"+trim(path), query)
-}
-
-func StaticThemeUrl(path string, theme string, query []Q) string {
-	return Url(StaticThemePath+"/"+theme+"/"+trim(path), query)
-}
-
 func trim(path string) string {
 	if len(path) > 0 && path[0] == '/' {
 		return path[1:]

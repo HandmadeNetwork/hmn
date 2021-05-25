@@ -149,27 +149,20 @@ var HMNTemplateFuncs = template.FuncMap{
 		}
 	},
 	"static": func(filepath string) string {
-		return hmnurl.StaticUrl(filepath, []hmnurl.Q{{"v", cachebust}})
+		return hmnurl.BuildPublic(filepath, true)
 	},
 	"staticnobust": func(filepath string) string {
-		return hmnurl.StaticUrl(filepath, nil)
+		return hmnurl.BuildPublic(filepath, false)
 	},
 	"statictheme": func(theme string, filepath string) string {
-		return hmnurl.StaticThemeUrl(filepath, theme, []hmnurl.Q{{"v", cachebust}})
+		return hmnurl.BuildTheme(filepath, theme, true)
 	},
 	"staticthemenobust": func(theme string, filepath string) string {
-		return hmnurl.StaticThemeUrl(filepath, theme, nil)
+		return hmnurl.BuildTheme(filepath, theme, false)
 	},
 	"timehtml": func(formatted string, t time.Time) template.HTML {
 		iso := t.Format(time.RFC3339)
 		return template.HTML(fmt.Sprintf(`<time datetime="%s">%s</time>`, iso, formatted))
-	},
-	"url": func(url string) string {
-		return hmnurl.Url(url, nil)
-	},
-	"urlq": func(url string, query string) string {
-		absUrl := hmnurl.Url(url, nil)
-		return fmt.Sprintf("%s?%s", absUrl, query)
 	},
 }
 

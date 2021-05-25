@@ -148,6 +148,7 @@ func Feed(c *RequestContext) ResponseData {
 			postResult.LibraryResource,
 			!hasRead,
 			true,
+			c.Theme,
 		))
 	}
 	c.Perf.EndBlock()

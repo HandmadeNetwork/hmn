@@ -133,7 +133,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 		Project:       templates.ProjectToTemplate(c.CurrentProject),
 		LoginPageUrl:  hmnurl.BuildLoginPage(c.FullUrl()),
 		User:          templateUser,
-		Theme:         "light",
+		Theme:         c.Theme,
 		ProjectCSSUrl: hmnurl.BuildProjectCSS(c.CurrentProject.Color1),
 		Header: templates.Header{
 			AdminUrl:           hmnurl.BuildHomepage(), // TODO(asaf)
@@ -278,6 +278,13 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		}
 		// http.ErrNoCookie is the only error Cookie ever returns, so no further handling to do here.
 	}
+
+	theme := "light"
+	if c.CurrentUser != nil && c.CurrentUser.DarkTheme {
+		theme = "dark"
+	}
+
+	c.Theme = theme
 
 	return true, ResponseData{}
 }

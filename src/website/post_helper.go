@@ -30,11 +30,11 @@ func UrlForGenericPost(post *models.Post, subforums []string, threadTitle string
 }
 
 // NOTE(asaf): THIS DOESN'T HANDLE WIKI EDIT ITEMS. Wiki edits are PostTextVersions, not Posts.
-func MakePostListItem(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, thread *models.Thread, post *models.Post, user *models.User, libraryResource *models.LibraryResource, unread bool, includeBreadcrumbs bool) templates.PostListItem {
+func MakePostListItem(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, thread *models.Thread, post *models.Post, user *models.User, libraryResource *models.LibraryResource, unread bool, includeBreadcrumbs bool, currentTheme string) templates.PostListItem {
 	var result templates.PostListItem
 
 	result.Title = thread.Title
-	result.User = templates.UserToTemplate(user)
+	result.User = templates.UserToTemplate(user, currentTheme)
 	result.Date = post.PostDate
 	result.Unread = unread
 	libraryResourceId := 0

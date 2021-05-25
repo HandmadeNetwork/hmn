@@ -1,6 +1,7 @@
 package hmnurl
 
 import (
+	"fmt"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -577,10 +578,13 @@ func BuildProjectCSS(color string) string {
 
 var RegexPublic = regexp.MustCompile("^/public/.+$")
 
-func BuildPublic(filepath string) string {
+func BuildPublic(filepath string, cachebust bool) string {
 	filepath = strings.Trim(filepath, "/")
 	if len(strings.TrimSpace(filepath)) == 0 {
 		panic(oops.New(nil, "Attempted to build a /public url with no path"))
+	}
+	if strings.Contains(filepath, "?") {
+		panic(oops.New(nil, "Public url failpath must not contain query params"))
 	}
 	var builder strings.Builder
 	builder.WriteString("/public")
@@ -593,7 +597,18 @@ func BuildPublic(filepath string) string {
 		builder.WriteRune('/')
 		builder.WriteString(part)
 	}
-	return Url(builder.String(), nil)
+	var query []Q
+	if cachebust {
+		query = []Q{{"v", cacheBust}}
+	}
+	return Url(builder.String(), query)
+}
+
+func BuildTheme(filepath string, theme string, cachebust bool) string {
+	if len(theme) == 0 {
+		panic(oops.New(nil, "Theme can't be blank"))
+	}
+	return BuildPublic(fmt.Sprintf("themes/%s/%s", theme, strings.Trim(filepath, "/")), cachebust)
 }
 
 /*

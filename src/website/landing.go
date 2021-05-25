@@ -183,7 +183,7 @@ func Index(c *RequestContext) ResponseData {
 				landingPageProject.FeaturedPost = &LandingPageFeaturedPost{
 					Title:   projectPost.Thread.Title,
 					Url:     hmnurl.BuildBlogPost(proj.Slug, projectPost.Thread.ID, projectPost.Post.ID),
-					User:    templates.UserToTemplate(&projectPost.User),
+					User:    templates.UserToTemplate(&projectPost.User, c.Theme),
 					Date:    projectPost.Post.PostDate,
 					Unread:  !hasRead,
 					Content: template.HTML(content),
@@ -200,6 +200,7 @@ func Index(c *RequestContext) ResponseData {
 						projectPost.LibraryResource,
 						!hasRead,
 						false,
+						c.Theme,
 					),
 				)
 			}
@@ -293,7 +294,7 @@ func Index(c *RequestContext) ResponseData {
 		NewsPost: LandingPageFeaturedPost{
 			Title:   newsPostResult.Thread.Title,
 			Url:     hmnurl.BuildBlogPost(models.HMNProjectSlug, newsPostResult.Thread.ID, newsPostResult.Post.ID),
-			User:    templates.UserToTemplate(&newsPostResult.User),
+			User:    templates.UserToTemplate(&newsPostResult.User, c.Theme),
 			Date:    newsPostResult.Post.PostDate,
 			Unread:  true, // TODO
 			Content: template.HTML(newsPostResult.PostVersion.TextParsed),

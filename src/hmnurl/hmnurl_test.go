@@ -329,14 +329,17 @@ func TestProjectCSS(t *testing.T) {
 }
 
 func TestPublic(t *testing.T) {
-	AssertRegexMatch(t, BuildPublic("test"), RegexPublic, nil)
-	AssertRegexMatch(t, BuildPublic("/test"), RegexPublic, nil)
-	AssertRegexMatch(t, BuildPublic("/test/"), RegexPublic, nil)
-	AssertRegexMatch(t, BuildPublic("/test/thing/image.png"), RegexPublic, nil)
-	assert.Panics(t, func() { BuildPublic("") })
-	assert.Panics(t, func() { BuildPublic("/") })
-	assert.Panics(t, func() { BuildPublic("/thing//image.png") })
-	assert.Panics(t, func() { BuildPublic("/thing/ /image.png") })
+	AssertRegexMatch(t, BuildPublic("test", false), RegexPublic, nil)
+	AssertRegexMatch(t, BuildPublic("/test", true), RegexPublic, nil)
+	AssertRegexMatch(t, BuildPublic("/test/", false), RegexPublic, nil)
+	AssertRegexMatch(t, BuildPublic("/test/thing/image.png", true), RegexPublic, nil)
+	assert.Panics(t, func() { BuildPublic("", false) })
+	assert.Panics(t, func() { BuildPublic("/", false) })
+	assert.Panics(t, func() { BuildPublic("/thing//image.png", false) })
+	assert.Panics(t, func() { BuildPublic("/thing/ /image.png", false) })
+	assert.Panics(t, func() { BuildPublic("/thing/image.png?hello", false) })
+
+	AssertRegexMatch(t, BuildTheme("test.css", "light", true), RegexPublic, nil)
 }
 
 func TestMarkRead(t *testing.T) {
