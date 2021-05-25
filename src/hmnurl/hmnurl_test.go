@@ -14,6 +14,7 @@ func TestUrl(t *testing.T) {
 		SetGlobalBaseUrl(config.Config.BaseUrl)
 	}()
 	SetGlobalBaseUrl("http://handmade.test")
+	isTest = true
 
 	t.Run("no query", func(t *testing.T) {
 		result := Url("/test/foo", nil)

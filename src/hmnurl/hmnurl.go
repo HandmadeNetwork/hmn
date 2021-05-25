@@ -20,6 +20,7 @@ type Q struct {
 
 var baseUrlParsed url.URL
 var cacheBust string
+var isTest bool
 
 func init() {
 	SetGlobalBaseUrl(config.Config.BaseUrl)
