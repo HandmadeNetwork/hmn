@@ -135,18 +135,37 @@ type BackgroundImage struct {
 	Size string // A valid CSS background-size value
 }
 
+type PostType int
+
+const (
+	PostTypeUnknown PostType = iota
+	PostTypeBlogPost
+	PostTypeBlogComment
+	PostTypeForumThread
+	PostTypeForumReply
+	PostTypeWikiCreate
+	PostTypeWikiTalk
+	PostTypeWikiEdit
+	PostTypeLibraryComment
+)
+
 // Data from post_list_item.html
 type PostListItem struct {
 	Title       string
 	Url         string
+	UUID        string
 	Breadcrumbs []Breadcrumb
+
+	PostType       PostType
+	PostTypePrefix string
 
 	User User
 	Date time.Time
 
-	Unread  bool
-	Classes string
-	Content string
+	Unread       bool
+	Classes      string
+	Preview      string
+	LastEditDate time.Time
 }
 
 // Data from thread_list_item.html

@@ -57,13 +57,6 @@ func BuildSiteMap() string {
 	return Url("/sitemap", nil)
 }
 
-var RegexAtomFeed = regexp.MustCompile("^/atom$")
-
-func BuildAtomFeed() string {
-	defer CatchPanic()
-	return Url("/atom", nil)
-}
-
 // QUESTION(ben): Can we change these routes?
 
 var RegexLoginAction = regexp.MustCompile("^/login$")
@@ -174,6 +167,23 @@ func BuildFeedWithPage(page int) string {
 		return BuildFeed()
 	}
 	return Url("/feed/"+strconv.Itoa(page), nil)
+}
+
+var RegexAtomFeed = regexp.MustCompile("^/atom(/(?P<feedtype>.+))?$")
+
+func BuildAtomFeed() string {
+	defer CatchPanic()
+	return Url("/atom", nil)
+}
+
+func BuildAtomFeedForProjects() string {
+	defer CatchPanic()
+	return Url("/atom/projects", nil)
+}
+
+func BuildAtomFeedForShowcase() string {
+	defer CatchPanic()
+	return Url("/atom/showcase", nil)
 }
 
 /*

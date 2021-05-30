@@ -1,10 +1,14 @@
 package website
 
 import (
+	"fmt"
 	"math"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
@@ -76,9 +80,123 @@ func Feed(c *RequestContext) ResponseData {
 		currentUserId = &c.CurrentUser.ID
 	}
 
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	posts, err := fetchAllPosts(c, lineageBuilder, currentUserId, howManyPostsToSkip, postsPerPage)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
+	}
+
+	baseData := getBaseData(c)
+	baseData.BodyClasses = append(baseData.BodyClasses, "feed")
+
+	var res ResponseData
+	res.WriteTemplate("feed.html", FeedData{
+		BaseData: baseData,
+
+		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
+		MarkAllReadUrl: hmnurl.BuildMarkRead(0),
+		Posts:          posts,
+		Pagination:     pagination,
+	}, c.Perf)
+
+	return res
+}
+
+type FeedType int
+
+const (
+	FeedTypeAll = iota
+	FeedTypeProjects
+	FeedTypeShowcase
+)
+
+// NOTE(asaf): UUID values copied from old website
+var (
+	FeedIDAll      = "urn:uuid:1084fd28-993a-4961-9011-39ddeaeb3711"
+	FeedIDProjects = "urn:uuid:cfad0d50-cbcf-11e7-82d7-db1d52543cc7"
+	FeedIDShowcase = "urn:uuid:37d29027-2892-5a21-b521-951246c7aa46"
+)
+
+type AtomFeedData struct {
+	Title    string
+	Subtitle string
+
+	HomepageUrl string
+	AtomFeedUrl string
+	FeedUrl     string
+
+	CopyrightStatement string
+	SiteVersion        string
+	Updated            time.Time
+	FeedID             string
+
+	FeedType FeedType
+	Posts    []templates.PostListItem
+	Projects []int // TODO(asaf): Actually do this
+	Snippets []int // TODO(asaf): Actually do this
+}
+
+func AtomFeed(c *RequestContext) ResponseData {
+	itemsPerFeed := 25 // NOTE(asaf): Copied from old website
+
+	feedData := AtomFeedData{
+		HomepageUrl: hmnurl.BuildHomepage(),
+
+		CopyrightStatement: fmt.Sprintf("Copyright (C) 2014-%d Handmade.Network and its contributors", time.Now().Year()),
+		SiteVersion:        "2.0",
+	}
+
+	feedType, hasType := c.PathParams["feedtype"]
+	if !hasType || len(feedType) == 0 {
+		feedData.Title = "New Threads, Blog Posts, Replies and Comments | Site-wide | Handmade.Network"
+		feedData.Subtitle = feedData.Title
+		feedData.FeedType = FeedTypeAll
+		feedData.FeedID = FeedIDAll
+		feedData.AtomFeedUrl = hmnurl.BuildAtomFeed()
+		feedData.FeedUrl = hmnurl.BuildFeed()
+
+		c.Perf.StartBlock("SQL", "Fetch category tree")
+		categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+		lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+		c.Perf.EndBlock()
+
+		posts, err := fetchAllPosts(c, lineageBuilder, nil, 0, itemsPerFeed)
+		if err != nil {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
+		}
+		feedData.Posts = posts
+
+		updated := time.Now()
+		if len(posts) > 0 {
+			updated = posts[0].Date
+		}
+		feedData.Updated = updated
+	} else {
+		switch strings.ToLower(feedType) {
+		case "projects":
+			// TODO(asaf): Implement this
+		case "showcase":
+			// TODO(asaf): Implement this
+		default:
+			return FourOhFour(c)
+		}
+	}
+
+	var res ResponseData
+	res.WriteTemplate("atom.xml", feedData, c.Perf)
+
+	return res
+}
+
+func fetchAllPosts(c *RequestContext, lineageBuilder *models.CategoryLineageBuilder, currentUserID *int, offset int, limit int) ([]templates.PostListItem, error) {
 	c.Perf.StartBlock("SQL", "Fetch posts")
 	type feedPostQuery struct {
 		Post               models.Post             `db:"post"`
+		PostVersion        models.PostVersion      `db:"version"`
 		Thread             models.Thread           `db:"thread"`
 		Cat                models.Category         `db:"cat"`
 		Proj               models.Project          `db:"proj"`
@@ -92,6 +210,7 @@ func Feed(c *RequestContext) ResponseData {
 		SELECT $columns
 		FROM
 			handmade_post AS post
+			JOIN handmade_postversion AS version ON version.id = post.current_id
 			JOIN handmade_thread AS thread ON thread.id = post.thread_id
 			JOIN handmade_category AS cat ON cat.id = post.category_id
 			JOIN handmade_project AS proj ON proj.id = post.project_id
@@ -112,20 +231,15 @@ func Feed(c *RequestContext) ResponseData {
 		ORDER BY postdate DESC
 		LIMIT $3 OFFSET $4
 		`,
-		currentUserId,
+		currentUserID,
 		[]models.CategoryKind{models.CatKindForum, models.CatKindBlog, models.CatKindWiki, models.CatKindLibraryResource},
-		postsPerPage,
-		howManyPostsToSkip,
+		limit,
+		offset,
 	)
 	c.Perf.EndBlock()
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
+		return nil, err
 	}
-
-	c.Perf.StartBlock("SQL", "Fetch category tree")
-	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
-	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
-	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("FEED", "Build post items")
 	var postItems []templates.PostListItem
@@ -139,7 +253,7 @@ func Feed(c *RequestContext) ResponseData {
 			hasRead = true
 		}
 
-		postItems = append(postItems, MakePostListItem(
+		postItem := MakePostListItem(
 			lineageBuilder,
 			&postResult.Proj,
 			&postResult.Thread,
@@ -149,22 +263,14 @@ func Feed(c *RequestContext) ResponseData {
 			!hasRead,
 			true,
 			c.Theme,
-		))
+		)
+
+		postItem.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(postItem.Url)).URN()
+		postItem.LastEditDate = postResult.PostVersion.EditDate
+
+		postItems = append(postItems, postItem)
 	}
 	c.Perf.EndBlock()
 
-	baseData := getBaseData(c)
-	baseData.BodyClasses = append(baseData.BodyClasses, "feed")
-
-	var res ResponseData
-	res.WriteTemplate("feed.html", FeedData{
-		BaseData: baseData,
-
-		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
-		MarkAllReadUrl: hmnurl.BuildMarkRead(0),
-		Posts:          postItems,
-		Pagination:     pagination,
-	}, c.Perf)
-
-	return res
+	return postItems, nil
 }

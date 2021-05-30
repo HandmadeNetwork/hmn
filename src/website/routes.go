@@ -73,7 +73,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			}
 
 			if !c.CurrentProject.IsHMN() {
-				return c.Redirect(hmnurl.Url(c.URL().String(), nil), http.StatusMovedPermanently)
+				return c.Redirect(hmnurl.Url(c.URL().Path, hmnurl.QFromURL(c.URL())), http.StatusMovedPermanently)
 			}
 
 			return h(c)
@@ -104,6 +104,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	staticPages.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
 
 	mainRoutes.GET(hmnurl.RegexFeed, Feed)
+	mainRoutes.GET(hmnurl.RegexAtomFeed, AtomFeed)
 
 	// TODO(asaf): Trailing slashes break these
 	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)

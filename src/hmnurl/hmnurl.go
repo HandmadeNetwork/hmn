@@ -18,6 +18,16 @@ type Q struct {
 	Value string
 }
 
+func QFromURL(u *url.URL) []Q {
+	var result []Q
+	for key, values := range u.Query() {
+		for _, v := range values {
+			result = append(result, Q{Name: key, Value: v})
+		}
+	}
+	return result
+}
+
 var baseUrlParsed url.URL
 var cacheBust string
 var isTest bool

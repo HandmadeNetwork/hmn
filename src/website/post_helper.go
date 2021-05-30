@@ -29,6 +29,24 @@ func UrlForGenericPost(post *models.Post, subforums []string, threadTitle string
 	return hmnurl.BuildProjectHomepage(projectSlug)
 }
 
+var PostTypeMap = map[models.CategoryKind][]templates.PostType{
+	models.CatKindBlog:            []templates.PostType{templates.PostTypeBlogPost, templates.PostTypeBlogComment},
+	models.CatKindForum:           []templates.PostType{templates.PostTypeForumThread, templates.PostTypeForumReply},
+	models.CatKindWiki:            []templates.PostType{templates.PostTypeWikiCreate, templates.PostTypeWikiTalk},
+	models.CatKindLibraryResource: []templates.PostType{templates.PostTypeLibraryComment, templates.PostTypeLibraryComment},
+}
+
+var PostTypePrefix = map[templates.PostType]string{
+	templates.PostTypeBlogPost:       "New blog post",
+	templates.PostTypeBlogComment:    "Blog comment",
+	templates.PostTypeForumThread:    "New forum thread",
+	templates.PostTypeForumReply:     "Forum reply",
+	templates.PostTypeWikiCreate:     "New wiki page",
+	templates.PostTypeWikiTalk:       "Wiki comment",
+	templates.PostTypeWikiEdit:       "Wiki edit",
+	templates.PostTypeLibraryComment: "Library comment",
+}
+
 // NOTE(asaf): THIS DOESN'T HANDLE WIKI EDIT ITEMS. Wiki edits are PostTextVersions, not Posts.
 func MakePostListItem(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, thread *models.Thread, post *models.Post, user *models.User, libraryResource *models.LibraryResource, unread bool, includeBreadcrumbs bool, currentTheme string) templates.PostListItem {
 	var result templates.PostListItem
@@ -42,6 +60,19 @@ func MakePostListItem(lineageBuilder *models.CategoryLineageBuilder, project *mo
 		libraryResourceId = libraryResource.ID
 	}
 	result.Url = UrlForGenericPost(post, lineageBuilder.GetSubforumLineageSlugs(post.CategoryID), thread.Title, libraryResourceId, project.Slug)
+	result.Preview = post.Preview
+
+	postType := templates.PostTypeUnknown
+	postTypeOptions, found := PostTypeMap[post.CategoryKind]
+	if found {
+		var hasParent int
+		if post.ParentID != nil {
+			hasParent = 1
+		}
+		postType = postTypeOptions[hasParent]
+	}
+	result.PostType = postType
+	result.PostTypePrefix = PostTypePrefix[result.PostType]
 
 	if includeBreadcrumbs {
 		result.Breadcrumbs = append(result.Breadcrumbs, templates.Breadcrumb{

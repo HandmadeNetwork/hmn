@@ -4,7 +4,6 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
-	"net/url"
 	"strings"
 	"time"
 
@@ -25,11 +24,7 @@ const (
 var templateFs embed.FS
 var Templates map[string]*template.Template
 
-var cachebust string
-
 func Init() {
-	cachebust = fmt.Sprint(time.Now().Unix())
-
 	Templates = make(map[string]*template.Template)
 
 	files, _ := templateFs.ReadDir("src")
@@ -54,6 +49,16 @@ func Init() {
 			}
 
 			Templates[f.Name()] = t
+		} else if strings.HasSuffix(f.Name(), ".xml") {
+			t := template.New(f.Name())
+			t = t.Funcs(sprig.FuncMap())
+			t = t.Funcs(HMNTemplateFuncs)
+			t, err := t.ParseFS(templateFs, "src/"+f.Name())
+			if err != nil {
+				logging.Fatal().Str("filename", f.Name()).Err(err).Msg("failed to parse template")
+			}
+
+			Templates[f.Name()] = t
 		}
 	}
 }
@@ -68,7 +73,10 @@ func names(ts []*template.Template) []string {
 
 var HMNTemplateFuncs = template.FuncMap{
 	"absolutedate": func(t time.Time) string {
-		return t.Format("January 2, 2006, 3:04pm")
+		return t.UTC().Format("January 2, 2006, 3:04pm")
+	},
+	"rfc3339": func(t time.Time) string {
+		return t.UTC().Format(time.RFC3339)
 	},
 	"alpha": func(alpha float64, color noire.Color) noire.Color {
 		color.Alpha = alpha
@@ -76,9 +84,6 @@ var HMNTemplateFuncs = template.FuncMap{
 	},
 	"brighten": func(amount float64, color noire.Color) noire.Color {
 		return color.Tint(amount)
-	},
-	"cachebust": func() string {
-		return cachebust
 	},
 	"color2css": func(color noire.Color) template.CSS {
 		return template.CSS(color.HTML())
@@ -95,20 +100,6 @@ var HMNTemplateFuncs = template.FuncMap{
 	"lightness": func(lightness float64, color noire.Color) noire.Color {
 		h, s, _, a := color.HSLA()
 		return noire.NewHSLA(h, s, lightness*100, a)
-	},
-	"projecturl": func(url string, proj interface{}) string {
-		return hmnurl.ProjectUrl(url, nil, getProjectSubdomain(proj))
-	},
-	"projecturlq": func(url string, proj interface{}, query string) string {
-		absUrl := hmnurl.ProjectUrl(url, nil, getProjectSubdomain(proj))
-		return fmt.Sprintf("%s?%s", absUrl, query)
-	},
-	"query": func(args ...string) string {
-		query := url.Values{}
-		for i := 0; i < len(args); i += 2 {
-			query.Set(args[i], args[i+1])
-		}
-		return query.Encode()
 	},
 	"relativedate": func(t time.Time) string {
 		// TODO: Support relative future dates
@@ -161,8 +152,11 @@ var HMNTemplateFuncs = template.FuncMap{
 		return hmnurl.BuildTheme(filepath, theme, false)
 	},
 	"timehtml": func(formatted string, t time.Time) template.HTML {
-		iso := t.Format(time.RFC3339)
+		iso := t.UTC().Format(time.RFC3339)
 		return template.HTML(fmt.Sprintf(`<time datetime="%s">%s</time>`, iso, formatted))
+	},
+	"noescape": func(str string) template.HTML {
+		return template.HTML(str)
 	},
 }
 

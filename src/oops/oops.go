@@ -46,14 +46,16 @@ var ZerologStackMarshaler = func(err error) interface{} {
 	if asOops, ok := err.(*Error); ok {
 		return asOops.Stack
 	}
-	return nil
+	// NOTE(asaf): If we got here, it means zerolog is trying to output a non-oops error.
+	//			   We remove this call and the zerolog caller from the stack.
+	return Trace()[2:]
 }
 
 func New(wrapped error, format string, args ...interface{}) error {
 	return &Error{
 		Message: fmt.Sprintf(format, args...),
 		Wrapped: wrapped,
-		Stack:   Trace(),
+		Stack:   Trace()[1:], // NOTE(asaf): Remove the call to New from the stack
 	}
 }
 

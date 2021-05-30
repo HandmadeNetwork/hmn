@@ -102,7 +102,7 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 		Blurb:      u.Blurb,
 		Signature:  u.Signature,
 		AvatarUrl:  avatar,
-		ProfileUrl: hmnurl.Url("m/"+u.Username, nil),
+		ProfileUrl: hmnurl.BuildMember(u.Username),
 
 		DarkTheme:     u.DarkTheme,
 		Timezone:      u.Timezone,

@@ -14,6 +14,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -249,7 +250,11 @@ func (rd *ResponseData) WriteTemplate(name string, data interface{}, rp *perf.Re
 		rp.StartBlock("TEMPLATE", name)
 		defer rp.EndBlock()
 	}
-	return templates.Templates[name].Execute(rd, data)
+	template, hasTemplate := templates.Templates[name]
+	if !hasTemplate {
+		panic(oops.New(nil, "Template not found: %s", name))
+	}
+	return template.Execute(rd, data)
 }
 
 func ErrorResponse(status int, errs ...error) ResponseData {
