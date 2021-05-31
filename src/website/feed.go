@@ -136,7 +136,7 @@ type AtomFeedData struct {
 
 	FeedType FeedType
 	Posts    []templates.PostListItem
-	Projects []int // TODO(asaf): Actually do this
+	Projects []templates.Project
 	Snippets []int // TODO(asaf): Actually do this
 }
 
@@ -178,7 +178,68 @@ func AtomFeed(c *RequestContext) ResponseData {
 	} else {
 		switch strings.ToLower(feedType) {
 		case "projects":
-			// TODO(asaf): Implement this
+			feedData.Title = "New Projects | Site-wide | Handmade.Network"
+			feedData.Subtitle = feedData.Title
+			feedData.FeedType = FeedTypeProjects
+			feedData.FeedID = FeedIDProjects
+			feedData.AtomFeedUrl = hmnurl.BuildAtomFeedForProjects()
+			feedData.FeedUrl = hmnurl.BuildProjectIndex()
+
+			c.Perf.StartBlock("SQL", "Fetching projects")
+			type projectResult struct {
+				Project models.Project `db:"project"`
+			}
+			projects, err := db.Query(c.Context(), c.Conn, projectResult{},
+				`
+				SELECT $columns
+				FROM handmade_project AS project
+				ORDER BY date_approved DESC
+				LIMIT $1
+				`,
+				itemsPerFeed,
+			)
+			if err != nil {
+				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects"))
+			}
+			var projectIds []int
+			projectMap := make(map[int]*templates.Project)
+			for _, p := range projects.ToSlice() {
+				project := p.(*projectResult).Project
+				templateProject := templates.ProjectToTemplate(&project)
+				templateProject.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(templateProject.Url)).URN()
+
+				projectIds = append(projectIds, project.ID)
+				projectMap[project.ID] = &templateProject
+				feedData.Projects = append(feedData.Projects, templateProject)
+			}
+			c.Perf.EndBlock()
+
+			c.Perf.StartBlock("SQL", "Fetching project owners")
+			type ownerResult struct {
+				User      models.User `db:"auth_user"`
+				ProjectID int         `db:"project_groups.project_id"`
+			}
+			owners, err := db.Query(c.Context(), c.Conn, ownerResult{},
+				`
+				SELECT $columns
+				FROM
+					auth_user 
+					INNER JOIN auth_user_groups AS user_groups ON auth_user.id = user_groups.user_id
+					INNER JOIN handmade_project_groups AS project_groups ON user_groups.group_id = project_groups.group_id
+				WHERE
+					project_groups.project_id = ANY($1)
+				`,
+				projectIds,
+			)
+			if err != nil {
+				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects owners"))
+			}
+			for _, res := range owners.ToSlice() {
+				owner := res.(*ownerResult)
+				templateProject := projectMap[owner.ProjectID]
+				templateProject.Owners = append(templateProject.Owners, templates.UserToTemplate(&owner.User, ""))
+			}
+			c.Perf.EndBlock()
 		case "showcase":
 			// TODO(asaf): Implement this
 		default:

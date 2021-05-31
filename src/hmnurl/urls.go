@@ -169,7 +169,7 @@ func BuildFeedWithPage(page int) string {
 	return Url("/feed/"+strconv.Itoa(page), nil)
 }
 
-var RegexAtomFeed = regexp.MustCompile("^/atom(/(?P<feedtype>.+))?$")
+var RegexAtomFeed = regexp.MustCompile("^/atom(/(?P<feedtype>[^/]+))?(/new)?$") // NOTE(asaf): `/new` for backwards compatibility with old website
 
 func BuildAtomFeed() string {
 	defer CatchPanic()
@@ -682,10 +682,16 @@ func BuildPublic(filepath string, cachebust bool) string {
 
 func BuildTheme(filepath string, theme string, cachebust bool) string {
 	defer CatchPanic()
+	filepath = strings.Trim(filepath, "/")
 	if len(theme) == 0 {
 		panic(oops.New(nil, "Theme can't be blank"))
 	}
-	return BuildPublic(fmt.Sprintf("themes/%s/%s", theme, strings.Trim(filepath, "/")), cachebust)
+	return BuildPublic(fmt.Sprintf("themes/%s/%s", theme, filepath), cachebust)
+}
+
+func BuildUserFile(filepath string) string {
+	filepath = strings.Trim(filepath, "/")
+	return BuildPublic(fmt.Sprintf("media/%s", filepath), false)
 }
 
 /*

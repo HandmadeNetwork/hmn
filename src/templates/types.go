@@ -91,6 +91,11 @@ type Project struct {
 	Color1    string
 	Color2    string
 	Url       string
+	Blurb     string
+	Owners    []User
+
+	LogoDark  string
+	LogoLight string
 
 	IsHMN bool
 
@@ -98,6 +103,9 @@ type Project struct {
 	HasForum   bool
 	HasWiki    bool
 	HasLibrary bool
+
+	UUID         string
+	DateApproved time.Time
 }
 
 type User struct {

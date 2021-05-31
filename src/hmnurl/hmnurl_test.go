@@ -52,6 +52,10 @@ func TestAtomFeed(t *testing.T) {
 	AssertRegexMatch(t, BuildAtomFeed(), RegexAtomFeed, nil)
 	AssertRegexMatch(t, BuildAtomFeedForProjects(), RegexAtomFeed, map[string]string{"feedtype": "projects"})
 	AssertRegexMatch(t, BuildAtomFeedForShowcase(), RegexAtomFeed, map[string]string{"feedtype": "showcase"})
+
+	// NOTE(asaf): The following tests are for backwards compatibity
+	AssertRegexMatch(t, "/atom/projects/new", RegexAtomFeed, map[string]string{"feedtype": "projects"})
+	AssertRegexMatch(t, "/atom/showcase/new", RegexAtomFeed, map[string]string{"feedtype": "showcase"})
 }
 
 func TestLoginAction(t *testing.T) {
@@ -343,6 +347,7 @@ func TestPublic(t *testing.T) {
 	assert.Panics(t, func() { BuildPublic("/thing/image.png?hello", false) })
 
 	AssertRegexMatch(t, BuildTheme("test.css", "light", true), RegexPublic, nil)
+	AssertRegexMatch(t, BuildUserFile("mylogo.png"), RegexPublic, nil)
 }
 
 func TestMarkRead(t *testing.T) {

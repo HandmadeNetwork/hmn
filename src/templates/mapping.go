@@ -58,6 +58,10 @@ func ProjectToTemplate(p *models.Project) Project {
 		Color1:    p.Color1,
 		Color2:    p.Color2,
 		Url:       hmnurl.BuildProjectHomepage(p.Slug),
+		Blurb:     p.Blurb,
+
+		LogoLight: hmnurl.BuildUserFile(p.LogoLight),
+		LogoDark:  hmnurl.BuildUserFile(p.LogoDark),
 
 		IsHMN: p.IsHMN(),
 
@@ -65,6 +69,8 @@ func ProjectToTemplate(p *models.Project) Project {
 		HasForum:   true,
 		HasWiki:    true,
 		HasLibrary: true,
+
+		DateApproved: p.DateApproved,
 	}
 }
 
@@ -78,10 +84,13 @@ func ThreadToTemplate(t *models.Thread) Thread {
 
 func UserToTemplate(u *models.User, currentTheme string) User {
 	// TODO: Handle deleted users. Maybe not here, but if not, at call sites of this function.
+	if currentTheme == "" {
+		currentTheme = "light"
+	}
 
 	avatar := ""
 	if u.Avatar != nil && len(*u.Avatar) > 0 {
-		avatar = hmnurl.BuildPublic(*u.Avatar, false)
+		avatar = hmnurl.BuildUserFile(*u.Avatar)
 	} else {
 		avatar = hmnurl.BuildTheme("empty-avatar.svg", currentTheme, true)
 	}
