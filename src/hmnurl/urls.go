@@ -16,8 +16,6 @@ Any function in this package whose name starts with Build is required to be cove
 This helps ensure that we don't generate URLs that can't be routed.
 */
 
-// TODO(asaf): Make this whole file only crash in Dev
-
 var RegexHomepage = regexp.MustCompile("^/$")
 
 func BuildHomepage() string {
@@ -27,13 +25,6 @@ func BuildHomepage() string {
 func BuildProjectHomepage(projectSlug string) string {
 	defer CatchPanic()
 	return ProjectUrl("/", nil, projectSlug)
-}
-
-var RegexProjectIndex = regexp.MustCompile("^/projects$")
-
-func BuildProjectIndex() string {
-	defer CatchPanic()
-	return Url("/projects", nil)
 }
 
 var RegexShowcase = regexp.MustCompile("^/showcase$")
@@ -78,6 +69,13 @@ var RegexLogoutAction = regexp.MustCompile("^/logout$")
 func BuildLogoutAction() string {
 	defer CatchPanic()
 	return Url("/logout", nil)
+}
+
+var RegexRegister = regexp.MustCompile("^/_register$")
+
+func BuildRegister() string {
+	defer CatchPanic()
+	return Url("/_register", nil)
 }
 
 /*
@@ -184,6 +182,40 @@ func BuildAtomFeedForProjects() string {
 func BuildAtomFeedForShowcase() string {
 	defer CatchPanic()
 	return Url("/atom/showcase", nil)
+}
+
+/*
+* Projects
+ */
+
+var RegexProjectIndex = regexp.MustCompile("^/projects(/(?P<page>.+)?)?$")
+
+func BuildProjectIndex(page int) string {
+	defer CatchPanic()
+	if page < 1 {
+		panic(oops.New(nil, "page must be >= 1"))
+	}
+	if page == 1 {
+		return Url("/projects", nil)
+	} else {
+		return Url(fmt.Sprintf("/projects/%d", page), nil)
+	}
+}
+
+var RegexProjectNew = regexp.MustCompile("^/projects/new$")
+
+func BuildProjectNew() string {
+	defer CatchPanic()
+
+	return Url("/projects/new", nil)
+}
+
+var RegexProjectNotApproved = regexp.MustCompile("^/p/(?P<slug>.+)$")
+
+func BuildProjectNotApproved(slug string) string {
+	defer CatchPanic()
+
+	return Url(fmt.Sprintf("/p/%s", slug), nil)
 }
 
 /*

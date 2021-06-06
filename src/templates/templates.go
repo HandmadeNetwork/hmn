@@ -158,6 +158,14 @@ var HMNTemplateFuncs = template.FuncMap{
 	"noescape": func(str string) template.HTML {
 		return template.HTML(str)
 	},
+
+	// NOTE(asaf): Template specific functions:
+	"projectcarddata": func(project Project, classes string) ProjectCardData {
+		return ProjectCardData{
+			Project: &project,
+			Classes: classes,
+		}
+	},
 }
 
 type ErrInvalidHexColor struct {

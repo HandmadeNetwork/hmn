@@ -183,7 +183,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 			feedData.FeedType = FeedTypeProjects
 			feedData.FeedID = FeedIDProjects
 			feedData.AtomFeedUrl = hmnurl.BuildAtomFeedForProjects()
-			feedData.FeedUrl = hmnurl.BuildProjectIndex()
+			feedData.FeedUrl = hmnurl.BuildProjectIndex(1)
 
 			c.Perf.StartBlock("SQL", "Fetching projects")
 			type projectResult struct {
@@ -192,10 +192,15 @@ func AtomFeed(c *RequestContext) ResponseData {
 			projects, err := db.Query(c.Context(), c.Conn, projectResult{},
 				`
 				SELECT $columns
-				FROM handmade_project AS project
+				FROM
+					handmade_project AS project
+				WHERE
+					project.lifecycle = ANY($1)
+					AND project.flags = 0
 				ORDER BY date_approved DESC
-				LIMIT $1
+				LIMIT $2
 				`,
+				models.VisibleProjectLifecycles,
 				itemsPerFeed,
 			)
 			if err != nil {
@@ -205,7 +210,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 			projectMap := make(map[int]*templates.Project)
 			for _, p := range projects.ToSlice() {
 				project := p.(*projectResult).Project
-				templateProject := templates.ProjectToTemplate(&project)
+				templateProject := templates.ProjectToTemplate(&project, c.Theme)
 				templateProject.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(templateProject.Url)).URN()
 
 				projectIds = append(projectIds, project.ID)

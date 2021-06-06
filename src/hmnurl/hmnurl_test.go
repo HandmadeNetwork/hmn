@@ -32,10 +32,6 @@ func TestHomepage(t *testing.T) {
 	AssertSubdomain(t, BuildProjectHomepage("hero"), "hero")
 }
 
-func TestProjectIndex(t *testing.T) {
-	AssertRegexMatch(t, BuildProjectIndex(), RegexProjectIndex, nil)
-}
-
 func TestShowcase(t *testing.T) {
 	AssertRegexMatch(t, BuildShowcase(), RegexShowcase, nil)
 }
@@ -70,6 +66,10 @@ func TestLogoutAction(t *testing.T) {
 	AssertRegexMatch(t, BuildLogoutAction(), RegexLogoutAction, nil)
 }
 
+func TestRegister(t *testing.T) {
+	AssertRegexMatch(t, BuildRegister(), RegexRegister, nil)
+}
+
 func TestStaticPages(t *testing.T) {
 	AssertRegexMatch(t, BuildManifesto(), RegexManifesto, nil)
 	AssertRegexMatch(t, BuildAbout(), RegexAbout, nil)
@@ -92,6 +92,20 @@ func TestFeed(t *testing.T) {
 	AssertRegexMatch(t, BuildFeedWithPage(5), RegexFeed, map[string]string{"page": "5"})
 	assert.Panics(t, func() { BuildFeedWithPage(-1) })
 	assert.Panics(t, func() { BuildFeedWithPage(0) })
+}
+
+func TestProjectIndex(t *testing.T) {
+	AssertRegexMatch(t, BuildProjectIndex(1), RegexProjectIndex, nil)
+	AssertRegexMatch(t, BuildProjectIndex(2), RegexProjectIndex, map[string]string{"page": "2"})
+	assert.Panics(t, func() { BuildProjectIndex(0) })
+}
+
+func TestProjectNew(t *testing.T) {
+	AssertRegexMatch(t, BuildProjectNew(), RegexProjectNew, nil)
+}
+
+func TestProjectNotApproved(t *testing.T) {
+	AssertRegexMatch(t, BuildProjectNotApproved("test"), RegexProjectNotApproved, map[string]string{"slug": "test"})
 }
 
 func TestPodcast(t *testing.T) {

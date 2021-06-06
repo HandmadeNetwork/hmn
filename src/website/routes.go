@@ -106,9 +106,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexFeed, Feed)
 	mainRoutes.GET(hmnurl.RegexAtomFeed, AtomFeed)
 
-	// TODO(asaf): Trailing slashes break these
+	mainRoutes.GET(hmnurl.RegexProjectIndex, ProjectIndex)
+
 	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)
-	// mainRoutes.GET(`^/(?P<cats>forums(/cat)*)/t/(?P<threadid>\d+)/p/(?P<postid>\d+)$`, ForumPost)
 	mainRoutes.GET(hmnurl.RegexForumCategory, ForumCategory)
 
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
@@ -131,11 +131,12 @@ func getBaseData(c *RequestContext) templates.BaseData {
 	}
 
 	return templates.BaseData{
-		Project:       templates.ProjectToTemplate(c.CurrentProject),
+		Project:       templates.ProjectToTemplate(c.CurrentProject, c.Theme),
 		LoginPageUrl:  hmnurl.BuildLoginPage(c.FullUrl()),
 		User:          templateUser,
 		Theme:         c.Theme,
 		ProjectCSSUrl: hmnurl.BuildProjectCSS(c.CurrentProject.Color1),
+		IsProjectPage: !c.CurrentProject.IsHMN(),
 		Header: templates.Header{
 			AdminUrl:           hmnurl.BuildHomepage(), // TODO(asaf)
 			MemberSettingsUrl:  hmnurl.BuildHomepage(), // TODO(asaf)
@@ -144,6 +145,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			RegisterUrl:        hmnurl.BuildHomepage(), // TODO(asaf)
 			HMNHomepageUrl:     hmnurl.BuildHomepage(), // TODO(asaf)
 			ProjectHomepageUrl: hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
+			ProjectIndexUrl:    hmnurl.BuildProjectIndex(1),
 			BlogUrl:            hmnurl.BuildBlog(c.CurrentProject.Slug, 1),
 			ForumsUrl:          hmnurl.BuildForumCategory(c.CurrentProject.Slug, nil, 1),
 			WikiUrl:            hmnurl.BuildWiki(c.CurrentProject.Slug),
@@ -159,7 +161,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			ManifestoUrl:               hmnurl.BuildManifesto(),
 			CodeOfConductUrl:           hmnurl.BuildCodeOfConduct(),
 			CommunicationGuidelinesUrl: hmnurl.BuildCommunicationGuidelines(),
-			ProjectIndexUrl:            hmnurl.BuildProjectIndex(),
+			ProjectIndexUrl:            hmnurl.BuildProjectIndex(1),
 			ForumsUrl:                  hmnurl.BuildForumCategory(models.HMNProjectSlug, nil, 1),
 			ContactUrl:                 hmnurl.BuildContactPage(),
 			SitemapUrl:                 hmnurl.BuildSiteMap(),

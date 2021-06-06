@@ -1,0 +1,152 @@
+{{ template "base.html" . }}
+
+{{ define "content" }}
+	<div class="content-block no-bg-image">
+		{{ with .CarouselProjects }}
+			<div class="project-carousel-container mw-100 mv2 mv3-ns margin-center">
+				<div class="project-carousel pa3 h5 overflow-hidden bg--dim br2-ns">
+					<div class="dn db-l"> <!-- desktop carousel -->
+						{{ range $index, $project := . }}
+							<div class="project-carousel-item flex pa3 w-100 h-100 bg--dim items-center {{ if eq $index 0 }}active{{ end }}">
+								<div class="flex-grow-1 pr3 relative flex flex-column h-100 justify-center">
+									<a href="{{ $project.Url }}">
+										<h3>{{ $project.Name }}</h3>
+									</a>
+									<div class="project-carousel-description">
+										{{ $project.ParsedDescription }}
+									</div>
+									<div class="project-carousel-fade"></div>
+								</div>
+								<div class="flex-shrink-0 order-0 order-1-ns">
+									<a href="{{ $project.Url }}">
+										<div class="image bg-center cover w5 h5 br2" style="background-image:url({{ $project.Logo }})" ></div>
+									</a>
+								</div>
+							</div>
+						{{ end }}
+					</div>
+					<div class="db dn-l"> <!-- mobile/tablet carousel -->
+						{{ range $index, $project := . }}
+							<div class="project-carousel-item-small {{ if eq $index 0 }}active{{ end }}">
+								{{ template "project_card.html" projectcarddata $project "h-100" }}
+							</div>
+						{{ end }}
+					</div>
+				</div>
+				<div class="flex justify-center pv2">
+					{{ range $index, $project := . }}
+						<div
+							class="project-carousel-button br-pill w1 h1 mh2 {{ if eq $index 0 }}active{{ end }}"
+							onclick="carouselButtonClick({{ $index }})"
+						></div>
+					{{ end }}
+				</div>
+			</div>
+		{{ end }}
+		<div class="flex flex-column flex-row-l mv3 items-start">
+			<div class="bg--dim-ns br2">
+				<div class="clear"></div>
+				<div class="optionbar pv2 ph3">
+					<a href="{{ .ProjectAtomFeedUrl }}"><span class="icon big">4</span> RSS Feed &ndash; New Projects</span></a>
+					{{ template "pagination.html" .Pagination }}
+				</div>
+
+				<div class="projectlist ph3">
+					{{ range .Projects }}
+						<div class="mv3">
+							{{ template "project_card.html" projectcarddata . ""}}
+						</div>
+					{{ end }}
+				</div>
+
+				<div class="optionbar bottom pv2 ph3">
+					<div class="options order-1"></div>
+					<div class="options order-0 order-last-ns">{{ template "pagination.html" .Pagination }}</div>
+				</div>
+			</div>
+			<div class="w-100 w-40-l ph3 ph0-ns flex-shrink-0">
+				<div class="ml3-l mt3 mt0-l pa3 bg--dim br2">
+					{{ if not .UserPendingProject }}
+						<div class="content-block new-project p-spaced">
+							<h2>Submit a Project</h2>
+							<pre>your-project-here.handmade.network</pre>
+							<p>
+								Developing something cool? Building a tool, game, website, etc.
+								that meshes with the <a href="{{ .ManifestoUrl }}">Handmade philosophy</a>?
+							</p>
+							{{ if .User }}
+								<p class="center">
+									<a class="button" href="{{ .NewProjectUrl }}">Submit a Project</a>
+								</p>
+							{{ else }}
+								<p>
+									Become a member now to submit a project to the site!
+								</p>
+								<p class="center">
+									<a class="button" href="{{ .RegisterUrl }}">Register</a>
+									<span class="mh2">or</span>
+									<a class="button" href="{{ .LoginUrl }}">Log In</a>
+								</p>
+							{{ end }}
+						</div>
+					{{ else }}
+						<div class="content-block single">
+							<h2>Project pending</h2>
+							<p>Thanks for considering us as a home for<br /><a href="{{ .UserPendingProject.Url }}">{{ .UserPendingProject.Name }}</a>!</p>
+							<br />
+							{{ if .UserPendingProjectUnderReview }}
+								<p>We see it's ready for review by an administrator, great! We'll try and get back to you in a timely manner.</p>
+							{{ else }}
+								<p>When you're ready for us to review it, let us know using the checkbox on {{ .UserPendingProject.Name }}'s profile editor.</p>
+							{{ end }}
+						</div>
+					{{ end }}
+					{{ if .UserApprovedProjects }}
+						<div class="content-block single projectlist">
+							{{ if .UserPendingProject }}
+								<h2>Your other projects</h2>
+							{{ else }}
+								<h2>Your projects</h2>
+							{{ end }}
+							{{ range .UserApprovedProjects }}
+								<div class="mv3">
+									{{ template "project_card.html" projectcarddata . "" }}
+								</div>
+							{{ end }}
+						</div>
+					{{ end }}
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		const numCarouselItems = {{ len .CarouselProjects }};
+
+		function activateCarouselProject(i) {
+			const items = document.querySelectorAll('.project-carousel-item');
+			items.forEach(item => item.classList.remove('active'));
+			items[i].classList.add('active');
+
+			const smallItems = document.querySelectorAll('.project-carousel-item-small');
+			smallItems.forEach(item => item.classList.remove('active'));
+			smallItems[i].classList.add('active');
+
+			const buttons = document.querySelectorAll('.project-carousel-button');
+			buttons.forEach(button => button.classList.remove('active'));
+			buttons[i].classList.add('active');
+		}
+
+		let carouselTimerCurrent = 0;
+		const carouselTimer = setInterval(() => {
+			const next = (carouselTimerCurrent + 1) % numCarouselItems;
+			activateCarouselProject(next);
+			carouselTimerCurrent = next;
+		}, 10000);
+
+		function carouselButtonClick(i) {
+			activateCarouselProject(i);
+			clearInterval(carouselTimer);
+		}
+	</script>
+{{ end }}

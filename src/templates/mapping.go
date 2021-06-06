@@ -51,17 +51,50 @@ func (p *Post) AddUrls(projectSlug string, subforums []string, threadId int, pos
 	p.QuoteUrl = hmnurl.BuildForumPostQuote(projectSlug, subforums, threadId, postId)
 }
 
-func ProjectToTemplate(p *models.Project) Project {
-	return Project{
-		Name:      p.Name,
-		Subdomain: p.Subdomain(),
-		Color1:    p.Color1,
-		Color2:    p.Color2,
-		Url:       hmnurl.BuildProjectHomepage(p.Slug),
-		Blurb:     p.Blurb,
+var LifecycleBadgeClasses = map[models.ProjectLifecycle]string{
+	models.ProjectLifecycleUnapproved:       "",
+	models.ProjectLifecycleApprovalRequired: "",
+	models.ProjectLifecycleActive:           "",
+	models.ProjectLifecycleHiatus:           "notice-hiatus",
+	models.ProjectLifecycleDead:             "notice-dead",
+	models.ProjectLifecycleLTSRequired:      "",
+	models.ProjectLifecycleLTS:              "notice-lts",
+}
 
-		LogoLight: hmnurl.BuildUserFile(p.LogoLight),
-		LogoDark:  hmnurl.BuildUserFile(p.LogoDark),
+var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
+	models.ProjectLifecycleUnapproved:       "",
+	models.ProjectLifecycleApprovalRequired: "",
+	models.ProjectLifecycleActive:           "",
+	models.ProjectLifecycleHiatus:           "On Hiatus",
+	models.ProjectLifecycleDead:             "Dead",
+	models.ProjectLifecycleLTSRequired:      "",
+	models.ProjectLifecycleLTS:              "Complete",
+}
+
+func ProjectToTemplate(p *models.Project, theme string) Project {
+	logo := p.LogoLight
+	if theme == "dark" {
+		logo = p.LogoDark
+	}
+	var url string
+	if p.Lifecycle == models.ProjectLifecycleUnapproved || p.Lifecycle == models.ProjectLifecycleApprovalRequired {
+		url = hmnurl.BuildProjectNotApproved(p.Slug)
+	} else {
+		url = hmnurl.BuildProjectHomepage(p.Slug)
+	}
+	return Project{
+		Name:              p.Name,
+		Subdomain:         p.Subdomain(),
+		Color1:            p.Color1,
+		Color2:            p.Color2,
+		Url:               url,
+		Blurb:             p.Blurb,
+		ParsedDescription: template.HTML(p.ParsedDescription),
+
+		Logo: hmnurl.BuildUserFile(logo),
+
+		LifecycleBadgeClass: LifecycleBadgeClasses[p.Lifecycle],
+		LifecycleString:     LifecycleBadgeStrings[p.Lifecycle],
 
 		IsHMN: p.IsHMN(),
 

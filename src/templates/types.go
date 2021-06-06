@@ -20,8 +20,9 @@ type BaseData struct {
 	Project Project
 	User    *User
 
-	Header Header
-	Footer Footer
+	IsProjectPage bool
+	Header        Header
+	Footer        Footer
 }
 
 type Header struct {
@@ -32,6 +33,7 @@ type Header struct {
 	RegisterUrl        string
 	HMNHomepageUrl     string
 	ProjectHomepageUrl string
+	ProjectIndexUrl    string
 	BlogUrl            string
 	ForumsUrl          string
 	WikiUrl            string
@@ -86,16 +88,19 @@ type Post struct {
 }
 
 type Project struct {
-	Name      string
-	Subdomain string
-	Color1    string
-	Color2    string
-	Url       string
-	Blurb     string
-	Owners    []User
+	Name              string
+	Subdomain         string
+	Color1            string
+	Color2            string
+	Url               string
+	Blurb             string
+	ParsedDescription template.HTML
+	Owners            []User
 
-	LogoDark  string
-	LogoLight string
+	Logo string
+
+	LifecycleBadgeClass string
+	LifecycleString     string
 
 	IsHMN bool
 
@@ -190,6 +195,11 @@ type ThreadListItem struct {
 	Unread  bool
 	Classes string
 	Content string
+}
+
+type ProjectCardData struct {
+	Project *Project
+	Classes string
 }
 
 type Breadcrumb struct {

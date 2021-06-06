@@ -24,15 +24,26 @@ const (
 	ProjectLifecycleLTS
 )
 
+// NOTE(asaf): Just checking the lifecycle is not sufficient. Visible projects also must have flags = 0.
+var VisibleProjectLifecycles = []ProjectLifecycle{
+	ProjectLifecycleActive,
+	ProjectLifecycleHiatus,
+	ProjectLifecycleLTSRequired, // NOTE(asaf): LTS means complete
+	ProjectLifecycleLTS,
+}
+
+const RecentProjectUpdateTimespanSec = 60 * 60 * 24 * 28 // NOTE(asaf): Four weeks
+
 type Project struct {
 	ID int `db:"id"`
 
 	ForumID *int `db:"forum_id"`
 
-	Slug        string `db:"slug"`
-	Name        string `db:"name"`
-	Blurb       string `db:"blurb"`
-	Description string `db:"description"`
+	Slug              string `db:"slug"`
+	Name              string `db:"name"`
+	Blurb             string `db:"blurb"`
+	Description       string `db:"description"`
+	ParsedDescription string `db:"descparsed"`
 
 	Lifecycle ProjectLifecycle `db:"lifecycle"` // TODO(asaf): Ensure we only fetch projects in the correct lifecycle phase everywhere.
 
@@ -42,6 +53,8 @@ type Project struct {
 	LogoLight string `db:"logolight"`
 	LogoDark  string `db:"logodark"`
 
+	Flags          int       `db:"flags"` // NOTE(asaf): Flags is currently only used to mark a project as hidden. Flags == 1 means hidden. Flags == 0 means visible.
+	Featured       bool      `db:"featured"`
 	DateApproved   time.Time `db:"date_approved"`
 	AllLastUpdated time.Time `db:"all_last_updated"`
 }

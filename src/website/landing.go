@@ -55,12 +55,12 @@ func Index(c *RequestContext) ResponseData {
 		SELECT $columns
 		FROM handmade_project
 		WHERE
-			(flags = 0 AND NOT lifecycle = ANY($1))
+			(flags = 0 AND lifecycle = ANY($1))
 			OR id = $2
 		ORDER BY all_last_updated DESC
 		LIMIT $3
 		`,
-		[]models.ProjectLifecycle{models.ProjectLifecycleUnapproved, models.ProjectLifecycleApprovalRequired},
+		models.VisibleProjectLifecycles,
 		models.HMNProjectID,
 		numProjectsToGet*2, // hedge your bets against projects that don't have any content
 	)
@@ -140,7 +140,7 @@ func Index(c *RequestContext) ResponseData {
 		}
 
 		landingPageProject := LandingPageProject{
-			Project:   templates.ProjectToTemplate(proj),
+			Project:   templates.ProjectToTemplate(proj, c.Theme),
 			ForumsUrl: forumsUrl,
 		}
 
