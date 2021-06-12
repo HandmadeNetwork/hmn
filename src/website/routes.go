@@ -80,6 +80,16 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 		}
 	}
 
+	authMiddleware := func(h Handler) Handler {
+		return func(c *RequestContext) (res ResponseData) {
+			if c.CurrentUser == nil {
+				return c.Redirect(hmnurl.BuildLoginPage(c.FullUrl()), http.StatusSeeOther)
+			}
+
+			return h(c)
+		}
+	}
+
 	// TODO(asaf): login/logout shouldn't happen on subdomains. We should verify that in the middleware.
 	routes.POST(hmnurl.RegexLoginAction, Login)
 	routes.GET(hmnurl.RegexLogoutAction, Logout)
@@ -113,6 +123,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexUserProfile, UserProfile)
 
 	// NOTE(asaf): Any-project routes:
+	mainRoutes.Handle([]string{http.MethodGet, http.MethodPost}, hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
+	mainRoutes.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(ForumNewThreadSubmit))
 	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)
 	mainRoutes.GET(hmnurl.RegexForumCategory, ForumCategory)
 	mainRoutes.GET(hmnurl.RegexForumPost, ForumPostRedirect)
@@ -127,14 +139,12 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 func getBaseData(c *RequestContext) templates.BaseData {
 	var templateUser *templates.User
+	var templateSession *templates.Session
 	if c.CurrentUser != nil {
-		templateUser = &templates.User{
-			Username:    c.CurrentUser.Username,
-			Name:        c.CurrentUser.Name,
-			Email:       c.CurrentUser.Email,
-			IsSuperuser: c.CurrentUser.IsSuperuser,
-			IsStaff:     c.CurrentUser.IsStaff,
-		}
+		u := templates.UserToTemplate(c.CurrentUser, c.Theme)
+		s := templates.SessionToTemplate(c.CurrentSession)
+		templateUser = &u
+		templateSession = &s
 	}
 
 	return templates.BaseData{
@@ -146,6 +156,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 
 		Project: templates.ProjectToTemplate(c.CurrentProject, c.Theme),
 		User:    templateUser,
+		Session: templateSession,
 
 		IsProjectPage: !c.CurrentProject.IsHMN(),
 		Header: templates.Header{
@@ -293,12 +304,13 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 	{
 		sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
 		if err == nil {
-			user, err := getCurrentUser(c, sessionCookie.Value)
+			user, session, err := getCurrentUserAndSession(c, sessionCookie.Value)
 			if err != nil {
 				return false, ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user"))
 			}
 
 			c.CurrentUser = user
+			c.CurrentSession = session
 		}
 		// http.ErrNoCookie is the only error Cookie ever returns, so no further handling to do here.
 	}
@@ -315,13 +327,13 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 
 // Given a session id, fetches user data from the database. Will return nil if
 // the user cannot be found, and will only return an error if it's serious.
-func getCurrentUser(c *RequestContext, sessionId string) (*models.User, error) {
+func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User, *models.Session, error) {
 	session, err := auth.GetSession(c.Context(), c.Conn, sessionId)
 	if err != nil {
 		if errors.Is(err, auth.ErrNoSession) {
-			return nil, nil
+			return nil, nil, nil
 		} else {
-			return nil, oops.New(err, "failed to get current session")
+			return nil, nil, oops.New(err, "failed to get current session")
 		}
 	}
 
@@ -329,14 +341,14 @@ func getCurrentUser(c *RequestContext, sessionId string) (*models.User, error) {
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			logging.Debug().Str("username", session.Username).Msg("returning no current user for this request because the user for the session couldn't be found")
-			return nil, nil // user was deleted or something
+			return nil, nil, nil // user was deleted or something
 		} else {
-			return nil, oops.New(err, "failed to get user for session")
+			return nil, nil, oops.New(err, "failed to get user for session")
 		}
 	}
 	user := userRow.(*models.User)
 
-	return user, nil
+	return user, session, nil
 }
 
 func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (after func()) {

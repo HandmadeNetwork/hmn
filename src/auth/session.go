@@ -31,6 +31,16 @@ func makeSessionId() string {
 	return base64.StdEncoding.EncodeToString(idBytes)[:40]
 }
 
+func makeCSRFToken() string {
+	idBytes := make([]byte, 30)
+	_, err := io.ReadFull(rand.Reader, idBytes)
+	if err != nil {
+		panic(err)
+	}
+
+	return base64.StdEncoding.EncodeToString(idBytes)[:30]
+}
+
 var ErrNoSession = errors.New("no session found")
 
 func GetSession(ctx context.Context, conn *pgxpool.Pool, id string) (*models.Session, error) {
@@ -52,11 +62,12 @@ func CreateSession(ctx context.Context, conn *pgxpool.Pool, username string) (*m
 		ID:        makeSessionId(),
 		Username:  username,
 		ExpiresAt: time.Now().Add(sessionDuration),
+		CSRFToken: makeCSRFToken(),
 	}
 
 	_, err := conn.Exec(ctx,
-		"INSERT INTO sessions (id, username, expires_at) VALUES ($1, $2, $3)",
-		session.ID, session.Username, session.ExpiresAt,
+		"INSERT INTO sessions (id, username, expires_at, csrf_token) VALUES ($1, $2, $3, $4)",
+		session.ID, session.Username, session.ExpiresAt, session.CSRFToken,
 	)
 	if err != nil {
 		return nil, oops.New(err, "failed to persist session")

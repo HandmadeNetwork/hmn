@@ -115,6 +115,12 @@ func ProjectToTemplate(p *models.Project, theme string) Project {
 	}
 }
 
+func SessionToTemplate(s *models.Session) Session {
+	return Session{
+		CSRFToken: s.CSRFToken,
+	}
+}
+
 func ThreadToTemplate(t *models.Thread) Thread {
 	return Thread{
 		Title:  t.Title,

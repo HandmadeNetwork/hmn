@@ -20,6 +20,7 @@ type BaseData struct {
 
 	Project Project
 	User    *User
+	Session *Session
 
 	IsProjectPage bool
 	Header        Header
@@ -145,6 +146,10 @@ type Link struct {
 	ServiceUserData string
 	Name            string
 	Value           string
+}
+
+type Session struct {
+	CSRFToken string
 }
 
 type OpenGraphItem struct {

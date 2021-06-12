@@ -112,6 +112,9 @@ var HMNTemplateFuncs = template.FuncMap{
 	"color2css": func(color noire.Color) template.CSS {
 		return template.CSS(color.HTML())
 	},
+	"csrftoken": func(s Session) template.HTML {
+		return template.HTML(fmt.Sprintf(`<input type="hidden" name="csrf_token" value="%s">`, s.CSRFToken))
+	},
 	"darken": func(amount float64, color noire.Color) noire.Color {
 		return color.Shade(amount)
 	},

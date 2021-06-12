@@ -267,12 +267,16 @@ func BuildForumCategory(projectSlug string, subforums []string, page int) string
 	return ProjectUrl(builder.String(), nil, projectSlug)
 }
 
-var RegexForumNewThread = regexp.MustCompile(`^/forums(/(?P<cats>[^\d/]+(/[^\d]+)*))?/new?$`)
+var RegexForumNewThread = regexp.MustCompile(`^/forums(/(?P<cats>[^\d/]+(/[^\d]+)*))?/t/new$`)
+var RegexForumNewThreadSubmit = regexp.MustCompile(`^/forums(/(?P<cats>[^\d/]+(/[^\d]+)*))?/t/new/submit$`)
 
-func BuildForumNewThread(projectSlug string, subforums []string) string {
+func BuildForumNewThread(projectSlug string, subforums []string, submit bool) string {
 	defer CatchPanic()
 	builder := buildForumCategoryPath(subforums)
-	builder.WriteString("/new")
+	builder.WriteString("/t/new")
+	if submit {
+		builder.WriteString("/submit")
+	}
 
 	return ProjectUrl(builder.String(), nil, projectSlug)
 }

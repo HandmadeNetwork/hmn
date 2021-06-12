@@ -260,7 +260,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 	var res ResponseData
 	err = res.WriteTemplate("forum_category.html", forumCategoryData{
 		BaseData:     baseData,
-		NewThreadUrl: hmnurl.BuildForumNewThread(c.CurrentProject.Slug, currentSubforumSlugs),
+		NewThreadUrl: hmnurl.BuildForumNewThread(c.CurrentProject.Slug, currentSubforumSlugs, false),
 		MarkReadUrl:  hmnurl.BuildMarkRead(currentCatId),
 		Threads:      threads,
 		Pagination: templates.Pagination{
@@ -513,6 +513,50 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 		page,
 		requestedPostId,
 	), http.StatusSeeOther)
+}
+
+type editorData struct {
+	templates.BaseData
+	SubmitUrl    string
+	PostTitle    string
+	PostBody     string
+	SubmitLabel  string
+	PreviewLabel string
+}
+
+func ForumNewThread(c *RequestContext) ResponseData {
+	if c.Req.Method == http.MethodPost {
+		// TODO: Get preview data
+	}
+
+	baseData := getBaseData(c)
+	baseData.Title = "Create New Thread"
+	// TODO(ben): Set breadcrumbs
+
+	var res ResponseData
+	err := res.WriteTemplate("editor.html", editorData{
+		BaseData:     baseData,
+		SubmitLabel:  "Post New Thread",
+		PreviewLabel: "Preview",
+	}, c.Perf)
+	// err := res.WriteTemplate("forum_thread.html", forumThreadData{
+	// 	BaseData:    baseData,
+	// 	Thread:      templates.ThreadToTemplate(&thread),
+	// 	Posts:       posts,
+	// 	CategoryUrl: hmnurl.BuildForumCategory(c.CurrentProject.Slug, currentSubforumSlugs, 1),
+	// 	ReplyUrl:    hmnurl.BuildForumPostReply(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, *thread.FirstID),
+	// 	Pagination:  pagination,
+	// }, c.Perf)
+	if err != nil {
+		panic(err)
+	}
+
+	return res
+}
+
+func ForumNewThreadSubmit(c *RequestContext) ResponseData {
+	var res ResponseData
+	return res
 }
 
 func validateSubforums(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, catPath string) (int, bool) {
