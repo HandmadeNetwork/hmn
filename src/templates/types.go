@@ -14,6 +14,7 @@ type BaseData struct {
 	BodyClasses     []string
 	Breadcrumbs     []Breadcrumb
 
+	CurrentUrl    string
 	LoginPageUrl  string
 	ProjectCSSUrl string
 

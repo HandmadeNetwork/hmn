@@ -66,9 +66,12 @@ func BuildLoginPage(redirectTo string) string {
 
 var RegexLogoutAction = regexp.MustCompile("^/logout$")
 
-func BuildLogoutAction() string {
+func BuildLogoutAction(redir string) string {
 	defer CatchPanic()
-	return Url("/logout", nil)
+	if redir == "" {
+		redir = "/"
+	}
+	return Url("/logout", []Q{{"redirect", redir}})
 }
 
 var RegexRegister = regexp.MustCompile("^/_register$")
