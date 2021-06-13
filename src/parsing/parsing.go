@@ -1,8 +1,12 @@
 package parsing
 
 import (
+	"bytes"
 	"regexp"
 	"sort"
+
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 )
 
 func StripNames(regexStr string) string {
@@ -84,4 +88,17 @@ func tokenizeBBCode(input string) []token {
 	})
 
 	return tokens
+}
+
+var md = goldmark.New(
+	goldmark.WithExtensions(extension.GFM),
+)
+
+func ParsePostInput(source string) string {
+	var buf bytes.Buffer
+	if err := md.Convert([]byte(source), &buf); err != nil {
+		panic(err)
+	}
+
+	return buf.String()
 }

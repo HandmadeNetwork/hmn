@@ -1,6 +1,7 @@
 package parsing
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,4 +24,24 @@ Mix 'em: [u][/i]wow.[/i][/u]
 		expected := "Hello, <strong>amazing</strong> <em>incredible</em> <strong><em><u>world!!!</u></em></strong>"
 		assert.Equal(t, expected, ParseBBCode(bbcode))
 	})
+}
+
+func TestParsePostInput(t *testing.T) {
+	testDoc := []byte(`
+Hello, *world!*
+
+I can do **bold**, *italic*, and _underlined_ text??
+
+# Heading 1
+## Heading 2
+### Heading 3
+
+Links: [HMN](https://handmade.network)
+Images: ![this is a picture of sanic](https://i.kym-cdn.com/photos/images/newsfeed/000/722/711/ef1.jpg)
+`)
+
+	res := ParsePostInput(testDoc)
+	fmt.Println(string(res))
+
+	t.Fail()
 }
