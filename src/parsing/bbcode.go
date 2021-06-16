@@ -1,7 +1,6 @@
 package parsing
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/yuin/goldmark"
@@ -34,9 +33,7 @@ func (s bParser) Parse(parent gast.Node, block text.Reader, pc parser.Context) g
 	// link.Protocol = protocol
 	// return link
 
-	lineBytes, segment := block.PeekLine()
-	fmt.Printf("line: %s\n", string(lineBytes))
-	fmt.Printf("segment: %#v\n", segment)
+	lineBytes, _ := block.PeekLine()
 
 	line := string(lineBytes)
 

@@ -72,7 +72,7 @@ func (n *SpoilerNode) Kind() gast.NodeKind {
 	return KindSpoiler
 }
 
-func NewSpoiler() *SpoilerNode {
+func NewSpoiler() gast.Node {
 	return &SpoilerNode{}
 }
 

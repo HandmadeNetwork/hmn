@@ -91,7 +91,7 @@ func tokenizeBBCode(input string) []token {
 }
 
 var md = goldmark.New(
-	goldmark.WithExtensions(extension.GFM, SpoilerExtension{}, bTag{}),
+	goldmark.WithExtensions(extension.GFM, SpoilerExtension{}, EmbedExtension{}, bTag{}),
 )
 
 func ParsePostInput(source string) string {
