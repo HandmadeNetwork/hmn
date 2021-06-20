@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
 	gast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
@@ -15,6 +16,7 @@ import (
 var (
 	REEmbedTag = regexp.MustCompile(`^!embed\((?P<url>.+?)\)`)
 
+	// TODO: Timestamped youtube embeds
 	REYoutubeLong  = regexp.MustCompile(`^https://www\.youtube\.com/watch?.*v=(?P<vid>[a-zA-Z0-9_-]{11})`)
 	REYoutubeShort = regexp.MustCompile(`^https://youtu\.be/(?P<vid>[a-zA-Z0-9_-]{11})`)
 	REVimeo        = regexp.MustCompile(`^https://vimeo\.com/(?P<vid>\d+)`)
@@ -26,8 +28,7 @@ var (
 
 type embedParser struct{}
 
-// TODO: Make this a block parser
-func NewEmbedParser() parser.InlineParser {
+func NewEmbedParser() parser.BlockParser {
 	return embedParser{}
 }
 
@@ -35,11 +36,11 @@ func (s embedParser) Trigger() []byte {
 	return []byte{'!'}
 }
 
-func (s embedParser) Parse(parent gast.Node, block text.Reader, pc parser.Context) gast.Node {
-	restOfLine, _ := block.PeekLine()
+func (s embedParser) Open(parent ast.Node, reader text.Reader, pc parser.Context) (ast.Node, parser.State) {
+	restOfLine, _ := reader.PeekLine()
 	urlMatch := REEmbedTag.FindSubmatch(restOfLine)
 	if urlMatch == nil {
-		return nil
+		return nil, parser.NoChildren
 	}
 	url := urlMatch[REEmbedTag.SubexpIndex("url")]
 
@@ -58,11 +59,25 @@ func (s embedParser) Parse(parent gast.Node, block text.Reader, pc parser.Contex
 	}
 
 	if html == "" {
-		return nil
+		return nil, parser.NoChildren
 	}
 
-	block.Advance(len(urlMatch[0]))
-	return NewEmbed(html)
+	reader.Advance(len(urlMatch[0]))
+	return NewEmbed(html), parser.NoChildren
+}
+
+func (s embedParser) Continue(node ast.Node, reader text.Reader, pc parser.Context) parser.State {
+	return parser.Close
+}
+
+func (s embedParser) Close(node ast.Node, reader text.Reader, pc parser.Context) {}
+
+func (s embedParser) CanInterruptParagraph() bool {
+	return true
+}
+
+func (s embedParser) CanAcceptIndentedLine() bool {
+	return false
 }
 
 func extract(re *regexp.Regexp, src []byte, subexpName string) []byte {
@@ -143,7 +158,7 @@ func (r *EmbedHTMLRenderer) renderEmbed(w util.BufWriter, source []byte, n gast.
 type EmbedExtension struct{}
 
 func (e EmbedExtension) Extend(m goldmark.Markdown) {
-	m.Parser().AddOptions(parser.WithInlineParsers(
+	m.Parser().AddOptions(parser.WithBlockParsers(
 		util.Prioritized(NewEmbedParser(), 500),
 	))
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(
