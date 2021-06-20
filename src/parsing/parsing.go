@@ -97,6 +97,7 @@ var previewMarkdown = goldmark.New(
 		EmbedExtension{
 			Preview: true,
 		},
+		MathjaxExtension{},
 		bTag{},
 	),
 )
@@ -105,6 +106,7 @@ var realMarkdown = goldmark.New(
 		extension.GFM,
 		SpoilerExtension{},
 		EmbedExtension{},
+		MathjaxExtension{},
 		bTag{},
 	),
 )

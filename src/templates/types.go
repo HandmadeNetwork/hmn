@@ -22,9 +22,10 @@ type BaseData struct {
 	User    *User
 	Session *Session
 
-	IsProjectPage bool
-	Header        Header
-	Footer        Footer
+	IsProjectPage  bool
+	Header         Header
+	Footer         Footer
+	MathjaxEnabled bool
 }
 
 type Header struct {

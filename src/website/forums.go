@@ -531,6 +531,7 @@ func ForumNewThread(c *RequestContext) ResponseData {
 
 	baseData := getBaseData(c)
 	baseData.Title = "Create New Thread"
+	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
 	var res ResponseData
