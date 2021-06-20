@@ -1,67 +1,160 @@
 package parsing
 
 import (
-	"strings"
+	"regexp"
 
+	"github.com/frustra/bbcode"
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/ast"
 	gast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 )
 
-const BBCodePriority = 1 // TODO: Pick something more reasonable?
+var BBCodePriority = 1 // TODO: This is maybe too high a priority?
 
-type bParser struct{}
+var reTag = regexp.MustCompile(`(?P<open>\[\s*(?P<opentagname>[a-zA-Z]+))|(?P<close>\[\s*\/\s*(?P<closetagname>[a-zA-Z]+)\s*\])`)
 
-var _ parser.InlineParser = bParser{}
+var bbcodeCompiler = bbcode.NewCompiler(false, false)
 
-func (s bParser) Trigger() []byte {
+// ----------------------
+// Parser and delimiters
+// ----------------------
+
+type bbcodeParser struct{}
+
+func NewBBCodeParser() parser.InlineParser {
+	return bbcodeParser{}
+}
+
+func (s bbcodeParser) Trigger() []byte {
 	return []byte{'['}
 }
 
-func (s bParser) Parse(parent gast.Node, block text.Reader, pc parser.Context) gast.Node {
-	// _, segment := block.PeekLine()
-	// start := segment.Start
+func (s bbcodeParser) Parse(parent gast.Node, block text.Reader, pc parser.Context) gast.Node {
+	_, pos := block.Position()
+	restOfSource := block.Source()[pos.Start:]
 
-	// block.Advance(3)
-	// n := ast.NewTextSegment(text.NewSegment(start, start+4))
-	// bold := ast.NewText()
-	// bold.Segment
-	// link := ast.NewAutoLink(typ, n)
-	// link.Protocol = protocol
-	// return link
-
-	lineBytes, _ := block.PeekLine()
-
-	line := string(lineBytes)
-
-	if !strings.HasPrefix(line, "[b]") {
+	matches := reTag.FindAllSubmatchIndex(restOfSource, -1)
+	if matches == nil {
+		// No tags anywhere
 		return nil
 	}
-	start := 0
 
-	closingIndex := strings.Index(line, "[/b]")
-	if closingIndex < 0 {
+	otIndex := reTag.SubexpIndex("opentagname")
+	ctIndex := reTag.SubexpIndex("closetagname")
+
+	tagName := extractStringBySubmatchIndices(restOfSource, matches[0], otIndex)
+	if tagName == "" {
+		// Not an opening tag
 		return nil
 	}
-	end := closingIndex + 4
 
-	n := ast.NewEmphasis(2)
-	n.AppendChild(n, ast.NewString([]byte("wow bold text")))
+	depth := 0
+	endIndex := -1
+	for _, m := range matches {
+		if openName := extractStringBySubmatchIndices(restOfSource, m, otIndex); openName != "" {
+			if openName == tagName {
+				depth++
+			}
+		} else if closeName := extractStringBySubmatchIndices(restOfSource, m, ctIndex); closeName != "" {
+			if closeName == tagName {
+				depth--
+				if depth == 0 {
+					// We have balanced out!
+					endIndex = m[1] // the end index of this closing tag (exclusive)
+				}
+			}
+		}
+	}
+	if endIndex < 0 {
+		// Unbalanced, too many opening tags
+		return nil
+	}
 
-	block.Advance(end - start)
-	return n
+	unparsedBBCode := restOfSource[:endIndex]
+	block.Advance(len(unparsedBBCode))
+
+	return NewBBCode(bbcodeCompiler.Compile(string(unparsedBBCode)))
 }
 
-type bTag struct{}
+func extractStringBySubmatchIndices(src []byte, m []int, subexpIndex int) string {
+	srcIndices := m[2*subexpIndex : 2*subexpIndex+1+1]
+	if srcIndices[0] < 0 {
+		return ""
+	}
+	return string(src[srcIndices[0]:srcIndices[1]])
+}
 
-func (e bTag) Extend(m goldmark.Markdown) {
+// ----------------------
+// AST node
+// ----------------------
+
+type BBCodeNode struct {
+	gast.BaseInline
+	HTML string
+}
+
+var _ gast.Node = &BBCodeNode{}
+
+func (n *BBCodeNode) Dump(source []byte, level int) {
+	gast.DumpHelper(n, source, level, nil, nil)
+}
+
+var KindBBCode = gast.NewNodeKind("BBCode")
+
+func (n *BBCodeNode) Kind() gast.NodeKind {
+	return KindBBCode
+}
+
+func NewBBCode(html string) gast.Node {
+	return &BBCodeNode{
+		HTML: html,
+	}
+}
+
+// ----------------------
+// Renderer
+// ----------------------
+
+type BBCodeHTMLRenderer struct {
+	html.Config
+}
+
+func NewBBCodeHTMLRenderer(opts ...html.Option) renderer.NodeRenderer {
+	r := &BBCodeHTMLRenderer{
+		Config: html.NewConfig(),
+	}
+	for _, opt := range opts {
+		opt.SetHTMLOption(&r.Config)
+	}
+	return r
+}
+
+func (r *BBCodeHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
+	reg.Register(KindBBCode, r.renderBBCode)
+}
+
+func (r *BBCodeHTMLRenderer) renderBBCode(w util.BufWriter, source []byte, n gast.Node, entering bool) (gast.WalkStatus, error) {
+	if entering {
+		w.WriteString(n.(*BBCodeNode).HTML)
+	}
+	return gast.WalkContinue, nil
+}
+
+// ----------------------
+// Extension
+// ----------------------
+
+type BBCodeExtension struct{}
+
+func (e BBCodeExtension) Extend(m goldmark.Markdown) {
 	m.Parser().AddOptions(parser.WithInlineParsers(
-		util.Prioritized(bParser{}, BBCodePriority),
+		util.Prioritized(NewBBCodeParser(), BBCodePriority),
 	))
-	// m.Renderer().AddOptions(renderer.WithNodeRenderers(
-	// 	util.Prioritized(NewStrikethroughHTMLRenderer(), 500),
-	// ))
+	m.Renderer().AddOptions(renderer.WithNodeRenderers(
+		util.Prioritized(NewBBCodeHTMLRenderer(), BBCodePriority),
+	))
 }
