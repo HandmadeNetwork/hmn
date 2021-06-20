@@ -47,7 +47,7 @@ Mix 'em: [u][/i]wow.[/i][/u]
 // }
 
 func TestBBCodeParsing(t *testing.T) {
-	res := ParsePostInput(`[b]ONE[/b] [i]TWO[/i]`)
+	res := ParsePostInput(`[b]ONE[/b] [i]TWO[/i]`, false)
 	fmt.Println(res)
 	t.Fail()
 }

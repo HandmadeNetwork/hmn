@@ -90,11 +90,31 @@ func tokenizeBBCode(input string) []token {
 	return tokens
 }
 
-var md = goldmark.New(
-	goldmark.WithExtensions(extension.GFM, SpoilerExtension{}, EmbedExtension{}, bTag{}),
+var previewMarkdown = goldmark.New(
+	goldmark.WithExtensions(
+		extension.GFM,
+		SpoilerExtension{},
+		EmbedExtension{
+			Preview: true,
+		},
+		bTag{},
+	),
+)
+var realMarkdown = goldmark.New(
+	goldmark.WithExtensions(
+		extension.GFM,
+		SpoilerExtension{},
+		EmbedExtension{},
+		bTag{},
+	),
 )
 
-func ParsePostInput(source string) string {
+func ParsePostInput(source string, preview bool) string {
+	md := realMarkdown
+	if preview {
+		md = previewMarkdown
+	}
+
 	var buf bytes.Buffer
 	if err := md.Convert([]byte(source), &buf); err != nil {
 		panic(err)

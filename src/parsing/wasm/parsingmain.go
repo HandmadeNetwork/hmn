@@ -8,7 +8,7 @@ import (
 
 func main() {
 	js.Global().Set("parseMarkdown", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		return parsing.ParsePostInput(args[0].String())
+		return parsing.ParsePostInput(args[0].String(), true)
 	}))
 
 	var done chan bool

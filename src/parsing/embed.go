@@ -14,55 +14,55 @@ import (
 )
 
 var (
-	REEmbedTag = regexp.MustCompile(`^!embed\((?P<url>.+?)\)`)
-
 	// TODO: Timestamped youtube embeds
 	REYoutubeLong  = regexp.MustCompile(`^https://www\.youtube\.com/watch?.*v=(?P<vid>[a-zA-Z0-9_-]{11})`)
 	REYoutubeShort = regexp.MustCompile(`^https://youtu\.be/(?P<vid>[a-zA-Z0-9_-]{11})`)
 	REVimeo        = regexp.MustCompile(`^https://vimeo\.com/(?P<vid>\d+)`)
+	// TODO: Twitch VODs / clips
+	// TODO: Desmos
+	// TODO: Tweets
 )
 
 // ----------------------
 // Parser and delimiters
 // ----------------------
 
-type embedParser struct{}
-
-func NewEmbedParser() parser.BlockParser {
-	return embedParser{}
+type embedParser struct {
+	Preview bool
 }
 
+var _ parser.BlockParser = embedParser{}
+
 func (s embedParser) Trigger() []byte {
-	return []byte{'!'}
+	return nil
 }
 
 func (s embedParser) Open(parent ast.Node, reader text.Reader, pc parser.Context) (ast.Node, parser.State) {
 	restOfLine, _ := reader.PeekLine()
-	urlMatch := REEmbedTag.FindSubmatch(restOfLine)
-	if urlMatch == nil {
-		return nil, parser.NoChildren
-	}
-	url := urlMatch[REEmbedTag.SubexpIndex("url")]
 
 	html := ""
-	if ytLongMatch := extract(REYoutubeLong, url, "vid"); ytLongMatch != nil {
-		html = makeYoutubeEmbed(string(ytLongMatch))
-	} else if ytShortMatch := extract(REYoutubeShort, url, "vid"); ytShortMatch != nil {
-		html = makeYoutubeEmbed(string(ytShortMatch))
-	} else if vimeoMatch := extract(REVimeo, url, "vid"); vimeoMatch != nil {
-		html = `
+	var match []byte
+	if ytLongMatch := extract(REYoutubeLong, restOfLine, "vid"); ytLongMatch != nil {
+		match = ytLongMatch
+		html = makeYoutubeEmbed(string(ytLongMatch), s.Preview)
+	} else if ytShortMatch := extract(REYoutubeShort, restOfLine, "vid"); ytShortMatch != nil {
+		match = ytShortMatch
+		html = makeYoutubeEmbed(string(ytShortMatch), s.Preview)
+	} else if vimeoMatch := extract(REVimeo, restOfLine, "vid"); vimeoMatch != nil {
+		match = vimeoMatch
+		html = s.previewOrLegitEmbed("Vimeo", `
 <div class="mw6">
 	<div class="aspect-ratio aspect-ratio--16x9">
-		<iframe class="aspect-ratio--object" src="https://player.vimeo.com/video/` + string(vimeoMatch) + `" frameborder="0" allow="fullscreen; picture-in-picture" allowfullscreen></iframe>
+		<iframe class="aspect-ratio--object" src="https://player.vimeo.com/video/`+string(vimeoMatch)+`" frameborder="0" allow="fullscreen; picture-in-picture" allowfullscreen></iframe>
 	</div>
-</div>`
+</div>`)
 	}
 
 	if html == "" {
 		return nil, parser.NoChildren
 	}
 
-	reader.Advance(len(urlMatch[0]))
+	reader.Advance(len(match))
 	return NewEmbed(html), parser.NoChildren
 }
 
@@ -80,6 +80,22 @@ func (s embedParser) CanAcceptIndentedLine() bool {
 	return false
 }
 
+func (s embedParser) previewOrLegitEmbed(name string, legitHtml string) string {
+	if s.Preview {
+		return `
+<div class="mw6">
+	<div class="aspect-ratio aspect-ratio--16x9">
+		<div class="aspect-ratio--object ba b--dimmest bg-light-gray i black flex items-center justify-center">
+			` + name + ` embed
+		</div>
+	</div>
+</div>
+`
+	}
+
+	return legitHtml
+}
+
 func extract(re *regexp.Regexp, src []byte, subexpName string) []byte {
 	m := re.FindSubmatch(src)
 	if m == nil {
@@ -88,13 +104,22 @@ func extract(re *regexp.Regexp, src []byte, subexpName string) []byte {
 	return m[re.SubexpIndex(subexpName)]
 }
 
-func makeYoutubeEmbed(vid string) string {
-	return `
+func makeYoutubeEmbed(vid string, preview bool) string {
+	if preview {
+		return `
+<div class="mw6">
+	<img src="https://img.youtube.com/vi/` + vid + `/hqdefault.jpg">
+</div>
+`
+	} else {
+		return `
 <div class="mw6">
 	<div class="aspect-ratio aspect-ratio--16x9">
 		<iframe class="aspect-ratio--object" src="https://www.youtube-nocookie.com/embed/` + vid + `" frameborder="0" allowfullscreen></iframe>
 	</div>
-</div>`
+</div>
+`
+	}
 }
 
 // ----------------------
@@ -155,11 +180,13 @@ func (r *EmbedHTMLRenderer) renderEmbed(w util.BufWriter, source []byte, n gast.
 // Extension
 // ----------------------
 
-type EmbedExtension struct{}
+type EmbedExtension struct {
+	Preview bool
+}
 
 func (e EmbedExtension) Extend(m goldmark.Markdown) {
 	m.Parser().AddOptions(parser.WithBlockParsers(
-		util.Prioritized(NewEmbedParser(), 500),
+		util.Prioritized(embedParser{Preview: e.Preview}, 500),
 	))
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(
 		util.Prioritized(NewEmbedHTMLRenderer(), 500),
