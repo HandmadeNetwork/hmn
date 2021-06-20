@@ -1,9 +1,9 @@
 package parsing
 
 import (
-	"fmt"
 	"regexp"
 
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"github.com/frustra/bbcode"
 	"github.com/yuin/goldmark"
 	gast "github.com/yuin/goldmark/ast"
@@ -27,6 +27,7 @@ func init() {
 	type attr struct {
 		Name, Value string
 	}
+
 	addSimpleTag := func(name, tag string, notext bool, attrs ...attr) {
 		var tagFunc bbcode.TagCompilerFunc = func(bn *bbcode.BBCodeNode) (*bbcode.HTMLTag, bool) {
 			if notext {
@@ -34,8 +35,6 @@ func init() {
 				for _, child := range bn.Children {
 					if child.ID != bbcode.TEXT {
 						newChildren = append(newChildren, child)
-					} else {
-						fmt.Printf("%+v", child)
 					}
 				}
 				bn.Children = newChildren
@@ -50,6 +49,10 @@ func init() {
 		}
 		previewBBCodeCompiler.SetTag(name, tagFunc)
 		realBBCodeCompiler.SetTag(name, tagFunc)
+	}
+	addTag := func(name string, f bbcode.TagCompilerFunc) {
+		previewBBCodeCompiler.SetTag(name, f)
+		realBBCodeCompiler.SetTag(name, f)
 	}
 
 	previewBBCodeCompiler.SetTag("youtube", makeYoutubeBBCodeFunc(true))
@@ -67,6 +70,52 @@ func init() {
 	addSimpleTag("tr", "tr", true)
 	addSimpleTag("th", "th", false)
 	addSimpleTag("td", "td", false)
+
+	addTag("quote", func(bn *bbcode.BBCodeNode) (*bbcode.HTMLTag, bool) {
+		cite := bn.GetOpeningTag().Value
+		if cite == "" {
+			out := bbcode.NewHTMLTag("")
+			out.Name = "blockquote"
+			return out, true
+		} else {
+			out := bbcode.NewHTMLTag("")
+			out.Name = "blockquote"
+			out.Attrs["cite"] = cite
+
+			a := bbcode.NewHTMLTag("")
+			a.Name = "a"
+			a.Attrs = map[string]string{
+				"href":  hmnurl.BuildMember(cite),
+				"class": "quotewho",
+			}
+			a.AppendChild(bbcode.NewHTMLTag(cite))
+
+			br := bbcode.NewHTMLTag("")
+			br.Name = "br"
+
+			out.AppendChild(a)
+			out.AppendChild(br)
+
+			return out, true
+		}
+	})
+
+	addTag("code", func(bn *bbcode.BBCodeNode) (*bbcode.HTMLTag, bool) {
+		lang := ""
+		if tagvalue := bn.GetOpeningTag().Value; tagvalue != "" {
+			lang = tagvalue
+		} else if arglang, ok := bn.GetOpeningTag().Args["language"]; ok {
+			lang = arglang
+		}
+
+		out := bbcode.NewHTMLTag("")
+		out.Name = "pre"
+
+		// TODO: After figuring out code for Markdown, put it here too.
+		_ = lang
+
+		return out, true
+	})
 }
 
 func makeYoutubeBBCodeFunc(preview bool) bbcode.TagCompilerFunc {
@@ -206,7 +255,6 @@ func (s bbcodeParser) Parse(parent gast.Node, block text.Reader, pc parser.Conte
 
 	unparsedBBCode := restOfSource[:endIndex]
 	block.Advance(len(unparsedBBCode))
-	fmt.Println("parse this", string(unparsedBBCode))
 
 	compiler := realBBCodeCompiler
 	if s.Preview {
