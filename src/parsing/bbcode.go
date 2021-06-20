@@ -1,6 +1,7 @@
 package parsing
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/frustra/bbcode"
@@ -15,7 +16,7 @@ import (
 
 var BBCodePriority = 1 // TODO: This is maybe too high a priority?
 
-var reTag = regexp.MustCompile(`(?P<open>\[\s*(?P<opentagname>[a-zA-Z]+))|(?P<close>\[\s*\/\s*(?P<closetagname>[a-zA-Z]+)\s*\])`)
+var reTag = regexp.MustCompile(`(?P<open>\[\s*(?P<opentagname>[a-zA-Z0-9]+))|(?P<close>\[\s*\/\s*(?P<closetagname>[a-zA-Z0-9]+)\s*\])`)
 
 var previewBBCodeCompiler = bbcode.NewCompiler(false, false)
 var realBBCodeCompiler = bbcode.NewCompiler(false, false)
@@ -23,8 +24,49 @@ var realBBCodeCompiler = bbcode.NewCompiler(false, false)
 var REYoutubeVidOnly = regexp.MustCompile(`^[a-zA-Z0-9_-]{11}$`)
 
 func init() {
+	type attr struct {
+		Name, Value string
+	}
+	addSimpleTag := func(name, tag string, notext bool, attrs ...attr) {
+		var tagFunc bbcode.TagCompilerFunc = func(bn *bbcode.BBCodeNode) (*bbcode.HTMLTag, bool) {
+			if notext {
+				var newChildren []*bbcode.BBCodeNode
+				for _, child := range bn.Children {
+					if child.ID != bbcode.TEXT {
+						newChildren = append(newChildren, child)
+					} else {
+						fmt.Printf("%+v", child)
+					}
+				}
+				bn.Children = newChildren
+			}
+
+			out := bbcode.NewHTMLTag("")
+			out.Name = tag
+			for _, a := range attrs {
+				out.Attrs[a.Name] = a.Value
+			}
+			return out, true
+		}
+		previewBBCodeCompiler.SetTag(name, tagFunc)
+		realBBCodeCompiler.SetTag(name, tagFunc)
+	}
+
 	previewBBCodeCompiler.SetTag("youtube", makeYoutubeBBCodeFunc(true))
 	realBBCodeCompiler.SetTag("youtube", makeYoutubeBBCodeFunc(false))
+
+	addSimpleTag("h1", "h1", false)
+	addSimpleTag("h2", "h3", false)
+	addSimpleTag("h3", "h3", false)
+	addSimpleTag("m", "span", false, attr{"class", "monospace"})
+	addSimpleTag("ol", "ol", true)
+	addSimpleTag("ul", "ul", true)
+	addSimpleTag("li", "li", false)
+	addSimpleTag("spoiler", "span", false, attr{"class", "spoiler"})
+	addSimpleTag("table", "table", true)
+	addSimpleTag("tr", "tr", true)
+	addSimpleTag("th", "th", false)
+	addSimpleTag("td", "td", false)
 }
 
 func makeYoutubeBBCodeFunc(preview bool) bbcode.TagCompilerFunc {
@@ -164,6 +206,7 @@ func (s bbcodeParser) Parse(parent gast.Node, block text.Reader, pc parser.Conte
 
 	unparsedBBCode := restOfSource[:endIndex]
 	block.Advance(len(unparsedBBCode))
+	fmt.Println("parse this", string(unparsedBBCode))
 
 	compiler := realBBCodeCompiler
 	if s.Preview {
