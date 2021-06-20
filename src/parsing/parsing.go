@@ -15,7 +15,9 @@ var previewMarkdown = goldmark.New(
 			Preview: true,
 		},
 		MathjaxExtension{},
-		BBCodeExtension{},
+		BBCodeExtension{
+			Preview: true,
+		},
 	),
 )
 var realMarkdown = goldmark.New(

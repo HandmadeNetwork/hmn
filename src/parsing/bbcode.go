@@ -17,17 +17,104 @@ var BBCodePriority = 1 // TODO: This is maybe too high a priority?
 
 var reTag = regexp.MustCompile(`(?P<open>\[\s*(?P<opentagname>[a-zA-Z]+))|(?P<close>\[\s*\/\s*(?P<closetagname>[a-zA-Z]+)\s*\])`)
 
-var bbcodeCompiler = bbcode.NewCompiler(false, false)
+var previewBBCodeCompiler = bbcode.NewCompiler(false, false)
+var realBBCodeCompiler = bbcode.NewCompiler(false, false)
+
+var REYoutubeVidOnly = regexp.MustCompile(`^[a-zA-Z0-9_-]{11}$`)
+
+func init() {
+	previewBBCodeCompiler.SetTag("youtube", makeYoutubeBBCodeFunc(true))
+	realBBCodeCompiler.SetTag("youtube", makeYoutubeBBCodeFunc(false))
+}
+
+func makeYoutubeBBCodeFunc(preview bool) bbcode.TagCompilerFunc {
+	return func(bn *bbcode.BBCodeNode) (*bbcode.HTMLTag, bool) {
+		if len(bn.Children) != 1 {
+			return bbcode.NewHTMLTag("<missing video URL>"), false
+		}
+		if bn.Children[0].Token.ID != bbcode.TEXT {
+			return bbcode.NewHTMLTag("<missing video URL>"), false
+		}
+
+		contents := bn.Children[0].Token.Value.(string)
+		vid := ""
+
+		if m := REYoutubeLong.FindStringSubmatch(contents); m != nil {
+			vid = m[REYoutubeLong.SubexpIndex("vid")]
+		} else if m := REYoutubeShort.FindStringSubmatch(contents); m != nil {
+			vid = m[REYoutubeShort.SubexpIndex("vid")]
+		} else if m := REYoutubeVidOnly.MatchString(contents); m {
+			vid = contents
+		}
+
+		if vid == "" {
+			return bbcode.NewHTMLTag("<bad video URL>"), false
+		}
+
+		if preview {
+			/*
+				<div class="mw6">
+					<img src="https://img.youtube.com/vi/` + vid + `/hqdefault.jpg">
+				</div>
+			*/
+
+			out := bbcode.NewHTMLTag("")
+			out.Name = "div"
+			out.Attrs["class"] = "mw6"
+
+			img := bbcode.NewHTMLTag("")
+			img.Name = "img"
+			img.Attrs = map[string]string{
+				"src": "https://img.youtube.com/vi/" + vid + "/hqdefault.jpg",
+			}
+
+			out.AppendChild(img)
+
+			return out, false
+		} else {
+			/*
+				<div class="mw6">
+					<div class="aspect-ratio aspect-ratio--16x9">
+						<iframe class="aspect-ratio--object" src="https://www.youtube-nocookie.com/embed/` + vid + `" frameborder="0" allowfullscreen></iframe>
+					</div>
+				</div>
+			*/
+
+			out := bbcode.NewHTMLTag("")
+			out.Name = "div"
+			out.Attrs["class"] = "mw6"
+
+			aspect := bbcode.NewHTMLTag("")
+			aspect.Name = "div"
+			aspect.Attrs["class"] = "aspect-ratio aspect-ratio--16x9"
+
+			iframe := bbcode.NewHTMLTag("")
+			iframe.Name = "iframe"
+			iframe.Attrs = map[string]string{
+				"class":           "aspect-ratio--object",
+				"src":             "https://www.youtube-nocookie.com/embed/" + vid,
+				"frameborder":     "0",
+				"allowfullscreen": "",
+			}
+			iframe.AppendChild(nil) // render a closing tag lol
+
+			aspect.AppendChild(iframe)
+			out.AppendChild(aspect)
+
+			return out, false
+		}
+	}
+}
 
 // ----------------------
 // Parser and delimiters
 // ----------------------
 
-type bbcodeParser struct{}
-
-func NewBBCodeParser() parser.InlineParser {
-	return bbcodeParser{}
+type bbcodeParser struct {
+	Preview bool
 }
+
+var _ parser.InlineParser = &bbcodeParser{}
 
 func (s bbcodeParser) Trigger() []byte {
 	return []byte{'['}
@@ -65,6 +152,7 @@ func (s bbcodeParser) Parse(parent gast.Node, block text.Reader, pc parser.Conte
 				if depth == 0 {
 					// We have balanced out!
 					endIndex = m[1] // the end index of this closing tag (exclusive)
+					break
 				}
 			}
 		}
@@ -77,7 +165,12 @@ func (s bbcodeParser) Parse(parent gast.Node, block text.Reader, pc parser.Conte
 	unparsedBBCode := restOfSource[:endIndex]
 	block.Advance(len(unparsedBBCode))
 
-	return NewBBCode(bbcodeCompiler.Compile(string(unparsedBBCode)))
+	compiler := realBBCodeCompiler
+	if s.Preview {
+		compiler = previewBBCodeCompiler
+	}
+
+	return NewBBCode(compiler.Compile(string(unparsedBBCode)))
 }
 
 func extractStringBySubmatchIndices(src []byte, m []int, subexpIndex int) string {
@@ -148,11 +241,13 @@ func (r *BBCodeHTMLRenderer) renderBBCode(w util.BufWriter, source []byte, n gas
 // Extension
 // ----------------------
 
-type BBCodeExtension struct{}
+type BBCodeExtension struct {
+	Preview bool
+}
 
 func (e BBCodeExtension) Extend(m goldmark.Markdown) {
 	m.Parser().AddOptions(parser.WithInlineParsers(
-		util.Prioritized(NewBBCodeParser(), BBCodePriority),
+		util.Prioritized(bbcodeParser{Preview: e.Preview}, BBCodePriority),
 	))
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(
 		util.Prioritized(NewBBCodeHTMLRenderer(), BBCodePriority),
