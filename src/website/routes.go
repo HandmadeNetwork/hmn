@@ -147,7 +147,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			LoginActionUrl:     hmnurl.BuildLoginAction(c.FullUrl()),
 			LogoutActionUrl:    hmnurl.BuildLogoutAction(),
 			RegisterUrl:        hmnurl.BuildHomepage(), // TODO(asaf)
-			HMNHomepageUrl:     hmnurl.BuildHomepage(), // TODO(asaf)
+			HMNHomepageUrl:     hmnurl.BuildHomepage(),
 			ProjectHomepageUrl: hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
 			ProjectIndexUrl:    hmnurl.BuildProjectIndex(1),
 			BlogUrl:            hmnurl.BuildBlog(c.CurrentProject.Slug, 1),
@@ -250,7 +250,10 @@ func FourOhFour(c *RequestContext) ResponseData {
 			BaseData: getBaseData(c),
 			Wanted:   c.FullUrl(),
 		}
-		res.WriteTemplate("404.html", templateData, c.Perf)
+		err := res.WriteTemplate("404.html", templateData, c.Perf)
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		res.Write([]byte("Not Found"))
 	}

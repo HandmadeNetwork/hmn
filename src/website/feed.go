@@ -94,7 +94,7 @@ func Feed(c *RequestContext) ResponseData {
 	baseData.BodyClasses = append(baseData.BodyClasses, "feed")
 
 	var res ResponseData
-	res.WriteTemplate("feed.html", FeedData{
+	err = res.WriteTemplate("feed.html", FeedData{
 		BaseData: baseData,
 
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
@@ -102,6 +102,9 @@ func Feed(c *RequestContext) ResponseData {
 		Posts:          posts,
 		Pagination:     pagination,
 	}, c.Perf)
+	if err != nil {
+		panic(err)
+	}
 
 	return res
 }
@@ -253,7 +256,10 @@ func AtomFeed(c *RequestContext) ResponseData {
 	}
 
 	var res ResponseData
-	res.WriteTemplate("atom.xml", feedData, c.Perf)
+	err := res.WriteTemplate("atom.xml", feedData, c.Perf)
+	if err != nil {
+		panic(err)
+	}
 
 	return res
 }

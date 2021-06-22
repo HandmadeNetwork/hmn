@@ -214,24 +214,11 @@ var HMNTemplateFuncs = template.FuncMap{
 	},
 }
 
+// TODO(asaf): Delete these?
 type ErrInvalidHexColor struct {
 	color string
 }
 
 func (e ErrInvalidHexColor) Error() string {
 	return fmt.Sprintf("invalid hex color: %s", e.color)
-}
-
-func getProjectSubdomain(proj interface{}) string {
-	subdomain := ""
-	switch p := proj.(type) {
-	case Project:
-		subdomain = p.Subdomain
-	case int:
-		// TODO: Look up project from the database
-	default:
-		panic(fmt.Errorf("projecturl requires either a templates.Project or a project ID, got %+v", proj))
-	}
-
-	return subdomain
 }

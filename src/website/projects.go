@@ -182,7 +182,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	baseData := getBaseData(c)
 	baseData.Title = "Project List"
 	var res ResponseData
-	res.WriteTemplate("project_index.html", ProjectTemplateData{
+	err = res.WriteTemplate("project_index.html", ProjectTemplateData{
 		BaseData: baseData,
 
 		Pagination:       pagination,
@@ -199,5 +199,8 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		RegisterUrl:        hmnurl.BuildRegister(),
 		LoginUrl:           hmnurl.BuildLoginPage(c.FullUrl()),
 	}, c.Perf)
+	if err != nil {
+		panic(err)
+	}
 	return res
 }
