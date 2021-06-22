@@ -91,7 +91,12 @@ func Logout(c *RequestContext) ResponseData {
 		}
 	}
 
-	res := c.Redirect("/", http.StatusSeeOther) // TODO: Redirect to the page the user was currently on, or if not authorized to view that page, immediately to the home page.
+	redir := c.Req.URL.Query().Get("redirect")
+	if redir == "" {
+		redir = "/"
+	}
+
+	res := c.Redirect(redir, http.StatusSeeOther)
 	res.SetCookie(auth.DeleteSessionCookie)
 
 	return res

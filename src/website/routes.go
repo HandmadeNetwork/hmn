@@ -135,17 +135,21 @@ func getBaseData(c *RequestContext) templates.BaseData {
 	}
 
 	return templates.BaseData{
-		Project:       templates.ProjectToTemplate(c.CurrentProject, c.Theme),
+		Theme: c.Theme,
+
+		CurrentUrl:    c.FullUrl(),
 		LoginPageUrl:  hmnurl.BuildLoginPage(c.FullUrl()),
-		User:          templateUser,
-		Theme:         c.Theme,
 		ProjectCSSUrl: hmnurl.BuildProjectCSS(c.CurrentProject.Color1),
+
+		Project: templates.ProjectToTemplate(c.CurrentProject, c.Theme),
+		User:    templateUser,
+
 		IsProjectPage: !c.CurrentProject.IsHMN(),
 		Header: templates.Header{
 			AdminUrl:           hmnurl.BuildHomepage(), // TODO(asaf)
 			UserSettingsUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
 			LoginActionUrl:     hmnurl.BuildLoginAction(c.FullUrl()),
-			LogoutActionUrl:    hmnurl.BuildLogoutAction(),
+			LogoutActionUrl:    hmnurl.BuildLogoutAction(c.FullUrl()),
 			RegisterUrl:        hmnurl.BuildHomepage(), // TODO(asaf)
 			HMNHomepageUrl:     hmnurl.BuildHomepage(),
 			ProjectHomepageUrl: hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),

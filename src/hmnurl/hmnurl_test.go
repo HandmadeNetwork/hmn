@@ -63,7 +63,7 @@ func TestLoginPage(t *testing.T) {
 }
 
 func TestLogoutAction(t *testing.T) {
-	AssertRegexMatch(t, BuildLogoutAction(), RegexLogoutAction, nil)
+	AssertRegexMatch(t, BuildLogoutAction(""), RegexLogoutAction, nil)
 }
 
 func TestRegister(t *testing.T) {
