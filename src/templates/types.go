@@ -192,9 +192,8 @@ type PostListItem struct {
 
 // Data from thread_list_item.html
 type ThreadListItem struct {
-	Title       string
-	Url         string
-	Breadcrumbs []Breadcrumb
+	Title string
+	Url   string
 
 	FirstUser User
 	FirstDate time.Time
