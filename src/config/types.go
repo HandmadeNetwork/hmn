@@ -16,12 +16,13 @@ const (
 )
 
 type HMNConfig struct {
-	Env      Environment
-	Addr     string
-	BaseUrl  string
-	LogLevel zerolog.Level
-	Postgres PostgresConfig
-	Auth     AuthConfig
+	Env          Environment
+	Addr         string
+	BaseUrl      string
+	LogLevel     zerolog.Level
+	Postgres     PostgresConfig
+	Auth         AuthConfig
+	DigitalOcean DigitalOceanConfig
 }
 
 type PostgresConfig struct {
@@ -38,6 +39,16 @@ type PostgresConfig struct {
 type AuthConfig struct {
 	CookieDomain string
 	CookieSecure bool
+}
+
+type DigitalOceanConfig struct {
+	AssetsSpacesKey      string
+	AssetsSpacesSecret   string
+	AssetsSpacesRegion   string
+	AssetsSpacesEndpoint string
+	AssetsSpacesBucket   string
+	AssetsPathPrefix     string
+	AssetsPublicUrlRoot  string
 }
 
 func (info PostgresConfig) DSN() string {

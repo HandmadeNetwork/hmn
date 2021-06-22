@@ -3,6 +3,7 @@ package templates
 import (
 	"html/template"
 	"net"
+	"regexp"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -71,17 +72,22 @@ var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
 	models.ProjectLifecycleLTS:              "Complete",
 }
 
-func ProjectToTemplate(p *models.Project, theme string) Project {
-	logo := p.LogoLight
-	if theme == "dark" {
-		logo = p.LogoDark
-	}
+func ProjectUrl(p *models.Project) string {
 	var url string
 	if p.Lifecycle == models.ProjectLifecycleUnapproved || p.Lifecycle == models.ProjectLifecycleApprovalRequired {
 		url = hmnurl.BuildProjectNotApproved(p.Slug)
 	} else {
 		url = hmnurl.BuildProjectHomepage(p.Slug)
 	}
+	return url
+}
+
+func ProjectToTemplate(p *models.Project, theme string) Project {
+	logo := p.LogoLight
+	if theme == "dark" {
+		logo = p.LogoDark
+	}
+	url := ProjectUrl(p)
 	return Project{
 		Name:              p.Name,
 		Subdomain:         p.Subdomain(),
@@ -115,36 +121,49 @@ func ThreadToTemplate(t *models.Thread) Thread {
 	}
 }
 
-func UserToTemplate(u *models.User, currentTheme string) User {
-	// TODO: Handle deleted users. Maybe not here, but if not, at call sites of this function.
+func UserAvatarUrl(u *models.User, currentTheme string) string {
 	if currentTheme == "" {
 		currentTheme = "light"
 	}
-
 	avatar := ""
 	if u.Avatar != nil && len(*u.Avatar) > 0 {
 		avatar = hmnurl.BuildUserFile(*u.Avatar)
 	} else {
 		avatar = hmnurl.BuildTheme("empty-avatar.svg", currentTheme, true)
 	}
+	return avatar
+}
 
+func UserDisplayName(u *models.User) string {
 	name := u.Name
 	if u.Name == "" {
 		name = u.Username
+	}
+	return name
+}
+
+func UserToTemplate(u *models.User, currentTheme string) User {
+	// TODO: Handle deleted users. Maybe not here, but if not, at call sites of this function.
+
+	email := ""
+	if u.ShowEmail {
+		// TODO(asaf): Always show email to admins
+		email = u.Email
 	}
 
 	return User{
 		ID:          u.ID,
 		Username:    u.Username,
-		Email:       u.Email,
+		Email:       email,
 		IsSuperuser: u.IsSuperuser,
 		IsStaff:     u.IsStaff,
 
-		Name:       name,
+		Name:       UserDisplayName(u),
 		Blurb:      u.Blurb,
 		Signature:  u.Signature,
-		AvatarUrl:  avatar,
-		ProfileUrl: hmnurl.BuildMember(u.Username),
+		DateJoined: u.DateJoined,
+		AvatarUrl:  UserAvatarUrl(u, currentTheme),
+		ProfileUrl: hmnurl.BuildUserProfile(u.Username),
 
 		DarkTheme:     u.DarkTheme,
 		Timezone:      u.Timezone,
@@ -154,6 +173,53 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 		CanEditLibrary:                      u.CanEditLibrary,
 		DiscordSaveShowcase:                 u.DiscordSaveShowcase,
 		DiscordDeleteSnippetOnMessageDelete: u.DiscordDeleteSnippetOnMessageDelete,
+	}
+}
+
+var RegexServiceYoutube = regexp.MustCompile(`youtube\.com/(c/)?(?P<userdata>[\w/-]+)$`)
+var RegexServiceTwitter = regexp.MustCompile(`twitter\.com/(?P<userdata>\w+)$`)
+var RegexServiceGithub = regexp.MustCompile(`github\.com/(?P<userdata>[\w/-]+)$`)
+var RegexServiceTwitch = regexp.MustCompile(`twitch\.tv/(?P<userdata>[\w/-]+)$`)
+var RegexServiceHitbox = regexp.MustCompile(`hitbox\.tv/(?P<userdata>[\w/-]+)$`)
+var RegexServicePatreon = regexp.MustCompile(`patreon\.com/(?P<userdata>[\w/-]+)$`)
+var RegexServiceSoundcloud = regexp.MustCompile(`soundcloud\.com/(?P<userdata>[\w/-]+)$`)
+var RegexServiceItch = regexp.MustCompile(`(?P<userdata>[\w/-]+)\.itch\.io/?$`)
+
+var LinkServiceMap = map[string]*regexp.Regexp{
+	"youtube":    RegexServiceYoutube,
+	"twitter":    RegexServiceTwitter,
+	"github":     RegexServiceGithub,
+	"twitch":     RegexServiceTwitch,
+	"hitbox":     RegexServiceHitbox,
+	"patreon":    RegexServicePatreon,
+	"soundcloud": RegexServiceSoundcloud,
+	"itch":       RegexServiceItch,
+}
+
+func ParseKnownServicesForLink(link *models.Link) (serviceName string, userData string) {
+	for name, re := range LinkServiceMap {
+		match := re.FindStringSubmatch(link.Value)
+		if match != nil {
+			serviceName = name
+			userData = match[re.SubexpIndex("userdata")]
+			return
+		}
+	}
+	return "", ""
+}
+
+func LinkToTemplate(link *models.Link) Link {
+	name := ""
+	if link.Name != nil {
+		name = *link.Name
+	}
+	serviceName, serviceUserData := ParseKnownServicesForLink(link)
+	return Link{
+		Key:             link.Key,
+		ServiceName:     serviceName,
+		ServiceUserData: serviceUserData,
+		Name:            name,
+		Value:           link.Value,
 	}
 }
 

@@ -80,8 +80,12 @@ func TestStaticPages(t *testing.T) {
 	AssertRegexMatch(t, BuildProjectSubmissionGuidelines(), RegexProjectSubmissionGuidelines, nil)
 }
 
-func TestMember(t *testing.T) {
-	AssertRegexMatch(t, BuildMember("test"), RegexMember, map[string]string{"member": "test"})
+func TestUserProfile(t *testing.T) {
+	AssertRegexMatch(t, BuildUserProfile("test"), RegexUserProfile, map[string]string{"username": "test"})
+}
+
+func TestSnippet(t *testing.T) {
+	AssetRegexMatch(t, BuildSnippet(15), RegexSnippet, map[string]string{"snippetid": "15"})
 }
 
 func TestFeed(t *testing.T) {

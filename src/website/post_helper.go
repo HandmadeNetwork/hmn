@@ -47,6 +47,35 @@ var PostTypePrefix = map[templates.PostType]string{
 	templates.PostTypeLibraryComment: "Library comment",
 }
 
+func PostBreadcrumbs(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, post *models.Post, libraryResource *models.LibraryResource) []templates.Breadcrumb {
+	var result []templates.Breadcrumb
+	result = append(result, templates.Breadcrumb{
+		Name: project.Name,
+		Url:  hmnurl.BuildProjectHomepage(project.Slug),
+	})
+	result = append(result, templates.Breadcrumb{
+		Name: CategoryKindDisplayNames[post.CategoryKind],
+		Url:  BuildProjectMainCategoryUrl(project.Slug, post.CategoryKind),
+	})
+	switch post.CategoryKind {
+	case models.CatKindForum:
+		subforums := lineageBuilder.GetSubforumLineage(post.CategoryID)
+		slugs := lineageBuilder.GetSubforumLineageSlugs(post.CategoryID)
+		for i, subforum := range subforums {
+			result = append(result, templates.Breadcrumb{
+				Name: *subforum.Name, // NOTE(asaf): All subforum categories must have names.
+				Url:  hmnurl.BuildForumCategory(project.Slug, slugs[0:i+1], 1),
+			})
+		}
+	case models.CatKindLibraryResource:
+		result = append(result, templates.Breadcrumb{
+			Name: libraryResource.Name,
+			Url:  hmnurl.BuildLibraryResource(project.Slug, libraryResource.ID),
+		})
+	}
+	return result
+}
+
 // NOTE(asaf): THIS DOESN'T HANDLE WIKI EDIT ITEMS. Wiki edits are PostTextVersions, not Posts.
 func MakePostListItem(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, thread *models.Thread, post *models.Post, user *models.User, libraryResource *models.LibraryResource, unread bool, includeBreadcrumbs bool, currentTheme string) templates.PostListItem {
 	var result templates.PostListItem
@@ -75,30 +104,7 @@ func MakePostListItem(lineageBuilder *models.CategoryLineageBuilder, project *mo
 	result.PostTypePrefix = PostTypePrefix[result.PostType]
 
 	if includeBreadcrumbs {
-		result.Breadcrumbs = append(result.Breadcrumbs, templates.Breadcrumb{
-			Name: project.Name,
-			Url:  hmnurl.BuildProjectHomepage(project.Slug),
-		})
-		result.Breadcrumbs = append(result.Breadcrumbs, templates.Breadcrumb{
-			Name: CategoryKindDisplayNames[post.CategoryKind],
-			Url:  BuildProjectMainCategoryUrl(project.Slug, post.CategoryKind),
-		})
-		switch post.CategoryKind {
-		case models.CatKindForum:
-			subforums := lineageBuilder.GetSubforumLineage(post.CategoryID)
-			slugs := lineageBuilder.GetSubforumLineageSlugs(post.CategoryID)
-			for i, subforum := range subforums {
-				result.Breadcrumbs = append(result.Breadcrumbs, templates.Breadcrumb{
-					Name: *subforum.Name, // NOTE(asaf): All subforum categories must have names.
-					Url:  hmnurl.BuildForumCategory(project.Slug, slugs[0:i+1], 1),
-				})
-			}
-		case models.CatKindLibraryResource:
-			result.Breadcrumbs = append(result.Breadcrumbs, templates.Breadcrumb{
-				Name: libraryResource.Name,
-				Url:  hmnurl.BuildLibraryResource(project.Slug, libraryResource.ID),
-			})
-		}
+		result.Breadcrumbs = PostBreadcrumbs(lineageBuilder, project, post, libraryResource)
 	}
 
 	return result

@@ -10,9 +10,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 )
 
-const StaticPath = "/public"
-const StaticThemePath = "/public/themes"
-
 type Q struct {
 	Name  string
 	Value string
@@ -30,11 +27,13 @@ func QFromURL(u *url.URL) []Q {
 
 var baseUrlParsed url.URL
 var cacheBust string
+var S3BaseUrl string
 var isTest bool
 
 func init() {
 	SetGlobalBaseUrl(config.Config.BaseUrl)
 	SetCacheBust(fmt.Sprint(time.Now().Unix()))
+	SetS3BaseUrl(config.Config.DigitalOcean.AssetsPublicUrlRoot)
 }
 
 func SetGlobalBaseUrl(fullBaseUrl string) {
@@ -51,6 +50,10 @@ func SetGlobalBaseUrl(fullBaseUrl string) {
 
 func SetCacheBust(newCacheBust string) {
 	cacheBust = newCacheBust
+}
+
+func SetS3BaseUrl(base string) {
+	S3BaseUrl = base
 }
 
 func Url(path string, query []Q) string {

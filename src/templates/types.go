@@ -27,7 +27,7 @@ type BaseData struct {
 
 type Header struct {
 	AdminUrl           string
-	MemberSettingsUrl  string
+	UserSettingsUrl    string
 	LoginActionUrl     string
 	LogoutActionUrl    string
 	RegisterUrl        string
@@ -124,6 +124,7 @@ type User struct {
 	Blurb      string
 	Bio        string
 	Signature  string
+	DateJoined time.Time
 	AvatarUrl  string
 	ProfileUrl string
 
@@ -135,6 +136,14 @@ type User struct {
 	CanEditLibrary                      bool
 	DiscordSaveShowcase                 bool
 	DiscordDeleteSnippetOnMessageDelete bool
+}
+
+type Link struct {
+	Key             string
+	ServiceName     string
+	ServiceUserData string
+	Name            string
+	Value           string
 }
 
 type OpenGraphItem struct {
@@ -195,6 +204,51 @@ type ThreadListItem struct {
 	Unread  bool
 	Classes string
 	Content string
+}
+
+type TimelineType int
+
+const (
+	TimelineTypeUnknown TimelineType = iota
+
+	TimelineTypeForumThread
+	TimelineTypeForumReply
+
+	TimelineTypeBlogPost
+	TimelineTypeBlogComment
+
+	TimelineTypeWikiCreate
+	TimelineTypeWikiEdit
+	TimelineTypeWikiTalk
+
+	TimelineTypeLibraryComment
+
+	TimelineTypeSnippetImage
+	TimelineTypeSnippetVideo
+	TimelineTypeSnippetAudio
+	TimelineTypeSnippetYoutube
+)
+
+type TimelineItem struct {
+	Type      TimelineType
+	TypeTitle string
+	Class     string
+	Date      time.Time
+	Url       string
+
+	OwnerAvatarUrl string
+	OwnerName      string
+	OwnerUrl       string
+	Description    template.HTML
+
+	DiscordMessageUrl string
+	Width             int
+	Height            int
+	AssetUrl          string
+	YoutubeID         string
+
+	Title       string
+	Breadcrumbs []Breadcrumb
 }
 
 type ProjectCardData struct {

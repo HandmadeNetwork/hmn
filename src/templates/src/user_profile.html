@@ -1,0 +1,126 @@
+{{ template "base.html" . }}
+
+{{ define "content" }}
+<div class="flex flex-column flex-row-l">
+    <div class="flex-grow-1 overflow-hidden">
+		{{ with .ProfileUserProjects }}
+			<div class="content-block ph3 ph0-ns">
+				<h2>Projects</h2>
+				<div class="ph3">
+					{{ range . }}
+						<div class="mv3">
+							{{ template "project_card.html" projectcarddata . "" }}
+						</div>
+					{{ end }}
+				</div>
+			</div>
+		{{ end }}
+		{{ if gt (len .TimelineItems) 0 }}
+			<div class="content-block timeline-container ph3 ph0-ns">
+				<h2>Recent Activity</h2>
+				<div class="timeline-filters mb2">
+					{{ if gt .NumForums 0 }}
+						<div class="dib filter forums mr2"><input data-type="forums" class="v-mid mr1" type="checkbox" id="timeline-checkbox-forums" checked /><label class="v-mid" for="timeline-checkbox-forums">Forums (<span class="count">{{ .NumForums }}</span>)</label></div>
+					{{ end }}
+					{{ if gt .NumBlogs 0 }}
+						<div class="dib filter blogs mr2"><input data-type="blogs" class="v-mid mr1" type="checkbox" id="timeline-checkbox-blogs" checked /><label class="v-mid" for="timeline-checkbox-blogs">Blogs (<span class="count">{{ .NumBlogs }}</span>)</label></div>
+					{{ end }}
+					{{ if gt .NumWiki 0 }}
+						<div class="dib filter wiki mr2"><input data-type="wiki" class="v-mid mr1" type="checkbox" id="timeline-checkbox-wiki" checked /><label class="v-mid" for="timeline-checkbox-wiki">Wiki (<span class="count">{{ .NumWiki }}</span>)</label></div>
+					{{ end }}
+					{{ if gt .NumLibrary 0 }}
+						<div class="dib filter library mr2"><input data-type="library" class="v-mid mr1" type="checkbox" id="timeline-checkbox-library" checked /><label class="v-mid" for="timeline-checkbox-library">Library (<span class="count">{{ .NumLibrary }}</span>)</label></div>
+					{{ end }}
+					{{ if gt .NumSnippets 0 }}
+						<div class="dib filter snippets mr2"><input data-type="snippets" class="v-mid mr1" type="checkbox" id="timeline-checkbox-snippets" checked /><label class="v-mid" for="timeline-checkbox-snippets">Snippets (<span class="count">{{ .NumSnippets }}</span>)</label></div>
+					{{ end }}
+				</div>
+				<div class="timeline">
+					{{ range .TimelineItems }}
+						{{ if timelinepostitem . }}
+							<div class="timeline-item flex pa3 mb2 br3 {{ .Class }}">
+								<img class="avatar-icon big lite mr3" src="{{ .OwnerAvatarUrl }}"/>
+								<div class="timeline-info overflow-hidden">
+									{{ template "breadcrumbs.html" .Breadcrumbs }}
+									<div class="title f5 b nowrap truncate"><span>{{ .TypeTitle }}</span>: <a href="{{ .Url }}" class="title-text normal">{{ .Title }}</a></div>
+									<div class="details">
+										<a class="user" href="{{ .OwnerUrl }}">{{ .OwnerName }}</a> &mdash; {{ timehtml (relativedate .Date) .Date }}
+									</div>
+								</div>
+							</div>
+						{{ else if timelinesnippetitem . }}
+							<div class="timeline-item flex flex-column pa3 mb2 br3 {{ .Class }}">
+								<div class="timeline-user-info mb2 flex items-center">
+									<img class="avatar-icon lite mr2" src="{{ .OwnerAvatarUrl }}"/>
+									<a class="user" href="{{ .OwnerUrl }}">{{ .OwnerName }}</a>
+									<a class="datetime tr" style="flex: 1 1 auto;" href="{{ .Url }}">{{ timehtml (relativedate .Date) .Date }}</a>
+								</div>
+								<p class="timeline-snippet-title mb2">{{ .Description }}</p>
+								<div class="timeline-content-box {{ if snippetyoutube . }}youtube{{ end }}">
+									{{ if snippetvideo . }}
+										<video src="{{ .AssetUrl }}" preload="metadata" controls />
+									{{ else if snippetimage . }}
+										<img src="{{ .AssetUrl }}" />
+									{{ else if snippetaudio . }}
+										<audio src="{{ .AssetUrl }}" controls />
+									{{ else if snippetyoutube .}}
+										<iframe src="https://www.youtube-nocookie.com/embed/{{ .YoutubeID }}" allow="accelerometer; encrypted-media; gyroscope;" allowfullscreen frameborder="0"></iframe>
+									{{ end }}
+								</div>
+							</div>
+						{{ end }}
+					{{ end }}
+				</div>
+			</div>
+		{{ end }}
+	</div>
+    <div class="sidebar flex-shrink-0 mw6 w-30-l self-center self-start-l mh3 mh0-ns ml3-l overflow-hidden">
+		<div class="content-block box avatar">
+			<img alt="{{ .ProfileUser.Name }}'s Avatar" src="{{ .ProfileUser.AvatarUrl }}" />
+		</div>
+		<div class="content-block box list">
+			<div class="content-block">
+				<div class="description">
+					<p>{{ .ProfileUser.Bio }}</p>
+				</div>
+			</div>
+
+			<div class="pair flex flex-wrap">
+				<div class="key flex-auto mr1">Member since</div>
+				<div class="value">{{ absoluteshortdate .ProfileUser.DateJoined }}</div>
+			</div>
+
+			<div class="pair flex flex-wrap">
+				<div class="key flex-auto mr1">Posts</div>
+				<div class="value">{{ add .NumForums .NumBlogs .NumWiki .NumLibrary }}</div>
+			</div>
+
+			{{ if .ProfileUser.Email }}
+				<div class="pair flex flex-wrap">
+					<div class="key flex-auto mr1">Email</div>
+					<div class="value">{{ .ProfileUser.Email }}</div>
+				</div>
+			{{ end }}
+
+			{{ range .ProfileUserLinks }}
+				<div class="pair flex flex-wra[">
+					<div class="key flex-auto mr1">{{ .Key }}</div>
+					<div class="value projectlink"><a class="external" href="{{ .Value }}" ><span class="icon-{{ .ServiceName }}"></span> {{ if .ServiceUserData }}{{ .ServiceUserData }}{{ else }}{{ .Value }}{{ end }}</a></div>
+				</div>
+			{{ end }}
+		</div>
+	</div>
+</div>
+<script>
+	let timelineList = document.querySelector(".timeline");
+	let toggles = document.querySelectorAll(".timeline-filters .filter input");
+	function timelineFilterToggle(ev) {
+		timelineList.classList.toggle("no-" + ev.target.getAttribute("data-type"), !ev.target.checked);
+	}
+	for (let i = 0; i < toggles.length; ++i) {
+		let toggle = toggles[i];
+		toggle.checked = true;
+		toggle.addEventListener("change", timelineFilterToggle);
+	}
+</script>
+{{ end }}

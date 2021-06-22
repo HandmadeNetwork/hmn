@@ -72,8 +72,17 @@ func names(ts []*template.Template) []string {
 }
 
 var HMNTemplateFuncs = template.FuncMap{
+	"add": func(a int, b ...int) int {
+		for _, num := range b {
+			a += num
+		}
+		return a
+	},
 	"absolutedate": func(t time.Time) string {
 		return t.UTC().Format("January 2, 2006, 3:04pm")
+	},
+	"absoluteshortdate": func(t time.Time) string {
+		return t.UTC().Format("January 2, 2006")
 	},
 	"rfc3339": func(t time.Time) string {
 		return t.UTC().Format(time.RFC3339)
@@ -165,6 +174,43 @@ var HMNTemplateFuncs = template.FuncMap{
 			Project: &project,
 			Classes: classes,
 		}
+	},
+
+	"timelinepostitem": func(item TimelineItem) bool {
+		if item.Type == TimelineTypeForumThread ||
+			item.Type == TimelineTypeForumReply ||
+			item.Type == TimelineTypeBlogPost ||
+			item.Type == TimelineTypeBlogComment ||
+			item.Type == TimelineTypeWikiCreate ||
+			item.Type == TimelineTypeWikiEdit ||
+			item.Type == TimelineTypeWikiTalk ||
+			item.Type == TimelineTypeLibraryComment {
+
+			return true
+		}
+		return false
+	},
+	"timelinesnippetitem": func(item TimelineItem) bool {
+		if item.Type == TimelineTypeSnippetImage ||
+			item.Type == TimelineTypeSnippetVideo ||
+			item.Type == TimelineTypeSnippetAudio ||
+			item.Type == TimelineTypeSnippetYoutube {
+
+			return true
+		}
+		return false
+	},
+	"snippetvideo": func(snippet TimelineItem) bool {
+		return snippet.Type == TimelineTypeSnippetVideo
+	},
+	"snippetaudio": func(snippet TimelineItem) bool {
+		return snippet.Type == TimelineTypeSnippetAudio
+	},
+	"snippetimage": func(snippet TimelineItem) bool {
+		return snippet.Type == TimelineTypeSnippetImage
+	},
+	"snippetyoutube": func(snippet TimelineItem) bool {
+		return snippet.Type == TimelineTypeSnippetYoutube
 	},
 }
 

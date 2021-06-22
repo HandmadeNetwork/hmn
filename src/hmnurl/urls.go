@@ -132,17 +132,28 @@ func BuildProjectSubmissionGuidelines() string {
 }
 
 /*
-* Member
+* User
  */
 
-var RegexMember = regexp.MustCompile(`^/m/(?P<member>[^/]+)$`)
+var RegexUserProfile = regexp.MustCompile(`^/m/(?P<username>[^/]+)$`)
 
-func BuildMember(username string) string {
+func BuildUserProfile(username string) string {
 	defer CatchPanic()
 	if len(username) == 0 {
 		panic(oops.New(nil, "Username must not be blank"))
 	}
 	return Url("/m/"+username, nil)
+}
+
+/*
+* Snippets
+ */
+
+var RegexSnippet = regexp.MustCompile(`^/snippet/(?P<snippetid>\d+)$`)
+
+func BuildSnippet(snippetId int) string {
+	defer CatchPanic()
+	return Url("/snippet/"+strconv.Itoa(snippetId), nil)
 }
 
 /*
@@ -681,6 +692,12 @@ var RegexProjectCSS = regexp.MustCompile("^/assets/project.css$")
 func BuildProjectCSS(color string) string {
 	defer CatchPanic()
 	return Url("/assets/project.css", []Q{{"color", color}})
+}
+
+// NOTE(asaf): No Regex or tests for remote assets, since we don't parse it ourselves
+func BuildS3Asset(s3key string) string {
+	defer CatchPanic()
+	return fmt.Sprintf("%s%s", S3BaseUrl, s3key)
 }
 
 var RegexPublic = regexp.MustCompile("^/public/.+$")

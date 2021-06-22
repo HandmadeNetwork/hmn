@@ -10,6 +10,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"github.com/google/uuid"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zerologadapter"
@@ -37,6 +38,8 @@ func typeIsQueryable(t reflect.Type) bool {
 	// NOTE: boy it would be nice if we didn't have to do reflect.New here, considering that pgtype is just doing reflection on the value anyway
 
 	if isRecognizedByPgtype {
+		return true
+	} else if t == reflect.TypeOf(uuid.UUID{}) {
 		return true
 	}
 
@@ -100,10 +103,12 @@ func (it *StructQueryIterator) Next() (interface{}, bool) {
 	// Better logging of panics in this confusing reflection process
 	var currentField reflect.StructField
 	var currentValue reflect.Value
+	var currentIdx int
 	defer func() {
 		if r := recover(); r != nil {
 			if currentValue.IsValid() {
 				logging.Error().
+					Int("index", currentIdx).
 					Str("field name", currentField.Name).
 					Stringer("field type", currentField.Type).
 					Interface("value", currentValue.Interface()).
@@ -120,6 +125,7 @@ func (it *StructQueryIterator) Next() (interface{}, bool) {
 	}()
 
 	for i, val := range vals {
+		currentIdx = i
 		if val == nil {
 			continue
 		}

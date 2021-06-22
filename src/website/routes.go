@@ -103,16 +103,20 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	staticPages.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
 	staticPages.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
 
+	// TODO(asaf): Have separate middleware for HMN-only routes and any-project routes
+	// NOTE(asaf): HMN-only routes:
 	mainRoutes.GET(hmnurl.RegexFeed, Feed)
 	mainRoutes.GET(hmnurl.RegexAtomFeed, AtomFeed)
-
 	mainRoutes.GET(hmnurl.RegexProjectIndex, ProjectIndex)
+	mainRoutes.GET(hmnurl.RegexUserProfile, UserProfile)
 
+	// NOTE(asaf): Any-project routes:
 	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)
 	mainRoutes.GET(hmnurl.RegexForumCategory, ForumCategory)
 
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 
+	// Other
 	mainRoutes.AnyMethod(hmnurl.RegexCatchAll, FourOhFour)
 
 	return router
@@ -139,7 +143,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 		IsProjectPage: !c.CurrentProject.IsHMN(),
 		Header: templates.Header{
 			AdminUrl:           hmnurl.BuildHomepage(), // TODO(asaf)
-			MemberSettingsUrl:  hmnurl.BuildHomepage(), // TODO(asaf)
+			UserSettingsUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
 			LoginActionUrl:     hmnurl.BuildLoginAction(c.FullUrl()),
 			LogoutActionUrl:    hmnurl.BuildLogoutAction(),
 			RegisterUrl:        hmnurl.BuildHomepage(), // TODO(asaf)
@@ -256,6 +260,7 @@ func FourOhFour(c *RequestContext) ResponseData {
 func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 	c.Perf.StartBlock("MIDDLEWARE", "Load common website data")
 	defer c.Perf.EndBlock()
+
 	// get project
 	{
 		slug := ""
