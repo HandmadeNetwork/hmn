@@ -4,6 +4,8 @@ import (
 	"html/template"
 	"net"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -221,6 +223,72 @@ func LinkToTemplate(link *models.Link) Link {
 		Name:            name,
 		Value:           link.Value,
 	}
+}
+
+func TimelineItemsToJSON(items []TimelineItem) string {
+	// NOTE(asaf): As of 2021-06-22: This only serializes the data necessary for snippet showcase.
+	builder := strings.Builder{}
+	builder.WriteRune('[')
+	for i, item := range items {
+		if i > 0 {
+			builder.WriteRune(',')
+		}
+		builder.WriteRune('{')
+
+		builder.WriteString(`"type":`)
+		builder.WriteString(strconv.Itoa(int(item.Type)))
+		builder.WriteRune(',')
+
+		builder.WriteString(`"date":`)
+		builder.WriteString(strconv.FormatInt(item.Date.UTC().Unix(), 10))
+		builder.WriteRune(',')
+
+		builder.WriteString(`"description":"`)
+		jsonString := string(item.Description)
+		jsonString = strings.ReplaceAll(jsonString, `\`, `\\`)
+		jsonString = strings.ReplaceAll(jsonString, `"`, `\"`)
+		jsonString = strings.ReplaceAll(jsonString, "\n", "\\n")
+		jsonString = strings.ReplaceAll(jsonString, "\r", "\\r")
+		jsonString = strings.ReplaceAll(jsonString, "\t", "\\t")
+		builder.WriteString(jsonString)
+		builder.WriteString(`",`)
+
+		builder.WriteString(`"owner_name":"`)
+		builder.WriteString(item.OwnerName)
+		builder.WriteString(`",`)
+
+		builder.WriteString(`"owner_avatar":"`)
+		builder.WriteString(item.OwnerAvatarUrl)
+		builder.WriteString(`",`)
+
+		builder.WriteString(`"owner_url":"`)
+		builder.WriteString(item.OwnerUrl)
+		builder.WriteString(`",`)
+
+		builder.WriteString(`"snippet_url":"`)
+		builder.WriteString(item.Url)
+		builder.WriteString(`",`)
+
+		builder.WriteString(`"width":`)
+		builder.WriteString(strconv.Itoa(item.Width))
+		builder.WriteRune(',')
+
+		builder.WriteString(`"height":`)
+		builder.WriteString(strconv.Itoa(item.Height))
+		builder.WriteRune(',')
+
+		builder.WriteString(`"asset_url":"`)
+		builder.WriteString(item.AssetUrl)
+		builder.WriteString(`",`)
+
+		builder.WriteString(`"discord_message_url":"`)
+		builder.WriteString(item.DiscordMessageUrl)
+		builder.WriteString(`"`)
+
+		builder.WriteRune('}')
+	}
+	builder.WriteRune(']')
+	return builder.String()
 }
 
 func maybeString(s *string) string {

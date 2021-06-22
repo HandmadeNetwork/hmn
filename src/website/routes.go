@@ -107,6 +107,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	// NOTE(asaf): HMN-only routes:
 	mainRoutes.GET(hmnurl.RegexFeed, Feed)
 	mainRoutes.GET(hmnurl.RegexAtomFeed, AtomFeed)
+	mainRoutes.GET(hmnurl.RegexShowcase, Showcase)
 	mainRoutes.GET(hmnurl.RegexProjectIndex, ProjectIndex)
 	mainRoutes.GET(hmnurl.RegexUserProfile, UserProfile)
 
