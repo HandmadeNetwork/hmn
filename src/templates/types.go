@@ -234,6 +234,7 @@ type TimelineItem struct {
 	Class     string
 	Date      time.Time
 	Url       string
+	UUID      string
 
 	OwnerAvatarUrl string
 	OwnerName      string
