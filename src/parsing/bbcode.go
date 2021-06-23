@@ -1,9 +1,16 @@
 package parsing
 
 import (
+	"bytes"
 	"regexp"
+	"strings"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/oops"
+	"github.com/alecthomas/chroma"
+	chromahtml "github.com/alecthomas/chroma/formatters/html"
+	"github.com/alecthomas/chroma/lexers"
+	"github.com/alecthomas/chroma/styles"
 	"github.com/frustra/bbcode"
 	"github.com/yuin/goldmark"
 	gast "github.com/yuin/goldmark/ast"
@@ -108,26 +115,49 @@ func init() {
 			lang = arglang
 		}
 
+		text := bbcode.CompileText(bn)
+		text = strings.TrimPrefix(text, "\n")
+
+		var lexer chroma.Lexer
+		if lang != "" {
+			lexer = lexers.Get(lang)
+		}
+		if lexer == nil {
+			lexer = lexers.Analyse(text)
+		}
+		if lexer == nil {
+			lexer = lexers.Fallback
+		}
+
+		iterator, err := lexer.Tokenise(nil, text)
+		if err != nil {
+			panic(oops.New(err, "failed to tokenize bbcode"))
+		}
+
+		var result bytes.Buffer
+		formatter := chromahtml.New(HMNChromaOptions...)
+		formatter.Format(&result, styles.Monokai, iterator)
+		formatted := result.String()
+
 		out := bbcode.NewHTMLTag("")
 		out.Name = "pre"
+		out.Attrs["class"] = "hmn-code"
 
-		// TODO: After figuring out code for Markdown, put it here too.
-		_ = lang
+		child := bbcode.NewHTMLTag(formatted)
+		child.Raw = true
+		out.AppendChild(child)
 
-		return out, true
+		return out, false
 	})
 }
 
 func makeYoutubeBBCodeFunc(preview bool) bbcode.TagCompilerFunc {
 	return func(bn *bbcode.BBCodeNode) (*bbcode.HTMLTag, bool) {
-		if len(bn.Children) != 1 {
-			return bbcode.NewHTMLTag("<missing video URL>"), false
-		}
-		if bn.Children[0].Token.ID != bbcode.TEXT {
+		contents := bbcode.CompileText(bn)
+		if contents == "" {
 			return bbcode.NewHTMLTag("<missing video URL>"), false
 		}
 
-		contents := bn.Children[0].Token.Value.(string)
 		vid := ""
 
 		if m := REYoutubeLong.FindStringSubmatch(contents); m != nil {

@@ -4,12 +4,15 @@ import (
 	"bytes"
 
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting"
 	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/util"
 )
 
 var previewMarkdown = goldmark.New(
 	goldmark.WithExtensions(
 		extension.GFM,
+		highlightExtension,
 		SpoilerExtension{},
 		EmbedExtension{
 			Preview: true,
@@ -23,6 +26,7 @@ var previewMarkdown = goldmark.New(
 var realMarkdown = goldmark.New(
 	goldmark.WithExtensions(
 		extension.GFM,
+		highlightExtension,
 		SpoilerExtension{},
 		EmbedExtension{},
 		MathjaxExtension{},
@@ -43,3 +47,14 @@ func ParsePostInput(source string, preview bool) string {
 
 	return buf.String()
 }
+
+var highlightExtension = highlighting.NewHighlighting(
+	highlighting.WithFormatOptions(HMNChromaOptions...),
+	highlighting.WithWrapperRenderer(func(w util.BufWriter, context highlighting.CodeBlockContext, entering bool) {
+		if entering {
+			w.WriteString(`<pre class="hmn-code">`)
+		} else {
+			w.WriteString(`</pre>`)
+		}
+	}),
+)

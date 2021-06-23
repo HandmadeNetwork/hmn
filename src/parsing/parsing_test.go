@@ -1,55 +1,66 @@
 package parsing
 
 import (
-	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseBBCode(t *testing.T) {
-	const testDoc = `Hello, [b]amazing[/b] [i]incredible[/i] [b][i][u]world!!![/u][/i][/b]
-
-Too many opening tags: [b]wow.[b]
-
-Too many closing tags: [/i]wow.[/i]
-
-Mix 'em: [u][/i]wow.[/i][/u]
-
-[url=https://google.com/]Google![/url]
-`
-
-	t.Run("hello world", func(t *testing.T) {
-		bbcode := "Hello, [b]amazing[/b] [i]incredible[/i] [b][i][u]world!!![/u][/i][/b]"
-		expected := "Hello, <strong>amazing</strong> <em>incredible</em> <strong><em><u>world!!!</u></em></strong>"
-		assert.Equal(t, expected, ParseBBCode(bbcode))
+func TestMarkdown(t *testing.T) {
+	t.Run("fenced code blocks", func(t *testing.T) {
+		t.Run("multiple lines", func(t *testing.T) {
+			html := ParsePostInput("```\nmultiple lines\n\tof code\n```", false)
+			t.Log(html)
+			assert.Equal(t, 1, strings.Count(html, "<pre"))
+			assert.Contains(t, html, `class="hmn-code"`)
+			assert.Contains(t, html, "multiple lines\n\tof code")
+		})
+		t.Run("multiple lines with language", func(t *testing.T) {
+			html := ParsePostInput("```go\nfunc main() {\n\tfmt.Println(\"Hello, world!\")\n}\n```", false)
+			t.Log(html)
+			assert.Equal(t, 1, strings.Count(html, "<pre"))
+			assert.Contains(t, html, `class="hmn-code"`)
+			assert.Contains(t, html, "Println")
+			assert.Contains(t, html, "Hello, world!")
+		})
 	})
 }
 
-// func TestParsePostInput(t *testing.T) {
-// 	testDoc := []byte(`
-// Hello, *world!*
-
-// I can do **bold**, *italic*, and _underlined_ text??
-
-// # Heading 1
-// ## Heading 2
-// ### Heading 3
-
-// Links: [HMN](https://handmade.network)
-// Images: ![this is a picture of sanic](https://i.kym-cdn.com/photos/images/newsfeed/000/722/711/ef1.jpg)
-// `)
-
-// 	res := ParsePostInput(testDoc)
-// 	fmt.Println(string(res))
-
-// 	t.Fail()
-// }
-
-func TestBBCodeParsing(t *testing.T) {
-	res := ParsePostInput(`[b]ONE[/b] [i]TWO[/i]`, false)
-	fmt.Println(res)
-	t.Fail()
+func TestBBCode(t *testing.T) {
+	t.Run("[code]", func(t *testing.T) {
+		t.Run("one line", func(t *testing.T) {
+			html := ParsePostInput("[code]Just some code, you know?[/code]", false)
+			t.Log(html)
+			assert.Equal(t, 1, strings.Count(html, "<pre"))
+			assert.Contains(t, html, `class="hmn-code"`)
+			assert.Contains(t, html, "Just some code, you know?")
+		})
+		t.Run("multiline", func(t *testing.T) {
+			bbcode := `[code]
+Multiline code
+	with an indent
+[/code]`
+			html := ParsePostInput(bbcode, false)
+			t.Log(html)
+			assert.Equal(t, 1, strings.Count(html, "<pre"))
+			assert.Contains(t, html, `class="hmn-code"`)
+			assert.Contains(t, html, "Multiline code\n\twith an indent")
+			assert.NotContains(t, html, "<br")
+		})
+		t.Run("multiline with language", func(t *testing.T) {
+			bbcode := `[code language=go]
+func main() {
+	fmt.Println("Hello, world!")
+}
+[/code]`
+			html := ParsePostInput(bbcode, false)
+			t.Log(html)
+			assert.Equal(t, 1, strings.Count(html, "<pre"))
+			assert.Contains(t, html, "Println")
+			assert.Contains(t, html, "Hello, world!")
+		})
+	})
 }
 
 const allBBCode = `
