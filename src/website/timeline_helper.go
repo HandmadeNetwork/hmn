@@ -118,6 +118,7 @@ func SnippetToTimelineItem(snippet *models.Snippet, asset *models.Asset, discord
 	itemType := templates.TimelineTypeUnknown
 	youtubeId := ""
 	assetUrl := ""
+	mimeType := ""
 	width := 0
 	height := 0
 	discordMessageUrl := ""
@@ -142,6 +143,7 @@ func SnippetToTimelineItem(snippet *models.Snippet, asset *models.Asset, discord
 			itemType = templates.TimelineTypeSnippetAudio
 		}
 		assetUrl = hmnurl.BuildS3Asset(asset.S3Key)
+		mimeType = asset.MimeType
 		width = asset.Width
 		height = asset.Height
 	}
@@ -165,6 +167,7 @@ func SnippetToTimelineItem(snippet *models.Snippet, asset *models.Asset, discord
 		Width:             width,
 		Height:            height,
 		AssetUrl:          assetUrl,
+		MimeType:          mimeType,
 		YoutubeID:         youtubeId,
 	}
 }

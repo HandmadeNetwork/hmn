@@ -246,6 +246,7 @@ type TimelineItem struct {
 	Width             int
 	Height            int
 	AssetUrl          string
+	MimeType          string
 	YoutubeID         string
 
 	Title       string

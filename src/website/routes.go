@@ -108,6 +108,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexFeed, Feed)
 	mainRoutes.GET(hmnurl.RegexAtomFeed, AtomFeed)
 	mainRoutes.GET(hmnurl.RegexShowcase, Showcase)
+	mainRoutes.GET(hmnurl.RegexSnippet, Snippet)
 	mainRoutes.GET(hmnurl.RegexProjectIndex, ProjectIndex)
 	mainRoutes.GET(hmnurl.RegexUserProfile, UserProfile)
 
