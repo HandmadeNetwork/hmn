@@ -21,14 +21,82 @@
         {{ end }}
     {{ end }}
 </style>
-{{/*
-<script type="text/javascript" src="{% static 'templates.js' %}?v={% cachebust %}"></script>
-<script type="text/javascript" src="{% static 'timeline.js' %}?v={% cachebust %}"></script>
-<script type="text/javascript" src="{% static 'showcase.js' %}?v={% cachebust %}"></script>
-*/}}
+<script type="text/javascript" src="{{ static "js/templates.js" }}"></script>
+<script type="text/javascript" src="{{ static "js/showcase.js" }}"></script>
 {{ end }}
 
 {{ define "content" }}
+{{ template "showcase_templates.html" }}
+{{ if .ShowcaseTimelineJson }}
+	<div class="content-block pb3">
+		<div class="tc tl-l w-100 pb2">
+			<h2 class="di-l mr2-l">Community Showcase</h2>
+			<ul class="list dib-l">
+				<li class="dib-ns ma0 ph2">
+					<a href="{{ .ShowcaseUrl }}">View all</a>
+				</li>
+			</ul>
+		</div>
+
+		<div class="showcase relative overflow-hidden">
+			<div id="showcase-items" class="flex relative pl3 pl0-ns"></div>
+			<div class="arrow-container left">
+				<a href="javascript:void(0)" class="arrow svgicon svgicon-nofix" onclick="scrollShowcase('left')">{{ svg "chevron-left" }}</a>
+			</div>
+			<div class="arrow-container right">
+				<a href="javascript:void(0)" class="arrow svgicon svgicon-nofix" onclick="scrollShowcase('right')">{{ svg "chevron-right" }}</a>
+			</div>
+		</div>
+
+		<div class="c--dimmer i pv2 ph3 ph0-ns">
+			This is a selection of recent work done by community members. Want to participate? <a href="{{ .DiscordUrl }}" target="_blank">Join us on Discord.</a>
+		</div>
+	</div>
+	<script>
+		const timelineData = JSON.parse("{{ .ShowcaseTimelineJson }}");
+
+		const showcaseEl = document.querySelector('#showcase-items');
+		for (const item of timelineData) {
+			const [itemEl, addThumbnail] = makeShowcaseItem(item);
+			addThumbnail();
+			itemEl.container.classList.add('mr3');
+			showcaseEl.appendChild(itemEl.root);
+		}
+
+		function rem2px(rem) {
+			return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+		}
+
+		function scrollShowcase(direction = null) {
+			const ITEM_WIDTH = showcaseEl.querySelector('.showcase-item').getBoundingClientRect().width;
+			const ITEM_SPACING = rem2px(1);
+
+			const showcaseWidth = showcaseEl.getBoundingClientRect().width;
+			const numVisible = showcaseWidth / (ITEM_WIDTH + ITEM_SPACING);
+			const scrollMagnitude = Math.floor(numVisible) - 1;
+			const scrollDirection = (direction === 'right' ? 1 : (direction === 'left' ? -1 : 0));
+			const scrollAmount = scrollMagnitude * scrollDirection;
+
+			const minIndex = 0;
+			const maxIndex = timelineData.length - Math.floor(numVisible);
+
+			const currentScrollIndex = parseInt(showcaseEl.getAttribute('data-scroll-index'), 10) || 0;
+			const newScrollIndex = Math.max(minIndex, Math.min(maxIndex, currentScrollIndex + scrollAmount));
+
+			showcaseEl.style.transform = `translateX(${-newScrollIndex * (ITEM_WIDTH + ITEM_SPACING)}px)`;
+			showcaseEl.setAttribute('data-scroll-index', newScrollIndex);
+
+			const leftArrowEl = document.querySelector('.arrow-container.left');
+			const rightArrowEl = document.querySelector('.arrow-container.right');
+
+			leftArrowEl.classList.toggle('hide', newScrollIndex === minIndex);
+			rightArrowEl.classList.toggle('hide', newScrollIndex === maxIndex);
+		}
+		scrollShowcase(); // force a scroll as an easy way to initialize styles
+
+		window.addEventListener('resize', () => scrollShowcase());
+	</script>
+{{ end }}
 <div class="content-block">
     <div class="optionbar pb2">
         <div class="tc tl-l w-100">

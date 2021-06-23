@@ -71,6 +71,21 @@ func names(ts []*template.Template) []string {
 	return result
 }
 
+//go:embed svg/close.svg
+var SVGClose string
+
+//go:embed svg/chevron-left.svg
+var SVGChevronLeft string
+
+//go:embed svg/chevron-right.svg
+var SVGChevronRight string
+
+var SVGMap = map[string]string{
+	"close":         SVGClose,
+	"chevron-left":  SVGChevronLeft,
+	"chevron-right": SVGChevronRight,
+}
+
 var HMNTemplateFuncs = template.FuncMap{
 	"add": func(a int, b ...int) int {
 		for _, num := range b {
@@ -147,6 +162,13 @@ var HMNTemplateFuncs = template.FuncMap{
 		} else {
 			return str(int(delta/Yearish), "year", int((delta%Yearish)/Monthish), "month")
 		}
+	},
+	"svg": func(name string) template.HTML {
+		contents, found := SVGMap[name]
+		if !found {
+			panic("SVG not found: " + name)
+		}
+		return template.HTML(contents)
 	},
 	"static": func(filepath string) string {
 		return hmnurl.BuildPublic(filepath, true)
