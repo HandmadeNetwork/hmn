@@ -92,7 +92,7 @@ func init() {
 			a := bbcode.NewHTMLTag("")
 			a.Name = "a"
 			a.Attrs = map[string]string{
-				"href":  hmnurl.BuildMember(cite),
+				"href":  hmnurl.BuildUserProfile(cite),
 				"class": "quotewho",
 			}
 			a.AppendChild(bbcode.NewHTMLTag(cite))
