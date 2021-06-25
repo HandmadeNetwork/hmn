@@ -292,9 +292,9 @@ type forumThreadData struct {
 	Pagination  templates.Pagination
 }
 
-func ForumThread(c *RequestContext) ResponseData {
-	const postsPerPage = 15
+var threadViewPostsPerPage = 15
 
+func ForumThread(c *RequestContext) ResponseData {
 	c.Perf.StartBlock("SQL", "Fetch category tree")
 	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
 	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
@@ -353,7 +353,7 @@ func ForumThread(c *RequestContext) ResponseData {
 	if err != nil {
 		panic(oops.New(err, "failed to get count of posts for thread"))
 	}
-	page, numPages, ok := getPageInfo(c.PathParams["page"], numPosts, postsPerPage)
+	page, numPages, ok := getPageInfo(c.PathParams["page"], numPosts, threadViewPostsPerPage)
 	if !ok {
 		urlNoPage := hmnurl.BuildForumThread(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, thread.Title, 1)
 		return c.Redirect(urlNoPage, http.StatusSeeOther)
@@ -390,8 +390,8 @@ func ForumThread(c *RequestContext) ResponseData {
 		LIMIT $2 OFFSET $3
 		`,
 		thread.ID,
-		postsPerPage,
-		(page-1)*postsPerPage,
+		threadViewPostsPerPage,
+		(page-1)*threadViewPostsPerPage,
 	)
 	c.Perf.EndBlock()
 	if err != nil {
@@ -428,6 +428,91 @@ func ForumThread(c *RequestContext) ResponseData {
 	}
 
 	return res
+}
+
+func ForumPostRedirect(c *RequestContext) ResponseData {
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	currentCatId, valid := validateSubforums(lineageBuilder, c.CurrentProject, c.PathParams["cats"])
+	if !valid {
+		return FourOhFour(c)
+	}
+
+	requestedThreadId, err := strconv.Atoi(c.PathParams["threadid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	requestedPostId, err := strconv.Atoi(c.PathParams["postid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	c.Perf.StartBlock("SQL", "Fetch post ids for thread")
+	type postQuery struct {
+		PostID int `db:"post.id"`
+	}
+	postQueryResult, err := db.Query(c.Context(), c.Conn, postQuery{},
+		`
+		SELECT $columns
+		FROM
+			handmade_post AS post
+		WHERE
+			post.category_id = $1
+			AND post.thread_id = $2
+			AND NOT post.deleted
+		ORDER BY postdate
+		`,
+		currentCatId,
+		requestedThreadId,
+	)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post ids"))
+	}
+	postQuerySlice := postQueryResult.ToSlice()
+	c.Perf.EndBlock()
+	postIdx := -1
+	for i, id := range postQuerySlice {
+		if id.(*postQuery).PostID == requestedPostId {
+			postIdx = i
+			break
+		}
+	}
+	if postIdx == -1 {
+		return FourOhFour(c)
+	}
+
+	c.Perf.StartBlock("SQL", "Fetch thread title")
+	type threadTitleQuery struct {
+		ThreadTitle string `db:"thread.title"`
+	}
+	threadTitleQueryResult, err := db.QueryOne(c.Context(), c.Conn, threadTitleQuery{},
+		`
+		SELECT $columns
+		FROM handmade_thread AS thread
+		WHERE thread.id = $1
+		`,
+		requestedThreadId,
+	)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread title"))
+	}
+	c.Perf.EndBlock()
+	threadTitle := threadTitleQueryResult.(*threadTitleQuery).ThreadTitle
+
+	page := (postIdx / threadViewPostsPerPage) + 1
+
+	return c.Redirect(hmnurl.BuildForumThreadWithPostHash(
+		c.CurrentProject.Slug,
+		lineageBuilder.GetSubforumLineageSlugs(currentCatId),
+		requestedThreadId,
+		threadTitle,
+		page,
+		requestedPostId,
+	), http.StatusSeeOther)
 }
 
 func validateSubforums(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, catPath string) (int, bool) {

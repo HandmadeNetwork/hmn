@@ -115,6 +115,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	// NOTE(asaf): Any-project routes:
 	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)
 	mainRoutes.GET(hmnurl.RegexForumCategory, ForumCategory)
+	mainRoutes.GET(hmnurl.RegexForumPost, ForumPostRedirect)
 
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 
