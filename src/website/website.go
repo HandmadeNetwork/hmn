@@ -3,7 +3,9 @@ package website
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"time"
@@ -56,6 +58,10 @@ var WebsiteCommand = &cobra.Command{
 			<-signals
 			logging.Warn().Msg("Forcibly killed the website")
 			os.Exit(1)
+		}()
+
+		go func() {
+			log.Println(http.ListenAndServe(config.Config.PrivateAddr, nil))
 		}()
 
 		logging.Info().Str("addr", config.Config.Addr).Msg("Serving the website")

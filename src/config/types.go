@@ -18,6 +18,7 @@ const (
 type HMNConfig struct {
 	Env          Environment
 	Addr         string
+	PrivateAddr  string
 	BaseUrl      string
 	LogLevel     zerolog.Level
 	Postgres     PostgresConfig
