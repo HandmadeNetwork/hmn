@@ -90,6 +90,30 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 		}
 	}
 
+	csrfMiddleware := func(h Handler) Handler {
+		// CSRF mitigation actions per the OWASP cheat sheet:
+		// https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
+		return func(c *RequestContext) ResponseData {
+			c.Req.ParseForm()
+			csrfToken := c.Req.Form.Get(auth.CSRFFieldName)
+			if csrfToken != c.CurrentSession.CSRFToken {
+				c.Logger.Warn().Str("userId", c.CurrentUser.Username).Msg("user failed CSRF validation - potential attack?")
+
+				err := auth.DeleteSession(c.Context(), c.Conn, c.CurrentSession.ID)
+				if err != nil {
+					c.Logger.Error().Err(err).Msg("failed to delete session on CSRF failure")
+				}
+
+				res := c.Redirect("/", http.StatusSeeOther)
+				res.SetCookie(auth.DeleteSessionCookie)
+
+				return res
+			}
+
+			return h(c)
+		}
+	}
+
 	// TODO(asaf): login/logout shouldn't happen on subdomains. We should verify that in the middleware.
 	routes.POST(hmnurl.RegexLoginAction, Login)
 	routes.GET(hmnurl.RegexLogoutAction, Logout)
@@ -124,7 +148,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	// NOTE(asaf): Any-project routes:
 	mainRoutes.Handle([]string{http.MethodGet, http.MethodPost}, hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
-	mainRoutes.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(ForumNewThreadSubmit))
+	mainRoutes.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
 	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)
 	mainRoutes.GET(hmnurl.RegexForumCategory, ForumCategory)
 	mainRoutes.GET(hmnurl.RegexForumPost, ForumPostRedirect)

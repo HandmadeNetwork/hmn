@@ -534,9 +534,20 @@ func ForumNewThread(c *RequestContext) ResponseData {
 	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	currentCatId, valid := validateSubforums(lineageBuilder, c.CurrentProject, c.PathParams["cats"])
+	if !valid {
+		return FourOhFour(c)
+	}
+
 	var res ResponseData
 	err := res.WriteTemplate("editor.html", editorData{
 		BaseData:     baseData,
+		SubmitUrl:    hmnurl.BuildForumNewThread(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), true),
 		SubmitLabel:  "Post New Thread",
 		PreviewLabel: "Preview",
 	}, c.Perf)
@@ -556,8 +567,7 @@ func ForumNewThread(c *RequestContext) ResponseData {
 }
 
 func ForumNewThreadSubmit(c *RequestContext) ResponseData {
-	var res ResponseData
-	return res
+	return c.Redirect(hmnurl.BuildForumNewThread(models.HMNProjectSlug, nil, false), http.StatusSeeOther)
 }
 
 func validateSubforums(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, catPath string) (int, bool) {

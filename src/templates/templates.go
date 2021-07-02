@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"github.com/Masterminds/sprig"
@@ -113,7 +114,7 @@ var HMNTemplateFuncs = template.FuncMap{
 		return template.CSS(color.HTML())
 	},
 	"csrftoken": func(s Session) template.HTML {
-		return template.HTML(fmt.Sprintf(`<input type="hidden" name="csrf_token" value="%s">`, s.CSRFToken))
+		return template.HTML(fmt.Sprintf(`<input type="hidden" name="%s" value="%s">`, auth.CSRFFieldName, s.CSRFToken))
 	},
 	"darken": func(amount float64, color noire.Color) noire.Color {
 		return color.Shade(amount)

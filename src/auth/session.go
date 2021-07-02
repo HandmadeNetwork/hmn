@@ -18,6 +18,7 @@ import (
 )
 
 const SessionCookieName = "HMNSession"
+const CSRFFieldName = "csrf_token"
 
 const sessionDuration = time.Hour * 24 * 14
 
@@ -97,7 +98,7 @@ func NewSessionCookie(session *models.Session) *http.Cookie {
 
 		Secure:   config.Config.Auth.CookieSecure,
 		HttpOnly: true,
-		SameSite: http.SameSiteDefaultMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 }
 
