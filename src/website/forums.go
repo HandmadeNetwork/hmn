@@ -3,6 +3,7 @@ package website
 import (
 	"errors"
 	"math"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -518,18 +519,14 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 
 type editorData struct {
 	templates.BaseData
-	SubmitUrl    string
-	PostTitle    string
-	PostBody     string
-	SubmitLabel  string
-	PreviewLabel string
+	SubmitUrl   string
+	PostTitle   string
+	PostBody    string
+	SubmitLabel string
+	IsEditing   bool // false if new post, true if updating existing one
 }
 
 func ForumNewThread(c *RequestContext) ResponseData {
-	if c.Req.Method == http.MethodPost {
-		// TODO: Get preview data
-	}
-
 	baseData := getBaseData(c)
 	baseData.Title = "Create New Thread"
 	baseData.MathjaxEnabled = true
@@ -547,19 +544,10 @@ func ForumNewThread(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	err := res.WriteTemplate("editor.html", editorData{
-		BaseData:     baseData,
-		SubmitUrl:    hmnurl.BuildForumNewThread(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), true),
-		SubmitLabel:  "Post New Thread",
-		PreviewLabel: "Preview",
+		BaseData:    baseData,
+		SubmitUrl:   hmnurl.BuildForumNewThread(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), true),
+		SubmitLabel: "Post New Thread",
 	}, c.Perf)
-	// err := res.WriteTemplate("forum_thread.html", forumThreadData{
-	// 	BaseData:    baseData,
-	// 	Thread:      templates.ThreadToTemplate(&thread),
-	// 	Posts:       posts,
-	// 	CategoryUrl: hmnurl.BuildForumCategory(c.CurrentProject.Slug, currentSubforumSlugs, 1),
-	// 	ReplyUrl:    hmnurl.BuildForumPostReply(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, *thread.FirstID),
-	// 	Pagination:  pagination,
-	// }, c.Perf)
 	if err != nil {
 		panic(err)
 	}
@@ -572,6 +560,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 	if err != nil {
 		panic(err)
 	}
+	defer tx.Rollback(c.Context())
 
 	c.Perf.StartBlock("SQL", "Fetch category tree")
 	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
@@ -593,41 +582,104 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 	}
 
 	parsed := parsing.ParsePostInput(unparsed, false)
+	now := time.Now()
+
+	ip := net.ParseIP(c.Req.RemoteAddr)
 
 	// Create thread
 	var threadId int
 	err = tx.QueryRow(c.Context(),
 		`
-		INSERT INTO handmade_thread (title, sticky, locked, category_id)
+		INSERT INTO handmade_thread (title, sticky, category_id, first_id, last_id)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 		`,
 		title,
 		sticky,
-		false,
 		currentCatId,
+		-1,
+		-1,
 	).Scan(&threadId)
 	if err != nil {
 		panic(oops.New(err, "failed to create thread"))
 	}
 
-	// Create post version
-	_, err = tx.Exec(c.Context(),
+	// Create post
+	var postId int
+	err = tx.QueryRow(c.Context(),
 		`
-		INSERT INTO handmade_postversion (post_id, text_raw, text_parsed)
-		VALUES ($1, $2, $3)
+		INSERT INTO handmade_post (postdate, category_id, thread_id, preview, current_id, author_id, category_kind, project_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id
 		`,
-		// TODO: post id
+		now,
+		currentCatId,
+		threadId,
+		"lol", // TODO: Actual previews
+		-1,
+		c.CurrentUser.ID,
+		models.CatKindForum,
+		c.CurrentProject.ID,
+	).Scan(&postId)
+	if err != nil {
+		panic(oops.New(err, "failed to create post"))
+	}
+
+	// Create post version
+	var versionId int
+	err = tx.QueryRow(c.Context(),
+		`
+		INSERT INTO handmade_postversion (post_id, text_raw, text_parsed, ip, date)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id
+		`,
+		postId,
 		unparsed,
 		parsed,
+		ip,
+		now,
+	).Scan(&versionId)
+	if err != nil {
+		panic(oops.New(err, "failed to create post version"))
+	}
+
+	// Update post with version id
+	_, err = tx.Exec(c.Context(),
+		`
+		UPDATE handmade_post
+		SET current_id = $1
+		WHERE id = $2
+		`,
+		versionId,
+		postId,
 	)
+	if err != nil {
+		panic(oops.New(err, "failed to set current post version"))
+	}
+
+	// Update thread with post id
+	_, err = tx.Exec(c.Context(),
+		`
+		UPDATE handmade_thread
+		SET
+			first_id = $1,
+			last_id = $1
+		WHERE id = $2
+		`,
+		postId,
+		threadId,
+	)
+	if err != nil {
+		panic(oops.New(err, "failed to set thread post ids"))
+	}
 
 	err = tx.Commit(c.Context())
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new forum thread"))
 	}
 
-	// TODO: Redirect to newly created thread
-	return c.Redirect(hmnurl.BuildForumNewThread(models.HMNProjectSlug, nil, false), http.StatusSeeOther)
+	newThreadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), threadId, title, 1)
+	return c.Redirect(newThreadUrl, http.StatusSeeOther)
 }
 
 func validateSubforums(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, catPath string) (int, bool) {
