@@ -18,16 +18,8 @@ type Post struct {
 
 	CategoryKind CategoryKind `db:"category_kind"`
 
-	Depth        int       `db:"depth"`       // TODO: Drop this.
-	Slug         string    `db:"slug"`        // TODO: Drop this.
-	AuthorName   string    `db:"author_name"` // TODO: Drop this.
-	PostDate     time.Time `db:"postdate"`    // TODO: Drop this.
-	IP           net.IPNet `db:"ip"`          // TODO: Drop this.
-	Sticky       bool      `db:"sticky"`      // TODO: Drop this.
-	Deleted      bool      `db:"deleted"`
-	Hits         int       `db:"hits"`         // TODO: Drop this.
-	Featured     bool      `db:"featured"`     // TODO: Drop this.
-	FeatureVotes int       `db:"featurevotes"` // TODO: Drop this.
+	PostDate time.Time `db:"postdate"`
+	Deleted  bool      `db:"deleted"`
 
 	Preview  string `db:"preview"`
 	ReadOnly bool   `db:"readonly"`
@@ -40,8 +32,8 @@ type PostVersion struct {
 	TextRaw    string `db:"text_raw"`
 	TextParsed string `db:"text_parsed"`
 
-	EditIP     *net.IPNet `db:"edit_ip"`
-	EditDate   time.Time  `db:"edit_date"`
+	IP         *net.IPNet `db:"ip"`
+	Date       time.Time  `db:"date"`
 	EditReason string     `db:"edit_reason"`
 	EditorID   *int       `db:"editor_id"`
 }

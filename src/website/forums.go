@@ -405,7 +405,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		row := irow.(*postsQueryResult)
 
 		post := templates.PostToTemplate(&row.Post, row.Author, c.Theme)
-		post.AddContentVersion(row.Ver, row.Editor, c.Theme)
+		post.AddContentVersion(row.Ver, row.Editor)
 		post.AddUrls(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
 
 		posts = append(posts, post)

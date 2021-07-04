@@ -385,7 +385,7 @@ func fetchAllPosts(c *RequestContext, lineageBuilder *models.CategoryLineageBuil
 		)
 
 		postItem.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(postItem.Url)).URN()
-		postItem.LastEditDate = postResult.PostVersion.EditDate
+		postItem.LastEditDate = postResult.PostVersion.Date
 
 		postItems = append(postItems, postItem)
 	}

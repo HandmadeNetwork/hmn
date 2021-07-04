@@ -29,19 +29,17 @@ func PostToTemplate(p *models.Post, author *models.User, currentTheme string) Po
 		Author: authorUser,
 		// No content. A lot of the time we don't have this handy and don't need it. See AddContentVersion.
 		PostDate: p.PostDate,
-
-		IP: p.IP.String(),
 	}
 }
 
-func (p *Post) AddContentVersion(ver models.PostVersion, editor *models.User, currentTheme string) {
+func (p *Post) AddContentVersion(ver models.PostVersion, editor *models.User) {
 	p.Content = template.HTML(ver.TextParsed)
+	p.IP = maybeIp(ver.IP)
 
 	if editor != nil {
-		editorTmpl := UserToTemplate(editor, currentTheme)
+		editorTmpl := UserToTemplate(editor, "theme not required here")
 		p.Editor = &editorTmpl
-		p.EditDate = ver.EditDate
-		p.EditIP = maybeIp(ver.EditIP)
+		p.EditDate = ver.Date
 		p.EditReason = ver.EditReason
 	}
 }

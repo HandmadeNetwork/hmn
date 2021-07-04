@@ -84,7 +84,6 @@ type Post struct {
 
 	Editor     *User
 	EditDate   time.Time
-	EditIP     string
 	EditReason string
 
 	IP string

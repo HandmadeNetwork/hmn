@@ -98,7 +98,7 @@ func PostVersionToWikiTimelineItem(lineageBuilder *models.CategoryLineageBuilder
 		Type:      templates.TimelineTypeWikiEdit,
 		TypeTitle: TimelineTypeTitleMap[templates.TimelineTypeWikiEdit],
 		Class:     TimelineItemClassMap[templates.TimelineTypeWikiEdit],
-		Date:      version.EditDate,
+		Date:      version.Date,
 		Url:       hmnurl.BuildWikiArticle(project.Slug, thread.ID, thread.Title),
 
 		OwnerAvatarUrl: templates.UserAvatarUrl(owner, currentTheme),
