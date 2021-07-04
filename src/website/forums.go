@@ -12,6 +12,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
 )
@@ -567,6 +568,65 @@ func ForumNewThread(c *RequestContext) ResponseData {
 }
 
 func ForumNewThreadSubmit(c *RequestContext) ResponseData {
+	tx, err := c.Conn.Begin(c.Context())
+	if err != nil {
+		panic(err)
+	}
+
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	currentCatId, valid := validateSubforums(lineageBuilder, c.CurrentProject, c.PathParams["cats"])
+	if !valid {
+		return FourOhFour(c)
+	}
+
+	c.Req.ParseForm()
+
+	title := c.Req.Form.Get("title")
+	unparsed := c.Req.Form.Get("body")
+	sticky := false
+	if c.CurrentUser.IsStaff && c.Req.Form.Get("sticky") != "" {
+		sticky = true
+	}
+
+	parsed := parsing.ParsePostInput(unparsed, false)
+
+	// Create thread
+	var threadId int
+	err = tx.QueryRow(c.Context(),
+		`
+		INSERT INTO handmade_thread (title, sticky, locked, category_id)
+		RETURNING id
+		`,
+		title,
+		sticky,
+		false,
+		currentCatId,
+	).Scan(&threadId)
+	if err != nil {
+		panic(oops.New(err, "failed to create thread"))
+	}
+
+	// Create post version
+	_, err = tx.Exec(c.Context(),
+		`
+		INSERT INTO handmade_postversion (post_id, text_raw, text_parsed)
+		VALUES ($1, $2, $3)
+		`,
+		// TODO: post id
+		unparsed,
+		parsed,
+	)
+
+	err = tx.Commit(c.Context())
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new forum thread"))
+	}
+
+	// TODO: Redirect to newly created thread
 	return c.Redirect(hmnurl.BuildForumNewThread(models.HMNProjectSlug, nil, false), http.StatusSeeOther)
 }
 

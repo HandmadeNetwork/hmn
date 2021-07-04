@@ -11,11 +11,11 @@ import (
 )
 
 var TimelineTypeMap = map[models.CategoryKind][]templates.TimelineType{
-	//                                                                 No parent,                    Has parent
-	models.CatKindBlog:            []templates.TimelineType{templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment},
-	models.CatKindForum:           []templates.TimelineType{templates.TimelineTypeForumThread, templates.TimelineTypeForumReply},
-	models.CatKindWiki:            []templates.TimelineType{templates.TimelineTypeWikiCreate, templates.TimelineTypeWikiTalk},
-	models.CatKindLibraryResource: []templates.TimelineType{templates.TimelineTypeLibraryComment, templates.TimelineTypeLibraryComment},
+	//                             {            No parent         ,            Has parent            }
+	models.CatKindBlog:            {templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment},
+	models.CatKindForum:           {templates.TimelineTypeForumThread, templates.TimelineTypeForumReply},
+	models.CatKindWiki:            {templates.TimelineTypeWikiCreate, templates.TimelineTypeWikiTalk},
+	models.CatKindLibraryResource: {templates.TimelineTypeLibraryComment, templates.TimelineTypeLibraryComment},
 }
 
 var TimelineItemClassMap = map[templates.TimelineType]string{

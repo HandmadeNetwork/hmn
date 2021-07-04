@@ -18,28 +18,20 @@ type Post struct {
 
 	CategoryKind CategoryKind `db:"category_kind"`
 
-	Depth        int       `db:"depth"`
-	Slug         string    `db:"slug"`
+	Depth        int       `db:"depth"`       // TODO: Drop this.
+	Slug         string    `db:"slug"`        // TODO: Drop this.
 	AuthorName   string    `db:"author_name"` // TODO: Drop this.
-	PostDate     time.Time `db:"postdate"`
-	IP           net.IPNet `db:"ip"`
-	Sticky       bool      `db:"sticky"`
-	Deleted      bool      `db:"deleted"` // TODO: I'm not sure this is ever meaningfully used. It always seems to be 0 / false?
-	Hits         int       `db:"hits"`
-	Featured     bool      `db:"featured"`
-	FeatureVotes int       `db:"featurevotes"` // TODO: Remove this column from the db, it's never used
+	PostDate     time.Time `db:"postdate"`    // TODO: Drop this.
+	IP           net.IPNet `db:"ip"`          // TODO: Drop this.
+	Sticky       bool      `db:"sticky"`      // TODO: Drop this.
+	Deleted      bool      `db:"deleted"`
+	Hits         int       `db:"hits"`         // TODO: Drop this.
+	Featured     bool      `db:"featured"`     // TODO: Drop this.
+	FeatureVotes int       `db:"featurevotes"` // TODO: Drop this.
 
 	Preview  string `db:"preview"`
 	ReadOnly bool   `db:"readonly"`
 }
-
-type Parser int
-
-const (
-	ParserBBCode    Parser = 1
-	ParserCleanHTML        = 2
-	ParserMarkdown         = 3
-)
 
 type PostVersion struct {
 	ID     int `db:"id"`
@@ -47,7 +39,6 @@ type PostVersion struct {
 
 	TextRaw    string `db:"text_raw"`
 	TextParsed string `db:"text_parsed"`
-	Parser     Parser `db:"parser"`
 
 	EditIP     *net.IPNet `db:"edit_ip"`
 	EditDate   time.Time  `db:"edit_date"`
