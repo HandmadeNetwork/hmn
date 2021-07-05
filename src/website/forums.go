@@ -581,10 +581,16 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		sticky = true
 	}
 
-	parsed := parsing.ParsePostInput(unparsed, false)
+	parsed := parsing.ParsePostInput(unparsed, parsing.RealMarkdown)
 	now := time.Now()
-
 	ip := net.ParseIP(c.Req.RemoteAddr)
+
+	const previewMaxLength = 100
+	parsedPlaintext := parsing.ParsePostInput(unparsed, parsing.PlaintextMarkdown)
+	preview := parsedPlaintext
+	if len(preview) > previewMaxLength-1 {
+		preview = preview[:previewMaxLength-1] + "…"
+	}
 
 	// Create thread
 	var threadId int
@@ -615,7 +621,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		now,
 		currentCatId,
 		threadId,
-		"lol", // TODO: Actual previews
+		preview,
 		-1,
 		c.CurrentUser.ID,
 		models.CatKindForum,

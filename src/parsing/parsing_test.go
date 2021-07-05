@@ -10,14 +10,14 @@ import (
 func TestMarkdown(t *testing.T) {
 	t.Run("fenced code blocks", func(t *testing.T) {
 		t.Run("multiple lines", func(t *testing.T) {
-			html := ParsePostInput("```\nmultiple lines\n\tof code\n```", false)
+			html := ParsePostInput("```\nmultiple lines\n\tof code\n```", RealMarkdown)
 			t.Log(html)
 			assert.Equal(t, 1, strings.Count(html, "<pre"))
 			assert.Contains(t, html, `class="hmn-code"`)
 			assert.Contains(t, html, "multiple lines\n\tof code")
 		})
 		t.Run("multiple lines with language", func(t *testing.T) {
-			html := ParsePostInput("```go\nfunc main() {\n\tfmt.Println(\"Hello, world!\")\n}\n```", false)
+			html := ParsePostInput("```go\nfunc main() {\n\tfmt.Println(\"Hello, world!\")\n}\n```", RealMarkdown)
 			t.Log(html)
 			assert.Equal(t, 1, strings.Count(html, "<pre"))
 			assert.Contains(t, html, `class="hmn-code"`)
@@ -30,7 +30,7 @@ func TestMarkdown(t *testing.T) {
 func TestBBCode(t *testing.T) {
 	t.Run("[code]", func(t *testing.T) {
 		t.Run("one line", func(t *testing.T) {
-			html := ParsePostInput("[code]Just some code, you know?[/code]", false)
+			html := ParsePostInput("[code]Just some code, you know?[/code]", RealMarkdown)
 			t.Log(html)
 			assert.Equal(t, 1, strings.Count(html, "<pre"))
 			assert.Contains(t, html, `class="hmn-code"`)
@@ -41,7 +41,7 @@ func TestBBCode(t *testing.T) {
 Multiline code
 	with an indent
 [/code]`
-			html := ParsePostInput(bbcode, false)
+			html := ParsePostInput(bbcode, RealMarkdown)
 			t.Log(html)
 			assert.Equal(t, 1, strings.Count(html, "<pre"))
 			assert.Contains(t, html, `class="hmn-code"`)
@@ -54,7 +54,7 @@ func main() {
 	fmt.Println("Hello, world!")
 }
 [/code]`
-			html := ParsePostInput(bbcode, false)
+			html := ParsePostInput(bbcode, RealMarkdown)
 			t.Log(html)
 			assert.Equal(t, 1, strings.Count(html, "<pre"))
 			assert.Contains(t, html, "Println")
@@ -114,4 +114,7 @@ func main() {
 [td]Body 1[/td] [td]Body 2[/td]
 [/tr]
 [/table]
+
+[youtube]https://www.youtube.com/watch?v=0J8G9qNT7gQ[/youtube]
+[youtube]https://youtu.be/0J8G9qNT7gQ[/youtube]
 `

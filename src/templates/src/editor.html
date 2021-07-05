@@ -8,9 +8,10 @@
     <script src="{{ static "go_wasm_exec.js" }}"></script>
     <script>
         const go = new Go();
-        WebAssembly.instantiateStreaming(fetch("{{ static "parsing.wasm" }}"), go.importObject).then(result => {
-            go.run(result.instance);
-        });
+        const goLoaded = WebAssembly.instantiateStreaming(fetch("{{ static "parsing.wasm" }}"), go.importObject)
+            .then(result => {
+                go.run(result.instance);
+            });
     </script>
 {{ end }}
 
@@ -110,6 +111,9 @@
         MathJax.typeset();
     }
 
+    goLoaded.then(() => {
+        updatePreview();
+    });
     tf.addEventListener('input', () => {
         updatePreview();
     });

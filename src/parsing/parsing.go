@@ -9,43 +9,44 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-var previewMarkdown = goldmark.New(
-	goldmark.WithExtensions(
-		extension.GFM,
-		highlightExtension,
-		SpoilerExtension{},
-		EmbedExtension{
-			Preview: true,
-		},
-		MathjaxExtension{},
-		BBCodeExtension{
-			Preview: true,
-		},
-	),
-)
-var realMarkdown = goldmark.New(
-	goldmark.WithExtensions(
-		extension.GFM,
-		highlightExtension,
-		SpoilerExtension{},
-		EmbedExtension{},
-		MathjaxExtension{},
-		BBCodeExtension{},
-	),
+// Used for rendering real-time previews of post content.
+var PreviewMarkdown = goldmark.New(
+	goldmark.WithExtensions(makeGoldmarkExtensions(true)...),
 )
 
-func ParsePostInput(source string, preview bool) string {
-	md := realMarkdown
-	if preview {
-		md = previewMarkdown
-	}
+// Used for generating the final HTML for a post.
+var RealMarkdown = goldmark.New(
+	goldmark.WithExtensions(makeGoldmarkExtensions(false)...),
+)
 
+// Used for generating plain-text previews of posts.
+var PlaintextMarkdown = goldmark.New(
+	goldmark.WithExtensions(makeGoldmarkExtensions(false)...),
+	goldmark.WithRenderer(plaintextRenderer{}),
+)
+
+func ParsePostInput(source string, md goldmark.Markdown) string {
 	var buf bytes.Buffer
 	if err := md.Convert([]byte(source), &buf); err != nil {
 		panic(err)
 	}
 
 	return buf.String()
+}
+
+func makeGoldmarkExtensions(preview bool) []goldmark.Extender {
+	return []goldmark.Extender{
+		extension.GFM,
+		highlightExtension,
+		SpoilerExtension{},
+		EmbedExtension{
+			Preview: preview,
+		},
+		MathjaxExtension{},
+		BBCodeExtension{
+			Preview: preview,
+		},
+	}
 }
 
 var highlightExtension = highlighting.NewHighlighting(
