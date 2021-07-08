@@ -38,13 +38,6 @@ type RouteBuilder struct {
 
 type Handler func(c *RequestContext) ResponseData
 
-func WrapStdHandler(h http.Handler) Handler {
-	return func(c *RequestContext) (res ResponseData) {
-		h.ServeHTTP(&res, c.Req)
-		return res
-	}
-}
-
 type Middleware func(h Handler) Handler
 
 func (rb *RouteBuilder) Handle(methods []string, regex *regexp.Regexp, h Handler) {
@@ -68,10 +61,6 @@ func (rb *RouteBuilder) GET(regex *regexp.Regexp, h Handler) {
 
 func (rb *RouteBuilder) POST(regex *regexp.Regexp, h Handler) {
 	rb.Handle([]string{http.MethodPost}, regex, h)
-}
-
-func (rb *RouteBuilder) StdHandler(regex *regexp.Regexp, h http.Handler) {
-	rb.Handle([]string{""}, regex, WrapStdHandler(h))
 }
 
 func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {

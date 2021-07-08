@@ -66,7 +66,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	numPages := int(math.Ceil(float64(numThreads) / threadsPerPage))
+	numPages := utils.IntMax(int(math.Ceil(float64(numThreads)/threadsPerPage)), 1)
 
 	page := 1
 	pageString, hasPage := c.PathParams["page"]

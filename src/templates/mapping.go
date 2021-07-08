@@ -216,16 +216,25 @@ func ParseKnownServicesForLink(link *models.Link) (serviceName string, userData 
 
 func LinkToTemplate(link *models.Link) Link {
 	name := ""
-	if link.Name != nil {
-		name = *link.Name
-	}
+	/*
+		// NOTE(asaf): While Name and Key are separate things, Name is almost always the same as Key in the db, which looks weird.
+		//             So we're just going to ignore Name until we decide it's worth reusing.
+		if link.Name != nil {
+			name = *link.Name
+		}
+	*/
 	serviceName, serviceUserData := ParseKnownServicesForLink(link)
+	if serviceUserData != "" {
+		name = serviceUserData
+	}
+	if name == "" {
+		name = link.Value
+	}
 	return Link{
-		Key:             link.Key,
-		ServiceName:     serviceName,
-		ServiceUserData: serviceUserData,
-		Name:            name,
-		Value:           link.Value,
+		Key:  link.Key,
+		Name: name,
+		Icon: serviceName,
+		Url:  link.Value,
 	}
 }
 

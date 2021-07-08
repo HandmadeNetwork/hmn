@@ -141,11 +141,15 @@ type User struct {
 }
 
 type Link struct {
-	Key             string
-	ServiceName     string
-	ServiceUserData string
-	Name            string
-	Value           string
+	Key  string
+	Name string
+	Url  string
+	Icon string
+}
+
+type Notice struct {
+	Content template.HTML
+	Class   string
 }
 
 type Session struct {

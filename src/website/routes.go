@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/auth"
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
@@ -117,16 +119,19 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	// TODO(asaf): login/logout shouldn't happen on subdomains. We should verify that in the middleware.
 	routes.POST(hmnurl.RegexLoginAction, Login)
 	routes.GET(hmnurl.RegexLogoutAction, Logout)
-	routes.StdHandler(hmnurl.RegexPublic,
-		http.StripPrefix("/public/", http.FileServer(http.Dir("public"))),
-	)
+
+	routes.GET(hmnurl.RegexPublic, func(c *RequestContext) ResponseData {
+		var res ResponseData
+		http.StripPrefix("/public/", http.FileServer(http.Dir("public"))).ServeHTTP(&res, c.Req)
+		AddCORSHeaders(c, &res)
+		return res
+	})
 
 	mainRoutes.GET(hmnurl.RegexHomepage, func(c *RequestContext) ResponseData {
 		if c.CurrentProject.IsHMN() {
 			return Index(c)
 		} else {
-			// TODO: Return the project landing page
-			panic("route not implemented")
+			return ProjectHomepage(c)
 		}
 	})
 	staticPages.GET(hmnurl.RegexManifesto, Manifesto)
@@ -145,6 +150,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexSnippet, Snippet)
 	mainRoutes.GET(hmnurl.RegexProjectIndex, ProjectIndex)
 	mainRoutes.GET(hmnurl.RegexUserProfile, UserProfile)
+	mainRoutes.GET(hmnurl.RegexProjectNotApproved, ProjectHomepage)
 
 	// NOTE(asaf): Any-project routes:
 	mainRoutes.Handle([]string{http.MethodGet, http.MethodPost}, hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
@@ -198,7 +204,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			LibraryUrl:         hmnurl.BuildLibrary(c.CurrentProject.Slug),
 			ManifestoUrl:       hmnurl.BuildManifesto(),
 			EpisodeGuideUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
-			EditUrl:            hmnurl.BuildHomepage(), // TODO(asaf)
+			EditUrl:            "",
 			SearchActionUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
 		},
 		Footer: templates.Footer{
@@ -347,6 +353,22 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 	c.Theme = theme
 
 	return true, ResponseData{}
+}
+
+func AddCORSHeaders(c *RequestContext, res *ResponseData) {
+	parsed, err := url.Parse(config.Config.BaseUrl)
+	if err != nil {
+		c.Logger.Error().Str("Config.BaseUrl", config.Config.BaseUrl).Msg("Config.BaseUrl cannot be parsed. Skipping CORS headers")
+		return
+	}
+	origin := ""
+	origins, found := c.Req.Header["Origin"]
+	if found {
+		origin = origins[0]
+	}
+	if strings.HasSuffix(origin, parsed.Host) {
+		res.Header().Add("Access-Control-Allow-Origin", origin)
+	}
 }
 
 // Given a session id, fetches user data from the database. Will return nil if

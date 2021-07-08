@@ -1,0 +1,108 @@
+{{ template "base.html" . }}
+
+{{ define "extrahead" }}
+	{{ range .Screenshots }}
+		<link rel="preload" href="{{ . }}" as="image">
+	{{ end }}
+{{ end }}
+
+{{ define "content" }}
+<div class="flex flex-column flex-row-l">
+    <div class="flex-grow-1 overflow-hidden">
+		{{ range .Notices }}
+			<div class="content-block notice notice-{{ .Class }}">
+				{{ .Content }}
+			</div>
+		{{ end }}
+		{{ with .Screenshots }}
+			<div class="carousel-container mw-100 mv2 mv3-ns margin-center">
+				<div class="carousel aspect-ratio aspect-ratio--16x9 overflow-hidden bg--dim br2-ns">
+					<div class="dn db-l">
+						{{ range $index, $screenshot := . }}
+							<div class="carousel-item aspect-ratio--object bg--dim {{ if eq $index 0 }}active{{ end }}">
+								<div class="w-100 h-100" style="background:url('{{ $screenshot }}') no-repeat center / contain"></div>
+							</div>
+						{{ end }}
+					</div>
+					<div class="db dn-l">
+						{{ range $index, $screenshot := . }}
+							<div class="carousel-item-small aspect-ratio--object {{ if eq $index 0 }}active{{ end }}">
+								<div class="w-100 h-100" style="background:url('{{ $screenshot }}') no-repeat center / contain"></div>
+							</div>
+						{{ end }}
+					</div>
+				</div>
+				<div class="flex justify-center pv2">
+					{{ range $index, $screenshot := . }}
+						<div class="carousel-button br-pill w1 h1 mh2 {{ if eq $index 0 }}active{{ end }}" onclick="carouselButtonClick({{ $index }})"></div>
+					{{ end }}
+				</div>
+			</div>
+		{{ end }}
+		<div class="description">
+			{{ .Project.ParsedDescription }}
+		</div>
+		{{ with .RecentActivity }}
+			<div class="content-block timeline-container ph3 ph0-ns mv4">
+				<h2>Recent Activity</h2>
+				<div class="timeline">
+					{{ range . }}
+						{{ template "timeline_item.html" . }}
+					{{ end }}
+				</div>
+			</div>
+		{{ end }}
+		{{/* TODO(asaf): Add timeline items for project */}}
+	</div>
+    <div class="sidebar flex-shrink-0 mw6 w-30-l self-center self-start-l mh3 mh0-ns ml3-l overflow-hidden">
+		<div class="content-block">
+			<img alt="{{ .Project.Name }} Logo" class="br3" src="{{ .Project.Logo }}" />
+			<div class="mv3 relative">
+				<div class="mb3">
+					{{ range $i, $owner := .Owners }}
+						<div class="flex mv3 items-center {{ if eq $i 0 }}mt2{{ end }}">
+							<img class="avatar-icon mr2" src="{{ $owner.AvatarUrl }}" />
+							<a class="user-link" href="{{ $owner.ProfileUrl }}">{{ $owner.Name }}</a>
+						</div>
+					{{ end }}
+				</div>
+				{{ range .ProjectLinks }}
+					<div class="pair flex flex-wrap">
+						<div class="key flex-auto mr1">{{ .Key }}</div>
+						<div class="value projectlink"><a class="external" href="{{ .Url }}" ><span class="icon-{{ .Icon }}"></span>{{ .Name }}</a></div>
+					</div>
+				{{ end }}
+			</div>
+		</div>
+	</div>
+</div>
+<script>
+	const numCarouselItems = {{ len .Screenshots }};
+
+	function activateCarouselItem(i) {
+		const items = document.querySelectorAll('.carousel-item');
+		items.forEach(item => item.classList.remove('active'));
+		items[i].classList.add('active');
+
+		const smallItems = document.querySelectorAll('.carousel-item-small');
+		smallItems.forEach(item => item.classList.remove('active'));
+		smallItems[i].classList.add('active');
+
+		const buttons = document.querySelectorAll('.carousel-button');
+		buttons.forEach(button => button.classList.remove('active'));
+		buttons[i].classList.add('active');
+	}
+
+	let carouselTimerCurrent = 0;
+	const carouselTimer = setInterval(() => {
+		const next = (carouselTimerCurrent + 1) % numCarouselItems;
+		activateCarouselItem(next);
+		carouselTimerCurrent = next;
+	}, 10000);
+
+	function carouselButtonClick(i) {
+		activateCarouselItem(i);
+		clearInterval(carouselTimer);
+	}
+</script>
+{{ end }}

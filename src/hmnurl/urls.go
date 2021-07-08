@@ -232,6 +232,14 @@ func BuildProjectNotApproved(slug string) string {
 	return Url(fmt.Sprintf("/p/%s", slug), nil)
 }
 
+var RegexProjectEdit = regexp.MustCompile("^/p/(?P<slug>.+)/edit$")
+
+func BuildProjectEdit(slug string, section string) string {
+	defer CatchPanic()
+
+	return ProjectUrlWithFragment(fmt.Sprintf("/p/%s/edit", slug), nil, "", section)
+}
+
 /*
 * Podcast
  */

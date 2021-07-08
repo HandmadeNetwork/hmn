@@ -112,6 +112,10 @@ func TestProjectNotApproved(t *testing.T) {
 	AssertRegexMatch(t, BuildProjectNotApproved("test"), RegexProjectNotApproved, map[string]string{"slug": "test"})
 }
 
+func TestProjectEdit(t *testing.T) {
+	AssertRegexMatch(t, BuildProjectEdit("test", "foo"), RegexProjectEdit, map[string]string{"slug": "test"})
+}
+
 func TestPodcast(t *testing.T) {
 	AssertRegexMatch(t, BuildPodcast(""), RegexPodcast, nil)
 	AssertSubdomain(t, BuildPodcast(""), "")
