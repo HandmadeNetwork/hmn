@@ -260,7 +260,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 	}
 
 	var res ResponseData
-	err = res.WriteTemplate("forum_category.html", forumCategoryData{
+	res.MustWriteTemplate("forum_category.html", forumCategoryData{
 		BaseData:     baseData,
 		NewThreadUrl: hmnurl.BuildForumNewThread(c.CurrentProject.Slug, currentSubforumSlugs, false),
 		MarkReadUrl:  hmnurl.BuildMarkRead(currentCatId),
@@ -276,10 +276,6 @@ func ForumCategory(c *RequestContext) ResponseData {
 		},
 		Subcategories: subcats,
 	}, c.Perf)
-	if err != nil {
-		panic(err)
-	}
-
 	return res
 }
 
@@ -417,7 +413,7 @@ func ForumThread(c *RequestContext) ResponseData {
 	// TODO(asaf): Set breadcrumbs
 
 	var res ResponseData
-	err = res.WriteTemplate("forum_thread.html", forumThreadData{
+	res.MustWriteTemplate("forum_thread.html", forumThreadData{
 		BaseData:    baseData,
 		Thread:      templates.ThreadToTemplate(&thread),
 		Posts:       posts,
@@ -425,10 +421,6 @@ func ForumThread(c *RequestContext) ResponseData {
 		ReplyUrl:    hmnurl.BuildForumPostReply(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, *thread.FirstID),
 		Pagination:  pagination,
 	}, c.Perf)
-	if err != nil {
-		panic(err)
-	}
-
 	return res
 }
 
@@ -543,15 +535,11 @@ func ForumNewThread(c *RequestContext) ResponseData {
 	}
 
 	var res ResponseData
-	err := res.WriteTemplate("editor.html", editorData{
+	res.MustWriteTemplate("editor.html", editorData{
 		BaseData:    baseData,
 		SubmitUrl:   hmnurl.BuildForumNewThread(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), true),
 		SubmitLabel: "Post New Thread",
 	}, c.Perf)
-	if err != nil {
-		panic(err)
-	}
-
 	return res
 }
 

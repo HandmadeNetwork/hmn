@@ -298,10 +298,7 @@ func FourOhFour(c *RequestContext) ResponseData {
 			BaseData: getBaseData(c),
 			Wanted:   c.FullUrl(),
 		}
-		err := res.WriteTemplate("404.html", templateData, c.Perf)
-		if err != nil {
-			panic(err)
-		}
+		res.MustWriteTemplate("404.html", templateData, c.Perf)
 	} else {
 		res.Write([]byte("Not Found"))
 	}

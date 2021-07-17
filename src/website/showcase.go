@@ -56,13 +56,10 @@ func Showcase(c *RequestContext) ResponseData {
 	baseData := getBaseData(c)
 	baseData.Title = "Community Showcase"
 	var res ResponseData
-	err = res.WriteTemplate("showcase.html", ShowcaseData{
+	res.MustWriteTemplate("showcase.html", ShowcaseData{
 		BaseData:            baseData,
 		ShowcaseItems:       jsonItems,
 		ShowcaseAtomFeedUrl: hmnurl.BuildAtomFeedForShowcase(),
 	}, c.Perf)
-	if err != nil {
-		panic(err)
-	}
 	return res
 }

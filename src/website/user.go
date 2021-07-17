@@ -222,21 +222,12 @@ func UserProfile(c *RequestContext) ResponseData {
 			c.Theme,
 		)
 		switch timelineItem.Type {
-		case templates.TimelineTypeForumThread:
+		case templates.TimelineTypeForumThread, templates.TimelineTypeForumReply:
 			numForums += 1
-		case templates.TimelineTypeForumReply:
-			numForums += 1
-
-		case templates.TimelineTypeBlogPost:
+		case templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment:
 			numBlogs += 1
-		case templates.TimelineTypeBlogComment:
-			numBlogs += 1
-
-		case templates.TimelineTypeWikiCreate:
+		case templates.TimelineTypeWikiCreate, templates.TimelineTypeWikiTalk:
 			numWiki += 1
-		case templates.TimelineTypeWikiTalk:
-			numWiki += 1
-
 		case templates.TimelineTypeLibraryComment:
 			numLibrary += 1
 		}
@@ -283,7 +274,7 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	baseData := getBaseData(c)
 	var res ResponseData
-	err = res.WriteTemplate("user_profile.html", UserProfileTemplateData{
+	res.MustWriteTemplate("user_profile.html", UserProfileTemplateData{
 		BaseData:            baseData,
 		ProfileUser:         templates.UserToTemplate(profileUser, c.Theme),
 		ProfileUserLinks:    profileUserLinks,
@@ -295,8 +286,5 @@ func UserProfile(c *RequestContext) ResponseData {
 		NumLibrary:          numLibrary,
 		NumSnippets:         numSnippets,
 	}, c.Perf)
-	if err != nil {
-		panic(err)
-	}
 	return res
 }
