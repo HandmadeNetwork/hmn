@@ -7,11 +7,7 @@
 
     <script src="{{ static "go_wasm_exec.js" }}"></script>
     <script>
-        const go = new Go();
-        const goLoaded = WebAssembly.instantiateStreaming(fetch("{{ static "parsing.wasm" }}"), go.importObject)
-            .then(result => {
-                go.run(result.instance);
-            });
+        const previewWorker = new Worker('{{ static "js/editorpreviews.js" }}');
     </script>
 {{ end }}
 
@@ -105,17 +101,18 @@
     const tf = document.querySelector('#editor');
     const preview = document.querySelector('#preview');
 
-    function updatePreview() {
-        const previewHtml = parseMarkdown(tf.value);
+    function updatePreview(previewHtml) {
         preview.innerHTML = previewHtml;
         MathJax.typeset();
     }
 
-    goLoaded.then(() => {
-        updatePreview();
-    });
+    previewWorker.onmessage = ({ data }) => {
+        updatePreview(data);
+    };
+
+    previewWorker.postMessage(tf.value);
     tf.addEventListener('input', () => {
-        updatePreview();
+        previewWorker.postMessage(tf.value);
     });
 </script>
 {{ end }}
