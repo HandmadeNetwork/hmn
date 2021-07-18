@@ -23,7 +23,8 @@ import (
 
 var BBCodePriority = 1 // TODO: This is maybe too high a priority?
 
-var reTag = regexp.MustCompile(`(?P<open>\[\s*(?P<opentagname>[a-zA-Z0-9]+))|(?P<close>\[\s*\/\s*(?P<closetagname>[a-zA-Z0-9]+)\s*\])`)
+var reOpenTag = regexp.MustCompile(`^\[\s*(?P<name>[a-zA-Z0-9]+)`)
+var reTag = regexp.MustCompile(`\[\s*(?P<opentagname>[a-zA-Z0-9]+)|\[\s*\/\s*(?P<closetagname>[a-zA-Z0-9]+)\s*\]`)
 
 var previewBBCodeCompiler = bbcode.NewCompiler(false, false)
 var realBBCodeCompiler = bbcode.NewCompiler(false, false)
@@ -245,38 +246,42 @@ func (s bbcodeParser) Parse(parent gast.Node, block text.Reader, pc parser.Conte
 	_, pos := block.Position()
 	restOfSource := block.Source()[pos.Start:]
 
-	matches := reTag.FindAllSubmatchIndex(restOfSource, -1)
-	if matches == nil {
-		// No tags anywhere
+	openMatch := reOpenTag.FindSubmatch(restOfSource)
+	if openMatch == nil {
+		// not a bbcode tag
 		return nil
 	}
 
 	otIndex := reTag.SubexpIndex("opentagname")
 	ctIndex := reTag.SubexpIndex("closetagname")
 
-	tagName := extractStringBySubmatchIndices(restOfSource, matches[0], otIndex)
-	if tagName == "" {
-		// Not an opening tag
-		return nil
-	}
-
+	tagName := string(openMatch[reOpenTag.SubexpIndex("name")])
 	depth := 0
 	endIndex := -1
-	for _, m := range matches {
-		if openName := extractStringBySubmatchIndices(restOfSource, m, otIndex); openName != "" {
-			if openName == tagName {
-				depth++
-			}
-		} else if closeName := extractStringBySubmatchIndices(restOfSource, m, ctIndex); closeName != "" {
-			if closeName == tagName {
-				depth--
-				if depth == 0 {
-					// We have balanced out!
-					endIndex = m[1] // the end index of this closing tag (exclusive)
-					break
-				}
+
+	searchStartIndex := 0
+
+	for {
+		searchText := restOfSource[searchStartIndex:]
+
+		match := reTag.FindSubmatchIndex(searchText)
+		if match == nil {
+			// no more tags
+			break
+		}
+
+		if openName := extractStringBySubmatchIndices(searchText, match, otIndex); openName == tagName {
+			depth++
+		} else if closeName := extractStringBySubmatchIndices(searchText, match, ctIndex); closeName == tagName {
+			depth--
+			if depth == 0 {
+				// We have balanced out!
+				endIndex = searchStartIndex + match[1] // the end index of this closing tag (exclusive)
+				break
 			}
 		}
+
+		searchStartIndex = searchStartIndex + match[1]
 	}
 	if endIndex < 0 {
 		// Unbalanced, too many opening tags

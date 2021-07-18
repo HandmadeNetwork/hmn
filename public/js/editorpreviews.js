@@ -22,7 +22,7 @@ WebAssembly.instantiateStreaming(fetch('../parsing.wasm'), go.importObject)
     });
 
 const doPreview = () => {
-    if (!ready || !inputData) {
+    if (!ready || inputData === null) {
         return;
     }
 

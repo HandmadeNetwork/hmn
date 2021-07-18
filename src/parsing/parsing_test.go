@@ -63,6 +63,26 @@ func main() {
 	})
 }
 
+func TestSharlock(t *testing.T) {
+	t.Skipf("This doesn't pass right now because parts of Sharlock's original source read as indented code blocks, or depend on different line break behavior.")
+	t.Run("sanity check", func(t *testing.T) {
+		result := ParsePostInput(sharlock, RealMarkdown)
+
+		for _, line := range strings.Split(result, "\n") {
+			assert.NotContains(t, line, "[b]")
+			assert.NotContains(t, line, "[/b]")
+			assert.NotContains(t, line, "[ul]")
+			assert.NotContains(t, line, "[/ul]")
+			assert.NotContains(t, line, "[li]")
+			assert.NotContains(t, line, "[/li]")
+			assert.NotContains(t, line, "[img]")
+			assert.NotContains(t, line, "[/img]")
+			assert.NotContains(t, line, "[code")
+			assert.NotContains(t, line, "[/code]")
+		}
+	})
+}
+
 func BenchmarkSharlock(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		ParsePostInput(sharlock, RealMarkdown)
