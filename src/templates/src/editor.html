@@ -13,7 +13,7 @@
 
 {{ define "content" }}
 <div class="content-block">
-    <form action="{{ .SubmitUrl }}" method="post">
+    <form id="form" action="{{ .SubmitUrl }}" method="post">
         {{ csrftoken .Session }}
 
         <input class="b w-100 mb1" name="title" type="text" placeholder="Post title..." value="{{ .PostTitle }}"/>
@@ -98,8 +98,42 @@
 </div>
 
 <script>
+    const form = document.querySelector('#form');
     const tf = document.querySelector('#editor');
     const preview = document.querySelector('#preview');
+
+    const storagePrefix = 'post-contents';
+
+    // Delete old irrelevant local post contents
+    const aWeekAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+    for (const key in window.localStorage) {
+        if (!window.localStorage.hasOwnProperty(key)) {
+            continue;
+        }
+
+        if (key.startsWith(storagePrefix)) {
+            try {
+                const { when } = JSON.parse(window.localStorage.getItem(key));
+                if (when <= aWeekAgo) {
+                    window.localStorage.removeItem(key);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    }
+
+    // Load any stored content from localStorage
+    const storageKey = `${storagePrefix}/${window.location.host}${window.location.pathname}`;
+    const storedContents = window.localStorage.getItem(storageKey);
+    if (storedContents) {
+        try {
+            const { contents } = JSON.parse(storedContents);
+            tf.value = contents;
+        } catch (e) {
+            console.error(e);
+        }
+    }
 
     function updatePreview(previewHtml) {
         preview.innerHTML = previewHtml;
@@ -110,9 +144,20 @@
         updatePreview(data);
     };
 
-    previewWorker.postMessage(tf.value);
-    tf.addEventListener('input', () => {
-        previewWorker.postMessage(tf.value);
+    function doMarkdown() {
+        const md = tf.value;
+        previewWorker.postMessage(md);
+        window.localStorage.setItem(storageKey, JSON.stringify({
+            when: new Date().getTime(),
+            contents: md,
+        }));
+    }
+
+    doMarkdown();
+    tf.addEventListener('input', () => doMarkdown());
+
+    form.addEventListener('submit', e => {
+        window.localStorage.removeItem(storageKey);
     });
 </script>
 {{ end }}
