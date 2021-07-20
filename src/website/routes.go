@@ -153,11 +153,13 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexProjectNotApproved, ProjectHomepage)
 
 	// NOTE(asaf): Any-project routes:
-	mainRoutes.Handle([]string{http.MethodGet, http.MethodPost}, hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
+	mainRoutes.GET(hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
 	mainRoutes.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
 	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)
 	mainRoutes.GET(hmnurl.RegexForumCategory, ForumCategory)
 	mainRoutes.GET(hmnurl.RegexForumPost, ForumPostRedirect)
+	mainRoutes.GET(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReply))
+	mainRoutes.POST(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReplySubmit))
 
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 

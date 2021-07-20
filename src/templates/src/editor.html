@@ -19,11 +19,16 @@
 
 {{ define "content" }}
 <div class="content-block ph3 ph0-ns">
+    {{ if .ThreadTitle }}
+        <h2>{{ .ThreadTitle }}</h2>
+    {{ end }}
     <div class="flex flex-column flex-row-ns">
         <form id="form" action="{{ .SubmitUrl }}" method="post" class="flex-fair-ns">
             {{ csrftoken .Session }}
 
-            <input class="b w-100 mb1" name="title" type="text" placeholder="Post title..." value="{{ .PostTitle }}"/>
+            {{ if not .PostReplyingTo }}
+                <input class="b w-100 mb1" name="title" type="text" placeholder="Post title..." value="{{ .PostTitle }}"/>
+            {{ end }}
             {{/* TODO: Reintroduce the toolbar in a way that makes sense for Markdown */}}
             {{/*
             <div class="toolbar" id="toolbar">
@@ -67,6 +72,55 @@
                 </div>
             {% endif %}
             */}}
+
+            {{ with .PostReplyingTo }}
+                <h4 class="mt3">The post you're replying to:</h4>
+                <div class="bg--dim pa3 br3">
+                    <div class="w-100 flex items-center">
+                        {{ if .Author }}
+                            <div class="w-20 mw3 w3">
+                                <!-- Mobile avatar -->
+                                <div class="aspect-ratio--1x1 contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
+                            </div>
+                            <div class="pl3 flex flex-column">
+                                <div>
+                                    <a class="username" href="{{ .Author.ProfileUrl }}" target="_blank">{{ .Author.Username }}</a> {{/* TODO: Text scale stuff? Seems unnecessary. */}}
+                                    <!-- Mobile badges -->
+                                    <div class="di ph1">
+                                        {{ if .Author.IsStaff }}
+                                            <div class="badge staff"></div>
+                                        {{ end }}
+                                    </div>
+                                </div>
+                                {{ if and .Author.Name (ne .Author.Name .Author.Username) }}
+                                    <div class="c--dim f7"> {{ .Author.Name }} </div>
+                                {{ end }}
+                                <div class="c--dim f7">
+                                    {{ timehtml (relativedate .PostDate) .PostDate }}
+                                    {{ if .Editor }}
+                                        <span class="pl3">
+                                            Edited by
+                                            <a class="name" href="{{ .Editor.ProfileUrl }}" target="_blank">{{ coalesce .Editor.Name .Editor.Username }}</a>
+                                            on {{ timehtml (absolutedate .EditDate) .EditDate }}
+                                            {{ with .EditReason }}
+                                                Reason: {{ . }}
+                                            {{ end }}
+                                        </span>
+                                    {{ end }}
+                                </div>
+                            </div>
+                        {{ else }}
+                            <div class="username">Deleted member</div>
+                            <div class="avatar" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
+                        {{ end }}
+                    </div>
+                    <div class="w-100 pt3">
+                        <div class="contents overflow-x-auto">
+                            {{ .Content }}
+                        </div>
+                    </div>
+                </div>
+            {{ end }}
 
             {{/*
 
