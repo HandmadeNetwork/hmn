@@ -9,92 +9,99 @@
     <script>
         const previewWorker = new Worker('{{ static "js/editorpreviews.js" }}');
     </script>
+
+    <style>
+        #editor {
+            resize: vertical;
+        }
+    </style>
 {{ end }}
 
 {{ define "content" }}
-<div class="content-block">
-    <form id="form" action="{{ .SubmitUrl }}" method="post">
-        {{ csrftoken .Session }}
+<div class="content-block ph3 ph0-ns">
+    <div class="flex flex-column flex-row-ns">
+        <form id="form" action="{{ .SubmitUrl }}" method="post" class="flex-fair-ns">
+            {{ csrftoken .Session }}
 
-        <input class="b w-100 mb1" name="title" type="text" placeholder="Post title..." value="{{ .PostTitle }}"/>
-        {{/* TODO: Reintroduce the toolbar in a way that makes sense for Markdown */}}
-        {{/*
-        <div class="toolbar" id="toolbar">
-            <input type="button" id="bold" value="B" />
-            <input type="button" id="italic" value="I" /> 
-            <input type="button" id="underline" value="U" /> 
-            <input type="button" id="monospace" value="monospace" /> 
-            <input type="button" id="url" value="url" /> 
-            <input type="button" id="img" value="img" /> 
-            <input type="button" id="code" value="code" /> 
-            <input type="button" id="quote_simple" value="quote (anon)" /> 
-            <input type="button" id="quote_member" value="quote (member)" /> 
-            <input type="button" id="spoiler" value="spoiler" /> 
-            <input type="button" id="lalign" value="Left" /> 
-            <input type="button" id="calign" value="Center" /> 
-            <input type="button" id="ralign" value="Right" />
-            <input type="button" id="ulist" value="ul" />
-            <input type="button" id="olist" value="ol" />
-            <input type="button" id="litem" value="li" />
-            <input type="button" id="youtube" value="youtube" />
-        </div>
-        */}}
-        <textarea id="editor" class="w-100 minw-100 mw-100 h5 minh-5" name="body">{{ .PostBody }}</textarea>
+            <input class="b w-100 mb1" name="title" type="text" placeholder="Post title..." value="{{ .PostTitle }}"/>
+            {{/* TODO: Reintroduce the toolbar in a way that makes sense for Markdown */}}
+            {{/*
+            <div class="toolbar" id="toolbar">
+                <input type="button" id="bold" value="B" />
+                <input type="button" id="italic" value="I" /> 
+                <input type="button" id="underline" value="U" /> 
+                <input type="button" id="monospace" value="monospace" /> 
+                <input type="button" id="url" value="url" /> 
+                <input type="button" id="img" value="img" /> 
+                <input type="button" id="code" value="code" /> 
+                <input type="button" id="quote_simple" value="quote (anon)" /> 
+                <input type="button" id="quote_member" value="quote (member)" /> 
+                <input type="button" id="spoiler" value="spoiler" /> 
+                <input type="button" id="lalign" value="Left" /> 
+                <input type="button" id="calign" value="Center" /> 
+                <input type="button" id="ralign" value="Right" />
+                <input type="button" id="ulist" value="ul" />
+                <input type="button" id="olist" value="ol" />
+                <input type="button" id="litem" value="li" />
+                <input type="button" id="youtube" value="youtube" />
+            </div>
+            */}}
+            <textarea id="editor" class="w-100 h5 minh-5" name="body">{{ .PostBody }}</textarea>
 
-        <div class="flex flex-row-reverse justify-start mt2">
-            <input type="submit" class="button ml2" name="submit" value="{{ .SubmitLabel }}" />
-        </div>
+            <div class="flex flex-row-reverse justify-start mt2">
+                <input type="submit" class="button ml2" name="submit" value="{{ .SubmitLabel }}" />
+            </div>
 
-        <div class="post post-preview mv3 mathjax">
+            {{ if .IsEditing }}
+                <span class="editreason">
+                    <label for="editreason">Edit reason:</label>
+                    <input name="editreason" maxlength="255" type="text" id="editreason" />
+                </span>
+            {{ end }}
+            
+            {{/* TODO: Sticky threads
+            {% if user.is_staff and post and post.depth == 0 %}
+                <div class="checkbox sticky">
+                    <input type="checkbox" name="sticky" id="sticky" {% if thread.sticky %}checked{% endif%} />
+                    <label for="sticky">Sticky thread</label>
+                </div>
+            {% endif %}
+            */}}
+
+            {{/*
+
+            {% if context_reply_to %}
+                <h4>The post you're replying to:</h4>
+                <div class="recent-posts">
+                    {% with post=post_reply_to %}
+                        {% include "forum_thread_single_post.html" %}
+                    {% endwith %}
+                </div>
+            {% endif %}
+
+            {% if context_newer %}
+                <h4>Replies since then:</h4>
+                <div class="recent-posts">
+                    {% for post in posts_newer %}
+                        {% include "forum_thread_single_post.html" %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% if context_older %}
+                <h4>Replies before then:</h4>
+                <div class="recent-posts">
+                    {% for post in posts_older %}
+                        {% include "forum_thread_single_post.html" %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+            */}}
+        </form>
+        <div class="post post-preview mv3 mathjax flex-fair-ns mv0-ns ml3-ns">
             <div id="preview" class="body contents"></div>
         </div>
-
-        {{ if .IsEditing }}
-            <span class="editreason">
-                <label for="editreason">Edit reason:</label>
-                <input name="editreason" maxlength="255" type="text" id="editreason" />
-            </span>
-        {{ end }}
-        
-        {{/* TODO: Sticky threads
-        {% if user.is_staff and post and post.depth == 0 %}
-            <div class="checkbox sticky">
-                <input type="checkbox" name="sticky" id="sticky" {% if thread.sticky %}checked{% endif%} />
-                <label for="sticky">Sticky thread</label>
-            </div>
-        {% endif %}
-        */}}
-
-        {{/*
-
-        {% if context_reply_to %}
-            <h4>The post you're replying to:</h4>
-            <div class="recent-posts">
-                {% with post=post_reply_to %}
-                    {% include "forum_thread_single_post.html" %}
-                {% endwith %}
-            </div>
-        {% endif %}
-
-        {% if context_newer %}
-            <h4>Replies since then:</h4>
-            <div class="recent-posts">
-                {% for post in posts_newer %}
-                    {% include "forum_thread_single_post.html" %}
-                {% endfor %}
-            </div>
-        {% endif %}
-
-        {% if context_older %}
-            <h4>Replies before then:</h4>
-            <div class="recent-posts">
-                {% for post in posts_older %}
-                    {% include "forum_thread_single_post.html" %}
-                {% endfor %}
-            </div>
-        {% endif %}
-        */}}
-    </form>
+    </div>
 </div>
 
 <script>
