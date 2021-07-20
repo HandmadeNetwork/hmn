@@ -73,7 +73,6 @@ type Post struct {
 	DeleteUrl string
 	EditUrl   string
 	ReplyUrl  string
-	QuoteUrl  string
 
 	Preview  string
 	ReadOnly bool
@@ -87,6 +86,8 @@ type Post struct {
 	EditReason string
 
 	IP string
+
+	ReplyPost *Post
 }
 
 type Project struct {

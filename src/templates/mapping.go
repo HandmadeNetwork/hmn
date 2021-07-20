@@ -49,7 +49,6 @@ func (p *Post) AddUrls(projectSlug string, subforums []string, threadId int, pos
 	p.DeleteUrl = hmnurl.BuildForumPostDelete(projectSlug, subforums, threadId, postId)
 	p.EditUrl = hmnurl.BuildForumPostEdit(projectSlug, subforums, threadId, postId)
 	p.ReplyUrl = hmnurl.BuildForumPostReply(projectSlug, subforums, threadId, postId)
-	p.QuoteUrl = hmnurl.BuildForumPostQuote(projectSlug, subforums, threadId, postId)
 }
 
 var LifecycleBadgeClasses = map[models.ProjectLifecycle]string{

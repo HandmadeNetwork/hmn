@@ -387,6 +387,9 @@ func ForumThread(c *RequestContext) ResponseData {
 		Ver    models.PostVersion `db:"ver"`
 		Author *models.User       `db:"author"`
 		Editor *models.User       `db:"editor"`
+
+		ReplyPost   *models.Post `db:"reply"`
+		ReplyAuthor *models.User `db:"reply_author"`
 	}
 	itPosts, err := db.Query(c.Context(), c.Conn, postsQueryResult{},
 		`
@@ -396,10 +399,12 @@ func ForumThread(c *RequestContext) ResponseData {
 			JOIN handmade_postversion AS ver ON post.current_id = ver.id
 			LEFT JOIN auth_user AS author ON post.author_id = author.id
 			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
+			LEFT JOIN handmade_post AS reply ON post.reply_id = reply.id
+			LEFT JOIN auth_user AS reply_author ON reply.author_id = reply_author.id
 		WHERE
 			post.thread_id = $1
 			AND NOT post.deleted
-		ORDER BY postdate
+		ORDER BY post.postdate
 		LIMIT $2 OFFSET $3
 		`,
 		thread.ID,
@@ -419,6 +424,12 @@ func ForumThread(c *RequestContext) ResponseData {
 		post := templates.PostToTemplate(&row.Post, row.Author, c.Theme)
 		post.AddContentVersion(row.Ver, row.Editor)
 		post.AddUrls(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
+
+		if row.ReplyPost != nil {
+			reply := templates.PostToTemplate(row.ReplyPost, row.ReplyAuthor, c.Theme)
+			reply.AddUrls(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
+			post.ReplyPost = &reply
+		}
 
 		posts = append(posts, post)
 	}
@@ -596,7 +607,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		panic(oops.New(err, "failed to create thread"))
 	}
 
-	postId, _ := createForumPostAndVersion(c.Context(), tx, currentCatId, threadId, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host)
+	postId, _ := createForumPostAndVersion(c.Context(), tx, currentCatId, threadId, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host, nil)
 
 	// Update thread with post id
 	_, err = tx.Exec(c.Context(),
@@ -727,22 +738,27 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
+	postId, err := strconv.Atoi(c.PathParams["postid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
 	c.Req.ParseForm()
 
 	unparsed := c.Req.Form.Get("body")
 
-	postId, _ := createForumPostAndVersion(c.Context(), tx, currentCatId, threadId, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host)
+	newPostId, _ := createForumPostAndVersion(c.Context(), tx, currentCatId, threadId, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host, &postId)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new forum thread"))
 	}
 
-	newPostUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), threadId, postId)
+	newPostUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), threadId, newPostId)
 	return c.Redirect(newPostUrl, http.StatusSeeOther)
 }
 
-func createForumPostAndVersion(ctx context.Context, tx pgx.Tx, catId, threadId, userId, projectId int, unparsedContent string, ipString string) (postId, versionId int) {
+func createForumPostAndVersion(ctx context.Context, tx pgx.Tx, catId, threadId, userId, projectId int, unparsedContent string, ipString string, replyId *int) (postId, versionId int) {
 	parsed := parsing.ParsePostInput(unparsedContent, parsing.RealMarkdown)
 	now := time.Now()
 	ip := net.ParseIP(ipString)
@@ -757,8 +773,8 @@ func createForumPostAndVersion(ctx context.Context, tx pgx.Tx, catId, threadId, 
 	// Create post
 	err := tx.QueryRow(ctx,
 		`
-		INSERT INTO handmade_post (postdate, category_id, thread_id, preview, current_id, author_id, category_kind, project_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO handmade_post (postdate, category_id, thread_id, preview, current_id, author_id, category_kind, project_id, reply_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 		`,
 		now,
@@ -769,6 +785,7 @@ func createForumPostAndVersion(ctx context.Context, tx pgx.Tx, catId, threadId, 
 		userId,
 		models.CatKindForum,
 		projectId,
+		replyId,
 	).Scan(&postId)
 	if err != nil {
 		panic(oops.New(err, "failed to create post"))

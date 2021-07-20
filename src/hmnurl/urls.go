@@ -342,15 +342,6 @@ func BuildForumPostReply(projectSlug string, subforums []string, threadId int, p
 	return ProjectUrl(builder.String(), nil, projectSlug)
 }
 
-var RegexForumPostQuote = regexp.MustCompile(`^/forums(/(?P<cats>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)/p/(?P<postid>\d+)/quote$`)
-
-func BuildForumPostQuote(projectSlug string, subforums []string, threadId int, postId int) string {
-	defer CatchPanic()
-	builder := buildForumPostPath(subforums, threadId, postId)
-	builder.WriteString("/quote")
-	return ProjectUrl(builder.String(), nil, projectSlug)
-}
-
 /*
 * Blog
  */
