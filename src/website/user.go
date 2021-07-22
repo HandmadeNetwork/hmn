@@ -100,7 +100,7 @@ func UserProfile(c *RequestContext) ResponseData {
 			AND ($2 OR (project.flags = 0 AND project.lifecycle = ANY ($3)))
 		`,
 		profileUser.ID,
-		(c.CurrentUser != nil && (profileUser == c.CurrentUser || c.CurrentUser.IsSuperuser)),
+		(c.CurrentUser != nil && (profileUser == c.CurrentUser || c.CurrentUser.IsStaff)),
 		models.VisibleProjectLifecycles,
 	)
 	if err != nil {

@@ -157,11 +157,10 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 	}
 
 	return User{
-		ID:          u.ID,
-		Username:    u.Username,
-		Email:       email,
-		IsSuperuser: u.IsSuperuser,
-		IsStaff:     u.IsStaff,
+		ID:       u.ID,
+		Username: u.Username,
+		Email:    email,
+		IsStaff:  u.IsStaff,
 
 		Name:       UserDisplayName(u),
 		Blurb:      u.Blurb,

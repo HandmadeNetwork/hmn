@@ -288,7 +288,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	canView := false
 	canEdit := false
 	if c.CurrentUser != nil {
-		if c.CurrentUser.IsSuperuser {
+		if c.CurrentUser.IsStaff {
 			canView = true
 			canEdit = true
 		} else {

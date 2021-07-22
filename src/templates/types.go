@@ -117,11 +117,10 @@ type Project struct {
 }
 
 type User struct {
-	ID          int
-	Username    string
-	Email       string
-	IsSuperuser bool
-	IsStaff     bool
+	ID       int
+	Username string
+	Email    string
+	IsStaff  bool
 
 	Name       string
 	Blurb      string

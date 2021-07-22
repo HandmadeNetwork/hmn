@@ -41,7 +41,7 @@ type forumSubcategoryData struct {
 type editorData struct {
 	templates.BaseData
 	SubmitUrl   string
-	ThreadTitle string
+	Title       string
 	SubmitLabel string
 
 	IsEditing           bool // false if new post, true if updating existing one
@@ -710,7 +710,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 		SubmitUrl:   hmnurl.BuildForumPostReply(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), requestedThreadId, requestedPostId),
 		SubmitLabel: "Submit Reply",
 
-		ThreadTitle:    result.Thread.Title,
+		Title:          "Replying to post",
 		PostReplyingTo: &templatePost,
 	}, c.Perf)
 	return res
@@ -820,6 +820,12 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 	}
 	result := postQueryResult.(*postQuery)
 
+	// Ensure that the user is permitted to edit the post
+	isPostAuthor := result.Author != nil && result.Author.ID == c.CurrentUser.ID
+	if !(isPostAuthor || c.CurrentUser.IsStaff) {
+		return FourOhFour(c)
+	}
+
 	baseData := getBaseData(c)
 	baseData.Title = fmt.Sprintf("Editing \"%s\" | %s", result.Thread.Title, *categoryTree[currentCatId].Name)
 	baseData.MathjaxEnabled = true
@@ -832,7 +838,7 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 	res.MustWriteTemplate("editor.html", editorData{
 		BaseData:    baseData,
 		SubmitUrl:   hmnurl.BuildForumPostEdit(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), requestedThreadId, requestedPostId),
-		ThreadTitle: result.Thread.Title,
+		Title:       result.Thread.Title,
 		SubmitLabel: "Submit Edited Post",
 
 		IsEditing:           true,
@@ -868,8 +874,38 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	c.Req.ParseForm()
+	// Ensure that the user is permitted to edit the post
+	type postResult struct {
+		AuthorID *int `db:"author.id"`
+	}
+	iresult, err := db.QueryOne(c.Context(), c.Conn, postResult{},
+		`
+		SELECT $columns
+		FROM
+			handmade_post AS post
+			LEFT JOIN auth_user AS author ON post.author_id = author.id
+		WHERE
+			post.category_id = $1
+			AND post.thread_id = $2
+			AND post.id = $3
+			AND NOT post.deleted
+		ORDER BY postdate
+		`,
+		currentCatId,
+		threadId,
+		postId,
+	)
+	if err != nil && !errors.Is(err, db.ErrNoMatchingRows) {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get author of post to delete"))
+	}
+	result := iresult.(*postResult)
 
+	isPostAuthor := result.AuthorID != nil && *result.AuthorID == c.CurrentUser.ID
+	if !(isPostAuthor || c.CurrentUser.IsStaff) {
+		return FourOhFour(c)
+	}
+
+	c.Req.ParseForm()
 	unparsed := c.Req.Form.Get("body")
 	editReason := c.Req.Form.Get("editreason")
 
@@ -888,8 +924,8 @@ func createNewForumPostAndVersion(ctx context.Context, tx pgx.Tx, catId, threadI
 	// Create post
 	err := tx.QueryRow(ctx,
 		`
-		INSERT INTO handmade_post (postdate, category_id, thread_id, current_id, author_id, category_kind, project_id, reply_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		INSERT INTO handmade_post (postdate, category_id, thread_id, current_id, author_id, category_kind, project_id, reply_id, preview)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		RETURNING id
 		`,
 		time.Now(),
@@ -900,6 +936,7 @@ func createNewForumPostAndVersion(ctx context.Context, tx pgx.Tx, catId, threadI
 		models.CatKindForum,
 		projectId,
 		replyId,
+		"", // empty preview, will be updated later
 	).Scan(&postId)
 	if err != nil {
 		panic(oops.New(err, "failed to create post"))
