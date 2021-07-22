@@ -27,7 +27,7 @@
             {{ csrftoken .Session }}
 
             {{ if not (or .PostReplyingTo .IsEditing) }}
-                <input class="b w-100 mb1" name="title" type="text" placeholder="Post title..."/>
+                <input id="title" class="b w-100 mb1" name="title" type="text" placeholder="Post title..."/>
             {{ end }}
             {{/* TODO: Reintroduce the toolbar in a way that makes sense for Markdown */}}
             {{/*
@@ -151,7 +151,8 @@
 
 <script>
     const form = document.querySelector('#form');
-    const tf = document.querySelector('#editor');
+    const titleField = document.querySelector('#title'); // may be undefined, be careful!
+    const textField = document.querySelector('#editor');
     const preview = document.querySelector('#preview');
 
     const storagePrefix = 'post-contents';
@@ -178,10 +179,13 @@
     // Load any stored content from localStorage
     const storageKey = `${storagePrefix}/${window.location.host}${window.location.pathname}`;
     const storedContents = window.localStorage.getItem(storageKey);
-    if (storedContents && !tf.value) {
+    if (storedContents && !textField.value) {
         try {
-            const { contents } = JSON.parse(storedContents);
-            tf.value = contents;
+            const { title, contents } = JSON.parse(storedContents);
+            if (titleField) {
+                titleField.value = title;
+            }
+            textField.value = contents;
         } catch (e) {
             console.error(e);
         }
@@ -197,16 +201,24 @@
     };
 
     function doMarkdown() {
-        const md = tf.value;
+        const md = textField.value;
         previewWorker.postMessage(md);
+        updateContentCache();
+    }
+
+    function updateContentCache() {
         window.localStorage.setItem(storageKey, JSON.stringify({
             when: new Date().getTime(),
-            contents: md,
+            title: titleField ? titleField.value : '',
+            contents: textField.value,
         }));
     }
 
     doMarkdown();
-    tf.addEventListener('input', () => doMarkdown());
+    textField.addEventListener('input', () => doMarkdown());
+    if (titleField) {
+        titleField.addEventListener('input', () => updateContentCache());
+    }
 
     form.addEventListener('submit', e => {
         window.localStorage.removeItem(storageKey);
