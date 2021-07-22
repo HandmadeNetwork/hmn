@@ -160,6 +160,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexForumPost, ForumPostRedirect)
 	mainRoutes.GET(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReply))
 	mainRoutes.POST(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReplySubmit))
+	mainRoutes.GET(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEdit))
+	mainRoutes.POST(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEditSubmit))
 
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 

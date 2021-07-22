@@ -26,8 +26,8 @@
         <form id="form" action="{{ .SubmitUrl }}" method="post" class="flex-fair-ns">
             {{ csrftoken .Session }}
 
-            {{ if not .PostReplyingTo }}
-                <input class="b w-100 mb1" name="title" type="text" placeholder="Post title..." value="{{ .PostTitle }}"/>
+            {{ if not (or .PostReplyingTo .IsEditing) }}
+                <input class="b w-100 mb1" name="title" type="text" placeholder="Post title..."/>
             {{ end }}
             {{/* TODO: Reintroduce the toolbar in a way that makes sense for Markdown */}}
             {{/*
@@ -51,7 +51,7 @@
                 <input type="button" id="youtube" value="youtube" />
             </div>
             */}}
-            <textarea id="editor" class="w-100 h5 minh-5" name="body">{{ .PostBody }}</textarea>
+            <textarea id="editor" class="w-100 h5 minh-5" name="body">{{ if .IsEditing }}{{ .EditInitialContents }}{{ end }}</textarea>
 
             <div class="flex flex-row-reverse justify-start mt2">
                 <input type="submit" class="button ml2" name="submit" value="{{ .SubmitLabel }}" />
@@ -124,15 +124,6 @@
 
             {{/*
 
-            {% if context_reply_to %}
-                <h4>The post you're replying to:</h4>
-                <div class="recent-posts">
-                    {% with post=post_reply_to %}
-                        {% include "forum_thread_single_post.html" %}
-                    {% endwith %}
-                </div>
-            {% endif %}
-
             {% if context_newer %}
                 <h4>Replies since then:</h4>
                 <div class="recent-posts">
@@ -187,7 +178,7 @@
     // Load any stored content from localStorage
     const storageKey = `${storagePrefix}/${window.location.host}${window.location.pathname}`;
     const storedContents = window.localStorage.getItem(storageKey);
-    if (storedContents) {
+    if (storedContents && !tf.value) {
         try {
             const { contents } = JSON.parse(storedContents);
             tf.value = contents;
