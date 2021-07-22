@@ -162,7 +162,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.POST(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReplySubmit))
 	mainRoutes.GET(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEdit))
 	mainRoutes.POST(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEditSubmit))
-	// mainRoutes.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
+	mainRoutes.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
+	mainRoutes.POST(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDeleteSubmit))
 
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 
