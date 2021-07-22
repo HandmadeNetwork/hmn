@@ -77,7 +77,7 @@ type Post struct {
 	Preview  string
 	ReadOnly bool
 
-	Author   *User
+	Author   User
 	Content  template.HTML
 	PostDate time.Time
 
