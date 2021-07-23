@@ -12,12 +12,6 @@ import (
 )
 
 func PostToTemplate(p *models.Post, author *models.User, currentTheme string) Post {
-	var authorUser *User
-	if author != nil {
-		authorTmpl := UserToTemplate(author, currentTheme)
-		authorUser = &authorTmpl
-	}
-
 	return Post{
 		ID: p.ID,
 
@@ -26,7 +20,7 @@ func PostToTemplate(p *models.Post, author *models.User, currentTheme string) Po
 		Preview:  p.Preview,
 		ReadOnly: p.ReadOnly,
 
-		Author: authorUser,
+		Author: UserToTemplate(author, currentTheme),
 		// No content. A lot of the time we don't have this handy and don't need it. See AddContentVersion.
 		PostDate: p.PostDate,
 	}
@@ -49,7 +43,6 @@ func (p *Post) AddUrls(projectSlug string, subforums []string, threadId int, pos
 	p.DeleteUrl = hmnurl.BuildForumPostDelete(projectSlug, subforums, threadId, postId)
 	p.EditUrl = hmnurl.BuildForumPostEdit(projectSlug, subforums, threadId, postId)
 	p.ReplyUrl = hmnurl.BuildForumPostReply(projectSlug, subforums, threadId, postId)
-	p.QuoteUrl = hmnurl.BuildForumPostQuote(projectSlug, subforums, threadId, postId)
 }
 
 var LifecycleBadgeClasses = map[models.ProjectLifecycle]string{
@@ -132,7 +125,7 @@ func UserAvatarUrl(u *models.User, currentTheme string) string {
 		currentTheme = "light"
 	}
 	avatar := ""
-	if u.Avatar != nil && len(*u.Avatar) > 0 {
+	if u != nil && u.Avatar != nil && len(*u.Avatar) > 0 {
 		avatar = hmnurl.BuildUserFile(*u.Avatar)
 	} else {
 		avatar = hmnurl.BuildTheme("empty-avatar.svg", currentTheme, true)
@@ -149,7 +142,12 @@ func UserDisplayName(u *models.User) string {
 }
 
 func UserToTemplate(u *models.User, currentTheme string) User {
-	// TODO: Handle deleted users. Maybe not here, but if not, at call sites of this function.
+	if u == nil {
+		return User{
+			Name:      "Deleted user",
+			AvatarUrl: UserAvatarUrl(u, currentTheme),
+		}
+	}
 
 	email := ""
 	if u.ShowEmail {
@@ -158,11 +156,10 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 	}
 
 	return User{
-		ID:          u.ID,
-		Username:    u.Username,
-		Email:       email,
-		IsSuperuser: u.IsSuperuser,
-		IsStaff:     u.IsStaff,
+		ID:       u.ID,
+		Username: u.Username,
+		Email:    email,
+		IsStaff:  u.IsStaff,
 
 		Name:       UserDisplayName(u),
 		Blurb:      u.Blurb,
@@ -267,7 +264,7 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 		builder.WriteString(`",`)
 
 		builder.WriteString(`"owner_name":"`)
-		builder.WriteString(item.OwnerName)
+		builder.WriteString(item.OwnerName) // TODO: Do we need to do escaping on these other string fields too? Feels like someone could use this for XSS.
 		builder.WriteString(`",`)
 
 		builder.WriteString(`"owner_avatar":"`)

@@ -73,12 +73,11 @@ type Post struct {
 	DeleteUrl string
 	EditUrl   string
 	ReplyUrl  string
-	QuoteUrl  string
 
 	Preview  string
 	ReadOnly bool
 
-	Author   *User
+	Author   User
 	Content  template.HTML
 	PostDate time.Time
 
@@ -87,6 +86,8 @@ type Post struct {
 	EditReason string
 
 	IP string
+
+	ReplyPost *Post
 }
 
 type Project struct {
@@ -116,11 +117,10 @@ type Project struct {
 }
 
 type User struct {
-	ID          int
-	Username    string
-	Email       string
-	IsSuperuser bool
-	IsStaff     bool
+	ID       int
+	Username string
+	Email    string
+	IsStaff  bool
 
 	Name       string
 	Blurb      string

@@ -153,11 +153,17 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexProjectNotApproved, ProjectHomepage)
 
 	// NOTE(asaf): Any-project routes:
-	mainRoutes.Handle([]string{http.MethodGet, http.MethodPost}, hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
+	mainRoutes.GET(hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
 	mainRoutes.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
 	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)
 	mainRoutes.GET(hmnurl.RegexForumCategory, ForumCategory)
 	mainRoutes.GET(hmnurl.RegexForumPost, ForumPostRedirect)
+	mainRoutes.GET(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReply))
+	mainRoutes.POST(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReplySubmit))
+	mainRoutes.GET(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEdit))
+	mainRoutes.POST(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEditSubmit))
+	mainRoutes.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
+	mainRoutes.POST(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDeleteSubmit))
 
 	mainRoutes.GET(hmnurl.RegexPodcast, PodcastIndex)
 	mainRoutes.GET(hmnurl.RegexPodcastEdit, PodcastEdit)
@@ -308,10 +314,7 @@ func FourOhFour(c *RequestContext) ResponseData {
 			BaseData: getBaseData(c),
 			Wanted:   c.FullUrl(),
 		}
-		err := res.WriteTemplate("404.html", templateData, c.Perf)
-		if err != nil {
-			panic(err)
-		}
+		res.MustWriteTemplate("404.html", templateData, c.Perf)
 	} else {
 		res.Write([]byte("Not Found"))
 	}

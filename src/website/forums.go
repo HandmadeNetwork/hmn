@@ -1,7 +1,9 @@
 package website
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -16,6 +18,8 @@ import (
 	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type forumCategoryData struct {
@@ -33,6 +37,18 @@ type forumSubcategoryData struct {
 	Url          string
 	Threads      []templates.ThreadListItem
 	TotalThreads int
+}
+
+type editorData struct {
+	templates.BaseData
+	SubmitUrl   string
+	Title       string
+	SubmitLabel string
+
+	IsEditing           bool // false if new post, true if updating existing one
+	EditInitialContents string
+
+	PostReplyingTo *templates.Post
 }
 
 func ForumCategory(c *RequestContext) ResponseData {
@@ -260,7 +276,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 	}
 
 	var res ResponseData
-	err = res.WriteTemplate("forum_category.html", forumCategoryData{
+	res.MustWriteTemplate("forum_category.html", forumCategoryData{
 		BaseData:     baseData,
 		NewThreadUrl: hmnurl.BuildForumNewThread(c.CurrentProject.Slug, currentSubforumSlugs, false),
 		MarkReadUrl:  hmnurl.BuildMarkRead(currentCatId),
@@ -276,10 +292,6 @@ func ForumCategory(c *RequestContext) ResponseData {
 		},
 		Subcategories: subcats,
 	}, c.Perf)
-	if err != nil {
-		panic(err)
-	}
-
 	return res
 }
 
@@ -376,6 +388,9 @@ func ForumThread(c *RequestContext) ResponseData {
 		Ver    models.PostVersion `db:"ver"`
 		Author *models.User       `db:"author"`
 		Editor *models.User       `db:"editor"`
+
+		ReplyPost   *models.Post `db:"reply"`
+		ReplyAuthor *models.User `db:"reply_author"`
 	}
 	itPosts, err := db.Query(c.Context(), c.Conn, postsQueryResult{},
 		`
@@ -385,10 +400,12 @@ func ForumThread(c *RequestContext) ResponseData {
 			JOIN handmade_postversion AS ver ON post.current_id = ver.id
 			LEFT JOIN auth_user AS author ON post.author_id = author.id
 			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
+			LEFT JOIN handmade_post AS reply ON post.reply_id = reply.id
+			LEFT JOIN auth_user AS reply_author ON reply.author_id = reply_author.id
 		WHERE
 			post.thread_id = $1
 			AND NOT post.deleted
-		ORDER BY postdate
+		ORDER BY post.postdate
 		LIMIT $2 OFFSET $3
 		`,
 		thread.ID,
@@ -409,6 +426,12 @@ func ForumThread(c *RequestContext) ResponseData {
 		post.AddContentVersion(row.Ver, row.Editor)
 		post.AddUrls(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
 
+		if row.ReplyPost != nil {
+			reply := templates.PostToTemplate(row.ReplyPost, row.ReplyAuthor, c.Theme)
+			reply.AddUrls(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
+			post.ReplyPost = &reply
+		}
+
 		posts = append(posts, post)
 	}
 
@@ -417,7 +440,7 @@ func ForumThread(c *RequestContext) ResponseData {
 	// TODO(asaf): Set breadcrumbs
 
 	var res ResponseData
-	err = res.WriteTemplate("forum_thread.html", forumThreadData{
+	res.MustWriteTemplate("forum_thread.html", forumThreadData{
 		BaseData:    baseData,
 		Thread:      templates.ThreadToTemplate(&thread),
 		Posts:       posts,
@@ -425,14 +448,13 @@ func ForumThread(c *RequestContext) ResponseData {
 		ReplyUrl:    hmnurl.BuildForumPostReply(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, *thread.FirstID),
 		Pagination:  pagination,
 	}, c.Perf)
-	if err != nil {
-		panic(err)
-	}
-
 	return res
 }
 
 func ForumPostRedirect(c *RequestContext) ResponseData {
+	// TODO(compression): This logic for fetching posts by thread id / post id is gonna
+	// show up in a lot of places. It's used multiple times for forums, and also for blogs.
+	// Consider compressing this later.
 	c.Perf.StartBlock("SQL", "Fetch category tree")
 	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
 	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
@@ -517,15 +539,6 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 	), http.StatusSeeOther)
 }
 
-type editorData struct {
-	templates.BaseData
-	SubmitUrl   string
-	PostTitle   string
-	PostBody    string
-	SubmitLabel string
-	IsEditing   bool // false if new post, true if updating existing one
-}
-
 func ForumNewThread(c *RequestContext) ResponseData {
 	baseData := getBaseData(c)
 	baseData.Title = "Create New Thread"
@@ -543,15 +556,11 @@ func ForumNewThread(c *RequestContext) ResponseData {
 	}
 
 	var res ResponseData
-	err := res.WriteTemplate("editor.html", editorData{
+	res.MustWriteTemplate("editor.html", editorData{
 		BaseData:    baseData,
 		SubmitUrl:   hmnurl.BuildForumNewThread(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), true),
 		SubmitLabel: "Post New Thread",
 	}, c.Perf)
-	if err != nil {
-		panic(err)
-	}
-
 	return res
 }
 
@@ -581,17 +590,6 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		sticky = true
 	}
 
-	parsed := parsing.ParsePostInput(unparsed, parsing.RealMarkdown)
-	now := time.Now()
-	ip := net.ParseIP(c.Req.RemoteAddr)
-
-	const previewMaxLength = 100
-	parsedPlaintext := parsing.ParsePostInput(unparsed, parsing.PlaintextMarkdown)
-	preview := parsedPlaintext
-	if len(preview) > previewMaxLength-1 {
-		preview = preview[:previewMaxLength-1] + "…"
-	}
-
 	// Create thread
 	var threadId int
 	err = tx.QueryRow(c.Context(),
@@ -610,58 +608,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		panic(oops.New(err, "failed to create thread"))
 	}
 
-	// Create post
-	var postId int
-	err = tx.QueryRow(c.Context(),
-		`
-		INSERT INTO handmade_post (postdate, category_id, thread_id, preview, current_id, author_id, category_kind, project_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id
-		`,
-		now,
-		currentCatId,
-		threadId,
-		preview,
-		-1,
-		c.CurrentUser.ID,
-		models.CatKindForum,
-		c.CurrentProject.ID,
-	).Scan(&postId)
-	if err != nil {
-		panic(oops.New(err, "failed to create post"))
-	}
-
-	// Create post version
-	var versionId int
-	err = tx.QueryRow(c.Context(),
-		`
-		INSERT INTO handmade_postversion (post_id, text_raw, text_parsed, ip, date)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
-		`,
-		postId,
-		unparsed,
-		parsed,
-		ip,
-		now,
-	).Scan(&versionId)
-	if err != nil {
-		panic(oops.New(err, "failed to create post version"))
-	}
-
-	// Update post with version id
-	_, err = tx.Exec(c.Context(),
-		`
-		UPDATE handmade_post
-		SET current_id = $1
-		WHERE id = $2
-		`,
-		versionId,
-		postId,
-	)
-	if err != nil {
-		panic(oops.New(err, "failed to set current post version"))
-	}
+	postId, _ := createNewForumPostAndVersion(c.Context(), tx, currentCatId, threadId, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host, nil)
 
 	// Update thread with post id
 	_, err = tx.Exec(c.Context(),
@@ -686,6 +633,550 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 
 	newThreadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), threadId, title, 1)
 	return c.Redirect(newThreadUrl, http.StatusSeeOther)
+}
+
+func ForumPostReply(c *RequestContext) ResponseData {
+	// TODO(compression): This logic for fetching posts by thread id / post id is gonna
+	// show up in a lot of places. It's used multiple times for forums, and also for blogs.
+	// Consider compressing this later.
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	currentCatId, valid := validateSubforums(lineageBuilder, c.CurrentProject, c.PathParams["cats"])
+	if !valid {
+		return FourOhFour(c)
+	}
+
+	requestedThreadId, err := strconv.Atoi(c.PathParams["threadid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	requestedPostId, err := strconv.Atoi(c.PathParams["postid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	c.Perf.StartBlock("SQL", "Fetch post to reply to")
+	// TODO: Scope this down to just what you need
+	type postQuery struct {
+		Thread         models.Thread      `db:"thread"`
+		Post           models.Post        `db:"post"`
+		CurrentVersion models.PostVersion `db:"ver"`
+		Author         *models.User       `db:"author"`
+		Editor         *models.User       `db:"editor"`
+	}
+	postQueryResult, err := db.QueryOne(c.Context(), c.Conn, postQuery{},
+		`
+		SELECT $columns
+		FROM
+			handmade_thread AS thread
+			JOIN handmade_post AS post ON post.thread_id = thread.id
+			JOIN handmade_postversion AS ver ON post.current_id = ver.id
+			LEFT JOIN auth_user AS author ON post.author_id = author.id
+			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
+		WHERE
+			post.category_id = $1
+			AND post.thread_id = $2
+			AND post.id = $3
+			AND NOT post.deleted
+		ORDER BY postdate
+		`,
+		currentCatId,
+		requestedThreadId,
+		requestedPostId,
+	)
+	if err != nil {
+		if errors.Is(err, db.ErrNoMatchingRows) {
+			return FourOhFour(c)
+		} else {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch reply post"))
+		}
+	}
+	result := postQueryResult.(*postQuery)
+
+	baseData := getBaseData(c)
+	baseData.Title = fmt.Sprintf("Replying to \"%s\" | %s", result.Thread.Title, *categoryTree[currentCatId].Name)
+	baseData.MathjaxEnabled = true
+	// TODO(ben): Set breadcrumbs
+
+	templatePost := templates.PostToTemplate(&result.Post, result.Author, c.Theme)
+	templatePost.AddContentVersion(result.CurrentVersion, result.Editor)
+
+	var res ResponseData
+	res.MustWriteTemplate("editor.html", editorData{
+		BaseData:    baseData,
+		SubmitUrl:   hmnurl.BuildForumPostReply(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), requestedThreadId, requestedPostId),
+		SubmitLabel: "Submit Reply",
+
+		Title:          "Replying to post",
+		PostReplyingTo: &templatePost,
+	}, c.Perf)
+	return res
+}
+
+func ForumPostReplySubmit(c *RequestContext) ResponseData {
+	tx, err := c.Conn.Begin(c.Context())
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback(c.Context())
+
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	currentCatId, valid := validateSubforums(lineageBuilder, c.CurrentProject, c.PathParams["cats"])
+	if !valid {
+		return FourOhFour(c)
+	}
+
+	threadId, err := strconv.Atoi(c.PathParams["threadid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	postId, err := strconv.Atoi(c.PathParams["postid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	c.Req.ParseForm()
+
+	unparsed := c.Req.Form.Get("body")
+
+	newPostId, _ := createNewForumPostAndVersion(c.Context(), tx, currentCatId, threadId, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host, &postId)
+
+	err = tx.Commit(c.Context())
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to forum post"))
+	}
+
+	newPostUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), threadId, newPostId)
+	return c.Redirect(newPostUrl, http.StatusSeeOther)
+}
+
+func ForumPostEdit(c *RequestContext) ResponseData {
+	// TODO(compression): This logic for fetching posts by thread id / post id is gonna
+	// show up in a lot of places. It's used multiple times for forums, and also for blogs.
+	// Consider compressing this later.
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	currentCatId, valid := validateSubforums(lineageBuilder, c.CurrentProject, c.PathParams["cats"])
+	if !valid {
+		return FourOhFour(c)
+	}
+
+	requestedThreadId, err := strconv.Atoi(c.PathParams["threadid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	requestedPostId, err := strconv.Atoi(c.PathParams["postid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	c.Perf.StartBlock("SQL", "Fetch post to edit")
+	// TODO: Scope this down to just what you need
+	type postQuery struct {
+		Thread         models.Thread      `db:"thread"`
+		Post           models.Post        `db:"post"`
+		CurrentVersion models.PostVersion `db:"ver"`
+		Author         *models.User       `db:"author"`
+		Editor         *models.User       `db:"editor"`
+	}
+	postQueryResult, err := db.QueryOne(c.Context(), c.Conn, postQuery{},
+		`
+		SELECT $columns
+		FROM
+			handmade_thread AS thread
+			JOIN handmade_post AS post ON post.thread_id = thread.id
+			JOIN handmade_postversion AS ver ON post.current_id = ver.id
+			LEFT JOIN auth_user AS author ON post.author_id = author.id
+			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
+		WHERE
+			post.category_id = $1
+			AND post.thread_id = $2
+			AND post.id = $3
+			AND NOT post.deleted
+		ORDER BY postdate
+		`,
+		currentCatId,
+		requestedThreadId,
+		requestedPostId,
+	)
+	if err != nil {
+		if errors.Is(err, db.ErrNoMatchingRows) {
+			return FourOhFour(c)
+		} else {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch reply post"))
+		}
+	}
+	result := postQueryResult.(*postQuery)
+
+	// Ensure that the user is permitted to edit the post
+	canEdit, err := canEditPost(c.Context(), c.Conn, requestedPostId, *c.CurrentUser)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, err)
+	} else if !canEdit {
+		return FourOhFour(c)
+	}
+
+	baseData := getBaseData(c)
+	baseData.Title = fmt.Sprintf("Editing \"%s\" | %s", result.Thread.Title, *categoryTree[currentCatId].Name)
+	baseData.MathjaxEnabled = true
+	// TODO(ben): Set breadcrumbs
+
+	templatePost := templates.PostToTemplate(&result.Post, result.Author, c.Theme)
+	templatePost.AddContentVersion(result.CurrentVersion, result.Editor)
+
+	var res ResponseData
+	res.MustWriteTemplate("editor.html", editorData{
+		BaseData:    baseData,
+		SubmitUrl:   hmnurl.BuildForumPostEdit(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), requestedThreadId, requestedPostId),
+		Title:       result.Thread.Title,
+		SubmitLabel: "Submit Edited Post",
+
+		IsEditing:           true,
+		EditInitialContents: result.CurrentVersion.TextRaw,
+	}, c.Perf)
+	return res
+}
+
+func ForumPostEditSubmit(c *RequestContext) ResponseData {
+	tx, err := c.Conn.Begin(c.Context())
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback(c.Context())
+
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	currentCatId, valid := validateSubforums(lineageBuilder, c.CurrentProject, c.PathParams["cats"])
+	if !valid {
+		return FourOhFour(c)
+	}
+
+	threadId, err := strconv.Atoi(c.PathParams["threadid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	postId, err := strconv.Atoi(c.PathParams["postid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	// Ensure that the user is permitted to edit the post
+	canEdit, err := canEditPost(c.Context(), c.Conn, postId, *c.CurrentUser)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, err)
+	} else if !canEdit {
+		return FourOhFour(c)
+	}
+
+	c.Req.ParseForm()
+	unparsed := c.Req.Form.Get("body")
+	editReason := c.Req.Form.Get("editreason")
+
+	createForumPostVersion(c.Context(), tx, postId, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
+
+	err = tx.Commit(c.Context())
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit forum post"))
+	}
+
+	postUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), threadId, postId)
+	return c.Redirect(postUrl, http.StatusSeeOther)
+}
+
+func ForumPostDelete(c *RequestContext) ResponseData {
+	// TODO(compression): This logic for fetching posts by thread id / post id is gonna
+	// show up in a lot of places. It's used multiple times for forums, and also for blogs.
+	// Consider compressing this later.
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	currentCatId, valid := validateSubforums(lineageBuilder, c.CurrentProject, c.PathParams["cats"])
+	if !valid {
+		return FourOhFour(c)
+	}
+
+	requestedThreadId, err := strconv.Atoi(c.PathParams["threadid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	requestedPostId, err := strconv.Atoi(c.PathParams["postid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	// Ensure that the user is allowed to delete this post
+	canEdit, err := canEditPost(c.Context(), c.Conn, requestedPostId, *c.CurrentUser)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, err)
+	} else if !canEdit {
+		return FourOhFour(c)
+	}
+
+	c.Perf.StartBlock("SQL", "Fetch post to delete")
+	type postQuery struct {
+		Thread         models.Thread      `db:"thread"`
+		Post           models.Post        `db:"post"`
+		CurrentVersion models.PostVersion `db:"ver"`
+		Author         *models.User       `db:"author"`
+		Editor         *models.User       `db:"editor"`
+	}
+	postQueryResult, err := db.QueryOne(c.Context(), c.Conn, postQuery{},
+		`
+		SELECT $columns
+		FROM
+			handmade_thread AS thread
+			JOIN handmade_post AS post ON post.thread_id = thread.id
+			JOIN handmade_postversion AS ver ON post.current_id = ver.id
+			LEFT JOIN auth_user AS author ON post.author_id = author.id
+			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
+		WHERE
+			post.category_id = $1
+			AND post.thread_id = $2
+			AND post.id = $3
+			AND NOT post.deleted
+		ORDER BY postdate
+		`,
+		currentCatId,
+		requestedThreadId,
+		requestedPostId,
+	)
+	if err != nil {
+		if errors.Is(err, db.ErrNoMatchingRows) {
+			return FourOhFour(c)
+		} else {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post to delete"))
+		}
+	}
+	result := postQueryResult.(*postQuery)
+
+	baseData := getBaseData(c)
+	baseData.Title = fmt.Sprintf("Deleting post in \"%s\" | %s", result.Thread.Title, *categoryTree[currentCatId].Name)
+	baseData.MathjaxEnabled = true
+	// TODO(ben): Set breadcrumbs
+
+	templatePost := templates.PostToTemplate(&result.Post, result.Author, c.Theme)
+	templatePost.AddContentVersion(result.CurrentVersion, result.Editor)
+
+	type forumPostDeleteData struct {
+		templates.BaseData
+		Post      templates.Post
+		SubmitUrl string
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("forum_post_delete.html", forumPostDeleteData{
+		BaseData:  baseData,
+		SubmitUrl: hmnurl.BuildForumPostDelete(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), requestedThreadId, requestedPostId),
+		Post:      templatePost,
+	}, c.Perf)
+	return res
+}
+
+func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
+	// TODO(compression): This logic for fetching posts by thread id / post id is gonna
+	// show up in a lot of places. It's used multiple times for forums, and also for blogs.
+	// Consider compressing this later.
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	currentCatId, valid := validateSubforums(lineageBuilder, c.CurrentProject, c.PathParams["cats"])
+	if !valid {
+		return FourOhFour(c)
+	}
+
+	threadId, err := strconv.Atoi(c.PathParams["threadid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	postId, err := strconv.Atoi(c.PathParams["postid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	// Ensure that the user is allowed to delete this post
+	canEdit, err := canEditPost(c.Context(), c.Conn, postId, *c.CurrentUser)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, err)
+	} else if !canEdit {
+		return FourOhFour(c)
+	}
+
+	tx, err := c.Conn.Begin(c.Context())
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback(c.Context())
+
+	isFirstPost, err := db.QueryBool(c.Context(), tx,
+		`
+		SELECT thread.first_id = $1
+		FROM
+			handmade_thread AS thread
+		WHERE
+			thread.id = $2
+		`,
+		postId,
+		threadId,
+	)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check if post was the first post in the thread"))
+	}
+
+	if isFirstPost {
+		// Just delete the whole thread and all its posts.
+		_, err = tx.Exec(c.Context(),
+			`
+			UPDATE handmade_thread
+			SET deleted = TRUE
+			WHERE id = $1
+			`,
+			threadId,
+		)
+		_, err = tx.Exec(c.Context(),
+			`
+			UPDATE handmade_post
+			SET deleted = TRUE
+			WHERE thread_id = $1
+			`,
+			threadId,
+		)
+
+		err = tx.Commit(c.Context())
+		if err != nil {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete thread and posts when deleting the first post"))
+		}
+
+		forumUrl := hmnurl.BuildForumCategory(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), 1)
+		return c.Redirect(forumUrl, http.StatusSeeOther)
+	}
+
+	_, err = tx.Exec(c.Context(),
+		`
+		UPDATE handmade_post
+		SET deleted = TRUE
+		WHERE
+			id = $1
+		`,
+		postId,
+	)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to mark forum post as deleted"))
+	}
+
+	err = fixThreadPostIds(c.Context(), tx, threadId)
+	if err != nil {
+		if errors.Is(err, errThreadEmpty) {
+			panic("it shouldn't be possible to delete the last remaining post in a thread, without it also being the first post in the thread and thus resulting in the whole thread getting deleted earlier")
+		} else {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fix up thread post ids"))
+		}
+	}
+
+	err = tx.Commit(c.Context())
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete post"))
+	}
+
+	threadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(currentCatId), threadId, "", 1) // TODO: Go to the last page of the thread? Or the post before the post we just deleted?
+	return c.Redirect(threadUrl, http.StatusSeeOther)
+}
+
+func createNewForumPostAndVersion(ctx context.Context, tx pgx.Tx, catId, threadId, userId, projectId int, unparsedContent string, ipString string, replyId *int) (postId, versionId int) {
+	// Create post
+	err := tx.QueryRow(ctx,
+		`
+		INSERT INTO handmade_post (postdate, category_id, thread_id, current_id, author_id, category_kind, project_id, reply_id, preview)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING id
+		`,
+		time.Now(),
+		catId,
+		threadId,
+		-1,
+		userId,
+		models.CatKindForum,
+		projectId,
+		replyId,
+		"", // empty preview, will be updated later
+	).Scan(&postId)
+	if err != nil {
+		panic(oops.New(err, "failed to create post"))
+	}
+
+	versionId = createForumPostVersion(ctx, tx, postId, unparsedContent, ipString, "", nil)
+
+	return
+}
+
+func createForumPostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedContent string, ipString string, editReason string, editorId *int) (versionId int) {
+	parsed := parsing.ParsePostInput(unparsedContent, parsing.RealMarkdown)
+	ip := net.ParseIP(ipString)
+
+	const previewMaxLength = 100
+	parsedPlaintext := parsing.ParsePostInput(unparsedContent, parsing.PlaintextMarkdown)
+	preview := parsedPlaintext
+	if len(preview) > previewMaxLength-1 {
+		preview = preview[:previewMaxLength-1] + "…"
+	}
+
+	// Create post version
+	err := tx.QueryRow(ctx,
+		`
+		INSERT INTO handmade_postversion (post_id, text_raw, text_parsed, ip, date, edit_reason, editor_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id
+		`,
+		postId,
+		unparsedContent,
+		parsed,
+		ip,
+		time.Now(),
+		editReason,
+		editorId,
+	).Scan(&versionId)
+	if err != nil {
+		panic(oops.New(err, "failed to create post version"))
+	}
+
+	// Update post with version id and preview
+	_, err = tx.Exec(ctx,
+		`
+		UPDATE handmade_post
+		SET current_id = $1, preview = $2
+		WHERE id = $3
+		`,
+		versionId,
+		preview,
+		postId,
+	)
+	if err != nil {
+		panic(oops.New(err, "failed to set current post version and preview"))
+	}
+
+	return
 }
 
 func validateSubforums(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, catPath string) (int, bool) {
@@ -720,4 +1211,93 @@ func validateSubforums(lineageBuilder *models.CategoryLineageBuilder, project *m
 		}
 	}
 	return subforumCatId, valid
+}
+
+func canEditPost(ctx context.Context, conn *pgxpool.Pool, postId int, currentUser models.User) (bool, error) {
+	if currentUser.IsStaff {
+		return true, nil
+	}
+
+	type postResult struct {
+		AuthorID *int `db:"author.id"`
+	}
+	iresult, err := db.QueryOne(ctx, conn, postResult{},
+		`
+		SELECT $columns
+		FROM
+			handmade_post AS post
+			LEFT JOIN auth_user AS author ON post.author_id = author.id
+		WHERE
+			post.id = $1
+			AND NOT post.deleted
+		ORDER BY postdate
+		`,
+		postId,
+	)
+	if err != nil {
+		if errors.Is(err, db.ErrNoMatchingRows) {
+			return false, nil
+		} else {
+			return false, oops.New(err, "failed to get author of post when checking permissions")
+		}
+	}
+	result := iresult.(*postResult)
+
+	return result.AuthorID != nil && *result.AuthorID == currentUser.ID, nil
+}
+
+var errThreadEmpty = errors.New("thread contained no non-deleted posts")
+
+/*
+Ensures that the first_id and last_id on the thread are still good.
+
+Returns errThreadEmpty if the thread contains no visible posts any more.
+You should probably mark the thread as deleted in this case.
+*/
+func fixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
+	postsIter, err := db.Query(ctx, tx, models.Post{},
+		`
+		SELECT $columns
+		FROM handmade_post
+		WHERE
+			thread_id = $1
+			AND NOT deleted
+		`,
+		threadId,
+	)
+	if err != nil {
+		return oops.New(err, "failed to fetch posts when fixing up thread")
+	}
+
+	var firstPost, lastPost *models.Post
+	for _, ipost := range postsIter.ToSlice() {
+		post := ipost.(*models.Post)
+
+		if firstPost == nil || post.PostDate.Before(firstPost.PostDate) {
+			firstPost = post
+		}
+		if lastPost == nil || post.PostDate.After(lastPost.PostDate) {
+			lastPost = post
+		}
+	}
+
+	if firstPost == nil || lastPost == nil {
+		return errThreadEmpty
+	}
+
+	_, err = tx.Exec(ctx,
+		`
+		UPDATE handmade_thread
+		SET first_id = $1, last_id = $2
+		WHERE id = $3
+		`,
+		firstPost.ID,
+		lastPost.ID,
+		threadId,
+	)
+	if err != nil {
+		return oops.New(err, "failed to update thread first/last ids")
+	}
+
+	return nil
 }

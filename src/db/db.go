@@ -54,6 +54,11 @@ func typeIsQueryable(t reflect.Type) bool {
 	return false
 }
 
+// This interface should match both a direct pgx connection or a pgx transaction.
+type ConnOrTx interface {
+	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+}
+
 var connInfo = pgtype.NewConnInfo()
 
 func NewConn() *pgx.Conn {
@@ -211,7 +216,7 @@ func followPathThroughStructs(structPtrVal reflect.Value, path []int) (reflect.V
 	return val, field
 }
 
-func Query(ctx context.Context, conn *pgxpool.Pool, destExample interface{}, query string, args ...interface{}) (*StructQueryIterator, error) {
+func Query(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) (*StructQueryIterator, error) {
 	destType := reflect.TypeOf(destExample)
 	columnNames, fieldPaths, err := getColumnNamesAndPaths(destType, nil, "")
 	if err != nil {
@@ -279,7 +284,7 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix strin
 
 var ErrNoMatchingRows = errors.New("no matching rows")
 
-func QueryOne(ctx context.Context, conn *pgxpool.Pool, destExample interface{}, query string, args ...interface{}) (interface{}, error) {
+func QueryOne(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) (interface{}, error) {
 	rows, err := Query(ctx, conn, destExample, query, args...)
 	if err != nil {
 		return nil, err
@@ -294,7 +299,7 @@ func QueryOne(ctx context.Context, conn *pgxpool.Pool, destExample interface{}, 
 	return result, nil
 }
 
-func QueryScalar(ctx context.Context, conn *pgxpool.Pool, query string, args ...interface{}) (interface{}, error) {
+func QueryScalar(ctx context.Context, conn ConnOrTx, query string, args ...interface{}) (interface{}, error) {
 	rows, err := conn.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -317,7 +322,7 @@ func QueryScalar(ctx context.Context, conn *pgxpool.Pool, query string, args ...
 	return nil, ErrNoMatchingRows
 }
 
-func QueryInt(ctx context.Context, conn *pgxpool.Pool, query string, args ...interface{}) (int, error) {
+func QueryInt(ctx context.Context, conn ConnOrTx, query string, args ...interface{}) (int, error) {
 	result, err := QueryScalar(ctx, conn, query, args...)
 	if err != nil {
 		return 0, err
@@ -332,5 +337,19 @@ func QueryInt(ctx context.Context, conn *pgxpool.Pool, query string, args ...int
 		return int(r), nil
 	default:
 		return 0, oops.New(nil, "QueryInt got a non-int result: %v", result)
+	}
+}
+
+func QueryBool(ctx context.Context, conn ConnOrTx, query string, args ...interface{}) (bool, error) {
+	result, err := QueryScalar(ctx, conn, query, args...)
+	if err != nil {
+		return false, err
+	}
+
+	switch r := result.(type) {
+	case bool:
+		return r, nil
+	default:
+		return false, oops.New(nil, "QueryBool got a non-bool result: %v", result)
 	}
 }

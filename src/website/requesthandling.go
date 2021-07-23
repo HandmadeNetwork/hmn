@@ -254,6 +254,13 @@ func (rd *ResponseData) WriteTemplate(name string, data interface{}, rp *perf.Re
 	return template.Execute(rd, data)
 }
 
+func (rd *ResponseData) MustWriteTemplate(name string, data interface{}, rp *perf.RequestPerf) {
+	err := rd.WriteTemplate(name, data, rp)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func ErrorResponse(status int, errs ...error) ResponseData {
 	return ResponseData{
 		StatusCode: status,

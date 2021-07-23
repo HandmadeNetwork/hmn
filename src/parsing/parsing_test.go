@@ -63,58 +63,28 @@ func main() {
 	})
 }
 
-const allBBCode = `
-[b]bold[/b]
+func TestSharlock(t *testing.T) {
+	t.Skipf("This doesn't pass right now because parts of Sharlock's original source read as indented code blocks, or depend on different line break behavior.")
+	t.Run("sanity check", func(t *testing.T) {
+		result := ParsePostInput(sharlock, RealMarkdown)
 
-[i]italic[/i]
-
-[u]underline[/u]
-
-[h1]heading 1[/h1]
-
-[h2]heading 2[/h2]
-
-[h3]heading 3[/h3]
-
-[m]monospace[/m]
-
-[ol]
-  [li]ordered lists[/li]
-[/ol]
-
-[ul]
-  [li]unordered list[/li]
-[/ul]
-
-[url]https://handmade.network/[/url]
-[url=https://handmade.network/]Handmade Network[/url]
-
-[img=https://handmade.network/static/media/members/avatars/delix.jpeg]Ryan[/img]
-
-[quote]quotes[/quote]
-[quote=delix]Some quote[/quote]
-
-[code]
-Code
-[/code]
-
-[code language=go]
-func main() {
-  fmt.Println("Hello, world!")
+		for _, line := range strings.Split(result, "\n") {
+			assert.NotContains(t, line, "[b]")
+			assert.NotContains(t, line, "[/b]")
+			assert.NotContains(t, line, "[ul]")
+			assert.NotContains(t, line, "[/ul]")
+			assert.NotContains(t, line, "[li]")
+			assert.NotContains(t, line, "[/li]")
+			assert.NotContains(t, line, "[img]")
+			assert.NotContains(t, line, "[/img]")
+			assert.NotContains(t, line, "[code")
+			assert.NotContains(t, line, "[/code]")
+		}
+	})
 }
-[/code]
 
-[spoiler]spoilers[/spoiler]
-
-[table]
-[tr]
-[th]Heading 1[/th] [th]Heading 2[/th]
-[/tr]
-[tr]
-[td]Body 1[/td] [td]Body 2[/td]
-[/tr]
-[/table]
-
-[youtube]https://www.youtube.com/watch?v=0J8G9qNT7gQ[/youtube]
-[youtube]https://youtu.be/0J8G9qNT7gQ[/youtube]
-`
+func BenchmarkSharlock(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ParsePostInput(sharlock, RealMarkdown)
+	}
+}

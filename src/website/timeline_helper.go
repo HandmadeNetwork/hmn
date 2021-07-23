@@ -42,7 +42,7 @@ var TimelineItemClassMap = map[templates.TimelineType]string{
 var TimelineTypeTitleMap = map[templates.TimelineType]string{
 	templates.TimelineTypeUnknown: "",
 
-	templates.TimelineTypeForumThread: "New forums thread",
+	templates.TimelineTypeForumThread: "New forum thread",
 	templates.TimelineTypeForumReply:  "Forum reply",
 
 	templates.TimelineTypeBlogPost:    "New blog post",
