@@ -142,13 +142,11 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 
 	title := c.Req.Form.Get("title")
 	if len(strings.TrimSpace(title)) == 0 {
-		// TODO(asaf): Report this back to the user
-		return ErrorResponse(http.StatusInternalServerError, oops.New(nil, "Missing title"))
+		return RejectRequest(c, "Podcast title is empty")
 	}
 	description := c.Req.Form.Get("description")
 	if len(strings.TrimSpace(description)) == 0 {
-		// TODO(asaf): Report this back to the user
-		return ErrorResponse(http.StatusInternalServerError, oops.New(nil, "Missing description"))
+		return RejectRequest(c, "Podcast description is empty")
 	}
 	podcastImage, header, err := c.Req.FormFile("podcast_image")
 	imageFilename := ""
@@ -159,21 +157,18 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	}
 	if header != nil {
 		if header.Size > maxFileSize {
-			// TODO(asaf): Report this back to the user
-			return ErrorResponse(http.StatusInternalServerError, oops.New(nil, "Filesize too big"))
+			return RejectRequest(c, fmt.Sprintf("Image filesize too big. Max size: %d bytes", maxFileSize))
 		} else {
 			c.Perf.StartBlock("PODCAST", "Decoding image")
 			config, format, err := image.DecodeConfig(podcastImage)
 			c.Perf.EndBlock()
 			if err != nil {
-				// TODO(asaf): Report this back to the user
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Can't parse podcast logo"))
+				return RejectRequest(c, "Image type not supported")
 			}
 			imageWidth = config.Width
 			imageHeight = config.Height
 			if imageWidth == 0 || imageHeight == 0 {
-				// TODO(asaf): Report this back to the user
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Invalid image size"))
+				return RejectRequest(c, "Image has zero size")
 			}
 
 			imageFilename = fmt.Sprintf("podcast/%s/logo%d.%s", c.CurrentProject.Slug, time.Now().UTC().Unix(), format)
@@ -435,11 +430,17 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 
 	c.Req.ParseForm()
 	title := c.Req.Form.Get("title")
+	if len(strings.TrimSpace(title)) == 0 {
+		return RejectRequest(c, "Episode title is empty")
+	}
 	description := c.Req.Form.Get("description")
+	if len(strings.TrimSpace(description)) == 0 {
+		return RejectRequest(c, "Episode description is empty")
+	}
 	episodeNumberStr := c.Req.Form.Get("episode_number")
 	episodeNumber, err := strconv.Atoi(episodeNumberStr)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to parse episode number"))
+		return RejectRequest(c, "Episode number can't be parsed")
 	}
 	episodeFile := c.Req.Form.Get("episode_file")
 	found = false
@@ -451,7 +452,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	}
 
 	if !found {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "User-provided episode filename doesn't match existing files"))
+		return RejectRequest(c, "Requested episode file not found")
 	}
 
 	c.Perf.StartBlock("MP3", "Parsing mp3 file for duration")

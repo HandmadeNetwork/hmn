@@ -318,6 +318,23 @@ func FourOhFour(c *RequestContext) ResponseData {
 	return res
 }
 
+type RejectData struct {
+	templates.BaseData
+	RejectReason string
+}
+
+func RejectRequest(c *RequestContext, reason string) ResponseData {
+	var res ResponseData
+	err := res.WriteTemplate("reject.html", RejectData{
+		BaseData:     getBaseData(c),
+		RejectReason: reason,
+	}, c.Perf)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to render reject template"))
+	}
+	return res
+}
+
 func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 	c.Perf.StartBlock("MIDDLEWARE", "Load common website data")
 	defer c.Perf.EndBlock()
