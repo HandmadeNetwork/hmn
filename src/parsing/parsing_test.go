@@ -10,14 +10,14 @@ import (
 func TestMarkdown(t *testing.T) {
 	t.Run("fenced code blocks", func(t *testing.T) {
 		t.Run("multiple lines", func(t *testing.T) {
-			html := ParsePostInput("```\nmultiple lines\n\tof code\n```", RealMarkdown)
+			html := ParseMarkdown("```\nmultiple lines\n\tof code\n```", RealMarkdown)
 			t.Log(html)
 			assert.Equal(t, 1, strings.Count(html, "<pre"))
 			assert.Contains(t, html, `class="hmn-code"`)
 			assert.Contains(t, html, "multiple lines\n\tof code")
 		})
 		t.Run("multiple lines with language", func(t *testing.T) {
-			html := ParsePostInput("```go\nfunc main() {\n\tfmt.Println(\"Hello, world!\")\n}\n```", RealMarkdown)
+			html := ParseMarkdown("```go\nfunc main() {\n\tfmt.Println(\"Hello, world!\")\n}\n```", RealMarkdown)
 			t.Log(html)
 			assert.Equal(t, 1, strings.Count(html, "<pre"))
 			assert.Contains(t, html, `class="hmn-code"`)
@@ -30,7 +30,7 @@ func TestMarkdown(t *testing.T) {
 func TestBBCode(t *testing.T) {
 	t.Run("[code]", func(t *testing.T) {
 		t.Run("one line", func(t *testing.T) {
-			html := ParsePostInput("[code]Just some code, you know?[/code]", RealMarkdown)
+			html := ParseMarkdown("[code]Just some code, you know?[/code]", RealMarkdown)
 			t.Log(html)
 			assert.Equal(t, 1, strings.Count(html, "<pre"))
 			assert.Contains(t, html, `class="hmn-code"`)
@@ -41,7 +41,7 @@ func TestBBCode(t *testing.T) {
 Multiline code
 	with an indent
 [/code]`
-			html := ParsePostInput(bbcode, RealMarkdown)
+			html := ParseMarkdown(bbcode, RealMarkdown)
 			t.Log(html)
 			assert.Equal(t, 1, strings.Count(html, "<pre"))
 			assert.Contains(t, html, `class="hmn-code"`)
@@ -54,7 +54,7 @@ func main() {
 	fmt.Println("Hello, world!")
 }
 [/code]`
-			html := ParsePostInput(bbcode, RealMarkdown)
+			html := ParseMarkdown(bbcode, RealMarkdown)
 			t.Log(html)
 			assert.Equal(t, 1, strings.Count(html, "<pre"))
 			assert.Contains(t, html, "Println")
@@ -66,7 +66,7 @@ func main() {
 func TestSharlock(t *testing.T) {
 	t.Skipf("This doesn't pass right now because parts of Sharlock's original source read as indented code blocks, or depend on different line break behavior.")
 	t.Run("sanity check", func(t *testing.T) {
-		result := ParsePostInput(sharlock, RealMarkdown)
+		result := ParseMarkdown(sharlock, RealMarkdown)
 
 		for _, line := range strings.Split(result, "\n") {
 			assert.NotContains(t, line, "[b]")
@@ -85,6 +85,6 @@ func TestSharlock(t *testing.T) {
 
 func BenchmarkSharlock(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		ParsePostInput(sharlock, RealMarkdown)
+		ParseMarkdown(sharlock, RealMarkdown)
 	}
 }

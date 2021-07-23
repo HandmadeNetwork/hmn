@@ -279,7 +279,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 	res.MustWriteTemplate("forum_category.html", forumCategoryData{
 		BaseData:     baseData,
 		NewThreadUrl: hmnurl.BuildForumNewThread(c.CurrentProject.Slug, currentSubforumSlugs, false),
-		MarkReadUrl:  hmnurl.BuildMarkRead(currentCatId),
+		MarkReadUrl:  hmnurl.BuildForumCategoryMarkRead(currentCatId),
 		Threads:      threads,
 		Pagination: templates.Pagination{
 			Current: page,
@@ -293,6 +293,103 @@ func ForumCategory(c *RequestContext) ResponseData {
 		Subcategories: subcats,
 	}, c.Perf)
 	return res
+}
+
+func ForumCategoryMarkRead(c *RequestContext) ResponseData {
+	c.Perf.StartBlock("SQL", "Fetch category tree")
+	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.EndBlock()
+
+	catId, err := strconv.Atoi(c.PathParams["catid"])
+	if err != nil {
+		return FourOhFour(c)
+	}
+
+	tx, err := c.Conn.Begin(c.Context())
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback(c.Context())
+
+	// TODO(ben): Rework this logic when we rework blogs, threads, etc.
+	catIds := []int{catId}
+	if catId == 0 {
+		// Select all categories
+		type catIdResult struct {
+			CatID int `db:"id"`
+		}
+		cats, err := db.Query(c.Context(), tx, catIdResult{},
+			`
+			SELECT $columns
+			FROM handmade_category
+			WHERE kind = ANY ($1)
+			`,
+			[]models.CategoryKind{models.CatKindBlog, models.CatKindForum, models.CatKindWiki, models.CatKindLibraryResource},
+		)
+		if err != nil {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch category IDs for CLRI"))
+		}
+
+		catIdResults := cats.ToSlice()
+		catIds = make([]int, len(catIdResults))
+		for i, res := range catIdResults {
+			catIds[i] = res.(*catIdResult).CatID
+		}
+	}
+
+	c.Perf.StartBlock("SQL", "Update CLRIs")
+	_, err = tx.Exec(c.Context(),
+		`
+		INSERT INTO handmade_categorylastreadinfo (category_id, user_id, lastread)
+			SELECT id, $2, $3
+			FROM handmade_category
+			WHERE id = ANY ($1)
+		ON CONFLICT (category_id, user_id) DO UPDATE
+			SET lastread = EXCLUDED.lastread
+		`,
+		catIds,
+		c.CurrentUser.ID,
+		time.Now(),
+	)
+	c.Perf.EndBlock()
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update forum clris"))
+	}
+
+	c.Perf.StartBlock("SQL", "Delete TLRIs")
+	_, err = tx.Exec(c.Context(),
+		`
+		DELETE FROM handmade_threadlastreadinfo
+		WHERE
+			user_id = $2
+			AND thread_id IN (
+				SELECT id
+				FROM handmade_thread
+				WHERE
+					category_id = ANY ($1)
+			)
+		`,
+		catIds,
+		c.CurrentUser.ID,
+	)
+	c.Perf.EndBlock()
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete unnecessary tlris"))
+	}
+
+	err = tx.Commit(c.Context())
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit CLRI/TLRI updates"))
+	}
+
+	var redirUrl string
+	if catId == 0 {
+		redirUrl = hmnurl.BuildFeed()
+	} else {
+		redirUrl = hmnurl.BuildForumCategory(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(catId), 1)
+	}
+	return c.Redirect(redirUrl, http.StatusSeeOther)
 }
 
 type forumThreadData struct {
@@ -433,6 +530,24 @@ func ForumThread(c *RequestContext) ResponseData {
 		}
 
 		posts = append(posts, post)
+	}
+
+	// Update thread last read info
+	c.Perf.StartBlock("SQL", "Update TLRI")
+	_, err = c.Conn.Exec(c.Context(),
+		`
+		INSERT INTO handmade_threadlastreadinfo (thread_id, user_id, lastread)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (thread_id, user_id) DO UPDATE
+			SET lastread = EXCLUDED.lastread
+		`,
+		threadId,
+		c.CurrentUser.ID,
+		time.Now(),
+	)
+	c.Perf.EndBlock()
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update forum tlri"))
 	}
 
 	baseData := getBaseData(c)
@@ -1132,11 +1247,11 @@ func createNewForumPostAndVersion(ctx context.Context, tx pgx.Tx, catId, threadI
 }
 
 func createForumPostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedContent string, ipString string, editReason string, editorId *int) (versionId int) {
-	parsed := parsing.ParsePostInput(unparsedContent, parsing.RealMarkdown)
+	parsed := parsing.ParseMarkdown(unparsedContent, parsing.RealMarkdown)
 	ip := net.ParseIP(ipString)
 
 	const previewMaxLength = 100
-	parsedPlaintext := parsing.ParsePostInput(unparsedContent, parsing.PlaintextMarkdown)
+	parsedPlaintext := parsing.ParseMarkdown(unparsedContent, parsing.PlaintextMarkdown)
 	preview := parsedPlaintext
 	if len(preview) > previewMaxLength-1 {
 		preview = preview[:previewMaxLength-1] + "…"

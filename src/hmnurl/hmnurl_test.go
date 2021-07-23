@@ -395,8 +395,8 @@ func TestPublic(t *testing.T) {
 	AssertRegexMatch(t, BuildUserFile("mylogo.png"), RegexPublic, nil)
 }
 
-func TestMarkRead(t *testing.T) {
-	AssertRegexMatch(t, BuildMarkRead(5), RegexMarkRead, map[string]string{"catid": "5"})
+func TestForumCategoryMarkRead(t *testing.T) {
+	AssertRegexMatch(t, BuildForumCategoryMarkRead(5), RegexForumCategoryMarkRead, map[string]string{"catid": "5"})
 }
 
 func AssertSubdomain(t *testing.T, fullUrl string, expectedSubdomain string) {

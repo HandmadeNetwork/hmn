@@ -25,7 +25,7 @@ var PlaintextMarkdown = goldmark.New(
 	goldmark.WithRenderer(plaintextRenderer{}),
 )
 
-func ParsePostInput(source string, md goldmark.Markdown) string {
+func ParseMarkdown(source string, md goldmark.Markdown) string {
 	var buf bytes.Buffer
 	if err := md.Convert([]byte(source), &buf); err != nil {
 		panic(err)

@@ -803,17 +803,17 @@ func BuildUserFile(filepath string) string {
 * Other
  */
 
-var RegexMarkRead = regexp.MustCompile(`^/_markread/(?P<catid>\d+)$`)
+var RegexForumCategoryMarkRead = regexp.MustCompile(`^/markread/(?P<catid>\d+)$`)
 
 // NOTE(asaf): categoryId == 0 means ALL CATEGORIES
-func BuildMarkRead(categoryId int) string {
+func BuildForumCategoryMarkRead(categoryId int) string {
 	defer CatchPanic()
 	if categoryId < 0 {
 		panic(oops.New(nil, "Invalid category ID (%d), must be >= 0", categoryId))
 	}
 
 	var builder strings.Builder
-	builder.WriteString("/_markread/")
+	builder.WriteString("/markread/")
 	builder.WriteString(strconv.Itoa(categoryId))
 
 	return Url(builder.String(), nil)
