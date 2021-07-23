@@ -147,6 +147,33 @@ type Link struct {
 	Icon string
 }
 
+type Podcast struct {
+	Title       string
+	Description string
+	Language    string
+	ImageUrl    string
+	Url         string
+
+	RSSUrl     string
+	AppleUrl   string
+	GoogleUrl  string
+	SpotifyUrl string
+}
+
+type PodcastEpisode struct {
+	GUID            string
+	Title           string
+	Description     string
+	DescriptionHtml template.HTML
+	EpisodeNumber   int
+	Url             string
+	ImageUrl        string
+	FileUrl         string
+	FileSize        int64
+	PublicationDate time.Time
+	Duration        int
+}
+
 type Notice struct {
 	Content template.HTML
 	Class   string

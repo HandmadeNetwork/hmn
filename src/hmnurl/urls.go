@@ -251,6 +251,56 @@ func BuildPodcast(projectSlug string) string {
 	return ProjectUrl("/podcast", nil, projectSlug)
 }
 
+var RegexPodcastEdit = regexp.MustCompile(`^/podcast/edit$`)
+
+func BuildPodcastEdit(projectSlug string) string {
+	defer CatchPanic()
+	return ProjectUrl("/podcast/edit", nil, projectSlug)
+}
+
+func BuildPodcastEditSuccess(projectSlug string) string {
+	defer CatchPanic()
+	return ProjectUrl("/podcast/edit", []Q{Q{"success", "true"}}, projectSlug)
+}
+
+var RegexPodcastEpisode = regexp.MustCompile(`^/podcast/ep/(?P<episodeid>[^/]+)$`)
+
+func BuildPodcastEpisode(projectSlug string, episodeGUID string) string {
+	defer CatchPanic()
+	return ProjectUrl(fmt.Sprintf("/podcast/ep/%s", episodeGUID), nil, projectSlug)
+}
+
+var RegexPodcastEpisodeNew = regexp.MustCompile(`^/podcast/ep/new$`)
+
+func BuildPodcastEpisodeNew(projectSlug string) string {
+	defer CatchPanic()
+	return ProjectUrl("/podcast/ep/new", nil, projectSlug)
+}
+
+var RegexPodcastEpisodeEdit = regexp.MustCompile(`^/podcast/ep/(?P<episodeid>[^/]+)/edit$`)
+
+func BuildPodcastEpisodeEdit(projectSlug string, episodeGUID string) string {
+	defer CatchPanic()
+	return ProjectUrl(fmt.Sprintf("/podcast/ep/%s/edit", episodeGUID), nil, projectSlug)
+}
+
+func BuildPodcastEpisodeEditSuccess(projectSlug string, episodeGUID string) string {
+	defer CatchPanic()
+	return ProjectUrl(fmt.Sprintf("/podcast/ep/%s/edit", episodeGUID), []Q{Q{"success", "true"}}, projectSlug)
+}
+
+var RegexPodcastRSS = regexp.MustCompile(`^/podcast/podcast.xml$`)
+
+func BuildPodcastRSS(projectSlug string) string {
+	defer CatchPanic()
+	return ProjectUrl("/podcast/podcast.xml", nil, projectSlug)
+}
+
+func BuildPodcastEpisodeFile(projectSlug string, filename string) string {
+	defer CatchPanic()
+	return BuildUserFile(fmt.Sprintf("podcast/%s/%s", projectSlug, filename))
+}
+
 /*
 * Forums
  */

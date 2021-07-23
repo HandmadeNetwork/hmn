@@ -79,6 +79,7 @@ func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			Route:  route.Regex.String(),
 			Logger: logging.GlobalLogger(),
 			Req:    req,
+			Res:    rw,
 		}
 
 		if len(match) > 0 {
@@ -109,6 +110,10 @@ type RequestContext struct {
 	Logger     *zerolog.Logger
 	Req        *http.Request
 	PathParams map[string]string
+
+	// NOTE(asaf): This is the http package's internal response object. Not just a ResponseWriter.
+	//             We sometimes need the original response object so that some functions of the http package can set connection-management flags on it.
+	Res http.ResponseWriter
 
 	Conn           *pgxpool.Pool
 	CurrentProject *models.Project

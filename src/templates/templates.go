@@ -81,10 +81,22 @@ var SVGChevronLeft string
 //go:embed svg/chevron-right.svg
 var SVGChevronRight string
 
+//go:embed svg/appleinc.svg
+var SVGAppleInc string
+
+//go:embed svg/google.svg
+var SVGGoogle string
+
+//go:embed svg/spotify.svg
+var SVGSpotify string
+
 var SVGMap = map[string]string{
 	"close":         SVGClose,
 	"chevron-left":  SVGChevronLeft,
 	"chevron-right": SVGChevronRight,
+	"appleinc":      SVGAppleInc,
+	"google":        SVGGoogle,
+	"spotify":       SVGSpotify,
 }
 
 var HMNTemplateFuncs = template.FuncMap{

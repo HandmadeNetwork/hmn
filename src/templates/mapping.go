@@ -304,6 +304,46 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 	return builder.String()
 }
 
+func PodcastToTemplate(projectSlug string, podcast *models.Podcast, imageFilename string) Podcast {
+	imageUrl := ""
+	if imageFilename != "" {
+		imageUrl = hmnurl.BuildUserFile(imageFilename)
+	}
+	return Podcast{
+		Title:       podcast.Title,
+		Description: podcast.Description,
+		Language:    podcast.Language,
+		ImageUrl:    imageUrl,
+		Url:         hmnurl.BuildPodcast(projectSlug),
+
+		RSSUrl: hmnurl.BuildPodcastRSS(projectSlug),
+		// TODO(asaf): Move this to the db if we want to support user podcasts
+		AppleUrl:   "https://podcasts.apple.com/us/podcast/the-handmade-network-podcast/id1507790631",
+		GoogleUrl:  "https://www.google.com/podcasts?feed=aHR0cHM6Ly9oYW5kbWFkZS5uZXR3b3JrL3BvZGNhc3QvcG9kY2FzdC54bWw%3D",
+		SpotifyUrl: "https://open.spotify.com/show/2Nd9NjXscrBbQwYULiYKiU",
+	}
+}
+
+func PodcastEpisodeToTemplate(projectSlug string, episode *models.PodcastEpisode, audioFileSize int64, imageFilename string) PodcastEpisode {
+	imageUrl := ""
+	if imageFilename != "" {
+		imageUrl = hmnurl.BuildUserFile(imageFilename)
+	}
+	return PodcastEpisode{
+		GUID:            episode.GUID.String(),
+		Title:           episode.Title,
+		Description:     episode.Description,
+		DescriptionHtml: template.HTML(episode.DescriptionHtml),
+		EpisodeNumber:   episode.EpisodeNumber,
+		Url:             hmnurl.BuildPodcastEpisode(projectSlug, episode.GUID.String()),
+		ImageUrl:        imageUrl,
+		FileUrl:         hmnurl.BuildPodcastEpisodeFile(projectSlug, episode.AudioFile),
+		FileSize:        audioFileSize,
+		PublicationDate: episode.PublicationDate,
+		Duration:        episode.Duration,
+	}
+}
+
 func maybeString(s *string) string {
 	if s == nil {
 		return ""

@@ -159,6 +159,16 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexForumCategory, ForumCategory)
 	mainRoutes.GET(hmnurl.RegexForumPost, ForumPostRedirect)
 
+	mainRoutes.GET(hmnurl.RegexPodcast, PodcastIndex)
+	mainRoutes.GET(hmnurl.RegexPodcastEdit, PodcastEdit)
+	mainRoutes.POST(hmnurl.RegexPodcastEdit, PodcastEditSubmit)
+	mainRoutes.GET(hmnurl.RegexPodcastEpisodeNew, PodcastEpisodeNew)
+	mainRoutes.POST(hmnurl.RegexPodcastEpisodeNew, PodcastEpisodeSubmit)
+	mainRoutes.GET(hmnurl.RegexPodcastEpisodeEdit, PodcastEpisodeEdit)
+	mainRoutes.POST(hmnurl.RegexPodcastEpisodeEdit, PodcastEpisodeSubmit)
+	mainRoutes.GET(hmnurl.RegexPodcastEpisode, PodcastEpisode)
+	mainRoutes.GET(hmnurl.RegexPodcastRSS, PodcastRSS)
+
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 
 	// Other
@@ -368,6 +378,7 @@ func AddCORSHeaders(c *RequestContext, res *ResponseData) {
 	}
 	if strings.HasSuffix(origin, parsed.Host) {
 		res.Header().Add("Access-Control-Allow-Origin", origin)
+		res.Header().Add("Vary", "Origin")
 	}
 }
 
@@ -398,7 +409,7 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 }
 
 func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (after func()) {
-	c.Perf = perf.MakeNewRequestPerf(c.Route, c.Req.URL.Path)
+	c.Perf = perf.MakeNewRequestPerf(c.Route, c.Req.Method, c.Req.URL.Path)
 	return func() {
 		c.Perf.EndRequest()
 		log := logging.Info()
@@ -410,7 +421,7 @@ func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (aft
 			log.Str(fmt.Sprintf("[%4.d] At %9.2fms", i, c.Perf.MsFromStart(&block)), fmt.Sprintf("%*.s[%s] %s (%.4fms)", len(blockStack)*2, "", block.Category, block.Description, block.DurationMs()))
 			blockStack = append(blockStack, block.End)
 		}
-		log.Msg(fmt.Sprintf("Served %s in %.4fms", c.Perf.Path, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
+		log.Msg(fmt.Sprintf("Served [%s] %s in %.4fms", c.Perf.Method, c.Perf.Path, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
 		perfCollector.SubmitRun(c.Perf)
 	}
 }

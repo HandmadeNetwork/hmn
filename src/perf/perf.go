@@ -8,16 +8,18 @@ import (
 type RequestPerf struct {
 	Route  string
 	Path   string // the path actually matched
+	Method string
 	Start  time.Time
 	End    time.Time
 	Blocks []PerfBlock
 }
 
-func MakeNewRequestPerf(route string, path string) *RequestPerf {
+func MakeNewRequestPerf(route string, method string, path string) *RequestPerf {
 	return &RequestPerf{
-		Start: time.Now(),
-		Route: route,
-		Path:  path,
+		Start:  time.Now(),
+		Route:  route,
+		Path:   path,
+		Method: method,
 	}
 }
 

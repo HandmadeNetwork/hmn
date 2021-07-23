@@ -1,0 +1,23 @@
+{{ template "base.html" . }}
+
+{{ define "content" }}
+<div class="content-block">
+	{{ template "notices.html" .Notices }}
+	<h1>{{ if .IsEdit }}Edit{{ else }}New{{ end }} Episode</h1>
+	<form method="POST">
+		{{ csrftoken .Session }}
+		<input required type="text" class="b w-100 mb1" name="title" placeholder="Title" value="{{ .Title }}" />
+		<label for="episode_number">Episode number: </label><input required type="number" class="" name="episode_number" value="{{ .EpisodeNumber }}" />
+		<textarea required name="description" class="w-100 mv1" maxlength="4000" placeholder="Description (max 4000 chars)">{{ .Description }}</textarea>
+		<select required name="episode_file">
+			{{ $currentFile := .CurrentFile }}
+			{{ range .EpisodeFiles }}
+				<option {{ if eq $currentFile . }}selected{{ end }} value="{{ . }}">{{ . }}</option>
+			{{ end }}
+		</select>
+		<div class="mt3">
+			<input type="submit" name="submit" value="Submit" />
+		</div>
+	</form>
+</div>
+{{ end }}

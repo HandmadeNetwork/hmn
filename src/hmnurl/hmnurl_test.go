@@ -85,7 +85,7 @@ func TestUserProfile(t *testing.T) {
 }
 
 func TestSnippet(t *testing.T) {
-	AssetRegexMatch(t, BuildSnippet(15), RegexSnippet, map[string]string{"snippetid": "15"})
+	AssertRegexMatch(t, BuildSnippet(15), RegexSnippet, map[string]string{"snippetid": "15"})
 }
 
 func TestFeed(t *testing.T) {
@@ -123,6 +123,28 @@ func TestPodcast(t *testing.T) {
 	AssertSubdomain(t, BuildPodcast("hero"), "hero")
 }
 
+func TestPodcastEdit(t *testing.T) {
+	AssertRegexMatch(t, BuildPodcastEdit(""), RegexPodcastEdit, nil)
+	AssertRegexMatch(t, BuildPodcastEditSuccess(""), RegexPodcastEdit, nil)
+}
+
+func TestPodcastEpisode(t *testing.T) {
+	AssertRegexMatch(t, BuildPodcastEpisode("", "test"), RegexPodcastEpisode, map[string]string{"episodeid": "test"})
+}
+
+func TestPodcastEpisodeNew(t *testing.T) {
+	AssertRegexMatch(t, BuildPodcastEpisodeNew(""), RegexPodcastEpisodeNew, nil)
+}
+
+func TestPodcastEpisodeEdit(t *testing.T) {
+	AssertRegexMatch(t, BuildPodcastEpisodeEdit("", "test"), RegexPodcastEpisodeEdit, map[string]string{"episodeid": "test"})
+	AssertRegexMatch(t, BuildPodcastEpisodeEditSuccess("", "test"), RegexPodcastEpisodeEdit, map[string]string{"episodeid": "test"})
+}
+
+func TestPodcastRSS(t *testing.T) {
+	AssertRegexMatch(t, BuildPodcastRSS(""), RegexPodcastRSS, nil)
+}
+
 func TestForumCategory(t *testing.T) {
 	AssertRegexMatch(t, BuildForumCategory("", nil, 1), RegexForumCategory, nil)
 	AssertRegexMatch(t, BuildForumCategory("", []string{"wip"}, 2), RegexForumCategory, map[string]string{"cats": "wip", "page": "2"})
@@ -137,7 +159,8 @@ func TestForumCategory(t *testing.T) {
 }
 
 func TestForumNewThread(t *testing.T) {
-	AssertRegexMatch(t, BuildForumNewThread("", []string{"sub", "wip"}), RegexForumNewThread, map[string]string{"cats": "sub/wip"})
+	AssertRegexMatch(t, BuildForumNewThread("", []string{"sub", "wip"}, false), RegexForumNewThread, map[string]string{"cats": "sub/wip"})
+	AssertRegexMatch(t, BuildForumNewThread("", []string{"sub", "wip"}, true), RegexForumNewThreadSubmit, map[string]string{"cats": "sub/wip"})
 }
 
 func TestForumThread(t *testing.T) {

@@ -1,0 +1,71 @@
+{{ template "base.html" . }}
+
+{{ define "content" }}
+<div class="content-block">
+	{{ template "notices.html" .Notices }}
+	<form id="podcast_form" method="POST" enctype="multipart/form-data">
+        {{ csrftoken .Session }}
+		<input class="b w-100 mb1" type="text" name="title" required placeholder="Podcast title..." value="{{ .Podcast.Title }}" />
+		<textarea name="description" required class="w-100 minw-100 mw-100 h3 minh-3">{{ .Podcast.Description }}</textarea>
+		<div>
+			<label for="podcast_image">Podcast image (2mb max): </label>
+			<input id="file_input" type="file" accept="image/*" name="podcast_image" {{ if eq (len .Podcast.ImageUrl) 0 }}required{{ end }} />
+			<a href="javascript:;" class="db" id="reset_image">Reset Image</a>
+			<label style="display: none" id="file_too_big" for="podcast_image">File too big.</label>
+		</div>
+		<div>
+			<img id="image" src="{{ .Podcast.ImageUrl }}" />
+		</div>
+		<input type="submit" name="submit" value="Submit" />
+	</form>
+</div>
+<script>
+	let fileInput = document.querySelector("#file_input");
+	let image = document.querySelector("#image");
+	let fileTooBigLabel = document.querySelector("#file_too_big");
+	let resetImage = document.querySelector("#reset_image");
+	let form = document.querySelector("#podcast_form");
+
+	let originalImageUrl = "{{ .Podcast.ImageUrl }}";
+
+	fileInput.value = "";
+	let fileTooBig = false;
+	let maxFileSize = 2*1024*1024;
+
+	fileInput.addEventListener("change", function(ev) {
+		if (fileInput.files.length > 0) {
+			let file = fileInput.files[0];
+			handleNewImageFile(file);
+		}
+	});
+
+	function handleNewImageFile(file) {
+		fileTooBig = false;
+		if (file) {
+			if (file.size > maxFileSize) {
+				fileTooBig = true;
+			}
+			image.src = URL.createObjectURL(file);
+		} else {
+			image.src = originalImageUrl;
+		}
+
+		if (fileTooBig) {
+			fileTooBigLabel.style.display = "block";
+		} else {
+			fileTooBigLabel.style.display = "none";
+		}
+	}
+
+	resetImage.addEventListener("click", function(ev) {
+		fileInput.value = "";
+		handleNewImageFile(null);
+	});
+
+	form.addEventListener("submit", function(ev) {
+		if (fileTooBig) {
+			ev.preventDefault();
+		}
+	});
+</script>
+{{ end }}

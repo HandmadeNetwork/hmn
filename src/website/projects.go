@@ -266,37 +266,20 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	c.Perf.StartBlock("SQL", "Fetching project owners")
-	type ownerQuery struct {
-		Owner models.User `db:"auth_user"`
-	}
-	ownerQueryResult, err := db.Query(c.Context(), c.Conn, ownerQuery{},
-		`
-		SELECT $columns
-		FROM
-			auth_user
-			INNER JOIN auth_user_groups AS user_groups ON auth_user.id = user_groups.user_id
-			INNER JOIN handmade_project_groups AS project_groups ON user_groups.group_id = project_groups.group_id
-		WHERE
-			project_groups.project_id = $1
-		`,
-		project.ID,
-	)
+	owners, err := FetchProjectOwners(c, project.ID)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch owners for project"))
+		return ErrorResponse(http.StatusInternalServerError, err)
 	}
-	ownerQueryData := ownerQueryResult.ToSlice()
-	c.Perf.EndBlock()
 
 	canView := false
 	canEdit := false
 	if c.CurrentUser != nil {
-		if c.CurrentUser.IsSuperuser {
+		if c.CurrentUser.IsStaff {
 			canView = true
 			canEdit = true
 		} else {
-			for _, ownerRow := range ownerQueryData {
-				if ownerRow.(*ownerQuery).Owner.ID == c.CurrentUser.ID {
+			for _, owner := range owners {
+				if owner.ID == c.CurrentUser.ID {
 					canView = true
 					canEdit = true
 					break
@@ -397,8 +380,8 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		projectHomepageData.BaseData.Header.EditUrl = hmnurl.BuildProjectEdit(project.Slug, "")
 	}
 	projectHomepageData.Project = templates.ProjectToTemplate(project, c.Theme)
-	for _, ownerRow := range ownerQueryData {
-		projectHomepageData.Owners = append(projectHomepageData.Owners, templates.UserToTemplate(&ownerRow.(*ownerQuery).Owner, c.Theme))
+	for _, owner := range owners {
+		projectHomepageData.Owners = append(projectHomepageData.Owners, templates.UserToTemplate(owner, c.Theme))
 	}
 
 	if project.Flags == 1 {
