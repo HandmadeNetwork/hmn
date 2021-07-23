@@ -234,11 +234,24 @@ func Query(ctx context.Context, conn ConnOrTx, destExample interface{}, query st
 		return nil, err
 	}
 
-	return &StructQueryIterator{
+	it := &StructQueryIterator{
 		fieldPaths: fieldPaths,
 		rows:       rows,
 		destType:   destType,
-	}, nil
+	}
+
+	// Ensure that iterators are closed if context is cancelled. Otherwise, iterators can hold
+	// open connections even after a request is cancelled, causing the app to deadlock.
+	go func() {
+		done := ctx.Done()
+		if done == nil {
+			return
+		}
+		<-done
+		it.Close()
+	}()
+
+	return it, nil
 }
 
 func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix string) (names []string, paths [][]int, err error) {
