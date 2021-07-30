@@ -156,7 +156,7 @@ func Index(c *RequestContext) ResponseData {
 
 			featurable := (!proj.IsHMN() &&
 				projectPost.Post.ThreadType == models.ThreadTypeProjectArticle &&
-				*projectPost.Thread.FirstID == projectPost.Post.ID &&
+				projectPost.Thread.FirstID == projectPost.Post.ID &&
 				landingPageProject.FeaturedPost == nil)
 
 			if featurable {

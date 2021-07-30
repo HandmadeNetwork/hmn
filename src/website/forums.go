@@ -505,7 +505,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		Thread:      templates.ThreadToTemplate(&thread),
 		Posts:       posts,
 		SubforumUrl: hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, 1),
-		ReplyUrl:    hmnurl.BuildForumPostReply(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, *thread.FirstID),
+		ReplyUrl:    hmnurl.BuildForumPostReply(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, thread.FirstID),
 		Pagination:  pagination,
 	}, c.Perf)
 	return res

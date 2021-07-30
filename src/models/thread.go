@@ -25,6 +25,6 @@ type Thread struct {
 	Locked  bool   `db:"locked"`
 	Deleted bool   `db:"deleted"`
 
-	FirstID *int `db:"first_id"`
-	LastID  *int `db:"last_id"`
+	FirstID int `db:"first_id"`
+	LastID  int `db:"last_id"`
 }

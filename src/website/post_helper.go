@@ -78,7 +78,7 @@ func MakePostListItem(
 	postTypeOptions, found := PostTypeMap[post.ThreadType]
 	if found {
 		isNotFirst := 0
-		if *thread.FirstID != post.ID {
+		if thread.FirstID != post.ID {
 			isNotFirst = 1
 		}
 		postType = postTypeOptions[isNotFirst]

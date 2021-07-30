@@ -51,7 +51,7 @@ func PostToTimelineItem(lineageBuilder *models.SubforumLineageBuilder, post *mod
 	typeByCatKind, found := TimelineTypeMap[post.ThreadType]
 	if found {
 		isNotFirst := 0
-		if *thread.FirstID != post.ID {
+		if thread.FirstID != post.ID {
 			isNotFirst = 1
 		}
 		itemType = typeByCatKind[isNotFirst]
