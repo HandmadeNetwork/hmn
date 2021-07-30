@@ -37,11 +37,11 @@ func Feed(c *RequestContext) ResponseData {
 		FROM
 			handmade_post AS post
 		WHERE
-			post.category_kind = ANY ($1)
+			post.thread_type = ANY ($1)
 			AND deleted = FALSE
 			AND post.thread_id IS NOT NULL
 		`,
-		[]models.CategoryKind{models.CatKindForum, models.CatKindBlog, models.CatKindWiki, models.CatKindLibraryResource},
+		[]models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectArticle},
 	)
 	c.Perf.EndBlock()
 	if err != nil {
@@ -80,9 +80,9 @@ func Feed(c *RequestContext) ResponseData {
 		currentUserId = &c.CurrentUser.ID
 	}
 
-	c.Perf.StartBlock("SQL", "Fetch category tree")
-	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
-	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
 	posts, err := fetchAllPosts(c, lineageBuilder, currentUserId, howManyPostsToSkip, postsPerPage)
@@ -98,7 +98,7 @@ func Feed(c *RequestContext) ResponseData {
 		BaseData: baseData,
 
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
-		MarkAllReadUrl: hmnurl.BuildForumCategoryMarkRead(0),
+		MarkAllReadUrl: hmnurl.BuildForumMarkRead(0),
 		Posts:          posts,
 		Pagination:     pagination,
 	}, c.Perf)
@@ -158,9 +158,9 @@ func AtomFeed(c *RequestContext) ResponseData {
 		feedData.AtomFeedUrl = hmnurl.BuildAtomFeed()
 		feedData.FeedUrl = hmnurl.BuildFeed()
 
-		c.Perf.StartBlock("SQL", "Fetch category tree")
-		categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
-		lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+		c.Perf.StartBlock("SQL", "Fetch subforum tree")
+		subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+		lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 		c.Perf.EndBlock()
 
 		posts, err := fetchAllPosts(c, lineageBuilder, nil, 0, itemsPerFeed)
@@ -303,18 +303,16 @@ func AtomFeed(c *RequestContext) ResponseData {
 	return res
 }
 
-func fetchAllPosts(c *RequestContext, lineageBuilder *models.CategoryLineageBuilder, currentUserID *int, offset int, limit int) ([]templates.PostListItem, error) {
+func fetchAllPosts(c *RequestContext, lineageBuilder *models.SubforumLineageBuilder, currentUserID *int, offset int, limit int) ([]templates.PostListItem, error) {
 	c.Perf.StartBlock("SQL", "Fetch posts")
 	type feedPostQuery struct {
-		Post               models.Post             `db:"post"`
-		PostVersion        models.PostVersion      `db:"version"`
-		Thread             models.Thread           `db:"thread"`
-		Cat                models.Category         `db:"cat"`
-		Proj               models.Project          `db:"proj"`
-		LibraryResource    *models.LibraryResource `db:"lib_resource"`
-		User               models.User             `db:"auth_user"`
-		ThreadLastReadTime *time.Time              `db:"tlri.lastread"`
-		CatLastReadTime    *time.Time              `db:"clri.lastread"`
+		Post                 models.Post        `db:"post"`
+		PostVersion          models.PostVersion `db:"version"`
+		Thread               models.Thread      `db:"thread"`
+		Proj                 models.Project     `db:"proj"`
+		User                 models.User        `db:"auth_user"`
+		ThreadLastReadTime   *time.Time         `db:"tlri.lastread"`
+		SubforumLastReadTime *time.Time         `db:"slri.lastread"`
 	}
 	posts, err := db.Query(c.Context(), c.Conn, feedPostQuery{},
 		`
@@ -323,27 +321,25 @@ func fetchAllPosts(c *RequestContext, lineageBuilder *models.CategoryLineageBuil
 			handmade_post AS post
 			JOIN handmade_postversion AS version ON version.id = post.current_id
 			JOIN handmade_thread AS thread ON thread.id = post.thread_id
-			JOIN handmade_category AS cat ON cat.id = post.category_id
 			JOIN handmade_project AS proj ON proj.id = post.project_id
 			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
 				tlri.thread_id = post.thread_id
 				AND tlri.user_id = $1
 			)
-			LEFT JOIN handmade_categorylastreadinfo AS clri ON (
-				clri.category_id = post.category_id
-				AND clri.user_id = $1
+			LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
+				slri.subforum_id = thread.subforum_id
+				AND slri.user_id = $1
 			)
 			LEFT JOIN auth_user ON post.author_id = auth_user.id
-			LEFT JOIN handmade_libraryresource as lib_resource ON lib_resource.category_id = post.category_id
 		WHERE
-			post.category_kind = ANY ($2)
+			thread.type = ANY ($2)
 			AND post.deleted = FALSE
 			AND post.thread_id IS NOT NULL
 		ORDER BY postdate DESC
 		LIMIT $3 OFFSET $4
 		`,
 		currentUserID,
-		[]models.CategoryKind{models.CatKindForum, models.CatKindBlog, models.CatKindWiki, models.CatKindLibraryResource},
+		[]models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectArticle},
 		limit,
 		offset,
 	)
@@ -360,7 +356,7 @@ func fetchAllPosts(c *RequestContext, lineageBuilder *models.CategoryLineageBuil
 		hasRead := false
 		if postResult.ThreadLastReadTime != nil && postResult.ThreadLastReadTime.After(postResult.Post.PostDate) {
 			hasRead = true
-		} else if postResult.CatLastReadTime != nil && postResult.CatLastReadTime.After(postResult.Post.PostDate) {
+		} else if postResult.SubforumLastReadTime != nil && postResult.SubforumLastReadTime.After(postResult.Post.PostDate) {
 			hasRead = true
 		}
 
@@ -370,7 +366,6 @@ func fetchAllPosts(c *RequestContext, lineageBuilder *models.CategoryLineageBuil
 			&postResult.Thread,
 			&postResult.Post,
 			&postResult.User,
-			postResult.LibraryResource,
 			!hasRead,
 			true,
 			c.Theme,

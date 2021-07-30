@@ -3,8 +3,7 @@ package models
 type LibraryResource struct {
 	ID int `db:"id"`
 
-	CategoryID int  `db:"category_id"`
-	ProjectID  *int `db:"project_id"`
+	ProjectID *int `db:"project_id"`
 
 	Name          string `db:"name"`
 	Description   string `db:"description"`

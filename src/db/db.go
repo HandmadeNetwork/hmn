@@ -22,7 +22,7 @@ import (
 Values of these kinds are ok to query even if they are not directly understood by pgtype.
 This is common for custom types like:
 
-	type CategoryKind int
+	type ThreadType int
 */
 var queryableKinds = []reflect.Kind{
 	reflect.Int,

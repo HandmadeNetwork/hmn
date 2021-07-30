@@ -9,14 +9,13 @@ type Post struct {
 	ID int `db:"id"`
 
 	// TODO: Document each of these
-	AuthorID   *int `db:"author_id"`
-	CategoryID int  `db:"category_id"`
-	ParentID   *int `db:"parent_id"`
-	ThreadID   int  `db:"thread_id"`
-	CurrentID  int  `db:"current_id"`
-	ProjectID  int  `db:"project_id"`
+	AuthorID  *int `db:"author_id"`
+	ParentID  *int `db:"parent_id"`
+	ThreadID  int  `db:"thread_id"`
+	CurrentID int  `db:"current_id"`
+	ProjectID int  `db:"project_id"`
 
-	CategoryKind CategoryKind `db:"category_kind"`
+	ThreadType ThreadType `db:"thread_type"`
 
 	PostDate time.Time `db:"postdate"`
 	Deleted  bool      `db:"deleted"`

@@ -39,7 +39,6 @@ type Header struct {
 	ProjectIndexUrl    string
 	BlogUrl            string
 	ForumsUrl          string
-	WikiUrl            string
 	LibraryUrl         string
 	ManifestoUrl       string
 	EpisodeGuideUrl    string
@@ -109,7 +108,6 @@ type Project struct {
 
 	HasBlog    bool
 	HasForum   bool
-	HasWiki    bool
 	HasLibrary bool
 
 	UUID         string
@@ -202,10 +200,6 @@ const (
 	PostTypeBlogComment
 	PostTypeForumThread
 	PostTypeForumReply
-	PostTypeWikiCreate
-	PostTypeWikiTalk
-	PostTypeWikiEdit
-	PostTypeLibraryComment
 )
 
 // Data from post_list_item.html
@@ -252,12 +246,6 @@ const (
 
 	TimelineTypeBlogPost
 	TimelineTypeBlogComment
-
-	TimelineTypeWikiCreate
-	TimelineTypeWikiEdit
-	TimelineTypeWikiTalk
-
-	TimelineTypeLibraryComment
 
 	TimelineTypeSnippetImage
 	TimelineTypeSnippetVideo

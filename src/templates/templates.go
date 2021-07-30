@@ -218,11 +218,7 @@ var HMNTemplateFuncs = template.FuncMap{
 		if item.Type == TimelineTypeForumThread ||
 			item.Type == TimelineTypeForumReply ||
 			item.Type == TimelineTypeBlogPost ||
-			item.Type == TimelineTypeBlogComment ||
-			item.Type == TimelineTypeWikiCreate ||
-			item.Type == TimelineTypeWikiEdit ||
-			item.Type == TimelineTypeWikiTalk ||
-			item.Type == TimelineTypeLibraryComment {
+			item.Type == TimelineTypeBlogComment {
 
 			return true
 		}

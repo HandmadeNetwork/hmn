@@ -74,9 +74,9 @@ func Index(c *RequestContext) ResponseData {
 	allProjects := iterProjects.ToSlice()
 	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SQL", "Fetch category tree")
-	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
-	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
 	var currentUserId *int
@@ -90,12 +90,11 @@ func Index(c *RequestContext) ResponseData {
 
 		c.Perf.StartBlock("SQL", fmt.Sprintf("Fetch posts for %s", proj.Name))
 		type projectPostQuery struct {
-			Post               models.Post             `db:"post"`
-			Thread             models.Thread           `db:"thread"`
-			User               models.User             `db:"auth_user"`
-			LibraryResource    *models.LibraryResource `db:"lib_resource"`
-			ThreadLastReadTime *time.Time              `db:"tlri.lastread"`
-			CatLastReadTime    *time.Time              `db:"clri.lastread"`
+			Post                 models.Post   `db:"post"`
+			Thread               models.Thread `db:"thread"`
+			User                 models.User   `db:"auth_user"`
+			ThreadLastReadTime   *time.Time    `db:"tlri.lastread"`
+			SubforumLastReadTime *time.Time    `db:"slri.lastread"`
 		}
 		projectPostIter, err := db.Query(c.Context(), c.Conn, projectPostQuery{},
 			`
@@ -107,22 +106,21 @@ func Index(c *RequestContext) ResponseData {
 					tlri.thread_id = post.thread_id
 					AND tlri.user_id = $1
 				)
-				LEFT JOIN handmade_categorylastreadinfo AS clri ON (
-					clri.category_id = post.category_id
-					AND clri.user_id = $1
+				LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
+					slri.subforum_id = thread.subforum_id
+					AND slri.user_id = $1
 				)
 				LEFT JOIN auth_user ON post.author_id = auth_user.id
-				LEFT JOIN handmade_libraryresource as lib_resource ON lib_resource.category_id = post.category_id
 			WHERE
 				post.project_id = $2
-				AND post.category_kind IN ($3, $4, $5, $6)
+				AND post.thread_type = ANY ($3)
 				AND post.deleted = FALSE
 			ORDER BY postdate DESC
-			LIMIT $7
+			LIMIT $4
 			`,
 			currentUserId,
 			proj.ID,
-			models.CatKindBlog, models.CatKindForum, models.CatKindWiki, models.CatKindLibraryResource,
+			[]models.ThreadType{models.ThreadTypeProjectArticle, models.ThreadTypeForumPost},
 			maxPosts,
 		)
 		c.Perf.EndBlock()
@@ -134,7 +132,7 @@ func Index(c *RequestContext) ResponseData {
 
 		forumsUrl := ""
 		if proj.ForumID != nil {
-			forumsUrl = hmnurl.BuildForumCategory(proj.Slug, lineageBuilder.GetSubforumLineageSlugs(*proj.ForumID), 1)
+			forumsUrl = hmnurl.BuildForum(proj.Slug, lineageBuilder.GetSubforumLineageSlugs(*proj.ForumID), 1)
 		} else {
 			c.Logger.Error().Int("ProjectID", proj.ID).Str("ProjectName", proj.Name).Msg("Project fetched by landing page but it doesn't have forums")
 		}
@@ -150,12 +148,12 @@ func Index(c *RequestContext) ResponseData {
 			hasRead := false
 			if projectPost.ThreadLastReadTime != nil && projectPost.ThreadLastReadTime.After(projectPost.Post.PostDate) {
 				hasRead = true
-			} else if projectPost.CatLastReadTime != nil && projectPost.CatLastReadTime.After(projectPost.Post.PostDate) {
+			} else if projectPost.SubforumLastReadTime != nil && projectPost.SubforumLastReadTime.After(projectPost.Post.PostDate) {
 				hasRead = true
 			}
 
 			featurable := (!proj.IsHMN() &&
-				projectPost.Post.CategoryKind == models.CatKindBlog &&
+				projectPost.Post.ThreadType == models.ThreadTypeProjectArticle &&
 				projectPost.Post.ParentID == nil &&
 				landingPageProject.FeaturedPost == nil)
 
@@ -197,7 +195,6 @@ func Index(c *RequestContext) ResponseData {
 						&projectPost.Thread,
 						&projectPost.Post,
 						&projectPost.User,
-						projectPost.LibraryResource,
 						!hasRead,
 						false,
 						c.Theme,
@@ -263,14 +260,14 @@ func Index(c *RequestContext) ResponseData {
 			JOIN handmade_postversion AS ver ON post.current_id = ver.id
 		WHERE
 			post.project_id = $1
-			AND post.category_kind = $2
+			AND thread.type = $2
 			AND post.id = thread.first_id
 			AND NOT thread.deleted
 		ORDER BY post.postdate DESC
 		LIMIT 1
 		`,
 		models.HMNProjectID,
-		models.CatKindBlog,
+		models.ThreadTypeProjectArticle,
 	)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news post"))
@@ -294,6 +291,7 @@ func Index(c *RequestContext) ResponseData {
 			LEFT JOIN handmade_asset AS asset ON asset.id = snippet.asset_id
 			LEFT JOIN handmade_discordmessage AS discord_message ON discord_message.id = snippet.discord_message_id
 		ORDER BY snippet.when DESC
+		LIMIT 20
 		`,
 	)
 	if err != nil {

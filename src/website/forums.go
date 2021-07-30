@@ -21,17 +21,17 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-type forumCategoryData struct {
+type forumData struct {
 	templates.BaseData
 
-	NewThreadUrl  string
-	MarkReadUrl   string
-	Threads       []templates.ThreadListItem
-	Pagination    templates.Pagination
-	Subcategories []forumSubcategoryData
+	NewThreadUrl string
+	MarkReadUrl  string
+	Threads      []templates.ThreadListItem
+	Pagination   templates.Pagination
+	Subforums    []forumSubforumData
 }
 
-type forumSubcategoryData struct {
+type forumSubforumData struct {
 	Name         string
 	Url          string
 	Threads      []templates.ThreadListItem
@@ -50,7 +50,7 @@ type editorData struct {
 	PostReplyingTo *templates.Post
 }
 
-func ForumCategory(c *RequestContext) ResponseData {
+func Forum(c *RequestContext) ResponseData {
 	const threadsPerPage = 25
 
 	cd, ok := getCommonForumData(c)
@@ -58,7 +58,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID)
+	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID)
 
 	c.Perf.StartBlock("SQL", "Fetch count of page threads")
 	numThreads, err := db.QueryInt(c.Context(), c.Conn,
@@ -66,10 +66,10 @@ func ForumCategory(c *RequestContext) ResponseData {
 		SELECT COUNT(*)
 		FROM handmade_thread AS thread
 		WHERE
-			thread.category_id = $1
+			thread.subforum_id = $1
 			AND NOT thread.deleted
 		`,
-		cd.CatID,
+		cd.SubforumID,
 	)
 	if err != nil {
 		panic(oops.New(err, "failed to get count of threads"))
@@ -84,11 +84,11 @@ func ForumCategory(c *RequestContext) ResponseData {
 		if pageParsed, err := strconv.Atoi(pageString); err == nil {
 			page = pageParsed
 		} else {
-			return c.Redirect(hmnurl.BuildForumCategory(c.CurrentProject.Slug, currentSubforumSlugs, 1), http.StatusSeeOther)
+			return c.Redirect(hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, 1), http.StatusSeeOther)
 		}
 	}
 	if page < 1 || numPages < page {
-		return c.Redirect(hmnurl.BuildForumCategory(c.CurrentProject.Slug, currentSubforumSlugs, utils.IntClamp(1, page, numPages)), http.StatusSeeOther)
+		return c.Redirect(hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, utils.IntClamp(1, page, numPages)), http.StatusSeeOther)
 	}
 
 	howManyThreadsToSkip := (page - 1) * threadsPerPage
@@ -106,7 +106,7 @@ func ForumCategory(c *RequestContext) ResponseData {
 		FirstUser          *models.User  `db:"firstuser"`
 		LastUser           *models.User  `db:"lastuser"`
 		ThreadLastReadTime *time.Time    `db:"tlri.lastread"`
-		CatLastReadTime    *time.Time    `db:"clri.lastread"`
+		ForumLastReadTime  *time.Time    `db:"slri.lastread"`
 	}
 	itMainThreads, err := db.Query(c.Context(), c.Conn, threadQueryResult{},
 		`
@@ -121,17 +121,17 @@ func ForumCategory(c *RequestContext) ResponseData {
 				tlri.thread_id = thread.id
 				AND tlri.user_id = $2
 			)
-			LEFT JOIN handmade_categorylastreadinfo AS clri ON (
-				clri.category_id = $1
-				AND clri.user_id = $2
+			LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
+				slri.subforum_id = $1
+				AND slri.user_id = $2
 			)
 		WHERE
-			thread.category_id = $1
+			thread.subforum_id = $1
 			AND NOT thread.deleted
 		ORDER BY lastpost.postdate DESC
 		LIMIT $3 OFFSET $4
 		`,
-		cd.CatID,
+		cd.SubforumID,
 		currentUserId,
 		threadsPerPage,
 		howManyThreadsToSkip,
@@ -146,13 +146,13 @@ func ForumCategory(c *RequestContext) ResponseData {
 		hasRead := false
 		if row.ThreadLastReadTime != nil && row.ThreadLastReadTime.After(row.LastPost.PostDate) {
 			hasRead = true
-		} else if row.CatLastReadTime != nil && row.CatLastReadTime.After(row.LastPost.PostDate) {
+		} else if row.ForumLastReadTime != nil && row.ForumLastReadTime.After(row.LastPost.PostDate) {
 			hasRead = true
 		}
 
 		return templates.ThreadListItem{
 			Title:     row.Thread.Title,
-			Url:       hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(row.Thread.CategoryID), row.Thread.ID, row.Thread.Title, 1),
+			Url:       hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(*row.Thread.SubforumID), row.Thread.ID, row.Thread.Title, 1),
 			FirstUser: templates.UserToTemplate(row.FirstUser, c.Theme),
 			FirstDate: row.FirstPost.PostDate,
 			LastUser:  templates.UserToTemplate(row.LastUser, c.Theme),
@@ -169,32 +169,32 @@ func ForumCategory(c *RequestContext) ResponseData {
 	}
 
 	// ---------------------
-	// Subcategory things
+	// Subforum things
 	// ---------------------
 
-	var subcats []forumSubcategoryData
+	var subforums []forumSubforumData
 	if page == 1 {
-		subcatNodes := cd.CategoryTree[cd.CatID].Children
+		subforumNodes := cd.SubforumTree[cd.SubforumID].Children
 
-		for _, catNode := range subcatNodes {
-			c.Perf.StartBlock("SQL", "Fetch count of subcategory threads")
-			// TODO(asaf): [PERF] [MINOR] Consider replacing querying count per subcat with a single query for all cats with GROUP BY.
+		for _, sfNode := range subforumNodes {
+			c.Perf.StartBlock("SQL", "Fetch count of subforum threads")
+			// TODO(asaf): [PERF] [MINOR] Consider replacing querying count per subforum with a single query for all subforums with GROUP BY.
 			numThreads, err := db.QueryInt(c.Context(), c.Conn,
 				`
 				SELECT COUNT(*)
 				FROM handmade_thread AS thread
 				WHERE
-					thread.category_id = $1
+					thread.subforum_id = $1
 					AND NOT thread.deleted
 				`,
-				catNode.ID,
+				sfNode.ID,
 			)
 			if err != nil {
 				panic(oops.New(err, "failed to get count of threads"))
 			}
 			c.Perf.EndBlock()
 
-			c.Perf.StartBlock("SQL", "Fetch subcategory threads")
+			c.Perf.StartBlock("SQL", "Fetch subforum threads")
 			// TODO(asaf): [PERF] [MINOR] Consider batching these.
 			itThreads, err := db.Query(c.Context(), c.Conn, threadQueryResult{},
 				`
@@ -209,17 +209,17 @@ func ForumCategory(c *RequestContext) ResponseData {
 						tlri.thread_id = thread.id
 						AND tlri.user_id = $2
 					)
-					LEFT JOIN handmade_categorylastreadinfo AS clri ON (
-						clri.category_id = $1
-						AND clri.user_id = $2
+					LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
+						slri.subforum_id = $1
+						AND slri.user_id = $2
 					)
 				WHERE
-					thread.category_id = $1
+					thread.subforum_id = $1
 					AND NOT thread.deleted
 				ORDER BY lastpost.postdate DESC
 				LIMIT 3
 				`,
-				catNode.ID,
+				sfNode.ID,
 				currentUserId,
 			)
 			if err != nil {
@@ -234,9 +234,9 @@ func ForumCategory(c *RequestContext) ResponseData {
 				threads = append(threads, makeThreadListItem(threadRow))
 			}
 
-			subcats = append(subcats, forumSubcategoryData{
-				Name:         *catNode.Name,
-				Url:          hmnurl.BuildForumCategory(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(catNode.ID), 1),
+			subforums = append(subforums, forumSubforumData{
+				Name:         sfNode.Name,
+				Url:          hmnurl.BuildForum(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(sfNode.ID), 1),
 				Threads:      threads,
 				TotalThreads: numThreads,
 			})
@@ -249,53 +249,53 @@ func ForumCategory(c *RequestContext) ResponseData {
 
 	baseData := getBaseData(c)
 	baseData.Title = c.CurrentProject.Name + " Forums"
-	baseData.Breadcrumbs = []templates.Breadcrumb{ // TODO(ben): This is wrong; it needs to account for subcategories.
+	baseData.Breadcrumbs = []templates.Breadcrumb{ // TODO(ben): This is wrong; it needs to account for subforums.
 		{
 			Name: c.CurrentProject.Name,
 			Url:  hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
 		},
 		{
 			Name:    "Forums",
-			Url:     hmnurl.BuildForumCategory(c.CurrentProject.Slug, nil, 1),
+			Url:     hmnurl.BuildForum(c.CurrentProject.Slug, nil, 1),
 			Current: true,
 		},
 	}
 
-	currentSubforums := cd.LineageBuilder.GetSubforumLineage(cd.CatID)
+	currentSubforums := cd.LineageBuilder.GetSubforumLineage(cd.SubforumID)
 	for i, subforum := range currentSubforums {
 		baseData.Breadcrumbs = append(baseData.Breadcrumbs, templates.Breadcrumb{
-			Name: *subforum.Name, // NOTE(asaf): All subforum categories must have names.
-			Url:  hmnurl.BuildForumCategory(c.CurrentProject.Slug, currentSubforumSlugs[0:i+1], 1),
+			Name: subforum.Name,
+			Url:  hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs[0:i+1], 1),
 		})
 	}
 
 	var res ResponseData
-	res.MustWriteTemplate("forum_category.html", forumCategoryData{
+	res.MustWriteTemplate("forum.html", forumData{
 		BaseData:     baseData,
 		NewThreadUrl: hmnurl.BuildForumNewThread(c.CurrentProject.Slug, currentSubforumSlugs, false),
-		MarkReadUrl:  hmnurl.BuildForumCategoryMarkRead(cd.CatID),
+		MarkReadUrl:  hmnurl.BuildForumMarkRead(cd.SubforumID),
 		Threads:      threads,
 		Pagination: templates.Pagination{
 			Current: page,
 			Total:   numPages,
 
-			FirstUrl:    hmnurl.BuildForumCategory(c.CurrentProject.Slug, currentSubforumSlugs, 1),
-			LastUrl:     hmnurl.BuildForumCategory(c.CurrentProject.Slug, currentSubforumSlugs, numPages),
-			NextUrl:     hmnurl.BuildForumCategory(c.CurrentProject.Slug, currentSubforumSlugs, utils.IntClamp(1, page+1, numPages)),
-			PreviousUrl: hmnurl.BuildForumCategory(c.CurrentProject.Slug, currentSubforumSlugs, utils.IntClamp(1, page-1, numPages)),
+			FirstUrl:    hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, 1),
+			LastUrl:     hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, numPages),
+			NextUrl:     hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, utils.IntClamp(1, page+1, numPages)),
+			PreviousUrl: hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, utils.IntClamp(1, page-1, numPages)),
 		},
-		Subcategories: subcats,
+		Subforums: subforums,
 	}, c.Perf)
 	return res
 }
 
-func ForumCategoryMarkRead(c *RequestContext) ResponseData {
-	c.Perf.StartBlock("SQL", "Fetch category tree")
-	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
-	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+func ForumMarkRead(c *RequestContext) ResponseData {
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
-	catId, err := strconv.Atoi(c.PathParams["catid"])
+	sfId, err := strconv.Atoi(c.PathParams["sfid"])
 	if err != nil {
 		return FourOhFour(c)
 	}
@@ -307,28 +307,28 @@ func ForumCategoryMarkRead(c *RequestContext) ResponseData {
 	defer tx.Rollback(c.Context())
 
 	// TODO(ben): Rework this logic when we rework blogs, threads, etc.
-	catIds := []int{catId}
-	if catId == 0 {
+	sfIds := []int{sfId}
+	if sfId == 0 {
 		// Select all categories
-		type catIdResult struct {
-			CatID int `db:"id"`
+		type sfIdResult struct {
+			SubforumID int `db:"id"`
 		}
-		cats, err := db.Query(c.Context(), tx, catIdResult{},
+		cats, err := db.Query(c.Context(), tx, sfIdResult{},
 			`
 			SELECT $columns
-			FROM handmade_category
+			FROM handmade_subforum
 			WHERE kind = ANY ($1)
 			`,
-			[]models.CategoryKind{models.CatKindBlog, models.CatKindForum, models.CatKindWiki, models.CatKindLibraryResource},
+			[]models.ThreadType{models.ThreadTypeProjectArticle, models.ThreadTypeForumPost},
 		)
 		if err != nil {
 			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch category IDs for CLRI"))
 		}
 
 		catIdResults := cats.ToSlice()
-		catIds = make([]int, len(catIdResults))
+		sfIds = make([]int, len(catIdResults))
 		for i, res := range catIdResults {
-			catIds[i] = res.(*catIdResult).CatID
+			sfIds[i] = res.(*sfIdResult).SubforumID
 		}
 	}
 
@@ -342,7 +342,7 @@ func ForumCategoryMarkRead(c *RequestContext) ResponseData {
 		ON CONFLICT (category_id, user_id) DO UPDATE
 			SET lastread = EXCLUDED.lastread
 		`,
-		catIds,
+		sfIds,
 		c.CurrentUser.ID,
 		time.Now(),
 	)
@@ -364,7 +364,7 @@ func ForumCategoryMarkRead(c *RequestContext) ResponseData {
 					category_id = ANY ($1)
 			)
 		`,
-		catIds,
+		sfIds,
 		c.CurrentUser.ID,
 	)
 	c.Perf.EndBlock()
@@ -378,10 +378,10 @@ func ForumCategoryMarkRead(c *RequestContext) ResponseData {
 	}
 
 	var redirUrl string
-	if catId == 0 {
+	if sfId == 0 {
 		redirUrl = hmnurl.BuildFeed()
 	} else {
-		redirUrl = hmnurl.BuildForumCategory(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(catId), 1)
+		redirUrl = hmnurl.BuildForum(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(sfId), 1)
 	}
 	return c.Redirect(redirUrl, http.StatusSeeOther)
 }
@@ -392,7 +392,7 @@ type forumThreadData struct {
 	Thread templates.Thread
 	Posts  []templates.Post
 
-	CategoryUrl string
+	SubforumUrl string
 	ReplyUrl    string
 	Pagination  templates.Pagination
 }
@@ -405,7 +405,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID)
+	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID)
 
 	thread := cd.FetchThread(c.Context(), c.Conn)
 
@@ -519,7 +519,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		BaseData:    baseData,
 		Thread:      templates.ThreadToTemplate(thread),
 		Posts:       posts,
-		CategoryUrl: hmnurl.BuildForumCategory(c.CurrentProject.Slug, currentSubforumSlugs, 1),
+		SubforumUrl: hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, 1),
 		ReplyUrl:    hmnurl.BuildForumPostReply(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, *thread.FirstID),
 		Pagination:  pagination,
 	}, c.Perf)
@@ -542,12 +542,10 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 		FROM
 			handmade_post AS post
 		WHERE
-			post.category_id = $1
-			AND post.thread_id = $2
+			post.thread_id = $1
 			AND NOT post.deleted
 		ORDER BY postdate
 		`,
-		cd.CatID,
 		cd.ThreadID,
 	)
 	if err != nil {
@@ -588,7 +586,7 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 
 	return c.Redirect(hmnurl.BuildForumThreadWithPostHash(
 		c.CurrentProject.Slug,
-		cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID),
+		cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID),
 		cd.ThreadID,
 		threadTitle,
 		page,
@@ -610,7 +608,7 @@ func ForumNewThread(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("editor.html", editorData{
 		BaseData:    baseData,
-		SubmitUrl:   hmnurl.BuildForumNewThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID), true),
+		SubmitUrl:   hmnurl.BuildForumNewThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), true),
 		SubmitLabel: "Post New Thread",
 	}, c.Perf)
 	return res
@@ -643,13 +641,15 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 	var threadId int
 	err = tx.QueryRow(c.Context(),
 		`
-		INSERT INTO handmade_thread (title, sticky, category_id, first_id, last_id)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO handmade_thread (title, sticky, type, project_id, subforum_id, first_id, last_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
 		`,
 		title,
 		sticky,
-		cd.CatID,
+		models.ThreadTypeForumPost,
+		c.CurrentProject.ID,
+		cd.SubforumID,
 		-1,
 		-1,
 	).Scan(&threadId)
@@ -657,7 +657,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		panic(oops.New(err, "failed to create thread"))
 	}
 
-	postId, _ := createNewForumPostAndVersion(c.Context(), tx, cd.CatID, threadId, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host, nil)
+	postId, _ := createNewForumPostAndVersion(c.Context(), tx, threadId, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host, nil)
 
 	// Update thread with post id
 	_, err = tx.Exec(c.Context(),
@@ -680,7 +680,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new forum thread"))
 	}
 
-	newThreadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID), threadId, title, 1)
+	newThreadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), threadId, title, 1)
 	return c.Redirect(newThreadUrl, http.StatusSeeOther)
 }
 
@@ -693,7 +693,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 	postData := cd.FetchPostAndStuff(c.Context(), c.Conn)
 
 	baseData := getBaseData(c)
-	baseData.Title = fmt.Sprintf("Replying to \"%s\" | %s", postData.Thread.Title, *cd.CategoryTree[cd.CatID].Name)
+	baseData.Title = fmt.Sprintf("Replying to \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
 	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
@@ -703,7 +703,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("editor.html", editorData{
 		BaseData:    baseData,
-		SubmitUrl:   hmnurl.BuildForumPostReply(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID), cd.ThreadID, cd.PostID),
+		SubmitUrl:   hmnurl.BuildForumPostReply(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID),
 		SubmitLabel: "Submit Reply",
 
 		Title:          "Replying to post",
@@ -729,14 +729,14 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 
 	unparsed := c.Req.Form.Get("body")
 
-	newPostId, _ := createNewForumPostAndVersion(c.Context(), tx, cd.CatID, cd.ThreadID, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host, &cd.PostID)
+	newPostId, _ := createNewForumPostAndVersion(c.Context(), tx, cd.ThreadID, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host, &cd.PostID)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to forum post"))
 	}
 
-	newPostUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID), cd.ThreadID, newPostId)
+	newPostUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, newPostId)
 	return c.Redirect(newPostUrl, http.StatusSeeOther)
 }
 
@@ -753,7 +753,7 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 	postData := cd.FetchPostAndStuff(c.Context(), c.Conn)
 
 	baseData := getBaseData(c)
-	baseData.Title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, *cd.CategoryTree[cd.CatID].Name)
+	baseData.Title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
 	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
@@ -763,7 +763,7 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("editor.html", editorData{
 		BaseData:    baseData,
-		SubmitUrl:   hmnurl.BuildForumPostEdit(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID), cd.ThreadID, cd.PostID),
+		SubmitUrl:   hmnurl.BuildForumPostEdit(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID),
 		Title:       postData.Thread.Title,
 		SubmitLabel: "Submit Edited Post",
 
@@ -801,7 +801,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit forum post"))
 	}
 
-	postUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID), cd.ThreadID, cd.PostID)
+	postUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
 	return c.Redirect(postUrl, http.StatusSeeOther)
 }
 
@@ -818,7 +818,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 	postData := cd.FetchPostAndStuff(c.Context(), c.Conn)
 
 	baseData := getBaseData(c)
-	baseData.Title = fmt.Sprintf("Deleting post in \"%s\" | %s", postData.Thread.Title, *cd.CategoryTree[cd.CatID].Name)
+	baseData.Title = fmt.Sprintf("Deleting post in \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
 	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
@@ -834,7 +834,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("forum_post_delete.html", forumPostDeleteData{
 		BaseData:  baseData,
-		SubmitUrl: hmnurl.BuildForumPostDelete(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID), cd.ThreadID, cd.PostID),
+		SubmitUrl: hmnurl.BuildForumPostDelete(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID),
 		Post:      templatePost,
 	}, c.Perf)
 	return res
@@ -895,7 +895,7 @@ func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
 			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete thread and posts when deleting the first post"))
 		}
 
-		forumUrl := hmnurl.BuildForumCategory(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID), 1)
+		forumUrl := hmnurl.BuildForum(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), 1)
 		return c.Redirect(forumUrl, http.StatusSeeOther)
 	}
 
@@ -926,24 +926,23 @@ func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete post"))
 	}
 
-	threadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.CatID), cd.ThreadID, "", 1) // TODO: Go to the last page of the thread? Or the post before the post we just deleted?
+	threadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, "", 1) // TODO: Go to the last page of the thread? Or the post before the post we just deleted?
 	return c.Redirect(threadUrl, http.StatusSeeOther)
 }
 
-func createNewForumPostAndVersion(ctx context.Context, tx pgx.Tx, catId, threadId, userId, projectId int, unparsedContent string, ipString string, replyId *int) (postId, versionId int) {
+func createNewForumPostAndVersion(ctx context.Context, tx pgx.Tx, threadId, userId, projectId int, unparsedContent string, ipString string, replyId *int) (postId, versionId int) {
 	// Create post
 	err := tx.QueryRow(ctx,
 		`
-		INSERT INTO handmade_post (postdate, category_id, thread_id, current_id, author_id, category_kind, project_id, reply_id, preview)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO handmade_post (postdate, thread_id, thread_type, current_id, author_id, project_id, reply_id, preview)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
 		`,
 		time.Now(),
-		catId,
 		threadId,
+		models.ThreadTypeForumPost,
 		-1,
 		userId,
-		models.CatKindForum,
 		projectId,
 		replyId,
 		"", // empty preview, will be updated later
@@ -1064,16 +1063,16 @@ func fixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
 type commonForumData struct {
 	c *RequestContext
 
-	CatID    int
-	ThreadID int
-	PostID   int
+	SubforumID int
+	ThreadID   int
+	PostID     int
 
-	CategoryTree   models.CategoryTree
-	LineageBuilder *models.CategoryLineageBuilder
+	SubforumTree   models.SubforumTree
+	LineageBuilder *models.SubforumLineageBuilder
 }
 
 /*
-Gets data that is used on basically every forums-related route. Parses path params for category,
+Gets data that is used on basically every forums-related route. Parses path params for subforum,
 thread, and post ids and validates that all those resources do in fact exist.
 
 Returns false if any data is invalid and you should return a 404.
@@ -1082,25 +1081,25 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 	c.Perf.StartBlock("FORUMS", "Fetch common forum data")
 	defer c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SQL", "Fetch category tree")
-	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
-	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
 	res := commonForumData{
 		c:              c,
-		CategoryTree:   categoryTree,
+		SubforumTree:   subforumTree,
 		LineageBuilder: lineageBuilder,
 	}
 
-	if cats, hasCats := c.PathParams["cats"]; hasCats {
-		catId, valid := validateSubforums(lineageBuilder, c.CurrentProject, cats)
+	if subforums, hasSubforums := c.PathParams["subforums"]; hasSubforums {
+		sfId, valid := validateSubforums(lineageBuilder, c.CurrentProject, subforums)
 		if !valid {
 			return commonForumData{}, false
 		}
-		res.CatID = catId
+		res.SubforumID = sfId
 
-		// No need to validate cat here; it's handled by validateSubforums.
+		// No need to validate that subforum exists here; it's handled by validateSubforums.
 	}
 
 	if threadIdStr, hasThreadId := c.PathParams["threadid"]; hasThreadId {
@@ -1117,10 +1116,10 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 			FROM handmade_thread
 			WHERE
 				id = $1
-				AND category_id = $2
+				AND subforum_id = $2
 			`,
 			res.ThreadID,
-			res.CatID,
+			res.SubforumID,
 		)
 		c.Perf.EndBlock()
 		if err != nil {
@@ -1146,11 +1145,9 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 			WHERE
 				id = $1
 				AND thread_id = $2
-				AND category_id = $3
 			`,
 			res.PostID,
 			res.ThreadID,
-			res.CatID,
 		)
 		c.Perf.EndBlock()
 		if err != nil {
@@ -1180,14 +1177,14 @@ func (cd *commonForumData) FetchThread(ctx context.Context, connOrTx db.ConnOrTx
 		SELECT $columns
 		FROM
 			handmade_thread AS thread
-			JOIN handmade_category AS cat ON cat.id = thread.category_id
+			JOIN handmade_subforum AS sf ON sf.id = thread.subforum_id
 		WHERE
 			thread.id = $1
 			AND NOT thread.deleted
-			AND cat.id = $2
+			AND sf.id = $2
 		`,
 		cd.ThreadID,
-		cd.CatID, // NOTE(asaf): This verifies that the requested thread is under the requested subforum.
+		cd.SubforumID, // NOTE(asaf): This verifies that the requested thread is under the requested subforum.
 	)
 	cd.c.Perf.EndBlock()
 	if err != nil {
@@ -1225,12 +1222,10 @@ func (cd *commonForumData) FetchPostAndStuff(ctx context.Context, connOrTx db.Co
 			LEFT JOIN auth_user AS author ON post.author_id = author.id
 			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
 		WHERE
-			post.category_id = $1
-			AND post.thread_id = $2
-			AND post.id = $3
+			post.thread_id = $1
+			AND post.id = $2
 			AND NOT post.deleted
 		`,
-		cd.CatID,
 		cd.ThreadID,
 		cd.PostID,
 	)
@@ -1274,27 +1269,27 @@ func (cd *commonForumData) UserCanEditPost(ctx context.Context, connOrTx db.Conn
 	return result.AuthorID != nil && *result.AuthorID == user.ID
 }
 
-func validateSubforums(lineageBuilder *models.CategoryLineageBuilder, project *models.Project, catPath string) (int, bool) {
+func validateSubforums(lineageBuilder *models.SubforumLineageBuilder, project *models.Project, sfPath string) (int, bool) {
 	if project.ForumID == nil {
 		return -1, false
 	}
 
-	subforumCatId := *project.ForumID
-	if len(catPath) == 0 {
-		return subforumCatId, true
+	subforumId := *project.ForumID
+	if len(sfPath) == 0 {
+		return subforumId, true
 	}
 
-	catPath = strings.ToLower(catPath)
+	sfPath = strings.ToLower(sfPath)
 	valid := false
-	catSlugs := strings.Split(catPath, "/")
-	lastSlug := catSlugs[len(catSlugs)-1]
+	sfSlugs := strings.Split(sfPath, "/")
+	lastSlug := sfSlugs[len(sfSlugs)-1]
 	if len(lastSlug) > 0 {
-		lastSlugCatId := lineageBuilder.FindIdBySlug(project.ID, lastSlug)
-		if lastSlugCatId != -1 {
-			subforumSlugs := lineageBuilder.GetSubforumLineageSlugs(lastSlugCatId)
+		lastSlugSfId := lineageBuilder.FindIdBySlug(project.ID, lastSlug)
+		if lastSlugSfId != -1 {
+			subforumSlugs := lineageBuilder.GetSubforumLineageSlugs(lastSlugSfId)
 			allMatch := true
 			for i, subforum := range subforumSlugs {
-				if subforum != catSlugs[i] {
+				if subforum != sfSlugs[i] {
 					allMatch = false
 					break
 				}
@@ -1302,8 +1297,8 @@ func validateSubforums(lineageBuilder *models.CategoryLineageBuilder, project *m
 			valid = allMatch
 		}
 		if valid {
-			subforumCatId = lastSlugCatId
+			subforumId = lastSlugSfId
 		}
 	}
-	return subforumCatId, valid
+	return subforumId, valid
 }

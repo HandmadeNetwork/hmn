@@ -20,8 +20,6 @@ type UserProfileTemplateData struct {
 	TimelineItems       []templates.TimelineItem
 	NumForums           int
 	NumBlogs            int
-	NumWiki             int
-	NumLibrary          int
 	NumSnippets         int
 }
 
@@ -115,10 +113,9 @@ func UserProfile(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	type postQuery struct {
-		Post            models.Post             `db:"post"`
-		Thread          models.Thread           `db:"thread"`
-		LibraryResource *models.LibraryResource `db:"lib_resource"`
-		Project         models.Project          `db:"project"`
+		Post    models.Post    `db:"post"`
+		Thread  models.Thread  `db:"thread"`
+		Project models.Project `db:"project"`
 	}
 	c.Perf.StartBlock("SQL", "Fetch posts")
 	postQueryResult, err := db.Query(c.Context(), c.Conn, postQuery{},
@@ -128,7 +125,6 @@ func UserProfile(c *RequestContext) ResponseData {
 			handmade_post AS post
 			INNER JOIN handmade_thread AS thread ON thread.id = post.thread_id
 			INNER JOIN handmade_project AS project ON project.id = post.project_id
-			LEFT JOIN handmade_libraryresource AS lib_resource ON lib_resource.category_id = post.category_id
 		WHERE
 			post.author_id = $1
 			AND project.lifecycle = ANY ($2)
@@ -140,37 +136,6 @@ func UserProfile(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch posts for user: %s", username))
 	}
 	postQuerySlice := postQueryResult.ToSlice()
-	c.Perf.EndBlock()
-
-	type wikiEditQuery struct {
-		PostVersion models.PostVersion `db:"version"`
-		Post        models.Post        `db:"post"`
-		Thread      models.Thread      `db:"thread"`
-		Project     models.Project     `db:"project"`
-	}
-	c.Perf.StartBlock("SQL", "Fetch wiki edits")
-	wikiEditQueryResult, err := db.Query(c.Context(), c.Conn, wikiEditQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_postversion AS version
-			INNER JOIN handmade_post AS post ON post.id = version.post_id
-			INNER JOIN handmade_thread AS thread on thread.id = post.thread_id
-			INNER JOIN handmade_project AS project ON project.id = post.project_id
-		WHERE
-			version.editor_id = $1
-			AND post.parent_id IS NULL
-			AND post.category_kind = $2
-			AND project.lifecycle = ANY ($3)
-		`,
-		profileUser.ID,
-		models.CatKindWiki,
-		models.VisibleProjectLifecycles,
-	)
-	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch wiki edits for user: %s", username))
-	}
-	wikiEditQuerySlice := wikiEditQueryResult.ToSlice()
 	c.Perf.EndBlock()
 
 	type snippetQuery struct {
@@ -197,17 +162,15 @@ func UserProfile(c *RequestContext) ResponseData {
 	snippetQuerySlice := snippetQueryResult.ToSlice()
 	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SQL", "Fetch category tree")
-	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
-	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("PROFILE", "Construct timeline items")
-	timelineItems := make([]templates.TimelineItem, 0, len(postQuerySlice)+len(wikiEditQuerySlice)+len(snippetQuerySlice))
+	timelineItems := make([]templates.TimelineItem, 0, len(postQuerySlice)+len(snippetQuerySlice))
 	numForums := 0
 	numBlogs := 0
-	numWiki := len(wikiEditQuerySlice)
-	numLibrary := 0
 	numSnippets := len(snippetQuerySlice)
 
 	for _, postRow := range postQuerySlice {
@@ -217,7 +180,6 @@ func UserProfile(c *RequestContext) ResponseData {
 			&postData.Post,
 			&postData.Thread,
 			&postData.Project,
-			postData.LibraryResource,
 			profileUser,
 			c.Theme,
 		)
@@ -226,30 +188,12 @@ func UserProfile(c *RequestContext) ResponseData {
 			numForums += 1
 		case templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment:
 			numBlogs += 1
-		case templates.TimelineTypeWikiCreate, templates.TimelineTypeWikiTalk:
-			numWiki += 1
-		case templates.TimelineTypeLibraryComment:
-			numLibrary += 1
 		}
 		if timelineItem.Type != templates.TimelineTypeUnknown {
 			timelineItems = append(timelineItems, timelineItem)
 		} else {
 			c.Logger.Warn().Int("post ID", postData.Post.ID).Msg("Unknown timeline item type for post")
 		}
-	}
-
-	for _, wikiEditRow := range wikiEditQuerySlice {
-		wikiEditData := wikiEditRow.(*wikiEditQuery)
-		timelineItem := PostVersionToWikiTimelineItem(
-			lineageBuilder,
-			&wikiEditData.PostVersion,
-			&wikiEditData.Post,
-			&wikiEditData.Thread,
-			&wikiEditData.Project,
-			profileUser,
-			c.Theme,
-		)
-		timelineItems = append(timelineItems, timelineItem)
 	}
 
 	for _, snippetRow := range snippetQuerySlice {
@@ -282,8 +226,6 @@ func UserProfile(c *RequestContext) ResponseData {
 		TimelineItems:       timelineItems,
 		NumForums:           numForums,
 		NumBlogs:            numBlogs,
-		NumWiki:             numWiki,
-		NumLibrary:          numLibrary,
 		NumSnippets:         numSnippets,
 	}, c.Perf)
 	return res

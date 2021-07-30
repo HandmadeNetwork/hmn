@@ -339,9 +339,9 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SQL", "Fetch category tree")
-	categoryTree := models.GetFullCategoryTree(c.Context(), c.Conn)
-	lineageBuilder := models.MakeCategoryLineageBuilder(categoryTree)
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetching project timeline")
@@ -431,7 +431,6 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			&post.(*postQuery).Post,
 			&post.(*postQuery).Thread,
 			project,
-			nil,
 			&post.(*postQuery).Author,
 			c.Theme,
 		))

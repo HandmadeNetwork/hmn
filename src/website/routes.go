@@ -156,8 +156,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
 	mainRoutes.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
 	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)
-	mainRoutes.GET(hmnurl.RegexForumCategory, ForumCategory)
-	mainRoutes.POST(hmnurl.RegexForumCategoryMarkRead, authMiddleware(csrfMiddleware(ForumCategoryMarkRead)))
+	mainRoutes.GET(hmnurl.RegexForum, Forum)
+	mainRoutes.POST(hmnurl.RegexForumMarkRead, authMiddleware(csrfMiddleware(ForumMarkRead)))
 	mainRoutes.GET(hmnurl.RegexForumPost, ForumPostRedirect)
 	mainRoutes.GET(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReply))
 	mainRoutes.POST(hmnurl.RegexForumPostReply, authMiddleware(csrfMiddleware(ForumPostReplySubmit)))
@@ -216,8 +216,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			ProjectHomepageUrl: hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
 			ProjectIndexUrl:    hmnurl.BuildProjectIndex(1),
 			BlogUrl:            hmnurl.BuildBlog(c.CurrentProject.Slug, 1),
-			ForumsUrl:          hmnurl.BuildForumCategory(c.CurrentProject.Slug, nil, 1),
-			WikiUrl:            hmnurl.BuildWiki(c.CurrentProject.Slug),
+			ForumsUrl:          hmnurl.BuildForum(c.CurrentProject.Slug, nil, 1),
 			LibraryUrl:         hmnurl.BuildLibrary(c.CurrentProject.Slug),
 			ManifestoUrl:       hmnurl.BuildManifesto(),
 			EpisodeGuideUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
@@ -231,7 +230,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			CodeOfConductUrl:           hmnurl.BuildCodeOfConduct(),
 			CommunicationGuidelinesUrl: hmnurl.BuildCommunicationGuidelines(),
 			ProjectIndexUrl:            hmnurl.BuildProjectIndex(1),
-			ForumsUrl:                  hmnurl.BuildForumCategory(models.HMNProjectSlug, nil, 1),
+			ForumsUrl:                  hmnurl.BuildForum(models.HMNProjectSlug, nil, 1),
 			ContactUrl:                 hmnurl.BuildContactPage(),
 			SitemapUrl:                 hmnurl.BuildSiteMap(),
 		},

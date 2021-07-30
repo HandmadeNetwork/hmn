@@ -5,16 +5,12 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 )
 
-func BuildProjectMainCategoryUrl(projectSlug string, kind models.CategoryKind) string {
+func BuildProjectRootResourceUrl(projectSlug string, kind models.ThreadType) string {
 	switch kind {
-	case models.CatKindBlog:
+	case models.ThreadTypeProjectArticle:
 		return hmnurl.BuildBlog(projectSlug, 1)
-	case models.CatKindForum:
-		return hmnurl.BuildForumCategory(projectSlug, nil, 1)
-	case models.CatKindWiki:
-		return hmnurl.BuildWiki(projectSlug)
-	case models.CatKindLibraryResource:
-		return hmnurl.BuildLibrary(projectSlug)
+	case models.ThreadTypeForumPost:
+		return hmnurl.BuildForum(projectSlug, nil, 1)
 	}
 	return hmnurl.BuildProjectHomepage(projectSlug)
 }

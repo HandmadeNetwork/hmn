@@ -4,14 +4,10 @@ const TimelineTypes = {
     FORUM_REPLY: 2,
     BLOG_POST: 3,
     BLOG_COMMENT: 4,
-    WIKI_CREATE: 5,
-    WIKI_EDIT: 6,
-    WIKI_TALK: 7,
-    LIBRARY_COMMENT: 8,
-    SNIPPET_IMAGE: 9,
-    SNIPPET_VIDEO: 10,
-    SNIPPET_AUDIO: 11,
-    SNIPPET_YOUTUBE: 12
+    SNIPPET_IMAGE: 5,
+    SNIPPET_VIDEO: 6,
+    SNIPPET_AUDIO: 7,
+    SNIPPET_YOUTUBE: 8
 };
 
 const showcaseItemTemplate = makeTemplateCloner("showcase_item");

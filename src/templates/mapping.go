@@ -99,7 +99,6 @@ func ProjectToTemplate(p *models.Project, theme string) Project {
 
 		HasBlog:    true, // TODO: Check flag sets or whatever
 		HasForum:   true,
-		HasWiki:    true,
 		HasLibrary: true,
 
 		DateApproved: p.DateApproved,

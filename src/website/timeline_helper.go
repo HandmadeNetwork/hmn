@@ -10,12 +10,10 @@ import (
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
-var TimelineTypeMap = map[models.CategoryKind][]templates.TimelineType{
-	//                             {            No parent         ,            Has parent            }
-	models.CatKindBlog:            {templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment},
-	models.CatKindForum:           {templates.TimelineTypeForumThread, templates.TimelineTypeForumReply},
-	models.CatKindWiki:            {templates.TimelineTypeWikiCreate, templates.TimelineTypeWikiTalk},
-	models.CatKindLibraryResource: {templates.TimelineTypeLibraryComment, templates.TimelineTypeLibraryComment},
+var TimelineTypeMap = map[models.ThreadType][]templates.TimelineType{
+	//                               {            No parent         ,            Has parent            }
+	models.ThreadTypeProjectArticle: {templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment},
+	models.ThreadTypeForumPost:      {templates.TimelineTypeForumThread, templates.TimelineTypeForumReply},
 }
 
 var TimelineItemClassMap = map[templates.TimelineType]string{
@@ -26,12 +24,6 @@ var TimelineItemClassMap = map[templates.TimelineType]string{
 
 	templates.TimelineTypeBlogPost:    "blogs",
 	templates.TimelineTypeBlogComment: "blogs",
-
-	templates.TimelineTypeWikiCreate: "wiki",
-	templates.TimelineTypeWikiEdit:   "wiki",
-	templates.TimelineTypeWikiTalk:   "wiki",
-
-	templates.TimelineTypeLibraryComment: "library",
 
 	templates.TimelineTypeSnippetImage:   "snippets",
 	templates.TimelineTypeSnippetVideo:   "snippets",
@@ -48,21 +40,15 @@ var TimelineTypeTitleMap = map[templates.TimelineType]string{
 	templates.TimelineTypeBlogPost:    "New blog post",
 	templates.TimelineTypeBlogComment: "Blog comment",
 
-	templates.TimelineTypeWikiCreate: "New wiki article",
-	templates.TimelineTypeWikiEdit:   "Wiki edit",
-	templates.TimelineTypeWikiTalk:   "Wiki talk",
-
-	templates.TimelineTypeLibraryComment: "Library comment",
-
 	templates.TimelineTypeSnippetImage:   "Snippet",
 	templates.TimelineTypeSnippetVideo:   "Snippet",
 	templates.TimelineTypeSnippetAudio:   "Snippet",
 	templates.TimelineTypeSnippetYoutube: "Snippet",
 }
 
-func PostToTimelineItem(lineageBuilder *models.CategoryLineageBuilder, post *models.Post, thread *models.Thread, project *models.Project, libraryResource *models.LibraryResource, owner *models.User, currentTheme string) templates.TimelineItem {
+func PostToTimelineItem(lineageBuilder *models.SubforumLineageBuilder, post *models.Post, thread *models.Thread, project *models.Project, owner *models.User, currentTheme string) templates.TimelineItem {
 	itemType := templates.TimelineTypeUnknown
-	typeByCatKind, found := TimelineTypeMap[post.CategoryKind]
+	typeByCatKind, found := TimelineTypeMap[post.ThreadType]
 	if found {
 		hasParent := 0
 		if post.ParentID != nil {
@@ -71,17 +57,12 @@ func PostToTimelineItem(lineageBuilder *models.CategoryLineageBuilder, post *mod
 		itemType = typeByCatKind[hasParent]
 	}
 
-	libraryResourceId := 0
-	if libraryResource != nil {
-		libraryResourceId = libraryResource.ID
-	}
-
 	return templates.TimelineItem{
 		Type:      itemType,
 		TypeTitle: TimelineTypeTitleMap[itemType],
 		Class:     TimelineItemClassMap[itemType],
 		Date:      post.PostDate,
-		Url:       UrlForGenericPost(post, lineageBuilder.GetSubforumLineageSlugs(post.CategoryID), thread.Title, libraryResourceId, project.Slug),
+		Url:       UrlForGenericPost(thread, post, lineageBuilder, project.Slug),
 
 		OwnerAvatarUrl: templates.UserAvatarUrl(owner, currentTheme),
 		OwnerName:      templates.UserDisplayName(owner),
@@ -89,25 +70,7 @@ func PostToTimelineItem(lineageBuilder *models.CategoryLineageBuilder, post *mod
 		Description:    "", // NOTE(asaf): No description for posts
 
 		Title:       thread.Title,
-		Breadcrumbs: PostBreadcrumbs(lineageBuilder, project, post, libraryResource),
-	}
-}
-
-func PostVersionToWikiTimelineItem(lineageBuilder *models.CategoryLineageBuilder, version *models.PostVersion, post *models.Post, thread *models.Thread, project *models.Project, owner *models.User, currentTheme string) templates.TimelineItem {
-	return templates.TimelineItem{
-		Type:      templates.TimelineTypeWikiEdit,
-		TypeTitle: TimelineTypeTitleMap[templates.TimelineTypeWikiEdit],
-		Class:     TimelineItemClassMap[templates.TimelineTypeWikiEdit],
-		Date:      version.Date,
-		Url:       hmnurl.BuildWikiArticle(project.Slug, thread.ID, thread.Title),
-
-		OwnerAvatarUrl: templates.UserAvatarUrl(owner, currentTheme),
-		OwnerName:      templates.UserDisplayName(owner),
-		OwnerUrl:       hmnurl.BuildUserProfile(owner.Username),
-		Description:    "", // NOTE(asaf): No description for posts
-
-		Title:       thread.Title,
-		Breadcrumbs: PostBreadcrumbs(lineageBuilder, project, post, nil),
+		Breadcrumbs: PostBreadcrumbs(lineageBuilder, project, thread),
 	}
 }
 
