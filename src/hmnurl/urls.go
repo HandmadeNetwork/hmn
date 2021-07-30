@@ -414,17 +414,17 @@ func BuildBlog(projectSlug string, page int) string {
 	return ProjectUrl(path, nil, projectSlug)
 }
 
-var RegexBlogThread = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)(-([^/]+))?(/(?P<page>\d+))?$`)
+var RegexBlogThread = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)(-([^/]+))?$`)
 
-func BuildBlogThread(projectSlug string, threadId int, title string, page int) string {
+func BuildBlogThread(projectSlug string, threadId int, title string) string {
 	defer CatchPanic()
-	builder := buildBlogThreadPath(threadId, title, page)
+	builder := buildBlogThreadPath(threadId, title)
 	return ProjectUrl(builder.String(), nil, projectSlug)
 }
 
-func BuildBlogThreadWithPostHash(projectSlug string, threadId int, title string, page int, postId int) string {
+func BuildBlogThreadWithPostHash(projectSlug string, threadId int, title string, postId int) string {
 	defer CatchPanic()
-	builder := buildBlogThreadPath(threadId, title, page)
+	builder := buildBlogThreadPath(threadId, title)
 	return ProjectUrlWithFragment(builder.String(), nil, projectSlug, strconv.Itoa(postId))
 }
 
@@ -460,15 +460,6 @@ func BuildBlogPostReply(projectSlug string, threadId int, postId int) string {
 	defer CatchPanic()
 	builder := buildBlogPostPath(threadId, postId)
 	builder.WriteString("/reply")
-	return ProjectUrl(builder.String(), nil, projectSlug)
-}
-
-var RegexBlogPostQuote = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)/e/(?P<postid>\d+)/quote$`)
-
-func BuildBlogPostQuote(projectSlug string, threadId int, postId int) string {
-	defer CatchPanic()
-	builder := buildBlogPostPath(threadId, postId)
-	builder.WriteString("/quote")
 	return ProjectUrl(builder.String(), nil, projectSlug)
 }
 
@@ -523,6 +514,13 @@ var RegexProjectCSS = regexp.MustCompile("^/assets/project.css$")
 func BuildProjectCSS(color string) string {
 	defer CatchPanic()
 	return Url("/assets/project.css", []Q{{"color", color}})
+}
+
+var RegexEditorPreviewsJS = regexp.MustCompile("^/assets/editorpreviews.js$")
+
+func BuildEditorPreviewsJS() string {
+	defer CatchPanic()
+	return Url("/assets/editorpreviews.js", nil)
 }
 
 // NOTE(asaf): No Regex or tests for remote assets, since we don't parse it ourselves
@@ -665,11 +663,7 @@ func buildForumPostPath(subforums []string, threadId int, postId int) *strings.B
 	return builder
 }
 
-func buildBlogThreadPath(threadId int, title string, page int) *strings.Builder {
-	if page < 1 {
-		panic(oops.New(nil, "Invalid blog thread page (%d), must be >= 1", page))
-	}
-
+func buildBlogThreadPath(threadId int, title string) *strings.Builder {
 	if threadId < 1 {
 		panic(oops.New(nil, "Invalid blog thread ID (%d), must be >= 1", threadId))
 	}
@@ -681,10 +675,6 @@ func buildBlogThreadPath(threadId int, title string, page int) *strings.Builder 
 	if len(title) > 0 {
 		builder.WriteRune('-')
 		builder.WriteString(PathSafeTitle(title))
-	}
-	if page > 1 {
-		builder.WriteRune('/')
-		builder.WriteString(strconv.Itoa(page))
 	}
 
 	return &builder

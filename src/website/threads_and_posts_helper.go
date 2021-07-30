@@ -4,10 +4,14 @@ import (
 	"context"
 	"errors"
 	"math"
+	"net"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/parsing"
+	"github.com/jackc/pgx/v4"
 )
 
 type postAndRelatedModels struct {
@@ -187,7 +191,7 @@ func FetchThreadPostsAndStuff(
 	return thread, posts
 }
 
-func (cd *commonForumData) UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User) bool {
+func UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User, postId int) bool {
 	if user.IsStaff {
 		return true
 	}
@@ -204,7 +208,7 @@ func (cd *commonForumData) UserCanEditPost(ctx context.Context, connOrTx db.Conn
 			post.id = $1
 			AND NOT post.deleted
 		`,
-		cd.PostID,
+		postId,
 	)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
@@ -216,4 +220,217 @@ func (cd *commonForumData) UserCanEditPost(ctx context.Context, connOrTx db.Conn
 	result := iresult.(*postResult)
 
 	return result.AuthorID != nil && *result.AuthorID == user.ID
+}
+
+func CreateNewPost(
+	ctx context.Context,
+	tx pgx.Tx,
+	projectId int,
+	threadId int, threadType models.ThreadType,
+	userId int,
+	replyId *int,
+	unparsedContent string,
+	ipString string,
+) (postId, versionId int) {
+	// Create post
+	err := tx.QueryRow(ctx,
+		`
+		INSERT INTO handmade_post (postdate, thread_id, thread_type, current_id, author_id, project_id, reply_id, preview)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id
+		`,
+		time.Now(),
+		threadId,
+		models.ThreadTypeForumPost,
+		-1,
+		userId,
+		projectId,
+		replyId,
+		"", // empty preview, will be updated later
+	).Scan(&postId)
+	if err != nil {
+		panic(oops.New(err, "failed to create post"))
+	}
+
+	// Create and associate version
+	versionId = CreatePostVersion(ctx, tx, postId, unparsedContent, ipString, "", nil)
+
+	// Fix up thread
+	err = FixThreadPostIds(ctx, tx, threadId)
+	if err != nil {
+		panic(oops.New(err, "failed to fix up thread post IDs"))
+	}
+
+	return
+}
+
+func DeletePost(
+	ctx context.Context,
+	tx pgx.Tx,
+	threadId, postId int,
+) (threadDeleted bool) {
+	isFirstPost, err := db.QueryBool(ctx, tx,
+		`
+		SELECT thread.first_id = $1
+		FROM
+			handmade_thread AS thread
+		WHERE
+			thread.id = $2
+		`,
+		postId,
+		threadId,
+	)
+	if err != nil {
+		panic(oops.New(err, "failed to check if post was the first post in the thread"))
+	}
+
+	if isFirstPost {
+		// Just delete the whole thread and all its posts.
+		_, err = tx.Exec(ctx,
+			`
+			UPDATE handmade_thread
+			SET deleted = TRUE
+			WHERE id = $1
+			`,
+			threadId,
+		)
+		_, err = tx.Exec(ctx,
+			`
+			UPDATE handmade_post
+			SET deleted = TRUE
+			WHERE thread_id = $1
+			`,
+			threadId,
+		)
+
+		return true
+	}
+
+	_, err = tx.Exec(ctx,
+		`
+		UPDATE handmade_post
+		SET deleted = TRUE
+		WHERE
+			id = $1
+		`,
+		postId,
+	)
+	if err != nil {
+		panic(oops.New(err, "failed to mark forum post as deleted"))
+	}
+
+	err = FixThreadPostIds(ctx, tx, threadId)
+	if err != nil {
+		if errors.Is(err, errThreadEmpty) {
+			panic("it shouldn't be possible to delete the last remaining post in a thread, without it also being the first post in the thread and thus resulting in the whole thread getting deleted earlier")
+		} else {
+			panic(oops.New(err, "failed to fix up thread post ids"))
+		}
+	}
+
+	return false
+}
+
+func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedContent string, ipString string, editReason string, editorId *int) (versionId int) {
+	parsed := parsing.ParseMarkdown(unparsedContent, parsing.RealMarkdown)
+	ip := net.ParseIP(ipString)
+
+	const previewMaxLength = 100
+	parsedPlaintext := parsing.ParseMarkdown(unparsedContent, parsing.PlaintextMarkdown)
+	preview := parsedPlaintext
+	if len(preview) > previewMaxLength-1 {
+		preview = preview[:previewMaxLength-1] + "…"
+	}
+
+	// Create post version
+	err := tx.QueryRow(ctx,
+		`
+		INSERT INTO handmade_postversion (post_id, text_raw, text_parsed, ip, date, edit_reason, editor_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id
+		`,
+		postId,
+		unparsedContent,
+		parsed,
+		ip,
+		time.Now(),
+		editReason,
+		editorId,
+	).Scan(&versionId)
+	if err != nil {
+		panic(oops.New(err, "failed to create post version"))
+	}
+
+	// Update post with version id and preview
+	_, err = tx.Exec(ctx,
+		`
+		UPDATE handmade_post
+		SET current_id = $1, preview = $2
+		WHERE id = $3
+		`,
+		versionId,
+		preview,
+		postId,
+	)
+	if err != nil {
+		panic(oops.New(err, "failed to set current post version and preview"))
+	}
+
+	return
+}
+
+var errThreadEmpty = errors.New("thread contained no non-deleted posts")
+
+/*
+Ensures that the first_id and last_id on the thread are still good.
+
+Returns errThreadEmpty if the thread contains no visible posts any more.
+You should probably mark the thread as deleted in this case.
+*/
+func FixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
+	postsIter, err := db.Query(ctx, tx, models.Post{},
+		`
+		SELECT $columns
+		FROM handmade_post
+		WHERE
+			thread_id = $1
+			AND NOT deleted
+		`,
+		threadId,
+	)
+	if err != nil {
+		return oops.New(err, "failed to fetch posts when fixing up thread")
+	}
+
+	var firstPost, lastPost *models.Post
+	for _, ipost := range postsIter.ToSlice() {
+		post := ipost.(*models.Post)
+
+		if firstPost == nil || post.PostDate.Before(firstPost.PostDate) {
+			firstPost = post
+		}
+		if lastPost == nil || post.PostDate.After(lastPost.PostDate) {
+			lastPost = post
+		}
+	}
+
+	if firstPost == nil || lastPost == nil {
+		return errThreadEmpty
+	}
+
+	_, err = tx.Exec(ctx,
+		`
+		UPDATE handmade_thread
+		SET first_id = $1, last_id = $2
+		WHERE id = $3
+		`,
+		firstPost.ID,
+		lastPost.ID,
+		threadId,
+	)
+	if err != nil {
+		return oops.New(err, "failed to update thread first/last ids")
+	}
+
+	return nil
 }

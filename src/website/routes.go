@@ -168,6 +168,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	mainRoutes.GET(hmnurl.RegexBlogThread, BlogThread)
 	mainRoutes.GET(hmnurl.RegexBlogPost, BlogPostRedirectToThread)
+	mainRoutes.GET(hmnurl.RegexBlogPostEdit, BlogPostEdit)
+	mainRoutes.POST(hmnurl.RegexBlogPostEdit, BlogPostEditSubmit)
 
 	mainRoutes.GET(hmnurl.RegexPodcast, PodcastIndex)
 	mainRoutes.GET(hmnurl.RegexPodcastEdit, PodcastEdit)
@@ -180,6 +182,12 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexPodcastRSS, PodcastRSS)
 
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
+	mainRoutes.GET(hmnurl.RegexEditorPreviewsJS, func(c *RequestContext) ResponseData {
+		var res ResponseData
+		res.MustWriteTemplate("editorpreviews.js", nil, c.Perf)
+		res.Header().Add("Content-Type", "application/javascript")
+		return res
+	})
 
 	// Other
 	mainRoutes.AnyMethod(hmnurl.RegexCatchAll, FourOhFour)

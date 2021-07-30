@@ -1,11 +1,8 @@
 package website
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"math"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -15,10 +12,8 @@ import (
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
-	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
-	"github.com/jackc/pgx/v4"
 )
 
 type forumData struct {
@@ -38,16 +33,44 @@ type forumSubforumData struct {
 	TotalThreads int
 }
 
+type editActionType string
+
 type editorData struct {
 	templates.BaseData
 	SubmitUrl   string
-	Title       string
 	SubmitLabel string
 
-	IsEditing           bool // false if new post, true if updating existing one
+	// The following are filled out automatically by the
+	// getEditorDataFor* functions.
+	Title               string
+	CanEditTitle        bool
+	IsEditing           bool
 	EditInitialContents string
+	PostReplyingTo      *templates.Post
+}
 
-	PostReplyingTo *templates.Post
+func getEditorDataForNew(baseData templates.BaseData, replyPost *templates.Post) editorData {
+	result := editorData{
+		BaseData:       baseData,
+		CanEditTitle:   replyPost == nil,
+		PostReplyingTo: replyPost,
+	}
+
+	if replyPost != nil {
+		result.Title = "Replying to post"
+	}
+
+	return result
+}
+
+func getEditorDataForEdit(baseData templates.BaseData, p postAndRelatedModels) editorData {
+	return editorData{
+		BaseData:            baseData,
+		Title:               p.Thread.Title,
+		CanEditTitle:        p.Thread.FirstID == p.Post.ID,
+		IsEditing:           true,
+		EditInitialContents: p.CurrentVersion.TextRaw,
+	}
 }
 
 func Forum(c *RequestContext) ResponseData {
@@ -590,12 +613,12 @@ func ForumNewThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
+	editData := getEditorDataForNew(baseData, nil)
+	editData.SubmitUrl = hmnurl.BuildForumNewThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), true)
+	editData.SubmitLabel = "Post New Thread"
+
 	var res ResponseData
-	res.MustWriteTemplate("editor.html", editorData{
-		BaseData:    baseData,
-		SubmitUrl:   hmnurl.BuildForumNewThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), true),
-		SubmitLabel: "Post New Thread",
-	}, c.Perf)
+	res.MustWriteTemplate("editor.html", editData, c.Perf)
 	return res
 }
 
@@ -642,23 +665,8 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		panic(oops.New(err, "failed to create thread"))
 	}
 
-	postId, _ := createNewForumPostAndVersion(c.Context(), tx, threadId, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host, nil)
-
-	// Update thread with post id
-	_, err = tx.Exec(c.Context(),
-		`
-		UPDATE handmade_thread
-		SET
-			first_id = $1,
-			last_id = $1
-		WHERE id = $2
-		`,
-		postId,
-		threadId,
-	)
-	if err != nil {
-		panic(oops.New(err, "failed to set thread post ids"))
-	}
+	// Create everything else
+	CreateNewPost(c.Context(), tx, c.CurrentProject.ID, threadId, models.ThreadTypeForumPost, c.CurrentUser.ID, nil, unparsed, c.Req.Host)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
@@ -685,15 +693,12 @@ func ForumPostReply(c *RequestContext) ResponseData {
 	templatePost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
 	templatePost.AddContentVersion(postData.CurrentVersion, postData.Editor)
 
-	var res ResponseData
-	res.MustWriteTemplate("editor.html", editorData{
-		BaseData:    baseData,
-		SubmitUrl:   hmnurl.BuildForumPostReply(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID),
-		SubmitLabel: "Submit Reply",
+	editData := getEditorDataForNew(baseData, &templatePost)
+	editData.SubmitUrl = hmnurl.BuildForumPostReply(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
+	editData.SubmitLabel = "Submit Reply"
 
-		Title:          "Replying to post",
-		PostReplyingTo: &templatePost,
-	}, c.Perf)
+	var res ResponseData
+	res.MustWriteTemplate("editor.html", editData, c.Perf)
 	return res
 }
 
@@ -711,10 +716,9 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 
 	c.Req.ParseForm()
 	// TODO(ben): Validation
-
 	unparsed := c.Req.Form.Get("body")
 
-	newPostId, _ := createNewForumPostAndVersion(c.Context(), tx, cd.ThreadID, c.CurrentUser.ID, c.CurrentProject.ID, unparsed, c.Req.Host, &cd.PostID)
+	newPostId, _ := CreateNewPost(c.Context(), tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeForumPost, c.CurrentUser.ID, &cd.PostID, unparsed, c.Req.Host)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
@@ -731,30 +735,27 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !cd.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser) {
+	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
 	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
 	baseData := getBaseData(c)
-	baseData.Title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
+	if postData.Thread.FirstID == postData.Post.ID {
+		baseData.Title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
+	} else {
+		baseData.Title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[cd.SubforumID].Name)
+	}
 	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
-	templatePost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
-	templatePost.AddContentVersion(postData.CurrentVersion, postData.Editor)
+	editData := getEditorDataForEdit(baseData, postData)
+	editData.SubmitUrl = hmnurl.BuildForumPostEdit(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
+	editData.SubmitLabel = "Submit Edited Post"
 
 	var res ResponseData
-	res.MustWriteTemplate("editor.html", editorData{
-		BaseData:    baseData,
-		SubmitUrl:   hmnurl.BuildForumPostEdit(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID),
-		Title:       postData.Thread.Title,
-		SubmitLabel: "Submit Edited Post",
-
-		IsEditing:           true,
-		EditInitialContents: postData.CurrentVersion.TextRaw,
-	}, c.Perf)
+	res.MustWriteTemplate("editor.html", editData, c.Perf)
 	return res
 }
 
@@ -764,7 +765,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !cd.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser) {
+	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
@@ -779,7 +780,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 	unparsed := c.Req.Form.Get("body")
 	editReason := c.Req.Form.Get("editreason")
 
-	createForumPostVersion(c.Context(), tx, cd.PostID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
+	CreatePostVersion(c.Context(), tx, cd.PostID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
@@ -796,7 +797,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !cd.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser) {
+	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
@@ -831,7 +832,7 @@ func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !cd.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser) {
+	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
@@ -841,208 +842,20 @@ func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	isFirstPost, err := db.QueryBool(c.Context(), tx,
-		`
-		SELECT thread.first_id = $1
-		FROM
-			handmade_thread AS thread
-		WHERE
-			thread.id = $2
-		`,
-		cd.PostID,
-		cd.ThreadID,
-	)
-	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check if post was the first post in the thread"))
-	}
-
-	if isFirstPost {
-		// Just delete the whole thread and all its posts.
-		_, err = tx.Exec(c.Context(),
-			`
-			UPDATE handmade_thread
-			SET deleted = TRUE
-			WHERE id = $1
-			`,
-			cd.ThreadID,
-		)
-		_, err = tx.Exec(c.Context(),
-			`
-			UPDATE handmade_post
-			SET deleted = TRUE
-			WHERE thread_id = $1
-			`,
-			cd.ThreadID,
-		)
-
-		err = tx.Commit(c.Context())
-		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete thread and posts when deleting the first post"))
-		}
-
-		forumUrl := hmnurl.BuildForum(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), 1)
-		return c.Redirect(forumUrl, http.StatusSeeOther)
-	}
-
-	_, err = tx.Exec(c.Context(),
-		`
-		UPDATE handmade_post
-		SET deleted = TRUE
-		WHERE
-			id = $1
-		`,
-		cd.PostID,
-	)
-	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to mark forum post as deleted"))
-	}
-
-	err = fixThreadPostIds(c.Context(), tx, cd.ThreadID)
-	if err != nil {
-		if errors.Is(err, errThreadEmpty) {
-			panic("it shouldn't be possible to delete the last remaining post in a thread, without it also being the first post in the thread and thus resulting in the whole thread getting deleted earlier")
-		} else {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fix up thread post ids"))
-		}
-	}
+	threadDeleted := DeletePost(c.Context(), tx, cd.ThreadID, cd.PostID)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete post"))
 	}
 
-	threadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, "", 1) // TODO: Go to the last page of the thread? Or the post before the post we just deleted?
-	return c.Redirect(threadUrl, http.StatusSeeOther)
-}
-
-func createNewForumPostAndVersion(ctx context.Context, tx pgx.Tx, threadId, userId, projectId int, unparsedContent string, ipString string, replyId *int) (postId, versionId int) {
-	// Create post
-	err := tx.QueryRow(ctx,
-		`
-		INSERT INTO handmade_post (postdate, thread_id, thread_type, current_id, author_id, project_id, reply_id, preview)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id
-		`,
-		time.Now(),
-		threadId,
-		models.ThreadTypeForumPost,
-		-1,
-		userId,
-		projectId,
-		replyId,
-		"", // empty preview, will be updated later
-	).Scan(&postId)
-	if err != nil {
-		panic(oops.New(err, "failed to create post"))
+	if threadDeleted {
+		forumUrl := hmnurl.BuildForum(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), 1)
+		return c.Redirect(forumUrl, http.StatusSeeOther)
+	} else {
+		threadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, "", 1) // TODO: Go to the last page of the thread? Or the post before the post we just deleted?
+		return c.Redirect(threadUrl, http.StatusSeeOther)
 	}
-
-	versionId = createForumPostVersion(ctx, tx, postId, unparsedContent, ipString, "", nil)
-
-	return
-}
-
-func createForumPostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedContent string, ipString string, editReason string, editorId *int) (versionId int) {
-	parsed := parsing.ParseMarkdown(unparsedContent, parsing.RealMarkdown)
-	ip := net.ParseIP(ipString)
-
-	const previewMaxLength = 100
-	parsedPlaintext := parsing.ParseMarkdown(unparsedContent, parsing.PlaintextMarkdown)
-	preview := parsedPlaintext
-	if len(preview) > previewMaxLength-1 {
-		preview = preview[:previewMaxLength-1] + "…"
-	}
-
-	// Create post version
-	err := tx.QueryRow(ctx,
-		`
-		INSERT INTO handmade_postversion (post_id, text_raw, text_parsed, ip, date, edit_reason, editor_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id
-		`,
-		postId,
-		unparsedContent,
-		parsed,
-		ip,
-		time.Now(),
-		editReason,
-		editorId,
-	).Scan(&versionId)
-	if err != nil {
-		panic(oops.New(err, "failed to create post version"))
-	}
-
-	// Update post with version id and preview
-	_, err = tx.Exec(ctx,
-		`
-		UPDATE handmade_post
-		SET current_id = $1, preview = $2
-		WHERE id = $3
-		`,
-		versionId,
-		preview,
-		postId,
-	)
-	if err != nil {
-		panic(oops.New(err, "failed to set current post version and preview"))
-	}
-
-	return
-}
-
-var errThreadEmpty = errors.New("thread contained no non-deleted posts")
-
-/*
-Ensures that the first_id and last_id on the thread are still good.
-
-Returns errThreadEmpty if the thread contains no visible posts any more.
-You should probably mark the thread as deleted in this case.
-*/
-func fixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
-	postsIter, err := db.Query(ctx, tx, models.Post{},
-		`
-		SELECT $columns
-		FROM handmade_post
-		WHERE
-			thread_id = $1
-			AND NOT deleted
-		`,
-		threadId,
-	)
-	if err != nil {
-		return oops.New(err, "failed to fetch posts when fixing up thread")
-	}
-
-	var firstPost, lastPost *models.Post
-	for _, ipost := range postsIter.ToSlice() {
-		post := ipost.(*models.Post)
-
-		if firstPost == nil || post.PostDate.Before(firstPost.PostDate) {
-			firstPost = post
-		}
-		if lastPost == nil || post.PostDate.After(lastPost.PostDate) {
-			lastPost = post
-		}
-	}
-
-	if firstPost == nil || lastPost == nil {
-		return errThreadEmpty
-	}
-
-	_, err = tx.Exec(ctx,
-		`
-		UPDATE handmade_thread
-		SET first_id = $1, last_id = $2
-		WHERE id = $3
-		`,
-		firstPost.ID,
-		lastPost.ID,
-		threadId,
-	)
-	if err != nil {
-		return oops.New(err, "failed to update thread first/last ids")
-	}
-
-	return nil
 }
 
 type commonForumData struct {

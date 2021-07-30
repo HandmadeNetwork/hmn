@@ -182,7 +182,7 @@ func Index(c *RequestContext) ResponseData {
 
 				landingPageProject.FeaturedPost = &LandingPageFeaturedPost{
 					Title:   projectPost.Thread.Title,
-					Url:     hmnurl.BuildBlogPost(proj.Slug, projectPost.Thread.ID, projectPost.Post.ID),
+					Url:     hmnurl.BuildBlogThread(proj.Slug, projectPost.Thread.ID, projectPost.Thread.Title),
 					User:    templates.UserToTemplate(&projectPost.User, c.Theme),
 					Date:    projectPost.Post.PostDate,
 					Unread:  !hasRead,
@@ -323,13 +323,13 @@ func Index(c *RequestContext) ResponseData {
 		FeedUrl:     hmnurl.BuildFeed(),
 		PodcastUrl:  hmnurl.BuildPodcast(models.HMNProjectSlug),
 		StreamsUrl:  hmnurl.BuildStreams(),
-		IRCUrl:      hmnurl.BuildBlogThread(models.HMNProjectSlug, 1138, "[Tutorial] Handmade Network IRC", 1),
+		IRCUrl:      hmnurl.BuildBlogThread(models.HMNProjectSlug, 1138, "[Tutorial] Handmade Network IRC"),
 		DiscordUrl:  "https://discord.gg/hxWxDee",
 		ShowUrl:     "https://handmadedev.show/",
 		ShowcaseUrl: hmnurl.BuildShowcase(),
 		NewsPost: LandingPageFeaturedPost{
 			Title:   newsPostResult.Thread.Title,
-			Url:     hmnurl.BuildBlogPost(models.HMNProjectSlug, newsPostResult.Thread.ID, newsPostResult.Post.ID),
+			Url:     hmnurl.BuildBlogThread(models.HMNProjectSlug, newsPostResult.Thread.ID, newsPostResult.Thread.Title),
 			User:    templates.UserToTemplate(&newsPostResult.User, c.Theme),
 			Date:    newsPostResult.Post.PostDate,
 			Unread:  true, // TODO

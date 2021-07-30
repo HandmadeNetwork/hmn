@@ -10,7 +10,7 @@ import (
 func UrlForGenericPost(thread *models.Thread, post *models.Post, lineageBuilder *models.SubforumLineageBuilder, projectSlug string) string {
 	switch post.ThreadType {
 	case models.ThreadTypeProjectArticle:
-		return hmnurl.BuildBlogPost(projectSlug, post.ThreadID, post.ID)
+		return hmnurl.BuildBlogThreadWithPostHash(projectSlug, post.ThreadID, thread.Title, post.ID)
 	case models.ThreadTypeForumPost:
 		return hmnurl.BuildForumPost(projectSlug, lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), post.ThreadID, post.ID)
 	}

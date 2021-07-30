@@ -30,7 +30,7 @@ func Init() {
 
 	files, _ := templateFs.ReadDir("src")
 	for _, f := range files {
-		if strings.HasSuffix(f.Name(), ".html") {
+		if hasSuffix(f.Name(), ".html") {
 			t := template.New(f.Name())
 			t = t.Funcs(sprig.FuncMap())
 			t = t.Funcs(HMNTemplateFuncs)
@@ -40,17 +40,7 @@ func Init() {
 			}
 
 			Templates[f.Name()] = t
-		} else if strings.HasSuffix(f.Name(), ".css") {
-			t := template.New(f.Name())
-			t = t.Funcs(sprig.FuncMap())
-			t = t.Funcs(HMNTemplateFuncs)
-			t, err := t.ParseFS(templateFs, "src/"+f.Name())
-			if err != nil {
-				logging.Fatal().Str("filename", f.Name()).Err(err).Msg("failed to parse template")
-			}
-
-			Templates[f.Name()] = t
-		} else if strings.HasSuffix(f.Name(), ".xml") {
+		} else if hasSuffix(f.Name(), ".css", ".js", ".xml") {
 			t := template.New(f.Name())
 			t = t.Funcs(sprig.FuncMap())
 			t = t.Funcs(HMNTemplateFuncs)
@@ -62,6 +52,15 @@ func Init() {
 			Templates[f.Name()] = t
 		}
 	}
+}
+
+func hasSuffix(s string, suffixes ...string) bool {
+	for _, suffix := range suffixes {
+		if strings.HasSuffix(s, suffix) {
+			return true
+		}
+	}
+	return false
 }
 
 func names(ts []*template.Template) []string {

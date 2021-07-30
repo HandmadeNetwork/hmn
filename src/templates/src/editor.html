@@ -1,13 +1,14 @@
 {{ template "base.html" . }}
 
 {{ define "extrahead" }}
+    {{/* TODO: These are no longer useful? */}}
     <link rel="stylesheet" href="{{ static "editor.css" }}" />
     <script src="{{ static "util.js" }}"></script>
     <script src="{{ static "editor.js" }}"></script>
 
     <script src="{{ static "go_wasm_exec.js" }}"></script>
     <script>
-        const previewWorker = new Worker('{{ static "js/editorpreviews.js" }}');
+        const previewWorker = new Worker('/assets/editorpreviews.js');
     </script>
 
     <style>
@@ -19,15 +20,15 @@
 
 {{ define "content" }}
 <div class="content-block ph3 ph0-ns">
-    {{ if .Title }}
+    {{ if not .CanEditTitle }}
         <h2>{{ .Title }}</h2>
     {{ end }}
     <div class="flex flex-column flex-row-ns">
         <form id="form" action="{{ .SubmitUrl }}" method="post" class="flex-fair-ns">
             {{ csrftoken .Session }}
 
-            {{ if not (or .PostReplyingTo .IsEditing) }}
-                <input id="title" class="b w-100 mb1" name="title" type="text" placeholder="Post title..."/>
+            {{ if .CanEditTitle }}
+                <input id="title" class="b w-100 mb1" name="title" type="text" placeholder="Post title..." value="{{ .Title }}" />
             {{ end }}
             {{/* TODO: Reintroduce the toolbar in a way that makes sense for Markdown */}}
             {{/*
@@ -51,7 +52,7 @@
                 <input type="button" id="youtube" value="youtube" />
             </div>
             */}}
-            <textarea id="editor" class="w-100 h5 minh-5" name="body">{{ if .IsEditing }}{{ .EditInitialContents }}{{ end }}</textarea>
+            <textarea id="editor" class="w-100 h6 minh-6 pa2 mono lh-copy" name="body">{{ .EditInitialContents }}</textarea>
 
             <div class="flex flex-row-reverse justify-start mt2">
                 <input type="submit" class="button ml2" name="submit" value="{{ .SubmitLabel }}" />
@@ -99,7 +100,7 @@
             {% endif %}
             */}}
         </form>
-        <div class="post post-preview mv3 mathjax flex-fair-ns mv0-ns ml3-ns">
+        <div id="preview-container" class="post post-preview mv3 mathjax flex-fair-ns mv0-ns ml3-ns overflow-auto">
             <div id="preview" class="body contents"></div>
         </div>
     </div>
