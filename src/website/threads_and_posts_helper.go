@@ -241,7 +241,7 @@ func CreateNewPost(
 		`,
 		time.Now(),
 		threadId,
-		models.ThreadTypeForumPost,
+		threadType,
 		-1,
 		userId,
 		projectId,

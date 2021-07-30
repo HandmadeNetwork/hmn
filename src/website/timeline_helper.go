@@ -11,9 +11,9 @@ import (
 )
 
 var TimelineTypeMap = map[models.ThreadType][]templates.TimelineType{
-	//                               {           First post         ,         Subsequent post          }
-	models.ThreadTypeProjectArticle: {templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment},
-	models.ThreadTypeForumPost:      {templates.TimelineTypeForumThread, templates.TimelineTypeForumReply},
+	//                                {           First post         ,         Subsequent post          }
+	models.ThreadTypeProjectBlogPost: {templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment},
+	models.ThreadTypeForumPost:       {templates.TimelineTypeForumThread, templates.TimelineTypeForumReply},
 }
 
 var TimelineItemClassMap = map[templates.TimelineType]string{

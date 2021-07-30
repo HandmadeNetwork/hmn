@@ -120,7 +120,7 @@ func Index(c *RequestContext) ResponseData {
 			`,
 			currentUserId,
 			proj.ID,
-			[]models.ThreadType{models.ThreadTypeProjectArticle, models.ThreadTypeForumPost},
+			[]models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypeForumPost},
 			maxPosts,
 		)
 		c.Perf.EndBlock()
@@ -155,7 +155,7 @@ func Index(c *RequestContext) ResponseData {
 			}
 
 			featurable := (!proj.IsHMN() &&
-				projectPost.Post.ThreadType == models.ThreadTypeProjectArticle &&
+				projectPost.Post.ThreadType == models.ThreadTypeProjectBlogPost &&
 				projectPost.Thread.FirstID == projectPost.Post.ID &&
 				landingPageProject.FeaturedPost == nil)
 
@@ -269,7 +269,7 @@ func Index(c *RequestContext) ResponseData {
 		LIMIT 1
 		`,
 		models.HMNProjectID,
-		models.ThreadTypeProjectArticle,
+		models.ThreadTypeProjectBlogPost,
 	)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news post"))

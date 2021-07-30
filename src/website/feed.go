@@ -41,7 +41,7 @@ func Feed(c *RequestContext) ResponseData {
 			AND deleted = FALSE
 			AND post.thread_id IS NOT NULL
 		`,
-		[]models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectArticle},
+		[]models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectBlogPost},
 	)
 	c.Perf.EndBlock()
 	if err != nil {
@@ -339,7 +339,7 @@ func fetchAllPosts(c *RequestContext, lineageBuilder *models.SubforumLineageBuil
 		LIMIT $3 OFFSET $4
 		`,
 		currentUserID,
-		[]models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectArticle},
+		[]models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectBlogPost},
 		limit,
 		offset,
 	)

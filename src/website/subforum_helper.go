@@ -5,6 +5,6 @@ import (
 )
 
 var ThreadTypeDisplayNames = map[models.ThreadType]string{
-	models.ThreadTypeProjectArticle: "Blog",
-	models.ThreadTypeForumPost:      "Forums",
+	models.ThreadTypeProjectBlogPost: "Blog",
+	models.ThreadTypeForumPost:       "Forums",
 }

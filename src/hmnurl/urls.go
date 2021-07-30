@@ -428,6 +428,13 @@ func BuildBlogThreadWithPostHash(projectSlug string, threadId int, title string,
 	return ProjectUrlWithFragment(builder.String(), nil, projectSlug, strconv.Itoa(postId))
 }
 
+var RegexBlogNewThread = regexp.MustCompile(`^/blog/new$`)
+
+func BuildBlogNewThread(projectSlug string) string {
+	defer CatchPanic()
+	return ProjectUrl("/blog/new", nil, projectSlug)
+}
+
 var RegexBlogPost = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)/e/(?P<postid>\d+)$`)
 
 func BuildBlogPost(projectSlug string, threadId int, postId int) string {

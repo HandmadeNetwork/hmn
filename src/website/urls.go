@@ -7,7 +7,7 @@ import (
 
 func BuildProjectRootResourceUrl(projectSlug string, kind models.ThreadType) string {
 	switch kind {
-	case models.ThreadTypeProjectArticle:
+	case models.ThreadTypeProjectBlogPost:
 		return hmnurl.BuildBlog(projectSlug, 1)
 	case models.ThreadTypeForumPost:
 		return hmnurl.BuildForum(projectSlug, nil, 1)

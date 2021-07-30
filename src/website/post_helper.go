@@ -9,7 +9,7 @@ import (
 // NOTE(asaf): Please don't use this if you already know the kind of the post beforehand. Just call the appropriate build function.
 func UrlForGenericPost(thread *models.Thread, post *models.Post, lineageBuilder *models.SubforumLineageBuilder, projectSlug string) string {
 	switch post.ThreadType {
-	case models.ThreadTypeProjectArticle:
+	case models.ThreadTypeProjectBlogPost:
 		return hmnurl.BuildBlogThreadWithPostHash(projectSlug, post.ThreadID, thread.Title, post.ID)
 	case models.ThreadTypeForumPost:
 		return hmnurl.BuildForumPost(projectSlug, lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), post.ThreadID, post.ID)
@@ -19,9 +19,9 @@ func UrlForGenericPost(thread *models.Thread, post *models.Post, lineageBuilder 
 }
 
 var PostTypeMap = map[models.ThreadType][]templates.PostType{
-	//                               {         First post       ,       Subsequent post        }
-	models.ThreadTypeProjectArticle: {templates.PostTypeBlogPost, templates.PostTypeBlogComment},
-	models.ThreadTypeForumPost:      {templates.PostTypeForumThread, templates.PostTypeForumReply},
+	//                                {         First post       ,       Subsequent post        }
+	models.ThreadTypeProjectBlogPost: {templates.PostTypeBlogPost, templates.PostTypeBlogComment},
+	models.ThreadTypeForumPost:       {templates.PostTypeForumThread, templates.PostTypeForumReply},
 }
 
 var PostTypePrefix = map[templates.PostType]string{

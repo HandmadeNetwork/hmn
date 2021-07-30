@@ -166,10 +166,16 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
 	mainRoutes.POST(hmnurl.RegexForumPostDelete, authMiddleware(csrfMiddleware(ForumPostDeleteSubmit)))
 
+	mainRoutes.GET(hmnurl.RegexBlogNewThread, authMiddleware(BlogNewThread))
+	mainRoutes.POST(hmnurl.RegexBlogNewThread, authMiddleware(csrfMiddleware(BlogNewThreadSubmit)))
 	mainRoutes.GET(hmnurl.RegexBlogThread, BlogThread)
 	mainRoutes.GET(hmnurl.RegexBlogPost, BlogPostRedirectToThread)
-	mainRoutes.GET(hmnurl.RegexBlogPostEdit, BlogPostEdit)
-	mainRoutes.POST(hmnurl.RegexBlogPostEdit, BlogPostEditSubmit)
+	mainRoutes.GET(hmnurl.RegexBlogPostReply, authMiddleware(BlogPostReply))
+	mainRoutes.POST(hmnurl.RegexBlogPostReply, authMiddleware(csrfMiddleware(BlogPostReplySubmit)))
+	mainRoutes.GET(hmnurl.RegexBlogPostEdit, authMiddleware(BlogPostEdit))
+	mainRoutes.POST(hmnurl.RegexBlogPostEdit, authMiddleware(csrfMiddleware(BlogPostEditSubmit)))
+	mainRoutes.GET(hmnurl.RegexBlogPostDelete, authMiddleware(BlogPostDelete))
+	mainRoutes.POST(hmnurl.RegexBlogPostDelete, authMiddleware(csrfMiddleware(BlogPostDeleteSubmit)))
 
 	mainRoutes.GET(hmnurl.RegexPodcast, PodcastIndex)
 	mainRoutes.GET(hmnurl.RegexPodcastEdit, PodcastEdit)

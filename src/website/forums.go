@@ -634,16 +634,22 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	c.Req.ParseForm()
-
+	err = c.Req.ParseForm()
+	if err != nil {
+		return ErrorResponse(http.StatusBadRequest, oops.New(err, "the form data was invalid"))
+	}
 	title := c.Req.Form.Get("title")
 	unparsed := c.Req.Form.Get("body")
 	sticky := false
 	if c.CurrentUser.IsStaff && c.Req.Form.Get("sticky") != "" {
 		sticky = true
 	}
-
-	// TODO(ben): Validation (and error handling if ParseForm fails? might not need it since you'll get empty values)
+	if title == "" {
+		return RejectRequest(c, "You must provide a title for your post.")
+	}
+	if unparsed == "" {
+		return RejectRequest(c, "You must provide a body for your post.")
+	}
 
 	// Create thread
 	var threadId int
@@ -686,14 +692,14 @@ func ForumPostReply(c *RequestContext) ResponseData {
 	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
 	baseData := getBaseData(c)
-	baseData.Title = fmt.Sprintf("Replying to \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
+	baseData.Title = fmt.Sprintf("Replying to post | %s", cd.SubforumTree[cd.SubforumID].Name)
 	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
-	templatePost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
-	templatePost.AddContentVersion(postData.CurrentVersion, postData.Editor)
+	replyPost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
+	replyPost.AddContentVersion(postData.CurrentVersion, postData.Editor)
 
-	editData := getEditorDataForNew(baseData, &templatePost)
+	editData := getEditorDataForNew(baseData, &replyPost)
 	editData.SubmitUrl = hmnurl.BuildForumPostReply(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Reply"
 
@@ -714,9 +720,14 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	c.Req.ParseForm()
-	// TODO(ben): Validation
+	err = c.Req.ParseForm()
+	if err != nil {
+		return ErrorResponse(http.StatusBadRequest, oops.New(nil, "the form data was invalid"))
+	}
 	unparsed := c.Req.Form.Get("body")
+	if unparsed == "" {
+		return RejectRequest(c, "Your reply cannot be empty.")
+	}
 
 	newPostId, _ := CreateNewPost(c.Context(), tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeForumPost, c.CurrentUser.ID, &cd.PostID, unparsed, c.Req.Host)
 
