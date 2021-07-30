@@ -354,7 +354,9 @@ func fetchAllPosts(c *RequestContext, lineageBuilder *models.SubforumLineageBuil
 		postResult := iPostResult.(*feedPostQuery)
 
 		hasRead := false
-		if postResult.ThreadLastReadTime != nil && postResult.ThreadLastReadTime.After(postResult.Post.PostDate) {
+		if c.CurrentUser != nil && c.CurrentUser.MarkedAllReadAt.After(postResult.Post.PostDate) {
+			hasRead = true
+		} else if postResult.ThreadLastReadTime != nil && postResult.ThreadLastReadTime.After(postResult.Post.PostDate) {
 			hasRead = true
 		} else if postResult.SubforumLastReadTime != nil && postResult.SubforumLastReadTime.After(postResult.Post.PostDate) {
 			hasRead = true

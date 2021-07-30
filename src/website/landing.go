@@ -146,7 +146,9 @@ func Index(c *RequestContext) ResponseData {
 			projectPost := projectPostRow.(*projectPostQuery)
 
 			hasRead := false
-			if projectPost.ThreadLastReadTime != nil && projectPost.ThreadLastReadTime.After(projectPost.Post.PostDate) {
+			if c.CurrentUser != nil && c.CurrentUser.MarkedAllReadAt.After(projectPost.Post.PostDate) {
+				hasRead = true
+			} else if projectPost.ThreadLastReadTime != nil && projectPost.ThreadLastReadTime.After(projectPost.Post.PostDate) {
 				hasRead = true
 			} else if projectPost.SubforumLastReadTime != nil && projectPost.SubforumLastReadTime.After(projectPost.Post.PostDate) {
 				hasRead = true

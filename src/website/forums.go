@@ -306,54 +306,67 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	// TODO(ben): Rework this logic when we rework blogs, threads, etc.
 	sfIds := []int{sfId}
 	if sfId == 0 {
-		// Select all categories
-		type sfIdResult struct {
-			SubforumID int `db:"id"`
-		}
-		cats, err := db.Query(c.Context(), tx, sfIdResult{},
+		// Mark literally everything as read
+		_, err := tx.Exec(c.Context(),
 			`
-			SELECT $columns
-			FROM handmade_subforum
-			WHERE kind = ANY ($1)
+			UPDATE auth_user
+			SET marked_all_read_at = NOW()
+			WHERE id = $1
 			`,
-			[]models.ThreadType{models.ThreadTypeProjectArticle, models.ThreadTypeForumPost},
+			c.CurrentUser.ID,
 		)
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch category IDs for CLRI"))
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to mark all posts as read"))
 		}
 
-		catIdResults := cats.ToSlice()
-		sfIds = make([]int, len(catIdResults))
-		for i, res := range catIdResults {
-			sfIds[i] = res.(*sfIdResult).SubforumID
+		// Delete thread unread info
+		_, err = tx.Exec(c.Context(),
+			`
+			DELETE FROM handmade_threadlastreadinfo
+			WHERE user_id = $1;
+			`,
+			c.CurrentUser.ID,
+		)
+		if err != nil {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete thread unread info"))
 		}
-	}
 
-	c.Perf.StartBlock("SQL", "Update CLRIs")
-	_, err = tx.Exec(c.Context(),
-		`
-		INSERT INTO handmade_categorylastreadinfo (category_id, user_id, lastread)
+		// Delete subforum unread info
+		_, err = tx.Exec(c.Context(),
+			`
+			DELETE FROM handmade_subforumlastreadinfo
+			WHERE user_id = $1;
+			`,
+			c.CurrentUser.ID,
+		)
+		if err != nil {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete subforum unread info"))
+		}
+	} else {
+		c.Perf.StartBlock("SQL", "Update SLRIs")
+		_, err = tx.Exec(c.Context(),
+			`
+		INSERT INTO handmade_subforumlastreadinfo (subforum_id, user_id, lastread)
 			SELECT id, $2, $3
-			FROM handmade_category
+			FROM handmade_subforum
 			WHERE id = ANY ($1)
-		ON CONFLICT (category_id, user_id) DO UPDATE
+		ON CONFLICT (subforum_id, user_id) DO UPDATE
 			SET lastread = EXCLUDED.lastread
 		`,
-		sfIds,
-		c.CurrentUser.ID,
-		time.Now(),
-	)
-	c.Perf.EndBlock()
-	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update forum clris"))
-	}
+			sfIds,
+			c.CurrentUser.ID,
+			time.Now(),
+		)
+		c.Perf.EndBlock()
+		if err != nil {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update forum slris"))
+		}
 
-	c.Perf.StartBlock("SQL", "Delete TLRIs")
-	_, err = tx.Exec(c.Context(),
-		`
+		c.Perf.StartBlock("SQL", "Delete TLRIs")
+		_, err = tx.Exec(c.Context(),
+			`
 		DELETE FROM handmade_threadlastreadinfo
 		WHERE
 			user_id = $2
@@ -361,20 +374,21 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 				SELECT id
 				FROM handmade_thread
 				WHERE
-					category_id = ANY ($1)
+					subforum_id = ANY ($1)
 			)
 		`,
-		sfIds,
-		c.CurrentUser.ID,
-	)
-	c.Perf.EndBlock()
-	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete unnecessary tlris"))
+			sfIds,
+			c.CurrentUser.ID,
+		)
+		c.Perf.EndBlock()
+		if err != nil {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete unnecessary tlris"))
+		}
 	}
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit CLRI/TLRI updates"))
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit SLRI/TLRI updates"))
 	}
 
 	var redirUrl string
