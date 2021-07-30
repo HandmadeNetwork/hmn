@@ -10,7 +10,6 @@ type Post struct {
 
 	// TODO: Document each of these
 	AuthorID  *int `db:"author_id"`
-	ParentID  *int `db:"parent_id"`
 	ThreadID  int  `db:"thread_id"`
 	CurrentID int  `db:"current_id"`
 	ProjectID int  `db:"project_id"`

@@ -19,6 +19,7 @@ func UrlForGenericPost(thread *models.Thread, post *models.Post, lineageBuilder 
 }
 
 var PostTypeMap = map[models.ThreadType][]templates.PostType{
+	//                               {         First post       ,       Subsequent post        }
 	models.ThreadTypeProjectArticle: {templates.PostTypeBlogPost, templates.PostTypeBlogComment},
 	models.ThreadTypeForumPost:      {templates.PostTypeForumThread, templates.PostTypeForumReply},
 }
@@ -76,11 +77,11 @@ func MakePostListItem(
 	postType := templates.PostTypeUnknown
 	postTypeOptions, found := PostTypeMap[post.ThreadType]
 	if found {
-		var hasParent int
-		if post.ParentID != nil {
-			hasParent = 1
+		isNotFirst := 0
+		if *thread.FirstID != post.ID {
+			isNotFirst = 1
 		}
-		postType = postTypeOptions[hasParent]
+		postType = postTypeOptions[isNotFirst]
 	}
 	result.PostType = postType
 	result.PostTypePrefix = PostTypePrefix[result.PostType]

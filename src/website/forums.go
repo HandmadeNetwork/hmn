@@ -421,7 +421,7 @@ func ForumThread(c *RequestContext) ResponseData {
 
 	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID)
 
-	thread := cd.FetchThread(c.Context(), c.Conn)
+	thread := FetchThread(c.Context(), c.Conn, cd.ThreadID)
 
 	numPosts, err := db.QueryInt(c.Context(), c.Conn,
 		`
@@ -452,52 +452,23 @@ func ForumThread(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Fetch posts")
-	type postsQueryResult struct {
-		Post   models.Post        `db:"post"`
-		Ver    models.PostVersion `db:"ver"`
-		Author *models.User       `db:"author"`
-		Editor *models.User       `db:"editor"`
-
-		ReplyPost   *models.Post `db:"reply"`
-		ReplyAuthor *models.User `db:"reply_author"`
-	}
-	itPosts, err := db.Query(c.Context(), c.Conn, postsQueryResult{},
-		`
-		SELECT $columns
-		FROM
-			handmade_post AS post
-			JOIN handmade_postversion AS ver ON post.current_id = ver.id
-			LEFT JOIN auth_user AS author ON post.author_id = author.id
-			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
-			LEFT JOIN handmade_post AS reply ON post.reply_id = reply.id
-			LEFT JOIN auth_user AS reply_author ON reply.author_id = reply_author.id
-		WHERE
-			post.thread_id = $1
-			AND NOT post.deleted
-		ORDER BY post.postdate
-		LIMIT $2 OFFSET $3
-		`,
-		thread.ID,
-		threadViewPostsPerPage,
-		(page-1)*threadViewPostsPerPage,
+	_, postsAndStuff := FetchThreadPostsAndStuff(
+		c.Context(),
+		c.Conn,
+		cd.ThreadID,
+		page, threadViewPostsPerPage,
 	)
 	c.Perf.EndBlock()
-	if err != nil {
-		panic(err)
-	}
-	defer itPosts.Close()
 
 	var posts []templates.Post
-	for _, irow := range itPosts.ToSlice() {
-		row := irow.(*postsQueryResult)
+	for _, p := range postsAndStuff {
+		post := templates.PostToTemplate(&p.Post, p.Author, c.Theme)
+		post.AddContentVersion(p.CurrentVersion, p.Editor)
+		addForumUrlsToPost(&post, c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
 
-		post := templates.PostToTemplate(&row.Post, row.Author, c.Theme)
-		post.AddContentVersion(row.Ver, row.Editor)
-		post.AddUrls(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
-
-		if row.ReplyPost != nil {
-			reply := templates.PostToTemplate(row.ReplyPost, row.ReplyAuthor, c.Theme)
-			reply.AddUrls(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
+		if p.ReplyPost != nil {
+			reply := templates.PostToTemplate(p.ReplyPost, p.ReplyAuthor, c.Theme)
+			addForumUrlsToPost(&reply, c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
 			post.ReplyPost = &reply
 		}
 
@@ -531,7 +502,7 @@ func ForumThread(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("forum_thread.html", forumThreadData{
 		BaseData:    baseData,
-		Thread:      templates.ThreadToTemplate(thread),
+		Thread:      templates.ThreadToTemplate(&thread),
 		Posts:       posts,
 		SubforumUrl: hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, 1),
 		ReplyUrl:    hmnurl.BuildForumPostReply(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, *thread.FirstID),
@@ -704,7 +675,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	postData := cd.FetchPostAndStuff(c.Context(), c.Conn)
+	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
 	baseData := getBaseData(c)
 	baseData.Title = fmt.Sprintf("Replying to \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
@@ -764,7 +735,7 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	postData := cd.FetchPostAndStuff(c.Context(), c.Conn)
+	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
 	baseData := getBaseData(c)
 	baseData.Title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
@@ -829,7 +800,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	postData := cd.FetchPostAndStuff(c.Context(), c.Conn)
+	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
 	baseData := getBaseData(c)
 	baseData.Title = fmt.Sprintf("Deleting post in \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
@@ -1131,6 +1102,7 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 			WHERE
 				id = $1
 				AND subforum_id = $2
+				AND NOT deleted
 			`,
 			res.ThreadID,
 			res.SubforumID,
@@ -1159,6 +1131,7 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 			WHERE
 				id = $1
 				AND thread_id = $2
+				AND NOT deleted
 			`,
 			res.PostID,
 			res.ThreadID,
@@ -1173,114 +1146,6 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 	}
 
 	return res, true
-}
-
-/*
-Fetches the current thread according to the parsed path params. Since the ID was already validated
-in the constructor, this should always succeed.
-
-It will not, of course, succeed if there was no thread id in the path params, so don't do that.
-*/
-func (cd *commonForumData) FetchThread(ctx context.Context, connOrTx db.ConnOrTx) *models.Thread {
-	cd.c.Perf.StartBlock("SQL", "Fetch current thread")
-	type threadQueryResult struct {
-		Thread models.Thread `db:"thread"`
-	}
-	irow, err := db.QueryOne(ctx, connOrTx, threadQueryResult{},
-		`
-		SELECT $columns
-		FROM
-			handmade_thread AS thread
-			JOIN handmade_subforum AS sf ON sf.id = thread.subforum_id
-		WHERE
-			thread.id = $1
-			AND NOT thread.deleted
-			AND sf.id = $2
-		`,
-		cd.ThreadID,
-		cd.SubforumID, // NOTE(asaf): This verifies that the requested thread is under the requested subforum.
-	)
-	cd.c.Perf.EndBlock()
-	if err != nil {
-		// We shouldn't encounter db.ErrNoMatchingRows, because validation should have verified that everything exists.
-		panic(oops.New(err, "failed to fetch thread"))
-	}
-
-	thread := irow.(*threadQueryResult).Thread
-	return &thread
-}
-
-type postAndRelatedModels struct {
-	Thread         models.Thread      `db:"thread"`
-	Post           models.Post        `db:"post"`
-	CurrentVersion models.PostVersion `db:"ver"`
-	Author         *models.User       `db:"author"`
-	Editor         *models.User       `db:"editor"`
-}
-
-/*
-Fetches the post, the thread, and author / editor information for the post defined by the path
-params. Because all the IDs were validated in the constructor, this should always succeed.
-
-It will not succeed if there were missing path params though.
-*/
-func (cd *commonForumData) FetchPostAndStuff(ctx context.Context, connOrTx db.ConnOrTx) *postAndRelatedModels {
-	cd.c.Perf.StartBlock("SQL", "Fetch post to reply to")
-	postQueryResult, err := db.QueryOne(ctx, connOrTx, postAndRelatedModels{},
-		`
-		SELECT $columns
-		FROM
-			handmade_thread AS thread
-			JOIN handmade_post AS post ON post.thread_id = thread.id
-			JOIN handmade_postversion AS ver ON post.current_id = ver.id
-			LEFT JOIN auth_user AS author ON post.author_id = author.id
-			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
-		WHERE
-			post.thread_id = $1
-			AND post.id = $2
-			AND NOT post.deleted
-		`,
-		cd.ThreadID,
-		cd.PostID,
-	)
-	if err != nil {
-		// We shouldn't encounter db.ErrNoMatchingRows, because validation should have verified that everything exists.
-		panic(oops.New(err, "failed to fetch post and related data"))
-	}
-
-	result := postQueryResult.(*postAndRelatedModels)
-	return result
-}
-
-func (cd *commonForumData) UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User) bool {
-	if user.IsStaff {
-		return true
-	}
-
-	type postResult struct {
-		AuthorID *int `db:"post.author_id"`
-	}
-	iresult, err := db.QueryOne(ctx, connOrTx, postResult{},
-		`
-		SELECT $columns
-		FROM
-			handmade_post AS post
-		WHERE
-			post.id = $1
-			AND NOT post.deleted
-		`,
-		cd.PostID,
-	)
-	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
-			return false
-		} else {
-			panic(oops.New(err, "failed to get author of post when checking permissions"))
-		}
-	}
-	result := iresult.(*postResult)
-
-	return result.AuthorID != nil && *result.AuthorID == user.ID
 }
 
 func validateSubforums(lineageBuilder *models.SubforumLineageBuilder, project *models.Project, sfPath string) (int, bool) {
@@ -1315,4 +1180,11 @@ func validateSubforums(lineageBuilder *models.SubforumLineageBuilder, project *m
 		}
 	}
 	return subforumId, valid
+}
+
+func addForumUrlsToPost(p *templates.Post, projectSlug string, subforums []string, threadId int, postId int) {
+	p.Url = hmnurl.BuildForumPost(projectSlug, subforums, threadId, postId)
+	p.DeleteUrl = hmnurl.BuildForumPostDelete(projectSlug, subforums, threadId, postId)
+	p.EditUrl = hmnurl.BuildForumPostEdit(projectSlug, subforums, threadId, postId)
+	p.ReplyUrl = hmnurl.BuildForumPostReply(projectSlug, subforums, threadId, postId)
 }

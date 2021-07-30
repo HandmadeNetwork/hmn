@@ -11,7 +11,7 @@ import (
 )
 
 var TimelineTypeMap = map[models.ThreadType][]templates.TimelineType{
-	//                               {            No parent         ,            Has parent            }
+	//                               {           First post         ,         Subsequent post          }
 	models.ThreadTypeProjectArticle: {templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment},
 	models.ThreadTypeForumPost:      {templates.TimelineTypeForumThread, templates.TimelineTypeForumReply},
 }
@@ -50,11 +50,11 @@ func PostToTimelineItem(lineageBuilder *models.SubforumLineageBuilder, post *mod
 	itemType := templates.TimelineTypeUnknown
 	typeByCatKind, found := TimelineTypeMap[post.ThreadType]
 	if found {
-		hasParent := 0
-		if post.ParentID != nil {
-			hasParent = 1
+		isNotFirst := 0
+		if *thread.FirstID != post.ID {
+			isNotFirst = 1
 		}
-		itemType = typeByCatKind[hasParent]
+		itemType = typeByCatKind[isNotFirst]
 	}
 
 	return templates.TimelineItem{

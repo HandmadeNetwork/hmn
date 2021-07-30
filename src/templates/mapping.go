@@ -15,7 +15,7 @@ func PostToTemplate(p *models.Post, author *models.User, currentTheme string) Po
 	return Post{
 		ID: p.ID,
 
-		// Urls not set here. See AddUrls.
+		// Urls not set here. They vary per thread type. Set 'em yourself!
 
 		Preview:  p.Preview,
 		ReadOnly: p.ReadOnly,
@@ -36,13 +36,6 @@ func (p *Post) AddContentVersion(ver models.PostVersion, editor *models.User) {
 		p.EditDate = ver.Date
 		p.EditReason = ver.EditReason
 	}
-}
-
-func (p *Post) AddUrls(projectSlug string, subforums []string, threadId int, postId int) {
-	p.Url = hmnurl.BuildForumPost(projectSlug, subforums, threadId, postId)
-	p.DeleteUrl = hmnurl.BuildForumPostDelete(projectSlug, subforums, threadId, postId)
-	p.EditUrl = hmnurl.BuildForumPostEdit(projectSlug, subforums, threadId, postId)
-	p.ReplyUrl = hmnurl.BuildForumPostReply(projectSlug, subforums, threadId, postId)
 }
 
 var LifecycleBadgeClasses = map[models.ProjectLifecycle]string{
