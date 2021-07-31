@@ -115,13 +115,23 @@ func getCurrentVersion(ctx context.Context, conn *pgx.Conn) (types.MigrationVers
 	return types.MigrationVersion(currentVersion), nil
 }
 
-func ListMigrations() {
-	ctx := context.Background()
+func tryGetCurrentVersion(ctx context.Context) types.MigrationVersion {
+	defer func() {
+		recover()
+	}()
 
 	conn := db.NewConn()
 	defer conn.Close(ctx)
 
 	currentVersion, _ := getCurrentVersion(ctx, conn)
+
+	return currentVersion
+}
+
+func ListMigrations() {
+	ctx := context.Background()
+
+	currentVersion := tryGetCurrentVersion(ctx)
 	for _, version := range getSortedMigrationVersions() {
 		migration := migrations.All[version]
 		indicator := "  "
