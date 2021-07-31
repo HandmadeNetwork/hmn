@@ -56,6 +56,10 @@ func SetS3BaseUrl(base string) {
 	S3BaseUrl = base
 }
 
+func GetBaseHost() string {
+	return baseUrlParsed.Host
+}
+
 func Url(path string, query []Q) string {
 	return ProjectUrl(path, query, "")
 }

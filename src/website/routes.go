@@ -361,11 +361,8 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 
 	// get project
 	{
-		slug := ""
-		hostParts := strings.SplitN(c.Req.Host, ".", 3)
-		if len(hostParts) >= 3 {
-			slug = hostParts[0]
-		}
+		hostPrefix := strings.TrimSuffix(c.Req.Host, hmnurl.GetBaseHost())
+		slug := strings.TrimRight(hostPrefix, ".")
 
 		dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, slug)
 		if err != nil {
