@@ -2,15 +2,126 @@ package website
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
+
+func BlogIndex(c *RequestContext) ResponseData {
+	type blogIndexEntry struct {
+		Title   string
+		Url     string
+		Author  templates.User
+		Date    time.Time
+		Content template.HTML
+	}
+	type blogIndexData struct {
+		templates.BaseData
+		Posts      []blogIndexEntry
+		Pagination templates.Pagination
+		NewPostUrl string
+	}
+
+	const postsPerPage = 5
+
+	c.Perf.StartBlock("SQL", "Fetch count of posts")
+	numPosts, err := db.QueryInt(c.Context(), c.Conn,
+		`
+		SELECT COUNT(*)
+		FROM
+			handmade_thread
+		WHERE
+			project_id = $1
+			AND type = $2
+			AND NOT deleted
+		`,
+		c.CurrentProject.ID,
+		models.ThreadTypeProjectBlogPost,
+	)
+	c.Perf.EndBlock()
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch total number of blog posts"))
+	}
+
+	numPages := NumPages(numPosts, postsPerPage)
+	page, ok := ParsePageNumber(c, "page", numPages)
+	if !ok {
+		c.Redirect(hmnurl.BuildBlog(c.CurrentProject.Slug, page), http.StatusSeeOther)
+	}
+
+	type blogIndexQuery struct {
+		Thread         models.Thread      `db:"thread"`
+		Post           models.Post        `db:"post"`
+		CurrentVersion models.PostVersion `db:"ver"`
+		Author         *models.User       `db:"author"`
+	}
+	c.Perf.StartBlock("SQL", "Fetch blog posts")
+	postsResult, err := db.Query(c.Context(), c.Conn, blogIndexQuery{},
+		`
+		SELECT $columns
+		FROM
+			handmade_thread AS thread
+			JOIN handmade_post AS post ON thread.first_id = post.id
+			JOIN handmade_postversion AS ver ON post.current_id = ver.id
+			LEFT JOIN auth_user AS author ON post.author_id = author.id
+		WHERE
+			post.project_id = $1
+			AND post.thread_type = $2
+			AND NOT thread.deleted
+		ORDER BY post.postdate DESC
+		LIMIT $3 OFFSET $4
+		`,
+		c.CurrentProject.ID,
+		models.ThreadTypeProjectBlogPost,
+		postsPerPage,
+		(page-1)*postsPerPage,
+	)
+	c.Perf.EndBlock()
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
+	}
+
+	var entries []blogIndexEntry
+	for _, irow := range postsResult.ToSlice() {
+		row := irow.(*blogIndexQuery)
+
+		entries = append(entries, blogIndexEntry{
+			Title:   row.Thread.Title,
+			Url:     hmnurl.BuildBlogThread(c.CurrentProject.Slug, row.Thread.ID, row.Thread.Title),
+			Author:  templates.UserToTemplate(row.Author, c.Theme),
+			Date:    row.Post.PostDate,
+			Content: template.HTML(row.CurrentVersion.TextParsed),
+		})
+	}
+
+	baseData := getBaseData(c)
+	baseData.Title = fmt.Sprintf("%s Blog", c.CurrentProject.Name)
+
+	var res ResponseData
+	res.MustWriteTemplate("blog_index.html", blogIndexData{
+		BaseData: baseData,
+		Posts:    entries,
+		Pagination: templates.Pagination{
+			Current: page,
+			Total:   numPages,
+
+			FirstUrl:    hmnurl.BuildBlog(c.CurrentProject.Slug, 1),
+			LastUrl:     hmnurl.BuildBlog(c.CurrentProject.Slug, numPages),
+			PreviousUrl: hmnurl.BuildBlog(c.CurrentProject.Slug, utils.IntClamp(1, page-1, numPages)),
+			NextUrl:     hmnurl.BuildBlog(c.CurrentProject.Slug, utils.IntClamp(1, page+1, numPages)),
+		},
+		NewPostUrl: hmnurl.BuildBlogNewThread(c.CurrentProject.Slug),
+	}, c.Perf)
+	return res
+}
 
 func BlogThread(c *RequestContext) ResponseData {
 	type blogPostData struct {

@@ -2,7 +2,6 @@ package website
 
 import (
 	"fmt"
-	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -99,21 +98,11 @@ func Forum(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	numPages := utils.IntMax(int(math.Ceil(float64(numThreads)/threadsPerPage)), 1)
-
-	page := 1
-	pageString, hasPage := c.PathParams["page"]
-	if hasPage && pageString != "" {
-		if pageParsed, err := strconv.Atoi(pageString); err == nil {
-			page = pageParsed
-		} else {
-			return c.Redirect(hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, 1), http.StatusSeeOther)
-		}
+	numPages := NumPages(numThreads, threadsPerPage)
+	page, ok := ParsePageNumber(c, "page", numPages)
+	if !ok {
+		c.Redirect(hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, page), http.StatusSeeOther)
 	}
-	if page < 1 || numPages < page {
-		return c.Redirect(hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, utils.IntClamp(1, page, numPages)), http.StatusSeeOther)
-	}
-
 	howManyThreadsToSkip := (page - 1) * threadsPerPage
 
 	var currentUserId *int

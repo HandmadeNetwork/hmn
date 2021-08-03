@@ -166,6 +166,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
 	mainRoutes.POST(hmnurl.RegexForumPostDelete, authMiddleware(csrfMiddleware(ForumPostDeleteSubmit)))
 
+	mainRoutes.GET(hmnurl.RegexBlog, BlogIndex)
 	mainRoutes.GET(hmnurl.RegexBlogNewThread, authMiddleware(BlogNewThread))
 	mainRoutes.POST(hmnurl.RegexBlogNewThread, authMiddleware(csrfMiddleware(BlogNewThreadSubmit)))
 	mainRoutes.GET(hmnurl.RegexBlogThread, BlogThread)
