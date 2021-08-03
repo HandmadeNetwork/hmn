@@ -206,32 +206,31 @@ func AtomFeed(c *RequestContext) ResponseData {
 				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects"))
 			}
 			var projectIds []int
-			projectMap := make(map[int]*templates.Project)
+			projectMap := make(map[int]int) // map[project id]index in slice
 			for _, p := range projects.ToSlice() {
 				project := p.(*projectResult).Project
 				templateProject := templates.ProjectToTemplate(&project, c.Theme)
 				templateProject.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(templateProject.Url)).URN()
 
 				projectIds = append(projectIds, project.ID)
-				projectMap[project.ID] = &templateProject
 				feedData.Projects = append(feedData.Projects, templateProject)
+				projectMap[project.ID] = len(feedData.Projects) - 1
 			}
 			c.Perf.EndBlock()
 
 			c.Perf.StartBlock("SQL", "Fetching project owners")
 			type ownerResult struct {
 				User      models.User `db:"auth_user"`
-				ProjectID int         `db:"project_groups.project_id"`
+				ProjectID int         `db:"uproj.project_id"`
 			}
 			owners, err := db.Query(c.Context(), c.Conn, ownerResult{},
 				`
 				SELECT $columns
 				FROM
-					auth_user 
-					INNER JOIN auth_user_groups AS user_groups ON auth_user.id = user_groups.user_id
-					INNER JOIN handmade_project_groups AS project_groups ON user_groups.group_id = project_groups.group_id
+					handmade_user_projects AS uproj
+					JOIN auth_user ON uproj.user_id = auth_user.id
 				WHERE
-					project_groups.project_id = ANY($1)
+					uproj.project_id = ANY($1)
 				`,
 				projectIds,
 			)
@@ -240,7 +239,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 			}
 			for _, res := range owners.ToSlice() {
 				owner := res.(*ownerResult)
-				templateProject := projectMap[owner.ProjectID]
+				templateProject := &feedData.Projects[projectMap[owner.ProjectID]]
 				templateProject.Owners = append(templateProject.Owners, templates.UserToTemplate(&owner.User, ""))
 			}
 			c.Perf.EndBlock()

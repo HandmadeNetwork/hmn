@@ -36,10 +36,9 @@ func FetchProjectOwners(c *RequestContext, projectId int) ([]*models.User, error
 		SELECT $columns
 		FROM
 			auth_user
-			INNER JOIN auth_user_groups AS user_groups ON auth_user.id = user_groups.user_id
-			INNER JOIN handmade_project_groups AS project_groups ON user_groups.group_id = project_groups.group_id
+			INNER JOIN handmade_user_projects AS uproj ON uproj.user_id = auth_user.id
 		WHERE
-			project_groups.project_id = $1
+			uproj.project_id = $1
 		`,
 		projectId,
 	)

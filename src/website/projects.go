@@ -106,10 +106,9 @@ func ProjectIndex(c *RequestContext) ResponseData {
 			SELECT $columns
 			FROM
 				handmade_project AS project
-				INNER JOIN handmade_project_groups AS project_groups ON project_groups.project_id = project.id
-				INNER JOIN auth_user_groups AS user_groups ON user_groups.group_id = project_groups.group_id
+				INNER JOIN handmade_user_projects AS uproj ON uproj.project_id = project.id
 			WHERE
-				user_groups.user_id = $1
+				uproj.user_id = $1
 			`,
 			c.CurrentUser.ID,
 		)

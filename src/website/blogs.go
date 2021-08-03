@@ -27,7 +27,9 @@ func BlogIndex(c *RequestContext) ResponseData {
 		templates.BaseData
 		Posts      []blogIndexEntry
 		Pagination templates.Pagination
-		NewPostUrl string
+
+		CanCreatePost bool
+		NewPostUrl    string
 	}
 
 	const postsPerPage = 5
@@ -105,6 +107,23 @@ func BlogIndex(c *RequestContext) ResponseData {
 	baseData := getBaseData(c)
 	baseData.Title = fmt.Sprintf("%s Blog", c.CurrentProject.Name)
 
+	canCreate := false
+	if c.CurrentUser != nil {
+		isProjectOwner := false
+		owners, err := FetchProjectOwners(c, c.CurrentProject.ID)
+		if err != nil {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project owners"))
+		}
+		for _, owner := range owners {
+			if owner.ID == c.CurrentUser.ID {
+				isProjectOwner = true
+				break
+			}
+		}
+
+		canCreate = c.CurrentUser.IsStaff || isProjectOwner
+	}
+
 	var res ResponseData
 	res.MustWriteTemplate("blog_index.html", blogIndexData{
 		BaseData: baseData,
@@ -118,7 +137,9 @@ func BlogIndex(c *RequestContext) ResponseData {
 			PreviousUrl: hmnurl.BuildBlog(c.CurrentProject.Slug, utils.IntClamp(1, page-1, numPages)),
 			NextUrl:     hmnurl.BuildBlog(c.CurrentProject.Slug, utils.IntClamp(1, page+1, numPages)),
 		},
-		NewPostUrl: hmnurl.BuildBlogNewThread(c.CurrentProject.Slug),
+
+		CanCreatePost: canCreate,
+		NewPostUrl:    hmnurl.BuildBlogNewThread(c.CurrentProject.Slug),
 	}, c.Perf)
 	return res
 }
