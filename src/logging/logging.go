@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"sort"
@@ -16,7 +17,7 @@ import (
 
 func init() {
 	zerolog.ErrorStackMarshaler = oops.ZerologStackMarshaler
-	log.Logger = log.Output(NewPrettyZerologWriter())
+	log.Logger = log.Output(NewPrettyZerologWriter()).With().Stack().Logger()
 	zerolog.SetGlobalLevel(config.Config.LogLevel)
 }
 
@@ -202,4 +203,18 @@ func LogPanicValue(logger *zerolog.Logger, val interface{}, msg string) {
 			Interface(zerolog.ErrorStackFieldName, oops.Trace()).
 			Msg(msg)
 	}
+}
+
+const LoggerContextKey = "logger"
+
+func AttachLoggerToContext(logger *zerolog.Logger, ctx context.Context) context.Context {
+	return context.WithValue(ctx, LoggerContextKey, logger)
+}
+
+func ExtractLogger(ctx context.Context) *zerolog.Logger {
+	ilogger := ctx.Value(LoggerContextKey)
+	if ilogger == nil {
+		return GlobalLogger()
+	}
+	return ilogger.(*zerolog.Logger)
 }

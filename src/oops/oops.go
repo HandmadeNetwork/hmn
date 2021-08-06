@@ -14,7 +14,11 @@ type Error struct {
 }
 
 func (e *Error) Error() string {
-	return fmt.Sprintf("%s: %v", e.Message, e.Wrapped)
+	if e.Wrapped == nil {
+		return e.Message
+	} else {
+		return fmt.Sprintf("%s: %v", e.Message, e.Wrapped)
+	}
 }
 
 func (e *Error) Unwrap() error {

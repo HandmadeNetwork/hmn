@@ -13,6 +13,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/discord"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -42,6 +43,7 @@ var WebsiteCommand = &cobra.Command{
 			auth.PeriodicallyDeleteExpiredSessions(backgroundJobContext, conn),
 			auth.PeriodicallyDeleteInactiveUsers(backgroundJobContext, conn),
 			perfCollector.Done,
+			discord.RunDiscordBot(backgroundJobContext, conn),
 		)
 
 		signals := make(chan os.Signal, 1)
@@ -52,7 +54,9 @@ var WebsiteCommand = &cobra.Command{
 			go func() {
 				timeout, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
+				logging.Info().Msg("shutting down web server")
 				server.Shutdown(timeout)
+				logging.Info().Msg("cancelling background jobs")
 				cancelBackgroundJobs()
 			}()
 

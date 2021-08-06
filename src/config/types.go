@@ -25,6 +25,7 @@ type HMNConfig struct {
 	Auth         AuthConfig
 	Email        EmailConfig
 	DigitalOcean DigitalOceanConfig
+	Discord      DiscordConfig
 }
 
 type PostgresConfig struct {
@@ -60,6 +61,14 @@ type EmailConfig struct {
 	FromAddressPassword    string
 	FromName               string
 	OverrideRecipientEmail string
+}
+
+type DiscordConfig struct {
+	BotToken  string
+	BotUserID string
+
+	ShowcaseChannelID string
+	LibraryChannelID  string
 }
 
 func (info PostgresConfig) DSN() string {
