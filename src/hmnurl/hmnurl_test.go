@@ -28,6 +28,7 @@ func TestUrl(t *testing.T) {
 
 func TestHomepage(t *testing.T) {
 	AssertRegexMatch(t, BuildHomepage(), RegexHomepage, nil)
+	AssertRegexMatch(t, BuildHomepageWithRegistrationSuccess(), RegexHomepage, nil)
 	AssertRegexMatch(t, BuildProjectHomepage("hero"), RegexHomepage, nil)
 	AssertSubdomain(t, BuildProjectHomepage("hero"), "hero")
 }
@@ -68,6 +69,14 @@ func TestLogoutAction(t *testing.T) {
 
 func TestRegister(t *testing.T) {
 	AssertRegexMatch(t, BuildRegister(), RegexRegister, nil)
+}
+
+func TestRegistrationSuccess(t *testing.T) {
+	AssertRegexMatch(t, BuildRegistrationSuccess(), RegexRegistrationSuccess, nil)
+}
+
+func TestEmailConfirmation(t *testing.T) {
+	AssertRegexMatch(t, BuildEmailConfirmation("mruser", "test_token"), RegexEmailConfirmation, map[string]string{"username": "mruser", "token": "test_token"})
 }
 
 func TestStaticPages(t *testing.T) {
@@ -204,12 +213,12 @@ func TestBlog(t *testing.T) {
 }
 
 func TestBlogThread(t *testing.T) {
-	AssertRegexMatch(t, BuildBlogThread("", 1, "", 1), RegexBlogThread, map[string]string{"threadid": "1"})
-	AssertRegexMatch(t, BuildBlogThread("", 1, "", 2), RegexBlogThread, map[string]string{"threadid": "1", "page": "2"})
-	AssertRegexMatch(t, BuildBlogThread("", 1, "title/bla/http://", 2), RegexBlogThread, map[string]string{"threadid": "1", "page": "2"})
-	AssertRegexMatch(t, BuildBlogThreadWithPostHash("", 1, "title/bla/http://", 2, 123), RegexBlogThread, map[string]string{"threadid": "1", "page": "2"})
-	AssertRegexNoMatch(t, BuildBlogThread("", 1, "", 2), RegexBlog)
-	AssertSubdomain(t, BuildBlogThread("hero", 1, "", 1), "hero")
+	AssertRegexMatch(t, BuildBlogThread("", 1, ""), RegexBlogThread, map[string]string{"threadid": "1"})
+	AssertRegexMatch(t, BuildBlogThread("", 1, ""), RegexBlogThread, map[string]string{"threadid": "1"})
+	AssertRegexMatch(t, BuildBlogThread("", 1, "title/bla/http://"), RegexBlogThread, map[string]string{"threadid": "1"})
+	AssertRegexMatch(t, BuildBlogThreadWithPostHash("", 1, "title/bla/http://", 123), RegexBlogThread, map[string]string{"threadid": "1"})
+	AssertRegexNoMatch(t, BuildBlogThread("", 1, ""), RegexBlog)
+	AssertSubdomain(t, BuildBlogThread("hero", 1, ""), "hero")
 }
 
 func TestBlogPost(t *testing.T) {
@@ -234,12 +243,6 @@ func TestBlogPostReply(t *testing.T) {
 	AssertRegexMatch(t, BuildBlogPostReply("", 1, 2), RegexBlogPostReply, map[string]string{"threadid": "1", "postid": "2"})
 	AssertRegexNoMatch(t, BuildBlogPostReply("", 1, 2), RegexBlogPost)
 	AssertSubdomain(t, BuildBlogPostReply("hero", 1, 2), "hero")
-}
-
-func TestBlogPostQuote(t *testing.T) {
-	AssertRegexMatch(t, BuildBlogPostQuote("", 1, 2), RegexBlogPostQuote, map[string]string{"threadid": "1", "postid": "2"})
-	AssertRegexNoMatch(t, BuildBlogPostQuote("", 1, 2), RegexBlogPost)
-	AssertSubdomain(t, BuildBlogPostQuote("hero", 1, 2), "hero")
 }
 
 func TestLibrary(t *testing.T) {

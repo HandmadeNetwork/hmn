@@ -160,10 +160,8 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 		AvatarUrl:  UserAvatarUrl(u, currentTheme),
 		ProfileUrl: hmnurl.BuildUserProfile(u.Username),
 
-		DarkTheme:     u.DarkTheme,
-		Timezone:      u.Timezone,
-		ProfileColor1: u.ProfileColor1,
-		ProfileColor2: u.ProfileColor2,
+		DarkTheme: u.DarkTheme,
+		Timezone:  u.Timezone,
 
 		CanEditLibrary:                      u.CanEditLibrary,
 		DiscordSaveShowcase:                 u.DiscordSaveShowcase,

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -140,6 +141,37 @@ func (c *RequestContext) FullUrl() string {
 		scheme = "http://"
 	}
 	return scheme + c.Req.Host + c.Req.URL.String()
+}
+
+func (c *RequestContext) GetIP() *net.IPNet {
+	ipString := ""
+
+	if ipString == "" {
+		cf, hasCf := c.Req.Header["CF-Connecting-IP"]
+		if hasCf {
+			ipString = cf[0]
+		}
+	}
+
+	if ipString == "" {
+		forwarded, hasForwarded := c.Req.Header["X-Forwarded-For"]
+		if hasForwarded {
+			ipString = forwarded[0]
+		}
+	}
+
+	if ipString == "" {
+		ipString = c.Req.RemoteAddr
+	}
+
+	if ipString != "" {
+		_, res, err := net.ParseCIDR(fmt.Sprintf("%s/32", ipString))
+		if err == nil {
+			return res
+		}
+	}
+
+	return nil
 }
 
 func (c *RequestContext) GetFormValues() (url.Values, error) {

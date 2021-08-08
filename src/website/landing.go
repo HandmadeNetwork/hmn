@@ -317,6 +317,10 @@ func Index(c *RequestContext) ResponseData {
 	baseData := getBaseData(c)
 	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 
+	if c.Req.URL.Query().Get("registered") != "" {
+		baseData.Notices = []templates.Notice{{Content: "You've completed your registration successfully!", Class: "success"}}
+	}
+
 	var res ResponseData
 	err = res.WriteTemplate("landing.html", LandingTemplateData{
 		BaseData:    baseData,

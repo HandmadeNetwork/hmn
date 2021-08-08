@@ -352,7 +352,7 @@ func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
 	Migrate(afterMigration)
 
 	fmt.Println("Executing seed...")
-	cmd := exec.Command("psql",
+	cmd := exec.Command("pg_restore",
 		"--single-transaction",
 		"--dbname",
 		config.Config.Postgres.DbName,
@@ -361,7 +361,7 @@ func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
 		"--username",
 		config.Config.Postgres.User,
 		"--password",
-		"-f",
+		"--data-only",
 		seedFile,
 	)
 	fmt.Println("Running command:", cmd)

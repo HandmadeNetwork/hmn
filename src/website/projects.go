@@ -209,7 +209,6 @@ type ProjectHomepageData struct {
 	templates.BaseData
 	Project        templates.Project
 	Owners         []templates.User
-	Notices        []templates.Notice
 	Screenshots    []string
 	ProjectLinks   []templates.Link
 	Licenses       []templates.Link
@@ -385,7 +384,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			Class:   "hidden",
 			Content: "NOTICE: This project is hidden. It is currently visible only to owners and site admins.",
 		}
-		projectHomepageData.Notices = append(projectHomepageData.Notices, hiddenNotice)
+		projectHomepageData.BaseData.Notices = append(projectHomepageData.BaseData.Notices, hiddenNotice)
 	}
 
 	if project.Lifecycle != models.ProjectLifecycleActive {
@@ -413,7 +412,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			lifecycleNotice.Class = "lts"
 			lifecycleNotice.Content = template.HTML("NOTICE: This project has reached a state of completion.")
 		}
-		projectHomepageData.Notices = append(projectHomepageData.Notices, lifecycleNotice)
+		projectHomepageData.BaseData.Notices = append(projectHomepageData.BaseData.Notices, lifecycleNotice)
 	}
 
 	for _, screenshot := range screenshotQueryResult.ToSlice() {

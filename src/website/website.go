@@ -40,6 +40,7 @@ var WebsiteCommand = &cobra.Command{
 
 		backgroundJobsDone := zipJobs(
 			auth.PeriodicallyDeleteExpiredSessions(backgroundJobContext, conn),
+			auth.PeriodicallyDeleteInactiveUsers(backgroundJobContext, conn),
 			perfCollector.Done,
 		)
 

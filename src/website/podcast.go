@@ -74,7 +74,6 @@ func PodcastIndex(c *RequestContext) ResponseData {
 type PodcastEditData struct {
 	templates.BaseData
 	Podcast templates.Podcast
-	Notices []templates.Notice
 }
 
 func PodcastEdit(c *RequestContext) ResponseData {
@@ -102,7 +101,7 @@ func PodcastEdit(c *RequestContext) ResponseData {
 
 	success := c.URL().Query().Get("success")
 	if success != "" {
-		podcastEditData.Notices = append(podcastEditData.Notices, templates.Notice{Class: "success", Content: "Podcast updated successfully."})
+		podcastEditData.BaseData.Notices = append(podcastEditData.BaseData.Notices, templates.Notice{Class: "success", Content: "Podcast updated successfully."})
 	}
 
 	var res ResponseData
@@ -312,7 +311,6 @@ type PodcastEpisodeEditData struct {
 	EpisodeNumber int
 	CurrentFile   string
 	EpisodeFiles  []string
-	Notices       []templates.Notice
 }
 
 func PodcastEpisodeNew(c *RequestContext) ResponseData {
@@ -392,7 +390,7 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 
 	success := c.URL().Query().Get("success")
 	if success != "" {
-		podcastEpisodeEditData.Notices = append(podcastEpisodeEditData.Notices, templates.Notice{Class: "success", Content: "Podcast episode updated successfully."})
+		podcastEpisodeEditData.BaseData.Notices = append(podcastEpisodeEditData.BaseData.Notices, templates.Notice{Class: "success", Content: "Podcast episode updated successfully."})
 	}
 
 	var res ResponseData

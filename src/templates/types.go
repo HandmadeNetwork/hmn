@@ -13,6 +13,7 @@ type BaseData struct {
 	Theme           string
 	BodyClasses     []string
 	Breadcrumbs     []Breadcrumb
+	Notices         []Notice
 
 	CurrentUrl    string
 	LoginPageUrl  string
@@ -128,10 +129,8 @@ type User struct {
 	AvatarUrl  string
 	ProfileUrl string
 
-	DarkTheme     bool
-	Timezone      string
-	ProfileColor1 string
-	ProfileColor2 string
+	DarkTheme bool
+	Timezone  string
 
 	CanEditLibrary                      bool
 	DiscordSaveShowcase                 bool
@@ -172,6 +171,7 @@ type PodcastEpisode struct {
 	Duration        int
 }
 
+// NOTE(asaf): See /src/rawdata/scss/_notices.scss for a list of classes.
 type Notice struct {
 	Content template.HTML
 	Class   string
@@ -295,4 +295,11 @@ type Pagination struct {
 	LastUrl     string
 	PreviousUrl string
 	NextUrl     string
+}
+
+type EmailBaseData struct {
+	To        template.HTML
+	From      template.HTML
+	Subject   template.HTML
+	Separator template.HTML
 }

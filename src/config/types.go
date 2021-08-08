@@ -23,6 +23,7 @@ type HMNConfig struct {
 	LogLevel     zerolog.Level
 	Postgres     PostgresConfig
 	Auth         AuthConfig
+	Email        EmailConfig
 	DigitalOcean DigitalOceanConfig
 }
 
@@ -50,6 +51,15 @@ type DigitalOceanConfig struct {
 	AssetsSpacesBucket   string
 	AssetsPathPrefix     string
 	AssetsPublicUrlRoot  string
+}
+
+type EmailConfig struct {
+	ServerAddress          string
+	ServerPort             int
+	FromAddress            string
+	FromAddressPassword    string
+	FromName               string
+	OverrideRecipientEmail string
 }
 
 func (info PostgresConfig) DSN() string {

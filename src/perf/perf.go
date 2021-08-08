@@ -2,7 +2,10 @@ package perf
 
 import (
 	"context"
+	"fmt"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 type RequestPerf struct {
@@ -131,4 +134,16 @@ func (perfCollector *PerfCollector) GetPerfCopy() *PerfStorage {
 	perfCollector.RequestCopy <- resultChan
 	perfStorageCopy := <-resultChan
 	return &perfStorageCopy
+}
+
+func LogPerf(perf *RequestPerf, log *zerolog.Event) {
+	blockStack := make([]time.Time, 0)
+	for i, block := range perf.Blocks {
+		for len(blockStack) > 0 && block.End.After(blockStack[len(blockStack)-1]) {
+			blockStack = blockStack[:len(blockStack)-1]
+		}
+		log.Str(fmt.Sprintf("[%4.d] At %9.2fms", i, perf.MsFromStart(&block)), fmt.Sprintf("%*.s[%s] %s (%.4fms)", len(blockStack)*2, "", block.Category, block.Description, block.DurationMs()))
+		blockStack = append(blockStack, block.End)
+	}
+	log.Msg(fmt.Sprintf("Served [%s] %s in %.4fms", perf.Method, perf.Path, float64(perf.End.Sub(perf.Start).Nanoseconds())/1000/1000))
 }

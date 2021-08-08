@@ -11,8 +11,12 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
+	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/pbkdf2"
@@ -186,4 +190,48 @@ func UpdatePassword(ctx context.Context, conn *pgxpool.Pool, username string, hp
 	}
 
 	return nil
+}
+
+func DeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) (int64, error) {
+	tag, err := conn.Exec(ctx,
+		`
+		DELETE FROM auth_user
+		WHERE
+			status = $1 AND
+			(SELECT COUNT(*) as ct FROM handmade_onetimetoken AS ott WHERE ott.owner_id = auth_user.id AND ott.expires < $2) > 0;
+		`,
+		models.UserStatusInactive,
+		time.Now(),
+	)
+
+	if err != nil {
+		return 0, oops.New(err, "failed to delete inactive users")
+	}
+
+	return tag.RowsAffected(), nil
+}
+
+func PeriodicallyDeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) <-chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		t := time.NewTicker(10 * time.Second)
+		for {
+			select {
+			case <-t.C:
+				n, err := DeleteInactiveUsers(ctx, conn)
+				if err == nil {
+					if n > 0 {
+						logging.Info().Int64("num deleted users", n).Msg("Deleted inactive users")
+					}
+				} else {
+					logging.Error().Err(err).Msg("Failed to delete expired sessions")
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return done
 }

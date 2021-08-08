@@ -7,6 +7,14 @@ import (
 
 var UserType = reflect.TypeOf(User{})
 
+type UserStatus int
+
+const (
+	UserStatusInactive UserStatus = iota + 1
+	UserStatusActive
+	UserStatusBanned
+)
+
 type User struct {
 	ID int `db:"id"`
 
@@ -17,8 +25,8 @@ type User struct {
 	DateJoined time.Time  `db:"date_joined"`
 	LastLogin  *time.Time `db:"last_login"`
 
-	IsStaff  bool `db:"is_staff"`
-	IsActive bool `db:"is_active"`
+	IsStaff bool       `db:"is_staff"`
+	Status  UserStatus `db:"status"`
 
 	Name      string  `db:"name"`
 	Bio       string  `db:"bio"`
@@ -26,10 +34,8 @@ type User struct {
 	Signature string  `db:"signature"`
 	Avatar    *string `db:"avatar"` // TODO: Image field stuff?
 
-	DarkTheme     bool   `db:"darktheme"`
-	Timezone      string `db:"timezone"`
-	ProfileColor1 string `db:"color_1"`
-	ProfileColor2 string `db:"color_2"`
+	DarkTheme bool   `db:"darktheme"`
+	Timezone  string `db:"timezone"`
 
 	ShowEmail      bool `db:"showemail"`
 	CanEditLibrary bool `db:"edit_library"`
@@ -38,4 +44,8 @@ type User struct {
 	DiscordDeleteSnippetOnMessageDelete bool `db:"discord_delete_snippet_on_message_delete"`
 
 	MarkedAllReadAt time.Time `db:"marked_all_read_at"`
+}
+
+func (u *User) IsActive() bool {
+	return u.Status == UserStatusActive
 }

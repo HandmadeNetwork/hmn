@@ -94,6 +94,7 @@ func NewSessionCookie(session *models.Session) *http.Cookie {
 		Value: session.ID,
 
 		Domain:  config.Config.Auth.CookieDomain,
+		Path:    "/",
 		Expires: time.Now().Add(sessionDuration),
 
 		Secure:   config.Config.Auth.CookieSecure,

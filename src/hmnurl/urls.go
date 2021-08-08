@@ -16,10 +16,15 @@ Any function in this package whose name starts with Build is required to be cove
 This helps ensure that we don't generate URLs that can't be routed.
 */
 
+var RegexOldHome = regexp.MustCompile("^/home$")
 var RegexHomepage = regexp.MustCompile("^/$")
 
 func BuildHomepage() string {
 	return Url("/", nil)
+}
+
+func BuildHomepageWithRegistrationSuccess() string {
+	return Url("/", []Q{{Name: "registered", Value: "true"}})
 }
 
 func BuildProjectHomepage(projectSlug string) string {
@@ -57,11 +62,11 @@ func BuildLoginAction(redirectTo string) string {
 	return Url("/login", []Q{{Name: "redirect", Value: redirectTo}})
 }
 
-var RegexLoginPage = regexp.MustCompile("^/_login$")
+var RegexLoginPage = regexp.MustCompile("^/login$")
 
 func BuildLoginPage(redirectTo string) string {
 	defer CatchPanic()
-	return Url("/_login", []Q{{Name: "redirect", Value: redirectTo}})
+	return Url("/login", []Q{{Name: "redirect", Value: redirectTo}})
 }
 
 var RegexLogoutAction = regexp.MustCompile("^/logout$")
@@ -74,11 +79,34 @@ func BuildLogoutAction(redir string) string {
 	return Url("/logout", []Q{{"redirect", redir}})
 }
 
-var RegexRegister = regexp.MustCompile("^/_register$")
+var RegexRegister = regexp.MustCompile("^/register$")
 
 func BuildRegister() string {
 	defer CatchPanic()
-	return Url("/_register", nil)
+	return Url("/register", nil)
+}
+
+var RegexRegistrationSuccess = regexp.MustCompile("^/registered_successfully$")
+
+func BuildRegistrationSuccess() string {
+	defer CatchPanic()
+	return Url("/registered_successfully", nil)
+}
+
+// TODO(asaf): Delete the old version a bit after launch
+var RegexOldEmailConfirmation = regexp.MustCompile(`^/_register/confirm/(?P<username>[\w\ \.\,\-@\+\_]+)/(?P<hash>[\d\w]+)/(?P<nonce>.+)[\/]?$`)
+var RegexEmailConfirmation = regexp.MustCompile("^/email_confirmation/(?P<username>[^/]+)/(?P<token>[^/]+)$")
+
+func BuildEmailConfirmation(username, token string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/email_confirmation/%s/%s", url.PathEscape(username), token), nil)
+}
+
+var RegexPasswordResetRequest = regexp.MustCompile("^/password_reset$")
+
+func BuildPasswordResetRequest() string {
+	defer CatchPanic()
+	return Url("/password_reset", nil)
 }
 
 /*
@@ -145,7 +173,12 @@ func BuildUserProfile(username string) string {
 	if len(username) == 0 {
 		panic(oops.New(nil, "Username must not be blank"))
 	}
-	return Url("/m/"+username, nil)
+	return Url("/m/"+url.PathEscape(username), nil)
+}
+
+// TODO
+func BuildUserSettings(username string) string {
+	return ""
 }
 
 /*

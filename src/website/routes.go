@@ -116,10 +116,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 		}
 	}
 
-	// TODO(asaf): login/logout shouldn't happen on subdomains. We should verify that in the middleware.
-	routes.POST(hmnurl.RegexLoginAction, Login)
-	routes.GET(hmnurl.RegexLogoutAction, Logout)
-
 	routes.GET(hmnurl.RegexPublic, func(c *RequestContext) ResponseData {
 		var res ResponseData
 		http.StripPrefix("/public/", http.FileServer(http.Dir("public"))).ServeHTTP(&res, c.Req)
@@ -144,6 +140,19 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	// TODO(asaf): Have separate middleware for HMN-only routes and any-project routes
 	// NOTE(asaf): HMN-only routes:
+	mainRoutes.GET(hmnurl.RegexOldHome, Index)
+
+	mainRoutes.POST(hmnurl.RegexLoginAction, Login)
+	mainRoutes.GET(hmnurl.RegexLogoutAction, Logout)
+	mainRoutes.GET(hmnurl.RegexLoginPage, LoginPage)
+
+	mainRoutes.GET(hmnurl.RegexRegister, RegisterNewUser)
+	mainRoutes.POST(hmnurl.RegexRegister, RegisterNewUserSubmit)
+	mainRoutes.GET(hmnurl.RegexRegistrationSuccess, RegisterNewUserSuccess)
+	mainRoutes.GET(hmnurl.RegexOldEmailConfirmation, EmailConfirmation) // TODO(asaf): Delete this a bit after launch
+	mainRoutes.GET(hmnurl.RegexEmailConfirmation, EmailConfirmation)
+	mainRoutes.POST(hmnurl.RegexEmailConfirmation, EmailConfirmationSubmit)
+
 	mainRoutes.GET(hmnurl.RegexFeed, Feed)
 	mainRoutes.GET(hmnurl.RegexAtomFeed, AtomFeed)
 	mainRoutes.GET(hmnurl.RegexShowcase, Showcase)
@@ -229,7 +238,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			UserSettingsUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
 			LoginActionUrl:     hmnurl.BuildLoginAction(c.FullUrl()),
 			LogoutActionUrl:    hmnurl.BuildLogoutAction(c.FullUrl()),
-			RegisterUrl:        hmnurl.BuildHomepage(), // TODO(asaf)
+			RegisterUrl:        hmnurl.BuildRegister(),
 			HMNHomepageUrl:     hmnurl.BuildHomepage(),
 			ProjectHomepageUrl: hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
 			ProjectIndexUrl:    hmnurl.BuildProjectIndex(1),
