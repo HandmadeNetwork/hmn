@@ -216,7 +216,7 @@ func PeriodicallyDeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) <-
 	go func() {
 		defer close(done)
 
-		t := time.NewTicker(10 * time.Second)
+		t := time.NewTicker(1 * time.Hour)
 		for {
 			select {
 			case <-t.C:
