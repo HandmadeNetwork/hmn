@@ -29,6 +29,6 @@ require (
 )
 
 replace (
-	github.com/frustra/bbcode v0.0.0-20201127003707-6ef347fbe1c8 => github.com/bvisness/bbcode v0.0.0-20210623031351-ec0e2e2e39d9
-	github.com/yuin/goldmark v1.4.1 => github.com/bvisness/goldmark v1.4.1-0.20210707024600-f7e596e26b5e
+	github.com/frustra/bbcode v0.0.0-20201127003707-6ef347fbe1c8 => github.com/HandmadeNetwork/bbcode v0.0.0-20210623031351-ec0e2e2e39d9
+	github.com/yuin/goldmark v1.4.1 => github.com/HandmadeNetwork/goldmark v1.4.1-0.20210707024600-f7e596e26b5e
 )
