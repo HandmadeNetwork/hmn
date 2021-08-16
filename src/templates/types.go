@@ -303,3 +303,9 @@ type EmailBaseData struct {
 	Subject   template.HTML
 	Separator template.HTML
 }
+
+type DiscordUser struct {
+	Username      string
+	Discriminator string
+	Avatar        string
+}

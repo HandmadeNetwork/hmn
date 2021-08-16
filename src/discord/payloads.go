@@ -217,10 +217,12 @@ func MessageFromMap(m interface{}) Message {
 
 // https://discord.com/developers/docs/resources/user#user-object
 type User struct {
-	ID            string `json:"id"`
-	Username      string `json:"username"`
-	Discriminator string `json:"discriminator"`
-	IsBot         bool   `json:"bot"`
+	ID            string  `json:"id"`
+	Username      string  `json:"username"`
+	Discriminator string  `json:"discriminator"`
+	Avatar        *string `json:"avatar"`
+	IsBot         bool    `json:"bot"`
+	Locale        string  `json:"locale"`
 }
 
 func UserFromMap(m interface{}) User {

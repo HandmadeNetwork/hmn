@@ -546,6 +546,22 @@ func BuildLibraryResource(projectSlug string, resourceId int) string {
 }
 
 /*
+* Discord OAuth
+ */
+
+var RegexDiscordTest = regexp.MustCompile("^/discord$")
+
+func BuildDiscordTest() string {
+	return Url("/discord", nil)
+}
+
+var RegexDiscordOAuthCallback = regexp.MustCompile("^/_discord_callback$")
+
+func BuildDiscordOAuthCallback() string {
+	return Url("/_discord_callback", nil)
+}
+
+/*
 * Assets
  */
 

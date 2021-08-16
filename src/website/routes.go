@@ -197,6 +197,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexPodcastEpisode, PodcastEpisode)
 	mainRoutes.GET(hmnurl.RegexPodcastRSS, PodcastRSS)
 
+	mainRoutes.GET(hmnurl.RegexDiscordTest, authMiddleware(DiscordTest)) // TODO: Delete this route
+	mainRoutes.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
+
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 	mainRoutes.GET(hmnurl.RegexEditorPreviewsJS, func(c *RequestContext) ResponseData {
 		var res ResponseData

@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
+	"strings"
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/logging"
@@ -26,13 +28,17 @@ var UserAgent = fmt.Sprintf("%s (%s, %s)", BotName, UserAgentURL, UserAgentVersi
 
 var httpClient = &http.Client{}
 
+func buildUrl(path string) string {
+	return fmt.Sprintf("%s%s", BaseUrl, path)
+}
+
 func makeRequest(ctx context.Context, method string, path string, body []byte) *http.Request {
 	var bodyReader io.Reader
 	if body != nil {
 		bodyReader = bytes.NewBuffer(body)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, fmt.Sprintf("%s%s", BaseUrl, path), bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, buildUrl(path), bodyReader)
 	if err != nil {
 		panic(err)
 	}
@@ -169,6 +175,121 @@ func CreateDM(ctx context.Context, recipientID string) (*Channel, error) {
 	}
 
 	return &channel, nil
+}
+
+type OAuthCodeExchangeResponse struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+	Scope        string `json:"scope"`
+}
+
+func ExchangeOAuthCode(ctx context.Context, code, redirectURI string) (*OAuthCodeExchangeResponse, error) {
+	const name = "OAuth Code Exchange"
+
+	body := make(url.Values)
+	body.Set("client_id", config.Config.Discord.OAuthClientID)
+	body.Set("client_secret", config.Config.Discord.OAuthClientSecret)
+	body.Set("grant_type", "authorization_code")
+	body.Set("code", code)
+	body.Set("redirect_uri", redirectURI)
+	bodyStr := body.Encode()
+
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		req, err := http.NewRequestWithContext(
+			ctx,
+			http.MethodPost,
+			"https://discord.com/api/oauth2/token",
+			strings.NewReader(bodyStr),
+		)
+		if err != nil {
+			panic(err)
+		}
+		req.Header.Add("User-Agent", UserAgent)
+		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+		return req
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		logErrorResponse(ctx, name, res, "")
+		return nil, oops.New(nil, "received error from Discord")
+	}
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var tokenResponse OAuthCodeExchangeResponse
+	err = json.Unmarshal(bodyBytes, &tokenResponse)
+	if err != nil {
+		return nil, oops.New(err, "failed to unmarshal Discord OAuth token")
+	}
+
+	return &tokenResponse, nil
+}
+
+func GetCurrentUserAsOAuth(ctx context.Context, accessToken string) (*User, error) {
+	const name = "Get Current User"
+
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, buildUrl("/users/@me"), nil)
+		if err != nil {
+			panic(err)
+		}
+		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+		req.Header.Add("User-Agent", UserAgent)
+
+		return req
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		logErrorResponse(ctx, name, res, "")
+		return nil, oops.New(nil, "received error from Discord")
+	}
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var user User
+	err = json.Unmarshal(bodyBytes, &user)
+	if err != nil {
+		return nil, oops.New(err, "failed to unmarshal Discord user")
+	}
+
+	return &user, nil
+}
+
+func AddGuildMemberRole(ctx context.Context, userID, roleID string) error {
+	const name = "Delete Message"
+
+	path := fmt.Sprintf("/guilds/%s/members/%s/roles/%s", config.Config.Discord.GuildID, userID, roleID)
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		return makeRequest(ctx, http.MethodPut, path, nil)
+	})
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusNoContent {
+		logErrorResponse(ctx, name, res, "")
+		return oops.New(nil, "got unexpected status code when adding role")
+	}
+
+	return nil
 }
 
 func logErrorResponse(ctx context.Context, name string, res *http.Response, msg string) {

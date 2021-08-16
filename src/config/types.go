@@ -67,6 +67,11 @@ type DiscordConfig struct {
 	BotToken  string
 	BotUserID string
 
+	OAuthClientID     string
+	OAuthClientSecret string
+
+	GuildID           string
+	MemberRoleID      string
 	ShowcaseChannelID string
 	LibraryChannelID  string
 }

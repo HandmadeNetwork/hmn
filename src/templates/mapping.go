@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"fmt"
 	"html/template"
 	"net"
 	"regexp"
@@ -328,6 +329,19 @@ func PodcastEpisodeToTemplate(projectSlug string, episode *models.PodcastEpisode
 		FileSize:        audioFileSize,
 		PublicationDate: episode.PublicationDate,
 		Duration:        episode.Duration,
+	}
+}
+
+func DiscordUserToTemplate(d *models.DiscordUser) DiscordUser {
+	var avatarUrl string // TODO: Default avatar image
+	if d.Avatar != nil {
+		avatarUrl = fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png", d.UserID, *d.Avatar)
+	}
+
+	return DiscordUser{
+		Username:      d.Username,
+		Discriminator: d.Discriminator,
+		Avatar:        avatarUrl,
 	}
 }
 
