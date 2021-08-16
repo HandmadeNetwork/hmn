@@ -561,6 +561,12 @@ func BuildDiscordOAuthCallback() string {
 	return Url("/_discord_callback", nil)
 }
 
+var RegexDiscordUnlink = regexp.MustCompile("^/_discord_unlink$")
+
+func BuildDiscordUnlink() string {
+	return Url("/_discord_unlink", nil)
+}
+
 /*
 * Assets
  */

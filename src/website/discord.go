@@ -41,6 +41,7 @@ func DiscordTest(c *RequestContext) ResponseData {
 		templates.BaseData
 		DiscordUser  *templates.DiscordUser
 		AuthorizeURL string
+		UnlinkURL    string
 	}
 
 	baseData := getBaseData(c)
@@ -56,6 +57,7 @@ func DiscordTest(c *RequestContext) ResponseData {
 	td := templateData{
 		BaseData:     baseData,
 		AuthorizeURL: fmt.Sprintf("https://discord.com/api/oauth2/authorize?%s", params.Encode()),
+		UnlinkURL:    hmnurl.BuildDiscordUnlink(),
 	}
 
 	if userDiscord != nil {
@@ -111,12 +113,13 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch Discord user info"))
 	}
 
-	// TODO: Add the role on Discord
+	// Add the role on Discord
 	err = discord.AddGuildMemberRole(c.Context(), user.ID, config.Config.Discord.MemberRoleID)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to add member role"))
 	}
 
+	// Add the user to our database
 	_, err = c.Conn.Exec(c.Context(),
 		`
 		INSERT INTO handmade_discorduser (username, discriminator, access_token, refresh_token, avatar, locale, userid, expiry, hmn_user_id)
@@ -134,6 +137,54 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 	)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save new Discord user info"))
+	}
+
+	return c.Redirect(hmnurl.BuildDiscordTest(), http.StatusSeeOther)
+}
+
+func DiscordUnlink(c *RequestContext) ResponseData {
+	tx, err := c.Conn.Begin(c.Context())
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback(c.Context())
+
+	iDiscordUser, err := db.QueryOne(c.Context(), tx, models.DiscordUser{},
+		`
+		SELECT $columns
+		FROM handmade_discorduser
+		WHERE hmn_user_id = $1
+		`,
+		c.CurrentUser.ID,
+	)
+	if err != nil {
+		if errors.Is(err, db.ErrNoMatchingRows) {
+			return c.Redirect(hmnurl.BuildDiscordTest(), http.StatusSeeOther)
+		} else {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get Discord user for unlink"))
+		}
+	}
+	discordUser := iDiscordUser.(*models.DiscordUser)
+
+	_, err = tx.Exec(c.Context(),
+		`
+		DELETE FROM handmade_discorduser
+		WHERE id = $1
+		`,
+		discordUser.ID,
+	)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete Discord user"))
+	}
+
+	err = tx.Commit(c.Context())
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit Discord user delete"))
+	}
+
+	err = discord.RemoveGuildMemberRole(c.Context(), discordUser.UserID, config.Config.Discord.MemberRoleID)
+	if err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to remove member role on unlink")
 	}
 
 	return c.Redirect(hmnurl.BuildDiscordTest(), http.StatusSeeOther)

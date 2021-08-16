@@ -273,7 +273,7 @@ func GetCurrentUserAsOAuth(ctx context.Context, accessToken string) (*User, erro
 }
 
 func AddGuildMemberRole(ctx context.Context, userID, roleID string) error {
-	const name = "Delete Message"
+	const name = "Add Guild Member Role"
 
 	path := fmt.Sprintf("/guilds/%s/members/%s/roles/%s", config.Config.Discord.GuildID, userID, roleID)
 	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
@@ -287,6 +287,27 @@ func AddGuildMemberRole(ctx context.Context, userID, roleID string) error {
 	if res.StatusCode != http.StatusNoContent {
 		logErrorResponse(ctx, name, res, "")
 		return oops.New(nil, "got unexpected status code when adding role")
+	}
+
+	return nil
+}
+
+func RemoveGuildMemberRole(ctx context.Context, userID, roleID string) error {
+	const name = "Remove Guild Member Role"
+
+	path := fmt.Sprintf("/guilds/%s/members/%s/roles/%s", config.Config.Discord.GuildID, userID, roleID)
+	logging.ExtractLogger(ctx).Warn().Str("path", path).Msg("I dunno")
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		return makeRequest(ctx, http.MethodDelete, path, nil)
+	})
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusNoContent {
+		logErrorResponse(ctx, name, res, "")
+		return oops.New(nil, "got unexpected status code when removing role")
 	}
 
 	return nil
