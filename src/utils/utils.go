@@ -27,6 +27,13 @@ func IntClamp(min, t, max int) int {
 	return IntMax(min, IntMin(t, max))
 }
 
+func Int64Max(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 /*
 Recover a panic and convert it to a returned error. Call it like so:
 

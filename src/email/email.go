@@ -17,6 +17,9 @@ import (
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
+// TODO(asaf): Adjust this once we test on the server
+const ExpectedEmailSendDuration = time.Millisecond * 3000
+
 type RegistrationEmailData struct {
 	Name                    string
 	HomepageUrl             string
