@@ -288,7 +288,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			ManifestoUrl:       hmnurl.BuildManifesto(),
 			EpisodeGuideUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
 			EditUrl:            "",
-			SearchActionUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
+			SearchActionUrl:    "https://duckduckgo.com",
 		},
 		Footer: templates.Footer{
 			HomepageUrl:                hmnurl.BuildHomepage(),
