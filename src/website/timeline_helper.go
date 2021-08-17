@@ -65,7 +65,7 @@ func PostToTimelineItem(lineageBuilder *models.SubforumLineageBuilder, post *mod
 		Url:       UrlForGenericPost(thread, post, lineageBuilder, project.Slug),
 
 		OwnerAvatarUrl: templates.UserAvatarUrl(owner, currentTheme),
-		OwnerName:      templates.UserDisplayName(owner),
+		OwnerName:      owner.BestName(),
 		OwnerUrl:       hmnurl.BuildUserProfile(owner.Username),
 		Description:    "", // NOTE(asaf): No description for posts
 
@@ -122,7 +122,7 @@ func SnippetToTimelineItem(snippet *models.Snippet, asset *models.Asset, discord
 		Url:   hmnurl.BuildSnippet(snippet.ID),
 
 		OwnerAvatarUrl: templates.UserAvatarUrl(owner, currentTheme),
-		OwnerName:      templates.UserDisplayName(owner),
+		OwnerName:      owner.BestName(),
 		OwnerUrl:       hmnurl.BuildUserProfile(owner.Username),
 		Description:    template.HTML(snippet.DescriptionHtml),
 

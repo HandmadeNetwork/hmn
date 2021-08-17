@@ -3,7 +3,6 @@ package website
 import (
 	"errors"
 	"fmt"
-	"html/template"
 	"math"
 	"math/rand"
 	"net/http"
@@ -380,39 +379,48 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	}
 
 	if project.Flags == 1 {
-		hiddenNotice := templates.Notice{
-			Class:   "hidden",
-			Content: "NOTICE: This project is hidden. It is currently visible only to owners and site admins.",
-		}
-		projectHomepageData.BaseData.Notices = append(projectHomepageData.BaseData.Notices, hiddenNotice)
+		projectHomepageData.BaseData.AddImmediateNotice(
+			"hidden",
+			"NOTICE: This project is hidden. It is currently visible only to owners and site admins.",
+		)
 	}
 
 	if project.Lifecycle != models.ProjectLifecycleActive {
-		var lifecycleNotice templates.Notice
 		switch project.Lifecycle {
 		case models.ProjectLifecycleUnapproved:
-			lifecycleNotice.Class = "unapproved"
-			lifecycleNotice.Content = template.HTML(fmt.Sprintf(
-				"NOTICE: This project has not yet been submitted for approval. It is only visible to owners. Please <a href=\"%s\">submit it for approval</a> when the project content is ready for review.",
-				hmnurl.BuildProjectEdit(project.Slug, "submit"),
-			))
+			projectHomepageData.BaseData.AddImmediateNotice(
+				"unapproved",
+				fmt.Sprintf(
+					"NOTICE: This project has not yet been submitted for approval. It is only visible to owners. Please <a href=\"%s\">submit it for approval</a> when the project content is ready for review.",
+					hmnurl.BuildProjectEdit(project.Slug, "submit"),
+				),
+			)
 		case models.ProjectLifecycleApprovalRequired:
-			lifecycleNotice.Class = "unapproved"
-			lifecycleNotice.Content = template.HTML("NOTICE: This project is awaiting approval. It is only visible to owners and site admins.")
+			projectHomepageData.BaseData.AddImmediateNotice(
+				"unapproved",
+				"NOTICE: This project is awaiting approval. It is only visible to owners and site admins.",
+			)
 		case models.ProjectLifecycleHiatus:
-			lifecycleNotice.Class = "hiatus"
-			lifecycleNotice.Content = template.HTML("NOTICE: This project is on hiatus and may not update for a while.")
+			projectHomepageData.BaseData.AddImmediateNotice(
+				"hiatus",
+				"NOTICE: This project is on hiatus and may not update for a while.",
+			)
 		case models.ProjectLifecycleDead:
-			lifecycleNotice.Class = "dead"
-			lifecycleNotice.Content = template.HTML("NOTICE: Site staff have marked this project as being dead. If you intend to revive it, please contact a member of the Handmade Network staff.")
+			projectHomepageData.BaseData.AddImmediateNotice(
+				"dead",
+				"NOTICE: Site staff have marked this project as being dead. If you intend to revive it, please contact a member of the Handmade Network staff.",
+			)
 		case models.ProjectLifecycleLTSRequired:
-			lifecycleNotice.Class = "lts-reqd"
-			lifecycleNotice.Content = template.HTML("NOTICE: This project is awaiting approval for maintenance-mode status.")
+			projectHomepageData.BaseData.AddImmediateNotice(
+				"lts-reqd",
+				"NOTICE: This project is awaiting approval for maintenance-mode status.",
+			)
 		case models.ProjectLifecycleLTS:
-			lifecycleNotice.Class = "lts"
-			lifecycleNotice.Content = template.HTML("NOTICE: This project has reached a state of completion.")
+			projectHomepageData.BaseData.AddImmediateNotice(
+				"lts",
+				"NOTICE: This project has reached a state of completion.",
+			)
 		}
-		projectHomepageData.BaseData.Notices = append(projectHomepageData.BaseData.Notices, lifecycleNotice)
 	}
 
 	for _, screenshot := range screenshotQueryResult.ToSlice() {

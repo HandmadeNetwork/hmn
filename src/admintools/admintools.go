@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/db"
@@ -114,6 +115,8 @@ func init() {
 			switch emailType {
 			case "registration":
 				err = email.SendRegistrationEmail(toAddress, toName, "test_user", "test_token", p)
+			case "passwordreset":
+				err = email.SendPasswordReset(toAddress, toName, "test_user", "test_token", time.Now().Add(time.Hour*24), p)
 			default:
 				fmt.Printf("You must provide a valid email type\n\n")
 				cmd.Usage()

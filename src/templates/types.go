@@ -29,6 +29,13 @@ type BaseData struct {
 	MathjaxEnabled bool
 }
 
+func (bd *BaseData) AddImmediateNotice(class, content string) {
+	bd.Notices = append(bd.Notices, Notice{
+		Class:   class,
+		Content: template.HTML(content),
+	})
+}
+
 type Header struct {
 	AdminUrl           string
 	UserSettingsUrl    string

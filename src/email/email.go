@@ -49,6 +49,38 @@ func SendRegistrationEmail(toAddress string, toName string, username string, com
 	return nil
 }
 
+type PasswordResetEmailData struct {
+	Name               string
+	DoPasswordResetUrl string
+	Expiration         time.Time
+}
+
+func SendPasswordReset(toAddress string, toName string, username string, resetToken string, expiration time.Time, perf *perf.RequestPerf) error {
+	perf.StartBlock("EMAIL", "Password reset email")
+
+	perf.StartBlock("EMAIL", "Rendering template")
+	contents, err := renderTemplate("email_password_reset.html", PasswordResetEmailData{
+		Name:               toName,
+		DoPasswordResetUrl: hmnurl.BuildDoPasswordReset(username, resetToken),
+		Expiration:         expiration,
+	})
+	if err != nil {
+		return err
+	}
+	perf.EndBlock()
+
+	perf.StartBlock("EMAIL", "Sending email")
+	err = sendMail(toAddress, toName, "[handmade.network] Your password reset request", contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+	perf.EndBlock()
+
+	perf.EndBlock()
+
+	return nil
+}
+
 var EmailRegex = regexp.MustCompile(`^[^:\p{Cc} ]+@[^:\p{Cc} ]+\.[^:\p{Cc} ]+$`)
 
 func IsEmail(address string) bool {

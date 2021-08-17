@@ -99,11 +99,6 @@ func PodcastEdit(c *RequestContext) ResponseData {
 		Podcast:  podcast,
 	}
 
-	success := c.URL().Query().Get("success")
-	if success != "" {
-		podcastEditData.BaseData.Notices = append(podcastEditData.BaseData.Notices, templates.Notice{Class: "success", Content: "Podcast updated successfully."})
-	}
-
 	var res ResponseData
 	err = res.WriteTemplate("podcast_edit.html", podcastEditData, c.Perf)
 	if err != nil {
@@ -249,7 +244,9 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to commit db transaction"))
 	}
 
-	return c.Redirect(hmnurl.BuildPodcastEditSuccess(c.CurrentProject.Slug), http.StatusSeeOther)
+	res := c.Redirect(hmnurl.BuildPodcastEdit(c.CurrentProject.Slug), http.StatusSeeOther)
+	res.AddFutureNotice("success", "Podcast updated successfully.")
+	return res
 }
 
 type PodcastEpisodeData struct {
@@ -386,11 +383,6 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 		EpisodeNumber: episode.EpisodeNumber,
 		CurrentFile:   episode.AudioFile,
 		EpisodeFiles:  episodeFiles,
-	}
-
-	success := c.URL().Query().Get("success")
-	if success != "" {
-		podcastEpisodeEditData.BaseData.Notices = append(podcastEpisodeEditData.BaseData.Notices, templates.Notice{Class: "success", Content: "Podcast episode updated successfully."})
 	}
 
 	var res ResponseData
@@ -541,7 +533,9 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		}
 	}
 
-	return c.Redirect(hmnurl.BuildPodcastEpisodeEditSuccess(c.CurrentProject.Slug, guidStr), http.StatusSeeOther)
+	res := c.Redirect(hmnurl.BuildPodcastEpisodeEdit(c.CurrentProject.Slug, guidStr), http.StatusSeeOther)
+	res.AddFutureNotice("success", "Podcast episode updated successfully.")
+	return res
 }
 
 func GetEpisodeFiles(projectSlug string) ([]string, error) {

@@ -198,14 +198,34 @@ func DeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) (int64, error)
 		DELETE FROM auth_user
 		WHERE
 			status = $1 AND
-			(SELECT COUNT(*) as ct FROM handmade_onetimetoken AS ott WHERE ott.owner_id = auth_user.id AND ott.expires < $2) > 0;
+			(SELECT COUNT(*) as ct FROM handmade_onetimetoken AS ott WHERE ott.owner_id = auth_user.id AND ott.expires < $2 AND ott.token_type = $3) > 0;
 		`,
 		models.UserStatusInactive,
 		time.Now(),
+		models.TokenTypeRegistration,
 	)
 
 	if err != nil {
 		return 0, oops.New(err, "failed to delete inactive users")
+	}
+
+	return tag.RowsAffected(), nil
+}
+
+func DeleteExpiredPasswordResets(ctx context.Context, conn *pgxpool.Pool) (int64, error) {
+	tag, err := conn.Exec(ctx,
+		`
+		DELETE FROM handmade_onetimetoken
+		WHERE
+			token_type = $1
+			AND expires < $2
+		`,
+		models.TokenTypePasswordReset,
+		time.Now(),
+	)
+
+	if err != nil {
+		return 0, oops.New(err, "failed to delete expired password resets")
 	}
 
 	return tag.RowsAffected(), nil
@@ -226,7 +246,16 @@ func PeriodicallyDeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) <-
 						logging.Info().Int64("num deleted users", n).Msg("Deleted inactive users")
 					}
 				} else {
-					logging.Error().Err(err).Msg("Failed to delete expired sessions")
+					logging.Error().Err(err).Msg("Failed to delete inactive users")
+				}
+
+				n, err = DeleteExpiredPasswordResets(ctx, conn)
+				if err == nil {
+					if n > 0 {
+						logging.Info().Int64("num deleted password resets", n).Msg("Deleted expired password resets")
+					}
+				} else {
+					logging.Error().Err(err).Msg("Failed to delete expired password resets")
 				}
 			case <-ctx.Done():
 				return

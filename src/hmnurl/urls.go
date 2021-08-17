@@ -23,10 +23,6 @@ func BuildHomepage() string {
 	return Url("/", nil)
 }
 
-func BuildHomepageWithRegistrationSuccess() string {
-	return Url("/", []Q{{Name: "registered", Value: "true"}})
-}
-
 func BuildProjectHomepage(projectSlug string) string {
 	defer CatchPanic()
 	return ProjectUrl("/", nil, projectSlug)
@@ -102,11 +98,26 @@ func BuildEmailConfirmation(username, token string) string {
 	return Url(fmt.Sprintf("/email_confirmation/%s/%s", url.PathEscape(username), token), nil)
 }
 
-var RegexPasswordResetRequest = regexp.MustCompile("^/password_reset$")
+var RegexRequestPasswordReset = regexp.MustCompile("^/password_reset$")
 
-func BuildPasswordResetRequest() string {
+func BuildRequestPasswordReset() string {
 	defer CatchPanic()
 	return Url("/password_reset", nil)
+}
+
+var RegexPasswordResetSent = regexp.MustCompile("^/password_reset/sent$")
+
+func BuildPasswordResetSent() string {
+	defer CatchPanic()
+	return Url("/password_reset/sent", nil)
+}
+
+var RegexOldDoPasswordReset = regexp.MustCompile(`^_password_reset/(?P<username>[\w\ \.\,\-@\+\_]+)/(?P<token>[\d\w]+)[\/]?$`)
+var RegexDoPasswordReset = regexp.MustCompile("^/password_reset/(?P<username>[^/]+)/(?P<token>[^/]+)$")
+
+func BuildDoPasswordReset(username string, token string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/password_reset/%s/%s", url.PathEscape(username), token), nil)
 }
 
 /*
@@ -176,9 +187,10 @@ func BuildUserProfile(username string) string {
 	return Url("/m/"+url.PathEscape(username), nil)
 }
 
-// TODO
-func BuildUserSettings(username string) string {
-	return ""
+var RegexUserSettings = regexp.MustCompile(`^/_settings$`)
+
+func BuildUserSettings(section string) string {
+	return ProjectUrlWithFragment("/_settings", nil, "", section)
 }
 
 /*
@@ -291,11 +303,6 @@ func BuildPodcastEdit(projectSlug string) string {
 	return ProjectUrl("/podcast/edit", nil, projectSlug)
 }
 
-func BuildPodcastEditSuccess(projectSlug string) string {
-	defer CatchPanic()
-	return ProjectUrl("/podcast/edit", []Q{Q{"success", "true"}}, projectSlug)
-}
-
 var RegexPodcastEpisode = regexp.MustCompile(`^/podcast/ep/(?P<episodeid>[^/]+)$`)
 
 func BuildPodcastEpisode(projectSlug string, episodeGUID string) string {
@@ -315,11 +322,6 @@ var RegexPodcastEpisodeEdit = regexp.MustCompile(`^/podcast/ep/(?P<episodeid>[^/
 func BuildPodcastEpisodeEdit(projectSlug string, episodeGUID string) string {
 	defer CatchPanic()
 	return ProjectUrl(fmt.Sprintf("/podcast/ep/%s/edit", episodeGUID), nil, projectSlug)
-}
-
-func BuildPodcastEpisodeEditSuccess(projectSlug string, episodeGUID string) string {
-	defer CatchPanic()
-	return ProjectUrl(fmt.Sprintf("/podcast/ep/%s/edit", episodeGUID), []Q{Q{"success", "true"}}, projectSlug)
 }
 
 var RegexPodcastRSS = regexp.MustCompile(`^/podcast/podcast.xml$`)

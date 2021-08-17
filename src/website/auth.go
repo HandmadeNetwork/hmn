@@ -3,7 +3,6 @@ package website
 import (
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"regexp"
 	"strings"
@@ -41,7 +40,7 @@ func LoginPage(c *RequestContext) ResponseData {
 	res.MustWriteTemplate("auth_login.html", LoginPageData{
 		BaseData:          getBaseData(c),
 		RedirectUrl:       c.Req.URL.Query().Get("redirect"),
-		ForgotPasswordUrl: hmnurl.BuildPasswordResetRequest(),
+		ForgotPasswordUrl: hmnurl.BuildRequestPasswordReset(),
 	}, c.Perf)
 	return res
 }
@@ -57,29 +56,33 @@ func Login(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusBadRequest, NewSafeError(err, "request must contain form data"))
 	}
 
-	username := form.Get("username")
-	password := form.Get("password")
-	if username == "" || password == "" {
-		return RejectRequest(c, "You must provide both a username and password")
-	}
-
 	redirect := form.Get("redirect")
 	if redirect == "" {
 		redirect = "/"
 	}
 
+	username := form.Get("username")
+	password := form.Get("password")
+	if username == "" || password == "" {
+		return c.Redirect(hmnurl.BuildLoginPage(redirect), http.StatusSeeOther)
+	}
+
+	showLoginWithFailure := func(c *RequestContext, redirect string) ResponseData {
+		var res ResponseData
+		baseData := getBaseData(c)
+		baseData.AddImmediateNotice("failure", "Incorrect username or password")
+		res.MustWriteTemplate("auth_login.html", LoginPageData{
+			BaseData:          baseData,
+			RedirectUrl:       redirect,
+			ForgotPasswordUrl: hmnurl.BuildRequestPasswordReset(),
+		}, c.Perf)
+		return res
+	}
+
 	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{}, "SELECT $columns FROM auth_user WHERE LOWER(username) = LOWER($1)", username)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
-			var res ResponseData
-			baseData := getBaseData(c)
-			baseData.Notices = []templates.Notice{{Content: "Incorrect username or password", Class: "failure"}}
-			res.MustWriteTemplate("auth_login.html", LoginPageData{
-				BaseData:          baseData,
-				RedirectUrl:       redirect,
-				ForgotPasswordUrl: hmnurl.BuildPasswordResetRequest(),
-			}, c.Perf)
-			return res
+			return showLoginWithFailure(c, redirect)
 		} else {
 			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
 		}
@@ -93,15 +96,7 @@ func Login(c *RequestContext) ResponseData {
 	}
 
 	if !success {
-		var res ResponseData
-		baseData := getBaseData(c)
-		baseData.Notices = []templates.Notice{{Content: "Incorrect username or password", Class: "failure"}}
-		res.MustWriteTemplate("auth_login.html", LoginPageData{
-			BaseData:          baseData,
-			RedirectUrl:       redirect,
-			ForgotPasswordUrl: hmnurl.BuildPasswordResetRequest(),
-		}, c.Perf)
-		return res
+		return showLoginWithFailure(c, redirect)
 	}
 
 	if user.Status == models.UserStatusInactive {
@@ -117,23 +112,13 @@ func Login(c *RequestContext) ResponseData {
 }
 
 func Logout(c *RequestContext) ResponseData {
-	sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
-	if err == nil {
-		// clear the session from the db immediately, no expiration
-		err := auth.DeleteSession(c.Context(), c.Conn, sessionCookie.Value)
-		if err != nil {
-			logging.Error().Err(err).Msg("failed to delete session on logout")
-		}
-	}
-
 	redir := c.Req.URL.Query().Get("redirect")
 	if redir == "" {
 		redir = "/"
 	}
 
 	res := c.Redirect(redir, http.StatusSeeOther)
-	res.SetCookie(auth.DeleteSessionCookie)
-
+	logoutUser(c, &res)
 	return res
 }
 
@@ -170,6 +155,16 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	if password != password2 {
 		return RejectRequest(c, "Password confirmation doesn't match password")
 	}
+
+	c.Perf.StartBlock("SQL", "Check blacklist")
+	// TODO(asaf): Check email against blacklist
+	blacklisted := false
+	if blacklisted {
+		// NOTE(asaf): Silent rejection so we don't allow attackers to harvest emails.
+		time.Sleep(time.Second * 3) // NOTE(asaf): Pretend to send email
+		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
+	}
+	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Check for existing usernames and emails")
 	userAlreadyExists := true
@@ -221,16 +216,6 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to encrypt password"))
 	}
-
-	c.Perf.StartBlock("SQL", "Check blacklist")
-	// TODO(asaf): Check email against blacklist
-	blacklisted := false
-	if blacklisted {
-		// NOTE(asaf): Silent rejection so we don't allow attackers to harvest emails.
-		time.Sleep(time.Second * 3) // NOTE(asaf): Pretend to send email
-		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
-	}
-	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Create user and one time token")
 	tx, err := c.Conn.Begin(c.Context())
@@ -340,9 +325,9 @@ func EmailConfirmation(c *RequestContext) ResponseData {
 		return RejectRequest(c, "Bad validation url")
 	}
 
-	validationResult := validateUsernameAndToken(c, username, token)
-	if !validationResult.IsValid {
-		return validationResult.InvalidResponse
+	validationResult := validateUsernameAndToken(c, username, token, models.TokenTypeRegistration)
+	if !validationResult.Match {
+		return makeResponseForBadRegistrationTokenValidationResult(c, validationResult)
 	}
 
 	var res ResponseData
@@ -361,9 +346,9 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 	username := c.Req.Form.Get("username")
 	password := c.Req.Form.Get("password")
 
-	validationResult := validateUsernameAndToken(c, username, token)
-	if !validationResult.IsValid {
-		return validationResult.InvalidResponse
+	validationResult := validateUsernameAndToken(c, username, token, models.TokenTypeRegistration)
+	if !validationResult.Match {
+		return makeResponseForBadRegistrationTokenValidationResult(c, validationResult)
 	}
 
 	success, err := tryLogin(c, validationResult.User, password)
@@ -374,7 +359,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		var res ResponseData
 		baseData := getBaseData(c)
 		// NOTE(asaf): We can report that the password is incorrect, because an attacker wouldn't have a valid token to begin with.
-		baseData.Notices = []templates.Notice{{Content: template.HTML("Incorrect password. Please try again."), Class: "failure"}}
+		baseData.AddImmediateNotice("failure", "Incorrect password. Please try again.")
 		res.MustWriteTemplate("auth_email_validation.html", EmailValidationData{
 			BaseData: getBaseData(c),
 			Token:    token,
@@ -419,7 +404,8 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	res := c.Redirect(hmnurl.BuildHomepageWithRegistrationSuccess(), http.StatusSeeOther)
+	res := c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
+	res.AddFutureNotice("success", "You've completed your registration successfully!")
 	err = loginUser(c, validationResult.User, &res)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, err)
@@ -427,41 +413,281 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 	return res
 }
 
+// NOTE(asaf): Only call this when validationResult.Match is false.
+func makeResponseForBadRegistrationTokenValidationResult(c *RequestContext, validationResult validateUserAndTokenResult) ResponseData {
+	if validationResult.User == nil {
+		return RejectRequest(c, "You haven't validated your email in time and your user was deleted. You may try registering again with the same username.")
+	}
+
+	if validationResult.OneTimeToken == nil {
+		// NOTE(asaf): The user exists, but the validation token doesn't.
+		//			   That means the user already validated their email and can just log in normally.
+		return c.Redirect(hmnurl.BuildLoginPage(""), http.StatusSeeOther)
+	}
+
+	return RejectRequest(c, "Bad token. If you are having problems registering or logging in, please contact the staff.")
+}
+
 // NOTE(asaf): PasswordReset refers specifically to "forgot your password" flow over email,
 //             not to changing your password through the user settings page.
 func RequestPasswordReset(c *RequestContext) ResponseData {
-	// Verify not logged in
-	// Show form
-	return FourOhFour(c)
+	if c.CurrentUser != nil {
+		return c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
+	}
+	var res ResponseData
+	res.MustWriteTemplate("auth_password_reset.html", getBaseData(c), c.Perf)
+	return res
 }
 
 func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
-	// Verify not logged in
-	// Verify email input
-	// Potentially send password reset email if no password reset request is active
-	// Show success page in all cases
-	return FourOhFour(c)
+	if c.CurrentUser != nil {
+		return c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
+	}
+	c.Req.ParseForm()
+
+	username := strings.TrimSpace(c.Req.Form.Get("username"))
+	emailAddress := strings.TrimSpace(c.Req.Form.Get("email"))
+
+	if username == "" && emailAddress == "" {
+		return RejectRequest(c, "You must provide a username and an email address.")
+	}
+
+	var user *models.User
+
+	c.Perf.StartBlock("SQL", "Fetching user")
+	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{},
+		`
+		SELECT $columns
+		FROM auth_user
+		WHERE
+			LOWER(username) = LOWER($1)
+			AND LOWER(email) = LOWER($2)
+		`,
+		username,
+		emailAddress,
+	)
+	c.Perf.EndBlock()
+	if err != nil {
+		if !errors.Is(err, db.ErrNoMatchingRows) {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
+		}
+	}
+	if userRow != nil {
+		user = userRow.(*models.User)
+	}
+
+	if user != nil {
+		c.Perf.StartBlock("SQL", "Fetching existing token")
+		tokenRow, err := db.QueryOne(c.Context(), c.Conn, models.OneTimeToken{},
+			`
+			SELECT $columns
+			FROM handmade_onetimetoken
+			WHERE
+				token_type = $1
+				AND owner_id = $2
+			`,
+			models.TokenTypePasswordReset,
+			user.ID,
+		)
+		c.Perf.EndBlock()
+		if err != nil {
+			if !errors.Is(err, db.ErrNoMatchingRows) {
+				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch onetimetoken for user"))
+			}
+		}
+		var resetToken *models.OneTimeToken
+		if tokenRow != nil {
+			resetToken = tokenRow.(*models.OneTimeToken)
+		}
+		now := time.Now()
+
+		if resetToken != nil {
+			if resetToken.Expires.Before(now.Add(time.Minute * 30)) { // NOTE(asaf): Expired or about to expire
+				c.Perf.StartBlock("SQL", "Deleting expired token")
+				_, err = c.Conn.Exec(c.Context(),
+					`
+					DELETE FROM handmade_onetimetoken
+					WHERE id = $1
+					`,
+					resetToken.ID,
+				)
+				c.Perf.EndBlock()
+				if err != nil {
+					return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete onetimetoken"))
+				}
+				resetToken = nil
+			}
+		}
+
+		if resetToken == nil {
+			c.Perf.StartBlock("SQL", "Creating new token")
+			tokenRow, err := db.QueryOne(c.Context(), c.Conn, models.OneTimeToken{},
+				`
+				INSERT INTO handmade_onetimetoken (token_type, created, expires, token_content, owner_id)
+				VALUES ($1, $2, $3, $4, $5)
+				RETURNING $columns
+				`,
+				models.TokenTypePasswordReset,
+				now,
+				now.Add(time.Hour*24),
+				models.GenerateToken(),
+				user.ID,
+			)
+			c.Perf.EndBlock()
+			if err != nil {
+				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create onetimetoken"))
+			}
+			resetToken = tokenRow.(*models.OneTimeToken)
+
+			err = email.SendPasswordReset(user.Email, user.BestName(), user.Username, resetToken.Content, resetToken.Expires, c.Perf)
+			if err != nil {
+				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send email"))
+			}
+		}
+	}
+	return c.Redirect(hmnurl.BuildPasswordResetSent(), http.StatusSeeOther)
 }
 
-func PasswordReset(c *RequestContext) ResponseData {
-	// Verify reset token
-	// If logged in
-	//   If same user as reset request -> Mark password reset as resolved and redirect to user settings
-	//   If other user -> Log out
-	// Show form
-	return FourOhFour(c)
+type PasswordResetSentData struct {
+	templates.BaseData
+	ContactUsUrl string
 }
 
-func PasswordResetSubmit(c *RequestContext) ResponseData {
-	// Verify not logged in
-	// Verify reset token
-	// Verify not resolved
-	// Verify inputs
-	// Set new password
-	// Mark resolved
-	// Log in
-	// Redirect to user settings page
-	return FourOhFour(c)
+func PasswordResetSent(c *RequestContext) ResponseData {
+	if c.CurrentUser != nil {
+		return c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
+	}
+	var res ResponseData
+	res.MustWriteTemplate("auth_password_reset_sent.html", PasswordResetSentData{
+		BaseData:     getBaseData(c),
+		ContactUsUrl: hmnurl.BuildContactPage(),
+	}, c.Perf)
+	return res
+}
+
+type DoPasswordResetData struct {
+	templates.BaseData
+	Username string
+	Token    string
+}
+
+func DoPasswordReset(c *RequestContext) ResponseData {
+	username, hasUsername := c.PathParams["username"]
+	token, hasToken := c.PathParams["token"]
+
+	if !hasToken || !hasUsername {
+		return RejectRequest(c, "Bad validation url.")
+	}
+
+	validationResult := validateUsernameAndToken(c, username, token, models.TokenTypePasswordReset)
+	if !validationResult.Match {
+		return RejectRequest(c, "Bad validation url.")
+	}
+
+	var res ResponseData
+
+	if c.CurrentUser != nil && c.CurrentUser.ID != validationResult.User.ID {
+		// NOTE(asaf): In the rare case that a user is logged in with user A and is trying to
+		//             change the password for user B, log out the current user to avoid confusion.
+		logoutUser(c, &res)
+	}
+
+	res.MustWriteTemplate("auth_do_password_reset.html", DoPasswordResetData{
+		BaseData: getBaseData(c),
+		Username: username,
+		Token:    token,
+	}, c.Perf)
+	return res
+}
+
+func DoPasswordResetSubmit(c *RequestContext) ResponseData {
+	c.Req.ParseForm()
+
+	token := c.Req.Form.Get("token")
+	username := c.Req.Form.Get("username")
+	password := c.Req.Form.Get("password")
+	password2 := c.Req.Form.Get("password2")
+
+	validationResult := validateUsernameAndToken(c, username, token, models.TokenTypePasswordReset)
+	if !validationResult.Match {
+		return RejectRequest(c, "Bad validation url.")
+	}
+
+	if c.CurrentUser != nil && c.CurrentUser.ID != validationResult.User.ID {
+		return RejectRequest(c, fmt.Sprintf("Can't change password for %s. You are logged in as %s.", username, c.CurrentUser.Username))
+	}
+
+	if len(password) < 8 {
+		return RejectRequest(c, "Password too short")
+	}
+	if password != password2 {
+		return RejectRequest(c, "Password confirmation doesn't match password")
+	}
+
+	hashed, err := auth.HashPassword(password)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to encrypt password"))
+	}
+
+	c.Perf.StartBlock("SQL", "Update user's password and delete reset token")
+	tx, err := c.Conn.Begin(c.Context())
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start db transaction"))
+	}
+	defer tx.Rollback(c.Context())
+
+	tag, err := tx.Exec(c.Context(),
+		`
+		UPDATE auth_user
+		SET password = $1
+		WHERE id = $2
+		`,
+		hashed.String(),
+		validationResult.User.ID,
+	)
+	if err != nil || tag.RowsAffected() == 0 {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user's password"))
+	}
+
+	if validationResult.User.Status == models.UserStatusInactive {
+		_, err = tx.Exec(c.Context(),
+			`
+			UPDATE auth_user
+			SET status = $1
+			WHERE id = $2
+			`,
+			models.UserStatusActive,
+			validationResult.User.ID,
+		)
+		if err != nil {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user's status"))
+		}
+	}
+
+	_, err = tx.Exec(c.Context(),
+		`
+		DELETE FROM handmade_onetimetoken
+		WHERE id = $1
+		`,
+		validationResult.OneTimeToken.ID,
+	)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete onetimetoken"))
+	}
+
+	err = tx.Commit(c.Context())
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit password reset to the db"))
+	}
+	c.Perf.EndBlock()
+
+	res := c.Redirect(hmnurl.BuildUserSettings(""), http.StatusSeeOther)
+	res.AddFutureNotice("success", "Password changed successfully.")
+	err = loginUser(c, validationResult.User, &res)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, err)
+	}
+	return res
 }
 
 func tryLogin(c *RequestContext, user *models.User, password string) (bool, error) {
@@ -535,14 +761,27 @@ func loginUser(c *RequestContext, user *models.User, responseData *ResponseData)
 	return nil
 }
 
-type validateUserAndTokenResult struct {
-	User            *models.User
-	OneTimeToken    *models.OneTimeToken
-	IsValid         bool
-	InvalidResponse ResponseData
+func logoutUser(c *RequestContext, res *ResponseData) {
+	sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
+	if err == nil {
+		// clear the session from the db immediately, no expiration
+		err := auth.DeleteSession(c.Context(), c.Conn, sessionCookie.Value)
+		if err != nil {
+			logging.Error().Err(err).Msg("failed to delete session on logout")
+		}
+	}
+
+	res.SetCookie(auth.DeleteSessionCookie)
 }
 
-func validateUsernameAndToken(c *RequestContext, username string, token string) validateUserAndTokenResult {
+type validateUserAndTokenResult struct {
+	User         *models.User
+	OneTimeToken *models.OneTimeToken
+	Match        bool
+	Error        error
+}
+
+func validateUsernameAndToken(c *RequestContext, username string, token string, tokenType models.OneTimeTokenType) validateUserAndTokenResult {
 	c.Perf.StartBlock("SQL", "Check username and token")
 	defer c.Perf.EndBlock()
 	type userAndTokenQuery struct {
@@ -554,32 +793,26 @@ func validateUsernameAndToken(c *RequestContext, username string, token string) 
 		SELECT $columns
 		FROM auth_user
 		LEFT JOIN handmade_onetimetoken AS onetimetoken ON onetimetoken.owner_id = auth_user.id
-		WHERE LOWER(auth_user.username) = LOWER($1)
+		WHERE
+			LOWER(auth_user.username) = LOWER($1)
+			AND onetimetoken.token_type = $2
 		`,
 		username,
+		tokenType,
 	)
 	var result validateUserAndTokenResult
 	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
-			result.IsValid = false
-			result.InvalidResponse = RejectRequest(c, "You haven't validated your email in time and your user was deleted. You may try registering again with the same username.")
-		} else {
-			result.IsValid = false
-			result.InvalidResponse = ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch token from db"))
+		if !errors.Is(err, db.ErrNoMatchingRows) {
+			result.Error = oops.New(err, "failed to fetch user and token from db")
+			return result
 		}
-	} else {
+	}
+	if row != nil {
 		data := row.(*userAndTokenQuery)
-		if data.OneTimeToken == nil {
-			// NOTE(asaf): The user exists, but the validation token doesn't. That means the user already validated their email and can just log in normally.
-			result.IsValid = false
-			result.InvalidResponse = c.Redirect(hmnurl.BuildLoginPage(""), http.StatusSeeOther)
-		} else if data.OneTimeToken.Content != token {
-			result.IsValid = false
-			result.InvalidResponse = RejectRequest(c, "Bad token. If you are having problems registering or logging in, please contact the staff.")
-		} else {
-			result.IsValid = true
-			result.User = &data.User
-			result.OneTimeToken = data.OneTimeToken
+		result.User = &data.User
+		result.OneTimeToken = data.OneTimeToken
+		if result.OneTimeToken != nil {
+			result.Match = (result.OneTimeToken.Content == token)
 		}
 	}
 

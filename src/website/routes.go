@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"net/url"
 	"strings"
@@ -50,6 +51,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 			defer LogContextErrors(c, &res)
 
+			defer storeNoticesInCookie(c, &res)
+
 			ok, errRes := LoadCommonWebsiteData(c)
 			if !ok {
 				return errRes
@@ -68,6 +71,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			defer logPerf()
 
 			defer LogContextErrors(c, &res)
+
+			defer storeNoticesInCookie(c, &res)
 
 			ok, errRes := LoadCommonWebsiteData(c)
 			if !ok {
@@ -153,6 +158,13 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexEmailConfirmation, EmailConfirmation)
 	mainRoutes.POST(hmnurl.RegexEmailConfirmation, EmailConfirmationSubmit)
 
+	mainRoutes.GET(hmnurl.RegexRequestPasswordReset, RequestPasswordReset)
+	mainRoutes.POST(hmnurl.RegexRequestPasswordReset, RequestPasswordResetSubmit)
+	mainRoutes.GET(hmnurl.RegexPasswordResetSent, PasswordResetSent)
+	mainRoutes.GET(hmnurl.RegexOldDoPasswordReset, DoPasswordReset)
+	mainRoutes.GET(hmnurl.RegexDoPasswordReset, DoPasswordReset)
+	mainRoutes.POST(hmnurl.RegexDoPasswordReset, DoPasswordResetSubmit)
+
 	mainRoutes.GET(hmnurl.RegexFeed, Feed)
 	mainRoutes.GET(hmnurl.RegexAtomFeed, AtomFeed)
 	mainRoutes.GET(hmnurl.RegexShowcase, Showcase)
@@ -225,6 +237,8 @@ func getBaseData(c *RequestContext) templates.BaseData {
 		templateSession = &s
 	}
 
+	notices := getNoticesFromCookie(c)
+
 	return templates.BaseData{
 		Theme: c.Theme,
 
@@ -235,11 +249,12 @@ func getBaseData(c *RequestContext) templates.BaseData {
 		Project: templates.ProjectToTemplate(c.CurrentProject, c.Theme),
 		User:    templateUser,
 		Session: templateSession,
+		Notices: notices,
 
 		IsProjectPage: !c.CurrentProject.IsHMN(),
 		Header: templates.Header{
 			AdminUrl:           hmnurl.BuildHomepage(), // TODO(asaf)
-			UserSettingsUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
+			UserSettingsUrl:    hmnurl.BuildUserSettings(""),
 			LoginActionUrl:     hmnurl.BuildLoginAction(c.FullUrl()),
 			LogoutActionUrl:    hmnurl.BuildLogoutAction(c.FullUrl()),
 			RegisterUrl:        hmnurl.BuildRegister(),
@@ -478,4 +493,84 @@ func LogContextErrors(c *RequestContext, res *ResponseData) {
 	for _, err := range res.Errors {
 		c.Logger.Error().Timestamp().Stack().Str("Requested", c.FullUrl()).Err(err).Msg("error occurred during request")
 	}
+}
+
+const NoticesCookieName = "hmn_notices"
+
+func getNoticesFromCookie(c *RequestContext) []templates.Notice {
+	cookie, err := c.Req.Cookie(NoticesCookieName)
+	if err != nil {
+		if !errors.Is(err, http.ErrNoCookie) {
+			c.Logger.Warn().Err(err).Msg("failed to get notices cookie")
+		}
+		return nil
+	}
+	return deserializeNoticesFromCookie(cookie.Value)
+}
+
+func storeNoticesInCookie(c *RequestContext, res *ResponseData) {
+	serialized := serializeNoticesForCookie(c, res.FutureNotices)
+	if serialized != "" {
+		noticesCookie := http.Cookie{
+			Name:     NoticesCookieName,
+			Value:    serialized,
+			Path:     "/",
+			Domain:   config.Config.Auth.CookieDomain,
+			Expires:  time.Now().Add(time.Minute * 5),
+			Secure:   config.Config.Auth.CookieSecure,
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		}
+		res.SetCookie(&noticesCookie)
+	} else if !(res.StatusCode >= 300 && res.StatusCode < 400) {
+		// NOTE(asaf): Don't clear on redirect
+		noticesCookie := http.Cookie{
+			Name:   NoticesCookieName,
+			Path:   "/",
+			Domain: config.Config.Auth.CookieDomain,
+			MaxAge: -1,
+		}
+		res.SetCookie(&noticesCookie)
+	}
+}
+
+func serializeNoticesForCookie(c *RequestContext, notices []templates.Notice) string {
+	var builder strings.Builder
+	maxSize := 1024 // NOTE(asaf): Make sure we don't use too much space for notices.
+	size := 0
+	for i, notice := range notices {
+		sizeIncrease := len(notice.Class) + len(string(notice.Content)) + 1
+		if i != 0 {
+			sizeIncrease += 1
+		}
+		if size+sizeIncrease > maxSize {
+			c.Logger.Warn().Interface("Notices", notices).Msg("Notices too big for cookie")
+			break
+		}
+
+		if i != 0 {
+			builder.WriteString("\t")
+		}
+		builder.WriteString(notice.Class)
+		builder.WriteString("|")
+		builder.WriteString(string(notice.Content))
+
+		size += sizeIncrease
+	}
+	return builder.String()
+}
+
+func deserializeNoticesFromCookie(cookieVal string) []templates.Notice {
+	var result []templates.Notice
+	notices := strings.Split(cookieVal, "\t")
+	for _, notice := range notices {
+		parts := strings.SplitN(notice, "|", 2)
+		if len(parts) == 2 {
+			result = append(result, templates.Notice{
+				Class:   parts[0],
+				Content: template.HTML(parts[1]),
+			})
+		}
+	}
+	return result
 }

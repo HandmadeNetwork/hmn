@@ -28,7 +28,6 @@ func TestUrl(t *testing.T) {
 
 func TestHomepage(t *testing.T) {
 	AssertRegexMatch(t, BuildHomepage(), RegexHomepage, nil)
-	AssertRegexMatch(t, BuildHomepageWithRegistrationSuccess(), RegexHomepage, nil)
 	AssertRegexMatch(t, BuildProjectHomepage("hero"), RegexHomepage, nil)
 	AssertSubdomain(t, BuildProjectHomepage("hero"), "hero")
 }
@@ -79,6 +78,12 @@ func TestEmailConfirmation(t *testing.T) {
 	AssertRegexMatch(t, BuildEmailConfirmation("mruser", "test_token"), RegexEmailConfirmation, map[string]string{"username": "mruser", "token": "test_token"})
 }
 
+func TestPasswordReset(t *testing.T) {
+	AssertRegexMatch(t, BuildRequestPasswordReset(), RegexRequestPasswordReset, nil)
+	AssertRegexMatch(t, BuildPasswordResetSent(), RegexPasswordResetSent, nil)
+	AssertRegexMatch(t, BuildDoPasswordReset("user", "token"), RegexDoPasswordReset, map[string]string{"username": "user", "token": "token"})
+}
+
 func TestStaticPages(t *testing.T) {
 	AssertRegexMatch(t, BuildManifesto(), RegexManifesto, nil)
 	AssertRegexMatch(t, BuildAbout(), RegexAbout, nil)
@@ -91,6 +96,10 @@ func TestStaticPages(t *testing.T) {
 
 func TestUserProfile(t *testing.T) {
 	AssertRegexMatch(t, BuildUserProfile("test"), RegexUserProfile, map[string]string{"username": "test"})
+}
+
+func TestUserSettings(t *testing.T) {
+	AssertRegexMatch(t, BuildUserSettings("test"), RegexUserSettings, nil)
 }
 
 func TestSnippet(t *testing.T) {
@@ -134,7 +143,6 @@ func TestPodcast(t *testing.T) {
 
 func TestPodcastEdit(t *testing.T) {
 	AssertRegexMatch(t, BuildPodcastEdit(""), RegexPodcastEdit, nil)
-	AssertRegexMatch(t, BuildPodcastEditSuccess(""), RegexPodcastEdit, nil)
 }
 
 func TestPodcastEpisode(t *testing.T) {
@@ -147,7 +155,6 @@ func TestPodcastEpisodeNew(t *testing.T) {
 
 func TestPodcastEpisodeEdit(t *testing.T) {
 	AssertRegexMatch(t, BuildPodcastEpisodeEdit("", "test"), RegexPodcastEpisodeEdit, map[string]string{"episodeid": "test"})
-	AssertRegexMatch(t, BuildPodcastEpisodeEditSuccess("", "test"), RegexPodcastEpisodeEdit, map[string]string{"episodeid": "test"})
 }
 
 func TestPodcastRSS(t *testing.T) {

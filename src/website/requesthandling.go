@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"html"
+	"html/template"
 	"io"
 	"net"
 	"net/http"
@@ -241,9 +242,10 @@ func (c *RequestContext) Redirect(dest string, code int) ResponseData {
 }
 
 type ResponseData struct {
-	StatusCode int
-	Body       *bytes.Buffer
-	Errors     []error
+	StatusCode    int
+	Body          *bytes.Buffer
+	Errors        []error
+	FutureNotices []templates.Notice
 
 	header http.Header
 }
@@ -272,6 +274,10 @@ func (rd *ResponseData) WriteHeader(status int) {
 
 func (rd *ResponseData) SetCookie(cookie *http.Cookie) {
 	rd.Header().Add("Set-Cookie", cookie.String())
+}
+
+func (rd *ResponseData) AddFutureNotice(class string, content string) {
+	rd.FutureNotices = append(rd.FutureNotices, templates.Notice{Class: class, Content: template.HTML(content)})
 }
 
 func (rd *ResponseData) WriteTemplate(name string, data interface{}, rp *perf.RequestPerf) error {

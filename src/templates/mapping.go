@@ -126,14 +126,6 @@ func UserAvatarUrl(u *models.User, currentTheme string) string {
 	return avatar
 }
 
-func UserDisplayName(u *models.User) string {
-	name := u.Name
-	if u.Name == "" {
-		name = u.Username
-	}
-	return name
-}
-
 func UserToTemplate(u *models.User, currentTheme string) User {
 	if u == nil {
 		return User{
@@ -154,7 +146,7 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 		Email:    email,
 		IsStaff:  u.IsStaff,
 
-		Name:       UserDisplayName(u),
+		Name:       u.BestName(),
 		Blurb:      u.Blurb,
 		Signature:  u.Signature,
 		DateJoined: u.DateJoined,

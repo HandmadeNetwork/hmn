@@ -46,6 +46,13 @@ type User struct {
 	MarkedAllReadAt time.Time `db:"marked_all_read_at"`
 }
 
+func (u *User) BestName() string {
+	if u.Name != "" {
+		return u.Name
+	}
+	return u.Username
+}
+
 func (u *User) IsActive() bool {
 	return u.Status == UserStatusActive
 }
