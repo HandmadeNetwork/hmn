@@ -1,0 +1,65 @@
+{{ template "base.html" . }}
+
+{{ define "extrahead" }}
+    <style type="text/css">
+        .sidebar { display:none; }
+
+        .editor {
+            text-align: center;
+        }
+
+        .editor {
+            font-size: 20px;
+        }
+
+        .editor label {
+            display: inline-block;
+            width: 50px;
+        }
+
+        .editor input {
+            font-size: 20px;
+            width: 250px;
+        }
+
+        .editor a {
+            font-family: monospace;
+        }
+    </style>
+{{ end }}
+
+{{ define "content" }}
+    <div class="editor">
+        <h1>Make a timer</h1>
+        <label for="date_input">Date:</label> <input id="date_input" type="date"><br />
+        <label for="time_input">Time:</label> <input id="time_input" type="time"></br />
+        <label for="title_input">Title:</label> <input id="title_input" type="text"><br />
+        <label for="url_input">URL:</label> <input id="url_input" type="text"><br />
+        <a target="_blank" href="javascript:;"></a>
+    </div>
+    <script type="text/javascript">
+        document.querySelector("#title_input").addEventListener("input", updateLink);
+        document.querySelector("#url_input").addEventListener("input", updateLink);
+        document.querySelector("#date_input").addEventListener("input", updateLink);
+        document.querySelector("#time_input").addEventListener("input", updateLink);
+
+        function updateLink() {
+            var title = document.querySelector("#title_input").value.trim();
+            var urlInput = document.querySelector("#url_input").value.trim();
+            var date = document.querySelector("#date_input").value.trim();
+            var time = document.querySelector("#time_input").value.trim();
+            var linkParams = "";
+            var link = document.querySelector(".editor a");
+            if (date.length > 0 && time.length > 0) {
+                var d = new Date(date + " " + time);
+                linkParams = "t=" + d.getTime()/1000 + (title.length > 0 ? "&n=" + encodeURIComponent(title) : "") + (urlInput.length > 0 ? "&u=" + encodeURIComponent(urlInput) : "");
+                var url = location.href.replace(location.search, "").replace("?", "") + "?" + linkParams;
+                link.setAttribute("href", url);
+                link.textContent = url;
+            } else {
+                link.setAttribute("href", "");
+                link.textContent = "";
+            }
+        }
+    </script>
+{{ end }}

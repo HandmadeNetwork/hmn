@@ -1,0 +1,138 @@
+{{ template "base.html" . }}
+
+{{ define "extrahead" }}
+    <style type="text/css">
+        .sidebar { display:none; }
+
+        .display {
+            text-align: center;
+        }
+
+        .display .event_title {
+            font-size: 80px;
+            line-height: 80px;
+        }
+
+        .display .date {
+            margin-top: 40px;
+            font-size: 30px;
+            line-height: 30px;
+        }
+
+        .display .precounter {
+            margin: 40px 0 0 0;
+            font-size: 50px;
+            line-height: 50px;
+        }
+
+        .display .postcounter {
+            margin: 0 0 40px 0;
+            font-size: 50px;
+            line-height: 50px;
+        }
+
+        .display .counter {
+            margin: 20px 0;
+            font-size: 50px;
+            line-height: 50px;
+            font-family: consolas, inconsolata, monospace;
+            white-space: pre;
+        }
+
+        .display > a {
+            display: inline-block;
+            margin-top: 20px;
+        }
+    </style>
+{{ end }}
+
+{{ define "content" }}
+    <div class="display">
+        <p class="event_title"></p>
+        <a class="external event_url" target="_blank" rel="nofollow"></a>
+        <p class="date"></p>
+        <p class="precounter"></p>
+        <p class="counter"></p>
+        <p class="postcounter">ago</p>
+        <input id="notify_checkbox" type="checkbox"><label for="notify_checkbox">Notify me when it starts (Keep this tab open to receive notification)</label><br />
+    </div>
+    <script type="text/javascript">
+        var timestamp = {{ .Timestamp }};
+        var title = "{{ .Name }}";
+        var url = "{{ .Url }}";
+        var happened = false;
+        var notificationState = "unknown";
+        timestamp *= 1000;
+        var date = new Date(timestamp);
+        happened = timestamp < new Date().getTime();
+        document.querySelector(".display .event_title").textContent = title;
+        var eventUrl = document.querySelector(".display .event_url");
+        if (url && url.length > 0) {
+            eventUrl.textContent = url;
+            if (!(url.startsWith("http://") || url.startsWith("https://"))) {
+                url = "//" + url;
+            }
+            eventUrl.setAttribute("href", url);
+        } else {
+            eventUrl.style.display = "none";
+        }
+        document.querySelector(".display .date").textContent = date.toDateString() + ", " + date.toLocaleTimeString();
+        if (document.querySelector("#notify_checkbox").checked) {
+            if (Notification.permission == "granted") {
+                notificationState = "on";
+            } else {
+                document.querySelector("#notify_checkbox").checked = false;
+            }
+        }
+        document.querySelector("#notify_checkbox").addEventListener("change", updateNotifications);
+        updateTimer();
+
+        function updateTimer() {
+            function pad(t) {
+                var str = t.toString();
+                if (str.length == 1) {
+                    str = " " + str;
+                }
+                return str;
+            }
+            var now = new Date().getTime();
+            var delta = Math.floor((timestamp - now) / 1000);
+            var past = delta < 0;
+            if (!happened && past) {
+                happened = true;
+                if (notificationState == "on") {
+                    new Notification(title + " is starting!!");
+                }
+            }
+            delta = Math.abs(delta);
+            var days = Math.floor(delta / 60 / 60 / 24);
+            var hours = Math.floor(delta / 60 / 60) % 24;
+            var minutes = Math.floor(delta / 60) % 60;
+            var seconds = delta % 60;
+            document.querySelector(".display .precounter").textContent = (past ? "Started" : "Starts in");
+            document.querySelector(".display .counter").textContent = (days > 0 ? days + "d " : "") + (days > 0 || hours > 0 ? pad(hours) + "h " : "") + pad(minutes) + "m " + pad(seconds) + "s";
+            document.querySelector(".display .postcounter").style.visibility = (past ? "visible" : "hidden");
+            setTimeout(updateTimer, 1000);
+        }
+
+        function updateNotifications() {
+            var checked = document.querySelector("#notify_checkbox").checked;
+            if (checked) {
+                if (Notification.permission == "granted") {
+                    notificationState = "on";
+                } else {
+                    Notification.requestPermission().then(function(permission) {
+                        if (permission == "granted") {
+                            document.querySelector("#notify_checkbox").checked = true;
+                            notificationState = "on";
+                        } else {
+                            document.querySelector("#notify_checkbox").checked = false;
+                        }
+                    });
+                }
+            } else {
+                notificationState = "off";
+            }
+        }
+    </script>
+{{ end }}

@@ -49,6 +49,13 @@ func BuildSiteMap() string {
 	return Url("/sitemap", nil)
 }
 
+var RegexWhenIsIt = regexp.MustCompile("^/whenisit$")
+
+func BuildWhenIsIt() string {
+	defer CatchPanic()
+	return Url("/whenisit", nil)
+}
+
 // QUESTION(ben): Can we change these routes?
 
 var RegexLoginAction = regexp.MustCompile("^/login$")

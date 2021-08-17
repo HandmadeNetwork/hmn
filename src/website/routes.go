@@ -160,6 +160,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	staticPages.GET(hmnurl.RegexContactPage, ContactPage)
 	staticPages.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
 	staticPages.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
+	staticPages.GET(hmnurl.RegexWhenIsIt, WhenIsIt)
 
 	// TODO(asaf): Have separate middleware for HMN-only routes and any-project routes
 	// NOTE(asaf): HMN-only routes:
@@ -269,6 +270,8 @@ func getBaseData(c *RequestContext) templates.BaseData {
 		Session: templateSession,
 		Notices: notices,
 
+		OpenGraphItems: buildDefaultOpenGraphItems(c.CurrentProject),
+
 		IsProjectPage: !c.CurrentProject.IsHMN(),
 		Header: templates.Header{
 			AdminUrl:           hmnurl.BuildHomepage(), // TODO(asaf)
@@ -298,6 +301,15 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			ContactUrl:                 hmnurl.BuildContactPage(),
 			SitemapUrl:                 hmnurl.BuildSiteMap(),
 		},
+	}
+}
+
+func buildDefaultOpenGraphItems(project *models.Project) []templates.OpenGraphItem {
+	return []templates.OpenGraphItem{
+		{Property: "og:site_name", Value: "Handmade.Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildUserFile(project.LogoLight)},
+		{Property: "og:image:secure_url", Value: hmnurl.BuildUserFile(project.LogoLight)},
 	}
 }
 

@@ -44,6 +44,10 @@ func TestSiteMap(t *testing.T) {
 	AssertRegexMatch(t, BuildSiteMap(), RegexSiteMap, nil)
 }
 
+func TestWhenIsIt(t *testing.T) {
+	AssertRegexMatch(t, BuildWhenIsIt(), RegexWhenIsIt, nil)
+}
+
 func TestAtomFeed(t *testing.T) {
 	AssertRegexMatch(t, BuildAtomFeed(), RegexAtomFeed, nil)
 	AssertRegexMatch(t, BuildAtomFeedForProjects(), RegexAtomFeed, map[string]string{"feedtype": "projects"})

@@ -104,7 +104,7 @@ func Snippet(c *RequestContext) ResponseData {
 	}
 
 	baseData := getBaseData(c)
-	baseData.OpenGraphItems = opengraph
+	baseData.OpenGraphItems = opengraph // NOTE(asaf): We're overriding the defaults on purpose.
 	var res ResponseData
 	err = res.WriteTemplate("snippet.html", SnippetData{
 		BaseData: baseData,
