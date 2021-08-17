@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -19,11 +20,12 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/teacat/noire"
 )
 
-func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) http.Handler {
+func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, perfCollector *perf.PerfCollector) http.Handler {
 	router := &Router{}
 	routes := RouteBuilder{
 		Router: router,
@@ -121,6 +123,16 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 		}
 	}
 
+	securityTimerMiddleware := func(delayMs int, h Handler) Handler {
+		// NOTE(asaf): Will make sure that the request takes at least `delayMs` to finish. Adds a 10% random duration.
+		return func(c *RequestContext) ResponseData {
+			duration := time.Millisecond * time.Duration(delayMs+rand.Intn(utils.IntMax(1, delayMs/10)))
+			res := h(c)
+			utils.SleepContext(longRequestContext, duration)
+			return res
+		}
+	}
+
 	routes.GET(hmnurl.RegexPublic, func(c *RequestContext) ResponseData {
 		var res ResponseData
 		http.StripPrefix("/public/", http.FileServer(http.Dir("public"))).ServeHTTP(&res, c.Req)
@@ -152,14 +164,14 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	mainRoutes.GET(hmnurl.RegexLoginPage, LoginPage)
 
 	mainRoutes.GET(hmnurl.RegexRegister, RegisterNewUser)
-	mainRoutes.POST(hmnurl.RegexRegister, RegisterNewUserSubmit)
+	mainRoutes.POST(hmnurl.RegexRegister, securityTimerMiddleware(3000, RegisterNewUserSubmit))
 	mainRoutes.GET(hmnurl.RegexRegistrationSuccess, RegisterNewUserSuccess)
 	mainRoutes.GET(hmnurl.RegexOldEmailConfirmation, EmailConfirmation) // TODO(asaf): Delete this a bit after launch
 	mainRoutes.GET(hmnurl.RegexEmailConfirmation, EmailConfirmation)
 	mainRoutes.POST(hmnurl.RegexEmailConfirmation, EmailConfirmationSubmit)
 
 	mainRoutes.GET(hmnurl.RegexRequestPasswordReset, RequestPasswordReset)
-	mainRoutes.POST(hmnurl.RegexRequestPasswordReset, RequestPasswordResetSubmit)
+	mainRoutes.POST(hmnurl.RegexRequestPasswordReset, securityTimerMiddleware(3000, RequestPasswordResetSubmit))
 	mainRoutes.GET(hmnurl.RegexPasswordResetSent, PasswordResetSent)
 	mainRoutes.GET(hmnurl.RegexOldDoPasswordReset, DoPasswordReset)
 	mainRoutes.GET(hmnurl.RegexDoPasswordReset, DoPasswordReset)

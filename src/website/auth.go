@@ -161,7 +161,6 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	blacklisted := false
 	if blacklisted {
 		// NOTE(asaf): Silent rejection so we don't allow attackers to harvest emails.
-		time.Sleep(time.Second * 3) // NOTE(asaf): Pretend to send email
 		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
 	}
 	c.Perf.EndBlock()
@@ -208,7 +207,6 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 
 	if emailAlreadyExists {
 		// NOTE(asaf): Silent rejection so we don't allow attackers to harvest emails.
-		time.Sleep(time.Second * 3) // NOTE(asaf): Pretend to send email
 		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
 	}
 
