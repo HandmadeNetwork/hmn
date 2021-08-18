@@ -215,11 +215,15 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	c.Perf.EndBlock()
 
+	templateUser := templates.UserToTemplate(profileUser, c.Theme)
+
 	baseData := getBaseData(c)
+	baseData.Title = templateUser.Name
+
 	var res ResponseData
 	res.MustWriteTemplate("user_profile.html", UserProfileTemplateData{
 		BaseData:            baseData,
-		ProfileUser:         templates.UserToTemplate(profileUser, c.Theme),
+		ProfileUser:         templateUser,
 		ProfileUserLinks:    profileUserLinks,
 		ProfileUserProjects: templateProjects,
 		TimelineItems:       timelineItems,
