@@ -563,7 +563,7 @@ func (bot *discordBotInstance) processEventMsg(ctx context.Context, msg *Gateway
 }
 
 func (bot *discordBotInstance) messageCreateOrUpdate(ctx context.Context, msg *Message) error {
-	if msg.Author != nil && msg.Author.ID == config.Config.Discord.BotUserID {
+	if msg.OriginalHasFields("author") && msg.Author.ID == config.Config.Discord.BotUserID {
 		// Don't process your own messages
 		return nil
 	}

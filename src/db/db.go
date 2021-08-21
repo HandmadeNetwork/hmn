@@ -11,6 +11,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/google/uuid"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/log/zerologadapter"
@@ -57,6 +58,7 @@ func typeIsQueryable(t reflect.Type) bool {
 // This interface should match both a direct pgx connection or a pgx transaction.
 type ConnOrTx interface {
 	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error)
 }
 
 var connInfo = pgtype.NewConnInfo()

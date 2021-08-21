@@ -2,6 +2,8 @@ package discord
 
 import (
 	"encoding/json"
+	"fmt"
+	"time"
 )
 
 type Opcode int
@@ -170,17 +172,48 @@ const (
 
 // https://discord.com/developers/docs/resources/channel#message-object
 type Message struct {
-	ID        string `json:"id"`
-	ChannelID string `json:"channel_id"`
-	Content   string `json:"content"`
-	Author    *User  `json:"author"` // note that this may not be an actual valid user (see the docs)
-	// TODO: Author info
-	// TODO: Timestamp parsing, yay
-	Type MessageType `json:"type"`
+	ID        string      `json:"id"`
+	ChannelID string      `json:"channel_id"`
+	GuildID   *string     `json:"guild_id"`
+	Content   string      `json:"content"`
+	Author    User        `json:"author"` // note that this may not be an actual valid user (see the docs)
+	Timestamp string      `json:"timestamp"`
+	Type      MessageType `json:"type"`
 
 	Attachments []Attachment `json:"attachments"`
+	// TODO: Embeds
 
 	originalMap map[string]interface{}
+}
+
+func (m *Message) JumpURL() string {
+	guildStr := "@me"
+	if m.GuildID != nil {
+		guildStr = *m.GuildID
+	}
+	return fmt.Sprintf("https://discord.com/channels/%s/%s/%s", guildStr, m.ChannelID, m.ID)
+}
+
+func (m *Message) Time() time.Time {
+	t, err := time.Parse(time.RFC3339Nano, m.Timestamp)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
+func (m *Message) OriginalHasFields(fields ...string) bool {
+	if m.originalMap == nil {
+		return false
+	}
+
+	for _, field := range fields {
+		_, ok := m.originalMap[field]
+		if !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func MessageFromMap(m interface{}) Message {
@@ -194,15 +227,16 @@ func MessageFromMap(m interface{}) Message {
 	msg := Message{
 		ID:        mmap["id"].(string),
 		ChannelID: mmap["channel_id"].(string),
+		GuildID:   maybeStringP(mmap, "guild_id"),
 		Content:   maybeString(mmap, "content"),
+		Timestamp: maybeString(mmap, "timestamp"),
 		Type:      MessageType(maybeInt(mmap, "type")),
 
 		originalMap: mmap,
 	}
 
 	if author, ok := mmap["author"]; ok {
-		u := UserFromMap(author)
-		msg.Author = &u
+		msg.Author = UserFromMap(author)
 	}
 
 	if iattachments, ok := mmap["attachments"]; ok {
@@ -211,6 +245,8 @@ func MessageFromMap(m interface{}) Message {
 			msg.Attachments = append(msg.Attachments, AttachmentFromMap(iattachment))
 		}
 	}
+
+	// TODO: Embeds
 
 	return msg
 }
@@ -274,6 +310,15 @@ func maybeString(m map[string]interface{}, k string) string {
 		return ""
 	}
 	return val.(string)
+}
+
+func maybeStringP(m map[string]interface{}, k string) *string {
+	val, ok := m[k]
+	if !ok {
+		return nil
+	}
+	strval := val.(string)
+	return &strval
 }
 
 func maybeInt(m map[string]interface{}, k string) int {
