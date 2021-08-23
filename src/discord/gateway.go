@@ -93,7 +93,7 @@ func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{} {
 
 var outgoingMessagesReady = make(chan struct{}, 1)
 
-type discordBotInstance struct {
+type botInstance struct {
 	conn   *websocket.Conn
 	dbConn *pgxpool.Pool
 
@@ -116,8 +116,8 @@ type discordBotInstance struct {
 	wg     sync.WaitGroup
 }
 
-func newBotInstance(dbConn *pgxpool.Pool) *discordBotInstance {
-	return &discordBotInstance{
+func newBotInstance(dbConn *pgxpool.Pool) *botInstance {
+	return &botInstance{
 		dbConn:          dbConn,
 		forceHeartbeat:  make(chan struct{}),
 		didAckHeartbeat: true,
@@ -129,7 +129,7 @@ Runs a bot instance to completion. It will start up a gateway connection and ret
 connection is closed. It only returns an error when something unexpected occurs; if so, you should
 do exponential backoff before reconnecting. Otherwise you can reconnect right away.
 */
-func (bot *discordBotInstance) Run(ctx context.Context) (err error) {
+func (bot *botInstance) Run(ctx context.Context) (err error) {
 	defer utils.RecoverPanicAsError(&err)
 
 	ctx, bot.cancel = context.WithCancel(ctx)
@@ -223,7 +223,7 @@ and RESUMED messages in our main message receiving loop instead of here.
 That way, we could receive exactly one message after sending Resume, either a Resume ACK or an
 Invalid Session, and from there it would be crystal clear what to do. Alas!)
 */
-func (bot *discordBotInstance) connect(ctx context.Context) error {
+func (bot *botInstance) connect(ctx context.Context) error {
 	res, err := GetGatewayBot(ctx)
 	if err != nil {
 		return oops.New(err, "failed to get gateway URL")
@@ -328,7 +328,7 @@ func (bot *discordBotInstance) connect(ctx context.Context) error {
 Sends outgoing gateway messages and channel messages. Handles heartbeats. This function should be
 run as its own goroutine.
 */
-func (bot *discordBotInstance) doSender(ctx context.Context) {
+func (bot *botInstance) doSender(ctx context.Context) {
 	defer bot.wg.Done()
 	defer bot.cancel()
 
@@ -507,7 +507,7 @@ func (bot *discordBotInstance) doSender(ctx context.Context) {
 	}
 }
 
-func (bot *discordBotInstance) receiveGatewayMessage(ctx context.Context) (*GatewayMessage, error) {
+func (bot *botInstance) receiveGatewayMessage(ctx context.Context) (*GatewayMessage, error) {
 	_, msgBytes, err := bot.conn.ReadMessage()
 	if err != nil {
 		return nil, err
@@ -524,7 +524,7 @@ func (bot *discordBotInstance) receiveGatewayMessage(ctx context.Context) (*Gate
 	return &msg, nil
 }
 
-func (bot *discordBotInstance) sendGatewayMessage(ctx context.Context, msg GatewayMessage) error {
+func (bot *botInstance) sendGatewayMessage(ctx context.Context, msg GatewayMessage) error {
 	logging.ExtractLogger(ctx).Debug().Interface("msg", msg).Msg("sending gateway message")
 	return bot.conn.WriteMessage(websocket.TextMessage, msg.ToJSON())
 }
@@ -534,7 +534,7 @@ Processes a single event message from Discord. If this returns an error, it mean
 really gone wrong, bad enough that the connection should be shut down. Otherwise it will just log
 any errors that occur.
 */
-func (bot *discordBotInstance) processEventMsg(ctx context.Context, msg *GatewayMessage) error {
+func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage) error {
 	if msg.Opcode != OpcodeDispatch {
 		panic(fmt.Sprintf("processEventMsg must only be used on Dispatch messages (opcode %d). Validate this before you call this function.", OpcodeDispatch))
 	}
@@ -562,7 +562,7 @@ func (bot *discordBotInstance) processEventMsg(ctx context.Context, msg *Gateway
 	return nil
 }
 
-func (bot *discordBotInstance) messageCreateOrUpdate(ctx context.Context, msg *Message) error {
+func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message) error {
 	if msg.OriginalHasFields("author") && msg.Author.ID == config.Config.Discord.BotUserID {
 		// Don't process your own messages
 		return nil

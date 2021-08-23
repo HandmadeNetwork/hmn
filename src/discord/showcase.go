@@ -3,17 +3,20 @@ package discord
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -21,7 +24,8 @@ var reDiscordMessageLink = regexp.MustCompile(`https?://.+?(\s|$)`)
 
 var errNotEnoughInfo = errors.New("Discord didn't send enough info in this event for us to do this")
 
-func (bot *discordBotInstance) processShowcaseMsg(ctx context.Context, msg *Message) error {
+// TODO: Can this function be called asynchronously?
+func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) error {
 	switch msg.Type {
 	case MessageTypeDefault, MessageTypeReply, MessageTypeApplicationCommand:
 	default:
@@ -69,7 +73,7 @@ func (bot *discordBotInstance) processShowcaseMsg(ctx context.Context, msg *Mess
 	return nil
 }
 
-func (bot *discordBotInstance) maybeDeleteShowcaseMsg(ctx context.Context, msg *Message) (didDelete bool, err error) {
+func (bot *botInstance) maybeDeleteShowcaseMsg(ctx context.Context, msg *Message) (didDelete bool, err error) {
 	hasGoodContent := true
 	if msg.OriginalHasFields("content") && !messageHasLinks(msg.Content) {
 		hasGoodContent = false
@@ -116,7 +120,7 @@ the database.
 
 This does not create snippets or do anything besides save the message itself.
 */
-func (bot *discordBotInstance) saveMessage(
+func (bot *botInstance) saveMessage(
 	ctx context.Context,
 	tx pgx.Tx,
 	msg *Message,
@@ -180,7 +184,7 @@ snippets.
 
 Idempotent; can be called any time whether the message exists or not.
 */
-func (bot *discordBotInstance) saveMessageAndContents(
+func (bot *botInstance) saveMessageAndContents(
 	ctx context.Context,
 	tx pgx.Tx,
 	msg *Message,
@@ -230,12 +234,53 @@ func (bot *discordBotInstance) saveMessageAndContents(
 		}
 	}
 
-	// TODO: Save embeds
+	// Save embeds
+	for _, embed := range msg.Embeds {
+		_, err := bot.saveEmbed(ctx, tx, &embed, discordUser.HMNUserId, msg.ID)
+		if err != nil {
+			return nil, oops.New(err, "failed to save embed")
+		}
+	}
 
 	return newMsg, nil
 }
 
-func (bot *discordBotInstance) saveAttachment(ctx context.Context, tx pgx.Tx, attachment *Attachment, hmnUserID int, discordMessageID string) (*models.DiscordMessageAttachment, error) {
+var discordDownloadClient = &http.Client{
+	Timeout: 10 * time.Second,
+}
+
+type DiscordResourceBadStatusCode error
+
+func downloadDiscordResource(ctx context.Context, url string) ([]byte, string, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, "", oops.New(err, "failed to make Discord download request")
+	}
+	res, err := discordDownloadClient.Do(req)
+	if err != nil {
+		return nil, "", oops.New(err, "failed to fetch Discord resource data")
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode < 200 || 299 < res.StatusCode {
+		return nil, "", DiscordResourceBadStatusCode(fmt.Errorf("status code %d from Discord resource: %s", res.StatusCode, url))
+	}
+
+	content, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	return content, res.Header.Get("Content-Type"), nil
+}
+
+func (bot *botInstance) saveAttachment(
+	ctx context.Context,
+	tx pgx.Tx,
+	attachment *Attachment,
+	hmnUserID int,
+	discordMessageID string,
+) (*models.DiscordMessageAttachment, error) {
 	// TODO: Return an existing attachment if it exists
 
 	width := 0
@@ -247,22 +292,20 @@ func (bot *discordBotInstance) saveAttachment(ctx context.Context, tx pgx.Tx, at
 		height = *attachment.Height
 	}
 
-	// TODO: Timeouts and stuff, context cancellation
-	res, err := http.Get(attachment.Url)
+	content, _, err := downloadDiscordResource(ctx, attachment.Url)
 	if err != nil {
-		return nil, oops.New(err, "failed to fetch attachment data")
+		return nil, oops.New(err, "failed to download Discord attachment")
 	}
-	defer res.Body.Close()
 
-	content, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
+	contentType := "application/octet-stream"
+	if attachment.ContentType != nil {
+		contentType = *attachment.ContentType
 	}
 
 	asset, err := assets.Create(ctx, tx, assets.CreateInput{
-		Content:  content,
-		Filename: attachment.Filename,
-		MimeType: attachment.ContentType,
+		Content:     content,
+		Filename:    attachment.Filename,
+		ContentType: contentType,
 
 		UploaderID: &hmnUserID,
 		Width:      width,
@@ -301,7 +344,109 @@ func (bot *discordBotInstance) saveAttachment(ctx context.Context, tx pgx.Tx, at
 	return iDiscordAttachment.(*models.DiscordMessageAttachment), nil
 }
 
-func (bot *discordBotInstance) allowedToCreateMessageSnippet(ctx context.Context, msg *Message) (bool, error) {
+func (bot *botInstance) saveEmbed(
+	ctx context.Context,
+	tx pgx.Tx,
+	embed *Embed,
+	hmnUserID int,
+	discordMessageID string,
+) (*models.DiscordMessageEmbed, error) {
+	// TODO: Does this need to be idempotent
+
+	isOkImageType := func(contentType string) bool {
+		return strings.HasPrefix(contentType, "image/")
+	}
+
+	isOkVideoType := func(contentType string) bool {
+		return strings.HasPrefix(contentType, "video/")
+	}
+
+	maybeSaveImageish := func(i EmbedImageish, contentTypeCheck func(string) bool) (*uuid.UUID, error) {
+		content, contentType, err := downloadDiscordResource(ctx, *i.Url)
+		if err != nil {
+			var statusError DiscordResourceBadStatusCode
+			if errors.As(err, &statusError) {
+				return nil, nil
+			} else {
+				return nil, oops.New(err, "failed to save Discord embed")
+			}
+		}
+		if contentTypeCheck(contentType) {
+			in := assets.CreateInput{
+				Content:     content,
+				Filename:    "embed",
+				ContentType: contentType,
+				UploaderID:  &hmnUserID,
+			}
+
+			if i.Width != nil {
+				in.Width = *i.Width
+			}
+			if i.Height != nil {
+				in.Height = *i.Height
+			}
+
+			asset, err := assets.Create(ctx, tx, in)
+			if err != nil {
+				return nil, oops.New(err, "failed to create asset from embed")
+			}
+			return &asset.ID, nil
+		}
+
+		return nil, nil
+	}
+
+	var imageAssetId *uuid.UUID
+	var videoAssetId *uuid.UUID
+	var err error
+
+	if embed.Video != nil && embed.Video.Url != nil {
+		videoAssetId, err = maybeSaveImageish(embed.Video.EmbedImageish, isOkVideoType)
+	} else if embed.Image != nil && embed.Image.Url != nil {
+		imageAssetId, err = maybeSaveImageish(embed.Image.EmbedImageish, isOkImageType)
+	} else if embed.Thumbnail != nil && embed.Thumbnail.Url != nil {
+		imageAssetId, err = maybeSaveImageish(embed.Thumbnail.EmbedImageish, isOkImageType)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Save the embed into the db
+	// TODO(db): Insert, RETURNING
+	var savedEmbedId int
+	err = tx.QueryRow(ctx,
+		`
+		INSERT INTO handmade_discordmessageembed (title, description, url, message_id, image_id, video_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
+		`,
+		embed.Title,
+		embed.Description,
+		embed.Url,
+		discordMessageID,
+		imageAssetId,
+		videoAssetId,
+	).Scan(&savedEmbedId)
+	if err != nil {
+		return nil, oops.New(err, "failed to insert new embed")
+	}
+
+	iDiscordEmbed, err := db.QueryOne(ctx, tx, models.DiscordMessageEmbed{},
+		`
+		SELECT $columns
+		FROM handmade_discordmessageembed
+		WHERE id = $1
+		`,
+		savedEmbedId,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch new Discord embed data")
+	}
+
+	return iDiscordEmbed.(*models.DiscordMessageEmbed), nil
+}
+
+func (bot *botInstance) allowedToCreateMessageSnippet(ctx context.Context, msg *Message) (bool, error) {
 	canSave, err := db.QueryBool(ctx, bot.dbConn,
 		`
 		SELECT u.discord_save_showcase
@@ -322,7 +467,7 @@ func (bot *discordBotInstance) allowedToCreateMessageSnippet(ctx context.Context
 	return canSave, nil
 }
 
-func (bot *discordBotInstance) createMessageSnippet(ctx context.Context, msg *Message) (*models.Snippet, error) {
+func (bot *botInstance) createMessageSnippet(ctx context.Context, msg *Message) (*models.Snippet, error) {
 	// TODO: Actually do this
 	return nil, nil
 }

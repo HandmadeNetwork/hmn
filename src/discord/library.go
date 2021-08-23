@@ -6,7 +6,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 )
 
-func (bot *discordBotInstance) processLibraryMsg(ctx context.Context, msg *Message) error {
+func (bot *botInstance) processLibraryMsg(ctx context.Context, msg *Message) error {
 	switch msg.Type {
 	case MessageTypeDefault, MessageTypeReply, MessageTypeApplicationCommand:
 	default:

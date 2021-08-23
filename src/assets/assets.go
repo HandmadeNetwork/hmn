@@ -48,9 +48,9 @@ func init() {
 }
 
 type CreateInput struct {
-	Content  []byte
-	Filename string
-	MimeType string
+	Content     []byte
+	Filename    string
+	ContentType string
 
 	// Optional params
 	UploaderID    *int // HMN user id
@@ -78,8 +78,8 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 	if len(in.Content) == 0 {
 		return nil, InvalidAssetError(fmt.Errorf("could not upload asset '%s': no bytes of data were provided", filename))
 	}
-	if in.MimeType == "" {
-		return nil, InvalidAssetError(fmt.Errorf("could not upload asset '%s': no mime type provided", filename))
+	if in.ContentType == "" {
+		return nil, InvalidAssetError(fmt.Errorf("could not upload asset '%s': no content type provided", filename))
 	}
 
 	// Upload the asset to the DO space
@@ -128,7 +128,7 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 		key,
 		filename,
 		len(in.Content),
-		in.MimeType,
+		in.ContentType,
 		checksum,
 		in.Width,
 		in.Height,

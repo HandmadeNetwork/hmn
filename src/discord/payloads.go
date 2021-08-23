@@ -112,8 +112,9 @@ type Resume struct {
 
 type ChannelType int
 
+// https://discord.com/developers/docs/resources/channel#channel-object-channel-types
 const (
-	ChannelTypeGuildext           ChannelType = 0
+	ChannelTypeGuildText          ChannelType = 0
 	ChannelTypeDM                 ChannelType = 1
 	ChannelTypeGuildVoice         ChannelType = 2
 	ChannelTypeGroupDM            ChannelType = 3
@@ -126,6 +127,7 @@ const (
 	ChannelTypeGuildStageVoice    ChannelType = 13
 )
 
+// https://discord.com/developers/docs/resources/channel#channel-object
 type Channel struct {
 	ID          string      `json:"id"`
 	Type        ChannelType `json:"type"`
@@ -138,6 +140,7 @@ type Channel struct {
 
 type MessageType int
 
+// https://discord.com/developers/docs/resources/channel#message-object-message-types
 const (
 	MessageTypeDefault MessageType = 0
 
@@ -181,7 +184,7 @@ type Message struct {
 	Type      MessageType `json:"type"`
 
 	Attachments []Attachment `json:"attachments"`
-	// TODO: Embeds
+	Embeds      []Embed      `json:"embeds"`
 
 	originalMap map[string]interface{}
 }
@@ -246,7 +249,12 @@ func MessageFromMap(m interface{}) Message {
 		}
 	}
 
-	// TODO: Embeds
+	if iembeds, ok := mmap["embeds"]; ok {
+		embeds := iembeds.([]interface{})
+		for _, iembed := range embeds {
+			msg.Embeds = append(msg.Embeds, EmbedFromMap(iembed))
+		}
+	}
 
 	return msg
 }
@@ -277,15 +285,16 @@ func UserFromMap(m interface{}) User {
 	return u
 }
 
+// https://discord.com/developers/docs/resources/channel#attachment-object
 type Attachment struct {
-	ID          string `json:"id"`
-	Filename    string `json:"filename"`
-	ContentType string `json:"content_type"`
-	Size        int    `json:"size"`
-	Url         string `json:"url"`
-	ProxyUrl    string `json:"proxy_url"`
-	Height      *int   `json:"height"`
-	Width       *int   `json:"width"`
+	ID          string  `json:"id"`
+	Filename    string  `json:"filename"`
+	ContentType *string `json:"content_type"`
+	Size        int     `json:"size"`
+	Url         string  `json:"url"`
+	ProxyUrl    string  `json:"proxy_url"`
+	Height      *int    `json:"height"`
+	Width       *int    `json:"width"`
 }
 
 func AttachmentFromMap(m interface{}) Attachment {
@@ -293,7 +302,7 @@ func AttachmentFromMap(m interface{}) Attachment {
 	a := Attachment{
 		ID:          mmap["id"].(string),
 		Filename:    mmap["filename"].(string),
-		ContentType: maybeString(mmap, "content_type"),
+		ContentType: maybeStringP(mmap, "content_type"),
 		Size:        int(mmap["size"].(float64)),
 		Url:         mmap["url"].(string),
 		ProxyUrl:    mmap["proxy_url"].(string),
@@ -302,6 +311,224 @@ func AttachmentFromMap(m interface{}) Attachment {
 	}
 
 	return a
+}
+
+// https://discord.com/developers/docs/resources/channel#embed-object
+type Embed struct {
+	Title       *string         `json:"title"`
+	Type        *string         `json:"type"`
+	Description *string         `json:"description"`
+	Url         *string         `json:"url"`
+	Timestamp   *string         `json:"timestamp"`
+	Color       *int            `json:"color"`
+	Footer      *EmbedFooter    `json:"footer"`
+	Image       *EmbedImage     `json:"image"`
+	Thumbnail   *EmbedThumbnail `json:"thumbnail"`
+	Video       *EmbedVideo     `json:"video"`
+	Provider    *EmbedProvider  `json:"provider"`
+	Author      *EmbedAuthor    `json:"author"`
+	Fields      []EmbedField    `json:"fields"`
+}
+
+type EmbedFooter struct {
+	Text         string  `json:"text"`
+	IconUrl      *string `json:"icon_url"`
+	ProxyIconUrl *string `json:"proxy_icon_url"`
+}
+
+type EmbedImageish struct {
+	Url      *string `json:"url"`
+	ProxyUrl *string `json:"proxy_url"`
+	Height   *int    `json:"height"`
+	Width    *int    `json:"width"`
+}
+
+type EmbedImage struct {
+	EmbedImageish
+}
+
+type EmbedThumbnail struct {
+	EmbedImageish
+}
+
+type EmbedVideo struct {
+	EmbedImageish
+}
+
+type EmbedProvider struct {
+	Name *string `json:"name"`
+	Url  *string `json:"url"`
+}
+
+type EmbedAuthor struct {
+	Name         *string `json:"name"`
+	Url          *string `json:"url"`
+	IconUrl      *string `json:"icon_url"`
+	ProxyIconUrl *string `json:"proxy_icon_url"`
+}
+
+type EmbedField struct {
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Inline *bool  `json:"inline"`
+}
+
+func EmbedFromMap(m interface{}) Embed {
+	mmap := m.(map[string]interface{})
+
+	e := Embed{
+		Title:       maybeStringP(mmap, "title"),
+		Type:        maybeStringP(mmap, "type"),
+		Description: maybeStringP(mmap, "description"),
+		Url:         maybeStringP(mmap, "url"),
+		Timestamp:   maybeStringP(mmap, "timestamp"),
+		Color:       maybeIntP(mmap, "color"),
+		Footer:      EmbedFooterFromMap(mmap, "footer"),
+		Image:       EmbedImageFromMap(mmap, "image"),
+		Thumbnail:   EmbedThumbnailFromMap(mmap, "thumbnail"),
+		Video:       EmbedVideoFromMap(mmap, "video"),
+		Provider:    EmbedProviderFromMap(mmap, "provider"),
+		Author:      EmbedAuthorFromMap(mmap, "author"),
+		Fields:      EmbedFieldsFromMap(mmap, "fields"),
+	}
+
+	return e
+}
+
+func EmbedFooterFromMap(m map[string]interface{}, k string) *EmbedFooter {
+	f, ok := m[k]
+	if !ok {
+		return nil
+	}
+	fMap, ok := f.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	return &EmbedFooter{
+		Text:         maybeString(fMap, "text"),
+		IconUrl:      maybeStringP(fMap, "icon_url"),
+		ProxyIconUrl: maybeStringP(fMap, "proxy_icon_url"),
+	}
+}
+
+func EmbedImageFromMap(m map[string]interface{}, k string) *EmbedImage {
+	val, ok := m[k]
+	if !ok {
+		return nil
+	}
+	valMap, ok := val.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	return &EmbedImage{
+		EmbedImageish: EmbedImageish{
+			Url:      maybeStringP(valMap, "url"),
+			ProxyUrl: maybeStringP(valMap, "proxy_url"),
+			Height:   maybeIntP(valMap, "height"),
+			Width:    maybeIntP(valMap, "width"),
+		},
+	}
+}
+
+func EmbedThumbnailFromMap(m map[string]interface{}, k string) *EmbedThumbnail {
+	val, ok := m[k]
+	if !ok {
+		return nil
+	}
+	valMap, ok := val.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	return &EmbedThumbnail{
+		EmbedImageish: EmbedImageish{
+			Url:      maybeStringP(valMap, "url"),
+			ProxyUrl: maybeStringP(valMap, "proxy_url"),
+			Height:   maybeIntP(valMap, "height"),
+			Width:    maybeIntP(valMap, "width"),
+		},
+	}
+}
+
+func EmbedVideoFromMap(m map[string]interface{}, k string) *EmbedVideo {
+	val, ok := m[k]
+	if !ok {
+		return nil
+	}
+	valMap, ok := val.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	return &EmbedVideo{
+		EmbedImageish: EmbedImageish{
+			Url:      maybeStringP(valMap, "url"),
+			ProxyUrl: maybeStringP(valMap, "proxy_url"),
+			Height:   maybeIntP(valMap, "height"),
+			Width:    maybeIntP(valMap, "width"),
+		},
+	}
+}
+
+func EmbedProviderFromMap(m map[string]interface{}, k string) *EmbedProvider {
+	val, ok := m[k]
+	if !ok {
+		return nil
+	}
+	valMap, ok := val.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	return &EmbedProvider{
+		Name: maybeStringP(valMap, "name"),
+		Url:  maybeStringP(valMap, "url"),
+	}
+}
+
+func EmbedAuthorFromMap(m map[string]interface{}, k string) *EmbedAuthor {
+	val, ok := m[k]
+	if !ok {
+		return nil
+	}
+	valMap, ok := val.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+
+	return &EmbedAuthor{
+		Name: maybeStringP(valMap, "name"),
+		Url:  maybeStringP(valMap, "url"),
+	}
+}
+
+func EmbedFieldsFromMap(m map[string]interface{}, k string) []EmbedField {
+	val, ok := m[k]
+	if !ok {
+		return nil
+	}
+	valSlice, ok := val.([]interface{})
+	if !ok {
+		return nil
+	}
+
+	var result []EmbedField
+	for _, innerVal := range valSlice {
+		valMap, ok := innerVal.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		result = append(result, EmbedField{
+			Name:   maybeString(valMap, "name"),
+			Value:  maybeString(valMap, "value"),
+			Inline: maybeBoolP(valMap, "inline"),
+		})
+	}
+
+	return result
 }
 
 func maybeString(m map[string]interface{}, k string) string {
@@ -336,4 +563,21 @@ func maybeIntP(m map[string]interface{}, k string) *int {
 	}
 	intval := int(val.(float64))
 	return &intval
+}
+
+func maybeBool(m map[string]interface{}, k string) bool {
+	val, ok := m[k]
+	if !ok {
+		return false
+	}
+	return val.(bool)
+}
+
+func maybeBoolP(m map[string]interface{}, k string) *bool {
+	val, ok := m[k]
+	if !ok {
+		return nil
+	}
+	boolval := val.(bool)
+	return &boolval
 }
