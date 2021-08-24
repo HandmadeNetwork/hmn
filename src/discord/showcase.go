@@ -229,18 +229,48 @@ func (bot *botInstance) saveMessageAndContents(
 	}
 
 	// Save attachments
-	for _, attachment := range msg.Attachments {
-		_, err := bot.saveAttachment(ctx, tx, &attachment, discordUser.HMNUserId, msg.ID)
-		if err != nil {
-			return nil, oops.New(err, "failed to save attachment")
+	if msg.OriginalHasFields("attachments") {
+		for _, attachment := range msg.Attachments {
+			_, err := bot.saveAttachment(ctx, tx, &attachment, discordUser.HMNUserId, msg.ID)
+			if err != nil {
+				return nil, oops.New(err, "failed to save attachment")
+			}
 		}
 	}
 
-	// Save embeds
-	for _, embed := range msg.Embeds {
-		_, err := bot.saveEmbed(ctx, tx, &embed, discordUser.HMNUserId, msg.ID)
+	// Save / delete embeds
+	if msg.OriginalHasFields("embeds") {
+		numSavedEmbeds, err := db.QueryInt(ctx, tx,
+			`
+			SELECT COUNT(*)
+			FROM handmade_discordmessageembed
+			WHERE message_id = $1
+			`,
+			msg.ID,
+		)
 		if err != nil {
-			return nil, oops.New(err, "failed to save embed")
+			return nil, oops.New(err, "failed to count existing embeds")
+		}
+		if numSavedEmbeds == 0 {
+			// No embeds yet, so save new ones
+			for _, embed := range msg.Embeds {
+				_, err := bot.saveEmbed(ctx, tx, &embed, discordUser.HMNUserId, msg.ID)
+				if err != nil {
+					return nil, oops.New(err, "failed to save embed")
+				}
+			}
+		} else if len(msg.Embeds) > 0 {
+			// Embeds were removed from the message
+			_, err := tx.Exec(ctx,
+				`
+				DELETE FROM handmade_discordmessageembed
+				WHERE message_id = $1
+				`,
+				msg.ID,
+			)
+			if err != nil {
+				return nil, oops.New(err, "failed to delete embeds")
+			}
 		}
 	}
 
@@ -515,7 +545,27 @@ func (bot *botInstance) createMessageSnippet(ctx context.Context, tx pgx.Tx, msg
 	existing := iexisting.(*existingSnippetResult)
 
 	if existing.Snippet != nil {
-		// A snippet already exists
+		// A snippet already exists - maybe update its content, then return it
+		if msg.OriginalHasFields("content") && !existing.Snippet.EditedOnWebsite {
+			contentMarkdown := msg.Content
+			contentHTML := contentMarkdown // TODO: Parse Markdown's HTML
+
+			_, err := tx.Exec(ctx,
+				`
+				UPDATE handmade_snippet
+				SET
+					description = $1,
+					_description_html = $2
+				WHERE id = $3
+				`,
+				contentMarkdown,
+				contentHTML,
+				existing.Snippet.ID,
+			)
+			if err != nil {
+				logging.ExtractLogger(ctx).Warn().Err(err).Msg("failed to update content of snippet on message edit")
+			}
+		}
 		return existing.Snippet, nil
 	}
 
