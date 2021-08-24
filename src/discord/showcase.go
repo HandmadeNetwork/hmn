@@ -47,7 +47,7 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) er
 	defer tx.Rollback(ctx)
 
 	// save the message, maybe save its contents, and maybe make a snippet too
-	_, err = bot.saveMessageAndContents(ctx, tx, msg)
+	newMsg, err := bot.saveMessageAndContents(ctx, tx, msg)
 	if errors.Is(err, errNotEnoughInfo) {
 		logging.ExtractLogger(ctx).Warn().
 			Interface("msg", msg).
@@ -56,8 +56,8 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) er
 	} else if err != nil {
 		return err
 	}
-	if doSnippet, err := bot.allowedToCreateMessageSnippet(ctx, msg); doSnippet && err == nil {
-		_, err := bot.createMessageSnippet(ctx, msg)
+	if doSnippet, err := bot.allowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
+		_, err := bot.createMessageSnippet(ctx, tx, msg)
 		if err != nil {
 			return oops.New(err, "failed to create snippet in gateway")
 		}
@@ -201,7 +201,7 @@ func (bot *botInstance) saveMessageAndContents(
 		FROM handmade_discorduser
 		WHERE userid = $1
 		`,
-		msg.Author.ID,
+		newMsg.UserID,
 	)
 	if errors.Is(err, db.ErrNoMatchingRows) {
 		return newMsg, nil
@@ -213,18 +213,20 @@ func (bot *botInstance) saveMessageAndContents(
 	// We have a linked Discord account, so save the message contents (regardless of
 	// whether we create a snippet or not).
 
-	_, err = tx.Exec(ctx,
-		`
-		INSERT INTO handmade_discordmessagecontent (message_id, discord_id, last_content)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (message_id) DO UPDATE SET
-			discord_id = EXCLUDED.discord_id,
-			last_content = EXCLUDED.last_content
-		`,
-		msg.ID,
-		discordUser.ID,
-		msg.Content, // TODO: Add a method that can fill in mentions and stuff (https://discord.com/developers/docs/reference#message-formatting)
-	)
+	if msg.OriginalHasFields("content") {
+		_, err = tx.Exec(ctx,
+			`
+			INSERT INTO handmade_discordmessagecontent (message_id, discord_id, last_content)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (message_id) DO UPDATE SET
+				discord_id = EXCLUDED.discord_id,
+				last_content = EXCLUDED.last_content
+			`,
+			newMsg.ID,
+			discordUser.ID,
+			msg.Content, // TODO: Add a method that can fill in mentions and stuff (https://discord.com/developers/docs/reference#message-formatting)
+		)
+	}
 
 	// Save attachments
 	for _, attachment := range msg.Attachments {
@@ -274,6 +276,10 @@ func downloadDiscordResource(ctx context.Context, url string) ([]byte, string, e
 	return content, res.Header.Get("Content-Type"), nil
 }
 
+/*
+Saves a Discord attachment as an HMN asset. Idempotent; will not create an attachment
+that already exists
+*/
 func (bot *botInstance) saveAttachment(
 	ctx context.Context,
 	tx pgx.Tx,
@@ -281,7 +287,21 @@ func (bot *botInstance) saveAttachment(
 	hmnUserID int,
 	discordMessageID string,
 ) (*models.DiscordMessageAttachment, error) {
-	// TODO: Return an existing attachment if it exists
+	iexisting, err := db.QueryOne(ctx, tx, models.DiscordMessageAttachment{},
+		`
+		SELECT $columns
+		FROM handmade_discordmessageattachment
+		WHERE id = $1
+		`,
+		attachment.ID,
+	)
+	if err == nil {
+		return iexisting.(*models.DiscordMessageAttachment), nil
+	} else if errors.Is(err, db.ErrNoMatchingRows) {
+		// this is fine, just create it
+	} else {
+		return nil, oops.New(err, "failed to check for existing attachment")
+	}
 
 	width := 0
 	height := 0
@@ -351,7 +371,8 @@ func (bot *botInstance) saveEmbed(
 	hmnUserID int,
 	discordMessageID string,
 ) (*models.DiscordMessageEmbed, error) {
-	// TODO: Does this need to be idempotent
+	// TODO: Does this need to be idempotent? Embeds don't have IDs...
+	// Maybe Discord will never actually send us the same embed twice?
 
 	isOkImageType := func(contentType string) bool {
 		return strings.HasPrefix(contentType, "image/")
@@ -446,7 +467,7 @@ func (bot *botInstance) saveEmbed(
 	return iDiscordEmbed.(*models.DiscordMessageEmbed), nil
 }
 
-func (bot *botInstance) allowedToCreateMessageSnippet(ctx context.Context, msg *Message) (bool, error) {
+func (bot *botInstance) allowedToCreateMessageSnippet(ctx context.Context, tx pgx.Tx, discordUserId string) (bool, error) {
 	canSave, err := db.QueryBool(ctx, bot.dbConn,
 		`
 		SELECT u.discord_save_showcase
@@ -456,7 +477,7 @@ func (bot *botInstance) allowedToCreateMessageSnippet(ctx context.Context, msg *
 		WHERE
 			duser.userid = $1
 		`,
-		msg.Author.ID,
+		discordUserId,
 	)
 	if errors.Is(err, db.ErrNoMatchingRows) {
 		return false, nil
@@ -467,9 +488,140 @@ func (bot *botInstance) allowedToCreateMessageSnippet(ctx context.Context, msg *
 	return canSave, nil
 }
 
-func (bot *botInstance) createMessageSnippet(ctx context.Context, msg *Message) (*models.Snippet, error) {
-	// TODO: Actually do this
-	return nil, nil
+func (bot *botInstance) createMessageSnippet(ctx context.Context, tx pgx.Tx, msg *Message) (*models.Snippet, error) {
+	// Check for existing snippet, maybe return it
+	type existingSnippetResult struct {
+		Message        models.DiscordMessage         `db:"msg"`
+		MessageContent *models.DiscordMessageContent `db:"c"`
+		Snippet        *models.Snippet               `db:"snippet"`
+		DiscordUser    *models.DiscordUser           `db:"duser"`
+	}
+	iexisting, err := db.QueryOne(ctx, tx, existingSnippetResult{},
+		`
+		SELECT $columns
+		FROM
+			handmade_discordmessage AS msg
+			LEFT JOIN handmade_discordmessagecontent AS c ON c.message_id = msg.id
+			LEFT JOIN handmade_snippet AS snippet ON snippet.discord_message_id = msg.id
+			LEFT JOIN handmade_discorduser AS duser ON msg.user_id = duser.userid
+		WHERE
+			msg.id = $1
+		`,
+		msg.ID,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to check for existing snippet")
+	}
+	existing := iexisting.(*existingSnippetResult)
+
+	if existing.Snippet != nil {
+		// A snippet already exists
+		return existing.Snippet, nil
+	}
+
+	if existing.Message.SnippetCreated {
+		// A snippet once existed but no longer does
+		// (we do not create another one in this case)
+		return nil, nil
+	}
+
+	if existing.MessageContent == nil || existing.DiscordUser == nil {
+		return nil, nil
+	}
+
+	// Get an asset ID or URL to make a snippet from
+	assetId, url, err := bot.getSnippetAssetOrUrl(ctx, tx, &existing.Message)
+	if assetId == nil && url == "" {
+		// Nothing to make a snippet from!
+		return nil, nil
+	}
+
+	contentMarkdown := existing.MessageContent.LastContent
+	contentHTML := contentMarkdown // TODO: Actually parse Discord's Markdown
+
+	// TODO(db): Insert
+	isnippet, err := db.QueryOne(ctx, tx, models.Snippet{},
+		`
+		INSERT INTO handmade_snippet (url, "when", description, _description_html, asset_id, discord_message_id, owner_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING $columns
+		`,
+		nil,
+		existing.Message.SentAt,
+		contentMarkdown,
+		contentHTML,
+		assetId,
+		msg.ID,
+		existing.DiscordUser.HMNUserId,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to create snippet from attachment")
+	}
+	_, err = tx.Exec(ctx,
+		`
+		UPDATE handmade_discordmessage
+		SET snippet_created = TRUE
+		WHERE id = $1
+		`,
+		msg.ID,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to mark message as having snippet")
+	}
+
+	return isnippet.(*models.Snippet), nil
+}
+
+// NOTE(ben): This is maybe redundant with the regexes we use for markdown. But
+// do we actually want to reuse those, or should we keep them separate?
+var RESnippetableUrl = regexp.MustCompile(`^https?://(youtu\.be|(www\.)?youtube\.com/watch)`)
+
+func (bot *botInstance) getSnippetAssetOrUrl(ctx context.Context, tx pgx.Tx, msg *models.DiscordMessage) (*uuid.UUID, string, error) {
+	// Check attachments
+	itAttachments, err := db.Query(ctx, tx, models.DiscordMessageAttachment{},
+		`
+		SELECT $columns
+		FROM handmade_discordmessageattachment
+		WHERE message_id = $1
+		`,
+		msg.ID,
+	)
+	if err != nil {
+		return nil, "", oops.New(err, "failed to fetch message attachments")
+	}
+	attachments := itAttachments.ToSlice()
+	for _, iattachment := range attachments {
+		attachment := iattachment.(*models.DiscordMessageAttachment)
+		return &attachment.AssetID, "", nil
+	}
+
+	// Check embeds
+	itEmbeds, err := db.Query(ctx, tx, models.DiscordMessageEmbed{},
+		`
+		SELECT $columns
+		FROM handmade_discordmessageembed
+		WHERE message_id = $1
+		`,
+		msg.ID,
+	)
+	if err != nil {
+		return nil, "", oops.New(err, "failed to fetch discord embeds")
+	}
+	embeds := itEmbeds.ToSlice()
+	for _, iembed := range embeds {
+		embed := iembed.(*models.DiscordMessageEmbed)
+		if embed.VideoID != nil {
+			return embed.VideoID, "", nil
+		} else if embed.ImageID != nil {
+			return embed.ImageID, "", nil
+		} else if embed.URL != nil {
+			if RESnippetableUrl.MatchString(*embed.URL) {
+				return nil, *embed.URL, nil
+			}
+		}
+	}
+
+	return nil, "", nil
 }
 
 func messageHasLinks(content string) bool {

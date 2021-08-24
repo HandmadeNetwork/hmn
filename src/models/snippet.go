@@ -10,7 +10,7 @@ type Snippet struct {
 	ID      int `db:"id"`
 	OwnerID int `db:"owner_id"`
 
-	When time.Time `db:"when"`
+	When time.Time `db:"\"when\""`
 
 	Description     string `db:"description"`
 	DescriptionHtml string `db:"_description_html"`
