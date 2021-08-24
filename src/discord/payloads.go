@@ -127,6 +127,13 @@ const (
 	ChannelTypeGuildStageVoice    ChannelType = 13
 )
 
+// https://discord.com/developers/docs/topics/permissions#role-object
+type Role struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	// more fields not yet present
+}
+
 // https://discord.com/developers/docs/resources/channel#channel-object
 type Channel struct {
 	ID          string      `json:"id"`
@@ -283,6 +290,13 @@ func UserFromMap(m interface{}) User {
 	}
 
 	return u
+}
+
+// https://discord.com/developers/docs/resources/guild#guild-member-object
+type GuildMember struct {
+	User *User   `json:"user"`
+	Nick *string `json:"nick"`
+	// more fields not yet handled here
 }
 
 // https://discord.com/developers/docs/resources/channel#attachment-object

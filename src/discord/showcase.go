@@ -16,6 +16,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/parsing"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 )
@@ -24,7 +25,6 @@ var reDiscordMessageLink = regexp.MustCompile(`https?://.+?(\s|$)`)
 
 var errNotEnoughInfo = errors.New("Discord didn't send enough info in this event for us to do this")
 
-// TODO: Can this function be called asynchronously?
 func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) error {
 	switch msg.Type {
 	case MessageTypeDefault, MessageTypeReply, MessageTypeApplicationCommand:
@@ -224,7 +224,7 @@ func (bot *botInstance) saveMessageAndContents(
 			`,
 			newMsg.ID,
 			discordUser.ID,
-			msg.Content, // TODO: Add a method that can fill in mentions and stuff (https://discord.com/developers/docs/reference#message-formatting)
+			CleanUpMarkdown(ctx, msg.Content),
 		)
 	}
 
@@ -547,8 +547,8 @@ func (bot *botInstance) createMessageSnippet(ctx context.Context, tx pgx.Tx, msg
 	if existing.Snippet != nil {
 		// A snippet already exists - maybe update its content, then return it
 		if msg.OriginalHasFields("content") && !existing.Snippet.EditedOnWebsite {
-			contentMarkdown := msg.Content
-			contentHTML := contentMarkdown // TODO: Parse Markdown's HTML
+			contentMarkdown := existing.MessageContent.LastContent
+			contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.RealMarkdown)
 
 			_, err := tx.Exec(ctx,
 				`
@@ -587,7 +587,7 @@ func (bot *botInstance) createMessageSnippet(ctx context.Context, tx pgx.Tx, msg
 	}
 
 	contentMarkdown := existing.MessageContent.LastContent
-	contentHTML := contentMarkdown // TODO: Actually parse Discord's Markdown
+	contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.RealMarkdown)
 
 	// TODO(db): Insert
 	isnippet, err := db.QueryOne(ctx, tx, models.Snippet{},

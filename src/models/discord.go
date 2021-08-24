@@ -41,7 +41,7 @@ account, regardless of whether we create snippets or not.
 */
 type DiscordMessageContent struct {
 	MessageID   string `db:"message_id"`
-	LastContent string `db:"last_content"`
+	LastContent string `db:"last_content"` // This should always be cleaned up with nice user IDs and stuff
 	DiscordID   int    `db:"discord_id"`
 }
 

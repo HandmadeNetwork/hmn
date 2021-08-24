@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,6 +26,8 @@ const (
 )
 
 var UserAgent = fmt.Sprintf("%s (%s, %s)", BotName, UserAgentURL, UserAgentVersion)
+
+var NotFound = errors.New("not found")
 
 var httpClient = &http.Client{}
 
@@ -81,6 +84,101 @@ func GetGatewayBot(ctx context.Context) (*GetGatewayBotResponse, error) {
 	}
 
 	return &result, nil
+}
+
+func GetGuildRoles(ctx context.Context, guildID string) ([]Role, error) {
+	const name = "Get Guild Roles"
+
+	path := fmt.Sprintf("/guilds/%s/roles", guildID)
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		return makeRequest(ctx, http.MethodGet, path, nil)
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		logErrorResponse(ctx, name, res, "")
+		return nil, oops.New(nil, "received error from Discord")
+	}
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var roles []Role
+	err = json.Unmarshal(bodyBytes, &roles)
+	if err != nil {
+		return nil, oops.New(err, "failed to unmarshal Discord message")
+	}
+
+	return roles, nil
+}
+
+func GetGuildChannels(ctx context.Context, guildID string) ([]Channel, error) {
+	const name = "Get Guild Channels"
+
+	path := fmt.Sprintf("/guilds/%s/channels", guildID)
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		return makeRequest(ctx, http.MethodGet, path, nil)
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		logErrorResponse(ctx, name, res, "")
+		return nil, oops.New(nil, "received error from Discord")
+	}
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var channels []Channel
+	err = json.Unmarshal(bodyBytes, &channels)
+	if err != nil {
+		return nil, oops.New(err, "failed to unmarshal Discord message")
+	}
+
+	return channels, nil
+}
+
+func GetGuildMember(ctx context.Context, guildID, userID string) (*GuildMember, error) {
+	const name = "Get Guild Member"
+
+	path := fmt.Sprintf("/guilds/%s/members/%s", guildID, userID)
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		return makeRequest(ctx, http.MethodGet, path, nil)
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, NotFound
+	} else if res.StatusCode >= 400 {
+		logErrorResponse(ctx, name, res, "")
+		return nil, oops.New(nil, "received error from Discord")
+	}
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var msg GuildMember
+	err = json.Unmarshal(bodyBytes, &msg)
+	if err != nil {
+		return nil, oops.New(err, "failed to unmarshal Discord message")
+	}
+
+	return &msg, nil
 }
 
 type CreateMessageRequest struct {
