@@ -110,6 +110,23 @@ type Resume struct {
 	SequenceNumber int    `json:"seq"`
 }
 
+// https://discord.com/developers/docs/topics/gateway#message-delete
+type MessageDelete struct {
+	ID        string `json:"id"`
+	ChannelID string `json:"channel_id"`
+	GuildID   string `json:"guild_id"`
+}
+
+func MessageDeleteFromMap(m interface{}) MessageDelete {
+	mmap := m.(map[string]interface{})
+
+	return MessageDelete{
+		ID:        mmap["id"].(string),
+		ChannelID: mmap["channel_id"].(string),
+		GuildID:   maybeString(mmap, "guild_id"),
+	}
+}
+
 type ChannelType int
 
 // https://discord.com/developers/docs/resources/channel#channel-object-channel-types

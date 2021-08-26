@@ -557,11 +557,14 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 		if err != nil {
 			return oops.New(err, "error on updated message")
 		}
+	case "MESSAGE_DELETE":
+		bot.messageDelete(ctx, MessageDeleteFromMap(msg.Data))
 	}
 
 	return nil
 }
 
+// TODO: Should this return an error? Or just log errors?
 func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message) error {
 	if msg.OriginalHasFields("author") && msg.Author.ID == config.Config.Discord.BotUserID {
 		// Don't process your own messages
@@ -585,6 +588,78 @@ func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message)
 	}
 
 	return nil
+}
+
+func (bot *botInstance) messageDelete(ctx context.Context, msgDelete MessageDelete) {
+	log := logging.ExtractLogger(ctx)
+
+	tx, err := bot.dbConn.Begin(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to start transaction")
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	type deleteMessageQuery struct {
+		Message     models.DiscordMessage `db:"msg"`
+		DiscordUser *models.DiscordUser   `db:"duser"`
+		HMNUser     *models.User          `db:"hmnuser"`
+		SnippetID   *int                  `db:"snippet.id"`
+	}
+	iresult, err := db.QueryOne(ctx, tx, deleteMessageQuery{},
+		`
+		SELECT $columns
+		FROM
+			handmade_discordmessage AS msg
+			LEFT JOIN handmade_discorduser AS duser ON msg.user_id = duser.userid
+			LEFT JOIN auth_user AS hmnuser ON duser.hmn_user_id = hmnuser.id
+			LEFT JOIN handmade_snippet AS snippet ON snippet.discord_message_id = msg.id
+		WHERE msg.id = $1 AND msg.channel_id = $2
+		`,
+		msgDelete.ID, msgDelete.ChannelID,
+	)
+	if errors.Is(err, db.ErrNoMatchingRows) {
+		return
+	} else if err != nil {
+		log.Error().Err(err).Msg("failed to check for message to delete")
+		return
+	}
+	result := iresult.(*deleteMessageQuery)
+
+	log.Debug().Msg("deleting Discord message")
+	_, err = tx.Exec(ctx,
+		`
+		DELETE FROM handmade_discordmessage
+		WHERE id = $1 AND channel_id = $2
+		`,
+		msgDelete.ID,
+		msgDelete.ChannelID,
+	)
+
+	shouldDeleteSnippet := result.HMNUser != nil && result.HMNUser.DiscordDeleteSnippetOnMessageDelete
+	if result.SnippetID != nil && shouldDeleteSnippet {
+		log.Debug().
+			Int("snippet_id", *result.SnippetID).
+			Int("user_id", result.HMNUser.ID).
+			Msg("deleting snippet from Discord message")
+		_, err = tx.Exec(ctx,
+			`
+			DELETE FROM handmade_snippet
+			WHERE id = $1
+			`,
+			result.SnippetID,
+		)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to delete snippet")
+			return
+		}
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to delete Discord message")
+		return
+	}
 }
 
 type MessageToSend struct {
