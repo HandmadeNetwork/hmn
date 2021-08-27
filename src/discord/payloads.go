@@ -252,9 +252,16 @@ func (m *Message) Time() time.Time {
 	return t
 }
 
+func (m *Message) ShortString() string {
+	return fmt.Sprintf("%s / %s: \"%s\" (%d attachments, %d embeds)", m.Timestamp, m.Author.Username, m.Content, len(m.Attachments), len(m.Embeds))
+}
+
 func (m *Message) OriginalHasFields(fields ...string) bool {
 	if m.originalMap == nil {
-		return false
+		// If we don't know, we assume the fields are there.
+		// Usually this is because it came from their API, where we
+		// always have all fields.
+		return true
 	}
 
 	for _, field := range fields {

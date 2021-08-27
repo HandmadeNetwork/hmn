@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/config"
@@ -409,6 +410,93 @@ func RemoveGuildMemberRole(ctx context.Context, userID, roleID string) error {
 	}
 
 	return nil
+}
+
+func GetChannelMessage(ctx context.Context, channelID, messageID string) (*Message, error) {
+	const name = "Get Channel Message"
+
+	path := fmt.Sprintf("/channels/%s/messages/%s", channelID, messageID)
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		return makeRequest(ctx, http.MethodGet, path, nil)
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusNotFound {
+		return nil, NotFound
+	} else if res.StatusCode >= 400 {
+		logErrorResponse(ctx, name, res, "")
+		return nil, oops.New(nil, "received error from Discord")
+	}
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var msg Message
+	err = json.Unmarshal(bodyBytes, &msg)
+	if err != nil {
+		return nil, oops.New(err, "failed to unmarshal Discord message")
+	}
+
+	return &msg, nil
+}
+
+type GetChannelMessagesInput struct {
+	Around string
+	Before string
+	After  string
+	Limit  int
+}
+
+func GetChannelMessages(ctx context.Context, channelID string, in GetChannelMessagesInput) ([]Message, error) {
+	const name = "Get Channel Messages"
+
+	path := fmt.Sprintf("/channels/%s/messages", channelID)
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		req := makeRequest(ctx, http.MethodGet, path, nil)
+		q := req.URL.Query()
+		if in.Around != "" {
+			q.Add("around", in.Around)
+		}
+		if in.Before != "" {
+			q.Add("before", in.Before)
+		}
+		if in.After != "" {
+			q.Add("after", in.After)
+		}
+		if in.Limit != 0 {
+			q.Add("limit", strconv.Itoa(in.Limit))
+		}
+		req.URL.RawQuery = q.Encode()
+
+		return req
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		logErrorResponse(ctx, name, res, "")
+		return nil, oops.New(nil, "received error from Discord")
+	}
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var msgs []Message
+	err = json.Unmarshal(bodyBytes, &msgs)
+	if err != nil {
+		return nil, oops.New(err, "failed to unmarshal Discord message")
+	}
+
+	return msgs, nil
 }
 
 func logErrorResponse(ctx context.Context, name string, res *http.Response, msg string) {

@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/assets"
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/parsing"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v4"
 )
 
 var reDiscordMessageLink = regexp.MustCompile(`https?://.+?(\s|$)`)
@@ -47,7 +47,7 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) er
 	defer tx.Rollback(ctx)
 
 	// save the message, maybe save its contents, and maybe make a snippet too
-	newMsg, err := bot.saveMessageAndContents(ctx, tx, msg)
+	newMsg, err := saveMessageAndContents(ctx, tx, msg)
 	if errors.Is(err, errNotEnoughInfo) {
 		logging.ExtractLogger(ctx).Warn().
 			Interface("msg", msg).
@@ -56,8 +56,8 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) er
 	} else if err != nil {
 		return err
 	}
-	if doSnippet, err := bot.allowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
-		_, err := bot.createMessageSnippet(ctx, tx, msg)
+	if doSnippet, err := allowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
+		_, err := createMessageSnippet(ctx, tx, msg)
 		if err != nil {
 			return oops.New(err, "failed to create snippet in gateway")
 		}
@@ -120,9 +120,9 @@ the database.
 
 This does not create snippets or do anything besides save the message itself.
 */
-func (bot *botInstance) saveMessage(
+func saveMessage(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx db.ConnOrTx,
 	msg *Message,
 ) (*models.DiscordMessage, error) {
 	iDiscordMessage, err := db.QueryOne(ctx, tx, models.DiscordMessage{},
@@ -138,6 +138,16 @@ func (bot *botInstance) saveMessage(
 			return nil, errNotEnoughInfo
 		}
 
+		guildID := msg.GuildID
+		if guildID == nil {
+			/*
+				This is weird, but it can happen when we fetch messages from
+				history instead of receiving it from the gateway. In this case
+				we just assume it's from the HMN server.
+			*/
+			guildID = &config.Config.Discord.GuildID
+		}
+
 		_, err = tx.Exec(ctx,
 			`
 			INSERT INTO handmade_discordmessage (id, channel_id, guild_id, url, user_id, sent_at, snippet_created)
@@ -145,7 +155,7 @@ func (bot *botInstance) saveMessage(
 			`,
 			msg.ID,
 			msg.ChannelID,
-			*msg.GuildID,
+			*guildID,
 			msg.JumpURL(),
 			msg.Author.ID,
 			msg.Time(),
@@ -184,12 +194,12 @@ snippets.
 
 Idempotent; can be called any time whether the message exists or not.
 */
-func (bot *botInstance) saveMessageAndContents(
+func saveMessageAndContents(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx db.ConnOrTx,
 	msg *Message,
 ) (*models.DiscordMessage, error) {
-	newMsg, err := bot.saveMessage(ctx, tx, msg)
+	newMsg, err := saveMessage(ctx, tx, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +241,7 @@ func (bot *botInstance) saveMessageAndContents(
 	// Save attachments
 	if msg.OriginalHasFields("attachments") {
 		for _, attachment := range msg.Attachments {
-			_, err := bot.saveAttachment(ctx, tx, &attachment, discordUser.HMNUserId, msg.ID)
+			_, err := saveAttachment(ctx, tx, &attachment, discordUser.HMNUserId, msg.ID)
 			if err != nil {
 				return nil, oops.New(err, "failed to save attachment")
 			}
@@ -254,7 +264,7 @@ func (bot *botInstance) saveMessageAndContents(
 		if numSavedEmbeds == 0 {
 			// No embeds yet, so save new ones
 			for _, embed := range msg.Embeds {
-				_, err := bot.saveEmbed(ctx, tx, &embed, discordUser.HMNUserId, msg.ID)
+				_, err := saveEmbed(ctx, tx, &embed, discordUser.HMNUserId, msg.ID)
 				if err != nil {
 					return nil, oops.New(err, "failed to save embed")
 				}
@@ -310,9 +320,9 @@ func downloadDiscordResource(ctx context.Context, url string) ([]byte, string, e
 Saves a Discord attachment as an HMN asset. Idempotent; will not create an attachment
 that already exists
 */
-func (bot *botInstance) saveAttachment(
+func saveAttachment(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx db.ConnOrTx,
 	attachment *Attachment,
 	hmnUserID int,
 	discordMessageID string,
@@ -394,9 +404,9 @@ func (bot *botInstance) saveAttachment(
 	return iDiscordAttachment.(*models.DiscordMessageAttachment), nil
 }
 
-func (bot *botInstance) saveEmbed(
+func saveEmbed(
 	ctx context.Context,
-	tx pgx.Tx,
+	tx db.ConnOrTx,
 	embed *Embed,
 	hmnUserID int,
 	discordMessageID string,
@@ -497,8 +507,8 @@ func (bot *botInstance) saveEmbed(
 	return iDiscordEmbed.(*models.DiscordMessageEmbed), nil
 }
 
-func (bot *botInstance) allowedToCreateMessageSnippet(ctx context.Context, tx pgx.Tx, discordUserId string) (bool, error) {
-	canSave, err := db.QueryBool(ctx, bot.dbConn,
+func allowedToCreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, discordUserId string) (bool, error) {
+	canSave, err := db.QueryBool(ctx, tx,
 		`
 		SELECT u.discord_save_showcase
 		FROM
@@ -518,7 +528,7 @@ func (bot *botInstance) allowedToCreateMessageSnippet(ctx context.Context, tx pg
 	return canSave, nil
 }
 
-func (bot *botInstance) createMessageSnippet(ctx context.Context, tx pgx.Tx, msg *Message) (*models.Snippet, error) {
+func createMessageSnippet(ctx context.Context, tx db.ConnOrTx, msg *Message) (*models.Snippet, error) {
 	// Check for existing snippet, maybe return it
 	type existingSnippetResult struct {
 		Message        models.DiscordMessage         `db:"msg"`
@@ -548,7 +558,7 @@ func (bot *botInstance) createMessageSnippet(ctx context.Context, tx pgx.Tx, msg
 		// A snippet already exists - maybe update its content, then return it
 		if msg.OriginalHasFields("content") && !existing.Snippet.EditedOnWebsite {
 			contentMarkdown := existing.MessageContent.LastContent
-			contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.RealMarkdown)
+			contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
 
 			_, err := tx.Exec(ctx,
 				`
@@ -580,14 +590,14 @@ func (bot *botInstance) createMessageSnippet(ctx context.Context, tx pgx.Tx, msg
 	}
 
 	// Get an asset ID or URL to make a snippet from
-	assetId, url, err := bot.getSnippetAssetOrUrl(ctx, tx, &existing.Message)
-	if assetId == nil && url == "" {
+	assetId, url, err := getSnippetAssetOrUrl(ctx, tx, &existing.Message)
+	if assetId == nil && url == nil {
 		// Nothing to make a snippet from!
 		return nil, nil
 	}
 
 	contentMarkdown := existing.MessageContent.LastContent
-	contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.RealMarkdown)
+	contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
 
 	// TODO(db): Insert
 	isnippet, err := db.QueryOne(ctx, tx, models.Snippet{},
@@ -596,7 +606,7 @@ func (bot *botInstance) createMessageSnippet(ctx context.Context, tx pgx.Tx, msg
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING $columns
 		`,
-		nil,
+		url,
 		existing.Message.SentAt,
 		contentMarkdown,
 		contentHTML,
@@ -626,7 +636,7 @@ func (bot *botInstance) createMessageSnippet(ctx context.Context, tx pgx.Tx, msg
 // do we actually want to reuse those, or should we keep them separate?
 var RESnippetableUrl = regexp.MustCompile(`^https?://(youtu\.be|(www\.)?youtube\.com/watch)`)
 
-func (bot *botInstance) getSnippetAssetOrUrl(ctx context.Context, tx pgx.Tx, msg *models.DiscordMessage) (*uuid.UUID, string, error) {
+func getSnippetAssetOrUrl(ctx context.Context, tx db.ConnOrTx, msg *models.DiscordMessage) (*uuid.UUID, *string, error) {
 	// Check attachments
 	itAttachments, err := db.Query(ctx, tx, models.DiscordMessageAttachment{},
 		`
@@ -637,12 +647,12 @@ func (bot *botInstance) getSnippetAssetOrUrl(ctx context.Context, tx pgx.Tx, msg
 		msg.ID,
 	)
 	if err != nil {
-		return nil, "", oops.New(err, "failed to fetch message attachments")
+		return nil, nil, oops.New(err, "failed to fetch message attachments")
 	}
 	attachments := itAttachments.ToSlice()
 	for _, iattachment := range attachments {
 		attachment := iattachment.(*models.DiscordMessageAttachment)
-		return &attachment.AssetID, "", nil
+		return &attachment.AssetID, nil, nil
 	}
 
 	// Check embeds
@@ -655,23 +665,23 @@ func (bot *botInstance) getSnippetAssetOrUrl(ctx context.Context, tx pgx.Tx, msg
 		msg.ID,
 	)
 	if err != nil {
-		return nil, "", oops.New(err, "failed to fetch discord embeds")
+		return nil, nil, oops.New(err, "failed to fetch discord embeds")
 	}
 	embeds := itEmbeds.ToSlice()
 	for _, iembed := range embeds {
 		embed := iembed.(*models.DiscordMessageEmbed)
 		if embed.VideoID != nil {
-			return embed.VideoID, "", nil
+			return embed.VideoID, nil, nil
 		} else if embed.ImageID != nil {
-			return embed.ImageID, "", nil
+			return embed.ImageID, nil, nil
 		} else if embed.URL != nil {
 			if RESnippetableUrl.MatchString(*embed.URL) {
-				return nil, *embed.URL, nil
+				return nil, embed.URL, nil
 			}
 		}
 	}
 
-	return nil, "", nil
+	return nil, nil, nil
 }
 
 func messageHasLinks(content string) bool {

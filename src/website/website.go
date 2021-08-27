@@ -45,6 +45,7 @@ var WebsiteCommand = &cobra.Command{
 			auth.PeriodicallyDeleteInactiveUsers(backgroundJobContext, conn),
 			perfCollector.Done,
 			discord.RunDiscordBot(backgroundJobContext, conn),
+			discord.RunHistoryWatcher(backgroundJobContext, conn),
 		)
 
 		signals := make(chan os.Signal, 1)

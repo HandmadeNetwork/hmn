@@ -332,7 +332,7 @@ func DeletePost(
 }
 
 func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedContent string, ipString string, editReason string, editorId *int) (versionId int) {
-	parsed := parsing.ParseMarkdown(unparsedContent, parsing.RealMarkdown)
+	parsed := parsing.ParseMarkdown(unparsedContent, parsing.ForumRealMarkdown)
 	ip := net.ParseIP(ipString)
 
 	const previewMaxLength = 100

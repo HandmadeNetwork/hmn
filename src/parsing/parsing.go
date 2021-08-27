@@ -10,19 +10,36 @@ import (
 )
 
 // Used for rendering real-time previews of post content.
-var PreviewMarkdown = goldmark.New(
-	goldmark.WithExtensions(makeGoldmarkExtensions(true)...),
+var ForumPreviewMarkdown = goldmark.New(
+	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
+		Previews: true,
+		Embeds:   true,
+	})...),
 )
 
 // Used for generating the final HTML for a post.
-var RealMarkdown = goldmark.New(
-	goldmark.WithExtensions(makeGoldmarkExtensions(false)...),
+var ForumRealMarkdown = goldmark.New(
+	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
+		Previews: false,
+		Embeds:   true,
+	})...),
 )
 
 // Used for generating plain-text previews of posts.
 var PlaintextMarkdown = goldmark.New(
-	goldmark.WithExtensions(makeGoldmarkExtensions(false)...),
+	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
+		Previews: false,
+		Embeds:   true,
+	})...),
 	goldmark.WithRenderer(plaintextRenderer{}),
+)
+
+// Used for processing Discord messages
+var DiscordMarkdown = goldmark.New(
+	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
+		Previews: false,
+		Embeds:   false,
+	})...),
 )
 
 func ParseMarkdown(source string, md goldmark.Markdown) string {
@@ -34,19 +51,35 @@ func ParseMarkdown(source string, md goldmark.Markdown) string {
 	return buf.String()
 }
 
-func makeGoldmarkExtensions(preview bool) []goldmark.Extender {
-	return []goldmark.Extender{
+type MarkdownOptions struct {
+	Previews bool
+	Embeds   bool
+}
+
+func makeGoldmarkExtensions(opts MarkdownOptions) []goldmark.Extender {
+	var extenders []goldmark.Extender
+	extenders = append(extenders,
 		extension.GFM,
 		highlightExtension,
 		SpoilerExtension{},
-		EmbedExtension{
-			Preview: preview,
-		},
+	)
+
+	if opts.Embeds {
+		extenders = append(extenders,
+			EmbedExtension{
+				Preview: opts.Previews,
+			},
+		)
+	}
+
+	extenders = append(extenders,
 		MathjaxExtension{},
 		BBCodeExtension{
-			Preview: preview,
+			Preview: opts.Previews,
 		},
-	}
+	)
+
+	return extenders
 }
 
 var highlightExtension = highlighting.NewHighlighting(

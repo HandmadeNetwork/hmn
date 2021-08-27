@@ -58,6 +58,7 @@ func typeIsQueryable(t reflect.Type) bool {
 // This interface should match both a direct pgx connection or a pgx transaction.
 type ConnOrTx interface {
 	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
 	Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error)
 }
 
