@@ -127,6 +127,29 @@ func MessageDeleteFromMap(m interface{}) MessageDelete {
 	}
 }
 
+// https://discord.com/developers/docs/topics/gateway#message-delete
+type MessageBulkDelete struct {
+	IDs       []string `json:"ids"`
+	ChannelID string   `json:"channel_id"`
+	GuildID   string   `json:"guild_id"`
+}
+
+func MessageBulkDeleteFromMap(m interface{}) MessageBulkDelete {
+	mmap := m.(map[string]interface{})
+
+	iids := mmap["ids"].([]interface{})
+	ids := make([]string, len(iids))
+	for i, iid := range iids {
+		ids[i] = iid.(string)
+	}
+
+	return MessageBulkDelete{
+		IDs:       ids,
+		ChannelID: mmap["channel_id"].(string),
+		GuildID:   maybeString(mmap, "guild_id"),
+	}
+}
+
 type ChannelType int
 
 // https://discord.com/developers/docs/resources/channel#channel-object-channel-types

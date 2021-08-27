@@ -559,6 +559,15 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 		}
 	case "MESSAGE_DELETE":
 		bot.messageDelete(ctx, MessageDeleteFromMap(msg.Data))
+	case "MESSAGE_BULK_DELETE":
+		bulkDelete := MessageBulkDeleteFromMap(msg.Data)
+		for _, id := range bulkDelete.IDs {
+			bot.messageDelete(ctx, MessageDelete{
+				ID:        id,
+				ChannelID: bulkDelete.ChannelID,
+				GuildID:   bulkDelete.GuildID,
+			})
+		}
 	}
 
 	return nil
