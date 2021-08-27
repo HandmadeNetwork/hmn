@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
 )
@@ -497,6 +498,16 @@ func GetChannelMessages(ctx context.Context, channelID string, in GetChannelMess
 	}
 
 	return msgs, nil
+}
+
+func GetAuthorizeUrl(state string) string {
+	params := make(url.Values)
+	params.Set("response_type", "code")
+	params.Set("client_id", config.Config.Discord.OAuthClientID)
+	params.Set("scope", "identify")
+	params.Set("state", state)
+	params.Set("redirect_uri", hmnurl.BuildDiscordOAuthCallback())
+	return fmt.Sprintf("https://discord.com/api/oauth2/authorize?%s", params.Encode())
 }
 
 func logErrorResponse(ctx context.Context, name string, res *http.Response, msg string) {

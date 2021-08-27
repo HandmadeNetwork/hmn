@@ -194,10 +194,10 @@ func BuildUserProfile(username string) string {
 	return Url("/m/"+url.PathEscape(username), nil)
 }
 
-var RegexUserSettings = regexp.MustCompile(`^/_settings$`)
+var RegexUserSettings = regexp.MustCompile(`^/settings$`)
 
 func BuildUserSettings(section string) string {
-	return ProjectUrlWithFragment("/_settings", nil, "", section)
+	return ProjectUrlWithFragment("/settings", nil, "", section)
 }
 
 /*
@@ -558,12 +558,6 @@ func BuildLibraryResource(projectSlug string, resourceId int) string {
 * Discord OAuth
  */
 
-var RegexDiscordTest = regexp.MustCompile("^/discord$")
-
-func BuildDiscordTest() string {
-	return Url("/discord", nil)
-}
-
 var RegexDiscordOAuthCallback = regexp.MustCompile("^/_discord_callback$")
 
 func BuildDiscordOAuthCallback() string {
@@ -574,6 +568,12 @@ var RegexDiscordUnlink = regexp.MustCompile("^/_discord_unlink$")
 
 func BuildDiscordUnlink() string {
 	return Url("/_discord_unlink", nil)
+}
+
+var RegexDiscordShowcaseBacklog = regexp.MustCompile("^/discord_showcase_backlog$")
+
+func BuildDiscordShowcaseBacklog() string {
+	return Url("/discord_showcase_backlog", nil)
 }
 
 /*

@@ -1,0 +1,201 @@
+{{ template "base.html" . }}
+
+{{ define "extrahead" }}
+	<script src="{{ static "js/tabs.js" }}"></script>
+{{ end }}
+
+{{ define "content" }}
+<form class="tabbed edit-form" action="{{ .SubmitUrl }}" method="post" enctype="multipart/form-data">
+    {{ csrftoken .Session }}
+    <div class="tab" data-name="Account" data-slug="account">
+        <div class="edit-form-row">
+            <div>Username:</div>
+            <div>
+                <div>{{ .User.Username }}</div>
+                <div class="c--dim f7">If you would like to change your username, please <a href="{{ .ContactUrl }}">contact us</a>.</div>
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div class="pt-input-ns">Real name:</div>
+            <div>
+                <input type="text" name="realname" maxlength="255" class="textbox realname" value="{{ .User.Name }}">
+                <div class="c--dim f7">(optional)</div>
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div class="pt-input-ns">Email:</div>
+            <div>
+                <input type="email" name="email" maxlength="254" class="textbox email" value="{{ .Email }}" />
+                <div class="mt1">
+                    <input type="checkbox" name="showemail" id="email" {{ if .ShowEmail }}checked{{ end }} />
+                    <label for="email">Show on your profile</label>
+                </div>
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div>Theme:</div>
+            <div>
+                <input type="checkbox" name="darktheme" id="darktheme" {{ if .User.DarkTheme }}checked{{ end }} />
+                <label for="darktheme">Use dark theme</label>
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div>Avatar:</div>
+            <div>
+                <input type="file" name="avatar" id="avatar">
+                <div class="avatar-preview"><img src="{{ .User.AvatarUrl }}" width="200px">
+                </div>
+                <div class="c--dim f7">(Allowed image types: PNG, JPEG and GIF. Avatars may weigh up to 1MB and will be resized if larger than 400x400 pixels)</div>
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div class="pt-input-ns">Short bio:</div>
+            <div>
+                <textarea class="shortbio" maxlength="140" data-max-chars="140" name="shortbio">
+                    {{- .User.Blurb -}}
+                </textarea>
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div class="pt-input-ns">Forum signature:</div>
+            <div>
+                <textarea class="signature" maxlength="255" data-max-chars="255" name="signature">
+                    {{- .User.Signature -}}
+                </textarea>
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div></div>
+            <div>
+                <input type="submit" value="Save profile" />
+            </div>
+        </div>
+    </div>
+
+    <div class="tab" data-name="Password" data-slug="password">
+        <div class="edit-form-row">
+            <div class="pt-input-ns">Old password:</div>
+            <div>
+                <input id="id_old_password" name="old_password" type="password" />
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div class="pt-input-ns">New password:</div>
+            <div>
+                <input id="id_new_password1" name="new_password1" type="password" />
+                <div class="c--dim f7 mw6">
+                    Your password must be 8 or more characters, and must differ from your username and current password.
+                    Other than that, <a href="http://krebsonsecurity.com/password-dos-and-donts/" class="external" target="_blank">please follow best practices</a>.
+                </div>
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div class="pt-input-ns">New password confirmation:</div>
+            <div>
+                <input id="id_new_password2" name="new_password2" type="password" />
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div></div>
+            <div>
+                <input type="submit" value="Update password" />
+            </div>
+        </div>
+    </div>
+
+    <div class="tab" data-name="Profile Page Options" data-slug="profile">
+        <div class="edit-form-row">
+            <div class="pt-input-ns">Links:</div>
+            <div>
+                <textarea class="links" name="links" id="links" maxlength="2048" data-max-chars="2048">
+                    {{- .LinksText -}}
+                </textarea>
+                <div class="c--dim f7">
+                    <div>Relevant links to put on your profile.</div>
+                    <div>Format: url [Title] (e.g. <code>http://example.com/ Example Site</code>)</div>
+                    <div>(1 per line, 10 max)</div>
+                </div>
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div class="pt-input-ns">Description:</div>
+            <div>
+                <textarea class="longbio" name="longbio" maxlength="1018" data-max-chars="1018">
+                    {{- .User.Bio -}}
+                </textarea>
+                <div class="c--dim f7">
+                    <div>Include some information about yourself, such as your background, interests, occupation, etc.</div>
+                </div>
+            </div>
+        </div>
+        <div class="edit-form-row">
+            <div></div>
+            <div>
+                <input type="submit" value="Save profile" />
+            </div>
+        </div>
+    </div>
+
+    <div class="tab" data-name="Discord" data-slug="discord">
+        <div>
+            {{ if .DiscordUser }}
+                Linked account:
+                <span class="b ph2">{{ .DiscordUser.Username }}#{{ .DiscordUser.Discriminator }}</span>
+                <a href="javascript:void(0)" onclick="unlinkDiscord()">
+                    Unlink account
+                </a>
+            {{ else }}
+                You haven't linked your Discord account.
+                <a href="{{ .DiscordAuthorizeUrl }}">Link account</a>
+            {{ end }}
+        </div>
+        
+        <div class="mv3">
+            <input type="checkbox" name="discord-showcase-auto" id="discord-showcase-auto" {{ if .User.DiscordSaveShowcase }}checked{{ end }} {{ if not .DiscordUser }}disabled{{ end }} />
+            <label for="discord-showcase-auto">Automatically capture everything I post in <span class="b nowrap">#project-showcase</span></label>
+            <div class="f7 c--dimmer">Snippets will only be created while this setting is on.</div>
+        </div>
+
+        <div class="mv3">
+            <input type="checkbox" name="discord-snippet-keep" id="discord-snippet-keep" {{ if not .User.DiscordDeleteSnippetOnMessageDelete }}checked{{ end }} {{ if not .DiscordUser }}disabled{{ end }} />
+            <label for="discord-snippet-keep">Keep captured snippets even if I delete them in Discord</label>
+        </div>
+
+        {{ if .DiscordUser }}
+            <div class="mv3 mw6">
+                <a href="javascript:void(0)" onclick="discordShowcaseBacklog()">
+                    Create snippets from all of my <span class="b nowrap">#project-showcase</span> posts
+                </a>
+                <div class="f7 c--dimmer">
+                    Use this if you have a backlog of content in <span class="b nowrap">#project-showcase</span> that you want on your profile.
+                </div>
+                {{ if gt .DiscordNumUnsavedMessages 0 }}
+                    <div class="f7 c--dimmer">
+                        <span class="b">WARNING:</span> {{ .DiscordNumUnsavedMessages }} of your messages are currently waiting to be processed. If you run this command now, some snippets may still be missing.
+                    </div>
+                {{ end }}
+            </div>
+        {{ end }}
+
+        <input type="submit" value="Save profile" />
+    </div>
+</form>
+
+<form id="discord-unlink-form" class="dn" action="{{ .DiscordUnlinkUrl }}" method="POST">
+    {{ csrftoken .Session }}
+    <script>
+        function unlinkDiscord() {
+            document.querySelector('#discord-unlink-form').submit();
+        }
+    </script>
+</form>
+
+<form id="discord-showcase-backlog" class="dn" action="{{ .DiscordShowcaseBacklogUrl }}" method="POST">
+    {{ csrftoken .Session }}
+    <script>
+        function discordShowcaseBacklog() {
+            document.querySelector('#discord-showcase-backlog').submit();
+        }
+    </script>
+</form>
+{{ end }}

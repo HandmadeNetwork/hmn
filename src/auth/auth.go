@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -150,15 +151,12 @@ func CheckPassword(password string, hashedPassword HashedPassword) (bool, error)
 	}
 }
 
-func HashPassword(password string) (HashedPassword, error) {
+func HashPassword(password string) HashedPassword {
 	// Follows the OWASP recommendations as of March 2021.
 	// https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 
 	salt := make([]byte, saltLength)
-	_, err := io.ReadFull(rand.Reader, salt)
-	if err != nil {
-		return HashedPassword{}, oops.New(err, "failed to generate salt")
-	}
+	io.ReadFull(rand.Reader, salt)
 	saltEnc := base64.StdEncoding.EncodeToString(salt)
 
 	cfg := Argon2idConfig{
@@ -176,12 +174,12 @@ func HashPassword(password string) (HashedPassword, error) {
 		AlgoConfig: cfg.String(),
 		Salt:       saltEnc,
 		Hash:       keyEnc,
-	}, nil
+	}
 }
 
 var ErrUserDoesNotExist = errors.New("user does not exist")
 
-func UpdatePassword(ctx context.Context, conn *pgxpool.Pool, username string, hp HashedPassword) error {
+func UpdatePassword(ctx context.Context, conn db.ConnOrTx, username string, hp HashedPassword) error {
 	tag, err := conn.Exec(ctx, "UPDATE auth_user SET password = $1 WHERE username = $2", hp.String(), username)
 	if err != nil {
 		return oops.New(err, "failed to update password")

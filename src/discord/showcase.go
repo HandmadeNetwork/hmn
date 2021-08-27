@@ -47,7 +47,7 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) er
 	defer tx.Rollback(ctx)
 
 	// save the message, maybe save its contents, and maybe make a snippet too
-	newMsg, err := saveMessageAndContents(ctx, tx, msg)
+	newMsg, err := SaveMessageAndContents(ctx, tx, msg)
 	if errors.Is(err, errNotEnoughInfo) {
 		logging.ExtractLogger(ctx).Warn().
 			Interface("msg", msg).
@@ -56,8 +56,8 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) er
 	} else if err != nil {
 		return err
 	}
-	if doSnippet, err := allowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
-		_, err := createMessageSnippet(ctx, tx, msg)
+	if doSnippet, err := AllowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
+		_, err := CreateMessageSnippet(ctx, tx, msg.ID)
 		if err != nil {
 			return oops.New(err, "failed to create snippet in gateway")
 		}
@@ -120,7 +120,7 @@ the database.
 
 This does not create snippets or do anything besides save the message itself.
 */
-func saveMessage(
+func SaveMessage(
 	ctx context.Context,
 	tx db.ConnOrTx,
 	msg *Message,
@@ -194,12 +194,12 @@ snippets.
 
 Idempotent; can be called any time whether the message exists or not.
 */
-func saveMessageAndContents(
+func SaveMessageAndContents(
 	ctx context.Context,
 	tx db.ConnOrTx,
 	msg *Message,
 ) (*models.DiscordMessage, error) {
-	newMsg, err := saveMessage(ctx, tx, msg)
+	newMsg, err := SaveMessage(ctx, tx, msg)
 	if err != nil {
 		return nil, err
 	}
@@ -507,7 +507,11 @@ func saveEmbed(
 	return iDiscordEmbed.(*models.DiscordMessageEmbed), nil
 }
 
-func allowedToCreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, discordUserId string) (bool, error) {
+/*
+Checks settings and permissions to decide whether we are allowed to create
+snippets for a user.
+*/
+func AllowedToCreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, discordUserId string) (bool, error) {
 	canSave, err := db.QueryBool(ctx, tx,
 		`
 		SELECT u.discord_save_showcase
@@ -528,7 +532,16 @@ func allowedToCreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, discordU
 	return canSave, nil
 }
 
-func createMessageSnippet(ctx context.Context, tx db.ConnOrTx, msg *Message) (*models.Snippet, error) {
+/*
+Attempts to create a snippet from a Discord message. If a snippet already
+exists, it will be returned and no new snippets will be created.
+
+It uses the content saved in the database to do this. If we do not have
+any content saved, nothing will happen.
+
+Does not check user preferences around snippets.
+*/
+func CreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, msgID string) (*models.Snippet, error) {
 	// Check for existing snippet, maybe return it
 	type existingSnippetResult struct {
 		Message        models.DiscordMessage         `db:"msg"`
@@ -547,16 +560,16 @@ func createMessageSnippet(ctx context.Context, tx db.ConnOrTx, msg *Message) (*m
 		WHERE
 			msg.id = $1
 		`,
-		msg.ID,
+		msgID,
 	)
 	if err != nil {
-		return nil, oops.New(err, "failed to check for existing snippet")
+		return nil, oops.New(err, "failed to check for existing snippet for message %s", msgID)
 	}
 	existing := iexisting.(*existingSnippetResult)
 
 	if existing.Snippet != nil {
 		// A snippet already exists - maybe update its content, then return it
-		if msg.OriginalHasFields("content") && !existing.Snippet.EditedOnWebsite {
+		if existing.MessageContent != nil && !existing.Snippet.EditedOnWebsite {
 			contentMarkdown := existing.MessageContent.LastContent
 			contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
 
@@ -611,7 +624,7 @@ func createMessageSnippet(ctx context.Context, tx db.ConnOrTx, msg *Message) (*m
 		contentMarkdown,
 		contentHTML,
 		assetId,
-		msg.ID,
+		msgID,
 		existing.DiscordUser.HMNUserId,
 	)
 	if err != nil {
@@ -623,7 +636,7 @@ func createMessageSnippet(ctx context.Context, tx db.ConnOrTx, msg *Message) (*m
 		SET snippet_created = TRUE
 		WHERE id = $1
 		`,
-		msg.ID,
+		msgID,
 	)
 	if err != nil {
 		return nil, oops.New(err, "failed to mark message as having snippet")

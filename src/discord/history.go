@@ -68,6 +68,7 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 		WHERE
 			c.last_content IS NULL
 			AND msg.guild_id = $1
+		ORDER BY msg.sent_at DESC
 		`,
 		config.Config.Discord.GuildID,
 	)
@@ -186,13 +187,13 @@ func handleHistoryMessage(ctx context.Context, dbConn *pgxpool.Pool, msg *Messag
 		break
 	}
 
-	newMsg, err := saveMessageAndContents(ctx, tx, msg)
+	newMsg, err := SaveMessageAndContents(ctx, tx, msg)
 	if err != nil {
 		return err
 	}
 	if createSnippets {
-		if doSnippet, err := allowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
-			_, err := createMessageSnippet(ctx, tx, msg)
+		if doSnippet, err := AllowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
+			_, err := CreateMessageSnippet(ctx, tx, msg.ID)
 			if err != nil {
 				return err
 			}

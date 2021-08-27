@@ -147,6 +147,7 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 		IsStaff:  u.IsStaff,
 
 		Name:       u.BestName(),
+		Bio:        u.Bio,
 		Blurb:      u.Blurb,
 		Signature:  u.Signature,
 		DateJoined: u.DateJoined,
@@ -162,60 +163,85 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 	}
 }
 
-var RegexServiceYoutube = regexp.MustCompile(`youtube\.com/(c/)?(?P<userdata>[\w/-]+)$`)
-var RegexServiceTwitter = regexp.MustCompile(`twitter\.com/(?P<userdata>\w+)$`)
-var RegexServiceGithub = regexp.MustCompile(`github\.com/(?P<userdata>[\w/-]+)$`)
-var RegexServiceTwitch = regexp.MustCompile(`twitch\.tv/(?P<userdata>[\w/-]+)$`)
-var RegexServiceHitbox = regexp.MustCompile(`hitbox\.tv/(?P<userdata>[\w/-]+)$`)
-var RegexServicePatreon = regexp.MustCompile(`patreon\.com/(?P<userdata>[\w/-]+)$`)
-var RegexServiceSoundcloud = regexp.MustCompile(`soundcloud\.com/(?P<userdata>[\w/-]+)$`)
-var RegexServiceItch = regexp.MustCompile(`(?P<userdata>[\w/-]+)\.itch\.io/?$`)
-
-var LinkServiceMap = map[string]*regexp.Regexp{
-	"youtube":    RegexServiceYoutube,
-	"twitter":    RegexServiceTwitter,
-	"github":     RegexServiceGithub,
-	"twitch":     RegexServiceTwitch,
-	"hitbox":     RegexServiceHitbox,
-	"patreon":    RegexServicePatreon,
-	"soundcloud": RegexServiceSoundcloud,
-	"itch":       RegexServiceItch,
+// An online site/service for which we recognize the link
+type LinkService struct {
+	Name     string
+	IconName string
+	Regex    *regexp.Regexp
 }
 
-func ParseKnownServicesForLink(link *models.Link) (serviceName string, userData string) {
-	for name, re := range LinkServiceMap {
-		match := re.FindStringSubmatch(link.Value)
+var LinkServices = []LinkService{
+	{
+		Name:     "YouTube",
+		IconName: "youtube",
+		Regex:    regexp.MustCompile(`youtube\.com/(c/)?(?P<userdata>[\w/-]+)$`),
+	},
+	{
+		Name:     "Twitter",
+		IconName: "twitter",
+		Regex:    regexp.MustCompile(`twitter\.com/(?P<userdata>\w+)$`),
+	},
+	{
+		Name:     "GitHub",
+		IconName: "github",
+		Regex:    regexp.MustCompile(`github\.com/(?P<userdata>[\w/-]+)$`),
+	},
+	{
+		Name:     "Twitch",
+		IconName: "twitch",
+		Regex:    regexp.MustCompile(`twitch\.tv/(?P<userdata>[\w/-]+)$`),
+	},
+	{
+		Name:     "Hitbox",
+		IconName: "hitbox",
+		Regex:    regexp.MustCompile(`hitbox\.tv/(?P<userdata>[\w/-]+)$`),
+	},
+	{
+		Name:     "Patreon",
+		IconName: "patreon",
+		Regex:    regexp.MustCompile(`patreon\.com/(?P<userdata>[\w/-]+)$`),
+	},
+	{
+		Name:     "SoundCloud",
+		IconName: "soundcloud",
+		Regex:    regexp.MustCompile(`soundcloud\.com/(?P<userdata>[\w/-]+)$`),
+	},
+	{
+		Name:     "itch.io",
+		IconName: "itch",
+		Regex:    regexp.MustCompile(`(?P<userdata>[\w/-]+)\.itch\.io/?$`),
+	},
+}
+
+func ParseKnownServicesForLink(link *models.Link) (service LinkService, userData string) {
+	for _, svc := range LinkServices {
+		match := svc.Regex.FindStringSubmatch(link.URL)
 		if match != nil {
-			serviceName = name
-			userData = match[re.SubexpIndex("userdata")]
-			return
+			return svc, match[svc.Regex.SubexpIndex("userdata")]
 		}
 	}
-	return "", ""
+	return LinkService{}, ""
 }
 
 func LinkToTemplate(link *models.Link) Link {
-	name := ""
-	/*
-		// NOTE(asaf): While Name and Key are separate things, Name is almost always the same as Key in the db, which looks weird.
-		//             So we're just going to ignore Name until we decide it's worth reusing.
-		if link.Name != nil {
-			name = *link.Name
-		}
-	*/
-	serviceName, serviceUserData := ParseKnownServicesForLink(link)
-	if serviceUserData != "" {
-		name = serviceUserData
+	tlink := Link{
+		Name:     link.Name,
+		Url:      link.URL,
+		LinkText: link.URL,
 	}
-	if name == "" {
-		name = link.Value
+
+	service, userData := ParseKnownServicesForLink(link)
+	if tlink.Name == "" && service.Name != "" {
+		tlink.Name = service.Name
 	}
-	return Link{
-		Key:  link.Key,
-		Name: name,
-		Icon: serviceName,
-		Url:  link.Value,
+	if service.IconName != "" {
+		tlink.Icon = service.IconName
 	}
+	if userData != "" {
+		tlink.LinkText = userData
+	}
+
+	return tlink
 }
 
 func TimelineItemsToJSON(items []TimelineItem) string {
