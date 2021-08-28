@@ -9,4 +9,4 @@ fi
 ./update_cinera.sh
 ./update_annotations.sh
 
-[ -d "data" ] || mkdir data
+mkdir -p data
