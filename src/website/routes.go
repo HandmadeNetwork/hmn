@@ -38,6 +38,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 				defer logPerf()
 
 				defer LogContextErrors(c, &res)
+				defer MiddlewarePanicCatcher(c, &res)
 
 				return h(c)
 			}
@@ -53,6 +54,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 			defer logPerf()
 
 			defer LogContextErrors(c, &res)
+			defer MiddlewarePanicCatcher(c, &res)
 
 			defer storeNoticesInCookie(c, &res)
 
@@ -74,6 +76,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 			defer logPerf()
 
 			defer LogContextErrors(c, &res)
+			defer MiddlewarePanicCatcher(c, &res)
 
 			defer storeNoticesInCookie(c, &res)
 
@@ -284,6 +287,8 @@ func getBaseData(c *RequestContext) templates.BaseData {
 		Session: templateSession,
 		Notices: notices,
 
+		ReportIssueMailto: "team@handmade.network",
+
 		OpenGraphItems: buildDefaultOpenGraphItems(c.CurrentProject),
 
 		IsProjectPage: !c.CurrentProject.IsHMN(),
@@ -355,7 +360,7 @@ func FetchProjectBySlug(ctx context.Context, conn *pgxpool.Pool, slug string) (*
 func ProjectCSS(c *RequestContext) ResponseData {
 	color := c.URL().Query().Get("color")
 	if color == "" {
-		return ErrorResponse(http.StatusBadRequest, NewSafeError(nil, "You must provide a 'color' parameter.\n"))
+		return c.ErrorResponse(http.StatusBadRequest, NewSafeError(nil, "You must provide a 'color' parameter.\n"))
 	}
 
 	baseData := getBaseData(c)
@@ -386,7 +391,7 @@ func ProjectCSS(c *RequestContext) ResponseData {
 	res.Header().Add("Content-Type", "text/css")
 	err := res.WriteTemplate("project.css", templateData, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to generate project CSS"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to generate project CSS"))
 	}
 
 	return res
@@ -423,7 +428,7 @@ func RejectRequest(c *RequestContext, reason string) ResponseData {
 		RejectReason: reason,
 	}, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to render reject template"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to render reject template"))
 	}
 	return res
 }
@@ -439,7 +444,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 
 		dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, slug)
 		if err != nil {
-			return false, ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
+			return false, c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
 		}
 		if dbProject == nil {
 			return false, c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
@@ -453,7 +458,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		if err == nil {
 			user, session, err := getCurrentUserAndSession(c, sessionCookie.Value)
 			if err != nil {
-				return false, ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user"))
+				return false, c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user"))
 			}
 
 			c.CurrentUser = user
@@ -536,6 +541,19 @@ func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (aft
 func LogContextErrors(c *RequestContext, res *ResponseData) {
 	for _, err := range res.Errors {
 		c.Logger.Error().Timestamp().Stack().Str("Requested", c.FullUrl()).Err(err).Msg("error occurred during request")
+	}
+}
+
+func MiddlewarePanicCatcher(c *RequestContext, res *ResponseData) {
+	if recovered := recover(); recovered != nil {
+		maybeError, ok := recovered.(*error)
+		var err error
+		if ok {
+			err = *maybeError
+		} else {
+			err = oops.New(nil, fmt.Sprintf("Recovered from panic with value: %v", recovered))
+		}
+		*res = c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 }
 

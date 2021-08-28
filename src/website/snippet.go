@@ -53,7 +53,7 @@ func Snippet(c *RequestContext) ResponseData {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			return FourOhFour(c)
 		} else {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippet"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippet"))
 		}
 	}
 	c.Perf.EndBlock()
@@ -111,7 +111,7 @@ func Snippet(c *RequestContext) ResponseData {
 		Snippet:  snippet,
 	}, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render snippet template"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render snippet template"))
 	}
 	return res
 }

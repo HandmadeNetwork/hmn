@@ -53,7 +53,7 @@ func Login(c *RequestContext) ResponseData {
 
 	form, err := c.GetFormValues()
 	if err != nil {
-		return ErrorResponse(http.StatusBadRequest, NewSafeError(err, "request must contain form data"))
+		return c.ErrorResponse(http.StatusBadRequest, NewSafeError(err, "request must contain form data"))
 	}
 
 	redirect := form.Get("redirect")
@@ -84,7 +84,7 @@ func Login(c *RequestContext) ResponseData {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			return showLoginWithFailure(c, redirect)
 		} else {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
 		}
 	}
 	user := userRow.(*models.User)
@@ -92,7 +92,7 @@ func Login(c *RequestContext) ResponseData {
 	success, err := tryLogin(c, user, password)
 
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	if !success {
@@ -106,7 +106,7 @@ func Login(c *RequestContext) ResponseData {
 	res := c.Redirect(redirect, http.StatusSeeOther)
 	err = loginUser(c, user, &res)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 	return res
 }
@@ -179,7 +179,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			userAlreadyExists = false
 		} else {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
 		}
 	}
 
@@ -200,7 +200,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			emailAlreadyExists = false
 		} else {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
 		}
 	}
 	c.Perf.EndBlock()
@@ -215,7 +215,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	c.Perf.StartBlock("SQL", "Create user and one time token")
 	tx, err := c.Conn.Begin(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start db transaction"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start db transaction"))
 	}
 	defer tx.Rollback(c.Context())
 
@@ -231,7 +231,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		username, emailAddress, hashed.String(), now, displayName, c.GetIP(),
 	).Scan(&newUserId)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to store user"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to store user"))
 	}
 
 	ott := models.GenerateToken()
@@ -247,7 +247,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		newUserId,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to store one-time token"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to store one-time token"))
 	}
 	c.Perf.EndBlock()
 
@@ -257,13 +257,13 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	}
 	err = email.SendRegistrationEmail(emailAddress, mailName, username, ott, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send registration email"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send registration email"))
 	}
 
 	c.Perf.StartBlock("SQL", "Commit user")
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit user to the db"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit user to the db"))
 	}
 	c.Perf.EndBlock()
 	return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
@@ -349,7 +349,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 	success, err := tryLogin(c, validationResult.User, password)
 
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	} else if !success {
 		var res ResponseData
 		baseData := getBaseData(c)
@@ -366,7 +366,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 	c.Perf.StartBlock("SQL", "Updating user status and deleting token")
 	tx, err := c.Conn.Begin(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start db transaction"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start db transaction"))
 	}
 	defer tx.Rollback(c.Context())
 
@@ -380,7 +380,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		validationResult.User.ID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user status"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user status"))
 	}
 
 	_, err = tx.Exec(c.Context(),
@@ -390,12 +390,12 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		validationResult.OneTimeToken.ID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete one time token"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete one time token"))
 	}
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit transaction"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit transaction"))
 	}
 	c.Perf.EndBlock()
 
@@ -403,7 +403,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 	res.AddFutureNotice("success", "You've completed your registration successfully!")
 	err = loginUser(c, validationResult.User, &res)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 	return res
 }
@@ -464,7 +464,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 	if err != nil {
 		if !errors.Is(err, db.ErrNoMatchingRows) {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
 		}
 	}
 	if userRow != nil {
@@ -487,7 +487,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 		c.Perf.EndBlock()
 		if err != nil {
 			if !errors.Is(err, db.ErrNoMatchingRows) {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch onetimetoken for user"))
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch onetimetoken for user"))
 			}
 		}
 		var resetToken *models.OneTimeToken
@@ -508,7 +508,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 				)
 				c.Perf.EndBlock()
 				if err != nil {
-					return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete onetimetoken"))
+					return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete onetimetoken"))
 				}
 				resetToken = nil
 			}
@@ -530,13 +530,13 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 			)
 			c.Perf.EndBlock()
 			if err != nil {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create onetimetoken"))
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create onetimetoken"))
 			}
 			resetToken = tokenRow.(*models.OneTimeToken)
 
 			err = email.SendPasswordReset(user.Email, user.BestName(), user.Username, resetToken.Content, resetToken.Expires, c.Perf)
 			if err != nil {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send email"))
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send email"))
 			}
 		}
 	}
@@ -624,7 +624,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 	c.Perf.StartBlock("SQL", "Update user's password and delete reset token")
 	tx, err := c.Conn.Begin(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start db transaction"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start db transaction"))
 	}
 	defer tx.Rollback(c.Context())
 
@@ -638,7 +638,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 		validationResult.User.ID,
 	)
 	if err != nil || tag.RowsAffected() == 0 {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user's password"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user's password"))
 	}
 
 	if validationResult.User.Status == models.UserStatusInactive {
@@ -652,7 +652,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 			validationResult.User.ID,
 		)
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user's status"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user's status"))
 		}
 	}
 
@@ -664,12 +664,12 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 		validationResult.OneTimeToken.ID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete onetimetoken"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete onetimetoken"))
 	}
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit password reset to the db"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit password reset to the db"))
 	}
 	c.Perf.EndBlock()
 
@@ -677,7 +677,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 	res.AddFutureNotice("success", "Password changed successfully.")
 	err = loginUser(c, validationResult.User, &res)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 	return res
 }

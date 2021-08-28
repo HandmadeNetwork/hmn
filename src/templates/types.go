@@ -6,14 +6,15 @@ import (
 )
 
 type BaseData struct {
-	Title           string
-	CanonicalLink   string
-	OpenGraphItems  []OpenGraphItem
-	BackgroundImage BackgroundImage
-	Theme           string
-	BodyClasses     []string
-	Breadcrumbs     []Breadcrumb
-	Notices         []Notice
+	Title             string
+	CanonicalLink     string
+	OpenGraphItems    []OpenGraphItem
+	BackgroundImage   BackgroundImage
+	Theme             string
+	BodyClasses       []string
+	Breadcrumbs       []Breadcrumb
+	Notices           []Notice
+	ReportIssueMailto string
 
 	CurrentUrl    string
 	LoginPageUrl  string

@@ -246,6 +246,15 @@ func (c *RequestContext) Redirect(dest string, code int) ResponseData {
 	return res
 }
 
+func (c *RequestContext) ErrorResponse(status int, errs ...error) ResponseData {
+	res := ResponseData{
+		StatusCode: status,
+		Errors:     errs,
+	}
+	res.MustWriteTemplate("error.html", getBaseData(c), c.Perf)
+	return res
+}
+
 type ResponseData struct {
 	StatusCode    int
 	Body          *bytes.Buffer
@@ -304,13 +313,6 @@ func (rd *ResponseData) MustWriteTemplate(name string, data interface{}, rp *per
 	}
 }
 
-func ErrorResponse(status int, errs ...error) ResponseData {
-	return ResponseData{
-		StatusCode: status,
-		Errors:     errs,
-	}
-}
-
 func doRequest(rw http.ResponseWriter, c *RequestContext, h Handler) {
 	defer func() {
 		/*
@@ -320,6 +322,7 @@ func doRequest(rw http.ResponseWriter, c *RequestContext, h Handler) {
 		if recovered := recover(); recovered != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			logging.LogPanicValue(c.Logger, recovered, "request panicked and was not handled")
+			rw.Write([]byte("There was a problem handling your request.\nPlease notify an admin at team@handmade.network"))
 		}
 	}()
 

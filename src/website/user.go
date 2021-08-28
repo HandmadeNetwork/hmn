@@ -59,7 +59,7 @@ func UserProfile(c *RequestContext) ResponseData {
 			if errors.Is(err, db.ErrNoMatchingRows) {
 				return FourOhFour(c)
 			} else {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user: %s", username))
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user: %s", username))
 			}
 		}
 		profileUser = userResult.(*models.User)
@@ -80,7 +80,7 @@ func UserProfile(c *RequestContext) ResponseData {
 		profileUser.ID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch links for user: %s", username))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch links for user: %s", username))
 	}
 	userLinksSlice := userLinkQueryResult.ToSlice()
 	profileUserLinks := make([]templates.Link, 0, len(userLinksSlice))
@@ -108,7 +108,7 @@ func UserProfile(c *RequestContext) ResponseData {
 		models.VisibleProjectLifecycles,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch projects for user: %s", username))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch projects for user: %s", username))
 	}
 	projectQuerySlice := projectQueryResult.ToSlice()
 	templateProjects := make([]templates.Project, 0, len(projectQuerySlice))
@@ -139,7 +139,7 @@ func UserProfile(c *RequestContext) ResponseData {
 		models.VisibleProjectLifecycles,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch posts for user: %s", username))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch posts for user: %s", username))
 	}
 	postQuerySlice := postQueryResult.ToSlice()
 	c.Perf.EndBlock()
@@ -163,7 +163,7 @@ func UserProfile(c *RequestContext) ResponseData {
 		profileUser.ID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for user: %s", username))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for user: %s", username))
 	}
 	snippetQuerySlice := snippetQueryResult.ToSlice()
 	c.Perf.EndBlock()
@@ -272,7 +272,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		c.CurrentUser.ID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user links"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user links"))
 	}
 	links := ilinks.ToSlice()
 
@@ -295,7 +295,7 @@ func UserSettings(c *RequestContext) ResponseData {
 	if errors.Is(err, db.ErrNoMatchingRows) {
 		// this is fine, but don't fetch any more messages
 	} else if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user's Discord account"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user's Discord account"))
 	} else {
 		duser := iduser.(*models.DiscordUser)
 		tmp := templates.DiscordUserToTemplate(duser)
@@ -316,7 +316,7 @@ func UserSettings(c *RequestContext) ResponseData {
 			config.Config.Discord.ShowcaseChannelID,
 		)
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check for unsaved user messages"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check for unsaved user messages"))
 		}
 	}
 
@@ -402,7 +402,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 		discordDeleteSnippetOnMessageDelete,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user"))
 	}
 
 	// Process links
@@ -460,7 +460,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 		if errors.As(err, &rejectErr) {
 			return RejectRequest(c, rejectErr.Error())
 		} else {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save new avatar"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save new avatar"))
 		}
 	}
 
@@ -468,7 +468,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save user settings"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save user settings"))
 	}
 
 	return c.Redirect(hmnurl.BuildUserSettings(""), http.StatusSeeOther)
@@ -489,7 +489,7 @@ func updatePassword(c *RequestContext, tx pgx.Tx, old, new, confirm string) *Res
 
 	ok, err := auth.CheckPassword(old, oldHashedPassword)
 	if err != nil {
-		res := ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check user's password"))
+		res := c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check user's password"))
 		return &res
 	}
 
@@ -501,7 +501,7 @@ func updatePassword(c *RequestContext, tx pgx.Tx, old, new, confirm string) *Res
 	newHashedPassword := auth.HashPassword(new)
 	err = auth.UpdatePassword(c.Context(), tx, c.CurrentUser.Username, newHashedPassword)
 	if err != nil {
-		res := ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update password"))
+		res := c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update password"))
 		return &res
 	}
 

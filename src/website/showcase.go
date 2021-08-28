@@ -36,7 +36,7 @@ func Showcase(c *RequestContext) ResponseData {
 		`,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
 	}
 	snippetQuerySlice := snippetQueryResult.ToSlice()
 	showcaseItems := make([]templates.TimelineItem, 0, len(snippetQuerySlice))

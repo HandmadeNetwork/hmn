@@ -32,7 +32,7 @@ type PodcastIndexData struct {
 func PodcastIndex(c *RequestContext) ResponseData {
 	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, true, "")
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	if podcastResult.Podcast == nil {
@@ -41,7 +41,7 @@ func PodcastIndex(c *RequestContext) ResponseData {
 
 	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	baseData := getBaseData(c)
@@ -63,7 +63,7 @@ func PodcastIndex(c *RequestContext) ResponseData {
 	var res ResponseData
 	err = res.WriteTemplate("podcast_index.html", podcastIndexData, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast index page"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast index page"))
 	}
 	return res
 }
@@ -76,12 +76,12 @@ type PodcastEditData struct {
 func PodcastEdit(c *RequestContext) ResponseData {
 	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, false, "")
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	if podcastResult.Podcast == nil || !canEdit {
@@ -99,7 +99,7 @@ func PodcastEdit(c *RequestContext) ResponseData {
 	var res ResponseData
 	err = res.WriteTemplate("podcast_edit.html", podcastEditData, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast edit page"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast edit page"))
 	}
 	return res
 }
@@ -107,12 +107,12 @@ func PodcastEdit(c *RequestContext) ResponseData {
 func PodcastEditSubmit(c *RequestContext) ResponseData {
 	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, false, "")
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	if podcastResult.Podcast == nil || !canEdit {
@@ -128,7 +128,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 	if err != nil {
 		// NOTE(asaf): The error for exceeding the max filesize doesn't have a special type, so we can't easily detect it here.
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to parse form"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to parse form"))
 	}
 
 	title := c.Req.Form.Get("title")
@@ -143,7 +143,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	c.Perf.StartBlock("SQL", "Updating podcast")
 	tx, err := c.Conn.Begin(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to start db transaction"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to start db transaction"))
 	}
 	defer tx.Rollback(c.Context())
 
@@ -153,7 +153,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 		if errors.As(err, &rejectErr) {
 			return RejectRequest(c, rejectErr.Error())
 		} else {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to save podcast image"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to save podcast image"))
 		}
 	}
 
@@ -173,7 +173,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 			podcastResult.Podcast.ID,
 		)
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update podcast"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update podcast"))
 		}
 	} else {
 		_, err = tx.Exec(c.Context(),
@@ -192,7 +192,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	err = tx.Commit(c.Context())
 	c.Perf.EndBlock()
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to commit db transaction"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to commit db transaction"))
 	}
 
 	res := c.Redirect(hmnurl.BuildPodcastEdit(c.CurrentProject.Slug), http.StatusSeeOther)
@@ -212,7 +212,7 @@ func PodcastEpisode(c *RequestContext) ResponseData {
 
 	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, true, episodeGUIDStr)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	if podcastResult.Podcast == nil || len(podcastResult.Episodes) == 0 {
@@ -246,7 +246,7 @@ func PodcastEpisode(c *RequestContext) ResponseData {
 	var res ResponseData
 	err = res.WriteTemplate("podcast_episode.html", podcastEpisodeData, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast episode page"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast episode page"))
 	}
 	return res
 }
@@ -264,12 +264,12 @@ type PodcastEpisodeEditData struct {
 func PodcastEpisodeNew(c *RequestContext) ResponseData {
 	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, false, "")
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	if podcastResult.Podcast == nil || !canEdit {
@@ -278,7 +278,7 @@ func PodcastEpisodeNew(c *RequestContext) ResponseData {
 
 	episodeFiles, err := GetEpisodeFiles(c.CurrentProject.Slug)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch podcast episode file list"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch podcast episode file list"))
 	}
 
 	podcast := templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, "")
@@ -291,7 +291,7 @@ func PodcastEpisodeNew(c *RequestContext) ResponseData {
 		EpisodeFiles: episodeFiles,
 	}, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast episode new page"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast episode new page"))
 	}
 	return res
 }
@@ -304,12 +304,12 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 
 	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, true, episodeGUIDStr)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	if podcastResult.Podcast == nil || len(podcastResult.Episodes) == 0 || !canEdit {
@@ -318,7 +318,7 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 
 	episodeFiles, err := GetEpisodeFiles(c.CurrentProject.Slug)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch podcast episode file list"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch podcast episode file list"))
 	}
 	episode := podcastResult.Episodes[0]
 
@@ -339,7 +339,7 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 	var res ResponseData
 	err = res.WriteTemplate("podcast_episode_edit.html", podcastEpisodeEditData, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast episode edit page"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast episode edit page"))
 	}
 	return res
 }
@@ -350,12 +350,12 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	isEdit := found && episodeGUIDStr != ""
 	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, isEdit, episodeGUIDStr)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	if podcastResult.Podcast == nil || (isEdit && len(podcastResult.Episodes) == 0) || !canEdit {
@@ -366,7 +366,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	episodeFiles, err := GetEpisodeFiles(c.CurrentProject.Slug)
 	c.Perf.EndBlock()
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch podcast episode file list"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch podcast episode file list"))
 	}
 
 	c.Req.ParseForm()
@@ -399,7 +399,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	c.Perf.StartBlock("MP3", "Parsing mp3 file for duration")
 	file, err := os.Open(fmt.Sprintf("public/media/podcast/%s/%s", c.CurrentProject.Slug, episodeFile))
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to open podcast file"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to open podcast file"))
 	}
 
 	mp3Decoder := mp3.NewDecoder(file)
@@ -421,7 +421,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	file.Close()
 	c.Perf.EndBlock()
 	if decodingError != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to decode mp3 file"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to decode mp3 file"))
 	}
 
 	c.Perf.StartBlock("MARKDOWN", "Parsing description")
@@ -455,7 +455,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		)
 		c.Perf.EndBlock()
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update podcast episode"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update podcast episode"))
 		}
 	} else {
 		guid := uuid.New()
@@ -480,7 +480,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		)
 		c.Perf.EndBlock()
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to create podcast episode"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to create podcast episode"))
 		}
 	}
 
@@ -504,7 +504,7 @@ type PodcastRSSData struct {
 func PodcastRSS(c *RequestContext) ResponseData {
 	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, true, "")
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	if podcastResult.Podcast == nil {
@@ -529,7 +529,7 @@ func PodcastRSS(c *RequestContext) ResponseData {
 	var res ResponseData
 	err = res.WriteTemplate("podcast.xml", podcastRSSData, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast RSS"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render podcast RSS"))
 	}
 	return res
 }

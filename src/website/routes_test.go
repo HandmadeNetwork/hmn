@@ -35,7 +35,7 @@ func TestLogContextErrors(t *testing.T) {
 	}
 
 	routes.GET(regexp.MustCompile("^/test$"), func(c *RequestContext) ResponseData {
-		return ErrorResponse(http.StatusInternalServerError, err1, err2)
+		return c.ErrorResponse(http.StatusInternalServerError, err1, err2)
 	})
 
 	srv := httptest.NewServer(router)

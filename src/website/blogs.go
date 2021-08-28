@@ -50,7 +50,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 	)
 	c.Perf.EndBlock()
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch total number of blog posts"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch total number of blog posts"))
 	}
 
 	numPages := NumPages(numPosts, postsPerPage)
@@ -88,7 +88,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 	)
 	c.Perf.EndBlock()
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
 	}
 
 	var entries []blogIndexEntry
@@ -112,7 +112,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		isProjectOwner := false
 		owners, err := FetchProjectOwners(c, c.CurrentProject.ID)
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project owners"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project owners"))
 		}
 		for _, owner := range owners {
 			if owner.ID == c.CurrentUser.ID {
@@ -232,7 +232,7 @@ func BlogNewThreadSubmit(c *RequestContext) ResponseData {
 
 	err = c.Req.ParseForm()
 	if err != nil {
-		return ErrorResponse(http.StatusBadRequest, oops.New(err, "the form data was invalid"))
+		return c.ErrorResponse(http.StatusBadRequest, oops.New(err, "the form data was invalid"))
 	}
 	title := c.Req.Form.Get("title")
 	unparsed := c.Req.Form.Get("body")
@@ -266,7 +266,7 @@ func BlogNewThreadSubmit(c *RequestContext) ResponseData {
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new blog post"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new blog post"))
 	}
 
 	newThreadUrl := hmnurl.BuildBlogThread(c.CurrentProject.Slug, threadId, title)
@@ -339,7 +339,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit blog post"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit blog post"))
 	}
 
 	postUrl := hmnurl.BuildBlogThreadWithPostHash(c.CurrentProject.Slug, cd.ThreadID, postData.Thread.Title, cd.PostID)
@@ -385,7 +385,7 @@ func BlogPostReplySubmit(c *RequestContext) ResponseData {
 
 	err = c.Req.ParseForm()
 	if err != nil {
-		return ErrorResponse(http.StatusBadRequest, oops.New(nil, "the form data was invalid"))
+		return c.ErrorResponse(http.StatusBadRequest, oops.New(nil, "the form data was invalid"))
 	}
 	unparsed := c.Req.Form.Get("body")
 	if unparsed == "" {
@@ -396,7 +396,7 @@ func BlogPostReplySubmit(c *RequestContext) ResponseData {
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to blog post"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to blog post"))
 	}
 
 	newPostUrl := hmnurl.BuildBlogPost(c.CurrentProject.Slug, cd.ThreadID, newPostId)
@@ -462,7 +462,7 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete post"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete post"))
 	}
 
 	if threadDeleted {

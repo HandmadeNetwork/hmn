@@ -71,7 +71,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		models.VisibleProjectLifecycles,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch projects"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch projects"))
 	}
 	allProjectsSlice := allProjects.ToSlice()
 	c.Perf.EndBlock()
@@ -112,7 +112,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 			c.CurrentUser.ID,
 		)
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
 		}
 		for _, project := range userProjectsResult.ToSlice() {
 			p := project.(*UserProjectQuery).Project
@@ -244,7 +244,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 				if errors.Is(err, db.ErrNoMatchingRows) {
 					return FourOhFour(c)
 				} else {
-					return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project by slug"))
+					return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project by slug"))
 				}
 			}
 			project = &projectQueryResult.(*projectQuery).Project
@@ -262,7 +262,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	owners, err := FetchProjectOwners(c, project.ID)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	canView := false
@@ -312,7 +312,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		project.ID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch screenshots for project"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch screenshots for project"))
 	}
 	c.Perf.EndBlock()
 
@@ -332,7 +332,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		project.ID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
 	}
 	c.Perf.EndBlock()
 
@@ -363,7 +363,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		maxRecentActivity,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project posts"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project posts"))
 	}
 	c.Perf.EndBlock()
 
@@ -445,7 +445,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	var res ResponseData
 	err = res.WriteTemplate("project_homepage.html", projectHomepageData, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render project homepage template"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render project homepage template"))
 	}
 	return res
 }

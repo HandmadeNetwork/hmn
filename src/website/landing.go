@@ -67,7 +67,7 @@ func Index(c *RequestContext) ResponseData {
 		numProjectsToGet*2, // hedge your bets against projects that don't have any content
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get projects for home page"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get projects for home page"))
 	}
 	defer iterProjects.Close()
 
@@ -274,7 +274,7 @@ func Index(c *RequestContext) ResponseData {
 		models.ThreadTypeProjectBlogPost,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news post"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news post"))
 	}
 	newsPostResult := newsPostRow.(*newsPostQuery)
 	c.Perf.EndBlock()
@@ -299,7 +299,7 @@ func Index(c *RequestContext) ResponseData {
 		`,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
 	}
 	snippetQuerySlice := snippetQueryResult.ToSlice()
 	showcaseItems := make([]templates.TimelineItem, 0, len(snippetQuerySlice))
@@ -343,7 +343,7 @@ func Index(c *RequestContext) ResponseData {
 		WheelJamUrl: hmnurl.BuildJamIndex(),
 	}, c.Perf)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render landing page template"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render landing page template"))
 	}
 
 	return res

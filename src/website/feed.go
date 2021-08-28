@@ -45,7 +45,7 @@ func Feed(c *RequestContext) ResponseData {
 	)
 	c.Perf.EndBlock()
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get count of feed posts"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get count of feed posts"))
 	}
 
 	numPages := int(math.Ceil(float64(numPosts) / postsPerPage))
@@ -87,7 +87,7 @@ func Feed(c *RequestContext) ResponseData {
 
 	posts, err := fetchAllPosts(c, lineageBuilder, currentUserId, howManyPostsToSkip, postsPerPage)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
 	}
 
 	baseData := getBaseData(c)
@@ -165,7 +165,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 
 		posts, err := fetchAllPosts(c, lineageBuilder, nil, 0, itemsPerFeed)
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
 		}
 		feedData.Posts = posts
 
@@ -203,7 +203,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 				itemsPerFeed,
 			)
 			if err != nil {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects"))
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects"))
 			}
 			var projectIds []int
 			projectMap := make(map[int]int) // map[project id]index in slice
@@ -235,7 +235,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 				projectIds,
 			)
 			if err != nil {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects owners"))
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects owners"))
 			}
 			for _, res := range owners.ToSlice() {
 				owner := res.(*ownerResult)
@@ -277,7 +277,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 				itemsPerFeed,
 			)
 			if err != nil {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
 			}
 			snippetQuerySlice := snippetQueryResult.ToSlice()
 			for _, s := range snippetQuerySlice {

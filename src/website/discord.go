@@ -53,19 +53,19 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 	code := query.Get("code")
 	res, err := discord.ExchangeOAuthCode(c.Context(), code, hmnurl.BuildDiscordOAuthCallback())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to exchange Discord authorization code"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to exchange Discord authorization code"))
 	}
 	expiry := time.Now().Add(time.Duration(res.ExpiresIn) * time.Second)
 
 	user, err := discord.GetCurrentUserAsOAuth(c.Context(), res.AccessToken)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch Discord user info"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch Discord user info"))
 	}
 
 	// Add the role on Discord
 	err = discord.AddGuildMemberRole(c.Context(), user.ID, config.Config.Discord.MemberRoleID)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to add member role"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to add member role"))
 	}
 
 	// Add the user to our database
@@ -85,7 +85,7 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 		c.CurrentUser.ID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save new Discord user info"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save new Discord user info"))
 	}
 
 	return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)
@@ -110,7 +110,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 		if errors.Is(err, db.ErrNoMatchingRows) {
 			return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)
 		} else {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get Discord user for unlink"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get Discord user for unlink"))
 		}
 	}
 	discordUser := iDiscordUser.(*models.DiscordUser)
@@ -123,12 +123,12 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 		discordUser.ID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete Discord user"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete Discord user"))
 	}
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit Discord user delete"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit Discord user delete"))
 	}
 
 	err = discord.RemoveGuildMemberRole(c.Context(), discordUser.UserID, config.Config.Discord.MemberRoleID)
@@ -149,13 +149,13 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 		c.Logger.Warn().Msg("could not do showcase backlog because no discord user exists")
 		return c.Redirect(hmnurl.BuildUserProfile(c.CurrentUser.Username), http.StatusSeeOther)
 	} else if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get discord user"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get discord user"))
 	}
 	duser := iduser.(*models.DiscordUser)
 
 	ok, err := discord.AllowedToCreateMessageSnippet(c.Context(), c.Conn, duser.UserID)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, err)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	if !ok {

@@ -330,7 +330,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 			c.CurrentUser.ID,
 		)
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to mark all posts as read"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to mark all posts as read"))
 		}
 
 		// Delete thread unread info
@@ -342,7 +342,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 			c.CurrentUser.ID,
 		)
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete thread unread info"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete thread unread info"))
 		}
 
 		// Delete subforum unread info
@@ -354,7 +354,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 			c.CurrentUser.ID,
 		)
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete subforum unread info"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete subforum unread info"))
 		}
 	} else {
 		c.Perf.StartBlock("SQL", "Update SLRIs")
@@ -373,7 +373,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		)
 		c.Perf.EndBlock()
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update forum slris"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update forum slris"))
 		}
 
 		c.Perf.StartBlock("SQL", "Delete TLRIs")
@@ -394,13 +394,13 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		)
 		c.Perf.EndBlock()
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete unnecessary tlris"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete unnecessary tlris"))
 		}
 	}
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit SLRI/TLRI updates"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit SLRI/TLRI updates"))
 	}
 
 	var redirUrl string
@@ -503,7 +503,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		)
 		c.Perf.EndBlock()
 		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update forum tlri"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update forum tlri"))
 		}
 	}
 
@@ -546,7 +546,7 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 		cd.ThreadID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post ids"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post ids"))
 	}
 	postQuerySlice := postQueryResult.ToSlice()
 	c.Perf.EndBlock()
@@ -574,7 +574,7 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 		cd.ThreadID,
 	)
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread title"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread title"))
 	}
 	c.Perf.EndBlock()
 	threadTitle := threadTitleQueryResult.(*threadTitleQuery).ThreadTitle
@@ -625,7 +625,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 
 	err = c.Req.ParseForm()
 	if err != nil {
-		return ErrorResponse(http.StatusBadRequest, oops.New(err, "the form data was invalid"))
+		return c.ErrorResponse(http.StatusBadRequest, oops.New(err, "the form data was invalid"))
 	}
 	title := c.Req.Form.Get("title")
 	unparsed := c.Req.Form.Get("body")
@@ -665,7 +665,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new forum thread"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new forum thread"))
 	}
 
 	newThreadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), threadId, title, 1)
@@ -711,7 +711,7 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 
 	err = c.Req.ParseForm()
 	if err != nil {
-		return ErrorResponse(http.StatusBadRequest, oops.New(nil, "the form data was invalid"))
+		return c.ErrorResponse(http.StatusBadRequest, oops.New(nil, "the form data was invalid"))
 	}
 	unparsed := c.Req.Form.Get("body")
 	if unparsed == "" {
@@ -722,7 +722,7 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to forum post"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to forum post"))
 	}
 
 	newPostUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, newPostId)
@@ -784,7 +784,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit forum post"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit forum post"))
 	}
 
 	postUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
@@ -846,7 +846,7 @@ func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
 
 	err = tx.Commit(c.Context())
 	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete post"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete post"))
 	}
 
 	if threadDeleted {
