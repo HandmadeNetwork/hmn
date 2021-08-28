@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euxo pipefail
+
 BLACK_BOLD=$'\e[1;30m'
 RESET=$'\e[0m'
 
@@ -64,23 +66,37 @@ sudo apt-get update
 sudo apt-get -y install postgresql
 
 # Configure Postgres
+# TODO: This was supposed to create a user without a password - why didn't it?
+# ...or was it?
 sudo -u postgres createuser --createdb --login --pwprompt hmn
 
 # Set up the folder structure, clone the repo
 sudo -u hmn bash -s <<'SCRIPT'
+set -euxo pipefail
+
 cd ~
 mkdir log
 mkdir bin
 
+echo 'PATH=$PATH:/usr/local/go/bin' >> ~/.profile
+source ~/.profile
+
 ssh-keygen -t ed25519 -C "beta-server" -N "" -f ~/.ssh/gitlab
 git config --global core.sshCommand "ssh -i ~/.ssh/gitlab"
 echo ""
+echo ""
 echo "Copy the following key and add it as a Deploy Key in the project in GitLab (https://git.handmade.network/hmn/hmn/-/settings/ci_cd#js-deploy-keys-settings):"
+echo ""
 cat ~/.ssh/gitlab.pub
+echo ""
 echo "Press enter to continue when you're done."
 read
 
 git clone git@gitssh.handmade.network:hmn/hmn.git
+pushd hmn
+    echo "Building the site for the first time. This may take a while..."
+    go build -o hmn src/main.go
+popd
 SCRIPT
 
 # Copy config files to the right places
@@ -92,10 +108,7 @@ cp /home/hmn/hmn/src/config/config.go.example /home/hmn/hmn/src/config/config.go
 cp /home/hmn/hmn/cinera/cinera.conf.sample /home/hmn/hmn/cinera/cinera.conf
 chmod 600 ~/.monitrc
 
-# TODO: Work this message in with all the others about config files you need to update
-echo "The Caddyfile has been written to the home folder. Please edit it and add the Cloudflare key so that the ACME challenge can pass."
-
-echo <<HELP
+cat <<HELP
 Everything has been installed, but before you can run the site, you will need to edit several config files:
 
 ${BLACK_BOLD}Caddy${RESET}: /home/caddy/Caddyfile
@@ -110,7 +123,11 @@ ${BLACK_BOLD}Monit${RESET}: ~/.monitrc
 
 ${BLACK_BOLD}Deploy Secret${RESET}: /home/hmn/hmn/server/deploy.conf
 
-    Fill in the secret value from the GitLab webhook.
+    First, go to GitLab and add a webhook with a secret. Filter it down to just push events on the branch you care about.
+
+    https://git.handmade.network/hmn/hmn/hooks
+
+    Then, edit the above file and fill in the secret value from the GitLab webhook.
 
 ${BLACK_BOLD}Website${RESET}: /home/hmn/hmn/src/config/config.go
 
