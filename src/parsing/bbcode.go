@@ -21,7 +21,7 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-var BBCodePriority = 1 // TODO: This is maybe too high a priority?
+var BBCodePriority = 1
 
 var reOpenTag = regexp.MustCompile(`^\[\s*(?P<name>[a-zA-Z0-9]+)`)
 var reTag = regexp.MustCompile(`\[\s*(?P<opentagname>[a-zA-Z0-9]+)|\[\s*\/\s*(?P<closetagname>[a-zA-Z0-9]+)\s*\]`)

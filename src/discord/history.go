@@ -137,7 +137,8 @@ func Scrape(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earlies
 			Before: before,
 		})
 		if err != nil {
-			panic(err) // TODO
+			logging.Error().Err(err).Msg("failed to get messages while scraping")
+			return
 		}
 
 		if len(msgs) == 0 {

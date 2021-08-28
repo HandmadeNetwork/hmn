@@ -39,6 +39,7 @@ func (bd *BaseData) AddImmediateNotice(class, content string) {
 
 type Header struct {
 	AdminUrl           string
+	UserProfileUrl     string
 	UserSettingsUrl    string
 	LoginActionUrl     string
 	LogoutActionUrl    string
@@ -89,6 +90,9 @@ type Post struct {
 	Author   User
 	Content  template.HTML
 	PostDate time.Time
+
+	AuthorNumPosts    int
+	AuthorNumProjects int
 
 	Editor     *User
 	EditDate   time.Time

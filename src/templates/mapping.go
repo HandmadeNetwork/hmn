@@ -273,7 +273,7 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 		builder.WriteString(`",`)
 
 		builder.WriteString(`"owner_name":"`)
-		builder.WriteString(item.OwnerName) // TODO: Do we need to do escaping on these other string fields too? Feels like someone could use this for XSS.
+		builder.WriteString(item.OwnerName)
 		builder.WriteString(`",`)
 
 		builder.WriteString(`"owner_avatar":"`)

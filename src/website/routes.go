@@ -112,13 +112,8 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 			if csrfToken != c.CurrentSession.CSRFToken {
 				c.Logger.Warn().Str("userId", c.CurrentUser.Username).Msg("user failed CSRF validation - potential attack?")
 
-				err := auth.DeleteSession(c.Context(), c.Conn, c.CurrentSession.ID)
-				if err != nil {
-					c.Logger.Error().Err(err).Msg("failed to delete session on CSRF failure")
-				}
-
 				res := c.Redirect("/", http.StatusSeeOther)
-				res.SetCookie(auth.DeleteSessionCookie)
+				logoutUser(c, &res)
 
 				return res
 			}
@@ -275,7 +270,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 		episodeGuideUrl = hmnurl.BuildEpisodeList(c.CurrentProject.Slug, defaultTopic)
 	}
 
-	return templates.BaseData{
+	baseData := templates.BaseData{
 		Theme: c.Theme,
 
 		CurrentUrl:    c.FullUrl(),
@@ -322,6 +317,12 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			SitemapUrl:                 hmnurl.BuildSiteMap(),
 		},
 	}
+
+	if c.CurrentUser != nil {
+		baseData.Header.UserProfileUrl = hmnurl.BuildUserProfile(c.CurrentUser.Username)
+	}
+
+	return baseData
 }
 
 func buildDefaultOpenGraphItems(project *models.Project) []templates.OpenGraphItem {

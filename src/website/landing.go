@@ -334,7 +334,7 @@ func Index(c *RequestContext) ResponseData {
 			Url:     hmnurl.BuildBlogThread(models.HMNProjectSlug, newsPostResult.Thread.ID, newsPostResult.Thread.Title),
 			User:    templates.UserToTemplate(&newsPostResult.User, c.Theme),
 			Date:    newsPostResult.Post.PostDate,
-			Unread:  true, // TODO
+			Unread:  true,
 			Content: template.HTML(newsPostResult.PostVersion.TextParsed),
 		},
 		PostColumns:          cols,

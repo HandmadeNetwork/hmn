@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/discord"
@@ -22,25 +21,16 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 	if state != c.CurrentSession.CSRFToken {
 		// CSRF'd!!!!
 
-		// TODO(compression): Should this and the CSRF middleware be pulled out to
-		// a separate function?
-
 		c.Logger.Warn().Str("userId", c.CurrentUser.Username).Msg("user failed Discord OAuth state validation - potential attack?")
 
-		err := auth.DeleteSession(c.Context(), c.Conn, c.CurrentSession.ID)
-		if err != nil {
-			c.Logger.Error().Err(err).Msg("failed to delete session on Discord OAuth state failure")
-		}
-
 		res := c.Redirect("/", http.StatusSeeOther)
-		res.SetCookie(auth.DeleteSessionCookie)
+		logoutUser(c, &res)
 
 		return res
 	}
 
-	// Check for error values and redirect back to ????
+	// Check for error values and redirect back to user settings
 	if errCode := query.Get("error"); errCode != "" {
-		// TODO: actually handle these errors
 		if errCode == "access_denied" {
 			// This occurs when the user cancels. Just go back to the profile page.
 			return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)
@@ -49,7 +39,7 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 		}
 	}
 
-	// Do the actual token exchange and redirect back to ????
+	// Do the actual token exchange
 	code := query.Get("code")
 	res, err := discord.ExchangeOAuthCode(c.Context(), code, hmnurl.BuildDiscordOAuthCallback())
 	if err != nil {

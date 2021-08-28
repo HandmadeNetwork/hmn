@@ -59,9 +59,6 @@ func (m *GatewayMessage) ToJSON() []byte {
 		panic(err)
 	}
 
-	// TODO: check if the payload is too big, either here or where we actually send
-	// https://discord.com/developers/docs/topics/gateway#sending-payloads
-
 	return mBytes
 }
 
@@ -70,7 +67,6 @@ type Hello struct {
 }
 
 func HelloFromMap(m interface{}) Hello {
-	// TODO: This should probably have some error handling, right?
 	return Hello{
 		HeartbeatIntervalMs: int(m.(map[string]interface{})["heartbeat_interval"].(float64)),
 	}

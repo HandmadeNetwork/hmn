@@ -155,12 +155,13 @@ func (bot *botInstance) Run(ctx context.Context) (err error) {
 	for {
 		msg, err := bot.receiveGatewayMessage(ctx)
 		if err != nil {
-			// TODO: Are there other kinds of connection close events that we need to handle? Probably?
 			if errors.Is(err, net.ErrClosed) {
 				// If the connection is closed, that's our cue to shut down the bot. Any errors
 				// related to the closure will have been logged elsewhere anyway.
 				return nil
 			} else {
+				// NOTE(ben): I don't know what events we might get in the future that we might
+				// want to handle gracefully (like above). Keep an eye out.
 				return oops.New(err, "failed to receive message from the gateway")
 			}
 		}
@@ -573,7 +574,7 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 	return nil
 }
 
-// TODO: Should this return an error? Or just log errors?
+// Only return an error if we want to restart the bot.
 func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message) error {
 	if msg.OriginalHasFields("author") && msg.Author.ID == config.Config.Discord.BotUserID {
 		// Don't process your own messages
@@ -583,7 +584,8 @@ func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message)
 	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID {
 		err := bot.processShowcaseMsg(ctx, msg)
 		if err != nil {
-			return oops.New(err, "failed to process showcase message")
+			logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to process showcase message")
+			return nil
 		}
 		return nil
 	}
@@ -591,7 +593,8 @@ func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message)
 	if msg.ChannelID == config.Config.Discord.LibraryChannelID {
 		err := bot.processLibraryMsg(ctx, msg)
 		if err != nil {
-			return oops.New(err, "failed to process library message")
+			logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to process library message")
+			return nil
 		}
 		return nil
 	}

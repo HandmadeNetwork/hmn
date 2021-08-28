@@ -14,38 +14,49 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 )
 
-// If a helper method returns this, you should call RejectRequest with the value.
-type RejectRequestError error
+type SaveImageFileResult struct {
+	ImageFileID     int
+	ValidationError string
+	FatalError      error
+}
 
 /*
 Reads an image file from form data and saves it to the filesystem and the database.
-If the file doesn't exist, this does nothing.
+If the file doesn't exist, this does nothing and returns 0 for the image file id.
 
 NOTE(ben): Someday we should replace this with the asset system.
 */
-func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, maxSize int64, filepath string) (imageFileId int, err error) {
+func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, maxSize int64, filepath string) SaveImageFileResult {
 	img, header, err := c.Req.FormFile(fileFieldName)
 	filename := ""
 	width := 0
 	height := 0
 	if err != nil && !errors.Is(err, http.ErrMissingFile) {
-		return 0, oops.New(err, "failed to read uploaded file")
+		return SaveImageFileResult{
+			FatalError: oops.New(err, "failed to read uploaded file"),
+		}
 	}
 
 	if header != nil {
 		if header.Size > maxSize {
-			return 0, RejectRequestError(fmt.Errorf("Image filesize too big. Max size: %d bytes", maxSize))
+			return SaveImageFileResult{
+				ValidationError: fmt.Sprintf("Image filesize too big. Max size: %d bytes", maxSize),
+			}
 		} else {
 			c.Perf.StartBlock("IMAGE", "Decoding image")
 			config, format, err := image.DecodeConfig(img)
 			c.Perf.EndBlock()
 			if err != nil {
-				return 0, RejectRequestError(errors.New("Image type not supported"))
+				return SaveImageFileResult{
+					ValidationError: "Image type not supported",
+				}
 			}
 			width = config.Width
 			height = config.Height
 			if width == 0 || height == 0 {
-				return 0, RejectRequestError(errors.New("Image has zero size"))
+				return SaveImageFileResult{
+					ValidationError: "Image has zero size",
+				}
 			}
 
 			filename = fmt.Sprintf("%s.%s", filepath, format)
@@ -53,12 +64,16 @@ func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, 
 			c.Perf.StartBlock("IMAGE", "Writing image file")
 			file, err := os.Create(storageFilename)
 			if err != nil {
-				return 0, oops.New(err, "Failed to create local image file")
+				return SaveImageFileResult{
+					FatalError: oops.New(err, "Failed to create local image file"),
+				}
 			}
 			img.Seek(0, io.SeekStart)
 			_, err = io.Copy(file, img)
 			if err != nil {
-				return 0, oops.New(err, "Failed to write image to file")
+				return SaveImageFileResult{
+					FatalError: oops.New(err, "Failed to write image to file"),
+				}
 			}
 			file.Close()
 			img.Close()
@@ -83,11 +98,15 @@ func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, 
 			filename, header.Size, hex.EncodeToString(sha1sum), false, width, height,
 		).Scan(&imageId)
 		if err != nil {
-			return 0, oops.New(err, "Failed to insert image file row")
+			return SaveImageFileResult{
+				FatalError: oops.New(err, "Failed to insert image file row"),
+			}
 		}
 
-		return imageId, nil
+		return SaveImageFileResult{
+			ImageFileID: imageId,
+		}
 	}
 
-	return 0, nil
+	return SaveImageFileResult{}
 }

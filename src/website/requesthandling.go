@@ -107,8 +107,6 @@ func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// TODO(asaf): Replace this with a 404 handler? Isn't this going to crash the server?
-	// We're doing panic recovery in doRequest, but not here. I don't think we should have this line in production.
 	panic(fmt.Sprintf("Path '%s' did not match any routes! Make sure to register a wildcard route to act as a 404.", path))
 }
 

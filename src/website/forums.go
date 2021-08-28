@@ -1,6 +1,7 @@
 package website
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -283,7 +285,7 @@ func Forum(c *RequestContext) ResponseData {
 	res.MustWriteTemplate("forum.html", forumData{
 		BaseData:     baseData,
 		NewThreadUrl: hmnurl.BuildForumNewThread(c.CurrentProject.Slug, currentSubforumSlugs, false),
-		MarkReadUrl:  hmnurl.BuildForumMarkRead(cd.SubforumID),
+		MarkReadUrl:  hmnurl.BuildForumMarkRead(c.CurrentProject.Slug, cd.SubforumID),
 		Threads:      threads,
 		Pagination: templates.Pagination{
 			Current: page,
@@ -470,6 +472,7 @@ func ForumThread(c *RequestContext) ResponseData {
 	)
 	c.Perf.EndBlock()
 
+	c.Perf.StartBlock("TEMPLATE", "Create template posts")
 	var posts []templates.Post
 	for _, p := range postsAndStuff {
 		post := templates.PostToTemplate(&p.Post, p.Author, c.Theme)
@@ -482,8 +485,11 @@ func ForumThread(c *RequestContext) ResponseData {
 			post.ReplyPost = &reply
 		}
 
+		addAuthorCountsToPost(c.Context(), c.Conn, &post)
+
 		posts = append(posts, post)
 	}
+	c.Perf.EndBlock()
 
 	// Update thread last read info
 	if c.CurrentUser != nil {
@@ -774,9 +780,11 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 	defer tx.Rollback(c.Context())
 
 	c.Req.ParseForm()
-	// TODO(ben): Validation
 	unparsed := c.Req.Form.Get("body")
 	editReason := c.Req.Form.Get("editreason")
+	if unparsed == "" {
+		return RejectRequest(c, "You must provide a body for your post.")
+	}
 
 	CreatePostVersion(c.Context(), tx, cd.PostID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
 
@@ -998,4 +1006,45 @@ func addForumUrlsToPost(p *templates.Post, projectSlug string, subforums []strin
 	p.DeleteUrl = hmnurl.BuildForumPostDelete(projectSlug, subforums, threadId, postId)
 	p.EditUrl = hmnurl.BuildForumPostEdit(projectSlug, subforums, threadId, postId)
 	p.ReplyUrl = hmnurl.BuildForumPostReply(projectSlug, subforums, threadId, postId)
+}
+
+func addAuthorCountsToPost(ctx context.Context, conn db.ConnOrTx, p *templates.Post) {
+	numPosts, err := db.QueryInt(ctx, conn,
+		`
+		SELECT COUNT(*)
+		FROM
+			handmade_post AS post
+			JOIN handmade_project AS project ON post.project_id = project.id
+		WHERE
+			post.author_id = $1
+			AND NOT post.deleted
+			AND project.lifecycle = ANY ($2)
+		`,
+		p.Author.ID,
+		models.VisibleProjectLifecycles,
+	)
+	if err != nil {
+		logging.ExtractLogger(ctx).Warn().Err(err).Msg("failed to get count of user posts")
+	} else {
+		p.AuthorNumPosts = numPosts
+	}
+
+	numProjects, err := db.QueryInt(ctx, conn,
+		`
+		SELECT COUNT(*)
+		FROM
+			handmade_project AS project
+			JOIN handmade_user_projects AS uproj ON uproj.project_id = project.id
+		WHERE
+			project.lifecycle = ANY ($1)
+			AND uproj.user_id = $2
+		`,
+		models.VisibleProjectLifecycles,
+		p.Author.ID,
+	)
+	if err != nil {
+		logging.ExtractLogger(ctx).Warn().Err(err).Msg("failed to get count of user projects")
+	} else {
+		p.AuthorNumProjects = numProjects
+	}
 }

@@ -204,7 +204,7 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 
 	thread := FetchThread(c.Context(), c.Conn, cd.ThreadID)
 
-	threadUrl := hmnurl.BuildBlogThread(c.CurrentProject.Slug, cd.ThreadID, thread.Title)
+	threadUrl := hmnurl.BuildBlogThreadWithPostHash(c.CurrentProject.Slug, cd.ThreadID, thread.Title, cd.PostID)
 	return c.Redirect(threadUrl, http.StatusFound)
 }
 

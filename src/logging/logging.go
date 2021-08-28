@@ -96,8 +96,6 @@ func NewPrettyZerologWriter() *PrettyZerologWriter {
 }
 
 func (w *PrettyZerologWriter) Write(p []byte) (int, error) {
-	// TODO: panic recovery so we log _something_
-
 	var fields map[string]interface{}
 	err := json.Unmarshal(p, &fields)
 	if err != nil {

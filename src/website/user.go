@@ -454,27 +454,24 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	}
 
 	// Update avatar
-	_, err = SaveImageFile(c, tx, "avatar", 1*1024*1024, fmt.Sprintf("members/avatars/%s", c.CurrentUser.Username))
-	if err != nil {
-		var rejectErr RejectRequestError
-		if errors.As(err, &rejectErr) {
-			return RejectRequest(c, rejectErr.Error())
-		} else {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save new avatar"))
-		}
+	imageSaveResult := SaveImageFile(c, tx, "avatar", 1*1024*1024, fmt.Sprintf("members/avatars/%s", c.CurrentUser.Username))
+	if imageSaveResult.ValidationError != "" {
+		return RejectRequest(c, imageSaveResult.ValidationError)
+	} else if imageSaveResult.FatalError != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(imageSaveResult.FatalError, "failed to save new avatar"))
 	}
-
-	// TODO: Success message
 
 	err = tx.Commit(c.Context())
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save user settings"))
 	}
 
-	return c.Redirect(hmnurl.BuildUserSettings(""), http.StatusSeeOther)
+	res := c.Redirect(hmnurl.BuildUserSettings(""), http.StatusSeeOther)
+	res.AddFutureNotice("success", "User profile updated.")
+
+	return res
 }
 
-// TODO: Rework this to use that RejectRequestError thing
 func updatePassword(c *RequestContext, tx pgx.Tx, old, new, confirm string) *ResponseData {
 	if new != confirm {
 		res := RejectRequest(c, "Your password and password confirmation did not match.")

@@ -404,6 +404,8 @@ func saveAttachment(
 	return iDiscordAttachment.(*models.DiscordMessageAttachment), nil
 }
 
+// Saves an embed from Discord. NOTE: This is _not_ idempotent, so only call it
+// if you do not have any embeds saved for this message yet.
 func saveEmbed(
 	ctx context.Context,
 	tx db.ConnOrTx,
@@ -411,9 +413,6 @@ func saveEmbed(
 	hmnUserID int,
 	discordMessageID string,
 ) (*models.DiscordMessageEmbed, error) {
-	// TODO: Does this need to be idempotent? Embeds don't have IDs...
-	// Maybe Discord will never actually send us the same embed twice?
-
 	isOkImageType := func(contentType string) bool {
 		return strings.HasPrefix(contentType, "image/")
 	}

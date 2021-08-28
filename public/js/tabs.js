@@ -72,7 +72,6 @@ function switchTab(container, slug) {
     for (const tab of tabs) {
         const slugMatches = tab.getAttribute("data-slug") === slug;
         tab.classList.toggle('dn', !slugMatches);
-        // TODO: Also update the tab button styles
 
         if (slugMatches) {
             didMatch = true;

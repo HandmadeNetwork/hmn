@@ -98,7 +98,7 @@ func Feed(c *RequestContext) ResponseData {
 		BaseData: baseData,
 
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
-		MarkAllReadUrl: hmnurl.BuildForumMarkRead(0),
+		MarkAllReadUrl: hmnurl.BuildForumMarkRead(c.CurrentProject.Slug, 0),
 		Posts:          posts,
 		Pagination:     pagination,
 	}, c.Perf)

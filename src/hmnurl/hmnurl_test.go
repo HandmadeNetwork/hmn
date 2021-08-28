@@ -308,7 +308,7 @@ func TestPublic(t *testing.T) {
 }
 
 func TestForumMarkRead(t *testing.T) {
-	AssertRegexMatch(t, BuildForumMarkRead(5), RegexForumMarkRead, map[string]string{"sfid": "5"})
+	AssertRegexMatch(t, BuildForumMarkRead(c.CurrentProject.Slug, 5), RegexForumMarkRead, map[string]string{"sfid": "5"})
 }
 
 func AssertSubdomain(t *testing.T, fullUrl string, expectedSubdomain string) {

@@ -147,17 +147,14 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	imageId, err := SaveImageFile(c, tx, "podcast_image", maxFileSize, fmt.Sprintf("podcast/%s/logo%d", c.CurrentProject.Slug, time.Now().UTC().Unix()))
-	if err != nil {
-		var rejectErr RejectRequestError
-		if errors.As(err, &rejectErr) {
-			return RejectRequest(c, rejectErr.Error())
-		} else {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to save podcast image"))
-		}
+	imageSaveResult := SaveImageFile(c, tx, "podcast_image", maxFileSize, fmt.Sprintf("podcast/%s/logo%d", c.CurrentProject.Slug, time.Now().UTC().Unix()))
+	if imageSaveResult.ValidationError != "" {
+		return RejectRequest(c, imageSaveResult.ValidationError)
+	} else if imageSaveResult.FatalError != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(imageSaveResult.FatalError, "Failed to save podcast image"))
 	}
 
-	if imageId != 0 {
+	if imageSaveResult.ImageFileID != 0 {
 		_, err = tx.Exec(c.Context(),
 			`
 			UPDATE handmade_podcast
@@ -169,7 +166,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 			`,
 			title,
 			description,
-			imageId,
+			imageSaveResult.ImageFileID,
 			podcastResult.Podcast.ID,
 		)
 		if err != nil {
