@@ -56,6 +56,13 @@ func BuildWhenIsIt() string {
 	return Url("/whenisit", nil)
 }
 
+var RegexJamIndex = regexp.MustCompile("^/jam$")
+
+func BuildJamIndex() string {
+	defer CatchPanic()
+	return Url("/jam", nil)
+}
+
 // QUESTION(ben): Can we change these routes?
 
 var RegexLoginAction = regexp.MustCompile("^/login$")

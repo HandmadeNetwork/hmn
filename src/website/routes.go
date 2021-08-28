@@ -161,6 +161,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	staticPages.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
 	staticPages.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
 	staticPages.GET(hmnurl.RegexWhenIsIt, WhenIsIt)
+	staticPages.GET(hmnurl.RegexJamIndex, JamIndex)
 
 	// TODO(asaf): Have separate middleware for HMN-only routes and any-project routes
 	// NOTE(asaf): HMN-only routes:
@@ -189,13 +190,13 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	mainRoutes.GET(hmnurl.RegexShowcase, Showcase)
 	mainRoutes.GET(hmnurl.RegexSnippet, Snippet)
 	mainRoutes.GET(hmnurl.RegexProjectIndex, ProjectIndex)
-	mainRoutes.GET(hmnurl.RegexUserProfile, UserProfile)
 	mainRoutes.GET(hmnurl.RegexProjectNotApproved, ProjectHomepage)
 
 	mainRoutes.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
 	mainRoutes.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
 	mainRoutes.POST(hmnurl.RegexDiscordShowcaseBacklog, authMiddleware(csrfMiddleware(DiscordShowcaseBacklog)))
 
+	mainRoutes.GET(hmnurl.RegexUserProfile, UserProfile)
 	mainRoutes.GET(hmnurl.RegexUserSettings, authMiddleware(UserSettings))
 	mainRoutes.POST(hmnurl.RegexUserSettings, authMiddleware(csrfMiddleware(UserSettingsSave)))
 

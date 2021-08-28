@@ -27,6 +27,8 @@ type LandingTemplateData struct {
 	DiscordUrl  string
 	ShowUrl     string
 	ShowcaseUrl string
+
+	WheelJamUrl string
 }
 
 type LandingPageProject struct {
@@ -337,6 +339,8 @@ func Index(c *RequestContext) ResponseData {
 		},
 		PostColumns:          cols,
 		ShowcaseTimelineJson: showcaseJson,
+
+		WheelJamUrl: hmnurl.BuildJamIndex(),
 	}, c.Perf)
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render landing page template"))
