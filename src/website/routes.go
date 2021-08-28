@@ -104,7 +104,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		// CSRF mitigation actions per the OWASP cheat sheet:
 		// https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
 		return func(c *RequestContext) ResponseData {
-			c.Req.ParseForm()
+			c.Req.ParseMultipartForm(100 * 1024 * 1024)
 			csrfToken := c.Req.Form.Get(auth.CSRFFieldName)
 			if csrfToken != c.CurrentSession.CSRFToken {
 				c.Logger.Warn().Str("userId", c.CurrentUser.Username).Msg("user failed CSRF validation - potential attack?")
@@ -228,9 +228,12 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	mainRoutes.GET(hmnurl.RegexPodcastEpisode, PodcastEpisode)
 	mainRoutes.GET(hmnurl.RegexPodcastRSS, PodcastRSS)
 
-	mainRoutes.GET(hmnurl.RegexDiscordTest, authMiddleware(DiscordTest)) // TODO: Delete this route
 	mainRoutes.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
-	mainRoutes.POST(hmnurl.RegexDiscordUnlink, authMiddleware(DiscordUnlink))
+	mainRoutes.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
+	mainRoutes.POST(hmnurl.RegexDiscordShowcaseBacklog, authMiddleware(csrfMiddleware(DiscordShowcaseBacklog)))
+
+	mainRoutes.GET(hmnurl.RegexUserSettings, authMiddleware(UserSettings))
+	mainRoutes.POST(hmnurl.RegexUserSettings, authMiddleware(csrfMiddleware(UserSettingsSave)))
 
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 	mainRoutes.GET(hmnurl.RegexEditorPreviewsJS, func(c *RequestContext) ResponseData {

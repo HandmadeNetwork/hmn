@@ -2,14 +2,21 @@ package website
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"sort"
 	"strings"
 
+	"git.handmade.network/hmn/hmn/src/auth"
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/discord"
+	hmnemail "git.handmade.network/hmn/hmn/src/email"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"github.com/jackc/pgx/v4"
 )
 
 type UserProfileTemplateData struct {
@@ -215,11 +222,15 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	c.Perf.EndBlock()
 
+	templateUser := templates.UserToTemplate(profileUser, c.Theme)
+
 	baseData := getBaseData(c)
+	baseData.Title = templateUser.Name
+
 	var res ResponseData
 	res.MustWriteTemplate("user_profile.html", UserProfileTemplateData{
 		BaseData:            baseData,
-		ProfileUser:         templates.UserToTemplate(profileUser, c.Theme),
+		ProfileUser:         templateUser,
 		ProfileUserLinks:    profileUserLinks,
 		ProfileUserProjects: templateProjects,
 		TimelineItems:       timelineItems,
@@ -228,4 +239,271 @@ func UserProfile(c *RequestContext) ResponseData {
 		NumSnippets:         numSnippets,
 	}, c.Perf)
 	return res
+}
+
+func UserSettings(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	type UserSettingsTemplateData struct {
+		templates.BaseData
+
+		User      templates.User
+		Email     string // these fields are handled specially on templates.User
+		ShowEmail bool
+		LinksText string
+
+		SubmitUrl  string
+		ContactUrl string
+
+		DiscordUser               *templates.DiscordUser
+		DiscordNumUnsavedMessages int
+		DiscordAuthorizeUrl       string
+		DiscordUnlinkUrl          string
+		DiscordShowcaseBacklogUrl string
+	}
+
+	ilinks, err := db.Query(c.Context(), c.Conn, models.Link{},
+		`
+		SELECT $columns
+		FROM handmade_links
+		WHERE user_id = $1
+		ORDER BY ordering
+		`,
+		c.CurrentUser.ID,
+	)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user links"))
+	}
+	links := ilinks.ToSlice()
+
+	linksText := ""
+	for _, ilink := range links {
+		link := ilink.(*models.Link)
+		linksText += fmt.Sprintf("%s %s\n", link.URL, link.Name)
+	}
+
+	var tduser *templates.DiscordUser
+	var numUnsavedMessages int
+	iduser, err := db.QueryOne(c.Context(), c.Conn, models.DiscordUser{},
+		`
+		SELECT $columns
+		FROM handmade_discorduser
+		WHERE hmn_user_id = $1
+		`,
+		c.CurrentUser.ID,
+	)
+	if errors.Is(err, db.ErrNoMatchingRows) {
+		// this is fine, but don't fetch any more messages
+	} else if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user's Discord account"))
+	} else {
+		duser := iduser.(*models.DiscordUser)
+		tmp := templates.DiscordUserToTemplate(duser)
+		tduser = &tmp
+
+		numUnsavedMessages, err = db.QueryInt(c.Context(), c.Conn,
+			`
+			SELECT COUNT(*)
+			FROM
+				handmade_discordmessage AS msg
+				LEFT JOIN handmade_discordmessagecontent AS c ON c.message_id = msg.id
+			WHERE
+				msg.user_id = $1
+				AND msg.channel_id = $2
+				AND c.last_content IS NULL
+			`,
+			duser.UserID,
+			config.Config.Discord.ShowcaseChannelID,
+		)
+		if err != nil {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check for unsaved user messages"))
+		}
+	}
+
+	templateUser := templates.UserToTemplate(c.CurrentUser, c.Theme)
+
+	baseData := getBaseData(c)
+	baseData.Title = templateUser.Name
+
+	res.MustWriteTemplate("user_settings.html", UserSettingsTemplateData{
+		BaseData:  baseData,
+		User:      templateUser,
+		Email:     c.CurrentUser.Email,
+		ShowEmail: c.CurrentUser.ShowEmail,
+		LinksText: linksText,
+
+		SubmitUrl:  hmnurl.BuildUserSettings(""),
+		ContactUrl: hmnurl.BuildContactPage(),
+
+		DiscordUser:               tduser,
+		DiscordNumUnsavedMessages: numUnsavedMessages,
+		DiscordAuthorizeUrl:       discord.GetAuthorizeUrl(c.CurrentSession.CSRFToken),
+		DiscordUnlinkUrl:          hmnurl.BuildDiscordUnlink(),
+		DiscordShowcaseBacklogUrl: hmnurl.BuildDiscordShowcaseBacklog(),
+	}, c.Perf)
+	return res
+}
+
+func UserSettingsSave(c *RequestContext) ResponseData {
+	tx, err := c.Conn.Begin(c.Context())
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback(c.Context())
+
+	form, err := c.GetFormValues()
+	if err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to parse form on user update")
+		return c.Redirect(hmnurl.BuildUserSettings(""), http.StatusSeeOther)
+	}
+
+	name := form.Get("realname")
+
+	email := form.Get("email")
+	if !hmnemail.IsEmail(email) {
+		return RejectRequest(c, "Your email was not valid.")
+	}
+
+	showEmail := form.Get("showemail") != ""
+	darkTheme := form.Get("darktheme") != ""
+
+	blurb := form.Get("shortbio")
+	signature := form.Get("signature")
+	bio := form.Get("longbio")
+
+	discordShowcaseAuto := form.Get("discord-showcase-auto") != ""
+	discordDeleteSnippetOnMessageDelete := form.Get("discord-snippet-keep") == ""
+
+	_, err = tx.Exec(c.Context(),
+		`
+		UPDATE auth_user
+		SET
+			name = $2,
+			email = $3,
+			showemail = $4,
+			darktheme = $5,
+			blurb = $6,
+			signature = $7,
+			bio = $8,
+			discord_save_showcase = $9,
+			discord_delete_snippet_on_message_delete = $10
+		WHERE
+			id = $1
+		`,
+		c.CurrentUser.ID,
+		name,
+		email,
+		showEmail,
+		darkTheme,
+		blurb,
+		signature,
+		bio,
+		discordShowcaseAuto,
+		discordDeleteSnippetOnMessageDelete,
+	)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user"))
+	}
+
+	// Process links
+	linksText := form.Get("links")
+	links := strings.Split(linksText, "\n")
+	_, err = tx.Exec(c.Context(), `DELETE FROM handmade_links WHERE user_id = $1`, c.CurrentUser.ID)
+	if err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to delete old links")
+	} else {
+		for i, link := range links {
+			link = strings.TrimSpace(link)
+			linkParts := strings.SplitN(link, " ", 2)
+			url := strings.TrimSpace(linkParts[0])
+			name := ""
+			if len(linkParts) > 1 {
+				name = strings.TrimSpace(linkParts[1])
+			}
+
+			if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+				continue
+			}
+
+			_, err := tx.Exec(c.Context(),
+				`
+				INSERT INTO handmade_links (name, url, ordering, user_id)
+				VALUES ($1, $2, $3, $4)
+				`,
+				name,
+				url,
+				i,
+				c.CurrentUser.ID,
+			)
+			if err != nil {
+				c.Logger.Warn().Err(err).Msg("failed to insert new link")
+				continue
+			}
+		}
+	}
+
+	// Update password
+	oldPassword := form.Get("old_password")
+	newPassword := form.Get("new_password1")
+	newPasswordConfirmation := form.Get("new_password2")
+	if oldPassword != "" && newPassword != "" {
+		errorRes := updatePassword(c, tx, oldPassword, newPassword, newPasswordConfirmation)
+		if errorRes != nil {
+			return *errorRes
+		}
+	}
+
+	// Update avatar
+	_, err = SaveImageFile(c, tx, "avatar", 1*1024*1024, fmt.Sprintf("members/avatars/%s", c.CurrentUser.Username))
+	if err != nil {
+		var rejectErr RejectRequestError
+		if errors.As(err, &rejectErr) {
+			return RejectRequest(c, rejectErr.Error())
+		} else {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save new avatar"))
+		}
+	}
+
+	// TODO: Success message
+
+	err = tx.Commit(c.Context())
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save user settings"))
+	}
+
+	return c.Redirect(hmnurl.BuildUserSettings(""), http.StatusSeeOther)
+}
+
+// TODO: Rework this to use that RejectRequestError thing
+func updatePassword(c *RequestContext, tx pgx.Tx, old, new, confirm string) *ResponseData {
+	if new != confirm {
+		res := RejectRequest(c, "Your password and password confirmation did not match.")
+		return &res
+	}
+
+	oldHashedPassword, err := auth.ParsePasswordString(c.CurrentUser.Password)
+	if err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to parse user's password string")
+		return nil
+	}
+
+	ok, err := auth.CheckPassword(old, oldHashedPassword)
+	if err != nil {
+		res := ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check user's password"))
+		return &res
+	}
+
+	if !ok {
+		res := RejectRequest(c, "The old password you provided was not correct.")
+		return &res
+	}
+
+	newHashedPassword := auth.HashPassword(new)
+	err = auth.UpdatePassword(c.Context(), tx, c.CurrentUser.Username, newHashedPassword)
+	if err != nil {
+		res := ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update password"))
+		return &res
+	}
+
+	return nil
 }

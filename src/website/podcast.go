@@ -1,11 +1,8 @@
 package website
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"image"
 	"io"
 	"io/fs"
 	"net/http"
@@ -142,47 +139,6 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	if len(strings.TrimSpace(description)) == 0 {
 		return RejectRequest(c, "Podcast description is empty")
 	}
-	podcastImage, header, err := c.Req.FormFile("podcast_image")
-	imageFilename := ""
-	imageWidth := 0
-	imageHeight := 0
-	if err != nil && !errors.Is(err, http.ErrMissingFile) {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to read uploaded file"))
-	}
-	if header != nil {
-		if header.Size > maxFileSize {
-			return RejectRequest(c, fmt.Sprintf("Image filesize too big. Max size: %d bytes", maxFileSize))
-		} else {
-			c.Perf.StartBlock("PODCAST", "Decoding image")
-			config, format, err := image.DecodeConfig(podcastImage)
-			c.Perf.EndBlock()
-			if err != nil {
-				return RejectRequest(c, "Image type not supported")
-			}
-			imageWidth = config.Width
-			imageHeight = config.Height
-			if imageWidth == 0 || imageHeight == 0 {
-				return RejectRequest(c, "Image has zero size")
-			}
-
-			imageFilename = fmt.Sprintf("podcast/%s/logo%d.%s", c.CurrentProject.Slug, time.Now().UTC().Unix(), format)
-			storageFilename := fmt.Sprintf("public/media/%s", imageFilename)
-			c.Perf.StartBlock("PODCAST", "Writing image file")
-			file, err := os.Create(storageFilename)
-			if err != nil {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to create local image file"))
-			}
-			podcastImage.Seek(0, io.SeekStart)
-			_, err = io.Copy(file, podcastImage)
-			if err != nil {
-				return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to write image to file"))
-			}
-			file.Close()
-			podcastImage.Close()
-			c.Perf.EndBlock()
-		}
-	}
-	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Updating podcast")
 	tx, err := c.Conn.Begin(c.Context())
@@ -190,23 +146,18 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to start db transaction"))
 	}
 	defer tx.Rollback(c.Context())
-	if imageFilename != "" {
-		hasher := sha1.New()
-		podcastImage.Seek(0, io.SeekStart)
-		io.Copy(hasher, podcastImage) // NOTE(asaf): Writing to hash.Hash never returns an error according to the docs
-		sha1sum := hasher.Sum(nil)
-		var imageId int
-		err = tx.QueryRow(c.Context(),
-			`
-			INSERT INTO handmade_imagefile (file, size, sha1sum, protected, width, height)
-			VALUES ($1, $2, $3, $4, $5, $6)
-			RETURNING id
-			`,
-			imageFilename, header.Size, hex.EncodeToString(sha1sum), false, imageWidth, imageHeight,
-		).Scan(&imageId)
-		if err != nil {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to insert image file row"))
+
+	imageId, err := SaveImageFile(c, tx, "podcast_image", maxFileSize, fmt.Sprintf("podcast/%s/logo%d", c.CurrentProject.Slug, time.Now().UTC().Unix()))
+	if err != nil {
+		var rejectErr RejectRequestError
+		if errors.As(err, &rejectErr) {
+			return RejectRequest(c, rejectErr.Error())
+		} else {
+			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to save podcast image"))
 		}
+	}
+
+	if imageId != 0 {
 		_, err = tx.Exec(c.Context(),
 			`
 			UPDATE handmade_podcast
@@ -474,7 +425,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("MARKDOWN", "Parsing description")
-	descriptionRendered := parsing.ParseMarkdown(description, parsing.RealMarkdown)
+	descriptionRendered := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
 	c.Perf.EndBlock()
 
 	guidStr := ""

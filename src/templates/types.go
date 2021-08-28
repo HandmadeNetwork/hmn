@@ -137,6 +137,7 @@ type User struct {
 	ProfileUrl string
 
 	DarkTheme bool
+	ShowEmail bool
 	Timezone  string
 
 	CanEditLibrary                      bool
@@ -145,10 +146,10 @@ type User struct {
 }
 
 type Link struct {
-	Key  string
-	Name string
-	Url  string
-	Icon string
+	Name     string
+	Url      string
+	LinkText string
+	Icon     string
 }
 
 type Podcast struct {

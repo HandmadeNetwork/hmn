@@ -51,10 +51,7 @@ func init() {
 				}
 			}
 
-			hashedPassword, err := auth.HashPassword(password)
-			if err != nil {
-				panic(err)
-			}
+			hashedPassword := auth.HashPassword(password)
 
 			err = auth.UpdatePassword(ctx, conn, canonicalUsername, hashedPassword)
 			if err != nil {

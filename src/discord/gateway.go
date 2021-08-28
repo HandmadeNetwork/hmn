@@ -93,7 +93,7 @@ func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{} {
 
 var outgoingMessagesReady = make(chan struct{}, 1)
 
-type discordBotInstance struct {
+type botInstance struct {
 	conn   *websocket.Conn
 	dbConn *pgxpool.Pool
 
@@ -116,8 +116,8 @@ type discordBotInstance struct {
 	wg     sync.WaitGroup
 }
 
-func newBotInstance(dbConn *pgxpool.Pool) *discordBotInstance {
-	return &discordBotInstance{
+func newBotInstance(dbConn *pgxpool.Pool) *botInstance {
+	return &botInstance{
 		dbConn:          dbConn,
 		forceHeartbeat:  make(chan struct{}),
 		didAckHeartbeat: true,
@@ -129,7 +129,7 @@ Runs a bot instance to completion. It will start up a gateway connection and ret
 connection is closed. It only returns an error when something unexpected occurs; if so, you should
 do exponential backoff before reconnecting. Otherwise you can reconnect right away.
 */
-func (bot *discordBotInstance) Run(ctx context.Context) (err error) {
+func (bot *botInstance) Run(ctx context.Context) (err error) {
 	defer utils.RecoverPanicAsError(&err)
 
 	ctx, bot.cancel = context.WithCancel(ctx)
@@ -223,7 +223,7 @@ and RESUMED messages in our main message receiving loop instead of here.
 That way, we could receive exactly one message after sending Resume, either a Resume ACK or an
 Invalid Session, and from there it would be crystal clear what to do. Alas!)
 */
-func (bot *discordBotInstance) connect(ctx context.Context) error {
+func (bot *botInstance) connect(ctx context.Context) error {
 	res, err := GetGatewayBot(ctx)
 	if err != nil {
 		return oops.New(err, "failed to get gateway URL")
@@ -328,7 +328,7 @@ func (bot *discordBotInstance) connect(ctx context.Context) error {
 Sends outgoing gateway messages and channel messages. Handles heartbeats. This function should be
 run as its own goroutine.
 */
-func (bot *discordBotInstance) doSender(ctx context.Context) {
+func (bot *botInstance) doSender(ctx context.Context) {
 	defer bot.wg.Done()
 	defer bot.cancel()
 
@@ -507,7 +507,7 @@ func (bot *discordBotInstance) doSender(ctx context.Context) {
 	}
 }
 
-func (bot *discordBotInstance) receiveGatewayMessage(ctx context.Context) (*GatewayMessage, error) {
+func (bot *botInstance) receiveGatewayMessage(ctx context.Context) (*GatewayMessage, error) {
 	_, msgBytes, err := bot.conn.ReadMessage()
 	if err != nil {
 		return nil, err
@@ -524,7 +524,7 @@ func (bot *discordBotInstance) receiveGatewayMessage(ctx context.Context) (*Gate
 	return &msg, nil
 }
 
-func (bot *discordBotInstance) sendGatewayMessage(ctx context.Context, msg GatewayMessage) error {
+func (bot *botInstance) sendGatewayMessage(ctx context.Context, msg GatewayMessage) error {
 	logging.ExtractLogger(ctx).Debug().Interface("msg", msg).Msg("sending gateway message")
 	return bot.conn.WriteMessage(websocket.TextMessage, msg.ToJSON())
 }
@@ -534,7 +534,7 @@ Processes a single event message from Discord. If this returns an error, it mean
 really gone wrong, bad enough that the connection should be shut down. Otherwise it will just log
 any errors that occur.
 */
-func (bot *discordBotInstance) processEventMsg(ctx context.Context, msg *GatewayMessage) error {
+func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage) error {
 	if msg.Opcode != OpcodeDispatch {
 		panic(fmt.Sprintf("processEventMsg must only be used on Dispatch messages (opcode %d). Validate this before you call this function.", OpcodeDispatch))
 	}
@@ -557,13 +557,25 @@ func (bot *discordBotInstance) processEventMsg(ctx context.Context, msg *Gateway
 		if err != nil {
 			return oops.New(err, "error on updated message")
 		}
+	case "MESSAGE_DELETE":
+		bot.messageDelete(ctx, MessageDeleteFromMap(msg.Data))
+	case "MESSAGE_BULK_DELETE":
+		bulkDelete := MessageBulkDeleteFromMap(msg.Data)
+		for _, id := range bulkDelete.IDs {
+			bot.messageDelete(ctx, MessageDelete{
+				ID:        id,
+				ChannelID: bulkDelete.ChannelID,
+				GuildID:   bulkDelete.GuildID,
+			})
+		}
 	}
 
 	return nil
 }
 
-func (bot *discordBotInstance) messageCreateOrUpdate(ctx context.Context, msg *Message) error {
-	if msg.Author != nil && msg.Author.ID == config.Config.Discord.BotUserID {
+// TODO: Should this return an error? Or just log errors?
+func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message) error {
+	if msg.OriginalHasFields("author") && msg.Author.ID == config.Config.Discord.BotUserID {
 		// Don't process your own messages
 		return nil
 	}
@@ -585,6 +597,78 @@ func (bot *discordBotInstance) messageCreateOrUpdate(ctx context.Context, msg *M
 	}
 
 	return nil
+}
+
+func (bot *botInstance) messageDelete(ctx context.Context, msgDelete MessageDelete) {
+	log := logging.ExtractLogger(ctx)
+
+	tx, err := bot.dbConn.Begin(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to start transaction")
+		return
+	}
+	defer tx.Rollback(ctx)
+
+	type deleteMessageQuery struct {
+		Message     models.DiscordMessage `db:"msg"`
+		DiscordUser *models.DiscordUser   `db:"duser"`
+		HMNUser     *models.User          `db:"hmnuser"`
+		SnippetID   *int                  `db:"snippet.id"`
+	}
+	iresult, err := db.QueryOne(ctx, tx, deleteMessageQuery{},
+		`
+		SELECT $columns
+		FROM
+			handmade_discordmessage AS msg
+			LEFT JOIN handmade_discorduser AS duser ON msg.user_id = duser.userid
+			LEFT JOIN auth_user AS hmnuser ON duser.hmn_user_id = hmnuser.id
+			LEFT JOIN handmade_snippet AS snippet ON snippet.discord_message_id = msg.id
+		WHERE msg.id = $1 AND msg.channel_id = $2
+		`,
+		msgDelete.ID, msgDelete.ChannelID,
+	)
+	if errors.Is(err, db.ErrNoMatchingRows) {
+		return
+	} else if err != nil {
+		log.Error().Err(err).Msg("failed to check for message to delete")
+		return
+	}
+	result := iresult.(*deleteMessageQuery)
+
+	log.Debug().Msg("deleting Discord message")
+	_, err = tx.Exec(ctx,
+		`
+		DELETE FROM handmade_discordmessage
+		WHERE id = $1 AND channel_id = $2
+		`,
+		msgDelete.ID,
+		msgDelete.ChannelID,
+	)
+
+	shouldDeleteSnippet := result.HMNUser != nil && result.HMNUser.DiscordDeleteSnippetOnMessageDelete
+	if result.SnippetID != nil && shouldDeleteSnippet {
+		log.Debug().
+			Int("snippet_id", *result.SnippetID).
+			Int("user_id", result.HMNUser.ID).
+			Msg("deleting snippet from Discord message")
+		_, err = tx.Exec(ctx,
+			`
+			DELETE FROM handmade_snippet
+			WHERE id = $1
+			`,
+			result.SnippetID,
+		)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to delete snippet")
+			return
+		}
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to delete Discord message")
+		return
+	}
 }
 
 type MessageToSend struct {

@@ -2,9 +2,7 @@ package website
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"net/url"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/auth"
@@ -14,61 +12,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
-	"git.handmade.network/hmn/hmn/src/templates"
 )
-
-func DiscordTest(c *RequestContext) ResponseData {
-	var userDiscord *models.DiscordUser
-	iUserDiscord, err := db.QueryOne(c.Context(), c.Conn, models.DiscordUser{},
-		`
-		SELECT $columns
-		FROM handmade_discorduser
-		WHERE hmn_user_id = $1
-		`,
-		c.CurrentUser.ID,
-	)
-	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
-			// we're ok, just no user
-		} else {
-			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current user's Discord account"))
-		}
-	} else {
-		userDiscord = iUserDiscord.(*models.DiscordUser)
-	}
-
-	type templateData struct {
-		templates.BaseData
-		DiscordUser  *templates.DiscordUser
-		AuthorizeURL string
-		UnlinkURL    string
-	}
-
-	baseData := getBaseData(c)
-	baseData.Title = "Discord Test"
-
-	params := make(url.Values)
-	params.Set("response_type", "code")
-	params.Set("client_id", config.Config.Discord.OAuthClientID)
-	params.Set("scope", "identify")
-	params.Set("state", c.CurrentSession.CSRFToken)
-	params.Set("redirect_uri", hmnurl.BuildDiscordOAuthCallback())
-
-	td := templateData{
-		BaseData:     baseData,
-		AuthorizeURL: fmt.Sprintf("https://discord.com/api/oauth2/authorize?%s", params.Encode()),
-		UnlinkURL:    hmnurl.BuildDiscordUnlink(),
-	}
-
-	if userDiscord != nil {
-		u := templates.DiscordUserToTemplate(userDiscord)
-		td.DiscordUser = &u
-	}
-
-	var res ResponseData
-	res.MustWriteTemplate("discordtest.html", td, c.Perf)
-	return res
-}
 
 func DiscordOAuthCallback(c *RequestContext) ResponseData {
 	query := c.Req.URL.Query()
@@ -95,14 +39,19 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 	}
 
 	// Check for error values and redirect back to ????
-	if query.Get("error") != "" {
+	if errCode := query.Get("error"); errCode != "" {
 		// TODO: actually handle these errors
-		return ErrorResponse(http.StatusBadRequest, errors.New(query.Get("error")))
+		if errCode == "access_denied" {
+			// This occurs when the user cancels. Just go back to the profile page.
+			return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)
+		} else {
+			return RejectRequest(c, "Failed to authenticate with Discord.")
+		}
 	}
 
 	// Do the actual token exchange and redirect back to ????
 	code := query.Get("code")
-	res, err := discord.ExchangeOAuthCode(c.Context(), code, hmnurl.BuildDiscordOAuthCallback()) // TODO: Redirect to the right place
+	res, err := discord.ExchangeOAuthCode(c.Context(), code, hmnurl.BuildDiscordOAuthCallback())
 	if err != nil {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to exchange Discord authorization code"))
 	}
@@ -139,7 +88,7 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save new Discord user info"))
 	}
 
-	return c.Redirect(hmnurl.BuildDiscordTest(), http.StatusSeeOther)
+	return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)
 }
 
 func DiscordUnlink(c *RequestContext) ResponseData {
@@ -159,7 +108,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 	)
 	if err != nil {
 		if errors.Is(err, db.ErrNoMatchingRows) {
-			return c.Redirect(hmnurl.BuildDiscordTest(), http.StatusSeeOther)
+			return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)
 		} else {
 			return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get Discord user for unlink"))
 		}
@@ -187,5 +136,59 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 		c.Logger.Warn().Err(err).Msg("failed to remove member role on unlink")
 	}
 
-	return c.Redirect(hmnurl.BuildDiscordTest(), http.StatusSeeOther)
+	return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)
+}
+
+func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
+	iduser, err := db.QueryOne(c.Context(), c.Conn, models.DiscordUser{},
+		`SELECT $columns FROM handmade_discorduser WHERE hmn_user_id = $1`,
+		c.CurrentUser.ID,
+	)
+	if errors.Is(err, db.ErrNoMatchingRows) {
+		// Nothing to do
+		c.Logger.Warn().Msg("could not do showcase backlog because no discord user exists")
+		return c.Redirect(hmnurl.BuildUserProfile(c.CurrentUser.Username), http.StatusSeeOther)
+	} else if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get discord user"))
+	}
+	duser := iduser.(*models.DiscordUser)
+
+	ok, err := discord.AllowedToCreateMessageSnippet(c.Context(), c.Conn, duser.UserID)
+	if err != nil {
+		return ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	if !ok {
+		// Not allowed to do this, bail out
+		c.Logger.Warn().Msg("was not allowed to save user snippets")
+		return c.Redirect(hmnurl.BuildUserProfile(c.CurrentUser.Username), http.StatusSeeOther)
+	}
+
+	type messageIdQuery struct {
+		MessageID string `db:"msg.id"`
+	}
+	imsgIds, err := db.Query(c.Context(), c.Conn, messageIdQuery{},
+		`
+		SELECT $columns
+		FROM
+			handmade_discordmessage AS msg
+		WHERE
+			msg.user_id = $1
+			AND msg.channel_id = $2
+		`,
+		duser.UserID,
+		config.Config.Discord.ShowcaseChannelID,
+	)
+	msgIds := imsgIds.ToSlice()
+
+	for _, imsgId := range msgIds {
+		msgId := imsgId.(*messageIdQuery)
+		_, err := discord.CreateMessageSnippet(c.Context(), c.Conn, msgId.MessageID)
+		if err != nil {
+			c.Logger.Warn().Err(err).Msg("failed to create snippet from showcase backlog")
+			continue
+		}
+	}
+
+	return c.Redirect(hmnurl.BuildUserProfile(c.CurrentUser.Username), http.StatusSeeOther)
 }

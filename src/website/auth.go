@@ -210,10 +210,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
 	}
 
-	hashed, err := auth.HashPassword(password)
-	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to encrypt password"))
-	}
+	hashed := auth.HashPassword(password)
 
 	c.Perf.StartBlock("SQL", "Create user and one time token")
 	tx, err := c.Conn.Begin(c.Context())
@@ -622,10 +619,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "Password confirmation doesn't match password")
 	}
 
-	hashed, err := auth.HashPassword(password)
-	if err != nil {
-		return ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to encrypt password"))
-	}
+	hashed := auth.HashPassword(password)
 
 	c.Perf.StartBlock("SQL", "Update user's password and delete reset token")
 	tx, err := c.Conn.Begin(c.Context())
@@ -707,14 +701,10 @@ func tryLogin(c *RequestContext, user *models.User, password string) (bool, erro
 
 	// re-hash and save the user's password if necessary
 	if hashed.IsOutdated() {
-		newHashed, err := auth.HashPassword(password)
-		if err == nil {
-			err := auth.UpdatePassword(c.Context(), c.Conn, user.Username, newHashed)
-			if err != nil {
-				c.Logger.Error().Err(err).Msg("failed to update user's password")
-			}
-		} else {
-			c.Logger.Error().Err(err).Msg("failed to re-hash password")
+		newHashed := auth.HashPassword(password)
+		err := auth.UpdatePassword(c.Context(), c.Conn, user.Username, newHashed)
+		if err != nil {
+			c.Logger.Error().Err(err).Msg("failed to update user's password")
 		}
 		// If errors happen here, we can still continue with logging them in
 	}
