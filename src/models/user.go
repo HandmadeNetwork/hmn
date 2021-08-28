@@ -32,7 +32,7 @@ type User struct {
 	Bio       string  `db:"bio"`
 	Blurb     string  `db:"blurb"`
 	Signature string  `db:"signature"`
-	Avatar    *string `db:"avatar"` // TODO: Image field stuff?
+	Avatar    *string `db:"avatar"`
 
 	DarkTheme bool   `db:"darktheme"`
 	Timezone  string `db:"timezone"`

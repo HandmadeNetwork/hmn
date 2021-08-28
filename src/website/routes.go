@@ -170,7 +170,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	// NOTE(asaf): HMN-only routes:
 	mainRoutes.GET(hmnurl.RegexOldHome, Index)
 
-	mainRoutes.POST(hmnurl.RegexLoginAction, Login)
+	mainRoutes.POST(hmnurl.RegexLoginAction, securityTimerMiddleware(time.Millisecond*100, Login)) // TODO(asaf): Adjust this after launch
 	mainRoutes.GET(hmnurl.RegexLogoutAction, Logout)
 	mainRoutes.GET(hmnurl.RegexLoginPage, LoginPage)
 
@@ -297,6 +297,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			UserSettingsUrl:    hmnurl.BuildUserSettings(""),
 			LoginActionUrl:     hmnurl.BuildLoginAction(c.FullUrl()),
 			LogoutActionUrl:    hmnurl.BuildLogoutAction(c.FullUrl()),
+			ForgotPasswordUrl:  hmnurl.BuildRequestPasswordReset(),
 			RegisterUrl:        hmnurl.BuildRegister(),
 			HMNHomepageUrl:     hmnurl.BuildHomepage(),
 			ProjectHomepageUrl: hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),

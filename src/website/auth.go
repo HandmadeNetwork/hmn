@@ -18,11 +18,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
-// TODO(asaf): Add a middleware that guarantees the certain handlers will take at least X amount of time.
-//             Will be relevant for:
-//             * Login POST
-//             * Register POST
-
 var UsernameRegex = regexp.MustCompile(`^[0-9a-zA-Z][\w-]{2,29}$`)
 
 type LoginPageData struct {
@@ -46,7 +41,6 @@ func LoginPage(c *RequestContext) ResponseData {
 }
 
 func Login(c *RequestContext) ResponseData {
-	// TODO: Update this endpoint to give uniform responses on errors and to be resilient to timing attacks.
 	if c.CurrentUser != nil {
 		return RejectRequest(c, "You are already logged in.")
 	}

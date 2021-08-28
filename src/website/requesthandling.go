@@ -140,11 +140,21 @@ func (c *RequestContext) URL() *url.URL {
 }
 
 func (c *RequestContext) FullUrl() string {
-	var scheme string // TODO(asaf): BEFORE RELEASE!! Fetch scheme from X-Forwarded-* headers or Forwarded header
-	if c.Req.TLS != nil {
-		scheme = "https://"
-	} else {
-		scheme = "http://"
+	var scheme string
+
+	if scheme == "" {
+		proto, hasProto := c.Req.Header["X-Forwarded-Proto"]
+		if hasProto {
+			scheme = fmt.Sprintf("%s://", proto)
+		}
+	}
+
+	if scheme == "" {
+		if c.Req.TLS != nil {
+			scheme = "https://"
+		} else {
+			scheme = "http://"
+		}
 	}
 	return scheme + c.Req.Host + c.Req.URL.String()
 }

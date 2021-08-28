@@ -249,12 +249,3 @@ var HMNTemplateFuncs = template.FuncMap{
 		return snippet.Type == TimelineTypeSnippetYoutube
 	},
 }
-
-// TODO(asaf): Delete these?
-type ErrInvalidHexColor struct {
-	color string
-}
-
-func (e ErrInvalidHexColor) Error() string {
-	return fmt.Sprintf("invalid hex color: %s", e.color)
-}

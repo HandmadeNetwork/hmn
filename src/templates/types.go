@@ -42,6 +42,7 @@ type Header struct {
 	UserSettingsUrl    string
 	LoginActionUrl     string
 	LogoutActionUrl    string
+	ForgotPasswordUrl  string
 	RegisterUrl        string
 	HMNHomepageUrl     string
 	ProjectHomepageUrl string

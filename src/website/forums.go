@@ -190,7 +190,6 @@ func Forum(c *RequestContext) ResponseData {
 
 		for _, sfNode := range subforumNodes {
 			c.Perf.StartBlock("SQL", "Fetch count of subforum threads")
-			// TODO(asaf): [PERF] [MINOR] Consider replacing querying count per subforum with a single query for all subforums with GROUP BY.
 			numThreads, err := db.QueryInt(c.Context(), c.Conn,
 				`
 				SELECT COUNT(*)
@@ -207,7 +206,6 @@ func Forum(c *RequestContext) ResponseData {
 			c.Perf.EndBlock()
 
 			c.Perf.StartBlock("SQL", "Fetch subforum threads")
-			// TODO(asaf): [PERF] [MINOR] Consider batching these.
 			itThreads, err := db.Query(c.Context(), c.Conn, threadQueryResult{},
 				`
 				SELECT $columns
@@ -261,7 +259,7 @@ func Forum(c *RequestContext) ResponseData {
 
 	baseData := getBaseData(c)
 	baseData.Title = c.CurrentProject.Name + " Forums"
-	baseData.Breadcrumbs = []templates.Breadcrumb{ // TODO(ben): This is wrong; it needs to account for subforums.
+	baseData.Breadcrumbs = []templates.Breadcrumb{
 		{
 			Name: c.CurrentProject.Name,
 			Url:  hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
