@@ -57,6 +57,10 @@ type Project struct {
 	Featured       bool      `db:"featured"`
 	DateApproved   time.Time `db:"date_approved"`
 	AllLastUpdated time.Time `db:"all_last_updated"`
+
+	ForumEnabled   bool `db:"forum_enabled"`
+	BlogEnabled    bool `db:"blog_enabled"`
+	LibraryEnabled bool `db:"library_enabled"`
 }
 
 func (p *Project) IsHMN() bool {

@@ -91,9 +91,9 @@ func ProjectToTemplate(p *models.Project, theme string) Project {
 
 		IsHMN: p.IsHMN(),
 
-		HasBlog:    true, // TODO: Check flag sets or whatever
-		HasForum:   true,
-		HasLibrary: true,
+		HasBlog:    p.BlogEnabled,
+		HasForum:   p.ForumEnabled,
+		HasLibrary: false, // TODO: port the library lol
 
 		DateApproved: p.DateApproved,
 	}
