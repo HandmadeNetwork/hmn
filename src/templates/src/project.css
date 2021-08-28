@@ -1,7 +1,12 @@
 {{ $c := hex2color .Color }}
+
+{{/* Theme "dim" colors tend more toward the background value (lighter or darker) */}}
 {{ $themeDim := eq .Theme "dark" | ternary (lightness 0.35 $c) (lightness 0.75 $c) | color2css }}
 {{ $themeDimmer := eq .Theme "dark" | ternary (lightness 0.3 $c) (lightness 0.8 $c) | color2css }}
 {{ $themeDimmest := eq .Theme "dark" | ternary (lightness 0.2 $c) (lightness 0.85 $c) | color2css }}
+
+{{/* Theme "dark" colors are always darker in value, regardless of light or dark theme. */}}
+{{ $themeDark := eq .Theme "dark" | ternary (lightness 0.30 $c) (lightness 0.35 $c) | color2css }}
 
 {{ $linkColor := eq .Theme "dark" | ternary (lightness 0.55 $c) (lightness 0.35 $c) | color2css }}
 {{ $linkHoverColor := eq .Theme "dark" | ternary (lightness 0.65 $c) (lightness 0.45 $c) | color2css }}
@@ -12,8 +17,12 @@
     --theme-color-dimmer: {{ $themeDimmer }};
     --theme-color-dimmest: {{ $themeDimmest }};
 
+    --theme-color-dark: {{ $themeDark }};
+
     --link-color: {{ $linkColor }};
-    --link-color-hover: {{ $linkHoverColor }};
+    --link-hover-color: {{ $linkHoverColor }};
+
+    --input-lite-border: {{ $linkColor }};
 }
 
 .accent {
@@ -46,64 +55,61 @@ a:hover, button:hover, .button:hover, input[type=button]:hover, input[type=submi
     background-color: {{ .PostBgColor }};
 }
 
-/*
-TODO: Manually apply sensible tachyons classes to the elements styled below, then delete
-all of this CSS.
-*/
+.bg-theme {
+    background-color: {{ $c | color2css }};
+    background-color: var(--theme-color);
+}
 
-/* {% if theme == "dark" %}
-    #search_form_input_homepage { color: #{% rgb_accent accent 0.65 %}; }
-    #search_form_input_homepage::-webkit-input-placeholder { color: #{% rgb_accent accent 0.65 %}; }
-    #search_form_input_homepage:-moz-placeholder { color: #{% rgb_accent accent 0.65 %}; }
-    #search_form_input_homepage::-moz-placeholder { color: #{% rgb_accent accent 0.65 %}; }
-    #search_form_input_homepage:-ms-input-placeholder { color: #{% rgb_accent accent 0.65 %}; }
-{% else %}
-    #search_form_input_homepage { color: #{% rgb_accent accent 0.25 %}; }
-    #search_form_input_homepage::-webkit-input-placeholder { color: #{% rgb_accent accent 0.25 %}; }
-    #search_form_input_homepage:-moz-placeholder { color: #{% rgb_accent accent 0.25 %}; }
-    #search_form_input_homepage::-moz-placeholder { color: #{% rgb_accent accent 0.25 %}; }
-    #search_form_input_homepage:-ms-input-placeholder { color: #{% rgb_accent accent 0.25 %}; }
-{% endif %} */
+.bg-theme-dim {
+    background-color: {{ $themeDim }};
+    background-color: var(--theme-color-dim);
+}
 
-/* {% if theme == "dark" %}
-    header .menu-bar .logo { background-color: #{% rgb_accent accent 0.23 %}; }
-    header .menu-bar .logo:hover { background-color: #{% rgb_accent accent 0.27 %}; }
-    header { border-bottom-color:#{% rgb_accent accent 0.33 %}; }
-    .post .action.button { border-bottom-color:#{% rgb_accent accent 0.33 %}; }
-    :root {
-        --input-lite-border: #{% rgb_accent accent 0.33 %};
-    }
+.bg-theme-dimmer {
+    background-color: {{ $themeDimmer }};
+    background-color: var(--theme-color-dimmer);
+}
 
-    header #unfold-btn-fx { background-color: #{% rgb_accent accent 0.23 %}; }
-    header #unfold-btn-fx:hover { background-color: #{% rgb_accent accent 0.21 %}; }
+.bg-theme-dimmest {
+    background-color: {{ $themeDimmest }};
+    background-color: var(--theme-color-dimmest);
+}
 
-    .forum .thread:nth-of-type(odd) { background-color:#{% rgb_accent accent 0.14 False 0.03%}; }
-    .blog .post:nth-of-type(even) { background-color:#{% rgb_accent accent 0.14 False 0.03 %}; }
-{% else %}
-    header .menu-bar .logo { background-color: #{% rgb_accent accent 0.25 True %}; }
-    header .menu-bar .logo:hover { background-color: #{% rgb_accent accent 0.28 True %}; }
-    header { border-bottom-color:#{% rgb_accent accent 0.18 %}; }
-    .post .action.button { border-bottom-color:#{% rgb_accent accent 0.25 True %}; }
-    :root {
-        --input-lite-border: #{% rgb_accent accent 0.25 True %};
-    }
+.bg-theme-dark {
+    background-color: {{ $themeDark }};
+    background-color: var(--theme-color-dark);
+}
 
-    header #unfold-btn-fx { background-color: #{% rgb_accent accent 0.20 %}; }
-    header #unfold-btn-fx:hover { background-color: #{% rgb_accent accent 0.16 %}; }
+.b--theme {
+    border-color: {{ $c | color2css }};
+    border-color: var(--theme-color);
+}
 
-    .forum .thread:nth-of-type(odd) { background-color:#{% rgb_accent accent 0.94 False 0.2 %}; }
-    .blog .post:nth-of-type(even) { background-color:#{% rgb_accent accent 0.94 False 0.2 %}; }
-{% endif %} */
+.b--theme-dim {
+    border-color: {{ $themeDim }};
+    border-color: var(--theme-color-dim);
+}
+
+.b--theme-dimmer {
+    border-color: {{ $themeDimmer }};
+    border-color: var(--theme-color-dimmer);
+}
+
+.b--theme-dimmest {
+    border-color: {{ $themeDimmest }};
+    border-color: var(--theme-color-dimmest);
+}
+
+.b--theme-dark {
+    border-color: {{ $themeDark }};
+    border-color: var(--theme-color-dark);
+}
 
 :root {
     --background-even-background: {{ .PostBgColor }};
 }
 
 /* Assets */
-
-header .menu-bar .hmdev-logo.project {
-    background-image:url("{{ static "logo_net.svg" }}");
-}
 
 .half.light {
     background-image:url("{{ statictheme "light" "accent_top_a.svg" }}");
