@@ -149,6 +149,9 @@ func (c *RequestContext) FullUrl() string {
 	return scheme + c.Req.Host + c.Req.URL.String()
 }
 
+// NOTE(asaf): Assumes port is present (it should be for RemoteAddr according to the docs)
+var ipRegex = regexp.MustCompile(`^(\[(?P<addrv6>[^\]]+)\]:\d+)|((?P<addrv4>[^:]+):\d+)$`)
+
 func (c *RequestContext) GetIP() *net.IPNet {
 	ipString := ""
 
@@ -168,6 +171,18 @@ func (c *RequestContext) GetIP() *net.IPNet {
 
 	if ipString == "" {
 		ipString = c.Req.RemoteAddr
+		if ipString != "" {
+			matches := ipRegex.FindStringSubmatch(ipString)
+			if matches != nil {
+				v4 := matches[ipRegex.SubexpIndex("addrv4")]
+				v6 := matches[ipRegex.SubexpIndex("addrv6")]
+				if v4 != "" {
+					ipString = v4
+				} else {
+					ipString = v6
+				}
+			}
+		}
 	}
 
 	if ipString != "" {
