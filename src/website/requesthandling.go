@@ -72,6 +72,11 @@ func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
+		path = strings.TrimSuffix(path, "/")
+		if path == "" {
+			path = "/"
+		}
+
 		match := route.Regex.FindStringSubmatch(path)
 		if match == nil {
 			continue

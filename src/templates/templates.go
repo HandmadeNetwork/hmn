@@ -105,6 +105,9 @@ var HMNTemplateFuncs = template.FuncMap{
 		}
 		return a
 	},
+	"strjoin": func(strs ...string) string {
+		return strings.Join(strs, "")
+	},
 	"absolutedate": func(t time.Time) string {
 		return t.UTC().Format("January 2, 2006, 3:04pm")
 	},

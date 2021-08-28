@@ -26,6 +26,7 @@ type HMNConfig struct {
 	Email        EmailConfig
 	DigitalOcean DigitalOceanConfig
 	Discord      DiscordConfig
+	EpisodeGuide EpisodeGuide
 }
 
 type PostgresConfig struct {
@@ -74,6 +75,11 @@ type DiscordConfig struct {
 	MemberRoleID      string
 	ShowcaseChannelID string
 	LibraryChannelID  string
+}
+
+type EpisodeGuide struct {
+	CineraOutputPath string
+	Projects         map[string]string // NOTE(asaf): Maps from slugs to default episode guide topic
 }
 
 func (info PostgresConfig) DSN() string {

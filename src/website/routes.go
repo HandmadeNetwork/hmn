@@ -192,6 +192,13 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	mainRoutes.GET(hmnurl.RegexUserProfile, UserProfile)
 	mainRoutes.GET(hmnurl.RegexProjectNotApproved, ProjectHomepage)
 
+	mainRoutes.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
+	mainRoutes.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
+	mainRoutes.POST(hmnurl.RegexDiscordShowcaseBacklog, authMiddleware(csrfMiddleware(DiscordShowcaseBacklog)))
+
+	mainRoutes.GET(hmnurl.RegexUserSettings, authMiddleware(UserSettings))
+	mainRoutes.POST(hmnurl.RegexUserSettings, authMiddleware(csrfMiddleware(UserSettingsSave)))
+
 	// NOTE(asaf): Any-project routes:
 	mainRoutes.GET(hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
 	mainRoutes.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
@@ -228,12 +235,9 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	mainRoutes.GET(hmnurl.RegexPodcastEpisode, PodcastEpisode)
 	mainRoutes.GET(hmnurl.RegexPodcastRSS, PodcastRSS)
 
-	mainRoutes.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
-	mainRoutes.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
-	mainRoutes.POST(hmnurl.RegexDiscordShowcaseBacklog, authMiddleware(csrfMiddleware(DiscordShowcaseBacklog)))
-
-	mainRoutes.GET(hmnurl.RegexUserSettings, authMiddleware(UserSettings))
-	mainRoutes.POST(hmnurl.RegexUserSettings, authMiddleware(csrfMiddleware(UserSettingsSave)))
+	mainRoutes.GET(hmnurl.RegexEpisodeList, EpisodeList)
+	mainRoutes.GET(hmnurl.RegexEpisode, Episode)
+	mainRoutes.GET(hmnurl.RegexCineraIndex, CineraIndex)
 
 	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 	mainRoutes.GET(hmnurl.RegexEditorPreviewsJS, func(c *RequestContext) ResponseData {
@@ -260,6 +264,12 @@ func getBaseData(c *RequestContext) templates.BaseData {
 	}
 
 	notices := getNoticesFromCookie(c)
+
+	episodeGuideUrl := ""
+	defaultTopic, hasAnnotations := config.Config.EpisodeGuide.Projects[c.CurrentProject.Slug]
+	if hasAnnotations {
+		episodeGuideUrl = hmnurl.BuildEpisodeList(c.CurrentProject.Slug, defaultTopic)
+	}
 
 	return templates.BaseData{
 		Theme: c.Theme,
@@ -289,7 +299,7 @@ func getBaseData(c *RequestContext) templates.BaseData {
 			ForumsUrl:          hmnurl.BuildForum(c.CurrentProject.Slug, nil, 1),
 			LibraryUrl:         hmnurl.BuildLibrary(c.CurrentProject.Slug),
 			ManifestoUrl:       hmnurl.BuildManifesto(),
-			EpisodeGuideUrl:    hmnurl.BuildHomepage(), // TODO(asaf)
+			EpisodeGuideUrl:    episodeGuideUrl,
 			EditUrl:            "",
 			SearchActionUrl:    "https://duckduckgo.com",
 		},

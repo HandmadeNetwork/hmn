@@ -276,6 +276,18 @@ func TestLibraryResource(t *testing.T) {
 	AssertSubdomain(t, BuildLibraryResource("hero", 1), "hero")
 }
 
+func TestEpisodeGuide(t *testing.T) {
+	AssertRegexMatch(t, BuildEpisodeList("hero", ""), RegexEpisodeList, map[string]string{"topic": ""})
+	AssertRegexMatch(t, BuildEpisodeList("hero", "code"), RegexEpisodeList, map[string]string{"topic": "code"})
+	AssertSubdomain(t, BuildEpisodeList("hero", "code"), "hero")
+
+	AssertRegexMatch(t, BuildEpisode("hero", "code", "day001"), RegexEpisode, map[string]string{"topic": "code", "episode": "day001"})
+	AssertSubdomain(t, BuildEpisode("hero", "code", "day001"), "hero")
+
+	AssertRegexMatch(t, BuildCineraIndex("hero", "code"), RegexCineraIndex, map[string]string{"topic": "code"})
+	AssertSubdomain(t, BuildCineraIndex("hero", "code"), "hero")
+}
+
 func TestProjectCSS(t *testing.T) {
 	AssertRegexMatch(t, BuildProjectCSS("000000"), RegexProjectCSS, nil)
 }

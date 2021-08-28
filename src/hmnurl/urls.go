@@ -555,6 +555,38 @@ func BuildLibraryResource(projectSlug string, resourceId int) string {
 }
 
 /*
+* Episode Guide
+ */
+
+var RegexEpisodeList = regexp.MustCompile(`^/episode(/(?P<topic>[^/]+))?$`)
+
+func BuildEpisodeList(projectSlug string, topic string) string {
+	defer CatchPanic()
+
+	var builder strings.Builder
+	builder.WriteString("/episode")
+	if topic != "" {
+		builder.WriteString("/")
+		builder.WriteString(topic)
+	}
+	return ProjectUrl(builder.String(), nil, projectSlug)
+}
+
+var RegexEpisode = regexp.MustCompile(`^/episode/(?P<topic>[^/]+)/(?P<episode>[^/]+)$`)
+
+func BuildEpisode(projectSlug string, topic string, episode string) string {
+	defer CatchPanic()
+	return ProjectUrl(fmt.Sprintf("/episode/%s/%s", topic, episode), nil, projectSlug)
+}
+
+var RegexCineraIndex = regexp.MustCompile(`^/(?P<topic>[^/]+).index$`)
+
+func BuildCineraIndex(projectSlug string, topic string) string {
+	defer CatchPanic()
+	return ProjectUrl(fmt.Sprintf("/%s.index", topic), nil, projectSlug)
+}
+
+/*
 * Discord OAuth
  */
 

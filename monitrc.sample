@@ -1,0 +1,54 @@
+SET DAEMON 5
+SET LOGFILE /var/log/monit.log
+SET STATEFILE /var/lib/monit/state
+SET HTTPD UNIXSOCKET /var/run/monit.sock
+    allow user:pass
+SET MAILSERVER
+    box.handmadedev.org
+    PORT 587
+    USERNAME "noreply@handmadedev.org"
+    PASSWORD "[FILL THIS IN]"
+    USING tlsv1
+SET MAIL-FORMAT {
+    from: noreply@handmadedev.org
+reply-to: noreply@handmadedev.org
+ subject: $SERVICE $EVENT at $DATE
+ message: Monit $ACTION $SERVICE at $DATE on $HOST: $DESCRIPTION
+}
+SET ALERT team@handmadedev.org only on { nonexist, instance }
+
+CHECK PROCESS beta_cinera PIDFILE /home/hmn-beta/srv/cinera/data/cinera.pid
+    GROUP cinera_beta
+    START PROGRAM = "/home/hmn-beta/srv/cinera/start.sh" AS UID "annotations"
+    STOP PROGRAM  = "/home/hmn-beta/srv/cinera/stop.sh"  AS UID "annotations"
+    MODE PASSIVE
+
+CHECK PROCESS live_cinera PIDFILE /home/hmn-live/srv/cinera/data/cinera.pid
+    GROUP cinera_live
+    START PROGRAM = "/home/hmn-live/srv/cinera/start.sh" AS UID "annotations"
+    STOP PROGRAM  = "/home/hmn-live/srv/cinera/stop.sh"  AS UID "annotations"
+    MODE PASSIVE
+
+CHECK PROCESS beta_discord_history PIDFILE /home/hmn-beta/discordhistory.pid
+    GROUP discord_history_beta
+    START PROGRAM = "/home/hmn-beta/start_discord_history.sh" AS UID "hmn-beta"
+    STOP PROGRAM = "/bin/bash -c '/bin/kill `/bin/cat /home/hmn-beta/discordhistory.pid`'"
+    MODE ACTIVE
+
+CHECK PROCESS beta_discord_bot PIDFILE /home/hmn-beta/discordbot.pid
+    GROUP discord_bot_beta
+    START PROGRAM = "/home/hmn-beta/start_discord_bot.sh" AS UID "hmn-beta"
+    STOP PROGRAM = "/bin/bash -c '/bin/kill `/bin/cat /home/hmn-beta/discordbot.pid`'"
+    MODE ACTIVE
+
+CHECK PROCESS live_discord_history PIDFILE /home/hmn-live/discordhistory.pid
+    GROUP discord_history_live
+    START PROGRAM = "/home/hmn-live/start_discord_history.sh" AS UID "hmn-live"
+    STOP PROGRAM = "/bin/bash -c '/bin/kill `/bin/cat /home/hmn-live/discordhistory.pid`'"
+    MODE ACTIVE
+
+CHECK PROCESS live_discord_bot PIDFILE /home/hmn-live/discordbot.pid
+    GROUP discord_bot_live
+    START PROGRAM = "/home/hmn-live/start_discord_bot.sh" AS UID "hmn-live"
+    STOP PROGRAM = "/bin/bash -c '/bin/kill `/bin/cat /home/hmn-live/discordbot.pid`'"
+    MODE ACTIVE
