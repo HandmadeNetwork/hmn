@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/auth"
@@ -21,6 +22,12 @@ import (
 )
 
 func init() {
+	adminCommand := &cobra.Command{
+		Use:   "admin",
+		Short: "Miscellaneous admin commands",
+	}
+	website.WebsiteCommand.AddCommand(adminCommand)
+
 	setPasswordCommand := &cobra.Command{
 		Use:   "setpassword [username] [new password]",
 		Short: "Replace a user's password",
@@ -61,7 +68,7 @@ func init() {
 			fmt.Printf("Successfully updated password for '%s'\n", canonicalUsername)
 		},
 	}
-	website.WebsiteCommand.AddCommand(setPasswordCommand)
+	adminCommand.AddCommand(setPasswordCommand)
 
 	activateUserCommand := &cobra.Command{
 		Use:   "activateuser [username]",
@@ -90,7 +97,7 @@ func init() {
 			fmt.Printf("User has been successfully activated.\n\n")
 		},
 	}
-	website.WebsiteCommand.AddCommand(activateUserCommand)
+	adminCommand.AddCommand(activateUserCommand)
 
 	sendTestMailCommand := &cobra.Command{
 		Use:   "sendtestmail [type] [toAddress] [toName]",
@@ -126,5 +133,168 @@ func init() {
 			}
 		},
 	}
-	website.WebsiteCommand.AddCommand(sendTestMailCommand)
+	adminCommand.AddCommand(sendTestMailCommand)
+
+	createSubforumCommand := &cobra.Command{
+		Use:   "createsubforum",
+		Short: "Create a new subforum",
+		Run: func(cmd *cobra.Command, args []string) {
+			name, _ := cmd.Flags().GetString("name")
+			slug, _ := cmd.Flags().GetString("slug")
+			blurb, _ := cmd.Flags().GetString("blurb")
+			parentSlug, _ := cmd.Flags().GetString("parent_slug")
+			projectSlug, _ := cmd.Flags().GetString("project_slug")
+
+			ctx := context.Background()
+			conn := db.NewConnPool(1, 1)
+			defer conn.Close()
+
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				panic(err)
+			}
+			defer tx.Rollback(ctx)
+
+			projectId, err := db.QueryInt(ctx, tx, `SELECT id FROM handmade_project WHERE slug = $1`, projectSlug)
+			if err != nil {
+				panic(err)
+			}
+
+			var parentId *int
+			if parentSlug == "" {
+				// Select the root subforum
+				id, err := db.QueryInt(ctx, tx,
+					`SELECT id FROM handmade_subforum WHERE parent_id IS NULL AND project_id = $1`,
+					projectId,
+				)
+				if err != nil {
+					panic(err)
+				}
+				parentId = &id
+			} else {
+				// Select the parent
+				id, err := db.QueryInt(ctx, tx,
+					`SELECT id FROM handmade_subforum WHERE slug = $1 AND project_id = $2`,
+					parentSlug, projectId,
+				)
+				if err != nil {
+					panic(err)
+				}
+				parentId = &id
+			}
+
+			newId, err := db.QueryInt(ctx, tx,
+				`
+				INSERT INTO handmade_subforum (name, slug, blurb, parent_id, project_id)
+				VALUES ($1, $2, $3, $4, $5)
+				RETURNING id
+				`,
+				name,
+				slug,
+				blurb,
+				parentId,
+				projectId,
+			)
+			if err != nil {
+				panic(err)
+			}
+
+			err = tx.Commit(ctx)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Printf("Created new subforum with id: %d\n", newId)
+		},
+	}
+	createSubforumCommand.Flags().String("name", "", "")
+	createSubforumCommand.Flags().String("slug", "", "")
+	createSubforumCommand.Flags().String("blurb", "", "")
+	createSubforumCommand.Flags().String("parent_slug", "", "")
+	createSubforumCommand.Flags().String("project_slug", "", "")
+	createSubforumCommand.MarkFlagRequired("name")
+	createSubforumCommand.MarkFlagRequired("slug")
+	createSubforumCommand.MarkFlagRequired("project_slug")
+	adminCommand.AddCommand(createSubforumCommand)
+
+	moveThreadsToSubforumCommand := &cobra.Command{
+		Use:   "movethreadstosubforum [<thread id>...]",
+		Short: "Move threads to a subforum, changing their type if necessary",
+		Run: func(cmd *cobra.Command, args []string) {
+			projectSlug, _ := cmd.Flags().GetString("project_slug")
+			subforumSlug, _ := cmd.Flags().GetString("subforum_slug")
+
+			ctx := context.Background()
+			conn := db.NewConnPool(1, 1)
+			defer conn.Close()
+
+			tx, err := conn.Begin(ctx)
+			if err != nil {
+				panic(err)
+			}
+			defer tx.Rollback(ctx)
+
+			projectId, err := db.QueryInt(ctx, tx, `SELECT id FROM handmade_project WHERE slug = $1`, projectSlug)
+			if err != nil {
+				panic(err)
+			}
+
+			subforumId, err := db.QueryInt(ctx, tx,
+				`SELECT id FROM handmade_subforum WHERE slug = $1 AND project_id = $2`,
+				subforumSlug, projectId,
+			)
+			if err != nil {
+				panic(err)
+			}
+
+			var threadIds []int
+			for _, threadIdStr := range args {
+				threadId, err := strconv.Atoi(threadIdStr)
+				if err != nil {
+					fmt.Printf("Couldn't move thread '%s': couldn't parse ID\n", threadIdStr)
+					continue
+				}
+				threadIds = append(threadIds, threadId)
+			}
+
+			threadsTag, err := tx.Exec(ctx,
+				`
+				UPDATE handmade_thread
+				SET
+					project_id = $2,
+					subforum_id = $3,
+					personal_article_user_id = NULL,
+					type = 2
+				WHERE
+					id = ANY ($1)
+				`,
+				threadIds,
+				projectId,
+				subforumId,
+			)
+
+			postsTag, err := tx.Exec(ctx,
+				`
+				UPDATE handmade_post
+				SET
+					thread_type = 2
+				WHERE
+					thread_id = ANY ($1)
+				`,
+				threadIds,
+			)
+
+			err = tx.Commit(ctx)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Printf("Successfully moved %d threads (and %d posts).\n", threadsTag.RowsAffected(), postsTag.RowsAffected())
+		},
+	}
+	moveThreadsToSubforumCommand.Flags().String("project_slug", "", "")
+	moveThreadsToSubforumCommand.Flags().String("subforum_slug", "", "")
+	moveThreadsToSubforumCommand.MarkFlagRequired("project_slug")
+	moveThreadsToSubforumCommand.MarkFlagRequired("subforum_slug")
+	adminCommand.AddCommand(moveThreadsToSubforumCommand)
 }
