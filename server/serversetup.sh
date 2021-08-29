@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euxo pipefail
+set -exo pipefail
 
 BLUE_BOLD=$'\e[1;34m'
 RESET=$'\e[0m'
@@ -11,11 +11,13 @@ savecheckpoint() {
     echo $1 > ./hmn_setup_checkpoint
 }
 
+do_as() {
+    sudo -u $1 --preserve-env=PATH bash -s
+}
+
 # Add swap space
 # https://www.digitalocean.com/community/tutorials/how-to-add-swap-space-on-ubuntu-20-04
 if [ $checkpoint -lt 10 ]; then
-    savecheckpoint 10
-
     fallocate -l 1G /swapfile
     chmod 600 /swapfile
     mkswap /swapfile
@@ -26,12 +28,12 @@ if [ $checkpoint -lt 10 ]; then
     sysctl vm.vfs_cache_pressure=50
     echo 'vm.swappiness=10' >> /etc/sysctl.conf
     echo 'vm.vfs_cache_pressure=50' >> /etc/sysctl.conf
+    
+    savecheckpoint 10
 fi
 
 # Configure Linux users
 if [ $checkpoint -lt 20 ]; then
-    savecheckpoint 20
-
     groupadd --system caddy
     useradd --system \
         --gid caddy \
@@ -50,33 +52,43 @@ if [ $checkpoint -lt 20 ]; then
         --shell /bin/bash \
         --create-home --home-dir /home/annotations \
         annotations
+    
+    savecheckpoint 20
 fi
 
 # Install important stuff
 if [ $checkpoint -lt 30 ]; then
-    savecheckpoint 30
-
     apt update
     apt install -y \
         build-essential \
         libcurl4-openssl-dev byacc flex
+    
+    savecheckpoint 30
 fi
 
 # Install Go
 if [ $checkpoint -lt 40 ]; then
-    savecheckpoint 40
-
     wget https://golang.org/dl/go1.17.linux-amd64.tar.gz
     tar -C /usr/local -xzf go1.17.linux-amd64.tar.gz
-    echo 'PATH=$PATH:/usr/local/go/bin:/root/go/bin' >> ~/.bash_profile
-    source ~/.bash_profile
+    
+    export PATH=$PATH:/usr/local/go/bin:/root/go/bin
+    echo 'export PATH=$PATH:/usr/local/go/bin:/root/go/bin' >> ~/.bashrc
+    go version
+
+    do_as hmn <<'SCRIPT'
+        set -euxo pipefail
+        echo 'export PATH=$PATH:/usr/local/go/bin:/home/hmn/go/bin' >> ~/.bashrc
+        go version
+SCRIPT
+    
+    savecheckpoint 40
 fi
+
+export PATH=$PATH:/usr/local/go/bin:/root/go/bin
 
 # Install Caddy
 # https://www.digitalocean.com/community/tutorials/how-to-host-a-website-with-caddy-on-ubuntu-18-04
 if [ $checkpoint -lt 50 ]; then
-    savecheckpoint 50
-
     go install github.com/caddyserver/xcaddy/cmd/xcaddy@v0.1.9
     xcaddy build \
         --with github.com/caddy-dns/cloudflare \
@@ -84,41 +96,47 @@ if [ $checkpoint -lt 50 ]; then
     mv caddy /usr/bin
     chown root:root /usr/bin/caddy
     chmod 755 /usr/bin/caddy
+    
+    savecheckpoint 50
 fi
 
 # Install Postgres
 # (instructions at https://www.postgresql.org/download/linux/ubuntu/)
 if [ $checkpoint -lt 60 ]; then
-    savecheckpoint 60
-
     sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
     sudo apt-get update
     sudo apt-get -y install postgresql
+    
+    savecheckpoint 60
 fi
 
 # Configure Postgres
-# TODO: This was supposed to create a user without a password - why didn't it?
-# ...or was it?
 if [ $checkpoint -lt 70 ]; then
-    savecheckpoint 70
+    echo "Enter the password for the HMN postgres user:"
     sudo -u postgres createuser --createdb --login --pwprompt hmn
+    
+    savecheckpoint 70
 fi
 
-# Set up the folder structure, clone the repo
+# Set up the folder structure
 if [ $checkpoint -lt 80 ]; then
-    savecheckpoint 80
+    set +x
 
-    sudo -u hmn bash -s <<'SCRIPT'
-        set -euxo pipefail
-
+    do_as hmn <<'SCRIPT'
         cd ~
         mkdir log
         mkdir bin
 
-        echo 'PATH=$PATH:/usr/local/go/bin:/home/hmn/bin' >> ~/.bash_profile
-        source ~/.bash_profile
+        echo 'export PATH=$PATH:/home/hmn/bin' >> ~/.bashrc
+SCRIPT
 
+    savecheckpoint 80
+fi
+
+# Set up SSH
+if [ $checkpoint -lt 81]
+    do_as hmn <<'SCRIPT'
         ssh-keygen -t ed25519 -C "beta-server" -N "" -f ~/.ssh/gitlab
         git config --global core.sshCommand "ssh -i ~/.ssh/gitlab"
         echo ""
@@ -127,35 +145,52 @@ if [ $checkpoint -lt 80 ]; then
         echo ""
         cat ~/.ssh/gitlab.pub
         echo ""
-        echo "Press enter to continue when you're done."
-        read
-
-        while true ; do
-            ssh -T git@gitssh.handmade.network && break || true
-            echo "Failed to connect to GitLab. Fix the issue and then try again. (Press enter when you're done.)"
-            read
-        done
+        echo "Run this script again when you're done - it will continue where it left off."
+        exit 0
 SCRIPT
 
-    echo 'PATH=$PATH:/home/hmn/bin' >> ~/.bash_profile
-    source ~/.bash_profile
+    savecheckpoint 81
+
+    # This is a special case, where we want to halt the script and allow the
+    # user to perform an action before moving on.
+    exit 0
 fi
 
-if [ $checkpoint -lt 90 ]; then
-    savecheckpoint 90
+# Test SSH
+if [ $checkpoint -lt 82 ]; then
+    do_as hmn <<'SCRIPT'
+        set -euxo pipefail
+        
+        if ! ssh -T -i ~/.ssh/gitlab git@gitssh.handmade.network; then
+            set +x
+            
+            echo "Failed to connect to GitLab. Fix the issue and then run this script again."
+            echo ""
+            echo "Copy the following key and add it as a Deploy Key in the project in GitLab (https://git.handmade.network/hmn/hmn/-/settings/ci_cd#js-deploy-keys-settings):"
+            echo ""
+            cat ~/.ssh/gitlab.pub
+            echo ""
+            exit 1
+        fi
+SCRIPT
+    
+    savecheckpoint 82
+fi
 
-    sudo -u hmn bash -s <<'SCRIPT'
+# Clone the repo
+if [ $checkpoint -lt 90 ]; then
+    do_as hmn <<'SCRIPT'
         set -euxo pipefail
 
         cd ~
         git clone git@gitssh.handmade.network:hmn/hmn.git
 SCRIPT
+    
+    savecheckpoint 90
 fi
 
 # Copy config files to the right places
 if [ $checkpoint -lt 100 ]; then
-    savecheckpoint 100
-
     cp /home/hmn/hmn/server/Caddyfile /home/caddy/Caddyfile
 
     cp /home/hmn/hmn/server/caddy.service /etc/systemd/system/caddy.service
@@ -170,21 +205,31 @@ if [ $checkpoint -lt 100 ]; then
     cp /home/hmn/hmn/src/config/config.go.example /home/hmn/hmn/src/config/config.go
     cp /home/hmn/hmn/server/deploy.conf.example /home/hmn/hmn/server/deploy.conf
     cp /home/hmn/hmn/cinera/cinera.conf.sample /home/hmn/hmn/cinera/cinera.conf
+    chown hmn:hmn /home/hmn/hmn/src/config/config.go
+    chown hmn:hmn /home/hmn/hmn/server/deploy.conf
+    chown hmn:hmn /home/hmn/hmn/cinera/cinera.conf
+
+    cp /home/hmn/hmn/server/root.Makefile /root/Makefile
 
     systemctl daemon-reload
+    
+    savecheckpoint 100
 fi
 
 # Build the site for the first time (despite bad config)
-if [ $checkpoint -lt 110 ]; then
-    savecheckpoint 110
-    
-    sudo -u hmn bash -s <<'SCRIPT'
+if [ $checkpoint -lt 110 ]; then    
+    do_as hmn <<'SCRIPT'
         set -euxo pipefail
 
         cd /home/hmn/hmn
         echo "Building the site for the first time. This may take a while..."
-        go build -o /home/hmn/bin/hmn src/main.go
+        go build -v -o /home/hmn/bin/hmn src/main.go
 SCRIPT
+
+    echo 'PATH=$PATH:/home/hmn/bin' >> ~/.bashrc
+    source ~/.bashrc
+    
+    savecheckpoint 110
 fi
 
 cat <<HELP
@@ -206,7 +251,7 @@ ${BLUE_BOLD}Caddy${RESET}: /home/caddy/Caddyfile
 
     Also, in the CGI config, add the name of the Git branch you would like to
     use when deploying. For example, a deployment of the beta site should use
-    the `beta` branch.
+    the 'beta' branch.
 
 ${BLUE_BOLD}Monit${RESET}: ~/.monitrc
 
@@ -239,18 +284,22 @@ ${BLUE_BOLD}Cinera${RESET}: /home/hmn/hmn/cinera/cinera.conf
 
 ${BLUE_BOLD}===== Next steps =====${RESET}
 
+Make sure you have everything on your path:
+
+    source ~/.bashrc
+
 Restore a database backup:
 
     su hmn
     cd ~
-    /home/hmn/bin/hmn seedfile <I dunno man figure it out>
+    hmn seedfile <I dunno man figure it out>
 
 Start up Caddy:
 
     systemctl start caddy
 
-Then run the deploy script:
+Then deploy the site:
 
-    /home/hmn/hmn/server/deploy.sh
+    make deploy
 
 HELP
