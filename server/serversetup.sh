@@ -135,7 +135,9 @@ SCRIPT
 fi
 
 # Set up SSH
-if [ $checkpoint -lt 81]
+if [ $checkpoint -lt 81 ]; then
+    set +x
+
     do_as hmn <<'SCRIPT'
         ssh-keygen -t ed25519 -C "beta-server" -N "" -f ~/.ssh/gitlab
         git config --global core.sshCommand "ssh -i ~/.ssh/gitlab"
@@ -253,9 +255,22 @@ ${BLUE_BOLD}Caddy${RESET}: /home/caddy/Caddyfile
     use when deploying. For example, a deployment of the beta site should use
     the 'beta' branch.
 
-${BLUE_BOLD}Monit${RESET}: ~/.monitrc
+${BLUE_BOLD}Website${RESET}: /home/hmn/hmn/src/config/config.go
 
-    Add the password for the email server.
+    First make sure you have Go on your path:
+
+        source ~/.bashrc
+
+    Then edit the config file using a special make task:
+
+        make edit-config
+
+    Fill out everything, then rebuild the site:
+
+        make build
+
+    You don't need to deploy the site yet; wait until you've
+    configured everything.
 
 ${BLUE_BOLD}Deploy Secret${RESET}: /home/hmn/hmn/server/deploy.conf
 
@@ -266,16 +281,6 @@ ${BLUE_BOLD}Deploy Secret${RESET}: /home/hmn/hmn/server/deploy.conf
 
     Then, edit the above file and fill in the secret value from the
     GitLab webhook.
-
-${BLUE_BOLD}Website${RESET}: /home/hmn/hmn/src/config/config.go
-
-    Fill out everything :)
-
-    Then rebuild the site:
-
-        su hmn
-        cd ~/hmn
-        go build -o /home/hmn/bin/hmn src/main.go
 
 ${BLUE_BOLD}Cinera${RESET}: /home/hmn/hmn/cinera/cinera.conf
 
@@ -301,5 +306,7 @@ Start up Caddy:
 Then deploy the site:
 
     make deploy
+
+Run 'make' on its own to see all the other tasks available to you!
 
 HELP

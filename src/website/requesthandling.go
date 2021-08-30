@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -252,7 +253,11 @@ func (c *RequestContext) Redirect(dest string, code int) ResponseData {
 	}
 
 	// Escape stuff
-	destUrl, _ := url.Parse(dest)
+	destUrl, err := url.Parse(dest)
+	if err != nil {
+		c.Logger.Warn().Err(err).Str("dest", dest).Msg("Failed to parse redirect URI")
+		return c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
+	}
 	dest = destUrl.String()
 
 	res.Header().Set("Location", dest)
