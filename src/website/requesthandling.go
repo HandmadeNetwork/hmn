@@ -144,7 +144,7 @@ func (c *RequestContext) FullUrl() string {
 	if scheme == "" {
 		proto, hasProto := c.Req.Header["X-Forwarded-Proto"]
 		if hasProto {
-			scheme = fmt.Sprintf("%s://", proto)
+			scheme = fmt.Sprintf("%s://", proto[0])
 		}
 	}
 
@@ -155,6 +155,7 @@ func (c *RequestContext) FullUrl() string {
 			scheme = "http://"
 		}
 	}
+
 	return scheme + c.Req.Host + c.Req.URL.String()
 }
 
