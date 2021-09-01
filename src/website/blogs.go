@@ -211,7 +211,6 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 func BlogNewThread(c *RequestContext) ResponseData {
 	baseData := getBaseData(c)
 	baseData.Title = fmt.Sprintf("Create New Post | %s", c.CurrentProject.Name)
-	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
 	editData := getEditorDataForNew(baseData, nil)
@@ -291,7 +290,6 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 	} else {
 		baseData.Title = fmt.Sprintf("Editing Post | %s", c.CurrentProject.Name)
 	}
-	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
 	editData := getEditorDataForEdit(baseData, postData)
@@ -356,7 +354,6 @@ func BlogPostReply(c *RequestContext) ResponseData {
 
 	baseData := getBaseData(c)
 	baseData.Title = fmt.Sprintf("Replying to comment in \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
-	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
 	replyPost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
@@ -421,7 +418,6 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 	} else {
 		baseData.Title = fmt.Sprintf("Deleting comment in \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
 	}
-	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
 	templatePost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)

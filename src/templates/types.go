@@ -24,10 +24,9 @@ type BaseData struct {
 	User    *User
 	Session *Session
 
-	IsProjectPage  bool
-	Header         Header
-	Footer         Footer
-	MathjaxEnabled bool
+	IsProjectPage bool
+	Header        Header
+	Footer        Footer
 }
 
 func (bd *BaseData) AddImmediateNotice(class, content string) {

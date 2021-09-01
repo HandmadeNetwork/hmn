@@ -9,8 +9,8 @@ set -eou pipefail
 # TODO(opensource): We should adapt Asaf's seedfile command and then delete this.
 
 THIS_PATH=$(pwd)
-BETA_PATH='/mnt/c/Users/bvisn/Developer/handmade/handmade-beta'
-# BETA_PATH='/Users/benvisness/Developer/handmade/handmade-beta'
+#BETA_PATH='/mnt/c/Users/bvisn/Developer/handmade/handmade-beta'
+BETA_PATH='/Users/benvisness/Developer/handmade/handmade-beta'
 
 cd $BETA_PATH
 docker-compose down -v
@@ -22,5 +22,5 @@ cd $THIS_PATH
 go run src/main.go migrate 2021-03-10T05:16:21Z
 
 cd $BETA_PATH
-./scripts/db_import -d -n hmn_two -a ./dbdumps/hmn_pg_dump_2021-04-26
-# ./scripts/db_import -d -n hmn_two -a ./dbdumps/hmn_pg_dump_2021-04-25
+#./scripts/db_import -d -n hmn_two -a ./dbdumps/hmn_pg_dump_2021-04-26
+./scripts/db_import -d -n hmn_two -a ./dbdumps/hmn_pg_dump_2021-04-25

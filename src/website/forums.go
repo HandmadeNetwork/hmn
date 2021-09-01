@@ -598,7 +598,6 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 func ForumNewThread(c *RequestContext) ResponseData {
 	baseData := getBaseData(c)
 	baseData.Title = "Create New Thread"
-	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
 	cd, ok := getCommonForumData(c)
@@ -686,7 +685,6 @@ func ForumPostReply(c *RequestContext) ResponseData {
 
 	baseData := getBaseData(c)
 	baseData.Title = fmt.Sprintf("Replying to post | %s", cd.SubforumTree[cd.SubforumID].Name)
-	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
 	replyPost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
@@ -751,7 +749,6 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 	} else {
 		baseData.Title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[cd.SubforumID].Name)
 	}
-	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
 	editData := getEditorDataForEdit(baseData, postData)
@@ -811,7 +808,6 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 
 	baseData := getBaseData(c)
 	baseData.Title = fmt.Sprintf("Deleting post in \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
-	baseData.MathjaxEnabled = true
 	// TODO(ben): Set breadcrumbs
 
 	templatePost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)

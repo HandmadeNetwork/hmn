@@ -10,7 +10,7 @@ import (
 
 func main() {
 	js.Global().Set("parseMarkdown", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		return parsing.ParseMarkdown(args[0].String(), parsing.PreviewMarkdown)
+		return parsing.ParseMarkdown(args[0].String(), parsing.ForumPreviewMarkdown)
 	}))
 
 	var done chan bool
