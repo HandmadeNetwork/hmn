@@ -13,8 +13,7 @@ func JamIndex(c *RequestContext) ResponseData {
 		ogimageurl = urljoin(current_site_host(), ogimagepath)
 	*/
 
-	baseData := getBaseData(c)
-	baseData.Title = "Wheel Reinvention Jam"
+	baseData := getBaseDataAutocrumb(c, "Wheel Reinvention Jam")
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade.Network"},
 		{Property: "og:type", Value: "website"},

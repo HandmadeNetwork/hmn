@@ -31,28 +31,38 @@ var PostTypePrefix = map[templates.PostType]string{
 	templates.PostTypeForumReply:  "Forum reply",
 }
 
-func PostBreadcrumbs(lineageBuilder *models.SubforumLineageBuilder, project *models.Project, thread *models.Thread) []templates.Breadcrumb {
+var ThreadTypeDisplayNames = map[models.ThreadType]string{
+	models.ThreadTypeProjectBlogPost: "Blog",
+	models.ThreadTypeForumPost:       "Forums",
+}
+
+func GenericThreadBreadcrumbs(lineageBuilder *models.SubforumLineageBuilder, project *models.Project, thread *models.Thread) []templates.Breadcrumb {
 	var result []templates.Breadcrumb
-	result = append(result, templates.Breadcrumb{
-		Name: project.Name,
-		Url:  hmnurl.BuildProjectHomepage(project.Slug),
-	})
-	result = append(result, templates.Breadcrumb{
-		Name: ThreadTypeDisplayNames[thread.Type],
-		Url:  BuildProjectRootResourceUrl(project.Slug, thread.Type),
-	})
-	switch thread.Type {
-	case models.ThreadTypeForumPost:
-		subforums := lineageBuilder.GetSubforumLineage(*thread.SubforumID)
-		slugs := lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID)
-		for i, subforum := range subforums {
-			result = append(result, templates.Breadcrumb{
-				Name: subforum.Name,
-				Url:  hmnurl.BuildForum(project.Slug, slugs[0:i+1], 1),
-			})
+	if thread.Type == models.ThreadTypeForumPost {
+		result = SubforumBreadcrumbs(lineageBuilder, project, *thread.SubforumID)
+	} else {
+		result = []templates.Breadcrumb{
+			{
+				Name: project.Name,
+				Url:  hmnurl.BuildProjectHomepage(project.Slug),
+			},
+			{
+				Name: ThreadTypeDisplayNames[thread.Type],
+				Url:  BuildProjectRootResourceUrl(project.Slug, thread.Type),
+			},
 		}
 	}
 	return result
+}
+
+func BuildProjectRootResourceUrl(projectSlug string, kind models.ThreadType) string {
+	switch kind {
+	case models.ThreadTypeProjectBlogPost:
+		return hmnurl.BuildBlog(projectSlug, 1)
+	case models.ThreadTypeForumPost:
+		return hmnurl.BuildForum(projectSlug, nil, 1)
+	}
+	return hmnurl.BuildProjectHomepage(projectSlug)
 }
 
 func MakePostListItem(
@@ -87,7 +97,7 @@ func MakePostListItem(
 	result.PostTypePrefix = PostTypePrefix[result.PostType]
 
 	if includeBreadcrumbs {
-		result.Breadcrumbs = PostBreadcrumbs(lineageBuilder, project, thread)
+		result.Breadcrumbs = GenericThreadBreadcrumbs(lineageBuilder, project, thread)
 	}
 
 	return result

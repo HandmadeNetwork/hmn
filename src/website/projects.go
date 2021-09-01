@@ -181,8 +181,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	baseData := getBaseData(c)
-	baseData.Title = "Project List"
+	baseData := getBaseDataAutocrumb(c, "Project List")
 	var res ResponseData
 	res.MustWriteTemplate("project_index.html", ProjectTemplateData{
 		BaseData: baseData,
@@ -369,7 +368,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	var projectHomepageData ProjectHomepageData
 
-	projectHomepageData.BaseData = getBaseData(c)
+	projectHomepageData.BaseData = getBaseData(c, project.Name, nil)
 	if canEdit {
 		projectHomepageData.BaseData.Header.EditUrl = hmnurl.BuildProjectEdit(project.Slug, "")
 	}

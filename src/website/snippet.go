@@ -103,7 +103,11 @@ func Snippet(c *RequestContext) ResponseData {
 		opengraph = append(opengraph, opengraphYoutube...)
 	}
 
-	baseData := getBaseData(c)
+	baseData := getBaseData(
+		c,
+		fmt.Sprintf("Snippet by %s", snippet.OwnerName),
+		[]templates.Breadcrumb{{Name: snippet.OwnerName, Url: snippet.OwnerUrl}},
+	)
 	baseData.OpenGraphItems = opengraph // NOTE(asaf): We're overriding the defaults on purpose.
 	var res ResponseData
 	err = res.WriteTemplate("snippet.html", SnippetData{

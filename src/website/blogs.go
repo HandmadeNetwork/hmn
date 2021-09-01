@@ -53,7 +53,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch total number of blog posts"))
 	}
 
-	numPages := NumPages(numPosts, postsPerPage)
+	numPages := utils.NumPages(numPosts, postsPerPage)
 	page, ok := ParsePageNumber(c, "page", numPages)
 	if !ok {
 		c.Redirect(hmnurl.BuildBlog(c.CurrentProject.Slug, page), http.StatusSeeOther)
@@ -104,8 +104,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		})
 	}
 
-	baseData := getBaseData(c)
-	baseData.Title = fmt.Sprintf("%s Blog", c.CurrentProject.Name)
+	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.Breadcrumb{BlogBreadcrumb(c.CurrentProject.Slug)})
 
 	canCreate := false
 	if c.CurrentUser != nil {
@@ -181,8 +180,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		templatePosts = append(templatePosts, post)
 	}
 
-	baseData := getBaseData(c)
-	baseData.Title = thread.Title
+	baseData := getBaseData(c, thread.Title, []templates.Breadcrumb{BlogBreadcrumb(c.CurrentProject.Slug)})
 
 	var res ResponseData
 	res.MustWriteTemplate("blog_post.html", blogPostData{
@@ -209,9 +207,11 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 }
 
 func BlogNewThread(c *RequestContext) ResponseData {
-	baseData := getBaseData(c)
-	baseData.Title = fmt.Sprintf("Create New Post | %s", c.CurrentProject.Name)
-	// TODO(ben): Set breadcrumbs
+	baseData := getBaseData(
+		c,
+		fmt.Sprintf("Create New Post | %s", c.CurrentProject.Name),
+		[]templates.Breadcrumb{BlogBreadcrumb(c.CurrentProject.Slug)},
+	)
 
 	editData := getEditorDataForNew(baseData, nil)
 	editData.SubmitUrl = hmnurl.BuildBlogNewThread(c.CurrentProject.Slug)
@@ -284,13 +284,17 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 
 	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
-	baseData := getBaseData(c)
+	title := ""
 	if postData.Thread.FirstID == postData.Post.ID {
-		baseData.Title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
+		title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
 	} else {
-		baseData.Title = fmt.Sprintf("Editing Post | %s", c.CurrentProject.Name)
+		title = fmt.Sprintf("Editing Post | %s", c.CurrentProject.Name)
 	}
-	// TODO(ben): Set breadcrumbs
+	baseData := getBaseData(
+		c,
+		title,
+		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &postData.Thread),
+	)
 
 	editData := getEditorDataForEdit(baseData, postData)
 	editData.SubmitUrl = hmnurl.BuildBlogPostEdit(c.CurrentProject.Slug, cd.ThreadID, cd.PostID)
@@ -352,9 +356,11 @@ func BlogPostReply(c *RequestContext) ResponseData {
 
 	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
-	baseData := getBaseData(c)
-	baseData.Title = fmt.Sprintf("Replying to comment in \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
-	// TODO(ben): Set breadcrumbs
+	baseData := getBaseData(
+		c,
+		fmt.Sprintf("Replying to comment in \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name),
+		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &postData.Thread),
+	)
 
 	replyPost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
 	replyPost.AddContentVersion(postData.CurrentVersion, postData.Editor)
@@ -412,12 +418,17 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 
 	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
-	baseData := getBaseData(c)
+	title := ""
 	if postData.Thread.FirstID == postData.Post.ID {
-		baseData.Title = fmt.Sprintf("Deleting \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
+		title = fmt.Sprintf("Deleting \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
 	} else {
-		baseData.Title = fmt.Sprintf("Deleting comment in \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
+		title = fmt.Sprintf("Deleting comment in \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
 	}
+	baseData := getBaseData(
+		c,
+		title,
+		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &postData.Thread),
+	)
 	// TODO(ben): Set breadcrumbs
 
 	templatePost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)

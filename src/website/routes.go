@@ -252,7 +252,13 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	return router
 }
 
-func getBaseData(c *RequestContext) templates.BaseData {
+func getBaseDataAutocrumb(c *RequestContext, title string) templates.BaseData {
+	return getBaseData(c, title, []templates.Breadcrumb{{Name: title, Url: ""}})
+}
+
+// NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
+//             If you pass nil, no breadcrumbs will be created.
+func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadcrumb) templates.BaseData {
 	var templateUser *templates.User
 	var templateSession *templates.Session
 	if c.CurrentUser != nil {
@@ -264,6 +270,17 @@ func getBaseData(c *RequestContext) templates.BaseData {
 
 	notices := getNoticesFromCookie(c)
 
+	if len(breadcrumbs) > 0 {
+		projectUrl := hmnurl.BuildProjectHomepage(c.CurrentProject.Slug)
+		if breadcrumbs[0].Url != projectUrl {
+			rootBreadcrumb := templates.Breadcrumb{
+				Name: c.CurrentProject.Name,
+				Url:  projectUrl,
+			}
+			breadcrumbs = append([]templates.Breadcrumb{rootBreadcrumb}, breadcrumbs...)
+		}
+	}
+
 	episodeGuideUrl := ""
 	defaultTopic, hasAnnotations := config.Config.EpisodeGuide.Projects[c.CurrentProject.Slug]
 	if hasAnnotations {
@@ -271,7 +288,9 @@ func getBaseData(c *RequestContext) templates.BaseData {
 	}
 
 	baseData := templates.BaseData{
-		Theme: c.Theme,
+		Theme:       c.Theme,
+		Title:       title,
+		Breadcrumbs: breadcrumbs,
 
 		CurrentUrl:    c.FullUrl(),
 		LoginPageUrl:  hmnurl.BuildLoginPage(c.FullUrl()),
@@ -365,7 +384,7 @@ func ProjectCSS(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusBadRequest, NewSafeError(nil, "You must provide a 'color' parameter.\n"))
 	}
 
-	baseData := getBaseData(c)
+	baseData := getBaseData(c, "", nil)
 
 	bgColor := noire.NewHex(color)
 	h, s, l := bgColor.HSL()
@@ -408,7 +427,7 @@ func FourOhFour(c *RequestContext) ResponseData {
 			templates.BaseData
 			Wanted string
 		}{
-			BaseData: getBaseData(c),
+			BaseData: getBaseData(c, "Page not found", nil),
 			Wanted:   c.FullUrl(),
 		}
 		res.MustWriteTemplate("404.html", templateData, c.Perf)
@@ -426,7 +445,7 @@ type RejectData struct {
 func RejectRequest(c *RequestContext, reason string) ResponseData {
 	var res ResponseData
 	err := res.WriteTemplate("reject.html", RejectData{
-		BaseData:     getBaseData(c),
+		BaseData:     getBaseData(c, "Rejected", nil),
 		RejectReason: reason,
 	}, c.Perf)
 	if err != nil {

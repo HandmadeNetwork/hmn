@@ -224,8 +224,7 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	templateUser := templates.UserToTemplate(profileUser, c.Theme)
 
-	baseData := getBaseData(c)
-	baseData.Title = templateUser.Name
+	baseData := getBaseDataAutocrumb(c, templateUser.Name)
 
 	var res ResponseData
 	res.MustWriteTemplate("user_profile.html", UserProfileTemplateData{
@@ -322,8 +321,7 @@ func UserSettings(c *RequestContext) ResponseData {
 
 	templateUser := templates.UserToTemplate(c.CurrentUser, c.Theme)
 
-	baseData := getBaseData(c)
-	baseData.Title = templateUser.Name
+	baseData := getBaseDataAutocrumb(c, templateUser.Name)
 
 	res.MustWriteTemplate("user_settings.html", UserSettingsTemplateData{
 		BaseData:  baseData,

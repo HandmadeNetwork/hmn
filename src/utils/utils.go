@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -32,6 +33,10 @@ func Int64Max(a, b int64) int64 {
 		return a
 	}
 	return b
+}
+
+func NumPages(numThings, thingsPerPage int) int {
+	return IntMax(int(math.Ceil(float64(numThings)/float64(thingsPerPage))), 1)
 }
 
 /*

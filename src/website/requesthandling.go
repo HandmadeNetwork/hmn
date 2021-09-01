@@ -280,7 +280,7 @@ func (c *RequestContext) ErrorResponse(status int, errs ...error) ResponseData {
 		StatusCode: status,
 		Errors:     errs,
 	}
-	res.MustWriteTemplate("error.html", getBaseData(c), c.Perf)
+	res.MustWriteTemplate("error.html", getBaseData(c, "", nil), c.Perf)
 	return res
 }
 

@@ -70,7 +70,7 @@ func PostToTimelineItem(lineageBuilder *models.SubforumLineageBuilder, post *mod
 		Description:    "", // NOTE(asaf): No description for posts
 
 		Title:       thread.Title,
-		Breadcrumbs: PostBreadcrumbs(lineageBuilder, project, thread),
+		Breadcrumbs: GenericThreadBreadcrumbs(lineageBuilder, project, thread),
 	}
 }
 

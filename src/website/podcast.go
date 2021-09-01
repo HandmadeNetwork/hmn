@@ -44,8 +44,7 @@ func PodcastIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseData(c)
-	baseData.Title = podcastResult.Podcast.Title
+	baseData := getBaseDataAutocrumb(c, podcastResult.Podcast.Title)
 
 	podcastIndexData := PodcastIndexData{
 		BaseData: baseData,
@@ -89,8 +88,11 @@ func PodcastEdit(c *RequestContext) ResponseData {
 	}
 
 	podcast := templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, podcastResult.ImageFile)
-	baseData := getBaseData(c)
-	baseData.Breadcrumbs = []templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}}
+	baseData := getBaseData(
+		c,
+		fmt.Sprintf("Edit %s", podcast.Title),
+		[]templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}},
+	)
 	podcastEditData := PodcastEditData{
 		BaseData: baseData,
 		Podcast:  podcast,
@@ -229,9 +231,11 @@ func PodcastEpisode(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, podcastResult.ImageFile)
 	episode := templates.PodcastEpisodeToTemplate(c.CurrentProject.Slug, podcastResult.Episodes[0], 0, podcastResult.ImageFile)
-	baseData := getBaseData(c)
-	baseData.Title = podcastResult.Podcast.Title
-	baseData.Breadcrumbs = []templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}}
+	baseData := getBaseData(
+		c,
+		fmt.Sprintf("%s | %s", episode.Title, podcast.Title),
+		[]templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}},
+	)
 
 	podcastEpisodeData := PodcastEpisodeData{
 		BaseData: baseData,
@@ -280,8 +284,11 @@ func PodcastEpisodeNew(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, "")
 	var res ResponseData
-	baseData := getBaseData(c)
-	baseData.Breadcrumbs = []templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}}
+	baseData := getBaseData(
+		c,
+		fmt.Sprintf("New episode | %s", podcast.Title),
+		[]templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}},
+	)
 	err = res.WriteTemplate("podcast_episode_edit.html", PodcastEpisodeEditData{
 		BaseData:     baseData,
 		IsEdit:       false,
@@ -321,8 +328,11 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, "")
 	podcastEpisode := templates.PodcastEpisodeToTemplate(c.CurrentProject.Slug, episode, 0, "")
-	baseData := getBaseData(c)
-	baseData.Breadcrumbs = []templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}, {Name: podcastEpisode.Title, Url: podcastEpisode.Url}}
+	baseData := getBaseData(
+		c,
+		fmt.Sprintf("Edit episode %s | %s", podcastEpisode.Title, podcast.Title),
+		[]templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}, {Name: podcastEpisode.Title, Url: podcastEpisode.Url}},
+	)
 	podcastEpisodeEditData := PodcastEpisodeEditData{
 		BaseData:      baseData,
 		IsEdit:        true,

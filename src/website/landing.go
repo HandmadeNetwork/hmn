@@ -316,7 +316,7 @@ func Index(c *RequestContext) ResponseData {
 	showcaseJson := templates.TimelineItemsToJSON(showcaseItems)
 	c.Perf.EndBlock()
 
-	baseData := getBaseData(c)
+	baseData := getBaseData(c, "", nil)
 	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 
 	var res ResponseData

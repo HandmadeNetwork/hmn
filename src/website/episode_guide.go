@@ -88,7 +88,7 @@ func EpisodeList(c *RequestContext) ResponseData {
 	}
 
 	var res ResponseData
-	baseData := getBaseData(c)
+	baseData := getBaseDataAutocrumb(c, fmt.Sprintf("Episode Guide"))
 	res.MustWriteTemplate("episode_list.html", EpisodeListData{
 		BaseData:     baseData,
 		Content:      template.HTML(guide),
@@ -147,8 +147,11 @@ func Episode(c *RequestContext) ResponseData {
 	content := contentMatches[episodeContentRegex.SubexpIndex("content")]
 
 	var res ResponseData
-	baseData := getBaseData(c)
-	baseData.Title = title
+	baseData := getBaseData(
+		c,
+		title,
+		[]templates.Breadcrumb{{Name: "Episode Guide", Url: hmnurl.BuildEpisodeList(c.CurrentProject.Slug, foundTopic)}},
+	)
 	res.MustWriteTemplate("episode.html", EpisodeData{
 		BaseData: baseData,
 		Content:  template.HTML(content),

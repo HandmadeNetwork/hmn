@@ -53,8 +53,7 @@ func Showcase(c *RequestContext) ResponseData {
 	jsonItems := templates.TimelineItemsToJSON(showcaseItems)
 	c.Perf.EndBlock()
 
-	baseData := getBaseData(c)
-	baseData.Title = "Community Showcase"
+	baseData := getBaseDataAutocrumb(c, "Community Showcase")
 	var res ResponseData
 	res.MustWriteTemplate("showcase.html", ShowcaseData{
 		BaseData:            baseData,

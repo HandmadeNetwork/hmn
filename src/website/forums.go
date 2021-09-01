@@ -100,7 +100,7 @@ func Forum(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	numPages := NumPages(numThreads, threadsPerPage)
+	numPages := utils.NumPages(numThreads, threadsPerPage)
 	page, ok := ParsePageNumber(c, "page", numPages)
 	if !ok {
 		c.Redirect(hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, page), http.StatusSeeOther)
@@ -259,27 +259,11 @@ func Forum(c *RequestContext) ResponseData {
 	// Template assembly
 	// ---------------------
 
-	baseData := getBaseData(c)
-	baseData.Title = c.CurrentProject.Name + " Forums"
-	baseData.Breadcrumbs = []templates.Breadcrumb{
-		{
-			Name: c.CurrentProject.Name,
-			Url:  hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
-		},
-		{
-			Name:    "Forums",
-			Url:     hmnurl.BuildForum(c.CurrentProject.Slug, nil, 1),
-			Current: true,
-		},
-	}
-
-	currentSubforums := cd.LineageBuilder.GetSubforumLineage(cd.SubforumID)
-	for i, subforum := range currentSubforums {
-		baseData.Breadcrumbs = append(baseData.Breadcrumbs, templates.Breadcrumb{
-			Name: subforum.Name,
-			Url:  hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs[0:i+1], 1),
-		})
-	}
+	baseData := getBaseData(
+		c,
+		fmt.Sprintf("%s Forums", c.CurrentProject.Name),
+		SubforumBreadcrumbs(cd.LineageBuilder, c.CurrentProject, cd.SubforumID),
+	)
 
 	var res ResponseData
 	res.MustWriteTemplate("forum.html", forumData{
@@ -511,9 +495,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c)
-	baseData.Title = thread.Title
-	// TODO(asaf): Set breadcrumbs
+	baseData := getBaseData(c, thread.Title, SubforumBreadcrumbs(cd.LineageBuilder, c.CurrentProject, cd.SubforumID))
 
 	var res ResponseData
 	res.MustWriteTemplate("forum_thread.html", forumThreadData{
@@ -596,15 +578,12 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 }
 
 func ForumNewThread(c *RequestContext) ResponseData {
-	baseData := getBaseData(c)
-	baseData.Title = "Create New Thread"
-	// TODO(ben): Set breadcrumbs
-
 	cd, ok := getCommonForumData(c)
 	if !ok {
 		return FourOhFour(c)
 	}
 
+	baseData := getBaseData(c, "Create New Thread", SubforumBreadcrumbs(cd.LineageBuilder, c.CurrentProject, cd.SubforumID))
 	editData := getEditorDataForNew(baseData, nil)
 	editData.SubmitUrl = hmnurl.BuildForumNewThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), true)
 	editData.SubmitLabel = "Post New Thread"
@@ -683,9 +662,11 @@ func ForumPostReply(c *RequestContext) ResponseData {
 
 	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
-	baseData := getBaseData(c)
-	baseData.Title = fmt.Sprintf("Replying to post | %s", cd.SubforumTree[cd.SubforumID].Name)
-	// TODO(ben): Set breadcrumbs
+	baseData := getBaseData(
+		c,
+		fmt.Sprintf("Replying to post | %s", cd.SubforumTree[cd.SubforumID].Name),
+		ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &postData.Thread),
+	)
 
 	replyPost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
 	replyPost.AddContentVersion(postData.CurrentVersion, postData.Editor)
@@ -743,13 +724,13 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 
 	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
-	baseData := getBaseData(c)
+	title := ""
 	if postData.Thread.FirstID == postData.Post.ID {
-		baseData.Title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
+		title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
 	} else {
-		baseData.Title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[cd.SubforumID].Name)
+		title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[cd.SubforumID].Name)
 	}
-	// TODO(ben): Set breadcrumbs
+	baseData := getBaseData(c, title, ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &postData.Thread))
 
 	editData := getEditorDataForEdit(baseData, postData)
 	editData.SubmitUrl = hmnurl.BuildForumPostEdit(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
@@ -806,9 +787,11 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 
 	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
 
-	baseData := getBaseData(c)
-	baseData.Title = fmt.Sprintf("Deleting post in \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
-	// TODO(ben): Set breadcrumbs
+	baseData := getBaseData(
+		c,
+		fmt.Sprintf("Deleting post in \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name),
+		ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &postData.Thread),
+	)
 
 	templatePost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
 	templatePost.AddContentVersion(postData.CurrentVersion, postData.Editor)

@@ -25,8 +25,7 @@ func WhenIsIt(c *RequestContext) ResponseData {
 		hasTimestamp = (err == nil)
 	}
 
-	baseData := getBaseData(c)
-	baseData.Title = "When is it?"
+	baseData := getBaseDataAutocrumb(c, "When is it?")
 
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:title",
