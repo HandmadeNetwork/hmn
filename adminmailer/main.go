@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"mime"
 	"mime/quotedprintable"
 	"net/smtp"
@@ -16,19 +17,20 @@ func main() {
 The config data is compiled into the program. If you need to change the config,
 find the adminmailer package in the hmn repo, modify config.go, and recompile.`)
 		fmt.Printf("\n\nUsage:\n")
-		fmt.Printf("%s [subject] [message]\n\n", os.Args[0])
-		os.Exit(1)
-	}
-	if len(os.Args) < 3 {
-		fmt.Printf("You must provide a subject and message to send\n\n")
-		fmt.Printf("%s [subject] [message]\n\n", os.Args[0])
+		fmt.Printf("You must provide a subject and message to send.\nMessage must be provided in stdin.\n\n")
+		fmt.Printf("%s [subject]\n\n", os.Args[0])
 		os.Exit(1)
 	}
 
 	subject := os.Args[1]
-	message := strings.Join(os.Args[2:], " ")
 
-	err := sendMail(RecvAddress, RecvName, subject, message)
+	message, err := io.ReadAll(os.Stdin)
+	if err != nil && err != io.EOF {
+		fmt.Printf("Error reading input: %v\n\n", err)
+		os.Exit(1)
+	}
+
+	err = sendMail(RecvAddress, RecvName, subject, string(message))
 	if err != nil {
 		fmt.Printf("Failed to send email:\n%v\n\n", err)
 		os.Exit(1)
@@ -71,7 +73,7 @@ func prepMailContents(toLine string, fromLine string, subject string, contentHtm
 	builder.WriteString(fmt.Sprintf("From: %s\r\n", fromLine))
 	builder.WriteString(fmt.Sprintf("Date: %s\r\n", time.Now().UTC().Format(time.RFC1123Z)))
 	builder.WriteString(fmt.Sprintf("Subject: %s\r\n", mime.QEncoding.Encode("utf-8", subject)))
-	builder.WriteString("Content-Type: text/html; charset=UTF-8\r\n")
+	builder.WriteString("Content-Type: text/plain; charset=UTF-8\r\n")
 	builder.WriteString("Content-Transfer-Encoding: quoted-printable\r\n")
 	builder.WriteString("\r\n")
 	writer := quotedprintable.NewWriter(&builder)
