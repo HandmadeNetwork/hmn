@@ -333,7 +333,6 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			ProjectIndexUrl:            hmnurl.BuildProjectIndex(1),
 			ForumsUrl:                  hmnurl.BuildForum(models.HMNProjectSlug, nil, 1),
 			ContactUrl:                 hmnurl.BuildContactPage(),
-			SitemapUrl:                 hmnurl.BuildSiteMap(),
 		},
 	}
 

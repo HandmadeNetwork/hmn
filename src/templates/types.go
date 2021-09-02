@@ -65,7 +65,6 @@ type Footer struct {
 	ProjectIndexUrl            string
 	ForumsUrl                  string
 	ContactUrl                 string
-	SitemapUrl                 string
 }
 
 type Thread struct {

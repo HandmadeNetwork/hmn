@@ -42,13 +42,6 @@ func BuildStreams() string {
 	return Url("/streams", nil)
 }
 
-var RegexSiteMap = regexp.MustCompile("^/sitemap$")
-
-func BuildSiteMap() string {
-	defer CatchPanic()
-	return Url("/sitemap", nil)
-}
-
 var RegexWhenIsIt = regexp.MustCompile("^/whenisit$")
 
 func BuildWhenIsIt() string {
