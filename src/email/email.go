@@ -18,7 +18,7 @@ import (
 )
 
 // TODO(asaf): Adjust this once we test on the server
-const ExpectedEmailSendDuration = time.Millisecond * 3000
+const ExpectedEmailSendDuration = time.Millisecond * 1500
 
 type RegistrationEmailData struct {
 	Name                    string
