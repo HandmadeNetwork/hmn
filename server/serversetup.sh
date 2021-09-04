@@ -199,11 +199,9 @@ if [ $checkpoint -lt 100 ]; then
     cp /home/hmn/hmn/server/caddy.service /etc/systemd/system/caddy.service
     cp /home/hmn/hmn/server/hmn.service /etc/systemd/system/hmn.service
     cp /home/hmn/hmn/server/cinera.service /etc/systemd/system/cinera.service
-    cp /home/hmn/hmn/server/status-email@.service /etc/systemd/system/status-email@.service
     chmod 644 /etc/systemd/system/caddy.service
     chmod 644 /etc/systemd/system/hmn.service
     chmod 644 /etc/systemd/system/cinera.service
-    chmod 644 /etc/systemd/system/status-email@.service
 
     cp /home/hmn/hmn/server/logrotate /etc/logrotate.d/hmn
     

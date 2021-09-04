@@ -365,7 +365,8 @@ func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
 		seedFile,
 	)
 	fmt.Println("Running command:", cmd)
-	if err = cmd.Run(); err != nil {
+	if output, err := cmd.CombinedOutput(); err != nil {
+		fmt.Print(string(output))
 		exitError, isExit := err.(*exec.ExitError)
 		if isExit {
 			panic(fmt.Errorf("failed to execute seed: %w\n%s", err, string(exitError.Stderr)))

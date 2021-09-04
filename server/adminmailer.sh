@@ -5,5 +5,5 @@ if [ $SERVICE_RESULT == "success" ]; then
 fi
 
 /home/hmn/hmn/adminmailer/adminmailer "[$1] Status changed" <<ERRMAIL
-$(service "$1" status)
+$(systemctl status --full "$1")
 ERRMAIL
