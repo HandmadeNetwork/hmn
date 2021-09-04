@@ -163,7 +163,6 @@ SCRIPT
     echo "https://git.handmade.network/Annotation-Pushers/cinera_handmade.network/-/settings/ci_cd#js-deploy-keys-settings"
     echo ""
     echo "Run this script again when you're done - it will continue where it left off."
-    exit 0
 
     savecheckpoint 81
 
@@ -252,7 +251,6 @@ if [ $checkpoint -lt 100 ]; then
     
     cp /home/hmn/hmn/src/config/config.go.example /home/hmn/hmn/src/config/config.go
     cp /home/hmn/hmn/server/hmn.conf.example /home/hmn/hmn/server/hmn.conf
-    cp /home/hmn/hmn/server/deploy.conf.example /home/hmn/hmn/server/deploy.conf
     cp /home/hmn/hmn/adminmailer/config.go.example /home/hmn/hmn/adminmailer/config.go
     cp /home/hmn/hmn/cinera/cinera.conf.sample /home/hmn/hmn/cinera/cinera.conf
     chown hmn:hmn /home/hmn/hmn/src/config/config.go
@@ -298,79 +296,82 @@ SCRIPT
 fi
 
 cat <<HELP
-Everything has been installed, but before you can run the site, you will need
-to edit several config files:
-
-${BLUE_BOLD}Caddy${RESET}: /home/caddy/Caddyfile
-
-    Get an API token from Cloudflare and add it to the Caddyfile to allow the
-    ACME challenge to succeed. The token must have the Zone / Zone / Read and 
-    Zone / DNS / Edit permissions (as laid out in the following links).
-
-        https://github.com/caddy-dns/cloudflare
-        https://github.com/libdns/cloudflare
-
-    Add the Cloudflare token to allow the ACME challenge to succeed, and add
-    the correct domains. (Don't forget to include both the normal and wildcard
-    domains.)
-
-    Also, in the CGI config, add the name of the Git branch you would like to
-    use when deploying. For example, a deployment of the beta site should use
-    the 'beta' branch.
-
-${BLUE_BOLD}Website${RESET}: /home/hmn/hmn/src/config/config.go
-
-    First make sure you have Go on your path:
-
-        source ~/.bashrc
-
-    Then edit the config file using a special make task:
-
-        make edit-config
-
-    Fill out everything, then rebuild the site:
-
-        make build
-
-    You don't need to deploy the site yet; wait until you've
-    configured everything.
-
-${BLUE_BOLD}HMN Environment Vars${RESET}: /home/hmn/hmn/server/hmn.conf
-
-    First, go to GitLab and add a webhook with a secret. Set it to trigger on
-    push events for the branch you are using for deploys.
-
-        https://git.handmade.network/hmn/hmn/hooks
-
-    Then, edit the above file and fill in all the environment vars, including
-    the secret value from the GitLab webhook.
-
-${BLUE_BOLD}Cinera${RESET}: /home/hmn/hmn/cinera/cinera.conf
-
-    Add the correct domain.
-
-${BLUE_BOLD}s3cmd${RESET}: /home/hmn/.s3cfg
-
-    Add the DigitalOcean Spaces credentials, and ensure that the bucket info is correct.
-
-${BLUE_BOLD}Admin mailer${RESET}: /home/hmn/hmn/adminmailer/config.go
-
-    First make sure you have Go on your path:
-
-        source ~/.bashrc
-
-    Fill in the config file and build the mailer:
-
-        cd /home/hmn/hmn/adminmailer
-        go build -o /usr/bin/adminmailer .
+Everything has been successfully installed!
 
 ${BLUE_BOLD}===== Next steps =====${RESET}
 
-Make sure you have everything on your path:
+First, make sure you have everything on your path:
 
     source ~/.bashrc
 
-Download and restore a database backup:
+${BLUE_BOLD}Edit the Caddy config${RESET}
+
+Get an API token from Cloudflare. The token must have the Zone / Zone / Read and
+Zone / DNS / Edit permissions (as laid out in the following links).
+
+    https://github.com/caddy-dns/cloudflare
+    https://github.com/libdns/cloudflare
+
+Then edit the Caddyfile:
+
+    vim /home/caddy/Caddyfile
+
+Add the Cloudflare token to allow the ACME challenge to succeed, and add
+the correct domains. (Don't forget to include both the normal and wildcard
+domains.)
+
+Also, in the CGI config, add the name of the Git branch you would like to
+use when deploying. For example, a deployment of the beta site should use
+the 'beta' branch.
+
+${BLUE_BOLD}Edit the website config${RESET}
+
+Edit the config file using a special make task:
+
+    make edit-config
+
+Fill out everything, then rebuild the site:
+
+    make build
+
+You don't need to deploy the site yet; wait until you've
+configured everything.
+
+${BLUE_BOLD}Edit HMN environment vars${RESET}
+
+First, go to GitLab and add a webhook with a secret. Set it to trigger on
+push events for the branch you are using for deploys.
+
+    https://git.handmade.network/hmn/hmn/hooks
+
+Then, edit the following file and fill in all the environment vars, including
+the secret value from the GitLab webhook:
+
+    /home/hmn/hmn/server/hmn.conf
+
+${BLUE_BOLD}Configure s3cmd${RESET}
+
+Edit the following file:
+
+    /home/hmn/.s3cfg
+
+Add the DigitalOcean Spaces credentials, and ensure that the bucket info is correct.
+
+${BLUE_BOLD}Configure Cinera${RESET}
+
+Edit the following file, adding the correct domain:
+
+    /home/hmn/hmn/cinera/cinera.conf
+
+${BLUE_BOLD}Configure the admin mailer${RESET}
+
+Fill in the config file and build the mailer:
+
+    cd /home/hmn/hmn/adminmailer
+    vim config.go
+    go build -o /usr/bin/adminmailer .
+
+${BLUE_BOLD}Download and restore a database backup${RESET}
 
     make download-database
 
@@ -378,21 +379,22 @@ Download and restore a database backup:
     cd ~
     hmn migrate --list
     hmn seedfile <your backup file> <ID of initial migration>
+    hmn migrate
 
-Restore static files:
+${BLUE_BOLD}Restore static files${RESET}
 
     make restore-static-files
 
-Set up Cinera:
+${BLUE_BOLD}Set up Cinera${RESET}
 
     cd /home/hmn/hmn/cinera
     ./setup.sh
 
-Start up Caddy:
+${BLUE_BOLD}Start up Caddy${RESET}
 
     systemctl start caddy
 
-Then deploy the site:
+${BLUE_BOLD}Deploy the site!${RESET}
 
     make deploy
 
