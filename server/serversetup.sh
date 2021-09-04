@@ -136,22 +136,34 @@ SCRIPT
     savecheckpoint 80
 fi
 
-# Set up SSH
+# Set up SSH for hmn
 if [ $checkpoint -lt 81 ]; then
     set +x
 
     do_as hmn <<'SCRIPT'
-        ssh-keygen -t ed25519 -C "beta-server" -N "" -f ~/.ssh/gitlab
-        git config --global core.sshCommand "ssh -i ~/.ssh/gitlab"
-        echo ""
-        echo ""
-        echo "Copy the following key and add it as a Deploy Key in the project in GitLab (https://git.handmade.network/hmn/hmn/-/settings/ci_cd#js-deploy-keys-settings):"
-        echo ""
-        cat ~/.ssh/gitlab.pub
-        echo ""
-        echo "Run this script again when you're done - it will continue where it left off."
-        exit 0
+        ssh-keygen -t ed25519 -C "beta-server" -N "" -f ~/.ssh/gitlab-hmn
+        git config --global core.sshCommand "ssh -i ~/.ssh/gitlab-hmn"
 SCRIPT
+
+    do_as annotations <<'SCRIPT'
+        ssh-keygen -t ed25519 -C "beta-server" -N "" -f ~/.ssh/gitlab-annotation-system
+        ssh-keygen -t ed25519 -C "beta-server" -N "" -f ~/.ssh/gitlab-hmml
+SCRIPT
+
+    echo ""
+    echo "Add the following keys as Deploy Keys to the following projects:"
+    echo ""
+    cat /home/hmn/.ssh/gitlab-hmn.pub
+    echo "https://git.handmade.network/hmn/hmn/-/settings/ci_cd#js-deploy-keys-settings"
+    echo ""
+    cat /home/annotations/.ssh/gitlab-annotation-system.pub
+    echo "https://git.handmade.network/Annotation-Pushers/Annotation-System/-/settings/ci_cd#js-deploy-keys-settings"
+    echo ""
+    cat /home/annotations/.ssh/gitlab-hmml.pub
+    echo "https://git.handmade.network/Annotation-Pushers/cinera_handmade.network/-/settings/ci_cd#js-deploy-keys-settings"
+    echo ""
+    echo "Run this script again when you're done - it will continue where it left off."
+    exit 0
 
     savecheckpoint 81
 
@@ -160,19 +172,51 @@ SCRIPT
     exit 0
 fi
 
-# Test SSH
+# Test SSH for hmn
 if [ $checkpoint -lt 82 ]; then
     do_as hmn <<'SCRIPT'
         set -euxo pipefail
         
-        if ! ssh -T -i ~/.ssh/gitlab git@gitssh.handmade.network; then
+        if ! ssh -T -i ~/.ssh/gitlab-hmn git@gitssh.handmade.network; then
             set +x
             
-            echo "Failed to connect to GitLab. Fix the issue and then run this script again."
+            echo "Copy the following key:"
             echo ""
-            echo "Copy the following key and add it as a Deploy Key in the project in GitLab (https://git.handmade.network/hmn/hmn/-/settings/ci_cd#js-deploy-keys-settings):"
+            cat ~/.ssh/gitlab-hmn
             echo ""
-            cat ~/.ssh/gitlab.pub
+            echo "Add it as a Deploy Key to the HMN project in GitLab:"
+            echo ""
+            echo "    https://git.handmade.network/hmn/hmn/-/settings/ci_cd#js-deploy-keys-settings"
+            echo ""
+            exit 1
+        fi
+SCRIPT
+
+    do_as annotations <<'SCRIPT'
+        if ! ssh -T -i ~/.ssh/gitlab-annotation-system git@gitssh.handmade.network; then
+            set +x
+
+            echo "Copy the following key:"
+            echo ""
+            cat ~/.ssh/gitlab-annotation-system
+            echo ""
+            echo "Add it as a Deploy Key to this project in GitLab:"
+            echo ""
+            echo "    https://git.handmade.network/Annotation-Pushers/Annotation-System/-/settings/ci_cd#js-deploy-keys-settings"
+            echo ""
+            exit 1
+        fi
+
+        if ! ssh -T -i ~/.ssh/gitlab-hmml git@gitssh.handmade.network; then
+            set +x
+
+            echo "Copy the following key:"
+            echo ""
+            cat ~/.ssh/gitlab-hmml
+            echo ""
+            echo "Add it as a Deploy Key to this project in GitLab:"
+            echo ""
+            echo "    https://git.handmade.network/Annotation-Pushers/cinera_handmade.network/-/settings/ci_cd#js-deploy-keys-settings"
             echo ""
             exit 1
         fi
@@ -228,10 +272,13 @@ fi
 
 # Set up crons
 if [ $checkpoint -lt 105 ]; then
-  # See https://stackoverflow.com/a/9625233/1177139
-  (crontab -l 2>/dev/null; echo "50 4 * * * /home/hmn/hmn/server/backup.sh") | crontab -
+    # See https://stackoverflow.com/a/9625233/1177139
+    (crontab -l 2>/dev/null; echo "50 4 * * * /home/hmn/hmn/server/backup.sh") | crontab -
 
-  savecheckpoint 105
+    # TODO: This seems to fail the first time you run it? But then works fine afterward, thanks
+    # to checkpoints. Probably should fix this someday.
+
+    savecheckpoint 105
 fi
 
 # Build the site for the first time (despite bad config)
@@ -312,10 +359,10 @@ ${BLUE_BOLD}Admin mailer${RESET}: /home/hmn/hmn/adminmailer/config.go
 
         source ~/.bashrc
 
-	Fill in the config file and build the mailer:
+    Fill in the config file and build the mailer:
 
-		cd /home/hmn/hmn/adminmailer
-		go build .
+        cd /home/hmn/hmn/adminmailer
+        go build -o /usr/bin/adminmailer .
 
 ${BLUE_BOLD}===== Next steps =====${RESET}
 
@@ -335,6 +382,11 @@ Download and restore a database backup:
 Restore static files:
 
     make restore-static-files
+
+Set up Cinera:
+
+    cd /home/hmn/hmn/cinera
+    ./setup.sh
 
 Start up Caddy:
 

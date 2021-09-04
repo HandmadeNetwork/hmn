@@ -16,6 +16,8 @@ chgrp $ANNOTATIONS_USER_GROUP $CINERA_SCRIPT_PATH
 chgrp $ANNOTATIONS_USER_GROUP $CINERA_SCRIPT_PATH/data
 
 ./update_cinera.sh
-./update_annotations.sh
+
+CMD="cd $CINERA_SCRIPT_PATH; ./update_annotations.sh"
+su - $ANNOTATIONS_USER -c "$CMD"
 
 mkdir -p data

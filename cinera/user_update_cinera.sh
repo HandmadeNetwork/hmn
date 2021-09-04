@@ -7,7 +7,7 @@ fi
 . cinera.conf
 
 if [ ! -d $CINERA_REPO_PATH ]; then
-    git clone git@gitssh.handmade.network:Annotation-Pushers/Annotation-System.git $CINERA_REPO_PATH
+    git clone --config core.sshCommand="ssh -i ~/.ssh/gitlab-annotation-system" git@gitssh.handmade.network:Annotation-Pushers/Annotation-System.git $CINERA_REPO_PATH
 fi
 
 if [ ! -d $CINERA_REPO_PATH ]; then
