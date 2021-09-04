@@ -6,10 +6,10 @@ if [ ! -e "cinera.conf" ]; then
 fi
 . cinera.conf
 
-monit -g $CINERA_MONIT_GROUP stop
+systemctl stop cinera.service
 
 CMD="cd $CINERA_SCRIPT_PATH; ./user_update_cinera.sh"
 
 su - $ANNOTATIONS_USER -c "$CMD"
 
-monit -g $CINERA_MONIT_GROUP start
+systemctl start cinera.service

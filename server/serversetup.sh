@@ -52,6 +52,7 @@ if [ $checkpoint -lt 20 ]; then
         --shell /bin/bash \
         --create-home --home-dir /home/annotations \
         annotations
+	usermod -a -G annotations hmn
     
     savecheckpoint 20
 fi

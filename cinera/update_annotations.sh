@@ -17,6 +17,7 @@ fi
 
 cd $CINERA_HMML_PATH
 git pull
+chown -R $ANNOTATIONS_USER:$ANNOTATIONS_USER_GROUP $CINERA_HMML_PATH
 
 cp -av $CINERA_HMML_PATH/cmuratori/hero/cinera__hero.css $CINERA_ASSETS_PATH/
 cp -av $CINERA_HMML_PATH/miotatsu/riscy/cinera__riscy.css $CINERA_ASSETS_PATH/
