@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eo pipefail
+source /home/hmn/hmn/server/hmn.conf
 
 branch=$1
 if [ -z "$branch" ]; then

@@ -11,13 +11,13 @@ help: ## Print this help.
 		| sed 's/^.*\/\(.*\)/\1/' \
 		| awk 'BEGIN {FS = ":[^:]*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-deploy:
-	/home/hmn/hmn/server/deploy.sh $1
+deploy: ## Manually build and deploy a branch of the website.
+	/home/hmn/hmn/server/deploy.sh
 
-build:
-    sudo -u hmn --preserve-env=PATH bash -c "cd ~/hmn && go build -o /home/hmn/bin/hmn src/main.go"
+build: ## Rebuild the website binary
+	sudo -u hmn --preserve-env=PATH bash -c "cd ~/hmn && go build -o /home/hmn/bin/hmn src/main.go"
 
-edit-config:
+edit-config: ## Edit the website config
 	vim /home/hmn/hmn/src/config/config.go
 	@echo 'Now that you have edited the config, you probably want to re-deploy the site:'
 	@echo ''
@@ -29,3 +29,9 @@ logs: ## View logs for the website
 
 logs-caddy: ## View logs for Caddy
 	journalctl -u caddy.service -f
+
+download-database: ## Download a database backup
+	sudo -u hmn bash -c "cd ~ && ~/hmn/server/download_database.sh"
+
+restore-static-files: ## Download static files from the backup.
+	sudo -u hmn bash -c "cd ~/hmn && /home/hmn/hmn/server/restore_static_files.sh"

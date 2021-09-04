@@ -61,7 +61,8 @@ if [ $checkpoint -lt 30 ]; then
     apt update
     apt install -y \
         build-essential \
-        libcurl4-openssl-dev byacc flex
+        libcurl4-openssl-dev byacc flex \
+        s3cmd
     
     savecheckpoint 30
 fi
@@ -205,17 +206,29 @@ if [ $checkpoint -lt 100 ]; then
     cp /home/hmn/hmn/server/logrotate /etc/logrotate.d/hmn
     
     cp /home/hmn/hmn/src/config/config.go.example /home/hmn/hmn/src/config/config.go
-    cp /home/hmn/hmn/server/deploy.conf.example /home/hmn/hmn/server/deploy.conf
+    cp /home/hmn/hmn/server/hmn.conf.example /home/hmn/hmn/server/hmn.conf
     cp /home/hmn/hmn/cinera/cinera.conf.sample /home/hmn/hmn/cinera/cinera.conf
     chown hmn:hmn /home/hmn/hmn/src/config/config.go
-    chown hmn:hmn /home/hmn/hmn/server/deploy.conf
+    chown hmn:hmn /home/hmn/hmn/server/hmn.conf
     chown hmn:hmn /home/hmn/hmn/cinera/cinera.conf
+
+    cp /home/hmn/hmn/server/.s3cfg /home/hmn/.s3cfg
+    chown hmn:hmn /home/hmn/.s3cfg
+    chmod 600 /home/hmn/.s3cfg
 
     cp /home/hmn/hmn/server/root.Makefile /root/Makefile
 
     systemctl daemon-reload
     
     savecheckpoint 100
+fi
+
+# Set up crons
+if [ $checkpoint -lt 105 ]; then
+  # See https://stackoverflow.com/a/9625233/1177139
+  (crontab -l 2>/dev/null; echo "50 4 * * * /home/hmn/hmn/server/backup.sh") | crontab -
+
+  savecheckpoint 105
 fi
 
 # Build the site for the first time (despite bad config)
@@ -272,19 +285,23 @@ ${BLUE_BOLD}Website${RESET}: /home/hmn/hmn/src/config/config.go
     You don't need to deploy the site yet; wait until you've
     configured everything.
 
-${BLUE_BOLD}Deploy Secret${RESET}: /home/hmn/hmn/server/deploy.conf
+${BLUE_BOLD}HMN Environment Vars${RESET}: /home/hmn/hmn/server/hmn.conf
 
     First, go to GitLab and add a webhook with a secret. Set it to trigger on
     push events for the branch you are using for deploys.
 
         https://git.handmade.network/hmn/hmn/hooks
 
-    Then, edit the above file and fill in the secret value from the
-    GitLab webhook.
+    Then, edit the above file and fill in all the environment vars, including
+    the secret value from the GitLab webhook.
 
 ${BLUE_BOLD}Cinera${RESET}: /home/hmn/hmn/cinera/cinera.conf
 
     Add the correct domain.
+
+${BLUE_BOLD}s3cmd${RESET}: /home/hmn/.s3cfg
+
+    Add the DigitalOcean Spaces credentials, and ensure that the bucket info is correct.
 
 
 ${BLUE_BOLD}===== Next steps =====${RESET}
@@ -293,11 +310,18 @@ Make sure you have everything on your path:
 
     source ~/.bashrc
 
-Restore a database backup:
+Download and restore a database backup:
+
+    make download-database
 
     su hmn
     cd ~
-    hmn seedfile <I dunno man figure it out>
+    hmn migrate --list
+    hmn seedfile <your backup file> <ID of initial migration>
+
+Restore static files:
+
+    make restore-static-files
 
 Start up Caddy:
 

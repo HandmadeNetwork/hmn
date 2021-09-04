@@ -1,8 +1,7 @@
 #!/bin/bash
 
 set -eo pipefail
-
-. /home/hmn/hmn/server/deploy.conf
+source /home/hmn/hmn/server/hmn.conf
 
 echo 'Content-Type: text/plain'
 echo ''
