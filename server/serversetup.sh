@@ -199,14 +199,18 @@ if [ $checkpoint -lt 100 ]; then
     cp /home/hmn/hmn/server/caddy.service /etc/systemd/system/caddy.service
     cp /home/hmn/hmn/server/hmn.service /etc/systemd/system/hmn.service
     cp /home/hmn/hmn/server/cinera.service /etc/systemd/system/cinera.service
+    cp /home/hmn/hmn/server/status-email@.service /etc/systemd/system/status-email@.service
     chmod 644 /etc/systemd/system/caddy.service
     chmod 644 /etc/systemd/system/hmn.service
     chmod 644 /etc/systemd/system/cinera.service
+    chmod 644 /etc/systemd/system/status-email@.service
 
     cp /home/hmn/hmn/server/logrotate /etc/logrotate.d/hmn
     
     cp /home/hmn/hmn/src/config/config.go.example /home/hmn/hmn/src/config/config.go
     cp /home/hmn/hmn/server/hmn.conf.example /home/hmn/hmn/server/hmn.conf
+    cp /home/hmn/hmn/server/deploy.conf.example /home/hmn/hmn/server/deploy.conf
+    cp /home/hmn/hmn/adminmailer/config.go.example /home/hmn/hmn/adminmailer/config.go
     cp /home/hmn/hmn/cinera/cinera.conf.sample /home/hmn/hmn/cinera/cinera.conf
     chown hmn:hmn /home/hmn/hmn/src/config/config.go
     chown hmn:hmn /home/hmn/hmn/server/hmn.conf
@@ -303,6 +307,16 @@ ${BLUE_BOLD}s3cmd${RESET}: /home/hmn/.s3cfg
 
     Add the DigitalOcean Spaces credentials, and ensure that the bucket info is correct.
 
+${BLUE_BOLD}Admin mailer${RESET}: /home/hmn/hmn/adminmailer/config.go
+
+    First make sure you have Go on your path:
+
+        source ~/.bashrc
+
+	Fill in the config file and build the mailer:
+
+		cd /home/hmn/hmn/adminmailer
+		go build .
 
 ${BLUE_BOLD}===== Next steps =====${RESET}
 
