@@ -188,6 +188,10 @@ func AtomFeed(c *RequestContext) ResponseData {
 			type projectResult struct {
 				Project models.Project `db:"project"`
 			}
+			_, hasAll := c.Req.URL.Query()["all"]
+			if hasAll {
+				itemsPerFeed = 100000
+			}
 			projects, err := db.Query(c.Context(), c.Conn, projectResult{},
 				`
 				SELECT $columns
