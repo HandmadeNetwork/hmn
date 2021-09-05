@@ -179,6 +179,25 @@ func BlogThread(c *RequestContext) ResponseData {
 
 		templatePosts = append(templatePosts, post)
 	}
+	// Update thread last read info
+	if c.CurrentUser != nil {
+		c.Perf.StartBlock("SQL", "Update TLRI")
+		_, err := c.Conn.Exec(c.Context(),
+			`
+		INSERT INTO handmade_threadlastreadinfo (thread_id, user_id, lastread)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (thread_id, user_id) DO UPDATE
+			SET lastread = EXCLUDED.lastread
+		`,
+			cd.ThreadID,
+			c.CurrentUser.ID,
+			time.Now(),
+		)
+		c.Perf.EndBlock()
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update blog tlri"))
+		}
+	}
 
 	baseData := getBaseData(c, thread.Title, []templates.Breadcrumb{BlogBreadcrumb(c.CurrentProject.Slug)})
 
