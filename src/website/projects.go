@@ -30,10 +30,7 @@ type ProjectTemplateData struct {
 	UserApprovedProjects          []templates.Project
 
 	ProjectAtomFeedUrl string
-	ManifestoUrl       string
-	NewProjectUrl      string
-	RegisterUrl        string
-	LoginUrl           string
+	WIPForumUrl        string
 }
 
 func ProjectIndex(c *RequestContext) ResponseData {
@@ -195,10 +192,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		UserApprovedProjects:          userApprovedProjects,
 
 		ProjectAtomFeedUrl: hmnurl.BuildAtomFeedForProjects(),
-		ManifestoUrl:       hmnurl.BuildManifesto(),
-		NewProjectUrl:      hmnurl.BuildProjectNew(),
-		RegisterUrl:        hmnurl.BuildRegister(),
-		LoginUrl:           hmnurl.BuildLoginPage(c.FullUrl()),
+		WIPForumUrl:        hmnurl.BuildForum(models.HMNProjectSlug, []string{"wip"}, 1),
 	}, c.Perf)
 	return res
 }
