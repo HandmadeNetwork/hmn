@@ -15,6 +15,9 @@ do_as() {
     sudo -u $1 --preserve-env=PATH bash -s
 }
 
+cd /home/hmn/hmn
+old_rev=$(git log -1 --pretty=format:%H)
+
 do_as hmn <<SCRIPT
 set -euo pipefail
 cd /home/hmn/hmn
@@ -30,3 +33,13 @@ set -euo pipefail
 /home/hmn/bin/hmn migrate
 SCRIPT
 systemctl start hmn
+
+cd /home/hmn/hmn
+new_rev=$(git log -1 --pretty=format:%H)
+if [ $old_rev != $new_rev ]; then
+	adminmailer "[$HMN_ENV] Deployed new version" <<DEPLOYMAIL
+$(git --no-pager log --no-color $old_rev..)
+DEPLOYMAIL
+fi
+
+
