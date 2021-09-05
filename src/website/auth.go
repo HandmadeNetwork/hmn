@@ -41,10 +41,6 @@ func LoginPage(c *RequestContext) ResponseData {
 }
 
 func Login(c *RequestContext) ResponseData {
-	if c.CurrentUser != nil {
-		return RejectRequest(c, "You are already logged in.")
-	}
-
 	form, err := c.GetFormValues()
 	if err != nil {
 		return c.ErrorResponse(http.StatusBadRequest, NewSafeError(err, "request must contain form data"))
@@ -53,6 +49,12 @@ func Login(c *RequestContext) ResponseData {
 	redirect := form.Get("redirect")
 	if redirect == "" {
 		redirect = "/"
+	}
+
+	if c.CurrentUser != nil {
+		res := c.Redirect(redirect, http.StatusSeeOther)
+		res.AddFutureNotice("warn", fmt.Sprintf("You are already logged in as %s.", c.CurrentUser.Username))
+		return res
 	}
 
 	username := form.Get("username")
