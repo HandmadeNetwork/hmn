@@ -465,7 +465,7 @@ func ForumThread(c *RequestContext) ResponseData {
 
 		if p.ReplyPost != nil {
 			reply := templates.PostToTemplate(p.ReplyPost, p.ReplyAuthor, c.Theme)
-			addForumUrlsToPost(&reply, c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
+			addForumUrlsToPost(&reply, c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, reply.ID)
 			post.ReplyPost = &reply
 		}
 
@@ -701,7 +701,15 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "Your reply cannot be empty.")
 	}
 
-	newPostId, _ := CreateNewPost(c.Context(), tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeForumPost, c.CurrentUser.ID, &cd.PostID, unparsed, c.Req.Host)
+	thread := FetchThread(c.Context(), tx, cd.ThreadID)
+
+	// Replies to the OP should not be considered replies
+	var replyPostId *int
+	if cd.PostID != thread.FirstID {
+		replyPostId = &cd.PostID
+	}
+
+	newPostId, _ := CreateNewPost(c.Context(), tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeForumPost, c.CurrentUser.ID, replyPostId, unparsed, c.Req.Host)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
