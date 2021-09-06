@@ -117,6 +117,9 @@ var HMNTemplateFuncs = template.FuncMap{
 	"rfc3339": func(t time.Time) string {
 		return t.UTC().Format(time.RFC3339)
 	},
+	"rfc1123": func(t time.Time) string {
+		return t.UTC().Format(time.RFC1123)
+	},
 	"alpha": func(alpha float64, color noire.Color) noire.Color {
 		color.Alpha = alpha
 		return color
