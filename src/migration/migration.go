@@ -65,24 +65,16 @@ func init() {
 	}
 
 	seedFromFileCommand := &cobra.Command{
-		Use:   "seedfile <filename> <after migration id>",
-		Short: "Resets the db, runs migrations up to and including <after migration id>, and runs the seed file.",
+		Use:   "seedfile <filename>",
+		Short: "Resets the db and runs the seed file.",
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) < 2 {
-				fmt.Printf("You must provide a seed file and migration id.\n\n")
+			if len(args) < 1 {
+				fmt.Printf("You must provide a seed file.\n\n")
 				cmd.Usage()
 				os.Exit(1)
 			}
 
-			seedFile := args[0]
-
-			afterMigration, err := time.Parse(time.RFC3339, args[1])
-			if err != nil {
-				fmt.Printf("ERROR: bad version string: %v", err)
-				os.Exit(1)
-			}
-
-			SeedFromFile(seedFile, types.MigrationVersion(afterMigration))
+			SeedFromFile(args[0])
 		},
 	}
 
@@ -301,18 +293,12 @@ func MakeMigration(name, description string) {
 // Applies a cloned db to the local db.
 // Applies the seed after the migration specified in `afterMigration`.
 // NOTE(asaf): The db role specified in the config must have the CREATEDB attribute! `ALTER ROLE hmn WITH CREATEDB;`
-func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
+func SeedFromFile(seedFile string) {
 	file, err := os.Open(seedFile)
 	if err != nil {
 		panic(fmt.Errorf("couldn't open seed file %s: %w", seedFile, err))
 	}
 	file.Close()
-
-	migration := migrations.All[afterMigration]
-
-	if migration == nil {
-		panic(fmt.Errorf("could not find migration: %s", afterMigration))
-	}
 
 	fmt.Println("Resetting database...")
 	{
@@ -348,20 +334,10 @@ func SeedFromFile(seedFile string, afterMigration types.MigrationVersion) {
 		}
 	}
 
-	fmt.Println("Running migrations...")
-	Migrate(afterMigration)
-
 	fmt.Println("Executing seed...")
 	cmd := exec.Command("pg_restore",
 		"--single-transaction",
-		"--dbname",
-		config.Config.Postgres.DbName,
-		"--host",
-		config.Config.Postgres.Hostname,
-		"--username",
-		config.Config.Postgres.User,
-		"--password",
-		"--data-only",
+		"--dbname", config.Config.Postgres.DSN(),
 		seedFile,
 	)
 	fmt.Println("Running command:", cmd)

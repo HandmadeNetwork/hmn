@@ -40,7 +40,7 @@ func (m ChangeHMNColors) Up(ctx context.Context, tx pgx.Tx) error {
 		return oops.New(err, "failed to update HMN colors")
 	}
 
-	if tag.RowsAffected() != 1 {
+	if tag.RowsAffected() > 1 {
 		return oops.New(nil, "was supposed to update only HMN, but updated %d projects instead", tag.RowsAffected())
 	}
 

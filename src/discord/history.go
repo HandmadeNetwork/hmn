@@ -17,8 +17,14 @@ func RunHistoryWatcher(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{
 	log := logging.ExtractLogger(ctx).With().Str("discord goroutine", "history watcher").Logger()
 	ctx = logging.AttachLoggerToContext(&log, ctx)
 
-	done := make(chan struct{})
+	if config.Config.Discord.BotToken == "" {
+		log.Warn().Msg("No Discord bot token was provided, so the Discord history bot cannot run.")
+		done := make(chan struct{}, 1)
+		done <- struct{}{}
+		return done
+	}
 
+	done := make(chan struct{})
 	go func() {
 		defer func() {
 			log.Debug().Msg("shut down Discord history watcher")
