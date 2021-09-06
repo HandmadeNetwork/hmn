@@ -25,10 +25,10 @@ edit-config: ## Edit the website config
 	@echo ''
 
 logs: ## View logs for the website
-	journalctl -u hmn.service -f
+	journalctl -u hmn.service -n 100 -f
 
 logs-caddy: ## View logs for Caddy
-	journalctl -u caddy.service -f
+	journalctl -u caddy.service -n 100 -f
 
 download-database: ## Download a database backup
 	sudo -u hmn bash -c "cd ~ && ~/hmn/server/download_database.sh"
