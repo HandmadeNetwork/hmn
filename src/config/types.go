@@ -82,6 +82,12 @@ type EpisodeGuide struct {
 	Projects         map[string]string // NOTE(asaf): Maps from slugs to default episode guide topic
 }
 
+func init() {
+	if Config.EpisodeGuide.Projects == nil {
+		Config.EpisodeGuide.Projects = make(map[string]string)
+	}
+}
+
 func (info PostgresConfig) DSN() string {
 	return fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s", info.User, info.Password, info.Hostname, info.Port, info.DbName)
 }

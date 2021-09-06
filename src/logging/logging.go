@@ -194,7 +194,7 @@ func LogPanicValue(logger *zerolog.Logger, val interface{}, msg string) {
 	}
 
 	if err, ok := val.(error); ok {
-		logger.Error().Stack().Err(err).Msg(msg)
+		logger.Error().Err(err).Msg(msg)
 	} else {
 		logger.Error().
 			Interface("recovered", val).

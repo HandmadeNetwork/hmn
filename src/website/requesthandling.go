@@ -276,6 +276,13 @@ func (c *RequestContext) Redirect(dest string, code int) ResponseData {
 }
 
 func (c *RequestContext) ErrorResponse(status int, errs ...error) ResponseData {
+	defer func() {
+		if r := recover(); r != nil {
+			LogContextErrors(c, errs...)
+			panic(r)
+		}
+	}()
+
 	res := ResponseData{
 		StatusCode: status,
 		Errors:     errs,

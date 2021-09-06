@@ -37,7 +37,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 				logPerf := TrackRequestPerf(c, perfCollector)
 				defer logPerf()
 
-				defer LogContextErrors(c, &res)
+				defer LogContextErrorsFromResponse(c, &res)
 				defer MiddlewarePanicCatcher(c, &res)
 
 				return h(c)
@@ -53,7 +53,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 			logPerf := TrackRequestPerf(c, perfCollector)
 			defer logPerf()
 
-			defer LogContextErrors(c, &res)
+			defer LogContextErrorsFromResponse(c, &res)
 			defer MiddlewarePanicCatcher(c, &res)
 
 			defer storeNoticesInCookie(c, &res)
@@ -75,7 +75,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 			logPerf := TrackRequestPerf(c, perfCollector)
 			defer logPerf()
 
-			defer LogContextErrors(c, &res)
+			defer LogContextErrorsFromResponse(c, &res)
 			defer MiddlewarePanicCatcher(c, &res)
 
 			defer storeNoticesInCookie(c, &res)
@@ -558,10 +558,14 @@ func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (aft
 	}
 }
 
-func LogContextErrors(c *RequestContext, res *ResponseData) {
-	for _, err := range res.Errors {
+func LogContextErrors(c *RequestContext, errs ...error) {
+	for _, err := range errs {
 		c.Logger.Error().Timestamp().Stack().Str("Requested", c.FullUrl()).Err(err).Msg("error occurred during request")
 	}
+}
+
+func LogContextErrorsFromResponse(c *RequestContext, res *ResponseData) {
+	LogContextErrors(c, res.Errors...)
 }
 
 func MiddlewarePanicCatcher(c *RequestContext, res *ResponseData) {

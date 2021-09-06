@@ -28,7 +28,7 @@ func TestLogContextErrors(t *testing.T) {
 		Middleware: func(h Handler) Handler {
 			return func(c *RequestContext) (res ResponseData) {
 				c.Logger = &logger
-				defer LogContextErrors(c, &res)
+				defer LogContextErrorsFromResponse(c, &res)
 				return h(c)
 			}
 		},
