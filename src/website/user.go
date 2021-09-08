@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
@@ -452,11 +453,26 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	}
 
 	// Update avatar
-	imageSaveResult := SaveImageFile(c, tx, "avatar", 1*1024*1024, fmt.Sprintf("members/avatars/%s", c.CurrentUser.Username))
+	imageSaveResult := SaveImageFile(c, tx, "avatar", 1*1024*1024, fmt.Sprintf("members/avatars/%s-%d", c.CurrentUser.Username, time.Now().UTC().Unix()))
 	if imageSaveResult.ValidationError != "" {
 		return RejectRequest(c, imageSaveResult.ValidationError)
 	} else if imageSaveResult.FatalError != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(imageSaveResult.FatalError, "failed to save new avatar"))
+	} else if imageSaveResult.ImageFile != nil {
+		_, err = tx.Exec(c.Context(),
+			`
+			UPDATE auth_user
+			SET
+				avatar = $2
+			WHERE
+				id = $1
+			`,
+			c.CurrentUser.ID,
+			imageSaveResult.ImageFile.File,
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user"))
+		}
 	}
 
 	err = tx.Commit(c.Context())

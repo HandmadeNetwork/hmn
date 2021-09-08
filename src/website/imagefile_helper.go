@@ -11,11 +11,12 @@ import (
 	"os"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 )
 
 type SaveImageFileResult struct {
-	ImageFileID     int
+	ImageFile       *models.ImageFile
 	ValidationError string
 	FatalError      error
 }
@@ -88,15 +89,15 @@ func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, 
 		img.Seek(0, io.SeekStart)
 		io.Copy(hasher, img) // NOTE(asaf): Writing to hash.Hash never returns an error according to the docs
 		sha1sum := hasher.Sum(nil)
-		var imageId int
-		err = dbConn.QueryRow(c.Context(),
+		// TODO(db): Should use insert helper
+		imageFile, err := db.QueryOne(c.Context(), dbConn, models.ImageFile{},
 			`
 			INSERT INTO handmade_imagefile (file, size, sha1sum, protected, width, height)
 			VALUES ($1, $2, $3, $4, $5, $6)
-			RETURNING id
+			RETURNING $columns
 			`,
 			filename, header.Size, hex.EncodeToString(sha1sum), false, width, height,
-		).Scan(&imageId)
+		)
 		if err != nil {
 			return SaveImageFileResult{
 				FatalError: oops.New(err, "Failed to insert image file row"),
@@ -104,7 +105,7 @@ func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, 
 		}
 
 		return SaveImageFileResult{
-			ImageFileID: imageId,
+			ImageFile: imageFile.(*models.ImageFile),
 		}
 	}
 

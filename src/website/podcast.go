@@ -156,7 +156,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(imageSaveResult.FatalError, "Failed to save podcast image"))
 	}
 
-	if imageSaveResult.ImageFileID != 0 {
+	if imageSaveResult.ImageFile != nil {
 		_, err = tx.Exec(c.Context(),
 			`
 			UPDATE handmade_podcast
@@ -168,7 +168,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 			`,
 			title,
 			description,
-			imageSaveResult.ImageFileID,
+			imageSaveResult.ImageFile.ID,
 			podcastResult.Podcast.ID,
 		)
 		if err != nil {

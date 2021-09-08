@@ -167,7 +167,7 @@ func Scrape(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earlies
 				return
 			}
 
-			err := handleHistoryMessage(ctx, dbConn, &msg, true)
+			err := handleHistoryMessage(ctx, dbConn, &msg, createSnippets)
 			if err != nil {
 				errLog := logging.ExtractLogger(ctx).Error()
 				if errors.Is(err, errNotEnoughInfo) {
