@@ -2,6 +2,7 @@ package website
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -849,6 +850,41 @@ func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
 		threadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, "", 1) // TODO: Go to the last page of the thread? Or the post before the post we just deleted?
 		return c.Redirect(threadUrl, http.StatusSeeOther)
 	}
+}
+
+func WikiArticleRedirect(c *RequestContext) ResponseData {
+	threadIdStr := c.PathParams["threadid"]
+	threadId, err := strconv.Atoi(threadIdStr)
+	if err != nil {
+		panic(err)
+	}
+
+	ithread, err := db.QueryOne(c.Context(), c.Conn, models.Thread{},
+		`
+		SELECT $columns
+		FROM handmade_thread
+		WHERE
+			id = $1
+			AND project_id = $2
+			AND NOT deleted
+		`,
+		threadId,
+		c.CurrentProject.ID,
+	)
+	if errors.Is(err, db.ErrNoMatchingRows) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up wiki thread"))
+	}
+	thread := ithread.(*models.Thread)
+
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	c.Perf.EndBlock()
+
+	dest := UrlForGenericThread(thread, lineageBuilder, c.CurrentProject.Slug)
+	return c.Redirect(dest, http.StatusFound)
 }
 
 type commonForumData struct {

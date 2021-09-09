@@ -6,7 +6,18 @@ import (
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
-// NOTE(asaf): Please don't use this if you already know the kind of the post beforehand. Just call the appropriate build function.
+// NOTE(asaf): Please don't use these if you already know the kind of the thread beforehand. Just call the appropriate build function.
+func UrlForGenericThread(thread *models.Thread, lineageBuilder *models.SubforumLineageBuilder, projectSlug string) string {
+	switch thread.Type {
+	case models.ThreadTypeProjectBlogPost:
+		return hmnurl.BuildBlogThread(projectSlug, thread.ID, thread.Title)
+	case models.ThreadTypeForumPost:
+		return hmnurl.BuildForumThread(projectSlug, lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), thread.ID, thread.Title, 1)
+	}
+
+	return hmnurl.BuildProjectHomepage(projectSlug)
+}
+
 func UrlForGenericPost(thread *models.Thread, post *models.Post, lineageBuilder *models.SubforumLineageBuilder, projectSlug string) string {
 	switch post.ThreadType {
 	case models.ThreadTypeProjectBlogPost:

@@ -433,6 +433,8 @@ func BuildForumPostReply(projectSlug string, subforums []string, threadId int, p
 	return ProjectUrl(builder.String(), nil, projectSlug)
 }
 
+var RegexWikiArticle = regexp.MustCompile(`^/wiki/(?P<threadid>\d+)(-([^/]+))?$`)
+
 /*
 * Blog
  */

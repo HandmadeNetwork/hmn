@@ -211,6 +211,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	mainRoutes.POST(hmnurl.RegexForumPostEdit, authMiddleware(csrfMiddleware(ForumPostEditSubmit)))
 	mainRoutes.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
 	mainRoutes.POST(hmnurl.RegexForumPostDelete, authMiddleware(csrfMiddleware(ForumPostDeleteSubmit)))
+	mainRoutes.GET(hmnurl.RegexWikiArticle, WikiArticleRedirect)
 
 	mainRoutes.GET(hmnurl.RegexBlog, BlogIndex)
 	mainRoutes.GET(hmnurl.RegexBlogNewThread, authMiddleware(BlogNewThread))
