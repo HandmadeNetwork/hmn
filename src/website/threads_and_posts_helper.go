@@ -3,8 +3,10 @@ package website
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"net"
+	"strings"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
@@ -278,6 +280,30 @@ func CreateNewPost(
 	if err != nil {
 		panic(oops.New(err, "failed to fix up thread post IDs"))
 	}
+
+	// Track a project update
+	updateEntries := []string{"all_last_updated"}
+	switch threadType {
+	case models.ThreadTypeForumPost:
+		updateEntries = append(updateEntries, "forum_last_updated")
+	case models.ThreadTypeProjectBlogPost, models.ThreadTypePersonalBlogPost:
+		updateEntries = append(updateEntries, "blog_last_updated")
+	}
+	for i := range updateEntries {
+		updateEntries[i] = fmt.Sprintf("%s = $2", updateEntries[i])
+	}
+	updates := strings.Join(updateEntries, ", ")
+
+	_, err = tx.Exec(ctx,
+		`
+		UPDATE handmade_project
+		SET `+updates+`
+		WHERE
+			id = $1
+		`,
+		projectId,
+		time.Now(),
+	)
 
 	return
 }

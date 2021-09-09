@@ -53,10 +53,13 @@ type Project struct {
 	LogoLight string `db:"logolight"`
 	LogoDark  string `db:"logodark"`
 
-	Flags          int       `db:"flags"` // NOTE(asaf): Flags is currently only used to mark a project as hidden. Flags == 1 means hidden. Flags == 0 means visible.
-	Featured       bool      `db:"featured"`
-	DateApproved   time.Time `db:"date_approved"`
-	AllLastUpdated time.Time `db:"all_last_updated"`
+	Flags                 int       `db:"flags"` // NOTE(asaf): Flags is currently only used to mark a project as hidden. Flags == 1 means hidden. Flags == 0 means visible.
+	Featured              bool      `db:"featured"`
+	DateApproved          time.Time `db:"date_approved"`
+	AllLastUpdated        time.Time `db:"all_last_updated"`
+	ForumLastUpdated      time.Time `db:"forum_last_updated"`
+	BlogLastUpdated       time.Time `db:"blog_last_updated"`
+	AnnotationLastUpdated time.Time `db:"annotation_last_updated"`
 
 	ForumEnabled   bool `db:"forum_enabled"`
 	BlogEnabled    bool `db:"blog_enabled"`
