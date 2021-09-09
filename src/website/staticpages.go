@@ -1,8 +1,16 @@
 package website
 
+import "git.handmade.network/hmn/hmn/src/templates"
+
 func Manifesto(c *RequestContext) ResponseData {
+	baseData := getBaseDataAutocrumb(c, "Handmade Manifesto")
+	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description",
+		Value:    "Modern computer hardware is amazing. Manufacturers have orchestrated billions of pieces of silicon into terrifyingly complex and efficient structures…",
+	})
+
 	var res ResponseData
-	res.MustWriteTemplate("manifesto.html", getBaseDataAutocrumb(c, "Manifesto"), c.Perf)
+	res.MustWriteTemplate("manifesto.html", baseData, c.Perf)
 	return res
 }
 
@@ -13,14 +21,26 @@ func About(c *RequestContext) ResponseData {
 }
 
 func CodeOfConduct(c *RequestContext) ResponseData {
+	baseData := getBaseDataAutocrumb(c, "Code of Conduct")
+	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description",
+		Value:    "The Handmade community is an international community of creatives dedicated to building and improving high quality software. These are the guidelines we pledge to uphold to maintain a healthy community.",
+	})
+
 	var res ResponseData
-	res.MustWriteTemplate("code_of_conduct.html", getBaseDataAutocrumb(c, "Code of Conduct"), c.Perf)
+	res.MustWriteTemplate("code_of_conduct.html", baseData, c.Perf)
 	return res
 }
 
 func CommunicationGuidelines(c *RequestContext) ResponseData {
+	baseData := getBaseDataAutocrumb(c, "Communication Guidelines")
+	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description",
+		Value:    "The Handmade community strives to create an environment conducive to innovation, education, and constructive discussion. These are the principles we expect members to respect.",
+	})
+
 	var res ResponseData
-	res.MustWriteTemplate("communication_guidelines.html", getBaseDataAutocrumb(c, "Communication Guidelines"), c.Perf)
+	res.MustWriteTemplate("communication_guidelines.html", baseData, c.Perf)
 	return res
 }
 

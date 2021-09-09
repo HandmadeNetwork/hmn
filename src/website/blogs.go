@@ -158,7 +158,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	thread, posts := FetchThreadPostsAndStuff(
+	thread, posts, preview := FetchThreadPostsAndStuff(
 		c.Context(),
 		c.Conn,
 		cd.ThreadID,
@@ -200,6 +200,10 @@ func BlogThread(c *RequestContext) ResponseData {
 	}
 
 	baseData := getBaseData(c, thread.Title, []templates.Breadcrumb{BlogBreadcrumb(c.CurrentProject.Slug)})
+	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description",
+		Value:    preview,
+	})
 
 	var res ResponseData
 	res.MustWriteTemplate("blog_post.html", blogPostData{

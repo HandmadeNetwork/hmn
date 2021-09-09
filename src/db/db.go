@@ -338,6 +338,20 @@ func QueryScalar(ctx context.Context, conn ConnOrTx, query string, args ...inter
 	return nil, ErrNoMatchingRows
 }
 
+func QueryString(ctx context.Context, conn ConnOrTx, query string, args ...interface{}) (string, error) {
+	result, err := QueryScalar(ctx, conn, query, args...)
+	if err != nil {
+		return "", err
+	}
+
+	switch r := result.(type) {
+	case string:
+		return r, nil
+	default:
+		return "", oops.New(nil, "QueryString got a non-string result: %v", result)
+	}
+}
+
 func QueryInt(ctx context.Context, conn ConnOrTx, query string, args ...interface{}) (int, error) {
 	result, err := QueryScalar(ctx, conn, query, args...)
 	if err != nil {

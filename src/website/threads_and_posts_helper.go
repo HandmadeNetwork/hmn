@@ -126,7 +126,7 @@ func FetchThreadPostsAndStuff(
 	connOrTx db.ConnOrTx,
 	threadId int,
 	page, postsPerPage int,
-) (models.Thread, []postAndRelatedModels) {
+) (models.Thread, []postAndRelatedModels, string) {
 	limit := postsPerPage
 	offset := (page - 1) * postsPerPage
 	if postsPerPage == 0 {
@@ -188,7 +188,24 @@ func FetchThreadPostsAndStuff(
 		})
 	}
 
-	return thread, posts
+	preview, err := db.QueryString(ctx, connOrTx,
+		`
+		SELECT post.preview
+		FROM
+			handmade_post AS post
+			JOIN handmade_thread AS thread ON post.thread_id = thread.id
+			JOIN handmade_postversion AS ver ON post.current_id = ver.id
+		WHERE
+			post.thread_id = $1
+			AND thread.first_id = post.id
+		`,
+		thread.ID,
+	)
+	if err != nil && !errors.Is(err, db.ErrNoMatchingRows) {
+		panic(oops.New(err, "failed to fetch posts for thread"))
+	}
+
+	return thread, posts, preview
 }
 
 func UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User, postId int) bool {

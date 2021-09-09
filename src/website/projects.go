@@ -178,7 +178,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	baseData := getBaseDataAutocrumb(c, "Project List")
+	baseData := getBaseDataAutocrumb(c, "Projects")
 	var res ResponseData
 	res.MustWriteTemplate("project_index.html", ProjectTemplateData{
 		BaseData: baseData,
@@ -366,6 +366,11 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if canEdit {
 		projectHomepageData.BaseData.Header.EditUrl = hmnurl.BuildProjectEdit(project.Slug, "")
 	}
+	projectHomepageData.BaseData.OpenGraphItems = append(projectHomepageData.BaseData.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description",
+		Value:    project.Blurb,
+	})
+
 	projectHomepageData.Project = templates.ProjectToTemplate(project, c.Theme)
 	for _, owner := range owners {
 		projectHomepageData.Owners = append(projectHomepageData.Owners, templates.UserToTemplate(owner, c.Theme))

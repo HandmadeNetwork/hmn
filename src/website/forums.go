@@ -449,7 +449,7 @@ func ForumThread(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Fetch posts")
-	_, postsAndStuff := FetchThreadPostsAndStuff(
+	_, postsAndStuff, preview := FetchThreadPostsAndStuff(
 		c.Context(),
 		c.Conn,
 		cd.ThreadID,
@@ -497,6 +497,10 @@ func ForumThread(c *RequestContext) ResponseData {
 	}
 
 	baseData := getBaseData(c, thread.Title, SubforumBreadcrumbs(cd.LineageBuilder, c.CurrentProject, cd.SubforumID))
+	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description",
+		Value:    preview,
+	})
 
 	var res ResponseData
 	res.MustWriteTemplate("forum_thread.html", forumThreadData{
