@@ -43,3 +43,6 @@ download-database: ## Download a database backup
 
 restore-static-files: ## Download static files from the backup.
 	sudo -u hmn bash -c "cd ~/hmn && /home/hmn/hmn/server/restore_static_files.sh"
+
+update-makefile: ## Update this Makefile with the latest from the repo.
+	cp /home/hmn/hmn/server/root.Makefile /root/Makefile
