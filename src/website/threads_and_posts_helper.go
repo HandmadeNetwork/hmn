@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/parsing"
@@ -348,7 +349,16 @@ func DeletePost(
 	return false
 }
 
+const maxPostContentLength = 200000
+
 func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedContent string, ipString string, editReason string, editorId *int) (versionId int) {
+	if len(unparsedContent) > maxPostContentLength {
+		logging.ExtractLogger(ctx).Warn().
+			Str("preview", unparsedContent[:400]).
+			Msg("Somebody attempted to create an extremely long post. Content was truncated.")
+		unparsedContent = unparsedContent[:maxPostContentLength-1]
+	}
+
 	parsed := parsing.ParseMarkdown(unparsedContent, parsing.ForumRealMarkdown)
 	ip := net.ParseIP(ipString)
 
