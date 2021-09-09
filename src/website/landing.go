@@ -320,7 +320,7 @@ func Index(c *RequestContext) ResponseData {
 	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
-		Value:    "A community of programmers committed to producing quality software through deeper understanding",
+		Value:    "A community of programmers committed to producing quality software through deeper understanding.",
 	})
 
 	var res ResponseData
