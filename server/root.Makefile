@@ -24,6 +24,14 @@ edit-config: ## Edit the website config
 	@echo '    make deploy'
 	@echo ''
 
+edit-caddyfile: ## Edit the Caddyfile
+	vim /home/caddy/Caddyfile
+	@echo 'Now that you have edited the Caddyfile, you probably want to restart Caddy:'
+	@echo ''
+	@echo '    systemctl restart caddy'
+	@echo ''
+	@echo "Don't forget to copy your changes back to the repo when you're done."
+
 logs: ## View logs for the website
 	journalctl -u hmn.service -n 100 -f
 
