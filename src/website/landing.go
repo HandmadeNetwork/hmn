@@ -81,56 +81,22 @@ func Index(c *RequestContext) ResponseData {
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
-	var currentUserId *int
-	if c.CurrentUser != nil {
-		currentUserId = &c.CurrentUser.ID
-	}
-
 	c.Perf.StartBlock("LANDING", "Process projects")
 	for _, projRow := range allProjects {
 		proj := projRow.(*models.Project)
 
 		c.Perf.StartBlock("SQL", fmt.Sprintf("Fetch posts for %s", proj.Name))
-		type projectPostQuery struct {
-			Post                 models.Post   `db:"post"`
-			Thread               models.Thread `db:"thread"`
-			User                 models.User   `db:"auth_user"`
-			ThreadLastReadTime   *time.Time    `db:"tlri.lastread"`
-			SubforumLastReadTime *time.Time    `db:"slri.lastread"`
-		}
-		projectPostIter, err := db.Query(c.Context(), c.Conn, projectPostQuery{},
-			`
-			SELECT $columns
-			FROM
-				handmade_post AS post
-				JOIN handmade_thread AS thread ON post.thread_id = thread.id
-				LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
-					tlri.thread_id = post.thread_id
-					AND tlri.user_id = $1
-				)
-				LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
-					slri.subforum_id = thread.subforum_id
-					AND slri.user_id = $1
-				)
-				LEFT JOIN auth_user ON post.author_id = auth_user.id
-			WHERE
-				post.project_id = $2
-				AND post.thread_type = ANY ($3)
-				AND post.deleted = FALSE
-			ORDER BY postdate DESC
-			LIMIT $4
-			`,
-			currentUserId,
-			proj.ID,
-			[]models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypeForumPost},
-			maxPosts,
-		)
+		projectPosts, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+			ProjectIDs:     []int{proj.ID},
+			ThreadTypes:    []models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypeForumPost},
+			Limit:          maxPosts,
+			SortDescending: true,
+		})
 		c.Perf.EndBlock()
 		if err != nil {
 			c.Logger.Error().Err(err).Msg("failed to fetch project posts")
 			continue
 		}
-		projectPosts := projectPostIter.ToSlice()
 
 		forumsUrl := ""
 		if proj.ForumID != nil {
@@ -144,18 +110,7 @@ func Index(c *RequestContext) ResponseData {
 			ForumsUrl: forumsUrl,
 		}
 
-		for _, projectPostRow := range projectPosts {
-			projectPost := projectPostRow.(*projectPostQuery)
-
-			hasRead := false
-			if c.CurrentUser != nil && c.CurrentUser.MarkedAllReadAt.After(projectPost.Post.PostDate) {
-				hasRead = true
-			} else if projectPost.ThreadLastReadTime != nil && projectPost.ThreadLastReadTime.After(projectPost.Post.PostDate) {
-				hasRead = true
-			} else if projectPost.SubforumLastReadTime != nil && projectPost.SubforumLastReadTime.After(projectPost.Post.PostDate) {
-				hasRead = true
-			}
-
+		for _, projectPost := range projectPosts {
 			featurable := (!proj.IsHMN() &&
 				projectPost.Post.ThreadType == models.ThreadTypeProjectBlogPost &&
 				projectPost.Thread.FirstID == projectPost.Post.ID &&
@@ -185,9 +140,9 @@ func Index(c *RequestContext) ResponseData {
 				landingPageProject.FeaturedPost = &LandingPageFeaturedPost{
 					Title:   projectPost.Thread.Title,
 					Url:     hmnurl.BuildBlogThread(proj.Slug, projectPost.Thread.ID, projectPost.Thread.Title),
-					User:    templates.UserToTemplate(&projectPost.User, c.Theme),
+					User:    templates.UserToTemplate(projectPost.Author, c.Theme),
 					Date:    projectPost.Post.PostDate,
-					Unread:  !hasRead,
+					Unread:  projectPost.ThreadUnread,
 					Content: template.HTML(content),
 				}
 			} else {
@@ -198,8 +153,8 @@ func Index(c *RequestContext) ResponseData {
 						proj,
 						&projectPost.Thread,
 						&projectPost.Post,
-						&projectPost.User,
-						!hasRead,
+						projectPost.Author,
+						projectPost.ThreadUnread,
 						false,
 						c.Theme,
 					),
@@ -248,35 +203,18 @@ func Index(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Get news")
-	type newsPostQuery struct {
-		Post        models.Post        `db:"post"`
-		PostVersion models.PostVersion `db:"ver"`
-		Thread      models.Thread      `db:"thread"`
-		User        models.User        `db:"auth_user"`
-	}
-	newsPostRow, err := db.QueryOne(c.Context(), c.Conn, newsPostQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_post AS post
-			JOIN handmade_thread AS thread ON post.thread_id = thread.id
-			JOIN auth_user ON post.author_id = auth_user.id
-			JOIN handmade_postversion AS ver ON post.current_id = ver.id
-		WHERE
-			post.project_id = $1
-			AND thread.type = $2
-			AND post.id = thread.first_id
-			AND NOT thread.deleted
-		ORDER BY post.postdate DESC
-		LIMIT 1
-		`,
-		models.HMNProjectID,
-		models.ThreadTypeProjectBlogPost,
-	)
+	newsThreads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+		ProjectIDs:  []int{models.HMNProjectID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+		Limit:       1,
+	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news post"))
 	}
-	newsPostResult := newsPostRow.(*newsPostQuery)
+	var newsThread ThreadAndStuff
+	if len(newsThreads) > 0 {
+		newsThread = newsThreads[0]
+	}
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetch showcase snippets")
@@ -334,12 +272,12 @@ func Index(c *RequestContext) ResponseData {
 		ShowUrl:     "https://handmadedev.show/",
 		ShowcaseUrl: hmnurl.BuildShowcase(),
 		NewsPost: LandingPageFeaturedPost{
-			Title:   newsPostResult.Thread.Title,
-			Url:     hmnurl.BuildBlogThread(models.HMNProjectSlug, newsPostResult.Thread.ID, newsPostResult.Thread.Title),
-			User:    templates.UserToTemplate(&newsPostResult.User, c.Theme),
-			Date:    newsPostResult.Post.PostDate,
+			Title:   newsThread.Thread.Title,
+			Url:     hmnurl.BuildBlogThread(models.HMNProjectSlug, newsThread.Thread.ID, newsThread.Thread.Title),
+			User:    templates.UserToTemplate(newsThread.FirstPostAuthor, c.Theme),
+			Date:    newsThread.FirstPost.PostDate,
 			Unread:  true,
-			Content: template.HTML(newsPostResult.PostVersion.TextParsed),
+			Content: template.HTML(newsThread.FirstPostCurrentVersion.TextParsed),
 		},
 		PostColumns:          cols,
 		ShowcaseTimelineJson: showcaseJson,

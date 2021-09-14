@@ -234,7 +234,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			)
 			c.Perf.EndBlock()
 			if err != nil {
-				if errors.Is(err, db.ErrNoMatchingRows) {
+				if errors.Is(err, db.NotFound) {
 					return FourOhFour(c)
 				} else {
 					return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project by slug"))

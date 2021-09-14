@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"net"
 	"strings"
 	"time"
@@ -19,198 +18,574 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-type postAndRelatedModels struct {
-	Thread         models.Thread
-	Post           models.Post
-	CurrentVersion models.PostVersion
+type ThreadsQuery struct {
+	// Available on all thread queries.
+	ProjectIDs  []int               // if empty, all projects
+	ThreadTypes []models.ThreadType // if empty, all types (you do not want to do this)
+	SubforumIDs []int               // if empty, all subforums
 
-	Author *models.User
-	Editor *models.User
+	// Ignored when using FetchThread.
+	ThreadIDs []int
 
-	ReplyPost   *models.Post
-	ReplyAuthor *models.User
+	// Ignored when using FetchThread or CountThreads.
+	Limit, Offset int // if empty, no pagination
+}
+
+type ThreadAndStuff struct {
+	Project                 models.Project     `db:"project"`
+	Thread                  models.Thread      `db:"thread"`
+	FirstPost               models.Post        `db:"first_post"`
+	LastPost                models.Post        `db:"last_post"`
+	FirstPostCurrentVersion models.PostVersion `db:"first_version"`
+	LastPostCurrentVersion  models.PostVersion `db:"last_version"`
+	FirstPostAuthor         *models.User       `db:"first_author"` // Can be nil in case of a deleted user
+	LastPostAuthor          *models.User       `db:"last_author"`  // Can be nil in case of a deleted user
+	Unread                  bool
 }
 
 /*
-Fetches the thread defined by your (already parsed) path params.
-
-YOU MUST VERIFY THAT THE THREAD ID IS VALID BEFORE CALLING THIS FUNCTION. It will
-not check, for example, that the thread belongs to the correct subforum.
+Fetches threads and related models from the database according to all the given
+query params. For the most correct results, provide as much information as you have
+on hand.
 */
-func FetchThread(ctx context.Context, connOrTx db.ConnOrTx, threadId int) models.Thread {
-	type threadQueryResult struct {
-		Thread models.Thread `db:"thread"`
+func FetchThreads(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	q ThreadsQuery,
+) ([]ThreadAndStuff, error) {
+	perf := ExtractPerf(ctx)
+	perf.StartBlock("SQL", "Fetch threads")
+	defer perf.EndBlock()
+
+	var qb db.QueryBuilder
+
+	var currentUserID *int
+	if currentUser != nil {
+		currentUserID = &currentUser.ID
 	}
-	irow, err := db.QueryOne(ctx, connOrTx, threadQueryResult{},
+
+	qb.Add(
 		`
 		SELECT $columns
 		FROM
 			handmade_thread AS thread
+			JOIN handmade_project AS project ON thread.project_id = project.id
+			JOIN handmade_post AS first_post ON first_post.id = thread.first_id
+			JOIN handmade_post AS last_post ON last_post.id = thread.last_id
+			JOIN handmade_postversion AS first_version ON first_version.id = first_post.current_id
+			JOIN handmade_postversion AS last_version ON last_version.id = last_post.current_id
+			LEFT JOIN auth_user AS first_author ON first_author.id = first_post.author_id
+			LEFT JOIN auth_user AS last_author ON last_author.id = last_post.author_id
+			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
+				tlri.thread_id = thread.id
+				AND tlri.user_id = $?
+			)
+			LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
+				slri.subforum_id = thread.subforum_id
+				AND slri.user_id = $?
+			)
 		WHERE
-			id = $1
-			AND NOT deleted
+			NOT thread.deleted
+			AND ( -- project has valid lifecycle
+				project.flags = 0 AND project.lifecycle = ANY($?)
+				OR project.id = $?
+			)
 		`,
-		threadId,
+		currentUserID,
+		currentUserID,
+		models.VisibleProjectLifecycles,
+		models.HMNProjectID,
 	)
-	if err != nil {
-		// We shouldn't encounter db.ErrNoMatchingRows, because validation should have verified that everything exists.
-		panic(oops.New(err, "failed to fetch thread"))
+	if len(q.ProjectIDs) > 0 {
+		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
+	}
+	if len(q.ThreadTypes) > 0 {
+		qb.Add(`AND thread.type = ANY ($?)`, q.ThreadTypes)
+	}
+	if len(q.SubforumIDs) > 0 {
+		qb.Add(`AND thread.subforum_id = ANY ($?)`, q.SubforumIDs)
+	}
+	if len(q.ThreadIDs) > 0 {
+		qb.Add(`AND thread.id = ANY ($?)`, q.ThreadIDs)
+	}
+	if currentUser == nil {
+		qb.Add(
+			`AND first_author.status = $? -- thread author is Approved`,
+			models.UserStatusApproved,
+		)
+	} else if !currentUser.IsStaff {
+		qb.Add(
+			`
+			AND (
+				first_author.status = $? -- thread author is Approved
+				OR first_author.id = $? -- current user is the thread author
+			)
+			`,
+			models.UserStatusApproved,
+			currentUserID,
+		)
+	}
+	qb.Add(`ORDER BY last_post.postdate DESC`)
+	if q.Limit > 0 {
+		qb.Add(`LIMIT $? OFFSET $?`, q.Limit, q.Offset)
 	}
 
-	thread := irow.(*threadQueryResult).Thread
-	return thread
-}
-
-/*
-Fetches the post, the thread, and author / editor information for the post defined in
-your path params.
-
-YOU MUST VERIFY THAT THE THREAD ID AND POST ID ARE VALID BEFORE CALLING THIS FUNCTION.
-It will not check that the post belongs to the correct subforum, for example, or the
-correct project blog. This logic varies per route and per use of threads, so it doesn't
-happen here.
-*/
-func FetchPostAndStuff(
-	ctx context.Context,
-	connOrTx db.ConnOrTx,
-	threadId, postId int,
-) postAndRelatedModels {
 	type resultRow struct {
-		Thread         models.Thread      `db:"thread"`
-		Post           models.Post        `db:"post"`
-		CurrentVersion models.PostVersion `db:"ver"`
-		Author         *models.User       `db:"author"`
-		Editor         *models.User       `db:"editor"`
-		ReplyPost      *models.Post       `db:"reply"`
-		ReplyAuthor    *models.User       `db:"reply_author"`
-	}
-	postQueryResult, err := db.QueryOne(ctx, connOrTx, resultRow{},
-		`
-		SELECT $columns
-		FROM
-			handmade_thread AS thread
-			JOIN handmade_post AS post ON post.thread_id = thread.id
-			JOIN handmade_postversion AS ver ON post.current_id = ver.id
-			LEFT JOIN auth_user AS author ON post.author_id = author.id
-			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
-			LEFT JOIN handmade_post AS reply ON post.reply_id = reply.id
-			LEFT JOIN auth_user AS reply_author ON reply.author_id = reply_author.id
-		WHERE
-			post.thread_id = $1
-			AND post.id = $2
-			AND NOT post.deleted
-		`,
-		threadId,
-		postId,
-	)
-	if err != nil {
-		// We shouldn't encounter db.ErrNoMatchingRows, because validation should have verified that everything exists.
-		panic(oops.New(err, "failed to fetch post and related data"))
+		ThreadAndStuff
+		ThreadLastReadTime *time.Time `db:"tlri.lastread"`
+		ForumLastReadTime  *time.Time `db:"slri.lastread"`
 	}
 
-	result := postQueryResult.(*resultRow)
-	return postAndRelatedModels{
-		Thread:         result.Thread,
-		Post:           result.Post,
-		CurrentVersion: result.CurrentVersion,
-		Author:         result.Author,
-		Editor:         result.Editor,
-		ReplyPost:      result.ReplyPost,
-		ReplyAuthor:    result.ReplyAuthor,
+	it, err := db.Query(ctx, dbConn, resultRow{}, qb.String(), qb.Args()...)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch threads")
 	}
+	iresults := it.ToSlice()
+
+	result := make([]ThreadAndStuff, len(iresults))
+	for i, iresult := range iresults {
+		row := *iresult.(*resultRow)
+
+		hasRead := false
+		if row.ThreadLastReadTime != nil && row.ThreadLastReadTime.After(row.LastPost.PostDate) {
+			hasRead = true
+		} else if row.ForumLastReadTime != nil && row.ForumLastReadTime.After(row.LastPost.PostDate) {
+			hasRead = true
+		}
+		row.Unread = !hasRead
+
+		result[i] = row.ThreadAndStuff
+	}
+
+	return result, nil
 }
 
 /*
-Fetches all the posts (and related models) for a given thread.
+Fetches a single thread and related data. A wrapper around FetchThreads.
+As with FetchThreads, provide as much information as you know to get the
+most correct results.
 
-YOU MUST VERIFY THAT THE THREAD ID IS VALID BEFORE CALLING THIS FUNCTION. It will
-not check, for example, that the thread belongs to the correct subforum.
+Returns db.NotFound if no result is found.
 */
-func FetchThreadPostsAndStuff(
+func FetchThread(
 	ctx context.Context,
-	connOrTx db.ConnOrTx,
-	threadId int,
-	page, postsPerPage int,
-) (models.Thread, []postAndRelatedModels, string) {
-	limit := postsPerPage
-	offset := (page - 1) * postsPerPage
-	if postsPerPage == 0 {
-		limit = math.MaxInt32
-		offset = 0
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	threadID int,
+	q ThreadsQuery,
+) (ThreadAndStuff, error) {
+	q.ThreadIDs = []int{threadID}
+	q.Limit = 1
+	q.Offset = 0
+
+	res, err := FetchThreads(ctx, dbConn, currentUser, q)
+	if err != nil {
+		return ThreadAndStuff{}, oops.New(err, "failed to fetch thread")
 	}
 
-	thread := FetchThread(ctx, connOrTx, threadId)
-
-	type postResult struct {
-		Post           models.Post        `db:"post"`
-		CurrentVersion models.PostVersion `db:"ver"`
-		Author         *models.User       `db:"author"`
-		Editor         *models.User       `db:"editor"`
-		ReplyPost      *models.Post       `db:"reply"`
-		ReplyAuthor    *models.User       `db:"reply_author"`
+	if len(res) == 0 {
+		return ThreadAndStuff{}, db.NotFound
 	}
-	itPosts, err := db.Query(ctx, connOrTx, postResult{},
+
+	return res[0], nil
+}
+
+func CountThreads(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	q ThreadsQuery,
+) (int, error) {
+	perf := ExtractPerf(ctx)
+	perf.StartBlock("SQL", "Count threads")
+	defer perf.EndBlock()
+
+	var qb db.QueryBuilder
+
+	var currentUserID *int
+	if currentUser != nil {
+		currentUserID = &currentUser.ID
+	}
+
+	qb.Add(
+		`
+		SELECT COUNT(*)
+		FROM
+			handmade_thread AS thread
+			JOIN handmade_project AS project ON thread.project_id = project.id
+			JOIN handmade_post AS first_post ON first_post.id = thread.first_id
+			LEFT JOIN auth_user AS first_author ON first_author.id = first_post.author_id
+		WHERE
+			NOT thread.deleted
+			AND ( -- project has valid lifecycle
+				project.flags = 0 AND project.lifecycle = ANY($?)
+				OR project.id = $?
+			)
+		`,
+		models.VisibleProjectLifecycles,
+		models.HMNProjectID,
+	)
+	if len(q.ProjectIDs) > 0 {
+		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
+	}
+	if len(q.ThreadTypes) > 0 {
+		qb.Add(`AND thread.type = ANY ($?)`, q.ThreadTypes)
+	}
+	if len(q.SubforumIDs) > 0 {
+		qb.Add(`AND thread.subforum_id = ANY ($?)`, q.SubforumIDs)
+	}
+	if currentUser == nil {
+		qb.Add(
+			`AND first_author.status = $? -- thread author is Approved`,
+			models.UserStatusApproved,
+		)
+	} else if !currentUser.IsStaff {
+		qb.Add(
+			`
+			AND (
+				first_author.status = $? -- thread author is Approved
+				OR first_author.id = $? -- current user is the thread author
+			)
+			`,
+			models.UserStatusApproved,
+			currentUserID,
+		)
+	}
+
+	count, err := db.QueryInt(ctx, dbConn, qb.String(), qb.Args()...)
+	if err != nil {
+		return 0, oops.New(err, "failed to fetch count of threads")
+	}
+
+	return count, nil
+}
+
+type PostsQuery struct {
+	// Available on all post queries.
+	ProjectIDs  []int
+	UserIDs     []int
+	ThreadTypes []models.ThreadType
+
+	// Ignored when using FetchPost.
+	ThreadIDs []int
+	PostIDs   []int
+
+	// Ignored when using FetchPost or CountPosts.
+	Limit, Offset  int
+	SortDescending bool
+}
+
+type PostAndStuff struct {
+	Project        models.Project `db:"project"`
+	Thread         models.Thread  `db:"thread"`
+	ThreadUnread   bool
+	Post           models.Post        `db:"post"`
+	CurrentVersion models.PostVersion `db:"ver"`
+	Author         *models.User       `db:"author"` // Can be nil in case of a deleted user
+	Editor         *models.User       `db:"editor"`
+	ReplyPost      *models.Post       `db:"reply_post"`
+	ReplyAuthor    *models.User       `db:"reply_author"`
+}
+
+/*
+Fetches posts and related models from the database according to all the given
+query params. For the most correct results, provide as much information as you have
+on hand.
+*/
+func FetchPosts(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	q PostsQuery,
+) ([]PostAndStuff, error) {
+	perf := ExtractPerf(ctx)
+	perf.StartBlock("SQL", "Fetch posts")
+	defer perf.EndBlock()
+
+	var qb db.QueryBuilder
+
+	var currentUserID *int
+	if currentUser != nil {
+		currentUserID = &currentUser.ID
+	}
+
+	type resultRow struct {
+		PostAndStuff
+		ThreadLastReadTime *time.Time `db:"tlri.lastread"`
+		ForumLastReadTime  *time.Time `db:"slri.lastread"`
+	}
+
+	qb.Add(
 		`
 		SELECT $columns
-		FROM
-			handmade_post AS post
-			JOIN handmade_postversion AS ver ON post.current_id = ver.id
-			LEFT JOIN auth_user AS author ON post.author_id = author.id
-			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
-			LEFT JOIN handmade_post AS reply ON post.reply_id = reply.id
-			LEFT JOIN auth_user AS reply_author ON reply.author_id = reply_author.id
-		WHERE
-			post.thread_id = $1
-			AND NOT post.deleted
-		ORDER BY post.postdate
-		LIMIT $2 OFFSET $3
-		`,
-		thread.ID,
-		limit,
-		offset,
-	)
-	if err != nil {
-		panic(oops.New(err, "failed to fetch posts for thread"))
-	}
-	defer itPosts.Close()
-
-	var posts []postAndRelatedModels
-	for {
-		irow, hasNext := itPosts.Next()
-		if !hasNext {
-			break
-		}
-
-		row := irow.(*postResult)
-		posts = append(posts, postAndRelatedModels{
-			Thread:         thread,
-			Post:           row.Post,
-			CurrentVersion: row.CurrentVersion,
-			Author:         row.Author,
-			Editor:         row.Editor,
-			ReplyPost:      row.ReplyPost,
-			ReplyAuthor:    row.ReplyAuthor,
-		})
-	}
-
-	preview, err := db.QueryString(ctx, connOrTx,
-		`
-		SELECT post.preview
 		FROM
 			handmade_post AS post
 			JOIN handmade_thread AS thread ON post.thread_id = thread.id
-			JOIN handmade_postversion AS ver ON post.current_id = ver.id
+			JOIN handmade_project AS project ON post.project_id = project.id
+			JOIN handmade_postversion AS ver ON ver.id = post.current_id
+			LEFT JOIN auth_user AS author ON author.id = post.author_id
+			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
+			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
+				tlri.thread_id = thread.id
+				AND tlri.user_id = $?
+			)
+			LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
+				slri.subforum_id = thread.subforum_id
+				AND slri.user_id = $?
+			)
+			-- Unconditionally fetch reply info, but make sure to check it
+			-- later and possibly remove these fields if the permission
+			-- check fails.
+			LEFT JOIN handmade_post AS reply_post ON reply_post.id = post.reply_id
+			LEFT JOIN auth_user AS reply_author ON reply_post.author_id = reply_author.id
 		WHERE
-			post.thread_id = $1
-			AND thread.first_id = post.id
+			NOT thread.deleted
+			AND NOT post.deleted
+			AND ( -- project has valid lifecycle
+				project.flags = 0 AND project.lifecycle = ANY($?)
+				OR project.id = $?
+			)
 		`,
-		thread.ID,
+		currentUserID,
+		currentUserID,
+		models.VisibleProjectLifecycles,
+		models.HMNProjectID,
 	)
-	if err != nil && !errors.Is(err, db.ErrNoMatchingRows) {
-		panic(oops.New(err, "failed to fetch posts for thread"))
+	if len(q.ProjectIDs) > 0 {
+		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
+	}
+	if len(q.UserIDs) > 0 {
+		qb.Add(`AND post.author_id = ANY ($?)`, q.UserIDs)
+	}
+	if len(q.ThreadIDs) > 0 {
+		qb.Add(`AND post.thread_id = ANY ($?)`, q.ThreadIDs)
+	}
+	if len(q.ThreadTypes) > 0 {
+		qb.Add(`AND thread.type = ANY ($?)`, q.ThreadTypes)
+	}
+	if len(q.PostIDs) > 0 {
+		qb.Add(`AND post.id = ANY ($?)`, q.PostIDs)
+	}
+	if currentUser == nil {
+		qb.Add(
+			`AND author.status = $? -- post author is Approved`,
+			models.UserStatusApproved,
+		)
+	} else if !currentUser.IsStaff {
+		qb.Add(
+			`
+			AND (
+				author.status = $? -- post author is Approved
+				OR author.id = $? -- current user is the post author
+			)
+			`,
+			models.UserStatusApproved,
+			currentUserID,
+		)
+	}
+	qb.Add(`ORDER BY post.postdate`)
+	if q.SortDescending {
+		qb.Add(`DESC`)
+	}
+	if q.Limit > 0 {
+		qb.Add(`LIMIT $? OFFSET $?`, q.Limit, q.Offset)
 	}
 
-	return thread, posts, preview
+	it, err := db.Query(ctx, dbConn, resultRow{}, qb.String(), qb.Args()...)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch posts")
+	}
+	iresults := it.ToSlice()
+
+	result := make([]PostAndStuff, len(iresults))
+	for i, iresult := range iresults {
+		row := *iresult.(*resultRow)
+
+		hasRead := false
+		if row.ThreadLastReadTime != nil && row.ThreadLastReadTime.After(row.Post.PostDate) {
+			hasRead = true
+		} else if row.ForumLastReadTime != nil && row.ForumLastReadTime.After(row.Post.PostDate) {
+			hasRead = true
+		}
+		row.ThreadUnread = !hasRead
+
+		if row.ReplyPost != nil && row.ReplyAuthor != nil {
+			replyAuthorIsNotApproved := row.ReplyAuthor.Status != models.UserStatusApproved
+			canSeeUnapprovedReply := currentUser != nil && (row.ReplyAuthor.ID == currentUser.ID || currentUser.IsStaff)
+			if replyAuthorIsNotApproved && !canSeeUnapprovedReply {
+				row.ReplyPost = nil
+				row.ReplyAuthor = nil
+			}
+		}
+
+		result[i] = row.PostAndStuff
+	}
+
+	return result, nil
+}
+
+/*
+Fetches posts for a given thread. A convenient wrapper around FetchPosts that returns
+the posts and the actual thread model.
+
+Return db.NotFound if nothing is found (no thread or no posts).
+*/
+func FetchThreadPosts(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	threadID int,
+	q PostsQuery,
+) (models.Thread, []PostAndStuff, error) {
+	q.ThreadIDs = []int{threadID}
+
+	res, err := FetchPosts(ctx, dbConn, currentUser, q)
+	if err != nil {
+		return models.Thread{}, nil, oops.New(err, "failed to fetch posts for thread")
+	}
+
+	if len(res) == 0 {
+		// We shouldn't have threads without posts anyway.
+		return models.Thread{}, nil, db.NotFound
+	}
+
+	return res[0].Thread, res, nil
+}
+
+/*
+Fetches a single post for a thread and its related data. A wrapper
+around FetchPosts. As with FetchPosts, provide as much information
+as you know to get the most correct results.
+
+Returns db.NotFound if no result is found.
+*/
+func FetchThreadPost(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	threadID, postID int,
+	q PostsQuery,
+) (PostAndStuff, error) {
+	q.ThreadIDs = []int{threadID}
+	q.PostIDs = []int{postID}
+	q.Limit = 1
+	q.Offset = 0
+
+	res, err := FetchPosts(ctx, dbConn, currentUser, q)
+	if err != nil {
+		return PostAndStuff{}, oops.New(err, "failed to fetch post")
+	}
+
+	if len(res) == 0 {
+		return PostAndStuff{}, db.NotFound
+	}
+
+	return res[0], nil
+}
+
+/*
+Fetches a single post and its related data. A wrapper
+around FetchPosts. As with FetchPosts, provide as much information
+as you know to get the most correct results.
+
+Returns db.NotFound if no result is found.
+*/
+func FetchPost(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	postID int,
+	q PostsQuery,
+) (PostAndStuff, error) {
+	q.PostIDs = []int{postID}
+	q.Limit = 1
+	q.Offset = 0
+
+	res, err := FetchPosts(ctx, dbConn, currentUser, q)
+	if err != nil {
+		return PostAndStuff{}, oops.New(err, "failed to fetch post")
+	}
+
+	if len(res) == 0 {
+		return PostAndStuff{}, db.NotFound
+	}
+
+	return res[0], nil
+}
+
+func CountPosts(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	q PostsQuery,
+) (int, error) {
+	perf := ExtractPerf(ctx)
+	perf.StartBlock("SQL", "Count posts")
+	defer perf.EndBlock()
+
+	var qb db.QueryBuilder
+
+	var currentUserID *int
+	if currentUser != nil {
+		currentUserID = &currentUser.ID
+	}
+
+	qb.Add(
+		`
+		SELECT COUNT(*)
+		FROM
+			handmade_post AS post
+			JOIN handmade_thread AS thread ON post.thread_id = thread.id
+			JOIN handmade_project AS project ON post.project_id = project.id
+			LEFT JOIN auth_user AS author ON author.id = post.author_id
+		WHERE
+			NOT thread.deleted
+			AND NOT post.deleted
+			AND ( -- project has valid lifecycle
+				project.flags = 0 AND project.lifecycle = ANY($?)
+				OR project.id = $?
+			)
+		`,
+		models.VisibleProjectLifecycles,
+		models.HMNProjectID,
+	)
+	if len(q.ProjectIDs) > 0 {
+		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
+	}
+	if len(q.UserIDs) > 0 {
+		qb.Add(`AND post.author_id = ANY ($?)`, q.UserIDs)
+	}
+	if len(q.ThreadIDs) > 0 {
+		qb.Add(`AND post.thread_id = ANY ($?)`, q.ThreadIDs)
+	}
+	if len(q.ThreadTypes) > 0 {
+		qb.Add(`AND thread.type = ANY ($?)`, q.ThreadTypes)
+	}
+	if currentUser == nil {
+		qb.Add(
+			`AND author.status = $? -- post author is Approved`,
+			models.UserStatusApproved,
+		)
+	} else if !currentUser.IsStaff {
+		qb.Add(
+			`
+			AND (
+				author.status = $? -- post author is Approved
+				OR author.id = $? -- current user is the post author
+			)
+			`,
+			models.UserStatusApproved,
+			currentUserID,
+		)
+	}
+
+	count, err := db.QueryInt(ctx, dbConn, qb.String(), qb.Args()...)
+	if err != nil {
+		return 0, oops.New(err, "failed to count posts")
+	}
+
+	return count, nil
 }
 
 func UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User, postId int) bool {
@@ -233,7 +608,7 @@ func UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User
 		postId,
 	)
 	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
+		if errors.Is(err, db.NotFound) {
 			return false
 		} else {
 			panic(oops.New(err, "failed to get author of post when checking permissions"))

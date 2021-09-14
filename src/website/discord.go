@@ -97,7 +97,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 		c.CurrentUser.ID,
 	)
 	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
+		if errors.Is(err, db.NotFound) {
 			return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)
 		} else {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get Discord user for unlink"))
@@ -134,7 +134,7 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 		`SELECT $columns FROM handmade_discorduser WHERE hmn_user_id = $1`,
 		c.CurrentUser.ID,
 	)
-	if errors.Is(err, db.ErrNoMatchingRows) {
+	if errors.Is(err, db.NotFound) {
 		// Nothing to do
 		c.Logger.Warn().Msg("could not do showcase backlog because no discord user exists")
 		return c.Redirect(hmnurl.BuildUserProfile(c.CurrentUser.Username), http.StatusSeeOther)

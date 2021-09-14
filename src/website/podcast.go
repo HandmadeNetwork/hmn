@@ -565,7 +565,7 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 	)
 	c.Perf.EndBlock()
 	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
+		if errors.Is(err, db.NotFound) {
 			return result, nil
 		} else {
 			return result, oops.New(err, "failed to fetch podcast")
@@ -615,7 +615,7 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 			)
 			c.Perf.EndBlock()
 			if err != nil {
-				if errors.Is(err, db.ErrNoMatchingRows) {
+				if errors.Is(err, db.NotFound) {
 					return result, nil
 				} else {
 					return result, oops.New(err, "failed to fetch podcast episode")

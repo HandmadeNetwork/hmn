@@ -252,7 +252,7 @@ func (bot *botInstance) connect(ctx context.Context) error {
 	shouldResume := true
 	isession, err := db.QueryOne(ctx, bot.dbConn, models.DiscordSession{}, `SELECT $columns FROM discord_session`)
 	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
+		if errors.Is(err, db.NotFound) {
 			// No session yet! Just identify and get on with it
 			shouldResume = false
 		} else {
@@ -630,7 +630,7 @@ func (bot *botInstance) messageDelete(ctx context.Context, msgDelete MessageDele
 		`,
 		msgDelete.ID, msgDelete.ChannelID,
 	)
-	if errors.Is(err, db.ErrNoMatchingRows) {
+	if errors.Is(err, db.NotFound) {
 		return
 	} else if err != nil {
 		log.Error().Err(err).Msg("failed to check for message to delete")

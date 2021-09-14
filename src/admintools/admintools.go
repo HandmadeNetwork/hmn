@@ -86,7 +86,7 @@ func init() {
 			conn := db.NewConnPool(1, 1)
 			defer conn.Close()
 
-			res, err := conn.Exec(ctx, "UPDATE auth_user SET status = $1 WHERE LOWER(username) = LOWER($2);", models.UserStatusActive, username)
+			res, err := conn.Exec(ctx, "UPDATE auth_user SET status = $1 WHERE LOWER(username) = LOWER($2);", models.UserStatusConfirmed, username)
 			if err != nil {
 				panic(err)
 			}

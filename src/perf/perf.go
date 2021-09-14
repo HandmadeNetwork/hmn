@@ -27,12 +27,20 @@ func MakeNewRequestPerf(route string, method string, path string) *RequestPerf {
 }
 
 func (rp *RequestPerf) EndRequest() {
+	if rp == nil {
+		return
+	}
+
 	for rp.EndBlock() {
 	}
 	rp.End = time.Now()
 }
 
 func (rp *RequestPerf) Checkpoint(category, description string) {
+	if rp == nil {
+		return
+	}
+
 	now := time.Now()
 	checkpoint := PerfBlock{
 		Start:       now,
@@ -44,6 +52,10 @@ func (rp *RequestPerf) Checkpoint(category, description string) {
 }
 
 func (rp *RequestPerf) StartBlock(category, description string) {
+	if rp == nil {
+		return
+	}
+
 	now := time.Now()
 	checkpoint := PerfBlock{
 		Start:       now,
@@ -55,6 +67,10 @@ func (rp *RequestPerf) StartBlock(category, description string) {
 }
 
 func (rp *RequestPerf) EndBlock() bool {
+	if rp == nil {
+		return false
+	}
+
 	for i := len(rp.Blocks) - 1; i >= 0; i -= 1 {
 		if rp.Blocks[i].End.Equal(time.Time{}) {
 			rp.Blocks[i].End = time.Now()
@@ -65,6 +81,10 @@ func (rp *RequestPerf) EndBlock() bool {
 }
 
 func (rp *RequestPerf) MsFromStart(block *PerfBlock) float64 {
+	if rp == nil {
+		return 0
+	}
+
 	return float64(block.Start.Sub(rp.Start).Nanoseconds()) / 1000 / 1000
 }
 

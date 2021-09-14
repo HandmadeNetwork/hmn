@@ -128,10 +128,15 @@ type RequestContext struct {
 	Theme          string
 
 	Perf *perf.RequestPerf
+
+	ctx context.Context
 }
 
 func (c *RequestContext) Context() context.Context {
-	return c.Req.Context()
+	if c.ctx == nil {
+		c.ctx = c.Req.Context()
+	}
+	return c.ctx
 }
 
 func (c *RequestContext) URL() *url.URL {

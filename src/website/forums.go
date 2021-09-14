@@ -70,7 +70,7 @@ func getEditorDataForNew(currentUser *models.User, baseData templates.BaseData, 
 	return result
 }
 
-func getEditorDataForEdit(currentUser *models.User, baseData templates.BaseData, p postAndRelatedModels) editorData {
+func getEditorDataForEdit(currentUser *models.User, baseData templates.BaseData, p PostAndStuff) editorData {
 	return editorData{
 		BaseData:            baseData,
 		Title:               p.Thread.Title,
@@ -92,21 +92,14 @@ func Forum(c *RequestContext) ResponseData {
 
 	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID)
 
-	c.Perf.StartBlock("SQL", "Fetch count of page threads")
-	numThreads, err := db.QueryInt(c.Context(), c.Conn,
-		`
-		SELECT COUNT(*)
-		FROM handmade_thread AS thread
-		WHERE
-			thread.subforum_id = $1
-			AND NOT thread.deleted
-		`,
-		cd.SubforumID,
-	)
+	numThreads, err := CountThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+		SubforumIDs: []int{cd.SubforumID},
+	})
 	if err != nil {
 		panic(oops.New(err, "failed to get count of threads"))
 	}
-	c.Perf.EndBlock()
 
 	numPages := utils.NumPages(numThreads, threadsPerPage)
 	page, ok := ParsePageNumber(c, "page", numPages)
@@ -115,78 +108,28 @@ func Forum(c *RequestContext) ResponseData {
 	}
 	howManyThreadsToSkip := (page - 1) * threadsPerPage
 
-	var currentUserId *int
-	if c.CurrentUser != nil {
-		currentUserId = &c.CurrentUser.ID
-	}
+	mainThreads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+		SubforumIDs: []int{cd.SubforumID},
+		Limit:       threadsPerPage,
+		Offset:      howManyThreadsToSkip,
+	})
 
-	c.Perf.StartBlock("SQL", "Fetch page threads")
-	type threadQueryResult struct {
-		Thread             models.Thread `db:"thread"`
-		FirstPost          models.Post   `db:"firstpost"`
-		LastPost           models.Post   `db:"lastpost"`
-		FirstUser          *models.User  `db:"firstuser"`
-		LastUser           *models.User  `db:"lastuser"`
-		ThreadLastReadTime *time.Time    `db:"tlri.lastread"`
-		ForumLastReadTime  *time.Time    `db:"slri.lastread"`
-	}
-	itMainThreads, err := db.Query(c.Context(), c.Conn, threadQueryResult{},
-		`
-		SELECT $columns
-		FROM
-			handmade_thread AS thread
-			JOIN handmade_post AS firstpost ON thread.first_id = firstpost.id
-			JOIN handmade_post AS lastpost ON thread.last_id = lastpost.id
-			LEFT JOIN auth_user AS firstuser ON firstpost.author_id = firstuser.id
-			LEFT JOIN auth_user AS lastuser ON lastpost.author_id = lastuser.id
-			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
-				tlri.thread_id = thread.id
-				AND tlri.user_id = $2
-			)
-			LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
-				slri.subforum_id = $1
-				AND slri.user_id = $2
-			)
-		WHERE
-			thread.subforum_id = $1
-			AND NOT thread.deleted
-		ORDER BY lastpost.postdate DESC
-		LIMIT $3 OFFSET $4
-		`,
-		cd.SubforumID,
-		currentUserId,
-		threadsPerPage,
-		howManyThreadsToSkip,
-	)
-	if err != nil {
-		panic(oops.New(err, "failed to fetch threads"))
-	}
-	c.Perf.EndBlock()
-	defer itMainThreads.Close()
-
-	makeThreadListItem := func(row *threadQueryResult) templates.ThreadListItem {
-		hasRead := false
-		if row.ThreadLastReadTime != nil && row.ThreadLastReadTime.After(row.LastPost.PostDate) {
-			hasRead = true
-		} else if row.ForumLastReadTime != nil && row.ForumLastReadTime.After(row.LastPost.PostDate) {
-			hasRead = true
-		}
-
+	makeThreadListItem := func(row ThreadAndStuff) templates.ThreadListItem {
 		return templates.ThreadListItem{
 			Title:     row.Thread.Title,
 			Url:       hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(*row.Thread.SubforumID), row.Thread.ID, row.Thread.Title, 1),
-			FirstUser: templates.UserToTemplate(row.FirstUser, c.Theme),
+			FirstUser: templates.UserToTemplate(row.FirstPostAuthor, c.Theme),
 			FirstDate: row.FirstPost.PostDate,
-			LastUser:  templates.UserToTemplate(row.LastUser, c.Theme),
+			LastUser:  templates.UserToTemplate(row.LastPostAuthor, c.Theme),
 			LastDate:  row.LastPost.PostDate,
-
-			Unread: !hasRead,
+			Unread:    row.Unread,
 		}
 	}
 
 	var threads []templates.ThreadListItem
-	for _, irow := range itMainThreads.ToSlice() {
-		row := irow.(*threadQueryResult)
+	for _, row := range mainThreads {
 		threads = append(threads, makeThreadListItem(row))
 	}
 
@@ -199,59 +142,25 @@ func Forum(c *RequestContext) ResponseData {
 		subforumNodes := cd.SubforumTree[cd.SubforumID].Children
 
 		for _, sfNode := range subforumNodes {
-			c.Perf.StartBlock("SQL", "Fetch count of subforum threads")
-			numThreads, err := db.QueryInt(c.Context(), c.Conn,
-				`
-				SELECT COUNT(*)
-				FROM handmade_thread AS thread
-				WHERE
-					thread.subforum_id = $1
-					AND NOT thread.deleted
-				`,
-				sfNode.ID,
-			)
+			numThreads, err := CountThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+				ProjectIDs:  []int{c.CurrentProject.ID},
+				ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+				SubforumIDs: []int{sfNode.ID},
+			})
 			if err != nil {
 				panic(oops.New(err, "failed to get count of threads"))
 			}
-			c.Perf.EndBlock()
 
-			c.Perf.StartBlock("SQL", "Fetch subforum threads")
-			itThreads, err := db.Query(c.Context(), c.Conn, threadQueryResult{},
-				`
-				SELECT $columns
-				FROM
-					handmade_thread AS thread
-					JOIN handmade_post AS firstpost ON thread.first_id = firstpost.id
-					JOIN handmade_post AS lastpost ON thread.last_id = lastpost.id
-					LEFT JOIN auth_user AS firstuser ON firstpost.author_id = firstuser.id
-					LEFT JOIN auth_user AS lastuser ON lastpost.author_id = lastuser.id
-					LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
-						tlri.thread_id = thread.id
-						AND tlri.user_id = $2
-					)
-					LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
-						slri.subforum_id = $1
-						AND slri.user_id = $2
-					)
-				WHERE
-					thread.subforum_id = $1
-					AND NOT thread.deleted
-				ORDER BY lastpost.postdate DESC
-				LIMIT 3
-				`,
-				sfNode.ID,
-				currentUserId,
-			)
-			if err != nil {
-				panic(err)
-			}
-			defer itThreads.Close()
-			c.Perf.EndBlock()
+			subforumThreads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+				ProjectIDs:  []int{c.CurrentProject.ID},
+				ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+				SubforumIDs: []int{sfNode.ID},
+				Limit:       3,
+			})
 
 			var threads []templates.ThreadListItem
-			for _, irow := range itThreads.ToSlice() {
-				threadRow := irow.(*threadQueryResult)
-				threads = append(threads, makeThreadListItem(threadRow))
+			for _, row := range subforumThreads {
+				threads = append(threads, makeThreadListItem(row))
 			}
 
 			subforums = append(subforums, forumSubforumData{
@@ -415,7 +324,8 @@ type forumThreadData struct {
 	Pagination  templates.Pagination
 }
 
-var threadViewPostsPerPage = 15
+// How many posts to display on a single page of a forum thread.
+var threadPostsPerPage = 15
 
 func ForumThread(c *RequestContext) ResponseData {
 	cd, ok := getCommonForumData(c)
@@ -425,22 +335,28 @@ func ForumThread(c *RequestContext) ResponseData {
 
 	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID)
 
-	thread := FetchThread(c.Context(), c.Conn, cd.ThreadID)
+	threads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+		ProjectIDs: []int{c.CurrentProject.ID},
+		ThreadIDs:  []int{cd.ThreadID},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get thread"))
+	}
+	if len(threads) == 0 {
+		return FourOhFour(c)
+	}
+	threadResult := threads[0]
+	thread := threadResult.Thread
 
-	numPosts, err := db.QueryInt(c.Context(), c.Conn,
-		`
-		SELECT COUNT(*)
-		FROM handmade_post
-		WHERE
-			thread_id = $1
-			AND NOT deleted
-		`,
-		thread.ID,
-	)
+	numPosts, err := CountPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+		ThreadIDs:   []int{cd.ThreadID},
+	})
 	if err != nil {
 		panic(oops.New(err, "failed to get count of posts for thread"))
 	}
-	page, numPages, ok := getPageInfo(c.PathParams["page"], numPosts, threadViewPostsPerPage)
+	page, numPages, ok := getPageInfo(c.PathParams["page"], numPosts, threadPostsPerPage)
 	if !ok {
 		urlNoPage := hmnurl.BuildForumThread(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, thread.Title, 1)
 		return c.Redirect(urlNoPage, http.StatusSeeOther)
@@ -455,16 +371,16 @@ func ForumThread(c *RequestContext) ResponseData {
 		PreviousUrl: hmnurl.BuildForumThread(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, thread.Title, utils.IntClamp(1, page-1, numPages)),
 	}
 
-	c.Perf.StartBlock("SQL", "Fetch posts")
-	_, postsAndStuff, preview := FetchThreadPostsAndStuff(
-		c.Context(),
-		c.Conn,
-		cd.ThreadID,
-		page, threadViewPostsPerPage,
-	)
-	c.Perf.EndBlock()
+	postsAndStuff, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+		ProjectIDs: []int{c.CurrentProject.ID},
+		ThreadIDs:  []int{thread.ID},
+		Limit:      threadPostsPerPage,
+		Offset:     (page - 1) * threadPostsPerPage,
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread posts"))
+	}
 
-	c.Perf.StartBlock("TEMPLATE", "Create template posts")
 	var posts []templates.Post
 	for _, p := range postsAndStuff {
 		post := templates.PostToTemplate(&p.Post, p.Author, c.Theme)
@@ -481,18 +397,17 @@ func ForumThread(c *RequestContext) ResponseData {
 
 		posts = append(posts, post)
 	}
-	c.Perf.EndBlock()
 
 	// Update thread last read info
 	if c.CurrentUser != nil {
 		c.Perf.StartBlock("SQL", "Update TLRI")
 		_, err = c.Conn.Exec(c.Context(),
 			`
-		INSERT INTO handmade_threadlastreadinfo (thread_id, user_id, lastread)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (thread_id, user_id) DO UPDATE
-			SET lastread = EXCLUDED.lastread
-		`,
+			INSERT INTO handmade_threadlastreadinfo (thread_id, user_id, lastread)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (thread_id, user_id) DO UPDATE
+				SET lastread = EXCLUDED.lastread
+			`,
 			cd.ThreadID,
 			c.CurrentUser.ID,
 			time.Now(),
@@ -506,7 +421,7 @@ func ForumThread(c *RequestContext) ResponseData {
 	baseData := getBaseData(c, thread.Title, SubforumBreadcrumbs(cd.LineageBuilder, c.CurrentProject, cd.SubforumID))
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
-		Value:    preview,
+		Value:    threadResult.FirstPost.Preview,
 	})
 
 	var res ResponseData
@@ -527,30 +442,20 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	c.Perf.StartBlock("SQL", "Fetch post ids for thread")
-	type postQuery struct {
-		PostID int `db:"post.id"`
-	}
-	postQueryResult, err := db.Query(c.Context(), c.Conn, postQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_post AS post
-		WHERE
-			post.thread_id = $1
-			AND NOT post.deleted
-		ORDER BY postdate
-		`,
-		cd.ThreadID,
-	)
+	posts, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+		ThreadIDs:   []int{cd.ThreadID},
+	})
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post ids"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch posts for redirect"))
 	}
-	postQuerySlice := postQueryResult.ToSlice()
-	c.Perf.EndBlock()
+
+	var post PostAndStuff
 	postIdx := -1
-	for i, id := range postQuerySlice {
-		if id.(*postQuery).PostID == cd.PostID {
+	for i, p := range posts {
+		if p.Post.ID == cd.PostID {
+			post = p
 			postIdx = i
 			break
 		}
@@ -559,31 +464,13 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	c.Perf.StartBlock("SQL", "Fetch thread title")
-	type threadTitleQuery struct {
-		ThreadTitle string `db:"thread.title"`
-	}
-	threadTitleQueryResult, err := db.QueryOne(c.Context(), c.Conn, threadTitleQuery{},
-		`
-		SELECT $columns
-		FROM handmade_thread AS thread
-		WHERE thread.id = $1
-		`,
-		cd.ThreadID,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread title"))
-	}
-	c.Perf.EndBlock()
-	threadTitle := threadTitleQueryResult.(*threadTitleQuery).ThreadTitle
-
-	page := (postIdx / threadViewPostsPerPage) + 1
+	page := (postIdx / threadPostsPerPage) + 1
 
 	return c.Redirect(hmnurl.BuildForumThreadWithPostHash(
 		c.CurrentProject.Slug,
 		cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID),
 		cd.ThreadID,
-		threadTitle,
+		post.Thread.Title,
 		page,
 		cd.PostID,
 	), http.StatusSeeOther)
@@ -672,16 +559,24 @@ func ForumPostReply(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
+	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post for reply"))
+	}
 
 	baseData := getBaseData(
 		c,
 		fmt.Sprintf("Replying to post | %s", cd.SubforumTree[cd.SubforumID].Name),
-		ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &postData.Thread),
+		ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &post.Thread),
 	)
 
-	replyPost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
-	replyPost.AddContentVersion(postData.CurrentVersion, postData.Editor)
+	replyPost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
+	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
 
 	editData := getEditorDataForNew(c.CurrentUser, baseData, &replyPost)
 	editData.SubmitUrl = hmnurl.BuildForumPostReply(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
@@ -713,11 +608,17 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "Your reply cannot be empty.")
 	}
 
-	thread := FetchThread(c.Context(), tx, cd.ThreadID)
+	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	}
 
 	// Replies to the OP should not be considered replies
 	var replyPostId *int
-	if cd.PostID != thread.FirstID {
+	if cd.PostID != post.Thread.FirstID {
 		replyPostId = &cd.PostID
 	}
 
@@ -742,17 +643,25 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
+	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post for editing"))
+	}
 
 	title := ""
-	if postData.Thread.FirstID == postData.Post.ID {
-		title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
+	if post.Thread.FirstID == post.Post.ID {
+		title = fmt.Sprintf("Editing \"%s\" | %s", post.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
 	} else {
 		title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[cd.SubforumID].Name)
 	}
-	baseData := getBaseData(c, title, ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &postData.Thread))
+	baseData := getBaseData(c, title, ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &post.Thread))
 
-	editData := getEditorDataForEdit(c.CurrentUser, baseData, postData)
+	editData := getEditorDataForEdit(c.CurrentUser, baseData, post)
 	editData.SubmitUrl = hmnurl.BuildForumPostEdit(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Edited Post"
 
@@ -805,16 +714,24 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
+	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post for delete"))
+	}
 
 	baseData := getBaseData(
 		c,
-		fmt.Sprintf("Deleting post in \"%s\" | %s", postData.Thread.Title, cd.SubforumTree[cd.SubforumID].Name),
-		ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &postData.Thread),
+		fmt.Sprintf("Deleting post in \"%s\" | %s", post.Thread.Title, cd.SubforumTree[cd.SubforumID].Name),
+		ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &post.Thread),
 	)
 
-	templatePost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
-	templatePost.AddContentVersion(postData.CurrentVersion, postData.Editor)
+	templatePost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
+	templatePost.AddContentVersion(post.CurrentVersion, post.Editor)
 
 	type forumPostDeleteData struct {
 		templates.BaseData
@@ -870,31 +787,22 @@ func WikiArticleRedirect(c *RequestContext) ResponseData {
 		panic(err)
 	}
 
-	ithread, err := db.QueryOne(c.Context(), c.Conn, models.Thread{},
-		`
-		SELECT $columns
-		FROM handmade_thread
-		WHERE
-			id = $1
-			AND project_id = $2
-			AND NOT deleted
-		`,
-		threadId,
-		c.CurrentProject.ID,
-	)
-	if errors.Is(err, db.ErrNoMatchingRows) {
+	thread, err := FetchThread(c.Context(), c.Conn, c.CurrentUser, threadId, ThreadsQuery{
+		ProjectIDs: []int{c.CurrentProject.ID},
+		// This is the rare query where we want all thread types!
+	})
+	if errors.Is(err, db.NotFound) {
 		return FourOhFour(c)
 	} else if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up wiki thread"))
 	}
-	thread := ithread.(*models.Thread)
 
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
-	dest := UrlForGenericThread(thread, lineageBuilder, c.CurrentProject.Slug)
+	dest := UrlForGenericThread(&thread.Thread, lineageBuilder, c.CurrentProject.Slug)
 	return c.Redirect(dest, http.StatusFound)
 }
 
@@ -911,9 +819,11 @@ type commonForumData struct {
 
 /*
 Gets data that is used on basically every forums-related route. Parses path params for subforum,
-thread, and post ids and validates that all those resources do in fact exist.
+thread, and post ids.
 
-Returns false if any data is invalid and you should return a 404.
+Does NOT validate that the requested thread and post ID are valid.
+
+If this returns false, then something was malformed and you should 404.
 */
 func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 	c.Perf.StartBlock("FORUMS", "Fetch common forum data")
@@ -936,8 +846,6 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 			return commonForumData{}, false
 		}
 		res.SubforumID = sfId
-
-		// No need to validate that subforum exists here; it's handled by validateSubforums.
 	}
 
 	if threadIdStr, hasThreadId := c.PathParams["threadid"]; hasThreadId {
@@ -946,27 +854,6 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 			return commonForumData{}, false
 		}
 		res.ThreadID = threadId
-
-		c.Perf.StartBlock("SQL", "Verify that the thread exists")
-		threadExists, err := db.QueryBool(c.Context(), c.Conn,
-			`
-			SELECT COUNT(*) > 0
-			FROM handmade_thread
-			WHERE
-				id = $1
-				AND subforum_id = $2
-				AND NOT deleted
-			`,
-			res.ThreadID,
-			res.SubforumID,
-		)
-		c.Perf.EndBlock()
-		if err != nil {
-			panic(err)
-		}
-		if !threadExists {
-			return commonForumData{}, false
-		}
 	}
 
 	if postIdStr, hasPostId := c.PathParams["postid"]; hasPostId {
@@ -975,27 +862,6 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 			return commonForumData{}, false
 		}
 		res.PostID = postId
-
-		c.Perf.StartBlock("SQL", "Verify that the post exists")
-		postExists, err := db.QueryBool(c.Context(), c.Conn,
-			`
-			SELECT COUNT(*) > 0
-			FROM handmade_post
-			WHERE
-				id = $1
-				AND thread_id = $2
-				AND NOT deleted
-			`,
-			res.PostID,
-			res.ThreadID,
-		)
-		c.Perf.EndBlock()
-		if err != nil {
-			panic(err)
-		}
-		if !postExists {
-			return commonForumData{}, false
-		}
 	}
 
 	return res, true
@@ -1042,6 +908,8 @@ func addForumUrlsToPost(p *templates.Post, projectSlug string, subforums []strin
 	p.ReplyUrl = hmnurl.BuildForumPostReply(projectSlug, subforums, threadId, postId)
 }
 
+// Takes a template post and adds information about how many posts the user has made
+// on the site.
 func addAuthorCountsToPost(ctx context.Context, conn db.ConnOrTx, p *templates.Post) {
 	numPosts, err := db.QueryInt(ctx, conn,
 		`

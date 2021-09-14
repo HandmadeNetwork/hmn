@@ -10,9 +10,10 @@ var UserType = reflect.TypeOf(User{})
 type UserStatus int
 
 const (
-	UserStatusInactive UserStatus = iota + 1
-	UserStatusActive
-	UserStatusBanned
+	UserStatusInactive  UserStatus = 1 // Default for new users
+	UserStatusConfirmed            = 2 // Confirmed email address
+	UserStatusApproved             = 3 // Approved by an admin and allowed to publicly post
+	UserStatusBanned               = 4 // BALEETED
 )
 
 type User struct {
@@ -54,5 +55,5 @@ func (u *User) BestName() string {
 }
 
 func (u *User) IsActive() bool {
-	return u.Status == UserStatusActive
+	return u.Status == UserStatusConfirmed
 }

@@ -133,7 +133,7 @@ func SaveMessage(
 		`,
 		msg.ID,
 	)
-	if errors.Is(err, db.ErrNoMatchingRows) {
+	if errors.Is(err, db.NotFound) {
 		if !msg.OriginalHasFields("author", "timestamp") {
 			return nil, errNotEnoughInfo
 		}
@@ -213,7 +213,7 @@ func SaveMessageAndContents(
 		`,
 		newMsg.UserID,
 	)
-	if errors.Is(err, db.ErrNoMatchingRows) {
+	if errors.Is(err, db.NotFound) {
 		return newMsg, nil
 	} else if err != nil {
 		return nil, oops.New(err, "failed to look up linked Discord user")
@@ -337,7 +337,7 @@ func saveAttachment(
 	)
 	if err == nil {
 		return iexisting.(*models.DiscordMessageAttachment), nil
-	} else if errors.Is(err, db.ErrNoMatchingRows) {
+	} else if errors.Is(err, db.NotFound) {
 		// this is fine, just create it
 	} else {
 		return nil, oops.New(err, "failed to check for existing attachment")
@@ -522,7 +522,7 @@ func AllowedToCreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, discordU
 		`,
 		discordUserId,
 	)
-	if errors.Is(err, db.ErrNoMatchingRows) {
+	if errors.Is(err, db.NotFound) {
 		return false, nil
 	} else if err != nil {
 		return false, oops.New(err, "failed to check if we can save Discord message")

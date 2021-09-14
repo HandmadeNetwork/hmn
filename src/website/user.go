@@ -57,7 +57,7 @@ func UserProfile(c *RequestContext) ResponseData {
 		)
 		c.Perf.EndBlock()
 		if err != nil {
-			if errors.Is(err, db.ErrNoMatchingRows) {
+			if errors.Is(err, db.NotFound) {
 				return FourOhFour(c)
 			} else {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user: %s", username))
@@ -65,6 +65,15 @@ func UserProfile(c *RequestContext) ResponseData {
 		}
 		profileUser = userResult.(*models.User)
 	}
+
+	{
+		userIsUnapproved := profileUser.Status != models.UserStatusApproved
+		canViewUnapprovedUser := c.CurrentUser != nil && (c.CurrentUser.ID == profileUser.ID || c.CurrentUser.IsStaff)
+		if userIsUnapproved && !canViewUnapprovedUser {
+			return FourOhFour(c)
+		}
+	}
+
 	c.Perf.StartBlock("SQL", "Fetch user links")
 	type userLinkQuery struct {
 		UserLink models.Link `db:"link"`
@@ -119,30 +128,11 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	type postQuery struct {
-		Post    models.Post    `db:"post"`
-		Thread  models.Thread  `db:"thread"`
-		Project models.Project `db:"project"`
-	}
 	c.Perf.StartBlock("SQL", "Fetch posts")
-	postQueryResult, err := db.Query(c.Context(), c.Conn, postQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_post AS post
-			INNER JOIN handmade_thread AS thread ON thread.id = post.thread_id
-			INNER JOIN handmade_project AS project ON project.id = post.project_id
-		WHERE
-			post.author_id = $1
-			AND project.lifecycle = ANY ($2)
-		`,
-		profileUser.ID,
-		models.VisibleProjectLifecycles,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch posts for user: %s", username))
-	}
-	postQuerySlice := postQueryResult.ToSlice()
+	posts, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+		UserIDs:        []int{profileUser.ID},
+		SortDescending: true,
+	})
 	c.Perf.EndBlock()
 
 	type snippetQuery struct {
@@ -175,18 +165,17 @@ func UserProfile(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("PROFILE", "Construct timeline items")
-	timelineItems := make([]templates.TimelineItem, 0, len(postQuerySlice)+len(snippetQuerySlice))
+	timelineItems := make([]templates.TimelineItem, 0, len(posts)+len(snippetQuerySlice))
 	numForums := 0
 	numBlogs := 0
 	numSnippets := len(snippetQuerySlice)
 
-	for _, postRow := range postQuerySlice {
-		postData := postRow.(*postQuery)
+	for _, post := range posts {
 		timelineItem := PostToTimelineItem(
 			lineageBuilder,
-			&postData.Post,
-			&postData.Thread,
-			&postData.Project,
+			&post.Post,
+			&post.Thread,
+			&post.Project,
 			profileUser,
 			c.Theme,
 		)
@@ -199,7 +188,7 @@ func UserProfile(c *RequestContext) ResponseData {
 		if timelineItem.Type != templates.TimelineTypeUnknown {
 			timelineItems = append(timelineItems, timelineItem)
 		} else {
-			c.Logger.Warn().Int("post ID", postData.Post.ID).Msg("Unknown timeline item type for post")
+			c.Logger.Warn().Int("post ID", post.Post.ID).Msg("Unknown timeline item type for post")
 		}
 	}
 
@@ -292,7 +281,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		`,
 		c.CurrentUser.ID,
 	)
-	if errors.Is(err, db.ErrNoMatchingRows) {
+	if errors.Is(err, db.NotFound) {
 		// this is fine, but don't fetch any more messages
 	} else if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user's Discord account"))

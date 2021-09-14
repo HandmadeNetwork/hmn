@@ -376,7 +376,7 @@ func FetchProjectBySlug(ctx context.Context, conn *pgxpool.Pool, slug string) (*
 		if err == nil {
 			subdomainProject := subdomainProjectRow.(*models.Project)
 			return subdomainProject, nil
-		} else if !errors.Is(err, db.ErrNoMatchingRows) {
+		} else if !errors.Is(err, db.NotFound) {
 			return nil, oops.New(err, "failed to get projects by slug")
 		} else {
 			return nil, nil
@@ -384,7 +384,7 @@ func FetchProjectBySlug(ctx context.Context, conn *pgxpool.Pool, slug string) (*
 	} else {
 		defaultProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE id = $1", models.HMNProjectID)
 		if err != nil {
-			if errors.Is(err, db.ErrNoMatchingRows) {
+			if errors.Is(err, db.NotFound) {
 				return nil, oops.New(nil, "default project didn't exist in the database")
 			} else {
 				return nil, oops.New(err, "failed to get default project")
@@ -546,7 +546,7 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 
 	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{}, "SELECT $columns FROM auth_user WHERE username = $1", session.Username)
 	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
+		if errors.Is(err, db.NotFound) {
 			logging.Debug().Str("username", session.Username).Msg("returning no current user for this request because the user for the session couldn't be found")
 			return nil, nil, nil // user was deleted or something
 		} else {
@@ -558,8 +558,12 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 	return user, session, nil
 }
 
+const PerfContextKey = "HMNPerf"
+
 func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (after func()) {
 	c.Perf = perf.MakeNewRequestPerf(c.Route, c.Req.Method, c.Req.URL.Path)
+	c.ctx = context.WithValue(c.Context(), PerfContextKey, c.Perf)
+
 	return func() {
 		c.Perf.EndRequest()
 		log := logging.Info()
@@ -574,6 +578,14 @@ func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (aft
 		log.Msg(fmt.Sprintf("Served [%s] %s in %.4fms", c.Perf.Method, c.Perf.Path, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
 		perfCollector.SubmitRun(c.Perf)
 	}
+}
+
+func ExtractPerf(ctx context.Context) *perf.RequestPerf {
+	iperf := ctx.Value(PerfContextKey)
+	if iperf == nil {
+		return nil
+	}
+	return iperf.(*perf.RequestPerf)
 }
 
 func LogContextErrors(c *RequestContext, errs ...error) {

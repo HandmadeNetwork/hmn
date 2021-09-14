@@ -77,7 +77,7 @@ func Login(c *RequestContext) ResponseData {
 
 	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{}, "SELECT $columns FROM auth_user WHERE LOWER(username) = LOWER($1)", username)
 	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
+		if errors.Is(err, db.NotFound) {
 			return showLoginWithFailure(c, redirect)
 		} else {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
@@ -172,7 +172,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		username,
 	)
 	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
+		if errors.Is(err, db.NotFound) {
 			userAlreadyExists = false
 		} else {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
@@ -193,7 +193,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		emailAddress,
 	)
 	if err != nil {
-		if errors.Is(err, db.ErrNoMatchingRows) {
+		if errors.Is(err, db.NotFound) {
 			emailAlreadyExists = false
 		} else {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
@@ -372,7 +372,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		SET status = $1
 		WHERE id = $2
 		`,
-		models.UserStatusActive,
+		models.UserStatusConfirmed,
 		validationResult.User.ID,
 	)
 	if err != nil {
@@ -459,7 +459,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 	)
 	c.Perf.EndBlock()
 	if err != nil {
-		if !errors.Is(err, db.ErrNoMatchingRows) {
+		if !errors.Is(err, db.NotFound) {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
 		}
 	}
@@ -482,7 +482,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 		)
 		c.Perf.EndBlock()
 		if err != nil {
-			if !errors.Is(err, db.ErrNoMatchingRows) {
+			if !errors.Is(err, db.NotFound) {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch onetimetoken for user"))
 			}
 		}
@@ -644,7 +644,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 			SET status = $1
 			WHERE id = $2
 			`,
-			models.UserStatusActive,
+			models.UserStatusConfirmed,
 			validationResult.User.ID,
 		)
 		if err != nil {
@@ -786,7 +786,7 @@ func validateUsernameAndToken(c *RequestContext, username string, token string, 
 	)
 	var result validateUserAndTokenResult
 	if err != nil {
-		if !errors.Is(err, db.ErrNoMatchingRows) {
+		if !errors.Is(err, db.NotFound) {
 			result.Error = oops.New(err, "failed to fetch user and token from db")
 			return result
 		}

@@ -12,6 +12,7 @@ type Post struct {
 	ThreadID  int  `db:"thread_id"`
 	CurrentID int  `db:"current_id"` // The id of the current PostVersion
 	ProjectID int  `db:"project_id"`
+	ReplyID   *int `db:"reply_id"`
 
 	ThreadType ThreadType `db:"thread_type"`
 

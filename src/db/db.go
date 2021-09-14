@@ -269,9 +269,8 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix strin
 		return nil, nil, oops.New(nil, "can only get column names and paths from a struct, got type '%v' (at prefix '%v')", destType.Name(), prefix)
 	}
 
-	for i := 0; i < destType.NumField(); i++ {
-		field := destType.Field(i)
-		path := append(pathSoFar, i)
+	for _, field := range reflect.VisibleFields(destType) {
+		path := append(pathSoFar, field.Index...)
 
 		if columnName := field.Tag.Get("db"); columnName != "" {
 			fieldType := field.Type
@@ -298,7 +297,12 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix strin
 	return columnNames, fieldPaths, nil
 }
 
-var ErrNoMatchingRows = errors.New("no matching rows")
+/*
+A general error to be used when no results are found. This is the error returned
+by QueryOne, and can generally be used by other database helpers that fetch a single
+result but find nothing.
+*/
+var NotFound = errors.New("not found")
 
 func QueryOne(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) (interface{}, error) {
 	rows, err := Query(ctx, conn, destExample, query, args...)
@@ -309,7 +313,7 @@ func QueryOne(ctx context.Context, conn ConnOrTx, destExample interface{}, query
 
 	result, hasRow := rows.Next()
 	if !hasRow {
-		return nil, ErrNoMatchingRows
+		return nil, NotFound
 	}
 
 	return result, nil
@@ -335,7 +339,7 @@ func QueryScalar(ctx context.Context, conn ConnOrTx, query string, args ...inter
 		return vals[0], nil
 	}
 
-	return nil, ErrNoMatchingRows
+	return nil, NotFound
 }
 
 func QueryString(ctx context.Context, conn ConnOrTx, query string, args ...interface{}) (string, error) {

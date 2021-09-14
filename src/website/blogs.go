@@ -1,6 +1,7 @@
 package website
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -34,21 +35,10 @@ func BlogIndex(c *RequestContext) ResponseData {
 
 	const postsPerPage = 5
 
-	c.Perf.StartBlock("SQL", "Fetch count of posts")
-	numPosts, err := db.QueryInt(c.Context(), c.Conn,
-		`
-		SELECT COUNT(*)
-		FROM
-			handmade_thread
-		WHERE
-			project_id = $1
-			AND type = $2
-			AND NOT deleted
-		`,
-		c.CurrentProject.ID,
-		models.ThreadTypeProjectBlogPost,
-	)
-	c.Perf.EndBlock()
+	numPosts, err := CountPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch total number of blog posts"))
 	}
@@ -59,48 +49,24 @@ func BlogIndex(c *RequestContext) ResponseData {
 		c.Redirect(hmnurl.BuildBlog(c.CurrentProject.Slug, page), http.StatusSeeOther)
 	}
 
-	type blogIndexQuery struct {
-		Thread         models.Thread      `db:"thread"`
-		Post           models.Post        `db:"post"`
-		CurrentVersion models.PostVersion `db:"ver"`
-		Author         *models.User       `db:"author"`
-	}
-	c.Perf.StartBlock("SQL", "Fetch blog posts")
-	postsResult, err := db.Query(c.Context(), c.Conn, blogIndexQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_thread AS thread
-			JOIN handmade_post AS post ON thread.first_id = post.id
-			JOIN handmade_postversion AS ver ON post.current_id = ver.id
-			LEFT JOIN auth_user AS author ON post.author_id = author.id
-		WHERE
-			post.project_id = $1
-			AND post.thread_type = $2
-			AND NOT thread.deleted
-		ORDER BY post.postdate DESC
-		LIMIT $3 OFFSET $4
-		`,
-		c.CurrentProject.ID,
-		models.ThreadTypeProjectBlogPost,
-		postsPerPage,
-		(page-1)*postsPerPage,
-	)
-	c.Perf.EndBlock()
+	threads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+		Limit:       postsPerPage,
+		Offset:      (page - 1) * postsPerPage,
+	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
 	}
 
 	var entries []blogIndexEntry
-	for _, irow := range postsResult.ToSlice() {
-		row := irow.(*blogIndexQuery)
-
+	for _, thread := range threads {
 		entries = append(entries, blogIndexEntry{
-			Title:   row.Thread.Title,
-			Url:     hmnurl.BuildBlogThread(c.CurrentProject.Slug, row.Thread.ID, row.Thread.Title),
-			Author:  templates.UserToTemplate(row.Author, c.Theme),
-			Date:    row.Post.PostDate,
-			Content: template.HTML(row.CurrentVersion.TextParsed),
+			Title:   thread.Thread.Title,
+			Url:     hmnurl.BuildBlogThread(c.CurrentProject.Slug, thread.Thread.ID, thread.Thread.Title),
+			Author:  templates.UserToTemplate(thread.FirstPostAuthor, c.Theme),
+			Date:    thread.FirstPost.PostDate,
+			Content: template.HTML(thread.FirstPostCurrentVersion.TextParsed),
 		})
 	}
 
@@ -158,12 +124,15 @@ func BlogThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	thread, posts, preview := FetchThreadPostsAndStuff(
-		c.Context(),
-		c.Conn,
-		cd.ThreadID,
-		0, 0,
-	)
+	thread, posts, err := FetchThreadPosts(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch posts for blog thread"))
+	}
 
 	var templatePosts []templates.Post
 	for _, p := range posts {
@@ -202,7 +171,7 @@ func BlogThread(c *RequestContext) ResponseData {
 	baseData := getBaseData(c, thread.Title, []templates.Breadcrumb{BlogBreadcrumb(c.CurrentProject.Slug)})
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
-		Value:    preview,
+		Value:    posts[0].Post.Preview,
 	})
 
 	var res ResponseData
@@ -223,9 +192,17 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	thread := FetchThread(c.Context(), c.Conn, cd.ThreadID)
+	thread, err := FetchThread(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, ThreadsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread for blog redirect"))
+	}
 
-	threadUrl := hmnurl.BuildBlogThreadWithPostHash(c.CurrentProject.Slug, cd.ThreadID, thread.Title, cd.PostID)
+	threadUrl := hmnurl.BuildBlogThreadWithPostHash(c.CurrentProject.Slug, cd.ThreadID, thread.Thread.Title, cd.PostID)
 	return c.Redirect(threadUrl, http.StatusFound)
 }
 
@@ -305,24 +282,32 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
+	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get blog post to edit"))
+	}
 
 	title := ""
-	if postData.Thread.FirstID == postData.Post.ID {
-		title = fmt.Sprintf("Editing \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
+	if post.Thread.FirstID == post.Post.ID {
+		title = fmt.Sprintf("Editing \"%s\" | %s", post.Thread.Title, c.CurrentProject.Name)
 	} else {
 		title = fmt.Sprintf("Editing Post | %s", c.CurrentProject.Name)
 	}
 	baseData := getBaseData(
 		c,
 		title,
-		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &postData.Thread),
+		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &post.Thread),
 	)
 
-	editData := getEditorDataForEdit(c.CurrentUser, baseData, postData)
+	editData := getEditorDataForEdit(c.CurrentUser, baseData, post)
 	editData.SubmitUrl = hmnurl.BuildBlogPostEdit(c.CurrentProject.Slug, cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Edited Post"
-	if postData.Thread.FirstID != postData.Post.ID {
+	if post.Thread.FirstID != post.Post.ID {
 		editData.SubmitLabel = "Submit Edited Comment"
 	}
 
@@ -347,27 +332,35 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	postData := FetchPostAndStuff(c.Context(), tx, cd.ThreadID, cd.PostID)
+	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get blog post to submit edits"))
+	}
 
 	c.Req.ParseForm()
 	title := c.Req.Form.Get("title")
 	unparsed := c.Req.Form.Get("body")
 	editReason := c.Req.Form.Get("editreason")
-	if title != "" && postData.Thread.FirstID != postData.Post.ID {
+	if title != "" && post.Thread.FirstID != post.Post.ID {
 		return RejectRequest(c, "You can only edit the title by editing the first post.")
 	}
 	if unparsed == "" {
 		return RejectRequest(c, "You must provide a post body.")
 	}
 
-	CreatePostVersion(c.Context(), tx, postData.Post.ID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
+	CreatePostVersion(c.Context(), tx, post.Post.ID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit blog post"))
 	}
 
-	postUrl := hmnurl.BuildBlogThreadWithPostHash(c.CurrentProject.Slug, cd.ThreadID, postData.Thread.Title, cd.PostID)
+	postUrl := hmnurl.BuildBlogThreadWithPostHash(c.CurrentProject.Slug, cd.ThreadID, post.Thread.Title, cd.PostID)
 	return c.Redirect(postUrl, http.StatusSeeOther)
 }
 
@@ -377,16 +370,24 @@ func BlogPostReply(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
+	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get blog post for reply"))
+	}
 
 	baseData := getBaseData(
 		c,
-		fmt.Sprintf("Replying to comment in \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name),
-		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &postData.Thread),
+		fmt.Sprintf("Replying to comment in \"%s\" | %s", post.Thread.Title, c.CurrentProject.Name),
+		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &post.Thread),
 	)
 
-	replyPost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
-	replyPost.AddContentVersion(postData.CurrentVersion, postData.Editor)
+	replyPost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
+	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
 
 	editData := getEditorDataForNew(c.CurrentUser, baseData, &replyPost)
 	editData.SubmitUrl = hmnurl.BuildBlogPostReply(c.CurrentProject.Slug, cd.ThreadID, cd.PostID)
@@ -439,23 +440,30 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	postData := FetchPostAndStuff(c.Context(), c.Conn, cd.ThreadID, cd.PostID)
+	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get blog post to delete"))
+	}
 
 	title := ""
-	if postData.Thread.FirstID == postData.Post.ID {
-		title = fmt.Sprintf("Deleting \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
+	if post.Thread.FirstID == post.Post.ID {
+		title = fmt.Sprintf("Deleting \"%s\" | %s", post.Thread.Title, c.CurrentProject.Name)
 	} else {
-		title = fmt.Sprintf("Deleting comment in \"%s\" | %s", postData.Thread.Title, c.CurrentProject.Name)
+		title = fmt.Sprintf("Deleting comment in \"%s\" | %s", post.Thread.Title, c.CurrentProject.Name)
 	}
 	baseData := getBaseData(
 		c,
 		title,
-		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &postData.Thread),
+		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &post.Thread),
 	)
-	// TODO(ben): Set breadcrumbs
 
-	templatePost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
-	templatePost.AddContentVersion(postData.CurrentVersion, postData.Editor)
+	templatePost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
+	templatePost.AddContentVersion(post.CurrentVersion, post.Editor)
 
 	type blogPostDeleteData struct {
 		templates.BaseData
@@ -499,8 +507,16 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 		projectUrl := hmnurl.BuildProjectHomepage(c.CurrentProject.Slug)
 		return c.Redirect(projectUrl, http.StatusSeeOther)
 	} else {
-		thread := FetchThread(c.Context(), c.Conn, cd.ThreadID)
-		threadUrl := hmnurl.BuildBlogThread(c.CurrentProject.Slug, thread.ID, thread.Title)
+		thread, err := FetchThread(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, ThreadsQuery{
+			ProjectIDs:  []int{c.CurrentProject.ID},
+			ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+		})
+		if errors.Is(err, db.NotFound) {
+			panic(oops.New(err, "the thread was supposedly not deleted after deleting a post in a blog, but the thread was not found afterwards"))
+		} else if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread after blog post delete"))
+		}
+		threadUrl := hmnurl.BuildBlogThread(c.CurrentProject.Slug, thread.Thread.ID, thread.Thread.Title)
 		return c.Redirect(threadUrl, http.StatusSeeOther)
 	}
 }
