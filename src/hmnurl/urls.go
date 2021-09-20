@@ -439,7 +439,7 @@ var RegexWikiArticle = regexp.MustCompile(`^/wiki/(?P<threadid>\d+)(-([^/]+))?$`
 * Blog
  */
 
-var RegexBlogsRedirect = regexp.MustCompile(`^/blogs`)
+var RegexBlogsRedirect = regexp.MustCompile(`^/blogs(?P<remainder>.*)`)
 
 var RegexBlog = regexp.MustCompile(`^/blog(/(?P<page>\d+))?$`)
 

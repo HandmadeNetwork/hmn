@@ -224,6 +224,12 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	mainRoutes.POST(hmnurl.RegexBlogPostEdit, authMiddleware(csrfMiddleware(BlogPostEditSubmit)))
 	mainRoutes.GET(hmnurl.RegexBlogPostDelete, authMiddleware(BlogPostDelete))
 	mainRoutes.POST(hmnurl.RegexBlogPostDelete, authMiddleware(csrfMiddleware(BlogPostDeleteSubmit)))
+	mainRoutes.GET(hmnurl.RegexBlogsRedirect, func(c *RequestContext) ResponseData {
+		return c.Redirect(hmnurl.ProjectUrl(
+			fmt.Sprintf("blog%s", c.PathParams["remainder"]), nil,
+			c.CurrentProject.Slug,
+		), http.StatusMovedPermanently)
+	})
 
 	mainRoutes.GET(hmnurl.RegexPodcast, PodcastIndex)
 	mainRoutes.GET(hmnurl.RegexPodcastEdit, PodcastEdit)
