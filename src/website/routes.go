@@ -231,6 +231,8 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		), http.StatusMovedPermanently)
 	})
 
+	mainRoutes.POST(hmnurl.RegexAssetUpload, AssetUpload)
+
 	mainRoutes.GET(hmnurl.RegexPodcast, PodcastIndex)
 	mainRoutes.GET(hmnurl.RegexPodcastEdit, PodcastEdit)
 	mainRoutes.POST(hmnurl.RegexPodcastEdit, PodcastEditSubmit)

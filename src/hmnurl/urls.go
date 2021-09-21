@@ -610,6 +610,17 @@ func BuildDiscordShowcaseBacklog() string {
 }
 
 /*
+* User assets
+ */
+
+var RegexAssetUpload = regexp.MustCompile("^/upload_asset$")
+
+// NOTE(asaf): Providing the projectSlug avoids any CORS problems.
+func BuildAssetUpload(projectSlug string) string {
+	return ProjectUrl("/upload_asset", nil, projectSlug)
+}
+
+/*
 * Assets
  */
 

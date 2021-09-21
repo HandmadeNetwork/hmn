@@ -40,10 +40,6 @@ func TestStreams(t *testing.T) {
 	AssertRegexMatch(t, BuildStreams(), RegexStreams, nil)
 }
 
-func TestSiteMap(t *testing.T) {
-	AssertRegexMatch(t, BuildSiteMap(), RegexSiteMap, nil)
-}
-
 func TestWhenIsIt(t *testing.T) {
 	AssertRegexMatch(t, BuildWhenIsIt(), RegexWhenIsIt, nil)
 }
@@ -288,6 +284,11 @@ func TestEpisodeGuide(t *testing.T) {
 	AssertSubdomain(t, BuildCineraIndex("hero", "code"), "hero")
 }
 
+func TestAssetUpload(t *testing.T) {
+	AssertRegexMatch(t, BuildAssetUpload("hero"), RegexAssetUpload, nil)
+	AssertSubdomain(t, BuildAssetUpload("hero"), "hero")
+}
+
 func TestProjectCSS(t *testing.T) {
 	AssertRegexMatch(t, BuildProjectCSS("000000"), RegexProjectCSS, nil)
 }
@@ -308,7 +309,8 @@ func TestPublic(t *testing.T) {
 }
 
 func TestForumMarkRead(t *testing.T) {
-	AssertRegexMatch(t, BuildForumMarkRead(c.CurrentProject.Slug, 5), RegexForumMarkRead, map[string]string{"sfid": "5"})
+	AssertRegexMatch(t, BuildForumMarkRead("hero", 5), RegexForumMarkRead, map[string]string{"sfid": "5"})
+	AssertSubdomain(t, BuildForumMarkRead("hero", 5), "hero")
 }
 
 func AssertSubdomain(t *testing.T, fullUrl string, expectedSubdomain string) {

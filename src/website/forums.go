@@ -49,13 +49,18 @@ type editorData struct {
 	IsEditing           bool
 	EditInitialContents string
 	PostReplyingTo      *templates.Post
+
+	MaxFileSize int
+	UploadUrl   string
 }
 
-func getEditorDataForNew(baseData templates.BaseData, replyPost *templates.Post) editorData {
+func getEditorDataForNew(currentUser *models.User, baseData templates.BaseData, replyPost *templates.Post) editorData {
 	result := editorData{
 		BaseData:       baseData,
 		CanEditTitle:   replyPost == nil,
 		PostReplyingTo: replyPost,
+		MaxFileSize:    AssetMaxSize(currentUser),
+		UploadUrl:      hmnurl.BuildAssetUpload(baseData.Project.Subdomain),
 	}
 
 	if replyPost != nil {
@@ -65,13 +70,15 @@ func getEditorDataForNew(baseData templates.BaseData, replyPost *templates.Post)
 	return result
 }
 
-func getEditorDataForEdit(baseData templates.BaseData, p postAndRelatedModels) editorData {
+func getEditorDataForEdit(currentUser *models.User, baseData templates.BaseData, p postAndRelatedModels) editorData {
 	return editorData{
 		BaseData:            baseData,
 		Title:               p.Thread.Title,
 		CanEditTitle:        p.Thread.FirstID == p.Post.ID,
 		IsEditing:           true,
 		EditInitialContents: p.CurrentVersion.TextRaw,
+		MaxFileSize:         AssetMaxSize(currentUser),
+		UploadUrl:           hmnurl.BuildAssetUpload(baseData.Project.Subdomain),
 	}
 }
 
@@ -589,7 +596,7 @@ func ForumNewThread(c *RequestContext) ResponseData {
 	}
 
 	baseData := getBaseData(c, "Create New Thread", SubforumBreadcrumbs(cd.LineageBuilder, c.CurrentProject, cd.SubforumID))
-	editData := getEditorDataForNew(baseData, nil)
+	editData := getEditorDataForNew(c.CurrentUser, baseData, nil)
 	editData.SubmitUrl = hmnurl.BuildForumNewThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), true)
 	editData.SubmitLabel = "Post New Thread"
 
@@ -676,7 +683,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 	replyPost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
 	replyPost.AddContentVersion(postData.CurrentVersion, postData.Editor)
 
-	editData := getEditorDataForNew(baseData, &replyPost)
+	editData := getEditorDataForNew(c.CurrentUser, baseData, &replyPost)
 	editData.SubmitUrl = hmnurl.BuildForumPostReply(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Reply"
 
@@ -745,7 +752,7 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 	}
 	baseData := getBaseData(c, title, ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &postData.Thread))
 
-	editData := getEditorDataForEdit(baseData, postData)
+	editData := getEditorDataForEdit(c.CurrentUser, baseData, postData)
 	editData.SubmitUrl = hmnurl.BuildForumPostEdit(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Edited Post"
 

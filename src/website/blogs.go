@@ -236,7 +236,7 @@ func BlogNewThread(c *RequestContext) ResponseData {
 		[]templates.Breadcrumb{BlogBreadcrumb(c.CurrentProject.Slug)},
 	)
 
-	editData := getEditorDataForNew(baseData, nil)
+	editData := getEditorDataForNew(c.CurrentUser, baseData, nil)
 	editData.SubmitUrl = hmnurl.BuildBlogNewThread(c.CurrentProject.Slug)
 	editData.SubmitLabel = "Create Post"
 
@@ -319,7 +319,7 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &postData.Thread),
 	)
 
-	editData := getEditorDataForEdit(baseData, postData)
+	editData := getEditorDataForEdit(c.CurrentUser, baseData, postData)
 	editData.SubmitUrl = hmnurl.BuildBlogPostEdit(c.CurrentProject.Slug, cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Edited Post"
 	if postData.Thread.FirstID != postData.Post.ID {
@@ -388,7 +388,7 @@ func BlogPostReply(c *RequestContext) ResponseData {
 	replyPost := templates.PostToTemplate(&postData.Post, postData.Author, c.Theme)
 	replyPost.AddContentVersion(postData.CurrentVersion, postData.Editor)
 
-	editData := getEditorDataForNew(baseData, &replyPost)
+	editData := getEditorDataForNew(c.CurrentUser, baseData, &replyPost)
 	editData.SubmitUrl = hmnurl.BuildBlogPostReply(c.CurrentProject.Slug, cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Reply"
 

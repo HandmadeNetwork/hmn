@@ -10,6 +10,10 @@
         #editor {
             resize: vertical;
         }
+
+		#editor.drop {
+			box-shadow: inset 0px 0px 5px yellow;
+		}
     </style>
 {{ end }}
 
@@ -104,6 +108,9 @@
 </div>
 
 <script>
+	const maxFileSize = {{ .MaxFileSize }};
+	const uploadUrl = {{ .UploadUrl }};
+
     const form = document.querySelector('#form');
     const titleField = document.querySelector('#title'); // may be undefined, be careful!
     const textField = document.querySelector('#editor');
@@ -177,5 +184,155 @@
     form.addEventListener('submit', e => {
         window.localStorage.removeItem(storageKey);
     });
+
+	let fileCounter = 0;
+
+	textField.addEventListener("dragover", function(ev) {
+		let effect = "none";
+		for (let i = 0; i < ev.dataTransfer.items.length; ++i) {
+			if (ev.dataTransfer.items[i].kind.toLowerCase() == "file") {
+				effect = "copy";
+				break;
+			}
+		}
+		ev.dataTransfer.dropEffect = effect;
+		ev.preventDefault();
+	});
+
+	let enterCounter = 0;
+
+	textField.addEventListener("dragenter", function(ev) {
+		enterCounter++;
+		let droppable = false;
+		for (let i = 0; i < ev.dataTransfer.items.length; ++i) {
+			if (ev.dataTransfer.items[i].kind.toLowerCase() == "file") {
+				droppable = true;
+				break;
+			}
+		}
+		if (droppable) {
+			textField.classList.add("drop");
+		}
+	});
+
+	textField.addEventListener("dragleave", function(ev) {
+		enterCounter--;
+		if (enterCounter == 0) {
+			textField.classList.remove("drop");
+		}
+	});
+
+	function makeUploadString(uploadNumber, filename) {
+		return `Uploading file #${uploadNumber}: \`${filename}\`...`;
+	}
+
+	textField.addEventListener("drop", function(ev) {
+		enterCounter = 0;
+		textField.classList.remove("drop");
+
+		let items = [];
+		for (let i = 0; i < ev.dataTransfer.files.length; ++i) {
+			let f = ev.dataTransfer.files[i];
+			if (f.size < maxFileSize) {
+				items.push({ file: f, error: null });
+			} else {
+				items.push({ file: null, error: `\`${f.name}\` is too big! Max size is ${maxFileSize} but the file is ${f.size}.` });
+			}
+		}
+
+		let cursorStart = textField.selectionStart;
+		let cursorEnd = textField.selectionEnd;
+
+		let toInsert = "\n";
+		for (let i = 0; i < items.length; ++i) {
+			if (items[i].file) {
+				fileCounter++;
+				toInsert += makeUploadString(fileCounter, items[i].file.name) + "\n";
+				startUpload(fileCounter, items[i].file);
+			} else {
+				toInsert += `${items[i].error}\n`;
+			}
+		}
+
+		textField.value = textField.value.substring(0, cursorStart) + toInsert + textField.value.substring(cursorEnd, textField.value.length);
+		doMarkdown();
+
+		ev.preventDefault();
+	});
+
+	function replaceUploadString(upload, newString) {
+		let cursorStart = textField.selectionStart;
+		let cursorEnd = textField.selectionEnd;
+		let uploadString = makeUploadString(upload.uploadNumber, upload.file.name);
+		let insertIndex = textField.value.indexOf(uploadString)
+		textField.value = textField.value.replace(uploadString, newString);
+		if (cursorStart <= insertIndex + uploadString.length) {
+			textField.selectionStart = cursorStart;
+		} else {
+			textField.selectionStart = cursorStart - uploadString.length + newString.length;
+		}
+		if (cursorEnd <= insertIndex + uploadString.length) {
+			textField.selectionEnd = cursorEnd;
+		} else {
+			textField.selectionEnd = cursorEnd - uploadString.length + newString.length;
+		}
+		doMarkdown();
+	}
+
+	let uploadQueue = [];
+	let currentUpload = null;
+	let currentXhr = null;
+
+	function startUpload(uploadNumber, file) {
+		uploadQueue.push({
+			uploadNumber: uploadNumber,
+			file: file
+		});
+		uploadNext();
+	}
+
+	function uploadDone(ev) {
+		try {
+			if (currentXhr.status == 200 && currentXhr.response) {
+				if (currentXhr.response.url) {
+					let url = currentXhr.response.url;
+					let newString = `[${currentUpload.file.name}](${url})`;
+					if (currentXhr.response.mime.startsWith("image")) {
+						newString = "!" + newString;
+					}
+
+					replaceUploadString(currentUpload, newString);
+				} else if (currentXhr.response.error) {
+					replaceUploadString(currentUpload, `Upload failed for \`${currentUpload.file.name}\`: ${currentXhr.response.error}.`);
+				} else {
+					replaceUploadString(currentUpload, `There was a problem uploading your file \`${currentUpload.file.name}\`.`);
+				}
+			} else {
+				replaceUploadString(currentUpload, `There was a problem uploading your file \`${currentUpload.file.name}\`.`);
+			}
+		} catch (err) {
+			replaceUploadString(currentUpload, `There was a problem uploading your file \`${currentUpload.file.name}\`.`);
+			console.error(err);
+		}
+		currentUpload = null;
+		currentXhr = null;
+		uploadNext();
+	}
+
+	function uploadNext() {
+		if (currentUpload == null) {
+			next = uploadQueue.shift();
+			if (next) {
+				// NOTE(asaf): We use XHR because fetch can't do upload progress reports. Womp womp. https://youtu.be/Pubd-spHN-0?t=2
+				currentXhr = new XMLHttpRequest();
+				currentXhr.open("POST", uploadUrl, true);
+				currentXhr.setRequestHeader("Hmn-Upload-Filename", next.file.name);
+				currentXhr.responseType = "json";
+				currentXhr.addEventListener("loadend", uploadDone);
+				currentXhr.send(next.file);
+				currentUpload = next;
+			}
+		}
+	}
 </script>
 {{ end }}
