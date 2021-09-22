@@ -2,6 +2,7 @@
 
 {{ define "extrahead" }}
     <script src="{{ static "go_wasm_exec.js" }}"></script>
+    <script src="{{ static "js/base64.js" }}"></script>
     <script>
         const previewWorker = new Worker('/assets/editorpreviews.js');
     </script>
@@ -298,7 +299,7 @@
 			if (items[i].file) {
 				fileCounter++;
 				toInsert += makeUploadString(fileCounter, items[i].file.name) + "\n";
-				startUpload(fileCounter, items[i].file);
+				queueUpload(fileCounter, items[i].file);
 			} else {
 				toInsert += `${items[i].error}\n`;
 			}
@@ -306,6 +307,7 @@
 
 		textField.value = textField.value.substring(0, cursorStart) + toInsert + textField.value.substring(cursorEnd, textField.value.length);
 		doMarkdown();
+		uploadNext();
 	}
 
 	function replaceUploadString(upload, newString) {
@@ -327,7 +329,11 @@
 		doMarkdown();
 	}
 
-	function startUpload(uploadNumber, file) {
+	function replaceUploadStringError(upload) {
+		replaceUploadString(upload, `There was a problem uploading your file \`${upload.file.name}\`.`);
+	}
+
+	function queueUpload(uploadNumber, file) {
 		uploadQueue.push({
 			uploadNumber: uploadNumber,
 			file: file
@@ -335,7 +341,6 @@
 
 		currentBatchSize++;
 		uploadProgressText.textContent = `Uploading files ${currentBatchDone+1}/${currentBatchSize}`;
-		uploadNext();
 	}
 
 	function uploadDone(ev) {
@@ -352,14 +357,14 @@
 				} else if (currentXhr.response.error) {
 					replaceUploadString(currentUpload, `Upload failed for \`${currentUpload.file.name}\`: ${currentXhr.response.error}.`);
 				} else {
-					replaceUploadString(currentUpload, `There was a problem uploading your file \`${currentUpload.file.name}\`.`);
+					replaceUploadStringError(currentUpload);
 				}
 			} else {
-				replaceUploadString(currentUpload, `There was a problem uploading your file \`${currentUpload.file.name}\`.`);
+				replaceUploadStringError(currentUpload);
 			}
 		} catch (err) {
-			replaceUploadString(currentUpload, `There was a problem uploading your file \`${currentUpload.file.name}\`.`);
 			console.error(err);
+			replaceUploadStringError(currentUpload);
 		}
 		currentUpload = null;
 		currentXhr = null;
@@ -384,15 +389,23 @@
 				submitButton.disabled = true;
 				submitButton.value = "Uploading files...";
 
-				// NOTE(asaf): We use XHR because fetch can't do upload progress reports. Womp womp. https://youtu.be/Pubd-spHN-0?t=2
-				currentXhr = new XMLHttpRequest();
-				currentXhr.upload.addEventListener("progress", updateUploadProgress);
-				currentXhr.open("POST", uploadUrl, true);
-				currentXhr.setRequestHeader("Hmn-Upload-Filename", next.file.name);
-				currentXhr.responseType = "json";
-				currentXhr.addEventListener("loadend", uploadDone);
-				currentXhr.send(next.file);
-				currentUpload = next;
+				try {
+					let utf8Filename = strToUTF8Arr(next.file.name);
+					let base64Filename = base64EncArr(utf8Filename);
+					// NOTE(asaf): We use XHR because fetch can't do upload progress reports. Womp womp. https://youtu.be/Pubd-spHN-0?t=2
+					currentXhr = new XMLHttpRequest();
+					currentXhr.upload.addEventListener("progress", updateUploadProgress);
+					currentXhr.open("POST", uploadUrl, true);
+					currentXhr.setRequestHeader("Hmn-Upload-Filename", base64Filename);
+					currentXhr.responseType = "json";
+					currentXhr.addEventListener("loadend", uploadDone);
+					currentXhr.send(next.file);
+					currentUpload = next;
+				} catch (err) {
+					replaceUploadStringError(next);
+					console.error(err);
+					uploadNext();
+				}
 			} else {
 				submitButton.disabled = false;
 				submitButton.value = submitText;

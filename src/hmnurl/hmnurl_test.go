@@ -313,6 +313,10 @@ func TestForumMarkRead(t *testing.T) {
 	AssertSubdomain(t, BuildForumMarkRead("hero", 5), "hero")
 }
 
+func TestS3Asset(t *testing.T) {
+	AssertRegexMatchFull(t, BuildS3Asset("hello"), RegexS3Asset, map[string]string{"key": "hello"})
+}
+
 func AssertSubdomain(t *testing.T, fullUrl string, expectedSubdomain string) {
 	t.Helper()
 
@@ -343,8 +347,15 @@ func AssertRegexMatch(t *testing.T, fullUrl string, regex *regexp.Regexp, params
 	if len(requestPath) == 0 {
 		requestPath = "/"
 	}
-	match := regex.FindStringSubmatch(requestPath)
-	assert.NotNilf(t, match, "Url did not match regex: [%s] vs [%s]", requestPath, regex.String())
+
+	AssertRegexMatchFull(t, requestPath, regex, paramsToVerify)
+}
+
+func AssertRegexMatchFull(t *testing.T, fullUrl string, regex *regexp.Regexp, paramsToVerify map[string]string) {
+	t.Helper()
+
+	match := regex.FindStringSubmatch(fullUrl)
+	assert.NotNilf(t, match, "Url did not match regex: [%s] vs [%s]", fullUrl, regex.String())
 
 	if paramsToVerify != nil {
 		subexpNames := regex.SubexpNames()
@@ -386,5 +397,4 @@ func AssertRegexNoMatch(t *testing.T, fullUrl string, regex *regexp.Regexp) {
 func TestThingsThatDontNeedCoverage(t *testing.T) {
 	// look the other way ಠ_ಠ
 	BuildPodcastEpisodeFile("foo", "bar")
-	BuildS3Asset("ha ha")
 }

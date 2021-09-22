@@ -3,6 +3,7 @@ package hmnurl
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
@@ -54,6 +55,7 @@ func SetCacheBust(newCacheBust string) {
 
 func SetS3BaseUrl(base string) {
 	S3BaseUrl = base
+	RegexS3Asset = regexp.MustCompile(fmt.Sprintf("%s(?P<key>[\\w\\-./]+)", regexp.QuoteMeta(S3BaseUrl)))
 }
 
 func GetBaseHost() string {

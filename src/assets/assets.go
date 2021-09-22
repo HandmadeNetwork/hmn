@@ -57,13 +57,13 @@ type CreateInput struct {
 	Width, Height int
 }
 
-var REIllegalFilenameChars = regexp.MustCompile(`[^\w \-.]`)
+var REIllegalFilenameChars = regexp.MustCompile(`[^\w\-.]`)
 
 func SanitizeFilename(filename string) string {
 	if filename == "" {
 		return "unnamed"
 	}
-	return REIllegalFilenameChars.ReplaceAllString(filename, "")
+	return REIllegalFilenameChars.ReplaceAllString(filename, "_")
 }
 
 func AssetKey(id, filename string) string {

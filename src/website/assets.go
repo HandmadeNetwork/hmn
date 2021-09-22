@@ -2,6 +2,7 @@ package website
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -51,9 +52,12 @@ func AssetUpload(c *RequestContext) ResponseData {
 	}
 
 	filenameHeader, hasFilename := c.Req.Header["Hmn-Upload-Filename"]
-	originalFilename := ""
+	originalFilename := "upload"
 	if hasFilename {
-		originalFilename = strings.ReplaceAll(filenameHeader[0], " ", "_")
+		decodedFilename, err := base64.StdEncoding.DecodeString(filenameHeader[0])
+		if err == nil {
+			originalFilename = string(decodedFilename)
+		}
 	}
 
 	bodyReader := http.MaxBytesReader(c.Res, c.Req.Body, int64(maxFilesize))

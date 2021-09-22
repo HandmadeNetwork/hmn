@@ -638,10 +638,12 @@ func BuildEditorPreviewsJS() string {
 	return Url("/assets/editorpreviews.js", nil)
 }
 
-// NOTE(asaf): No Regex or tests for remote assets, since we don't parse it ourselves
+var RegexS3Asset *regexp.Regexp
+
 func BuildS3Asset(s3key string) string {
 	defer CatchPanic()
-	return fmt.Sprintf("%s%s", S3BaseUrl, s3key)
+	res := fmt.Sprintf("%s%s", S3BaseUrl, s3key)
+	return res
 }
 
 var RegexPublic = regexp.MustCompile("^/public/.+$")

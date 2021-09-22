@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/parsing"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -427,6 +429,51 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 	)
 	if err != nil {
 		panic(oops.New(err, "failed to set current post version and preview"))
+	}
+
+	// Update asset usage
+
+	_, err = tx.Exec(ctx,
+		`
+		DELETE FROM handmade_post_asset_usage
+		WHERE post_id = $1
+		`,
+		postId,
+	)
+
+	matches := hmnurl.RegexS3Asset.FindAllStringSubmatch(unparsedContent, -1)
+	keyIdx := hmnurl.RegexS3Asset.SubexpIndex("key")
+
+	var keys []string
+	for _, match := range matches {
+		key := match[keyIdx]
+		keys = append(keys, key)
+	}
+
+	type assetId struct {
+		AssetID uuid.UUID `db:"id"`
+	}
+	assetResult, err := db.Query(ctx, tx, assetId{},
+		`
+		SELECT $columns
+		FROM handmade_asset
+		WHERE s3_key = ANY($1)
+		`,
+		keys,
+	)
+	if err != nil {
+		panic(oops.New(err, "failed to get assets matching keys"))
+	}
+
+	var values [][]interface{}
+
+	for _, asset := range assetResult.ToSlice() {
+		values = append(values, []interface{}{postId, asset.(*assetId).AssetID})
+	}
+
+	_, err = tx.CopyFrom(ctx, pgx.Identifier{"handmade_post_asset_usage"}, []string{"post_id", "asset_id"}, pgx.CopyFromRows(values))
+	if err != nil {
+		panic(oops.New(err, "failed to insert post asset usage"))
 	}
 
 	return
