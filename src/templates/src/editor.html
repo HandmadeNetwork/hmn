@@ -53,8 +53,17 @@
             */}}
             <textarea id="editor" class="w-100 h6 minh-6 pa2 mono lh-copy" name="body">{{ .EditInitialContents }}</textarea>
 
-            <div class="flex flex-row-reverse justify-start mt2">
-                <input type="submit" class="button ml2" name="submit" value="{{ .SubmitLabel }}" />
+			<div class="flex justify-end items-center mt2">
+				<div class="upload_bar flex-grow-1">
+					<div class="instructions">
+						Upload files by dragging & dropping, pasting, or <label class="pointer link" for="file_input">selecting</label> them.
+					</div>
+					<div class="progress flex">
+						<div class="progress_text mr3"></div>
+						<div class="progress_bar flex-grow-1 flex-shrink-1 pa1"><div class=""></div></div>
+					</div>
+				</div>
+                <input type="submit" class="button ml2 flex-grow-0 flex-shrink-0" name="submit" value="{{ .SubmitLabel }}" />
             </div>
 
             {{ if .IsEditing }}
@@ -104,6 +113,7 @@
         <div id="preview-container" class="post post-preview mathjax flex-fair-ns overflow-auto mv3 mv0-ns ml3-ns pa3 br3 bg--dim">
             <div id="preview" class="post-content"></div>
         </div>
+		<input type="file" multiple name="file_input" id="file_input" class="dn" />{{/* NOTE(asaf): Placing this outside the form to avoid submitting it to the server by accident */}}
     </div>
 </div>
 
@@ -185,7 +195,30 @@
         window.localStorage.removeItem(storageKey);
     });
 
+	/*
+	/ Asset upload
+	*/ 
+	const submitButton = document.querySelector("#form input[type=submit]");
+	const submitText = submitButton.value;
+	const fileInput = document.querySelector('#file_input');
+	const uploadBar = document.querySelector('.upload_bar');
+	const uploadProgress = document.querySelector('.upload_bar .progress');
+	const uploadProgressText = document.querySelector('.upload_bar .progress_text');
+	const uploadProgressBar = document.querySelector('.upload_bar .progress_bar');
+	const uploadProgressBarFill = document.querySelector('.upload_bar .progress_bar > div');
 	let fileCounter = 0;
+	let enterCounter = 0;
+	let uploadQueue = [];
+	let currentUpload = null;
+	let currentXhr = null;
+	let currentBatchSize = 0;
+	let currentBatchDone = 0;
+
+	fileInput.addEventListener("change", function(ev) {
+		if (fileInput.files.length > 0) {
+			importUserFiles(fileInput.files);
+		}
+	});
 
 	textField.addEventListener("dragover", function(ev) {
 		let effect = "none";
@@ -198,8 +231,6 @@
 		ev.dataTransfer.dropEffect = effect;
 		ev.preventDefault();
 	});
-
-	let enterCounter = 0;
 
 	textField.addEventListener("dragenter", function(ev) {
 		enterCounter++;
@@ -230,9 +261,23 @@
 		enterCounter = 0;
 		textField.classList.remove("drop");
 
+		if (ev.dataTransfer && ev.dataTransfer.files) {
+			importUserFiles(ev.dataTransfer.files)
+		}
+
+		ev.preventDefault();
+	});
+
+	textField.addEventListener("paste", function(ev) {
+		if (ev.clipboardData && ev.clipboardData.files) {
+			importUserFiles(ev.clipboardData.files)
+		}
+	});
+
+	function importUserFiles(files) {
 		let items = [];
-		for (let i = 0; i < ev.dataTransfer.files.length; ++i) {
-			let f = ev.dataTransfer.files[i];
+		for (let i = 0; i < files.length; ++i) {
+			let f = files[i];
 			if (f.size < maxFileSize) {
 				items.push({ file: f, error: null });
 			} else {
@@ -243,7 +288,12 @@
 		let cursorStart = textField.selectionStart;
 		let cursorEnd = textField.selectionEnd;
 
-		let toInsert = "\n";
+		let toInsert = "";
+		let linesToCursor = textField.value.substr(0, cursorStart).split("\n");
+		let cursorLine = linesToCursor[linesToCursor.length-1].trim();
+		if (cursorLine.length > 0) {
+			toInsert = "\n";
+		}
 		for (let i = 0; i < items.length; ++i) {
 			if (items[i].file) {
 				fileCounter++;
@@ -256,9 +306,7 @@
 
 		textField.value = textField.value.substring(0, cursorStart) + toInsert + textField.value.substring(cursorEnd, textField.value.length);
 		doMarkdown();
-
-		ev.preventDefault();
-	});
+	}
 
 	function replaceUploadString(upload, newString) {
 		let cursorStart = textField.selectionStart;
@@ -279,15 +327,14 @@
 		doMarkdown();
 	}
 
-	let uploadQueue = [];
-	let currentUpload = null;
-	let currentXhr = null;
-
 	function startUpload(uploadNumber, file) {
 		uploadQueue.push({
 			uploadNumber: uploadNumber,
 			file: file
 		});
+
+		currentBatchSize++;
+		uploadProgressText.textContent = `Uploading files ${currentBatchDone+1}/${currentBatchSize}`;
 		uploadNext();
 	}
 
@@ -316,21 +363,42 @@
 		}
 		currentUpload = null;
 		currentXhr = null;
+		currentBatchDone++;
 		uploadNext();
+	}
+
+	function updateUploadProgress(ev) {
+		if (ev.lengthComputable) {
+			let progress = ev.loaded / ev.total;
+			uploadProgressBarFill.style.width = Math.floor(progress * 100) + "%";
+		}
 	}
 
 	function uploadNext() {
 		if (currentUpload == null) {
 			next = uploadQueue.shift();
 			if (next) {
+				uploadProgressText.textContent = `Uploading files ${currentBatchDone+1}/${currentBatchSize}`;
+				uploadBar.classList.add("uploading");
+				uploadProgressBarFill.style.width = "0%";
+				submitButton.disabled = true;
+				submitButton.value = "Uploading files...";
+
 				// NOTE(asaf): We use XHR because fetch can't do upload progress reports. Womp womp. https://youtu.be/Pubd-spHN-0?t=2
 				currentXhr = new XMLHttpRequest();
+				currentXhr.upload.addEventListener("progress", updateUploadProgress);
 				currentXhr.open("POST", uploadUrl, true);
 				currentXhr.setRequestHeader("Hmn-Upload-Filename", next.file.name);
 				currentXhr.responseType = "json";
 				currentXhr.addEventListener("loadend", uploadDone);
 				currentXhr.send(next.file);
 				currentUpload = next;
+			} else {
+				submitButton.disabled = false;
+				submitButton.value = submitText;
+				uploadBar.classList.remove("uploading");
+				currentBatchSize = 0;
+				currentBatchDone = 0;
 			}
 		}
 	}
