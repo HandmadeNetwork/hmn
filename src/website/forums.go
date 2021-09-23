@@ -686,14 +686,41 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
+	post, err := FetchThreadPost(c.Context(), tx, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get forum post to submit edits"))
+	}
+
 	c.Req.ParseForm()
+	title := c.Req.Form.Get("title")
 	unparsed := c.Req.Form.Get("body")
 	editReason := c.Req.Form.Get("editreason")
+	if title != "" && post.Thread.FirstID != post.Post.ID {
+		return RejectRequest(c, "You can only edit the title by editing the first post.")
+	}
 	if unparsed == "" {
 		return RejectRequest(c, "You must provide a body for your post.")
 	}
 
 	CreatePostVersion(c.Context(), tx, cd.PostID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
+
+	if title != "" {
+		_, err := tx.Exec(c.Context(),
+			`
+			UPDATE handmade_thread SET title = $1 WHERE id = $2
+			`,
+			title,
+			post.Thread.ID,
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update thread title"))
+		}
+	}
 
 	err = tx.Commit(c.Context())
 	if err != nil {

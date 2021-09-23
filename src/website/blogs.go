@@ -332,7 +332,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+	post, err := FetchThreadPost(c.Context(), tx, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -354,6 +354,19 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 	}
 
 	CreatePostVersion(c.Context(), tx, post.Post.ID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
+
+	if title != "" {
+		_, err := tx.Exec(c.Context(),
+			`
+			UPDATE handmade_thread SET title = $1 WHERE id = $2
+			`,
+			title,
+			post.Thread.ID,
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update thread title"))
+		}
+	}
 
 	err = tx.Commit(c.Context())
 	if err != nil {
