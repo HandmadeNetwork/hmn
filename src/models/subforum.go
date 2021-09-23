@@ -52,7 +52,7 @@ func GetFullSubforumTree(ctx context.Context, conn *pgxpool.Pool) SubforumTree {
 		SELECT $columns
 		FROM
 			handmade_subforum as sf
-		ORDER BY id ASC
+		ORDER BY sort, id ASC
 		`,
 	)
 	if err != nil {
