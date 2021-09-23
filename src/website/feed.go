@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -30,40 +29,19 @@ type FeedData struct {
 func Feed(c *RequestContext) ResponseData {
 	const postsPerPage = 30
 
-	c.Perf.StartBlock("SQL", "Count posts")
-	numPosts, err := db.QueryInt(c.Context(), c.Conn,
-		`
-		SELECT COUNT(*)
-		FROM
-			handmade_post AS post
-		WHERE
-			post.thread_type = ANY ($1)
-			AND deleted = FALSE
-			AND post.thread_id IS NOT NULL
-		`,
-		[]models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectBlogPost},
-	)
-	c.Perf.EndBlock()
+	numPosts, err := CountPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectBlogPost},
+	})
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get count of feed posts"))
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	numPages := int(math.Ceil(float64(numPosts) / postsPerPage))
 
-	page := 1
-	pageString, hasPage := c.PathParams["page"]
-	if hasPage && pageString != "" {
-		if pageParsed, err := strconv.Atoi(pageString); err == nil {
-			page = pageParsed
-		} else {
-			return c.Redirect(hmnurl.BuildFeed(), http.StatusSeeOther)
-		}
+	page, numPages, ok := getPageInfo(c.PathParams["page"], numPosts, postsPerPage)
+	if !ok {
+		return c.Redirect(hmnurl.BuildFeed(), http.StatusSeeOther)
 	}
-	if page < 1 || numPages < page {
-		return c.Redirect(hmnurl.BuildFeedWithPage(utils.IntClamp(1, page, numPages)), http.StatusSeeOther)
-	}
-
-	howManyPostsToSkip := (page - 1) * postsPerPage
 
 	pagination := templates.Pagination{
 		Current: page,
@@ -75,17 +53,7 @@ func Feed(c *RequestContext) ResponseData {
 		PreviousUrl: hmnurl.BuildFeedWithPage(utils.IntClamp(1, page-1, numPages)),
 	}
 
-	var currentUserId *int
-	if c.CurrentUser != nil {
-		currentUserId = &c.CurrentUser.ID
-	}
-
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
-
-	posts, err := fetchAllPosts(c, lineageBuilder, currentUserId, howManyPostsToSkip, postsPerPage)
+	posts, err := fetchAllPosts(c, (page-1)*postsPerPage, postsPerPage)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
 	}
@@ -158,12 +126,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 		feedData.AtomFeedUrl = hmnurl.BuildAtomFeed()
 		feedData.FeedUrl = hmnurl.BuildFeed()
 
-		c.Perf.StartBlock("SQL", "Fetch subforum tree")
-		subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
-		lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-		c.Perf.EndBlock()
-
-		posts, err := fetchAllPosts(c, lineageBuilder, nil, 0, itemsPerFeed)
+		posts, err := fetchAllPosts(c, 0, itemsPerFeed)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
 		}
@@ -306,78 +269,37 @@ func AtomFeed(c *RequestContext) ResponseData {
 	return res
 }
 
-func fetchAllPosts(c *RequestContext, lineageBuilder *models.SubforumLineageBuilder, currentUserID *int, offset int, limit int) ([]templates.PostListItem, error) {
-	c.Perf.StartBlock("SQL", "Fetch posts")
-	type feedPostQuery struct {
-		Post                 models.Post        `db:"post"`
-		PostVersion          models.PostVersion `db:"version"`
-		Thread               models.Thread      `db:"thread"`
-		Proj                 models.Project     `db:"proj"`
-		User                 models.User        `db:"auth_user"`
-		ThreadLastReadTime   *time.Time         `db:"tlri.lastread"`
-		SubforumLastReadTime *time.Time         `db:"slri.lastread"`
-	}
-	posts, err := db.Query(c.Context(), c.Conn, feedPostQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_post AS post
-			JOIN handmade_postversion AS version ON version.id = post.current_id
-			JOIN handmade_thread AS thread ON thread.id = post.thread_id
-			JOIN handmade_project AS proj ON proj.id = post.project_id
-			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
-				tlri.thread_id = post.thread_id
-				AND tlri.user_id = $1
-			)
-			LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
-				slri.subforum_id = thread.subforum_id
-				AND slri.user_id = $1
-			)
-			LEFT JOIN auth_user ON post.author_id = auth_user.id
-		WHERE
-			thread.type = ANY ($2)
-			AND post.deleted = FALSE
-			AND post.thread_id IS NOT NULL
-		ORDER BY postdate DESC
-		LIMIT $3 OFFSET $4
-		`,
-		currentUserID,
-		[]models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectBlogPost},
-		limit,
-		offset,
-	)
-	c.Perf.EndBlock()
+func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostListItem, error) {
+	postsAndStuff, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+		ThreadTypes:    []models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectBlogPost},
+		Limit:          limit,
+		Offset:         offset,
+		SortDescending: true,
+	})
 	if err != nil {
 		return nil, err
 	}
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("FEED", "Build post items")
 	var postItems []templates.PostListItem
-	for _, iPostResult := range posts.ToSlice() {
-		postResult := iPostResult.(*feedPostQuery)
-
-		hasRead := false
-		if c.CurrentUser != nil && c.CurrentUser.MarkedAllReadAt.After(postResult.Post.PostDate) {
-			hasRead = true
-		} else if postResult.ThreadLastReadTime != nil && postResult.ThreadLastReadTime.After(postResult.Post.PostDate) {
-			hasRead = true
-		} else if postResult.SubforumLastReadTime != nil && postResult.SubforumLastReadTime.After(postResult.Post.PostDate) {
-			hasRead = true
-		}
-
+	for _, postAndStuff := range postsAndStuff {
 		postItem := MakePostListItem(
 			lineageBuilder,
-			&postResult.Proj,
-			&postResult.Thread,
-			&postResult.Post,
-			&postResult.User,
-			!hasRead,
+			&postAndStuff.Project,
+			&postAndStuff.Thread,
+			&postAndStuff.Post,
+			postAndStuff.Author,
+			postAndStuff.ThreadUnread,
 			true,
 			c.Theme,
 		)
 
 		postItem.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(postItem.Url)).URN()
-		postItem.LastEditDate = postResult.PostVersion.Date
+		postItem.LastEditDate = postAndStuff.CurrentVersion.Date
 
 		postItems = append(postItems, postItem)
 	}
