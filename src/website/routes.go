@@ -576,7 +576,7 @@ func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (aft
 			blockStack = append(blockStack, block.End)
 		}
 		log.Msg(fmt.Sprintf("Served [%s] %s in %.4fms", c.Perf.Method, c.Perf.Path, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
-		perfCollector.SubmitRun(c.Perf)
+		// perfCollector.SubmitRun(c.Perf) // TODO(asaf): Implement a use for this
 	}
 }
 
