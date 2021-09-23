@@ -1,6 +1,8 @@
 package website
 
 import (
+	"time"
+
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/templates"
 )
@@ -8,10 +10,11 @@ import (
 func JamIndex(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	/*
-		ogimagepath = '%swheeljam/opengraph.png' % (settings.STATIC_URL)
-		ogimageurl = urljoin(current_site_host(), ogimagepath)
-	*/
+	jamStartTime := time.Date(2021, 9, 27, 0, 0, 0, 0, time.UTC)
+	daysUntil := jamStartTime.YearDay() - time.Now().UTC().YearDay()
+	if daysUntil < 0 {
+		daysUntil = 0
+	}
 
 	baseData := getBaseDataAutocrumb(c, "Wheel Reinvention Jam")
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
@@ -22,6 +25,14 @@ func JamIndex(c *RequestContext) ResponseData {
 		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
 	}
 
-	res.MustWriteTemplate("wheeljam_index.html", baseData, c.Perf)
+	type JamPageData struct {
+		templates.BaseData
+		DaysUntil int
+	}
+
+	res.MustWriteTemplate("wheeljam_index.html", JamPageData{
+		BaseData:  baseData,
+		DaysUntil: daysUntil,
+	}, c.Perf)
 	return res
 }
