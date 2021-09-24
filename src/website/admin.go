@@ -54,7 +54,7 @@ func AdminAtomFeed(c *RequestContext) ResponseData {
 		HomepageUrl:        hmnurl.BuildHomepage(),
 		CopyrightStatement: fmt.Sprintf("Copyright (C) 2014-%d Handmade.Network and its contributors", time.Now().Year()),
 		SiteVersion:        "2.0",
-		Title:              "Admin feed",
+		Title:              "Handmade Network Admin feed",
 		Subtitle:           "Unapproved user posts",
 		FeedID:             uuid.NewSHA1(uuid.NameSpaceURL, []byte(hmnurl.BuildAdminAtomFeed())).URN(),
 		AtomFeedUrl:        hmnurl.BuildAdminAtomFeed(),
