@@ -142,7 +142,7 @@ func Index(c *RequestContext) ResponseData {
 					Url:     hmnurl.BuildBlogThread(proj.Slug, projectPost.Thread.ID, projectPost.Thread.Title),
 					User:    templates.UserToTemplate(projectPost.Author, c.Theme),
 					Date:    projectPost.Post.PostDate,
-					Unread:  projectPost.ThreadUnread,
+					Unread:  projectPost.Unread,
 					Content: template.HTML(content),
 				}
 			} else {
@@ -154,7 +154,7 @@ func Index(c *RequestContext) ResponseData {
 						&projectPost.Thread,
 						&projectPost.Post,
 						projectPost.Author,
-						projectPost.ThreadUnread,
+						projectPost.Unread,
 						false,
 						c.Theme,
 					),

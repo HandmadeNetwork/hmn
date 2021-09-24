@@ -279,7 +279,7 @@ type PostsQuery struct {
 type PostAndStuff struct {
 	Project        models.Project `db:"project"`
 	Thread         models.Thread  `db:"thread"`
-	ThreadUnread   bool
+	Unread         bool
 	Post           models.Post        `db:"post"`
 	CurrentVersion models.PostVersion `db:"ver"`
 	Author         *models.User       `db:"author"` // Can be nil in case of a deleted user
@@ -408,7 +408,7 @@ func FetchPosts(
 		} else if row.ForumLastReadTime != nil && row.ForumLastReadTime.After(row.Post.PostDate) {
 			hasRead = true
 		}
-		row.ThreadUnread = !hasRead
+		row.Unread = !hasRead
 
 		if row.ReplyPost != nil && row.ReplyAuthor != nil {
 			replyAuthorIsNotApproved := row.ReplyAuthor.Status != models.UserStatusApproved

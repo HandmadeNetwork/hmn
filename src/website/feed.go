@@ -293,7 +293,7 @@ func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostLi
 			&postAndStuff.Thread,
 			&postAndStuff.Post,
 			postAndStuff.Author,
-			postAndStuff.ThreadUnread,
+			postAndStuff.Unread,
 			true,
 			c.Theme,
 		)
