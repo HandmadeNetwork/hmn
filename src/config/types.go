@@ -23,6 +23,7 @@ type HMNConfig struct {
 	LogLevel     zerolog.Level
 	Postgres     PostgresConfig
 	Auth         AuthConfig
+	Admin        AdminConfig
 	Email        EmailConfig
 	DigitalOcean DigitalOceanConfig
 	Discord      DiscordConfig
@@ -80,6 +81,11 @@ type DiscordConfig struct {
 type EpisodeGuide struct {
 	CineraOutputPath string
 	Projects         map[string]string // NOTE(asaf): Maps from slugs to default episode guide topic
+}
+
+type AdminConfig struct {
+	AtomUsername string
+	AtomPassword string
 }
 
 func init() {

@@ -102,6 +102,11 @@ func TestUserSettings(t *testing.T) {
 	AssertRegexMatch(t, BuildUserSettings("test"), RegexUserSettings, nil)
 }
 
+func TestAdmin(t *testing.T) {
+	AssertRegexMatch(t, BuildAdminAtomFeed(), RegexAdminAtomFeed, nil)
+	AssertRegexMatch(t, BuildAdminApprovalQueue(), RegexAdminApprovalQueue, nil)
+}
+
 func TestSnippet(t *testing.T) {
 	AssertRegexMatch(t, BuildSnippet(15), RegexSnippet, map[string]string{"snippetid": "15"})
 }

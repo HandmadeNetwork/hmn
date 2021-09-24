@@ -1,0 +1,75 @@
+{{ template "base.html" . }}
+
+{{ define "content" }}
+<div class="content-block">
+    {{ range .Posts }}
+        <div class="post background-even pa3">
+            <div class="fl w-100 w-25-l pt3 pa3-l flex tc-l">
+                <div class="fl w-20 mw3 dn-l w3">
+                    <!-- Mobile avatar -->
+                    <div class="aspect-ratio--1x1 contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
+                </div>
+                <div class="w-100-l pl3 pl0-l flex flex-column items-center-l">
+                    <div>
+                        <a class="username" href="{{ .Author.ProfileUrl }}" target="_blank">{{ .Author.Username }}</a>
+                    </div>
+                    {{ if and .Author.Name (ne .Author.Name .Author.Username) }}
+                        <div class="c--dim f7"> {{ .Author.Name }} </div>
+                    {{ end }}
+                    <!-- Large avatar -->
+                    <div class="dn db-l w-60 pv2">
+                        <div class="aspect-ratio--1x1 contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
+                    </div>
+                    <div class="i c--dim f7">
+                        {{ if .Author.Blurb }}
+                            {{ .Author.Blurb }} {{/* TODO: Linebreaks? */}}
+                        {{ else if .Author.Bio }}
+                            {{ .Author.Bio }}
+                        {{ end }}
+                    </div>
+                </div>
+            </div>
+            <div class="fl w-100 w-75-l pv3 pa3-l">
+                <div class="w-100 flex-l flex-row-reverse-l">
+                    <div class="inline-flex flex-row-reverse pl3-l pb3 items-center">
+                        <div class="postid">
+                            <a name="{{ .ID }}" href="{{ .Url }}">#{{ .ID }}</a>
+                        </div>
+						<div class="flex pr3">
+							<form method="POST" class="mr4" target="{{ $.SubmitUrl }}">
+								{{ csrftoken $.Session }}
+								<input type="hidden" name="action" value="{{ $.ApprovalAction }}" />
+								<input type="hidden" name="user_id" value="{{ .Author.ID }}" />
+								<input type="submit" value="Approve User" />
+							</form>
+							<form method="POST" target="{{ $.SubmitUrl }}">
+								{{ csrftoken $.Session }}
+								<input type="hidden" name="action" value="{{ $.SpammerAction }}" />
+								<input type="hidden" name="user_id" value="{{ .Author.ID }}" />
+								<input type="submit" value="Mark as spammer" />
+							</form>
+						</div>
+                    </div>
+                    <div class="w-100 pb3">
+                        <div class="b" role="heading" aria-level="2">{{ .Title }}</div>
+                        {{ timehtml (relativedate .PostDate) .PostDate }}
+						{{ if and $.User.IsStaff .IP }}
+							<span>[{{ .IP }}]</span>
+						{{ end }}
+                    </div>
+                </div>
+                <div class="post-content overflow-x-auto">
+                    {{ .Content }}
+                </div>
+                {{/* {% if post.author.signature|length %}
+                    <div class="signature"><hr />
+                        {{ post.author.signature|bbdecode|safe }}
+                    </div>
+                {% endif %} */}}
+            </div>
+            <div class="cb"></div>
+        </div>
+    {{ end }}
+</div>
+{{ end }}
+

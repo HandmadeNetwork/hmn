@@ -103,6 +103,16 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		}
 	}
 
+	adminMiddleware := func(h Handler) Handler {
+		return func(c *RequestContext) (res ResponseData) {
+			if c.CurrentUser == nil || !c.CurrentUser.IsStaff {
+				return FourOhFour(c)
+			}
+
+			return h(c)
+		}
+	}
+
 	csrfMiddleware := func(h Handler) Handler {
 		// CSRF mitigation actions per the OWASP cheat sheet:
 		// https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
@@ -182,6 +192,10 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	mainRoutes.GET(hmnurl.RegexOldDoPasswordReset, DoPasswordReset)
 	mainRoutes.GET(hmnurl.RegexDoPasswordReset, DoPasswordReset)
 	mainRoutes.POST(hmnurl.RegexDoPasswordReset, DoPasswordResetSubmit)
+
+	mainRoutes.GET(hmnurl.RegexAdminAtomFeed, AdminAtomFeed)
+	mainRoutes.GET(hmnurl.RegexAdminApprovalQueue, adminMiddleware(AdminApprovalQueue))
+	mainRoutes.POST(hmnurl.RegexAdminApprovalQueue, adminMiddleware(csrfMiddleware(AdminApprovalQueueSubmit)))
 
 	mainRoutes.GET(hmnurl.RegexFeed, Feed)
 	mainRoutes.GET(hmnurl.RegexAtomFeed, AtomFeed)
@@ -316,7 +330,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 		IsProjectPage: !c.CurrentProject.IsHMN(),
 		Header: templates.Header{
-			AdminUrl:           hmnurl.BuildHomepage(), // TODO(asaf)
+			AdminUrl:           hmnurl.BuildAdminApprovalQueue(), // TODO(asaf): Replace with general-purpose admin page
 			UserSettingsUrl:    hmnurl.BuildUserSettings(""),
 			LoginActionUrl:     hmnurl.BuildLoginAction(c.FullUrl()),
 			LogoutActionUrl:    hmnurl.BuildLogoutAction(c.FullUrl()),

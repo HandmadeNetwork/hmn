@@ -372,8 +372,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		SET status = $1
 		WHERE id = $2
 		`,
-		// models.UserStatusConfirmed,
-		models.UserStatusApproved, // TODO: Change this back to Confirmed after the jam.
+		models.UserStatusConfirmed,
 		validationResult.User.ID,
 	)
 	if err != nil {

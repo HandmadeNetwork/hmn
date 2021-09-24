@@ -88,6 +88,21 @@ func DeleteSession(ctx context.Context, conn *pgxpool.Pool, id string) error {
 	return nil
 }
 
+func DeleteSessionForUser(ctx context.Context, conn *pgxpool.Pool, username string) error {
+	_, err := conn.Exec(ctx,
+		`
+		DELETE FROM sessions
+		WHERE LOWER(username) = LOWER($1)
+		`,
+		username,
+	)
+	if err != nil {
+		return oops.New(err, "failed to delete session")
+	}
+
+	return nil
+}
+
 func NewSessionCookie(session *models.Session) *http.Cookie {
 	return &http.Cookie{
 		Name:  SessionCookieName,

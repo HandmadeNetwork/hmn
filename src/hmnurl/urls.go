@@ -201,6 +201,24 @@ func BuildUserSettings(section string) string {
 }
 
 /*
+* Admin
+ */
+
+var RegexAdminAtomFeed = regexp.MustCompile(`^/admin/atom$`)
+
+func BuildAdminAtomFeed() string {
+	defer CatchPanic()
+	return Url("/admin/atom", nil)
+}
+
+var RegexAdminApprovalQueue = regexp.MustCompile(`^/admin/approvals$`)
+
+func BuildAdminApprovalQueue() string {
+	defer CatchPanic()
+	return Url("/admin/approvals", nil)
+}
+
+/*
 * Snippets
  */
 
