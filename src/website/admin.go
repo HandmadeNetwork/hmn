@@ -40,6 +40,9 @@ func AdminAtomFeed(c *RequestContext) ResponseData {
 	creds := fmt.Sprintf("%s:%s", config.Config.Admin.AtomUsername, config.Config.Admin.AtomPassword)
 	expectedAuth := fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(creds)))
 	auth, hasAuth := c.Req.Header["Authorization"]
+	if hasAuth {
+		c.Logger.Warn().Str("auth", auth[0]).Msg("Got auth")
+	}
 	if !hasAuth || auth[0] != expectedAuth {
 		return FourOhFour(c)
 	}
