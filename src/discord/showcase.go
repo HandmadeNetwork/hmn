@@ -25,7 +25,8 @@ var reDiscordMessageLink = regexp.MustCompile(`https?://.+?(\s|$)`)
 
 var errNotEnoughInfo = errors.New("Discord didn't send enough info in this event for us to do this")
 
-func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) error {
+// TODO: Turn this ad-hoc isJam parameter into a tag or something
+func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message, isJam bool) error {
 	switch msg.Type {
 	case MessageTypeDefault, MessageTypeReply, MessageTypeApplicationCommand:
 	default:
@@ -57,9 +58,16 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) er
 		return err
 	}
 	if doSnippet, err := AllowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
-		_, err := CreateMessageSnippet(ctx, tx, msg.ID)
+		snippet, err := CreateMessageSnippet(ctx, tx, msg.ID)
 		if err != nil {
 			return oops.New(err, "failed to create snippet in gateway")
+		}
+
+		if isJam {
+			_, err := tx.Exec(ctx, `UPDATE handmade_snippet SET is_jam = TRUE WHERE id = $1`, snippet.ID)
+			if err != nil {
+				return oops.New(err, "failed to mark snippet as a jam snippet")
+			}
 		}
 	} else if err != nil {
 		return oops.New(err, "failed to check snippet permissions in gateway")

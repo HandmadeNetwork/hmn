@@ -582,9 +582,18 @@ func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message)
 	}
 
 	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID {
-		err := bot.processShowcaseMsg(ctx, msg)
+		err := bot.processShowcaseMsg(ctx, msg, false)
 		if err != nil {
 			logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to process showcase message")
+			return nil
+		}
+		return nil
+	}
+
+	if msg.ChannelID == config.Config.Discord.JamShowcaseChannelID {
+		err := bot.processShowcaseMsg(ctx, msg, true)
+		if err != nil {
+			logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to process jam showcase message")
 			return nil
 		}
 		return nil

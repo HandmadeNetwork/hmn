@@ -22,12 +22,19 @@
         <title>Handmade Network</title>
     {{ end }}
 
+    <script src="{{ static "js/templates.js" }}"></script>
+    <script src="{{ static "js/showcase.js" }}"></script>
+
     <link rel="stylesheet" href="{{ static "fonts/mohave/stylesheet.css" }}">
     <link href='https://fonts.googleapis.com/css?family=Fira+Sans:300,400,500,600' rel='stylesheet' type='text/css'>
     <link href='https://fonts.googleapis.com/css?family=Fira+Mono:300,400,500,700' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" type="text/css" href="{{ static "style.css" }}">
 
     <style>
+        :root {
+            --content-background: #f8f8f8;
+        }
+
         body {
             background: linear-gradient(#ab4c47, #a5467d);
         }
@@ -171,6 +178,11 @@
             text-transform: uppercase;
         }
 
+        .showcase-item {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
         @media screen and (min-width: 30em) {
             /* not small styles */
 
@@ -254,6 +266,16 @@
             <p>
                 The rules for the jam are flexible. You can participate alone or with a team, and for as much of the time as your schedule allows. And there's no winner - our goal is to kickstart meaningful projects of all kinds.
             </p>
+        </div>
+
+        <div id="showcase-outer-container" class="bg-black-20 pt4 pb3 pb4-ns">
+            <div class="section mw8 margin-center ph3 ph4-l">
+                <h2>Happening right now.</h2>
+                <p>
+                    The jam is underway! These screenshots and videos were shared in #jam-showcase on our <a href="https://discord.gg/hxWxDee" target="_blank">Discord</a>. Join us!
+                </p>
+                <div id="showcase-container" class="mw8 center-layout mh2 mh0-ns"></div>
+            </div>
         </div>
 
         <div class="section flex-fair mw8 margin-center ph3 ph4-l mv4">
@@ -346,6 +368,106 @@
             {{ template "footer.html" . }}
         </div>
     </div>
+
+    {{ template "showcase_templates.html" }}
+
+    <!-- Copy-pasted and mangled from showcase.html  -->
+    <script>
+        const ROW_HEIGHT = 300;
+        const ITEM_SPACING = 4;
+
+        const showcaseItems = JSON.parse("{{ .ShowcaseItemsJSON }}");
+        const addThumbnailFuncs = new Array(showcaseItems.length);
+
+        const showcaseOuterContainer = document.querySelector('#showcase-outer-container');
+        let showcaseContainer = document.querySelector('#showcase-container');
+
+        showcaseOuterContainer.classList.toggle('dn', showcaseItems.length === 0);
+
+        const itemElements = []; // array of arrays
+        for (let i = 0; i < showcaseItems.length; i++) {
+            const item = showcaseItems[i];
+
+            const [itemEl, addThumbnail] = makeShowcaseItem(item);
+            itemEl.container.setAttribute('data-index', i);
+            itemEl.container.setAttribute('data-date', item.date);
+
+            addThumbnailFuncs[i] = addThumbnail;
+            
+            itemElements.push(itemEl.container);
+        }
+
+        function layout() {
+            const width = showcaseContainer.getBoundingClientRect().width;
+            showcaseContainer = emptyElement(showcaseContainer);
+            
+            function addRow(itemEls, rowWidth, container) {
+                const totalSpacing = ITEM_SPACING * (itemEls.length - 1);
+                const scaleFactor = (width / Math.max(rowWidth, width));
+
+                const row = document.createElement('div');
+                row.classList.add('flex');
+                row.classList.toggle('justify-between', rowWidth >= width);
+                row.style.marginBottom = `${ITEM_SPACING}px`;
+                
+                for (const itemEl of itemEls) {
+                    const index = parseInt(itemEl.getAttribute('data-index'), 10);
+                    const item = showcaseItems[index];
+
+                    const aspect = item.width / item.height;
+                    const baseWidth = (aspect * ROW_HEIGHT) * scaleFactor;
+                    const actualWidth = baseWidth - (totalSpacing / itemEls.length);
+
+                    itemEl.style.width = `${actualWidth}px`;
+                    itemEl.style.height = `${scaleFactor * ROW_HEIGHT}px`;
+                    itemEl.style.marginRight = `${ITEM_SPACING}px`;
+
+                    row.appendChild(itemEl);
+                }
+
+                container.appendChild(row);
+            }
+
+            let rowItemEls = [];
+            let rowWidth = 0;
+
+            for (const itemEl of itemElements) {
+                const index = parseInt(itemEl.getAttribute('data-index'), 10);
+                const item = showcaseItems[index];
+                
+                const aspect = item.width / item.height;
+                rowWidth += aspect * ROW_HEIGHT;
+
+                rowItemEls.push(itemEl);
+
+                if (rowWidth > width) {
+                    addRow(rowItemEls, rowWidth, showcaseContainer);
+
+                    rowItemEls = [];
+                    rowWidth = 0;
+                }
+            }
+
+            addRow(rowItemEls, rowWidth, showcaseContainer);
+        }
+
+        function loadImages() {
+            const items = showcaseContainer.querySelectorAll('.showcase-item');
+            for (const item of items) {
+                const i = parseInt(item.getAttribute('data-index'), 10);
+                addThumbnailFuncs[i]();
+            }
+        }
+
+        layout();
+        layout(); // scrollbars are fun!!
+
+        loadImages();
+
+        window.addEventListener('resize', () => {
+            layout();
+        });
+    </script>
 </body>
 
 </html>

@@ -232,6 +232,8 @@ func Index(c *RequestContext) ResponseData {
 			INNER JOIN auth_user AS owner ON owner.id = snippet.owner_id
 			LEFT JOIN handmade_asset AS asset ON asset.id = snippet.asset_id
 			LEFT JOIN handmade_discordmessage AS discord_message ON discord_message.id = snippet.discord_message_id
+		WHERE
+			NOT snippet.is_jam
 		ORDER BY snippet.when DESC
 		LIMIT 20
 		`,

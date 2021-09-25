@@ -72,10 +72,11 @@ type DiscordConfig struct {
 	OAuthClientID     string
 	OAuthClientSecret string
 
-	GuildID           string
-	MemberRoleID      string
-	ShowcaseChannelID string
-	LibraryChannelID  string
+	GuildID              string
+	MemberRoleID         string
+	ShowcaseChannelID    string
+	LibraryChannelID     string
+	JamShowcaseChannelID string
 }
 
 type EpisodeGuide struct {
