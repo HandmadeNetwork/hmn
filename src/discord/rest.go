@@ -500,6 +500,74 @@ func GetChannelMessages(ctx context.Context, channelID string, in GetChannelMess
 	return msgs, nil
 }
 
+// See https://discord.com/developers/docs/interactions/application-commands#create-guild-application-command-json-params
+type CreateGuildApplicationCommandRequest struct {
+	Name              string                     `json:"name"`               // 1-32 character name
+	Description       string                     `json:"description"`        // 1-100 character description
+	Options           []ApplicationCommandOption `json:"options"`            // the parameters for the command
+	DefaultPermission *bool                      `json:"default_permission"` // whether the command is enabled by default when the app is added to a guild
+	Type              ApplicationCommandType     `json:"type"`               // the type of command, defaults 1 if not set
+}
+
+// See https://discord.com/developers/docs/interactions/application-commands#create-guild-application-command
+func CreateGuildApplicationCommand(ctx context.Context, in CreateGuildApplicationCommandRequest) error {
+	const name = "Create Guild Application Command"
+
+	if in.Type == 0 {
+		in.Type = ApplicationCommandTypeChatInput
+	}
+
+	payloadJSON, err := json.Marshal(in)
+	if err != nil {
+		return oops.New(nil, "failed to marshal request body")
+	}
+
+	path := fmt.Sprintf("/applications/%s/guilds/%s/commands", config.Config.Discord.BotUserID, config.Config.Discord.GuildID)
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		req := makeRequest(ctx, http.MethodPost, path, []byte(payloadJSON))
+		req.Header.Add("Content-Type", "application/json")
+		return req
+	})
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		logErrorResponse(ctx, name, res, "")
+		return oops.New(nil, "received error from Discord")
+	}
+
+	return nil
+}
+
+func CreateInteractionResponse(ctx context.Context, interactionID, interactionToken string, in InteractionResponse) error {
+	const name = "Create Interaction Response"
+
+	payloadJSON, err := json.Marshal(in)
+	if err != nil {
+		return oops.New(nil, "failed to marshal request body")
+	}
+
+	path := fmt.Sprintf("/interactions/%s/%s/callback", interactionID, interactionToken)
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		req := makeRequest(ctx, http.MethodPost, path, []byte(payloadJSON))
+		req.Header.Add("Content-Type", "application/json")
+		return req
+	})
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		logErrorResponse(ctx, name, res, "")
+		return oops.New(nil, "received error from Discord")
+	}
+
+	return nil
+}
+
 func GetAuthorizeUrl(state string) string {
 	params := make(url.Values)
 	params.Set("response_type", "code")

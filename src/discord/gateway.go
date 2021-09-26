@@ -544,15 +544,17 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 	case "RESUMED":
 		// Nothing to do, but at least we can log something
 		logging.ExtractLogger(ctx).Info().Msg("Finished resuming gateway session")
+
+		bot.createApplicationCommands(ctx)
 	case "MESSAGE_CREATE":
-		newMessage := MessageFromMap(msg.Data)
+		newMessage := *MessageFromMap(msg.Data, "")
 
 		err := bot.messageCreateOrUpdate(ctx, &newMessage)
 		if err != nil {
 			return oops.New(err, "error on new message")
 		}
 	case "MESSAGE_UPDATE":
-		newMessage := MessageFromMap(msg.Data)
+		newMessage := *MessageFromMap(msg.Data, "")
 
 		err := bot.messageCreateOrUpdate(ctx, &newMessage)
 		if err != nil {
@@ -569,6 +571,15 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 				GuildID:   bulkDelete.GuildID,
 			})
 		}
+	case "GUILD_CREATE":
+		guild := *GuildFromMap(msg.Data, "")
+		if guild.ID != config.Config.Discord.GuildID {
+			break
+		}
+
+		bot.createApplicationCommands(ctx)
+	case "INTERACTION_CREATE":
+		go bot.doInteraction(ctx, InteractionFromMap(msg.Data, ""))
 	}
 
 	return nil
