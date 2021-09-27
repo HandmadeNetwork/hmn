@@ -712,7 +712,7 @@ type InteractionData struct {
 	// TODO
 
 	// Fields for User Command and Message Command
-	// TODO
+	TargetID string `json:"target_id"` // id the of user or message targetted by a user or message command
 }
 
 // See https://discord.com/developers/docs/interactions/receiving-and-responding#interaction-object-resolved-data-structure
@@ -842,6 +842,7 @@ func InteractionDataFromMap(m interface{}, k string) *InteractionData {
 		Name:     mmap["name"].(string),
 		Type:     ApplicationCommandType(mmap["type"].(float64)),
 		Resolved: ResolvedDataFromMap(mmap, "resolved"),
+		TargetID: maybeString(mmap, "target_id"),
 	}
 
 	if ioptions, ok := mmap["options"]; ok {

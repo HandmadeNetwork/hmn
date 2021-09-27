@@ -5,16 +5,18 @@ import (
 	"errors"
 	"fmt"
 
-	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 )
 
-const CommandNameProfile = "profile"
+// Slash command names and options
+const SlashCommandProfile = "profile"
+const ProfileOptionUser = "user"
 
-const ProfileCommandOptionUser = "user"
+// User command names
+const UserCommandProfile = "HMN Profile"
 
 func (bot *botInstance) createApplicationCommands(ctx context.Context) {
 	doOrWarn := func(err error) {
@@ -26,17 +28,21 @@ func (bot *botInstance) createApplicationCommands(ctx context.Context) {
 	}
 
 	doOrWarn(CreateGuildApplicationCommand(ctx, CreateGuildApplicationCommandRequest{
-		Name:        CommandNameProfile,
+		Type:        ApplicationCommandTypeChatInput,
+		Name:        SlashCommandProfile,
 		Description: "Get a link to a user's Handmade Network profile",
 		Options: []ApplicationCommandOption{
 			{
 				Type:        ApplicationCommandOptionTypeUser,
-				Name:        ProfileCommandOptionUser,
+				Name:        ProfileOptionUser,
 				Description: "The Discord user to look up on Handmade Network",
 				Required:    true,
 			},
 		},
-		Type: ApplicationCommandTypeChatInput,
+	}))
+	doOrWarn(CreateGuildApplicationCommand(ctx, CreateGuildApplicationCommandRequest{
+		Type: ApplicationCommandTypeUser,
+		Name: UserCommandProfile,
 	}))
 }
 
@@ -54,23 +60,25 @@ func (bot *botInstance) doInteraction(ctx context.Context, i *Interaction) {
 	}()
 
 	switch i.Data.Name {
-	case CommandNameProfile:
-		bot.handleProfileCommand(ctx, i)
+	case SlashCommandProfile:
+		userOpt := mustGetInteractionOption(i.Data.Options, ProfileOptionUser)
+		userID := userOpt.Value.(string)
+		bot.handleProfileCommand(ctx, i, userID)
+	case UserCommandProfile:
+		bot.handleProfileCommand(ctx, i, i.Data.TargetID)
 	default:
 		logging.ExtractLogger(ctx).Warn().Str("name", i.Data.Name).Msg("didn't recognize Discord interaction name")
 	}
 }
 
-func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction) {
-	userOpt := mustGetInteractionOption(i.Data.Options, ProfileCommandOptionUser)
-	userID := userOpt.Value.(string)
+func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction, userID string) {
 	member := i.Data.Resolved.Members[userID]
 
-	if userID == config.Config.Discord.BotUserID {
+	if member.User.IsBot {
 		err := CreateInteractionResponse(ctx, i.ID, i.Token, InteractionResponse{
 			Type: InteractionCallbackTypeChannelMessageWithSource,
 			Data: &InteractionCallbackData{
-				Content: "<a:confusedparrot:891814826484064336>",
+				Content: "<a:confusedparrot:865957487026765864>",
 			},
 		})
 		if err != nil {
@@ -98,7 +106,7 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 			err = CreateInteractionResponse(ctx, i.ID, i.Token, InteractionResponse{
 				Type: InteractionCallbackTypeChannelMessageWithSource,
 				Data: &InteractionCallbackData{
-					Content: fmt.Sprintf("%s hasn't linked a Handmade Network profile.", member.DisplayName()),
+					Content: fmt.Sprintf("<@%s> hasn't linked a Handmade Network profile.", member.User.ID),
 				},
 			})
 			if err != nil {
@@ -115,7 +123,7 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 	err = CreateInteractionResponse(ctx, i.ID, i.Token, InteractionResponse{
 		Type: InteractionCallbackTypeChannelMessageWithSource,
 		Data: &InteractionCallbackData{
-			Content: fmt.Sprintf("%s's profile can be viewed at %s.", member.DisplayName(), url),
+			Content: fmt.Sprintf("<@%s>'s profile can be viewed at %s.", member.User.ID, url),
 		},
 	})
 	if err != nil {
