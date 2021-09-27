@@ -224,6 +224,13 @@ func TestBlog(t *testing.T) {
 	AssertSubdomain(t, BuildBlog("hero", 1), "hero")
 }
 
+func TestBlogNewThread(t *testing.T) {
+	AssertRegexMatch(t, BuildBlogNewThread(""), RegexBlogNewThread, nil)
+	AssertSubdomain(t, BuildBlogNewThread(""), "")
+	AssertRegexMatch(t, BuildBlogNewThread("hero"), RegexBlogNewThread, nil)
+	AssertSubdomain(t, BuildBlogNewThread("hero"), "hero")
+}
+
 func TestBlogThread(t *testing.T) {
 	AssertRegexMatch(t, BuildBlogThread("", 1, ""), RegexBlogThread, map[string]string{"threadid": "1"})
 	AssertRegexMatch(t, BuildBlogThread("", 1, ""), RegexBlogThread, map[string]string{"threadid": "1"})
@@ -298,6 +305,10 @@ func TestProjectCSS(t *testing.T) {
 	AssertRegexMatch(t, BuildProjectCSS("000000"), RegexProjectCSS, nil)
 }
 
+func TestEditorPreviewsJS(t *testing.T) {
+	AssertRegexMatch(t, BuildEditorPreviewsJS(), RegexEditorPreviewsJS, nil)
+}
+
 func TestPublic(t *testing.T) {
 	AssertRegexMatch(t, BuildPublic("test", false), RegexPublic, nil)
 	AssertRegexMatch(t, BuildPublic("/test", true), RegexPublic, nil)
@@ -320,6 +331,23 @@ func TestForumMarkRead(t *testing.T) {
 
 func TestS3Asset(t *testing.T) {
 	AssertRegexMatchFull(t, BuildS3Asset("hello"), RegexS3Asset, map[string]string{"key": "hello"})
+}
+
+func TestJamIndex(t *testing.T) {
+	AssertRegexMatch(t, BuildJamIndex(), RegexJamIndex, nil)
+	AssertSubdomain(t, BuildJamIndex(), "")
+}
+
+func TestDiscordOAuthCallback(t *testing.T) {
+	AssertRegexMatch(t, BuildDiscordOAuthCallback(), RegexDiscordOAuthCallback, nil)
+}
+
+func TestDiscordUnlink(t *testing.T) {
+	AssertRegexMatch(t, BuildDiscordUnlink(), RegexDiscordUnlink, nil)
+}
+
+func TestDiscordShowcaseBacklog(t *testing.T) {
+	AssertRegexMatch(t, BuildDiscordShowcaseBacklog(), RegexDiscordShowcaseBacklog, nil)
 }
 
 func AssertSubdomain(t *testing.T, fullUrl string, expectedSubdomain string) {
