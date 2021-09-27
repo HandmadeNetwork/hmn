@@ -79,6 +79,7 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 			Type: InteractionCallbackTypeChannelMessageWithSource,
 			Data: &InteractionCallbackData{
 				Content: "<a:confusedparrot:865957487026765864>",
+				Flags:   FlagEphemeral,
 			},
 		})
 		if err != nil {
@@ -107,6 +108,7 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 				Type: InteractionCallbackTypeChannelMessageWithSource,
 				Data: &InteractionCallbackData{
 					Content: fmt.Sprintf("<@%s> hasn't linked a Handmade Network profile.", member.User.ID),
+					Flags:   FlagEphemeral,
 				},
 			})
 			if err != nil {
@@ -124,6 +126,7 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 		Type: InteractionCallbackTypeChannelMessageWithSource,
 		Data: &InteractionCallbackData{
 			Content: fmt.Sprintf("<@%s>'s profile can be viewed at %s.", member.User.ID, url),
+			Flags:   FlagEphemeral,
 		},
 	})
 	if err != nil {
