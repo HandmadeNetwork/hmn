@@ -93,11 +93,13 @@ type StructQueryIterator struct {
 	fieldPaths [][]int
 	rows       pgx.Rows
 	destType   reflect.Type
+	closed     chan struct{}
 }
 
 func (it *StructQueryIterator) Next() (interface{}, bool) {
 	hasNext := it.rows.Next()
 	if !hasNext {
+		it.Close()
 		return nil, false
 	}
 
@@ -169,6 +171,10 @@ func (it *StructQueryIterator) Next() (interface{}, bool) {
 
 func (it *StructQueryIterator) Close() {
 	it.rows.Close()
+	select {
+	case it.closed <- struct{}{}:
+	default:
+	}
 }
 
 func (it *StructQueryIterator) ToSlice() []interface{} {
@@ -241,6 +247,7 @@ func Query(ctx context.Context, conn ConnOrTx, destExample interface{}, query st
 		fieldPaths: fieldPaths,
 		rows:       rows,
 		destType:   destType,
+		closed:     make(chan struct{}, 1),
 	}
 
 	// Ensure that iterators are closed if context is cancelled. Otherwise, iterators can hold
@@ -250,8 +257,11 @@ func Query(ctx context.Context, conn ConnOrTx, destExample interface{}, query st
 		if done == nil {
 			return
 		}
-		<-done
-		it.Close()
+		select {
+		case <-done:
+			it.Close()
+		case <-it.closed:
+		}
 	}()
 
 	return it, nil
