@@ -37,23 +37,19 @@ func (bd *BaseData) AddImmediateNotice(class, content string) {
 }
 
 type Header struct {
-	AdminUrl           string
-	UserProfileUrl     string
-	UserSettingsUrl    string
-	LoginActionUrl     string
-	LogoutActionUrl    string
-	ForgotPasswordUrl  string
-	RegisterUrl        string
-	HMNHomepageUrl     string
-	ProjectHomepageUrl string
-	ProjectIndexUrl    string
-	BlogUrl            string
-	ForumsUrl          string
-	LibraryUrl         string
-	ManifestoUrl       string
-	EpisodeGuideUrl    string
-	EditUrl            string
-	SearchActionUrl    string
+	AdminUrl          string
+	UserProfileUrl    string
+	UserSettingsUrl   string
+	LoginActionUrl    string
+	LogoutActionUrl   string
+	ForgotPasswordUrl string
+	RegisterUrl       string
+
+	HMNHomepageUrl  string
+	ProjectIndexUrl string
+	PodcastUrl      string
+	ForumsUrl       string
+	LibraryUrl      string
 }
 
 type Footer struct {

@@ -1,4 +1,4 @@
-<header class="mb3 bb bw1 b--theme-dark">
+<header id="site-header" class="mb3 bb bw1 b--theme-dark">
     <div class="user-options flex justify-center justify-end-ns">
         {{ if .User }}
             {{ if .User.IsStaff }}
@@ -30,59 +30,81 @@
             <a href="{{ .Header.HMNHomepageUrl }}" class="hmn-logo bg-theme-dark">
                 Handmade
             </a>
-            <div class="items flex items-center justify-center justify-start-ns">
-                {{ if .IsProjectPage }}
-                    <a class="project-logo" href="{{ .Header.ProjectHomepageUrl }}">
-                        <h1>{{ .Project.Name }}</h1>
-                    </a>
-                {{ end }}
-				{{ if not .IsProjectPage }}
-					<a href="{{ .Header.ProjectIndexUrl }}" class="projects">Projects</a>
-				{{ end }}
-                {{ if .Project.HasBlog }}
-					<a href="{{ .Header.BlogUrl }}" class="blog">{{ if .IsProjectPage }}Blog{{ else }}News{{ end }}</a>
-                {{ end }}
-                {{ if .Project.HasForum }}
-                    <a href="{{ .Header.ForumsUrl }}" class="forums">Forums</a>
-                {{ end }}
-                {{ if .Project.HasLibrary }}
-                    <a href="{{ .Header.LibraryUrl }}" class="library">Library</a>
-                {{ end }}
-                {{ if .Project.IsHMN }}
-                    <a href="{{ .Header.ManifestoUrl }}" class="misson">Mission</a>
-                {{ end }}
-                {{ if .Header.EpisodeGuideUrl }}
-                    <a href="{{ .Header.EpisodeGuideUrl }}" class="annotations">Episode Guide</a>
-                {{ end }}
-                {{ if .Header.EditUrl }}
-                    <a class="edit" href="{{ .Header.EditUrl }}" title="Edit {{ .Project.Name }}"><span class="icon">0</span>&nbsp;Settings</a>
-                {{ end }}
+            <div class="items flex items-center justify-center justify-start-ns ml2-ns ml3-l">
+                <div class="root-item">
+				    <a href="{{ .Header.ProjectIndexUrl }}">Projects</a>
+                </div>
+				<div class="root-item">
+                    <a>Media <div class="dib svgicon ml1">{{ svg "chevron-down-thick" }}</div></a>
+                    <div class="submenu b--theme-dark">
+                        <a href="{{ .Header.PodcastUrl }}">Podcast</a>
+                        <a href="https://handmadedev.show/" target="_blank">Handmade Dev Show</a>
+                    </div>
+                </div>
+                <div class="root-item">
+				    <a href="{{ .Header.ForumsUrl }}">Forums</a>
+                </div>
+                <div class="root-item">
+                    <a>Resources <div class="dib svgicon ml1">{{ svg "chevron-down-thick" }}</div></a>
+                    <div class="submenu b--theme-dark">
+                        <a href="{{ .Header.LibraryUrl }}">Library</a>
+                    </div>
+                </div>
             </div>
         </div>
-        <form onsubmit="this.querySelector('input[name=q]').value = this.querySelector('#searchstring').value + ' site:handmade.network';" class="dn ma0 flex-l flex-column justify-center items-end" method="GET" action="{{ .Header.SearchActionUrl }}" target="_blank">
-			<input type="hidden" name="q" />
-            <input class="site-search bn lite pa2 fira" type="text" id="searchstring" value="" placeholder="Search with DuckDuckGo" size="18" />
-            <input id="search_button_homepage" type="submit" value="Go"/>
-        </form>
     </div>
 </header>
 
 <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function() {
-        var loginPopup = document.getElementById("login-popup");
-        var loginLink = document.getElementById("login-link");
+        const header = document.querySelector('#site-header');
 
-        if (loginPopup !== null) {
-            loginLink.removeAttribute("href");
+        // set up dropdown stuff for mobile / touch
+        {
+            const rootItems = header.querySelectorAll('.root-item');
 
-            loginLink.onclick = function() {
-                loginPopup.classList.toggle("open");
+            function clearDropdowns() {
+                for (const item of rootItems) {
+                    item.classList.remove('clicked');
+                }
+            }
+
+            function clickDropdown(el) {                
+                if (el.classList.contains('clicked')) {
+                    clearDropdowns();
+                } else {
+                    clearDropdowns();
+                    el.classList.add('clicked');
+                }
+            }
+
+            for (const item of rootItems) {
+                if (item.querySelector('.submenu')) {
+                    item.addEventListener('click', e => {
+                        clickDropdown(item);
+                        e.stopPropagation();
+                    });
+                }
             }
         }
 
-        for (const time of document.querySelectorAll('time')) {
-            const d = new Date(Date.parse(time.dateTime));
-            time.title = d.toLocaleString();
+        // set up login form
+        {
+            const loginPopup = document.getElementById("login-popup");
+            const loginLink = document.getElementById("login-link");
+
+            if (loginPopup !== null) {
+                loginLink.removeAttribute("href");
+
+                loginLink.onclick = () => {
+                    loginPopup.classList.toggle("open");
+                }
+            }
+
+            for (const time of document.querySelectorAll('time')) {
+                const d = new Date(Date.parse(time.dateTime));
+                time.title = d.toLocaleString();
+            }
         }
     });
 </script>

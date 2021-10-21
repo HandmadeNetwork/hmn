@@ -364,7 +364,8 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	projectHomepageData.BaseData = getBaseData(c, project.Name, nil)
 	if canEdit {
-		projectHomepageData.BaseData.Header.EditUrl = hmnurl.BuildProjectEdit(project.Slug, "")
+		// TODO: Move to project-specific navigation
+		// projectHomepageData.BaseData.Header.EditURL = hmnurl.BuildProjectEdit(project.Slug, "")
 	}
 	projectHomepageData.BaseData.OpenGraphItems = append(projectHomepageData.BaseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",

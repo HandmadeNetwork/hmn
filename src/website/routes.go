@@ -304,11 +304,12 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		}
 	}
 
-	episodeGuideUrl := ""
-	defaultTopic, hasAnnotations := config.Config.EpisodeGuide.Projects[c.CurrentProject.Slug]
-	if hasAnnotations {
-		episodeGuideUrl = hmnurl.BuildEpisodeList(c.CurrentProject.Slug, defaultTopic)
-	}
+	// TODO: move to project-specific navigation
+	// episodeGuideUrl := ""
+	// defaultTopic, hasAnnotations := config.Config.EpisodeGuide.Projects[c.CurrentProject.Slug]
+	// if hasAnnotations {
+	// 	episodeGuideUrl = hmnurl.BuildEpisodeList(c.CurrentProject.Slug, defaultTopic)
+	// }
 
 	baseData := templates.BaseData{
 		Theme:       c.Theme,
@@ -330,22 +331,18 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 		IsProjectPage: !c.CurrentProject.IsHMN(),
 		Header: templates.Header{
-			AdminUrl:           hmnurl.BuildAdminApprovalQueue(), // TODO(asaf): Replace with general-purpose admin page
-			UserSettingsUrl:    hmnurl.BuildUserSettings(""),
-			LoginActionUrl:     hmnurl.BuildLoginAction(c.FullUrl()),
-			LogoutActionUrl:    hmnurl.BuildLogoutAction(c.FullUrl()),
-			ForgotPasswordUrl:  hmnurl.BuildRequestPasswordReset(),
-			RegisterUrl:        hmnurl.BuildRegister(),
-			HMNHomepageUrl:     hmnurl.BuildHomepage(),
-			ProjectHomepageUrl: hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
-			ProjectIndexUrl:    hmnurl.BuildProjectIndex(1),
-			BlogUrl:            hmnurl.BuildBlog(c.CurrentProject.Slug, 1),
-			ForumsUrl:          hmnurl.BuildForum(c.CurrentProject.Slug, nil, 1),
-			LibraryUrl:         hmnurl.BuildLibrary(c.CurrentProject.Slug),
-			ManifestoUrl:       hmnurl.BuildManifesto(),
-			EpisodeGuideUrl:    episodeGuideUrl,
-			EditUrl:            "",
-			SearchActionUrl:    "https://duckduckgo.com",
+			AdminUrl:          hmnurl.BuildAdminApprovalQueue(), // TODO(asaf): Replace with general-purpose admin page
+			UserSettingsUrl:   hmnurl.BuildUserSettings(""),
+			LoginActionUrl:    hmnurl.BuildLoginAction(c.FullUrl()),
+			LogoutActionUrl:   hmnurl.BuildLogoutAction(c.FullUrl()),
+			ForgotPasswordUrl: hmnurl.BuildRequestPasswordReset(),
+			RegisterUrl:       hmnurl.BuildRegister(),
+
+			HMNHomepageUrl:  hmnurl.BuildHomepage(),
+			ProjectIndexUrl: hmnurl.BuildProjectIndex(1),
+			PodcastUrl:      hmnurl.BuildPodcast(c.CurrentProject.Slug),
+			ForumsUrl:       hmnurl.BuildForum(c.CurrentProject.Slug, nil, 1),
+			LibraryUrl:      hmnurl.BuildLibrary(c.CurrentProject.Slug),
 		},
 		Footer: templates.Footer{
 			HomepageUrl:                hmnurl.BuildHomepage(),
