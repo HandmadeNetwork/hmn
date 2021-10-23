@@ -254,10 +254,6 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 		}
 		builder.WriteRune('{')
 
-		builder.WriteString(`"type":`)
-		builder.WriteString(strconv.Itoa(int(item.Type)))
-		builder.WriteRune(',')
-
 		builder.WriteString(`"date":`)
 		builder.WriteString(strconv.FormatInt(item.Date.UTC().Unix(), 10))
 		builder.WriteRune(',')
@@ -288,16 +284,36 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 		builder.WriteString(item.Url)
 		builder.WriteString(`",`)
 
+		var mediaType TimelineItemMediaType
+		var assetUrl string
+		var thumbnailUrl string
+		var width, height int
+		if len(item.EmbedMedia) > 0 {
+			mediaType = item.EmbedMedia[0].Type
+			assetUrl = item.EmbedMedia[0].AssetUrl
+			thumbnailUrl = item.EmbedMedia[0].ThumbnailUrl
+			width = item.EmbedMedia[0].Width
+			height = item.EmbedMedia[0].Height
+		}
+
+		builder.WriteString(`"media_type":`)
+		builder.WriteString(strconv.Itoa(int(mediaType)))
+		builder.WriteRune(',')
+
 		builder.WriteString(`"width":`)
-		builder.WriteString(strconv.Itoa(item.Width))
+		builder.WriteString(strconv.Itoa(width))
 		builder.WriteRune(',')
 
 		builder.WriteString(`"height":`)
-		builder.WriteString(strconv.Itoa(item.Height))
+		builder.WriteString(strconv.Itoa(height))
 		builder.WriteRune(',')
 
 		builder.WriteString(`"asset_url":"`)
-		builder.WriteString(item.AssetUrl)
+		builder.WriteString(assetUrl)
+		builder.WriteString(`",`)
+
+		builder.WriteString(`"thumbnail_url":"`)
+		builder.WriteString(thumbnailUrl)
 		builder.WriteString(`",`)
 
 		builder.WriteString(`"discord_message_url":"`)

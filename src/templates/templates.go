@@ -11,6 +11,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"github.com/Masterminds/sprig"
+	"github.com/google/uuid"
 	"github.com/teacat/noire"
 )
 
@@ -179,6 +180,9 @@ var HMNTemplateFuncs = template.FuncMap{
 	"staticthemenobust": func(theme string, filepath string) string {
 		return hmnurl.BuildTheme(filepath, theme, false)
 	},
+	"string2uuid": func(s string) string {
+		return uuid.NewSHA1(uuid.NameSpaceURL, []byte(s)).URN()
+	},
 	"timehtml": func(formatted string, t time.Time) template.HTML {
 		iso := t.UTC().Format(time.RFC3339)
 		return template.HTML(fmt.Sprintf(`<time datetime="%s">%s</time>`, iso, formatted))
@@ -195,36 +199,8 @@ var HMNTemplateFuncs = template.FuncMap{
 		}
 	},
 
-	"timelinepostitem": func(item TimelineItem) bool {
-		if item.Type == TimelineTypeForumThread ||
-			item.Type == TimelineTypeForumReply ||
-			item.Type == TimelineTypeBlogPost ||
-			item.Type == TimelineTypeBlogComment {
-
-			return true
-		}
-		return false
-	},
-	"timelinesnippetitem": func(item TimelineItem) bool {
-		if item.Type == TimelineTypeSnippetImage ||
-			item.Type == TimelineTypeSnippetVideo ||
-			item.Type == TimelineTypeSnippetAudio ||
-			item.Type == TimelineTypeSnippetYoutube {
-
-			return true
-		}
-		return false
-	},
-	"snippetvideo": func(snippet TimelineItem) bool {
-		return snippet.Type == TimelineTypeSnippetVideo
-	},
-	"snippetaudio": func(snippet TimelineItem) bool {
-		return snippet.Type == TimelineTypeSnippetAudio
-	},
-	"snippetimage": func(snippet TimelineItem) bool {
-		return snippet.Type == TimelineTypeSnippetImage
-	},
-	"snippetyoutube": func(snippet TimelineItem) bool {
-		return snippet.Type == TimelineTypeSnippetYoutube
-	},
+	"mediaimage": func() TimelineItemMediaType { return TimelineItemMediaTypeImage },
+	"mediavideo": func() TimelineItemMediaType { return TimelineItemMediaTypeVideo },
+	"mediaaudio": func() TimelineItemMediaType { return TimelineItemMediaTypeAudio },
+	"mediaembed": func() TimelineItemMediaType { return TimelineItemMediaTypeEmbed },
 }

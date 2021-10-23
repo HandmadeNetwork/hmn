@@ -70,37 +70,34 @@ func Snippet(c *RequestContext) ResponseData {
 		{Property: "og:description", Value: string(snippet.Description)},
 	}
 
-	if snippet.Type == templates.TimelineTypeSnippetImage {
-		opengraphImage := []templates.OpenGraphItem{
-			{Property: "og:image", Value: snippet.AssetUrl},
-			{Property: "og:image:width", Value: strconv.Itoa(snippet.Width)},
-			{Property: "og:image:height", Value: strconv.Itoa(snippet.Height)},
-			{Property: "og:image:type", Value: snippet.MimeType},
-			{Name: "twitter:card", Value: "summary_large_image"},
+	if len(snippet.EmbedMedia) > 0 {
+		media := snippet.EmbedMedia[0]
+
+		switch media.Type {
+		case templates.TimelineItemMediaTypeImage:
+			opengraph = append(opengraph,
+				templates.OpenGraphItem{Property: "og:image", Value: media.AssetUrl},
+				templates.OpenGraphItem{Property: "og:image:width", Value: strconv.Itoa(media.Width)},
+				templates.OpenGraphItem{Property: "og:image:height", Value: strconv.Itoa(media.Height)},
+				templates.OpenGraphItem{Property: "og:image:type", Value: media.MimeType},
+				templates.OpenGraphItem{Name: "twitter:card", Value: "summary_large_image"},
+			)
+		case templates.TimelineItemMediaTypeVideo:
+			opengraph = append(opengraph,
+				templates.OpenGraphItem{Property: "og:video", Value: media.AssetUrl},
+				templates.OpenGraphItem{Property: "og:video:width", Value: strconv.Itoa(media.Width)},
+				templates.OpenGraphItem{Property: "og:video:height", Value: strconv.Itoa(media.Height)},
+				templates.OpenGraphItem{Property: "og:video:type", Value: media.MimeType},
+				templates.OpenGraphItem{Name: "twitter:card", Value: "player"},
+			)
+		case templates.TimelineItemMediaTypeAudio:
+			opengraph = append(opengraph,
+				templates.OpenGraphItem{Property: "og:audio", Value: media.AssetUrl},
+				templates.OpenGraphItem{Property: "og:audio:type", Value: media.MimeType},
+				templates.OpenGraphItem{Name: "twitter:card", Value: "player"},
+			)
 		}
-		opengraph = append(opengraph, opengraphImage...)
-	} else if snippet.Type == templates.TimelineTypeSnippetVideo {
-		opengraphVideo := []templates.OpenGraphItem{
-			{Property: "og:video", Value: snippet.AssetUrl},
-			{Property: "og:video:width", Value: strconv.Itoa(snippet.Width)},
-			{Property: "og:video:height", Value: strconv.Itoa(snippet.Height)},
-			{Property: "og:video:type", Value: snippet.MimeType},
-			{Name: "twitter:card", Value: "player"},
-		}
-		opengraph = append(opengraph, opengraphVideo...)
-	} else if snippet.Type == templates.TimelineTypeSnippetAudio {
-		opengraphAudio := []templates.OpenGraphItem{
-			{Property: "og:audio", Value: snippet.AssetUrl},
-			{Property: "og:audio:type", Value: snippet.MimeType},
-			{Name: "twitter:card", Value: "player"},
-		}
-		opengraph = append(opengraph, opengraphAudio...)
-	} else if snippet.Type == templates.TimelineTypeSnippetYoutube {
-		opengraphYoutube := []templates.OpenGraphItem{
-			{Property: "og:video", Value: fmt.Sprintf("https://youtube.com/watch?v=%s", snippet.YoutubeID)},
-			{Name: "twitter:card", Value: "player"},
-		}
-		opengraph = append(opengraph, opengraphYoutube...)
+		opengraph = append(opengraph, media.ExtraOpenGraphItems...)
 	}
 
 	baseData := getBaseData(

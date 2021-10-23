@@ -6,19 +6,18 @@
 		{{ with .ProfileUserProjects }}
 			<div class="content-block ph3 ph0-ns">
 				<h2>Projects</h2>
-				<div class="ph3">
-					{{ range . }}
-						<div class="mv3">
-							{{ template "project_card.html" projectcarddata . "" }}
-						</div>
-					{{ end }}
-				</div>
+				{{ range . }}
+					<div class="mv3">
+						{{ template "project_card.html" projectcarddata . "" }}
+					</div>
+				{{ end }}
 			</div>
 		{{ end }}
 		{{ if gt (len .TimelineItems) 0 }}
 			<div class="content-block timeline-container ph3 ph0-ns">
 				<h2>Recent Activity</h2>
 				<div class="timeline-filters mb2">
+					{{/*
 					{{ if gt .NumForums 0 }}
 						<div class="dib filter forums mr2"><input data-type="forums" class="v-mid mr1" type="checkbox" id="timeline-checkbox-forums" checked /><label class="v-mid" for="timeline-checkbox-forums">Forums (<span class="count">{{ .NumForums }}</span>)</label></div>
 					{{ end }}
@@ -28,6 +27,7 @@
 					{{ if gt .NumSnippets 0 }}
 						<div class="dib filter snippets mr2"><input data-type="snippets" class="v-mid mr1" type="checkbox" id="timeline-checkbox-snippets" checked /><label class="v-mid" for="timeline-checkbox-snippets">Snippets (<span class="count">{{ .NumSnippets }}</span>)</label></div>
 					{{ end }}
+					*/}}
 				</div>
 				<div class="timeline">
 					{{ range .TimelineItems }}
@@ -53,11 +53,6 @@
 				<div class="value">{{ absoluteshortdate .ProfileUser.DateJoined }}</div>
 			</div>
 
-			<div class="pair flex flex-wrap">
-				<div class="key flex-auto mr1">Posts</div>
-				<div class="value">{{ add .NumForums .NumBlogs }}</div>
-			</div>
-
 			{{ if .ProfileUser.Email }}
 				<div class="pair flex flex-wrap">
 					<div class="key flex-auto mr1">Email</div>
@@ -75,15 +70,50 @@
 	</div>
 </div>
 <script>
-	let timelineList = document.querySelector(".timeline");
-	let toggles = document.querySelectorAll(".timeline-filters .filter input");
-	function timelineFilterToggle(ev) {
-		timelineList.classList.toggle("no-" + ev.target.getAttribute("data-type"), !ev.target.checked);
+	const filterTitles = [];
+	for (const item of document.querySelectorAll('.timeline-item')) {
+		const title = item.getAttribute('data-filter-title');
+		if (title && !filterTitles.includes(title)) {
+			filterTitles.push(title);
+		}
 	}
-	for (let i = 0; i < toggles.length; ++i) {
-		let toggle = toggles[i];
-		toggle.checked = true;
-		toggle.addEventListener("change", timelineFilterToggle);
+	filterTitles.sort();
+
+	function itemsForFilterTitle(title) {
+		return document.querySelectorAll(`.timeline-item[data-filter-title="${title}"]`);
+	}
+
+	const filters = document.querySelector('.timeline-filters');
+
+	for (const title of filterTitles) {
+		const container = document.createElement("div");
+		container.className = "dib filter mr2";
+
+		const id = `timeline-checkbox-${title.replaceAll(/\s/g, '-')}`;
+
+		const input = document.createElement("input");
+		input.className = "v-mid mr1";
+		input.type = "checkbox";
+		input.id = id;
+		input.checked = true;
+		input.addEventListener("change", e => {
+			for (const item of itemsForFilterTitle(title)) {
+				if (e.target.checked) {
+					item.style.removeProperty("display");
+				} else {
+					item.style.setProperty("display", "none")
+				}
+			}
+		});
+		container.appendChild(input);
+
+		const label = document.createElement("label");
+		label.className = "v-mid";
+		label.htmlFor = id;
+		label.innerText = `${title} (${itemsForFilterTitle(title).length})`;
+		container.appendChild(label);
+
+		filters.appendChild(container);
 	}
 </script>
 {{ end }}

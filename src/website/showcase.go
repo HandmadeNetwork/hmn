@@ -45,7 +45,7 @@ func Showcase(c *RequestContext) ResponseData {
 	for _, s := range snippetQuerySlice {
 		row := s.(*snippetQuery)
 		timelineItem := SnippetToTimelineItem(&row.Snippet, row.Asset, row.DiscordMessage, &row.Owner, c.Theme)
-		if timelineItem.Type != templates.TimelineTypeSnippetYoutube {
+		if timelineItem.CanShowcase {
 			showcaseItems = append(showcaseItems, timelineItem)
 		}
 	}

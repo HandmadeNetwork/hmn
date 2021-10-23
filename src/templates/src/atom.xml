@@ -46,7 +46,7 @@
 			<entry>
 				<title>New showcase item by {{ .OwnerName }}</title>
 				<link rel="alternative" type="text/html" href="{{ .Url }}" />
-				<id>{{ .UUID }}</id>
+				<id>{{ string2uuid .Url }}</id>
 				<published>{{ rfc3339 .Date }}</published>
 				<author>
 					<name>{{ .OwnerName }}</name>
@@ -54,13 +54,19 @@
 				</author>
 				<content type="xhtml">
 					<div xmlns="http://www.w3.org/1999/xhtml">
-						{{ .Description }}
-						{{ if snippetimage . }}
-							<img src="{{ .AssetUrl }}"/>
-						{{ else if snippetvideo . }}
-							<video src="{{ .AssetUrl }}" controls="true"/>
-						{{ else if snippetaudio . }}
-							<audio src="{{ .AssetUrl }}" controls="true"/>
+						<div>
+							{{ .Description }}
+						</div>
+						{{ range .EmbedMedia }}
+							<div>
+								{{ if eq .Type mediaimage }}
+									<img src="{{ .AssetUrl }}"/>
+								{{ else if eq .Type mediavideo }}
+									<video src="{{ .AssetUrl }}" controls="true"/>
+								{{ else if eq .Type mediaaudio }}
+									<audio src="{{ .AssetUrl }}" controls="true"/>
+								{{ end }}
+							</div>
 						{{ end }}
 					</div>
 				</content>

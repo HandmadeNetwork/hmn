@@ -1,14 +1,9 @@
-const TimelineTypes = {
-    UNKNOWN: 0,
-    FORUM_THREAD: 1,
-    FORUM_REPLY: 2,
-    BLOG_POST: 3,
-    BLOG_COMMENT: 4,
-    SNIPPET_IMAGE: 5,
-    SNIPPET_VIDEO: 6,
-    SNIPPET_AUDIO: 7,
-    SNIPPET_YOUTUBE: 8
-};
+const TimelineMediaTypes = {
+    IMAGE: 1,
+    VIDEO: 2,
+    AUDIO: 3,
+    EMBED: 4,
+}
 
 const showcaseItemTemplate = makeTemplateCloner("showcase_item");
 const modalTemplate = makeTemplateCloner("timeline_modal");
@@ -39,10 +34,10 @@ function makeShowcaseItem(timelineItem) {
     let addThumbnailFunc = () => {};
     let createModalContentFunc = () => {};
 
-    switch (timelineItem.type) {
-    case TimelineTypes.SNIPPET_IMAGE:
+    switch (timelineItem.media_type) {
+    case TimelineMediaTypes.IMAGE:
         addThumbnailFunc = () => {
-            itemEl.thumbnail.style.backgroundImage = `url('${timelineItem.asset_url}')`;
+            itemEl.thumbnail.style.backgroundImage = `url('${timelineItem.thumbnail_url}')`;
         };
         
         createModalContentFunc = () => {
@@ -53,10 +48,10 @@ function makeShowcaseItem(timelineItem) {
         };
 
         break;
-    case TimelineTypes.SNIPPET_VIDEO:
+    case TimelineMediaTypes.VIDEO:
         addThumbnailFunc = () => {
             const video = document.createElement('video');
-            video.src = timelineItem.asset_url;
+            video.src = timelineItem.asset_url; // TODO: Use image thumbnails
             video.controls = false;
             video.classList.add('h-100');
             video.preload = 'metadata';
@@ -73,7 +68,7 @@ function makeShowcaseItem(timelineItem) {
         };
 
         break;
-    case TimelineTypes.SNIPPET_AUDIO:
+    case TimelineMediaTypes.AUDIO:
         createModalContentFunc = () => {
             const modalAudio = document.createElement('audio');
             modalAudio.src = timelineItem.asset_url;

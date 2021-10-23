@@ -1,136 +1,174 @@
 package website
 
 import (
+	"fmt"
 	"html/template"
 	"regexp"
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
-var TimelineTypeMap = map[models.ThreadType][]templates.TimelineType{
-	//                                {           First post         ,         Subsequent post          }
-	models.ThreadTypeProjectBlogPost: {templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment},
-	models.ThreadTypeForumPost:       {templates.TimelineTypeForumThread, templates.TimelineTypeForumReply},
+type TimelineTypeTitles struct {
+	TypeTitleFirst    string
+	TypeTitleNotFirst string
+	FilterTitle       string
 }
 
-var TimelineItemClassMap = map[templates.TimelineType]string{
-	templates.TimelineTypeUnknown: "",
-
-	templates.TimelineTypeForumThread: "forums",
-	templates.TimelineTypeForumReply:  "forums",
-
-	templates.TimelineTypeBlogPost:    "blogs",
-	templates.TimelineTypeBlogComment: "blogs",
-
-	templates.TimelineTypeSnippetImage:   "snippets",
-	templates.TimelineTypeSnippetVideo:   "snippets",
-	templates.TimelineTypeSnippetAudio:   "snippets",
-	templates.TimelineTypeSnippetYoutube: "snippets",
+var TimelineTypeTitleMap = map[models.ThreadType]TimelineTypeTitles{
+	models.ThreadTypeProjectBlogPost: {"New blog post", "Blog comment", "Blogs"},
+	models.ThreadTypeForumPost:       {"New forum thread", "Forum reply", "Forums"},
 }
 
-var TimelineTypeTitleMap = map[templates.TimelineType]string{
-	templates.TimelineTypeUnknown: "",
-
-	templates.TimelineTypeForumThread: "New forum thread",
-	templates.TimelineTypeForumReply:  "Forum reply",
-
-	templates.TimelineTypeBlogPost:    "New blog post",
-	templates.TimelineTypeBlogComment: "Blog comment",
-
-	templates.TimelineTypeSnippetImage:   "Snippet",
-	templates.TimelineTypeSnippetVideo:   "Snippet",
-	templates.TimelineTypeSnippetAudio:   "Snippet",
-	templates.TimelineTypeSnippetYoutube: "Snippet",
-}
-
-func PostToTimelineItem(lineageBuilder *models.SubforumLineageBuilder, post *models.Post, thread *models.Thread, project *models.Project, owner *models.User, currentTheme string) templates.TimelineItem {
-	itemType := templates.TimelineTypeUnknown
-	typeByCatKind, found := TimelineTypeMap[post.ThreadType]
-	if found {
-		isNotFirst := 0
-		if thread.FirstID != post.ID {
-			isNotFirst = 1
-		}
-		itemType = typeByCatKind[isNotFirst]
-	}
-
-	return templates.TimelineItem{
-		Type:      itemType,
-		TypeTitle: TimelineTypeTitleMap[itemType],
-		Class:     TimelineItemClassMap[itemType],
-		Date:      post.PostDate,
-		Url:       UrlForGenericPost(thread, post, lineageBuilder, project.Slug),
+func PostToTimelineItem(
+	lineageBuilder *models.SubforumLineageBuilder,
+	post *models.Post,
+	thread *models.Thread,
+	project *models.Project,
+	owner *models.User,
+	currentTheme string,
+) templates.TimelineItem {
+	item := templates.TimelineItem{
+		Date:        post.PostDate,
+		Title:       thread.Title,
+		Breadcrumbs: GenericThreadBreadcrumbs(lineageBuilder, project, thread),
+		Url:         UrlForGenericPost(thread, post, lineageBuilder, project.Slug),
 
 		OwnerAvatarUrl: templates.UserAvatarUrl(owner, currentTheme),
 		OwnerName:      owner.BestName(),
 		OwnerUrl:       hmnurl.BuildUserProfile(owner.Username),
-		Description:    "", // NOTE(asaf): No description for posts
-
-		Title:       thread.Title,
-		Breadcrumbs: GenericThreadBreadcrumbs(lineageBuilder, project, thread),
 	}
+
+	if typeTitles, ok := TimelineTypeTitleMap[post.ThreadType]; ok {
+		if thread.FirstID == post.ID {
+			item.TypeTitle = typeTitles.TypeTitleFirst
+		} else {
+			item.TypeTitle = typeTitles.TypeTitleNotFirst
+		}
+		item.FilterTitle = typeTitles.FilterTitle
+	} else {
+		logging.Warn().
+			Int("postID", post.ID).
+			Int("threadType", int(post.ThreadType)).
+			Msg("unknown thread type for post")
+	}
+
+	return item
 }
 
-var YoutubeRegex = regexp.MustCompile(`(?i)youtube\.com/watch\?.*v=(?P<videoid>[^/&]+)`)
-var YoutubeShortRegex = regexp.MustCompile(`(?i)youtu\.be/(?P<videoid>[^/]+)`)
+func SnippetToTimelineItem(
+	snippet *models.Snippet,
+	asset *models.Asset,
+	discordMessage *models.DiscordMessage,
+	owner *models.User,
+	currentTheme string,
+) templates.TimelineItem {
+	item := templates.TimelineItem{
+		Date:        snippet.When,
+		FilterTitle: "Snippets",
+		Url:         hmnurl.BuildSnippet(snippet.ID),
 
-func SnippetToTimelineItem(snippet *models.Snippet, asset *models.Asset, discordMessage *models.DiscordMessage, owner *models.User, currentTheme string) templates.TimelineItem {
-	itemType := templates.TimelineTypeUnknown
-	youtubeId := ""
-	assetUrl := ""
-	mimeType := ""
-	width := 0
-	height := 0
-	discordMessageUrl := ""
+		OwnerAvatarUrl: templates.UserAvatarUrl(owner, currentTheme),
+		OwnerName:      owner.BestName(),
+		OwnerUrl:       hmnurl.BuildUserProfile(owner.Username),
 
-	if asset == nil {
-		match := YoutubeRegex.FindStringSubmatch(*snippet.Url)
-		index := YoutubeRegex.SubexpIndex("videoid")
-		if match == nil {
-			match = YoutubeShortRegex.FindStringSubmatch(*snippet.Url)
-			index = YoutubeShortRegex.SubexpIndex("videoid")
-		}
-		if match != nil {
-			youtubeId = match[index]
-			itemType = templates.TimelineTypeSnippetYoutube
-		}
-	} else {
+		Description: template.HTML(snippet.DescriptionHtml),
+
+		CanShowcase: true,
+	}
+
+	if asset != nil {
 		if strings.HasPrefix(asset.MimeType, "image/") {
-			itemType = templates.TimelineTypeSnippetImage
+			item.EmbedMedia = append(item.EmbedMedia, imageMediaItem(asset))
 		} else if strings.HasPrefix(asset.MimeType, "video/") {
-			itemType = templates.TimelineTypeSnippetVideo
+			item.EmbedMedia = append(item.EmbedMedia, videoMediaItem(asset))
 		} else if strings.HasPrefix(asset.MimeType, "audio/") {
-			itemType = templates.TimelineTypeSnippetAudio
+			item.EmbedMedia = append(item.EmbedMedia, audioMediaItem(asset))
 		}
-		assetUrl = hmnurl.BuildS3Asset(asset.S3Key)
-		mimeType = asset.MimeType
-		width = asset.Width
-		height = asset.Height
+	}
+
+	if snippet.Url != nil {
+		url := *snippet.Url
+		if videoId := getYoutubeVideoID(url); videoId != "" {
+			item.EmbedMedia = append(item.EmbedMedia, youtubeMediaItem(videoId))
+			item.CanShowcase = false
+		}
 	}
 
 	if discordMessage != nil {
-		discordMessageUrl = discordMessage.Url
+		item.DiscordMessageUrl = discordMessage.Url
 	}
 
-	return templates.TimelineItem{
-		Type:  itemType,
-		Class: TimelineItemClassMap[itemType],
-		Date:  snippet.When,
-		Url:   hmnurl.BuildSnippet(snippet.ID),
+	return item
+}
 
-		OwnerAvatarUrl: templates.UserAvatarUrl(owner, currentTheme),
-		OwnerName:      owner.BestName(),
-		OwnerUrl:       hmnurl.BuildUserProfile(owner.Username),
-		Description:    template.HTML(snippet.DescriptionHtml),
+var youtubeRegexes = [...]*regexp.Regexp{
+	regexp.MustCompile(`(?i)youtube\.com/watch\?.*v=(?P<videoid>[^/&]+)`),
+	regexp.MustCompile(`(?i)youtu\.be/(?P<videoid>[^/]+)`),
+}
 
-		DiscordMessageUrl: discordMessageUrl,
-		Width:             width,
-		Height:            height,
-		AssetUrl:          assetUrl,
-		MimeType:          mimeType,
-		YoutubeID:         youtubeId,
+func getYoutubeVideoID(url string) string {
+	for _, regex := range youtubeRegexes {
+		match := regex.FindStringSubmatch(url)
+		if match != nil {
+			return match[regex.SubexpIndex("videoid")]
+		}
+	}
+
+	return ""
+}
+
+func imageMediaItem(asset *models.Asset) templates.TimelineItemMedia {
+	assetUrl := hmnurl.BuildS3Asset(asset.S3Key)
+
+	return templates.TimelineItemMedia{
+		Type:         templates.TimelineItemMediaTypeImage,
+		AssetUrl:     assetUrl,
+		ThumbnailUrl: assetUrl, // TODO: Use smaller thumbnails?
+		MimeType:     asset.MimeType,
+		Width:        asset.Width,
+		Height:       asset.Height,
+	}
+}
+
+func videoMediaItem(asset *models.Asset) templates.TimelineItemMedia {
+	assetUrl := hmnurl.BuildS3Asset(asset.S3Key)
+
+	return templates.TimelineItemMedia{
+		Type:     templates.TimelineItemMediaTypeVideo,
+		AssetUrl: assetUrl,
+		// TODO: Use image thumbnails
+		MimeType: asset.MimeType,
+		Width:    asset.Width,
+		Height:   asset.Height,
+	}
+}
+
+func audioMediaItem(asset *models.Asset) templates.TimelineItemMedia {
+	assetUrl := hmnurl.BuildS3Asset(asset.S3Key)
+
+	return templates.TimelineItemMedia{
+		Type:     templates.TimelineItemMediaTypeAudio,
+		AssetUrl: assetUrl,
+		MimeType: asset.MimeType,
+		Width:    asset.Width,
+		Height:   asset.Height,
+	}
+}
+
+func youtubeMediaItem(videoId string) templates.TimelineItemMedia {
+	return templates.TimelineItemMedia{
+		Type: templates.TimelineItemMediaTypeEmbed,
+		EmbedHTML: template.HTML(fmt.Sprintf(
+			`<iframe src="https://www.youtube-nocookie.com/embed/%s" allow="accelerometer; encrypted-media; gyroscope;" allowfullscreen frameborder="0"></iframe>`,
+			template.HTMLEscapeString(videoId),
+		)),
+		ExtraOpenGraphItems: []templates.OpenGraphItem{
+			{Property: "og:video", Value: fmt.Sprintf("https://youtube.com/watch?v=%s", videoId)},
+			{Name: "twitter:card", Value: "player"},
+		},
 	}
 }

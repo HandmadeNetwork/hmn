@@ -26,9 +26,6 @@ type UserProfileTemplateData struct {
 	ProfileUserLinks    []templates.Link
 	ProfileUserProjects []templates.Project
 	TimelineItems       []templates.TimelineItem
-	NumForums           int
-	NumBlogs            int
-	NumSnippets         int
 }
 
 func UserProfile(c *RequestContext) ResponseData {
@@ -166,42 +163,27 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	c.Perf.StartBlock("PROFILE", "Construct timeline items")
 	timelineItems := make([]templates.TimelineItem, 0, len(posts)+len(snippetQuerySlice))
-	numForums := 0
-	numBlogs := 0
-	numSnippets := len(snippetQuerySlice)
 
 	for _, post := range posts {
-		timelineItem := PostToTimelineItem(
+		timelineItems = append(timelineItems, PostToTimelineItem(
 			lineageBuilder,
 			&post.Post,
 			&post.Thread,
 			&post.Project,
 			profileUser,
 			c.Theme,
-		)
-		switch timelineItem.Type {
-		case templates.TimelineTypeForumThread, templates.TimelineTypeForumReply:
-			numForums += 1
-		case templates.TimelineTypeBlogPost, templates.TimelineTypeBlogComment:
-			numBlogs += 1
-		}
-		if timelineItem.Type != templates.TimelineTypeUnknown {
-			timelineItems = append(timelineItems, timelineItem)
-		} else {
-			c.Logger.Warn().Int("post ID", post.Post.ID).Msg("Unknown timeline item type for post")
-		}
+		))
 	}
 
 	for _, snippetRow := range snippetQuerySlice {
 		snippetData := snippetRow.(*snippetQuery)
-		timelineItem := SnippetToTimelineItem(
+		timelineItems = append(timelineItems, SnippetToTimelineItem(
 			&snippetData.Snippet,
 			snippetData.Asset,
 			snippetData.DiscordMessage,
 			profileUser,
 			c.Theme,
-		)
-		timelineItems = append(timelineItems, timelineItem)
+		))
 	}
 
 	c.Perf.StartBlock("PROFILE", "Sort timeline")
@@ -223,9 +205,6 @@ func UserProfile(c *RequestContext) ResponseData {
 		ProfileUserLinks:    profileUserLinks,
 		ProfileUserProjects: templateProjects,
 		TimelineItems:       timelineItems,
-		NumForums:           numForums,
-		NumBlogs:            numBlogs,
-		NumSnippets:         numSnippets,
 	}, c.Perf)
 	return res
 }

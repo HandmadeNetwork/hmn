@@ -244,45 +244,45 @@ type ThreadListItem struct {
 	Content string
 }
 
-type TimelineType int
-
-const (
-	TimelineTypeUnknown TimelineType = iota
-
-	TimelineTypeForumThread
-	TimelineTypeForumReply
-
-	TimelineTypeBlogPost
-	TimelineTypeBlogComment
-
-	TimelineTypeSnippetImage
-	TimelineTypeSnippetVideo
-	TimelineTypeSnippetAudio
-	TimelineTypeSnippetYoutube
-)
-
 type TimelineItem struct {
-	Type      TimelineType
-	TypeTitle string
-	Class     string
-	Date      time.Time
-	Url       string
-	UUID      string
+	Date              time.Time
+	Title             string
+	TypeTitle         string
+	FilterTitle       string
+	Breadcrumbs       []Breadcrumb
+	Url               string
+	DiscordMessageUrl string
 
 	OwnerAvatarUrl string
 	OwnerName      string
 	OwnerUrl       string
-	Description    template.HTML
 
-	DiscordMessageUrl string
-	Width             int
-	Height            int
-	AssetUrl          string
-	MimeType          string
-	YoutubeID         string
+	Description         template.HTML
+	TruncateDescription bool
 
-	Title       string
-	Breadcrumbs []Breadcrumb
+	PreviewMedia TimelineItemMedia
+	EmbedMedia   []TimelineItemMedia
+
+	CanShowcase bool // whether this snippet can be shown in a showcase gallery
+}
+
+type TimelineItemMediaType int
+
+const (
+	TimelineItemMediaTypeImage TimelineItemMediaType = iota + 1
+	TimelineItemMediaTypeVideo
+	TimelineItemMediaTypeAudio
+	TimelineItemMediaTypeEmbed
+)
+
+type TimelineItemMedia struct {
+	Type                TimelineItemMediaType
+	AssetUrl            string
+	EmbedHTML           template.HTML
+	ThumbnailUrl        string
+	MimeType            string
+	Width, Height       int
+	ExtraOpenGraphItems []OpenGraphItem
 }
 
 type ProjectCardData struct {

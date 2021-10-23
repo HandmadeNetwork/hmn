@@ -10,17 +10,19 @@
         </div>
         <p class="mb2">{{ .Snippet.Description }}</p>
         <div>
-			{{ if snippetimage .Snippet }}
-                <img src="{{ .Snippet.AssetUrl }}" />
-			{{ else if snippetvideo .Snippet }}
-                <video src="{{ .Snippet.AssetUrl }}" preload="metadata" controls />
-			{{ else if snippetaudio .Snippet }}
-                <audio src="{{ .Snippet.AssetUrl }}" controls />
-			{{ else if snippetyoutube .Snippet }}
-                <div class="mb3 aspect-ratio aspect-ratio--16x9">
-                    <iframe class="aspect-ratio--object" src="https://www.youtube-nocookie.com/embed/{{ .Snippet.YoutubeID }}" allow="accelerometer; encrypted-media; gyroscope;" allowfullscreen frameborder="0" />
-                </div>
-			{{ end }}
+            {{ range .Snippet.EmbedMedia }}
+                {{ if eq .Type mediaimage }}
+                    <img src="{{ .AssetUrl }}">
+                {{ else if eq .Type mediavideo }}
+                    <video src="{{ .AssetUrl }}" preload="metadata" controls>
+                {{ else if eq .Type mediaaudio }}
+                    <audio src="{{ .AssetUrl }}" controls>
+                {{ else if eq .Type mediaembed }}
+                    <div class="mb3 aspect-ratio aspect-ratio--16x9">
+                        {{ .EmbedHTML }}
+                    </div>
+                {{ end }}
+            {{ end }}
         </div>
     </div>
 </div>
