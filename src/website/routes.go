@@ -269,6 +269,8 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		return res
 	})
 
+	mainRoutes.GET(hmnurl.RegexLibraryAny, LibraryNotPortedYet)
+
 	// Other
 	mainRoutes.AnyMethod(hmnurl.RegexCatchAll, FourOhFour)
 

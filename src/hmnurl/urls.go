@@ -535,6 +535,9 @@ func BuildBlogPostReply(projectSlug string, threadId int, postId int) string {
 * Library
  */
 
+// Any library route. Remove after we port the library.
+var RegexLibraryAny = regexp.MustCompile(`^/library`)
+
 var RegexLibrary = regexp.MustCompile(`^/library$`)
 
 func BuildLibrary(projectSlug string) string {
