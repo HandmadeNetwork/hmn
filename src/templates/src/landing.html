@@ -1,26 +1,7 @@
 {{ template "base.html" . }}
 
 {{ define "extrahead" }}
-<style type="text/css">
-    {{ $base := . }}
-    {{ range $col := .PostColumns }}
-        {{ range $entry := $col }}
-            {{ $c1 := hex2color .Project.Color1 }}
-            {{ $linkColor := eq $base.Theme "dark" | ternary (lightness 0.55 $c1) (lightness 0.35 $c1) | color2css }}
-            {{ $linkHoverColor := eq $base.Theme "dark" | ternary (lightness 0.65 $c1) (lightness 0.45 $c1) | color2css }}
-            {{ $projectPostBackground := eq $base.Theme "dark" | ternary (lightness 0.15 $c1) (lightness 0.95 $c1) | alpha 0.2 | color2css }}
-
-            #p{{ .Project.Subdomain }} a.project-title { color: {{ $linkColor }}; }
-            #p{{ .Project.Subdomain }} .unread a { color: {{ $linkColor }}; }
-            #p{{ .Project.Subdomain }} .unread a:hover { color: {{ $linkHoverColor }}  }
-            #p{{ .Project.Subdomain }} .unread .avatar-icon { border-color: {{ $linkColor }}; }
-            #p{{ .Project.Subdomain }} .post-list-item:nth-of-type(even) { background-color: {{ $projectPostBackground }}; }
-            #p{{ .Project.Subdomain }} .thread.more { background-color:transparent; }
-        {{ end }}
-    {{ end }}
-</style>
 <script src="{{ static "js/templates.js" }}"></script>
-<script src="{{ static "js/showcase.js" }}"></script>
 {{ end }}
 
 {{ define "content" }}
@@ -77,186 +58,63 @@
         </div>
     </a>
 </div>
-{{ template "showcase_templates.html" }}
-{{ if .ShowcaseTimelineJson }}
-	<div class="content-block pb3">
-		<div class="tc tl-l w-100 pb2">
-			<h2 class="di-l mr2-l">Community Showcase</h2>
-			<ul class="list dib-l">
-				<li class="dib-ns ma0 ph2">
-					<a href="{{ .ShowcaseUrl }}">View all</a>
-				</li>
-			</ul>
-		</div>
 
-		<div class="showcase relative overflow-hidden">
-			<div id="showcase-items" class="flex relative pl3 pl0-ns"></div>
-			<div class="arrow-container left">
-				<a href="javascript:void(0)" class="arrow svgicon svgicon-nofix" onclick="scrollShowcase('left')">{{ svg "chevron-left" }}</a>
+<div class="landing-layout ph3 ph0-ns">
+	{{/*
+		The order of the grid children should be as desired on mobile, then adapted to larger
+		sizes using CSS grid properties.
+	*/}}
+
+	<div>
+		<h2>Latest News</h2>
+		{{ template "timeline_item.html" .NewsPost }}
+	</div>
+	<div class="landing-right">
+		<h2>Around the Network</h2>
+		<div class="optionbar mb2">
+			<div class="options">
+				<a class="button" href="{{ .AtomFeedUrl }}"><span class="icon big pr1">4</span> RSS Feed</a>
+				{{ if .User }}
+					<form method="POST" action="{{ .MarkAllReadUrl }}">
+						{{ csrftoken .Session }}
+						<button type="submit"><span class="big pr1">&#x2713;</span> Mark all posts on site as read</button>
+					</form>
+				{{ end }}
 			</div>
-			<div class="arrow-container right">
-				<a href="javascript:void(0)" class="arrow svgicon svgicon-nofix" onclick="scrollShowcase('right')">{{ svg "chevron-right" }}</a>
+			<div class="options">
+				{{ template "pagination.html" .Pagination }}
 			</div>
 		</div>
-
-		<div class="c--dimmer i pv2 ph3 ph0-ns">
-			This is a selection of recent work done by community members. Want to participate? <a href="{{ .DiscordUrl }}" target="_blank">Join us on Discord.</a>
+		{{ range .TimelineItems }}
+			{{ template "timeline_item.html" . }}
+		{{ end }}
+		<div class="optionbar bottom mt2">
+			<div class="options"></div>
+			<div class="options">
+				{{ template "pagination.html" .Pagination }}
+			</div>
 		</div>
 	</div>
-	<script>
-		const timelineData = JSON.parse("{{ .ShowcaseTimelineJson }}");
-
-		const showcaseEl = document.querySelector('#showcase-items');
-		for (const item of timelineData) {
-			const [itemEl, addThumbnail] = makeShowcaseItem(item);
-			addThumbnail();
-			itemEl.container.classList.add('mr3');
-			showcaseEl.appendChild(itemEl.root);
-		}
-
-		function rem2px(rem) {
-			return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
-		}
-
-		function scrollShowcase(direction = null) {
-			const ITEM_WIDTH = showcaseEl.querySelector('.showcase-item').getBoundingClientRect().width;
-			const ITEM_SPACING = rem2px(1);
-
-			const showcaseWidth = showcaseEl.getBoundingClientRect().width;
-			const numVisible = showcaseWidth / (ITEM_WIDTH + ITEM_SPACING);
-			const scrollMagnitude = Math.floor(numVisible) - 1;
-			const scrollDirection = (direction === 'right' ? 1 : (direction === 'left' ? -1 : 0));
-			const scrollAmount = scrollMagnitude * scrollDirection;
-
-			const minIndex = 0;
-			const maxIndex = timelineData.length - Math.floor(numVisible);
-
-			const currentScrollIndex = parseInt(showcaseEl.getAttribute('data-scroll-index'), 10) || 0;
-			const newScrollIndex = Math.max(minIndex, Math.min(maxIndex, currentScrollIndex + scrollAmount));
-
-			showcaseEl.style.transform = `translateX(${-newScrollIndex * (ITEM_WIDTH + ITEM_SPACING)}px)`;
-			showcaseEl.setAttribute('data-scroll-index', newScrollIndex);
-
-			const leftArrowEl = document.querySelector('.arrow-container.left');
-			const rightArrowEl = document.querySelector('.arrow-container.right');
-
-			leftArrowEl.classList.toggle('hide', newScrollIndex === minIndex);
-			rightArrowEl.classList.toggle('hide', newScrollIndex === maxIndex);
-		}
-		scrollShowcase(); // force a scroll as an easy way to initialize styles
-
-		window.addEventListener('resize', () => scrollShowcase());
-	</script>
-{{ end }}
-<div class="content-block">
-    <div class="optionbar pb2">
-        <div class="tc tl-l w-100">
-            <h2 class="di-l mr2-l">Around the Network</h2>
-            <ul class="list dib-l">
-                <li class="dib-ns ma0 ph2">
-                    <a href="{{ .FeedUrl }}">View all posts on HMN</a>
-                </li>
-                <li class="dib-ns ma0 ph2">
-                    <a href="{{ .PodcastUrl }}">Podcast</a>
-                </li>
-                {{/* TODO: Make a better IRC intro page because the current one is trash anyway */}}
-                {{/*
-                <li class="dib-ns ma0 ph2">
-                    <a href="{{ .StreamsUrl }}">See who's live</a>
-                </li>
-                <li class="dib-ns ma0 ph2">
-					<a href="{{ .IRCUrl }}" target="_blank">Chat in IRC</a>
-                </li>
-                */}}
-                <li class="dib-ns ma0 ph2">
-					<a href="{{ .DiscordUrl }}" target="_blank">Chat on Discord</a>
-                </li>
-                <li class="dib-ns ma0 ph2">
-					<a href="{{ .ShowUrl }}" target="_blank">See the Show</a>
-                </li>
-            </ul>
-        </div>
-    </div>
-</div>
-
-<div class="content-block news cf">
-    {{ $newsPost := .NewsPost }}
-    {{ range $i, $col := .PostColumns }}
-        <div class="fl w-100 w-50-l">
-            <div class="mw7 mw-none-l center-layout">
-                {{ if eq $i 0 }}
-                    <div class="pt3">
-                        {{ template "landing_page_featured_post" $newsPost}}
-                    </div>
-                {{ end }}
-
-                {{ range $entry := $col }}
-                    {{ $proj := $entry.Project }}
-                    {{ $posts := $entry.Posts }}
-                    <div class="pt3" id="p{{ $proj.Subdomain }}">
-                        {{ $c1 := hex2color $proj.Color1 }}
-                        <a
-                            class="project-title"
-                            href="{{ $proj.Url }}"
-                        >
-                            <h2 class="ph3">{{ $proj.Name }}</h2>
-                        </a>
-
-                        {{ with $entry.FeaturedPost }}
-                            {{ template "landing_page_featured_post" . }}
-                        {{ end }}
-
-                        {{ range $post := $posts }}
-                            {{ template "post_list_item" $post }}
-                        {{ end }}
-
-                        <div class="ph3 thread unread more">
-                            <a class="title" href="{{ $entry.ForumsUrl }}">
-                                More posts &rarr;
-                            </a>
-                        </div>
-                    </div>
-                {{ end }}
-            </div>
-        </div>
-    {{ end }}
-</div>
-{{ end }}
-
-{{ define "landing_page_featured_post" }}
-{{/* Call this template with a LandingPageFeaturedPost. */}}
-<div class="flex items-start ph3 pv2 {{ if .Unread }}unread{{ else }}read{{ end }}">
-    <img class="avatar-icon mr2" src="{{ .User.AvatarUrl }}">
-    <div class="flex-grow-1 overflow-hidden">
-        <div class="title mb1"><a href="{{ .Url }}">{{ .Title }}</a></div>
-        <div class="details">
-            <a class="user" href="{{ .User.ProfileUrl }}">{{ .User.Name }}</a> &mdash; {{ timehtml (relativedate .Date) .Date }}
-        </div>
-        <div class="overflow-hidden mh-5 mt2 relative">
-            <div>
-                {{ .Content }}
-            </div>
-            <div class="excerpt-fade absolute w-100 h4 bottom-0 z-999"></div>
-        </div>
-        <div class="mt2">
-            <a href="{{ .Url }}">Read More &rarr;</a>
-        </div>
-    </div>
-</div>
-{{ end }}
-
-{{ define "post_list_item" }}
-{{/* Call this template with a PostListItem. */}}
-<div class="post-list-item flex items-center ph3 pv2 {{ if .Unread }}unread{{ else }}read{{ end }} {{ .Classes }}">
-    <img class="avatar-icon mr2" src="{{ .User.AvatarUrl }}">
-    <div class="flex-grow-1 overflow-hidden">
-		<div class="title nowrap truncate"><a href="{{ .Url }}" title="{{ .Preview }}">{{ .Title }}</a></div>
-        <div class="details">
-            <a class="user" href="{{ .User.ProfileUrl }}">{{ .User.Name }}</a> &mdash; {{ timehtml (relativedate .Date) .Date }}
-        </div>
-    </div>
-    <div class="goto">
-        <a href="{{ .Url }}">&raquo;</a>
-    </div>
+	{{ if .ShowcaseTimelineJson }}
+		<div>
+			{{ template "showcase_templates.html" }}
+			<div>
+				<h2>Community Showcase</h2>
+				<div class="bg--card pa3 br3">
+					<div class="mb3">
+						This is a selection of recent work done by community members. Want to participate? <a href="{{ .DiscordUrl }}" target="_blank">Join us on Discord.</a>
+					</div>
+					<div id="showcase-container"></div>
+					<div>
+						<a class="db w-100 tc pa2" href="{{ .ShowcaseUrl }}">View all »</a>
+					</div>
+				</div>
+			</div>
+			<script>
+				const showcaseItems = JSON.parse("{{ .ShowcaseTimelineJson }}");
+				initShowcaseContainer(document.querySelector('#showcase-container'), showcaseItems, 200);
+			</script>
+		</div>
+	{{ end }}
 </div>
 {{ end }}

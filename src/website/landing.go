@@ -1,205 +1,88 @@
 package website
 
 import (
-	"fmt"
 	"html/template"
+	"math"
 	"net/http"
-	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 type LandingTemplateData struct {
 	templates.BaseData
 
-	NewsPost             LandingPageFeaturedPost
-	PostColumns          [][]LandingPageProject
+	NewsPost             *templates.TimelineItem
+	TimelineItems        []templates.TimelineItem
+	Pagination           templates.Pagination
 	ShowcaseTimelineJson string
 
-	FeedUrl     string
-	PodcastUrl  string
-	StreamsUrl  string
-	IRCUrl      string
-	DiscordUrl  string
-	ShowUrl     string
-	ShowcaseUrl string
+	FeedUrl        string
+	PodcastUrl     string
+	StreamsUrl     string
+	IRCUrl         string
+	DiscordUrl     string
+	ShowUrl        string
+	ShowcaseUrl    string
+	AtomFeedUrl    string
+	MarkAllReadUrl string
 
 	WheelJamUrl string
 }
 
-type LandingPageProject struct {
-	Project      templates.Project
-	FeaturedPost *LandingPageFeaturedPost
-	Posts        []templates.PostListItem
-	ForumsUrl    string
-}
-
-type LandingPageFeaturedPost struct {
-	Title   string
-	Url     string
-	User    templates.User
-	Date    time.Time
-	Unread  bool
-	Content template.HTML
-}
-
 func Index(c *RequestContext) ResponseData {
-	const maxPosts = 5
-	const numProjectsToGet = 7
-
-	c.Perf.StartBlock("SQL", "Fetch projects")
-	iterProjects, err := db.Query(c.Context(), c.Conn, models.Project{},
-		`
-		SELECT $columns
-		FROM handmade_project
-		WHERE
-			(flags = 0 AND lifecycle = ANY($1))
-			OR id = $2
-		ORDER BY all_last_updated DESC
-		LIMIT $3
-		`,
-		models.VisibleProjectLifecycles,
-		models.HMNProjectID,
-		numProjectsToGet*2, // hedge your bets against projects that don't have any content
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get projects for home page"))
-	}
-	defer iterProjects.Close()
-
-	var pageProjects []LandingPageProject
-
-	allProjects := iterProjects.ToSlice()
-	c.Perf.EndBlock()
-
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("LANDING", "Process projects")
-	for _, projRow := range allProjects {
-		proj := projRow.(*models.Project)
+	var timelineItems []templates.TimelineItem
 
-		c.Perf.StartBlock("SQL", fmt.Sprintf("Fetch posts for %s", proj.Name))
-		projectPosts, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
-			ProjectIDs:     []int{proj.ID},
-			ThreadTypes:    []models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypeForumPost},
-			Limit:          maxPosts,
-			SortDescending: true,
-		})
-		c.Perf.EndBlock()
-		if err != nil {
-			c.Logger.Error().Err(err).Msg("failed to fetch project posts")
-			continue
-		}
-
-		forumsUrl := ""
-		if proj.ForumID != nil {
-			forumsUrl = hmnurl.BuildForum(proj.Slug, lineageBuilder.GetSubforumLineageSlugs(*proj.ForumID), 1)
-		} else {
-			c.Logger.Error().Int("ProjectID", proj.ID).Str("ProjectName", proj.Name).Msg("Project fetched by landing page but it doesn't have forums")
-		}
-
-		landingPageProject := LandingPageProject{
-			Project:   templates.ProjectToTemplate(proj, c.Theme),
-			ForumsUrl: forumsUrl,
-		}
-
-		for _, projectPost := range projectPosts {
-			featurable := (!proj.IsHMN() &&
-				projectPost.Post.ThreadType == models.ThreadTypeProjectBlogPost &&
-				projectPost.Thread.FirstID == projectPost.Post.ID &&
-				landingPageProject.FeaturedPost == nil)
-
-			if featurable {
-				type featuredContentResult struct {
-					Content string `db:"ver.text_parsed"`
-				}
-
-				c.Perf.StartBlock("SQL", "Fetch featured post content")
-				contentResult, err := db.QueryOne(c.Context(), c.Conn, featuredContentResult{}, `
-					SELECT $columns
-					FROM
-						handmade_post AS post
-						JOIN handmade_postversion AS ver ON post.current_id = ver.id
-					WHERE
-						post.id = $1
-				`, projectPost.Post.ID)
-				c.Perf.EndBlock()
-				if err != nil {
-					c.Logger.Error().Err(err).Msg("failed to fetch featured post content")
-					continue
-				}
-				content := contentResult.(*featuredContentResult).Content
-
-				landingPageProject.FeaturedPost = &LandingPageFeaturedPost{
-					Title:   projectPost.Thread.Title,
-					Url:     hmnurl.BuildBlogThread(proj.Slug, projectPost.Thread.ID, projectPost.Thread.Title),
-					User:    templates.UserToTemplate(projectPost.Author, c.Theme),
-					Date:    projectPost.Post.PostDate,
-					Unread:  projectPost.Unread,
-					Content: template.HTML(content),
-				}
-			} else {
-				landingPageProject.Posts = append(
-					landingPageProject.Posts,
-					MakePostListItem(
-						lineageBuilder,
-						proj,
-						&projectPost.Thread,
-						&projectPost.Post,
-						projectPost.Author,
-						projectPost.Unread,
-						false,
-						c.Theme,
-					),
-				)
-			}
-		}
-
-		if len(projectPosts) > 0 {
-			pageProjects = append(pageProjects, landingPageProject)
-		}
-
-		if len(pageProjects) >= numProjectsToGet {
-			break
-		}
+	numPosts, err := CountPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+		ThreadTypes: feedThreadTypes,
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
-	c.Perf.EndBlock()
 
-	/*
-		Columns are filled by placing projects into the least full column.
-		The fill array tracks the estimated sizes.
+	numPages := int(math.Ceil(float64(numPosts) / feedPostsPerPage))
 
-		This is all hardcoded for two columns; deal with it.
-	*/
-	cols := [][]LandingPageProject{nil, nil}
-	fill := []int{4, 0}
-	featuredIndex := []int{0, 0}
-	for _, pageProject := range pageProjects {
-		leastFullColumnIndex := indexOfSmallestInt(fill)
+	page, numPages, ok := getPageInfo("1", numPosts, feedPostsPerPage)
+	if !ok {
+		return c.Redirect(hmnurl.BuildFeed(), http.StatusSeeOther)
+	}
 
-		numNewPosts := len(pageProject.Posts)
-		if numNewPosts > maxPosts {
-			numNewPosts = maxPosts
+	pagination := templates.Pagination{
+		Current: page,
+		Total:   numPages,
+
+		FirstUrl:    hmnurl.BuildFeed(),
+		LastUrl:     hmnurl.BuildFeedWithPage(numPages),
+		NextUrl:     hmnurl.BuildFeedWithPage(utils.IntClamp(1, page+1, numPages)),
+		PreviousUrl: hmnurl.BuildFeedWithPage(utils.IntClamp(1, page-1, numPages)),
+	}
+
+	// This is essentially an alternate for feed page 1.
+	posts, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+		ThreadTypes:    feedThreadTypes,
+		Limit:          feedPostsPerPage,
+		SortDescending: true,
+	})
+	if err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to fetch latest posts")
+	}
+	for _, p := range posts {
+		item := PostToTimelineItem(lineageBuilder, &p.Post, &p.Thread, &p.Project, p.Author, c.Theme)
+		if p.Thread.Type == models.ThreadTypeProjectBlogPost && p.Post.ID == p.Thread.FirstID {
+			// blog post
+			item.Description = template.HTML(p.CurrentVersion.TextParsed)
+			item.TruncateDescription = true
 		}
-
-		fill[leastFullColumnIndex] += numNewPosts
-
-		if pageProject.FeaturedPost != nil {
-			fill[leastFullColumnIndex] += 2 // featured posts add more to height
-
-			// projects with featured posts go at the top of the column
-			cols[leastFullColumnIndex] = append(cols[leastFullColumnIndex], pageProject)
-			featuredIndex[leastFullColumnIndex] += 1
-		} else {
-			cols[leastFullColumnIndex] = append(cols[leastFullColumnIndex], pageProject)
-		}
+		timelineItems = append(timelineItems, item)
 	}
 
 	c.Perf.StartBlock("SQL", "Get news")
@@ -211,9 +94,14 @@ func Index(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news post"))
 	}
-	var newsThread ThreadAndStuff
+	var newsPostItem *templates.TimelineItem
 	if len(newsThreads) > 0 {
-		newsThread = newsThreads[0]
+		t := newsThreads[0]
+		item := PostToTimelineItem(lineageBuilder, &t.FirstPost, &t.Thread, &t.Project, t.FirstPostAuthor, c.Theme)
+		item.TypeTitle = ""
+		item.Description = template.HTML(t.FirstPostCurrentVersion.TextParsed)
+		item.TruncateDescription = true
+		newsPostItem = &item
 	}
 	c.Perf.EndBlock()
 
@@ -235,7 +123,7 @@ func Index(c *RequestContext) ResponseData {
 		WHERE
 			NOT snippet.is_jam
 		ORDER BY snippet.when DESC
-		LIMIT 20
+		LIMIT 40
 		`,
 	)
 	if err != nil {
@@ -265,24 +153,22 @@ func Index(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	err = res.WriteTemplate("landing.html", LandingTemplateData{
-		BaseData:    baseData,
-		FeedUrl:     hmnurl.BuildFeed(),
-		PodcastUrl:  hmnurl.BuildPodcast(models.HMNProjectSlug),
-		StreamsUrl:  hmnurl.BuildStreams(),
-		IRCUrl:      hmnurl.BuildBlogThread(models.HMNProjectSlug, 1138, "[Tutorial] Handmade Network IRC"),
-		DiscordUrl:  "https://discord.gg/hxWxDee",
-		ShowUrl:     "https://handmadedev.show/",
-		ShowcaseUrl: hmnurl.BuildShowcase(),
-		NewsPost: LandingPageFeaturedPost{
-			Title:   newsThread.Thread.Title,
-			Url:     hmnurl.BuildBlogThread(models.HMNProjectSlug, newsThread.Thread.ID, newsThread.Thread.Title),
-			User:    templates.UserToTemplate(newsThread.FirstPostAuthor, c.Theme),
-			Date:    newsThread.FirstPost.PostDate,
-			Unread:  true,
-			Content: template.HTML(newsThread.FirstPostCurrentVersion.TextParsed),
-		},
-		PostColumns:          cols,
+		BaseData: baseData,
+
+		NewsPost:             newsPostItem,
+		TimelineItems:        timelineItems,
+		Pagination:           pagination,
 		ShowcaseTimelineJson: showcaseJson,
+
+		FeedUrl:        hmnurl.BuildFeed(),
+		PodcastUrl:     hmnurl.BuildPodcast(models.HMNProjectSlug),
+		StreamsUrl:     hmnurl.BuildStreams(),
+		IRCUrl:         hmnurl.BuildBlogThread(models.HMNProjectSlug, 1138, "[Tutorial] Handmade Network IRC"),
+		DiscordUrl:     "https://discord.gg/hxWxDee",
+		ShowUrl:        "https://handmadedev.show/",
+		ShowcaseUrl:    hmnurl.BuildShowcase(),
+		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
+		MarkAllReadUrl: hmnurl.BuildForumMarkRead(models.HMNProjectSlug, 0),
 
 		WheelJamUrl: hmnurl.BuildJamIndex(),
 	}, c.Perf)
@@ -291,18 +177,4 @@ func Index(c *RequestContext) ResponseData {
 	}
 
 	return res
-}
-
-func indexOfSmallestInt(s []int) int {
-	result := 0
-	min := s[result]
-
-	for i, val := range s {
-		if val < min {
-			result = i
-			min = val
-		}
-	}
-
-	return result
 }

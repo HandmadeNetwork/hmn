@@ -39,7 +39,7 @@ function makeShowcaseItem(timelineItem) {
         addThumbnailFunc = () => {
             itemEl.thumbnail.style.backgroundImage = `url('${timelineItem.thumbnail_url}')`;
         };
-        
+
         createModalContentFunc = () => {
             const modalImage = document.createElement('img');
             modalImage.src = timelineItem.asset_url;
@@ -81,7 +81,7 @@ function makeShowcaseItem(timelineItem) {
         break;
     // TODO(ben): Other snippet types?
     }
-    
+
     let modalEl = null;
     itemEl.container.addEventListener('click', function() {
         if (!modalEl) {
@@ -113,3 +113,106 @@ function makeShowcaseItem(timelineItem) {
     return [itemEl, doOnce(addThumbnailFunc)];
 }
 
+function initShowcaseContainer(container, items, rowHeight = 300, itemSpacing = 4) {
+    const addThumbnailFuncs = new Array(items.length);
+
+    const itemElements = []; // array of arrays
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+
+        const [itemEl, addThumbnail] = makeShowcaseItem(item);
+        itemEl.container.setAttribute('data-index', i);
+        itemEl.container.setAttribute('data-date', item.date);
+
+        addThumbnailFuncs[i] = addThumbnail;
+
+        itemElements.push(itemEl.container);
+    }
+
+    function layout() {
+        const width = container.getBoundingClientRect().width;
+        container = emptyElement(container);
+
+        function addRow(itemEls, rowWidth, container) {
+            const totalSpacing = itemSpacing * (itemEls.length - 1);
+            const scaleFactor = (width / Math.max(rowWidth, width));
+
+            const row = document.createElement('div');
+            row.classList.add('flex');
+            row.classList.toggle('justify-between', rowWidth >= width);
+            row.style.marginBottom = `${itemSpacing}px`;
+
+            for (const itemEl of itemEls) {
+                const index = parseInt(itemEl.getAttribute('data-index'), 10);
+                const item = items[index];
+
+                const aspect = item.width / item.height;
+                const baseWidth = (aspect * rowHeight) * scaleFactor;
+                const actualWidth = baseWidth - (totalSpacing / itemEls.length);
+
+                itemEl.style.width = `${actualWidth}px`;
+                itemEl.style.height = `${scaleFactor * rowHeight}px`;
+                itemEl.style.marginRight = `${itemSpacing}px`;
+
+                row.appendChild(itemEl);
+            }
+
+            container.appendChild(row);
+        }
+
+        let rowItemEls = [];
+        let rowWidth = 0;
+
+        for (const itemEl of itemElements) {
+            const index = parseInt(itemEl.getAttribute('data-index'), 10);
+            const item = items[index];
+
+            const aspect = item.width / item.height;
+            rowWidth += aspect * rowHeight;
+
+            rowItemEls.push(itemEl);
+
+            if (rowWidth > width) {
+                addRow(rowItemEls, rowWidth, container);
+
+                rowItemEls = [];
+                rowWidth = 0;
+            }
+        }
+
+        addRow(rowItemEls, rowWidth, container);
+    }
+
+    function tryLoadImages() {
+        const OFFSCREEN_THRESHOLD = 0;
+
+        const rect = container.getBoundingClientRect();
+        const offscreen = (
+            rect.bottom < -OFFSCREEN_THRESHOLD
+            || rect.top > window.innerHeight + OFFSCREEN_THRESHOLD
+        );
+
+        if (!offscreen) {
+            const items = container.querySelectorAll('.showcase-item');
+            for (const item of items) {
+                const i = parseInt(item.getAttribute('data-index'), 10);
+                addThumbnailFuncs[i]();
+            }
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        layout();
+        layout(); // scrollbars are fun!!
+        tryLoadImages();
+    })
+
+    window.addEventListener('resize', () => {
+        layout();
+        tryLoadImages();
+    });
+
+    window.addEventListener('scroll', () => {
+        tryLoadImages();
+    });
+}

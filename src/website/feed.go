@@ -26,19 +26,24 @@ type FeedData struct {
 	MarkAllReadUrl string
 }
 
-func Feed(c *RequestContext) ResponseData {
-	const postsPerPage = 30
+const feedPostsPerPage = 30
 
+var feedThreadTypes = []models.ThreadType{
+	models.ThreadTypeForumPost,
+	models.ThreadTypeProjectBlogPost,
+}
+
+func Feed(c *RequestContext) ResponseData {
 	numPosts, err := CountPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
-		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectBlogPost},
+		ThreadTypes: feedThreadTypes,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	numPages := int(math.Ceil(float64(numPosts) / postsPerPage))
+	numPages := int(math.Ceil(float64(numPosts) / feedPostsPerPage))
 
-	page, numPages, ok := getPageInfo(c.PathParams["page"], numPosts, postsPerPage)
+	page, numPages, ok := getPageInfo(c.PathParams["page"], numPosts, feedPostsPerPage)
 	if !ok {
 		return c.Redirect(hmnurl.BuildFeed(), http.StatusSeeOther)
 	}
@@ -53,7 +58,7 @@ func Feed(c *RequestContext) ResponseData {
 		PreviousUrl: hmnurl.BuildFeedWithPage(utils.IntClamp(1, page-1, numPages)),
 	}
 
-	posts, err := fetchAllPosts(c, (page-1)*postsPerPage, postsPerPage)
+	posts, err := fetchAllPosts(c, (page-1)*feedPostsPerPage, feedPostsPerPage)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
 	}
@@ -272,7 +277,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 
 func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostListItem, error) {
 	postsAndStuff, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
-		ThreadTypes:    []models.ThreadType{models.ThreadTypeForumPost, models.ThreadTypeProjectBlogPost},
+		ThreadTypes:    feedThreadTypes,
 		Limit:          limit,
 		Offset:         offset,
 		SortDescending: true,

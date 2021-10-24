@@ -177,13 +177,15 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	for _, snippetRow := range snippetQuerySlice {
 		snippetData := snippetRow.(*snippetQuery)
-		timelineItems = append(timelineItems, SnippetToTimelineItem(
+		item := SnippetToTimelineItem(
 			&snippetData.Snippet,
 			snippetData.Asset,
 			snippetData.DiscordMessage,
 			profileUser,
 			c.Theme,
-		))
+		)
+		item.SmallInfo = true
+		timelineItems = append(timelineItems, item)
 	}
 
 	c.Perf.StartBlock("PROFILE", "Sort timeline")

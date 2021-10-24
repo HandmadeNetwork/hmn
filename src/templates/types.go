@@ -263,6 +263,7 @@ type TimelineItem struct {
 	PreviewMedia TimelineItemMedia
 	EmbedMedia   []TimelineItemMedia
 
+	SmallInfo   bool
 	CanShowcase bool // whether this snippet can be shown in a showcase gallery
 }
 

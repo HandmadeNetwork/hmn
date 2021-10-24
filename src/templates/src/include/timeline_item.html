@@ -1,10 +1,8 @@
-{{ $small := or .Description .EmbedMedia }}
-
 <div class="timeline-item flex flex-column pa3 mb2 br3" {{ with .FilterTitle }}data-filter-title="{{ . }}"{{ end }}>
 	{{/* top bar - avatar, info, date */}}
 	<div class="flex items-center">
 		<a class="flex-shrink-0" href="{{ .OwnerUrl }}">
-			<img class="avatar-icon lite {{ if not $small }}big{{ end }} {{ if $small }}mr2{{ else }}mr3{{ end }}" src="{{ .OwnerAvatarUrl }}" />
+			<img class="avatar-icon lite {{ if not .SmallInfo }}big{{ end }} {{ if .SmallInfo }}mr2{{ else }}mr3{{ end }}" src="{{ .OwnerAvatarUrl }}" />
 		</a>
 
 		<div class="overflow-hidden flex-grow-1 flex flex-column justify-center">
@@ -13,19 +11,19 @@
 			{{ end }}
 			{{ if .Title }}
 				<div class="f5 nowrap truncate">
-					{{ with .TypeTitle }}<b>{{ . }}:</b>{{ end }}
+					{{ with .TypeTitle }}<b class="dn di-ns">{{ . }}:</b>{{ end }}
 					<a href="{{ .Url }}">{{ .Title }}</a>
 				</div>
 			{{ end }}
 			<div class="details">
 				<a class="user" href="{{ .OwnerUrl }}">{{ .OwnerName }}</a>
-				{{ if not $small }}
+				{{ if not .SmallInfo }}
 					&mdash; {{ timehtml (relativedate .Date) .Date }}
 				{{ end }}
 			</div>
 		</div>
 
-		{{ if $small }}
+		{{ if .SmallInfo }}
 			<a href="{{ .Url }}">{{ timehtml (relativedate .Date) .Date }}</a>
 		{{ end }}
 	</div>
@@ -39,6 +37,11 @@
 				<div class="excerpt-fade absolute w-100 h4 bottom-0 z-999"></div>
 			{{ end }}
 		</div>
+		{{ if .TruncateDescription }}
+			<div class="mt2">
+				<a href="{{ .Url }}">Read more »</a>
+			</div>
+		{{ end }}
 	{{ end }}
 
 	{{ range .EmbedMedia }}

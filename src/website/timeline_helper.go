@@ -98,6 +98,10 @@ func SnippetToTimelineItem(
 		}
 	}
 
+	if len(item.EmbedMedia) > 0 && (item.EmbedMedia[0].Width == 0 || item.EmbedMedia[0].Height == 0) {
+		item.CanShowcase = false
+	}
+
 	if discordMessage != nil {
 		item.DiscordMessageUrl = discordMessage.Url
 	}

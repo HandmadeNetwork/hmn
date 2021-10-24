@@ -249,6 +249,7 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 	builder := strings.Builder{}
 	builder.WriteRune('[')
 	for i, item := range items {
+
 		if i > 0 {
 			builder.WriteRune(',')
 		}

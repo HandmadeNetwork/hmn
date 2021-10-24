@@ -2,10 +2,11 @@
 
 {{ define "extrahead" }}
 	<script src="{{ static "js/templates.js" }}"></script>
-	<script src="{{ static "js/showcase.js" }}"></script>
 {{ end }}
 
 {{ define "content" }}
+	{{ template "showcase_templates.html" }}
+
 	<div class="content-block">
 		<div class="ph2 ph0-ns pb4">
 			<div class="optionbar">
@@ -22,150 +23,50 @@
 		</div>
 	</div>
 
-	{{ template "showcase_templates.html" }}
-
 	<template id="showcase-month">
 		<h3 data-tmpl="dateHeader" class="mt3 f4 fw5">Unknown Date</h3>
 		<div data-tmpl="itemsContainer" class="month-container"></div>
 	</template>
 
 	<script>
-		const ROW_HEIGHT = 300;
-		const ITEM_SPACING = 4;
+		const showcaseItems = JSON.parse("{{ .ShowcaseItems }}");
 
 		const monthTemplate = makeTemplateCloner('showcase-month');
+		const showcaseContainer = document.querySelector('#showcase-container');
 
-		const showcaseItems = JSON.parse("{{ .ShowcaseItems }}");
-		const addThumbnailFuncs = new Array(showcaseItems.length);
+		const itemsByMonth = []; // array of arrays
 
-		let showcaseContainer = document.querySelector('#showcase-container');
-
-		const itemElementsByMonth = []; // array of arrays
-		let currentMonthElements = [];
 		let currentMonth = null;
 		let currentYear = null;
-		for (let i = 0; i < showcaseItems.length; i++) {
-			const item = showcaseItems[i];
+		let currentMonthItems = [];
+		for (const item of showcaseItems) {
 			const date = new Date(item.date * 1000);
 
 			if (date.getMonth() !== currentMonth || date.getFullYear() !== currentYear) {
-				if (currentMonthElements.length > 0) {
-					itemElementsByMonth.push(currentMonthElements);
+				// rolled over to new month
+				if (currentMonthItems.length > 0) {
+					itemsByMonth.push(currentMonthItems);
 				}
 
-				currentMonthElements = [];
 				currentMonth = date.getMonth();
 				currentYear = date.getFullYear();
+				currentMonthItems = [];
 			}
 
-			const [itemEl, addThumbnail] = makeShowcaseItem(item);
-			itemEl.container.setAttribute('data-index', i);
-			itemEl.container.setAttribute('data-date', item.date);
-
-			addThumbnailFuncs[i] = addThumbnail;
-			
-			currentMonthElements.push(itemEl.container);
+			currentMonthItems.push(item);
 		}
-		if (currentMonthElements.length > 0) {
-			itemElementsByMonth.push(currentMonthElements);
+		if (currentMonthItems.length > 0) {
+			itemsByMonth.push(currentMonthItems);
 		}
 
-		function layout() {
-			const width = showcaseContainer.getBoundingClientRect().width;
-			showcaseContainer = emptyElement(showcaseContainer);
-			
-			function addRow(itemEls, rowWidth, container) {
-				const totalSpacing = ITEM_SPACING * (itemEls.length - 1);
-				const scaleFactor = (width / Math.max(rowWidth, width));
+		for (const monthItems of itemsByMonth) {
+			const month = monthTemplate();
 
-				const row = document.createElement('div');
-				row.classList.add('flex');
-				row.classList.toggle('justify-between', rowWidth >= width);
-				row.style.marginBottom = `${ITEM_SPACING}px`;
-				
-				for (const itemEl of itemEls) {
-					const index = parseInt(itemEl.getAttribute('data-index'), 10);
-					const item = showcaseItems[index];
+			const firstDate = new Date(monthItems[0].date * 1000);
+			month.dateHeader.textContent = firstDate.toLocaleDateString([], { month: 'long', year: 'numeric' });
 
-					const aspect = item.width / item.height;
-					const baseWidth = (aspect * ROW_HEIGHT) * scaleFactor;
-					const actualWidth = baseWidth - (totalSpacing / itemEls.length);
-
-					itemEl.style.width = `${actualWidth}px`;
-					itemEl.style.height = `${scaleFactor * ROW_HEIGHT}px`;
-					itemEl.style.marginRight = `${ITEM_SPACING}px`;
-
-					row.appendChild(itemEl);
-				}
-
-				container.appendChild(row);
-			}
-
-			for (const monthEls of itemElementsByMonth) {
-				const month = monthTemplate();
-
-				const firstDate = new Date(parseFloat(monthEls[0].getAttribute('data-date')) * 1000);
-				month.dateHeader.textContent = firstDate.toLocaleDateString([], { month: 'long', year: 'numeric' });
-
-				let rowItemEls = [];
-				let rowWidth = 0;
-
-				for (const itemEl of monthEls) {
-					const index = parseInt(itemEl.getAttribute('data-index'), 10);
-					const item = showcaseItems[index];
-					
-					const aspect = item.width / item.height;
-					rowWidth += aspect * ROW_HEIGHT;
-
-					rowItemEls.push(itemEl);
-
-					if (rowWidth > width) {
-						addRow(rowItemEls, rowWidth, month.itemsContainer);
-
-						rowItemEls = [];
-						rowWidth = 0;
-					}
-				}
-
-				addRow(rowItemEls, rowWidth, month.itemsContainer);
-
-				showcaseContainer.appendChild(month.root);
-			}
+			initShowcaseContainer(month.root.querySelector('.month-container'), monthItems);
+			showcaseContainer.appendChild(month.root);
 		}
-
-		function tryLoadImages() {
-			const OFFSCREEN_THRESHOLD = 0;
-
-			const months = document.querySelectorAll('.month-container');
-			for (const month of months) {
-				const rect = month.getBoundingClientRect();
-				const offscreen = (
-					rect.bottom < -OFFSCREEN_THRESHOLD
-					|| rect.top > window.innerHeight + OFFSCREEN_THRESHOLD
-				);
-
-				if (!offscreen) {
-					const items = month.querySelectorAll('.showcase-item');
-					for (const item of items) {
-						const i = parseInt(item.getAttribute('data-index'), 10);
-						addThumbnailFuncs[i]();
-					}
-				}
-			}
-		}
-
-		layout();
-		layout(); // scrollbars are fun!!
-
-		tryLoadImages();
-
-		window.addEventListener('resize', () => {
-			layout();
-			tryLoadImages();
-		});
-
-		window.addEventListener('scroll', () => {
-			tryLoadImages();
-		});
 	</script>
 {{ end }}
