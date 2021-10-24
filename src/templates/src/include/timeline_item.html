@@ -1,39 +1,57 @@
-{{/*
-TODO: The logic in here for how to present various types of timeline items needs to be more robust.
-*/}}
+{{ $small := or .Description .EmbedMedia }}
 
-{{ if or .Description .EmbedMedia }}
-	<div class="timeline-item flex flex-column pa3 mb2 br3" data-filter-title="{{ .FilterTitle }}">
-		<div class="timeline-user-info mb2 flex items-center">
-			<img class="avatar-icon lite mr2" src="{{ .OwnerAvatarUrl }}"/>
-			<a class="user" href="{{ .OwnerUrl }}">{{ .OwnerName }}</a>
-			<a class="datetime tr" style="flex: 1 1 auto;" href="{{ .Url }}">{{ timehtml (relativedate .Date) .Date }}</a>
-		</div>
-		<div class="mb2">{{ .Description }}</div>
-		{{ range .EmbedMedia }}
-			<div class="timeline-content-box {{ if eq .Type mediaembed }}embed{{ end }}">
-				{{ if eq .Type mediaimage }}
-					<img src="{{ .AssetUrl }}">
-				{{ else if eq .Type mediavideo }}
-					<video src="{{ .AssetUrl }}" preload="metadata" controls>
-				{{ else if eq .Type mediaaudio }}
-					<audio src="{{ .AssetUrl }}" controls>
-				{{ else if eq .Type mediaembed }}
-					{{ .EmbedHTML }}
+<div class="timeline-item flex flex-column pa3 mb2 br3" {{ with .FilterTitle }}data-filter-title="{{ . }}"{{ end }}>
+	{{/* top bar - avatar, info, date */}}
+	<div class="flex items-center">
+		<a class="flex-shrink-0" href="{{ .OwnerUrl }}">
+			<img class="avatar-icon lite {{ if not $small }}big{{ end }} {{ if $small }}mr2{{ else }}mr3{{ end }}" src="{{ .OwnerAvatarUrl }}" />
+		</a>
+
+		<div class="overflow-hidden flex-grow-1 flex flex-column justify-center">
+			{{ if .Breadcrumbs }}
+				{{ template "breadcrumbs.html" .Breadcrumbs }}
+			{{ end }}
+			{{ if .Title }}
+				<div class="f5 nowrap truncate">
+					{{ with .TypeTitle }}<b>{{ . }}:</b>{{ end }}
+					<a href="{{ .Url }}">{{ .Title }}</a>
+				</div>
+			{{ end }}
+			<div class="details">
+				<a class="user" href="{{ .OwnerUrl }}">{{ .OwnerName }}</a>
+				{{ if not $small }}
+					&mdash; {{ timehtml (relativedate .Date) .Date }}
 				{{ end }}
 			</div>
+		</div>
+
+		{{ if $small }}
+			<a href="{{ .Url }}">{{ timehtml (relativedate .Date) .Date }}</a>
 		{{ end }}
 	</div>
-{{ else }}
-	<div class="timeline-item flex pa3 mb2 br3" data-filter-title="{{ .FilterTitle }}">
-		<img class="avatar-icon big lite mr3" src="{{ .OwnerAvatarUrl }}"/>
-		<div class="timeline-info overflow-hidden">
-			{{ template "breadcrumbs.html" .Breadcrumbs }}
-			<div class="title f5 b nowrap truncate"><span>{{ .TypeTitle }}</span>: <a href="{{ .Url }}" class="title-text normal">{{ .Title }}</a></div>
-			<div class="details">
-				<a class="user" href="{{ .OwnerUrl }}">{{ .OwnerName }}</a> &mdash; {{ timehtml (relativedate .Date) .Date }}
-			</div>
-		</div>
-	</div>
-{{ end }}
 
+	{{/* content */}}
+
+	{{ if .Description }}
+		<div class="mt3 overflow-hidden relative {{ if .TruncateDescription }}mh-5{{ end }}">
+			<div class="post-content">{{ .Description }}</div>
+			{{ if .TruncateDescription }}
+				<div class="excerpt-fade absolute w-100 h4 bottom-0 z-999"></div>
+			{{ end }}
+		</div>
+	{{ end }}
+
+	{{ range .EmbedMedia }}
+		<div class="timeline-content-box mt3 {{ if eq .Type mediaembed }}embed{{ end }}">
+			{{ if eq .Type mediaimage }}
+				<img src="{{ .AssetUrl }}">
+			{{ else if eq .Type mediavideo }}
+				<video src="{{ .AssetUrl }}" preload="metadata" controls>
+			{{ else if eq .Type mediaaudio }}
+				<audio src="{{ .AssetUrl }}" controls>
+			{{ else if eq .Type mediaembed }}
+				{{ .EmbedHTML }}
+			{{ end }}
+		</div>
+	{{ end }}
+</div>
