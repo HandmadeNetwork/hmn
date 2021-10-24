@@ -89,10 +89,11 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 
 	upload := func() error {
 		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket: &config.Config.DigitalOcean.AssetsSpacesBucket,
-			Key:    &key,
-			Body:   bytes.NewReader(in.Content),
-			ACL:    types.ObjectCannedACLPublicRead,
+			Bucket:      &config.Config.DigitalOcean.AssetsSpacesBucket,
+			Key:         &key,
+			Body:        bytes.NewReader(in.Content),
+			ACL:         types.ObjectCannedACLPublicRead,
+			ContentType: &in.ContentType,
 		})
 		return err
 	}
