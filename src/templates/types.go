@@ -257,14 +257,15 @@ type TimelineItem struct {
 	OwnerName      string
 	OwnerUrl       string
 
-	Description         template.HTML
-	TruncateDescription bool
+	Description template.HTML
 
 	PreviewMedia TimelineItemMedia
 	EmbedMedia   []TimelineItemMedia
 
-	SmallInfo   bool
-	CanShowcase bool // whether this snippet can be shown in a showcase gallery
+	SmallInfo           bool
+	AllowTitleWrap      bool
+	TruncateDescription bool
+	CanShowcase         bool // whether this snippet can be shown in a showcase gallery
 }
 
 type TimelineItemMediaType int

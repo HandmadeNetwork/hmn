@@ -98,7 +98,10 @@ func Index(c *RequestContext) ResponseData {
 	if len(newsThreads) > 0 {
 		t := newsThreads[0]
 		item := PostToTimelineItem(lineageBuilder, &t.FirstPost, &t.Thread, &t.Project, t.FirstPostAuthor, c.Theme)
+		item.OwnerAvatarUrl = ""
+		item.Breadcrumbs = nil
 		item.TypeTitle = ""
+		item.AllowTitleWrap = true
 		item.Description = template.HTML(t.FirstPostCurrentVersion.TextParsed)
 		item.TruncateDescription = true
 		newsPostItem = &item
