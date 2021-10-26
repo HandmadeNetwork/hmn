@@ -21,6 +21,7 @@ type LandingTemplateData struct {
 	Pagination           templates.Pagination
 	ShowcaseTimelineJson string
 
+	ManifestoUrl   string
 	FeedUrl        string
 	PodcastUrl     string
 	StreamsUrl     string
@@ -163,6 +164,7 @@ func Index(c *RequestContext) ResponseData {
 		Pagination:           pagination,
 		ShowcaseTimelineJson: showcaseJson,
 
+		ManifestoUrl:   hmnurl.BuildManifesto(),
 		FeedUrl:        hmnurl.BuildFeed(),
 		PodcastUrl:     hmnurl.BuildPodcast(models.HMNProjectSlug),
 		StreamsUrl:     hmnurl.BuildStreams(),
