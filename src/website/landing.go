@@ -166,7 +166,7 @@ func Index(c *RequestContext) ResponseData {
 
 		ManifestoUrl:   hmnurl.BuildManifesto(),
 		FeedUrl:        hmnurl.BuildFeed(),
-		PodcastUrl:     hmnurl.BuildPodcast(models.HMNProjectSlug),
+		PodcastUrl:     hmnurl.BuildPodcast(),
 		StreamsUrl:     hmnurl.BuildStreams(),
 		IRCUrl:         hmnurl.BuildBlogThread(models.HMNProjectSlug, 1138, "[Tutorial] Handmade Network IRC"),
 		DiscordUrl:     "https://discord.gg/hxWxDee",

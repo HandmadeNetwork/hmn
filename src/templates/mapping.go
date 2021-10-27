@@ -327,7 +327,7 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 	return builder.String()
 }
 
-func PodcastToTemplate(projectSlug string, podcast *models.Podcast, imageFilename string) Podcast {
+func PodcastToTemplate(podcast *models.Podcast, imageFilename string) Podcast {
 	imageUrl := ""
 	if imageFilename != "" {
 		imageUrl = hmnurl.BuildUserFile(imageFilename)
@@ -337,9 +337,9 @@ func PodcastToTemplate(projectSlug string, podcast *models.Podcast, imageFilenam
 		Description: podcast.Description,
 		Language:    podcast.Language,
 		ImageUrl:    imageUrl,
-		Url:         hmnurl.BuildPodcast(projectSlug),
+		Url:         hmnurl.BuildPodcast(),
 
-		RSSUrl: hmnurl.BuildPodcastRSS(projectSlug),
+		RSSUrl: hmnurl.BuildPodcastRSS(),
 		// TODO(asaf): Move this to the db if we want to support user podcasts
 		AppleUrl:   "https://podcasts.apple.com/us/podcast/the-handmade-network-podcast/id1507790631",
 		GoogleUrl:  "https://www.google.com/podcasts?feed=aHR0cHM6Ly9oYW5kbWFkZS5uZXR3b3JrL3BvZGNhc3QvcG9kY2FzdC54bWw%3D",
@@ -347,7 +347,7 @@ func PodcastToTemplate(projectSlug string, podcast *models.Podcast, imageFilenam
 	}
 }
 
-func PodcastEpisodeToTemplate(projectSlug string, episode *models.PodcastEpisode, audioFileSize int64, imageFilename string) PodcastEpisode {
+func PodcastEpisodeToTemplate(episode *models.PodcastEpisode, audioFileSize int64, imageFilename string) PodcastEpisode {
 	imageUrl := ""
 	if imageFilename != "" {
 		imageUrl = hmnurl.BuildUserFile(imageFilename)
@@ -358,9 +358,9 @@ func PodcastEpisodeToTemplate(projectSlug string, episode *models.PodcastEpisode
 		Description:     episode.Description,
 		DescriptionHtml: template.HTML(episode.DescriptionHtml),
 		EpisodeNumber:   episode.EpisodeNumber,
-		Url:             hmnurl.BuildPodcastEpisode(projectSlug, episode.GUID.String()),
+		Url:             hmnurl.BuildPodcastEpisode(episode.GUID.String()),
 		ImageUrl:        imageUrl,
-		FileUrl:         hmnurl.BuildPodcastEpisodeFile(projectSlug, episode.AudioFile),
+		FileUrl:         hmnurl.BuildPodcastEpisodeFile(episode.AudioFile),
 		FileSize:        audioFileSize,
 		PublicationDate: episode.PublicationDate,
 		Duration:        episode.Duration,

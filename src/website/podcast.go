@@ -48,16 +48,16 @@ func PodcastIndex(c *RequestContext) ResponseData {
 
 	podcastIndexData := PodcastIndexData{
 		BaseData: baseData,
-		Podcast:  templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, podcastResult.ImageFile),
+		Podcast:  templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile),
 	}
 
 	if canEdit {
-		podcastIndexData.EditUrl = hmnurl.BuildPodcastEdit(c.CurrentProject.Slug)
-		podcastIndexData.NewEpisodeUrl = hmnurl.BuildPodcastEpisodeNew(c.CurrentProject.Slug)
+		podcastIndexData.EditUrl = hmnurl.BuildPodcastEdit()
+		podcastIndexData.NewEpisodeUrl = hmnurl.BuildPodcastEpisodeNew()
 	}
 
 	for _, episode := range podcastResult.Episodes {
-		podcastIndexData.Episodes = append(podcastIndexData.Episodes, templates.PodcastEpisodeToTemplate(c.CurrentProject.Slug, episode, 0, podcastResult.ImageFile))
+		podcastIndexData.Episodes = append(podcastIndexData.Episodes, templates.PodcastEpisodeToTemplate(episode, 0, podcastResult.ImageFile))
 	}
 	var res ResponseData
 	err = res.WriteTemplate("podcast_index.html", podcastIndexData, c.Perf)
@@ -87,7 +87,7 @@ func PodcastEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	podcast := templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, podcastResult.ImageFile)
+	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile)
 	baseData := getBaseData(
 		c,
 		fmt.Sprintf("Edit %s", podcast.Title),
@@ -194,7 +194,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to commit db transaction"))
 	}
 
-	res := c.Redirect(hmnurl.BuildPodcastEdit(c.CurrentProject.Slug), http.StatusSeeOther)
+	res := c.Redirect(hmnurl.BuildPodcastEdit(), http.StatusSeeOther)
 	res.AddFutureNotice("success", "Podcast updated successfully.")
 	return res
 }
@@ -226,11 +226,11 @@ func PodcastEpisode(c *RequestContext) ResponseData {
 
 	editUrl := ""
 	if canEdit {
-		editUrl = hmnurl.BuildPodcastEpisodeEdit(c.CurrentProject.Slug, podcastResult.Episodes[0].GUID.String())
+		editUrl = hmnurl.BuildPodcastEpisodeEdit(podcastResult.Episodes[0].GUID.String())
 	}
 
-	podcast := templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, podcastResult.ImageFile)
-	episode := templates.PodcastEpisodeToTemplate(c.CurrentProject.Slug, podcastResult.Episodes[0], 0, podcastResult.ImageFile)
+	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile)
+	episode := templates.PodcastEpisodeToTemplate(podcastResult.Episodes[0], 0, podcastResult.ImageFile)
 	baseData := getBaseData(
 		c,
 		fmt.Sprintf("%s | %s", episode.Title, podcast.Title),
@@ -282,7 +282,7 @@ func PodcastEpisodeNew(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch podcast episode file list"))
 	}
 
-	podcast := templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, "")
+	podcast := templates.PodcastToTemplate(podcastResult.Podcast, "")
 	var res ResponseData
 	baseData := getBaseData(
 		c,
@@ -326,8 +326,8 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 	}
 	episode := podcastResult.Episodes[0]
 
-	podcast := templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, "")
-	podcastEpisode := templates.PodcastEpisodeToTemplate(c.CurrentProject.Slug, episode, 0, "")
+	podcast := templates.PodcastToTemplate(podcastResult.Podcast, "")
+	podcastEpisode := templates.PodcastEpisodeToTemplate(episode, 0, "")
 	baseData := getBaseData(
 		c,
 		fmt.Sprintf("Edit episode %s | %s", podcastEpisode.Title, podcast.Title),
@@ -491,7 +491,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		}
 	}
 
-	res := c.Redirect(hmnurl.BuildPodcastEpisodeEdit(c.CurrentProject.Slug, guidStr), http.StatusSeeOther)
+	res := c.Redirect(hmnurl.BuildPodcastEpisodeEdit(guidStr), http.StatusSeeOther)
 	res.AddFutureNotice("success", "Podcast episode updated successfully.")
 	return res
 }
@@ -519,7 +519,7 @@ func PodcastRSS(c *RequestContext) ResponseData {
 	}
 
 	podcastRSSData := PodcastRSSData{
-		Podcast: templates.PodcastToTemplate(c.CurrentProject.Slug, podcastResult.Podcast, podcastResult.ImageFile),
+		Podcast: templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile),
 	}
 
 	for _, episode := range podcastResult.Episodes {
@@ -530,7 +530,7 @@ func PodcastRSS(c *RequestContext) ResponseData {
 		} else {
 			filesize = stat.Size()
 		}
-		podcastRSSData.Episodes = append(podcastRSSData.Episodes, templates.PodcastEpisodeToTemplate(c.CurrentProject.Slug, episode, filesize, podcastResult.ImageFile))
+		podcastRSSData.Episodes = append(podcastRSSData.Episodes, templates.PodcastEpisodeToTemplate(episode, filesize, podcastResult.ImageFile))
 	}
 
 	var res ResponseData

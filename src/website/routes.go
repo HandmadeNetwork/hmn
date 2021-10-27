@@ -45,8 +45,8 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		},
 	}
 
-	mainRoutes := routes
-	mainRoutes.Middleware = func(h Handler) Handler {
+	anyProject := routes
+	anyProject.Middleware = func(h Handler) Handler {
 		return func(c *RequestContext) (res ResponseData) {
 			c.Conn = conn
 
@@ -67,8 +67,8 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		}
 	}
 
-	staticPages := routes
-	staticPages.Middleware = func(h Handler) Handler {
+	hmnOnly := routes
+	hmnOnly.Middleware = func(h Handler) Handler {
 		return func(c *RequestContext) (res ResponseData) {
 			c.Conn = conn
 
@@ -154,125 +154,125 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		return res
 	})
 
-	mainRoutes.GET(hmnurl.RegexHomepage, func(c *RequestContext) ResponseData {
+	anyProject.GET(hmnurl.RegexHomepage, func(c *RequestContext) ResponseData {
 		if c.CurrentProject.IsHMN() {
 			return Index(c)
 		} else {
 			return ProjectHomepage(c)
 		}
 	})
-	staticPages.GET(hmnurl.RegexManifesto, Manifesto)
-	staticPages.GET(hmnurl.RegexAbout, About)
-	staticPages.GET(hmnurl.RegexCodeOfConduct, CodeOfConduct)
-	staticPages.GET(hmnurl.RegexCommunicationGuidelines, CommunicationGuidelines)
-	staticPages.GET(hmnurl.RegexContactPage, ContactPage)
-	staticPages.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
-	staticPages.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
-	staticPages.GET(hmnurl.RegexWhenIsIt, WhenIsIt)
-	staticPages.GET(hmnurl.RegexJamIndex, JamIndex)
 
-	// TODO(asaf): Have separate middleware for HMN-only routes and any-project routes
 	// NOTE(asaf): HMN-only routes:
-	mainRoutes.GET(hmnurl.RegexOldHome, Index)
+	hmnOnly.GET(hmnurl.RegexManifesto, Manifesto)
+	hmnOnly.GET(hmnurl.RegexAbout, About)
+	hmnOnly.GET(hmnurl.RegexCodeOfConduct, CodeOfConduct)
+	hmnOnly.GET(hmnurl.RegexCommunicationGuidelines, CommunicationGuidelines)
+	hmnOnly.GET(hmnurl.RegexContactPage, ContactPage)
+	hmnOnly.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
+	hmnOnly.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
+	hmnOnly.GET(hmnurl.RegexWhenIsIt, WhenIsIt)
+	hmnOnly.GET(hmnurl.RegexJamIndex, JamIndex)
 
-	mainRoutes.POST(hmnurl.RegexLoginAction, securityTimerMiddleware(time.Millisecond*100, Login)) // TODO(asaf): Adjust this after launch
-	mainRoutes.GET(hmnurl.RegexLogoutAction, Logout)
-	mainRoutes.GET(hmnurl.RegexLoginPage, LoginPage)
+	hmnOnly.GET(hmnurl.RegexOldHome, Index)
 
-	mainRoutes.GET(hmnurl.RegexRegister, RegisterNewUser)
-	mainRoutes.POST(hmnurl.RegexRegister, securityTimerMiddleware(email.ExpectedEmailSendDuration, RegisterNewUserSubmit))
-	mainRoutes.GET(hmnurl.RegexRegistrationSuccess, RegisterNewUserSuccess)
-	mainRoutes.GET(hmnurl.RegexOldEmailConfirmation, EmailConfirmation) // TODO(asaf): Delete this a bit after launch
-	mainRoutes.GET(hmnurl.RegexEmailConfirmation, EmailConfirmation)
-	mainRoutes.POST(hmnurl.RegexEmailConfirmation, EmailConfirmationSubmit)
+	hmnOnly.POST(hmnurl.RegexLoginAction, securityTimerMiddleware(time.Millisecond*100, Login)) // TODO(asaf): Adjust this after launch
+	hmnOnly.GET(hmnurl.RegexLogoutAction, Logout)
+	hmnOnly.GET(hmnurl.RegexLoginPage, LoginPage)
 
-	mainRoutes.GET(hmnurl.RegexRequestPasswordReset, RequestPasswordReset)
-	mainRoutes.POST(hmnurl.RegexRequestPasswordReset, securityTimerMiddleware(email.ExpectedEmailSendDuration, RequestPasswordResetSubmit))
-	mainRoutes.GET(hmnurl.RegexPasswordResetSent, PasswordResetSent)
-	mainRoutes.GET(hmnurl.RegexOldDoPasswordReset, DoPasswordReset)
-	mainRoutes.GET(hmnurl.RegexDoPasswordReset, DoPasswordReset)
-	mainRoutes.POST(hmnurl.RegexDoPasswordReset, DoPasswordResetSubmit)
+	hmnOnly.GET(hmnurl.RegexRegister, RegisterNewUser)
+	hmnOnly.POST(hmnurl.RegexRegister, securityTimerMiddleware(email.ExpectedEmailSendDuration, RegisterNewUserSubmit))
+	hmnOnly.GET(hmnurl.RegexRegistrationSuccess, RegisterNewUserSuccess)
+	hmnOnly.GET(hmnurl.RegexOldEmailConfirmation, EmailConfirmation) // TODO(asaf): Delete this a bit after launch
+	hmnOnly.GET(hmnurl.RegexEmailConfirmation, EmailConfirmation)
+	hmnOnly.POST(hmnurl.RegexEmailConfirmation, EmailConfirmationSubmit)
 
-	mainRoutes.GET(hmnurl.RegexAdminAtomFeed, AdminAtomFeed)
-	mainRoutes.GET(hmnurl.RegexAdminApprovalQueue, adminMiddleware(AdminApprovalQueue))
-	mainRoutes.POST(hmnurl.RegexAdminApprovalQueue, adminMiddleware(csrfMiddleware(AdminApprovalQueueSubmit)))
+	hmnOnly.GET(hmnurl.RegexRequestPasswordReset, RequestPasswordReset)
+	hmnOnly.POST(hmnurl.RegexRequestPasswordReset, securityTimerMiddleware(email.ExpectedEmailSendDuration, RequestPasswordResetSubmit))
+	hmnOnly.GET(hmnurl.RegexPasswordResetSent, PasswordResetSent)
+	hmnOnly.GET(hmnurl.RegexOldDoPasswordReset, DoPasswordReset)
+	hmnOnly.GET(hmnurl.RegexDoPasswordReset, DoPasswordReset)
+	hmnOnly.POST(hmnurl.RegexDoPasswordReset, DoPasswordResetSubmit)
 
-	mainRoutes.GET(hmnurl.RegexFeed, Feed)
-	mainRoutes.GET(hmnurl.RegexAtomFeed, AtomFeed)
-	mainRoutes.GET(hmnurl.RegexShowcase, Showcase)
-	mainRoutes.GET(hmnurl.RegexSnippet, Snippet)
-	mainRoutes.GET(hmnurl.RegexProjectIndex, ProjectIndex)
-	mainRoutes.GET(hmnurl.RegexProjectNotApproved, ProjectHomepage)
+	hmnOnly.GET(hmnurl.RegexAdminAtomFeed, AdminAtomFeed)
+	hmnOnly.GET(hmnurl.RegexAdminApprovalQueue, adminMiddleware(AdminApprovalQueue))
+	hmnOnly.POST(hmnurl.RegexAdminApprovalQueue, adminMiddleware(csrfMiddleware(AdminApprovalQueueSubmit)))
 
-	mainRoutes.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
-	mainRoutes.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
-	mainRoutes.POST(hmnurl.RegexDiscordShowcaseBacklog, authMiddleware(csrfMiddleware(DiscordShowcaseBacklog)))
+	hmnOnly.GET(hmnurl.RegexFeed, Feed)
+	hmnOnly.GET(hmnurl.RegexAtomFeed, AtomFeed)
+	hmnOnly.GET(hmnurl.RegexShowcase, Showcase)
+	hmnOnly.GET(hmnurl.RegexSnippet, Snippet)
+	hmnOnly.GET(hmnurl.RegexProjectIndex, ProjectIndex)
+	hmnOnly.GET(hmnurl.RegexProjectNotApproved, ProjectHomepage)
 
-	mainRoutes.GET(hmnurl.RegexUserProfile, UserProfile)
-	mainRoutes.GET(hmnurl.RegexUserSettings, authMiddleware(UserSettings))
-	mainRoutes.POST(hmnurl.RegexUserSettings, authMiddleware(csrfMiddleware(UserSettingsSave)))
+	hmnOnly.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
+	hmnOnly.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
+	hmnOnly.POST(hmnurl.RegexDiscordShowcaseBacklog, authMiddleware(csrfMiddleware(DiscordShowcaseBacklog)))
+
+	hmnOnly.GET(hmnurl.RegexUserProfile, UserProfile)
+	hmnOnly.GET(hmnurl.RegexUserSettings, authMiddleware(UserSettings))
+	hmnOnly.POST(hmnurl.RegexUserSettings, authMiddleware(csrfMiddleware(UserSettingsSave)))
+
+	hmnOnly.GET(hmnurl.RegexPodcast, PodcastIndex)
+	hmnOnly.GET(hmnurl.RegexPodcastEdit, PodcastEdit)
+	hmnOnly.POST(hmnurl.RegexPodcastEdit, PodcastEditSubmit)
+	hmnOnly.GET(hmnurl.RegexPodcastEpisodeNew, PodcastEpisodeNew)
+	hmnOnly.POST(hmnurl.RegexPodcastEpisodeNew, PodcastEpisodeSubmit)
+	hmnOnly.GET(hmnurl.RegexPodcastEpisodeEdit, PodcastEpisodeEdit)
+	hmnOnly.POST(hmnurl.RegexPodcastEpisodeEdit, PodcastEpisodeSubmit)
+	hmnOnly.GET(hmnurl.RegexPodcastEpisode, PodcastEpisode)
+	hmnOnly.GET(hmnurl.RegexPodcastRSS, PodcastRSS)
+
+	hmnOnly.GET(hmnurl.RegexLibraryAny, LibraryNotPortedYet)
 
 	// NOTE(asaf): Any-project routes:
-	mainRoutes.GET(hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
-	mainRoutes.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
-	mainRoutes.GET(hmnurl.RegexForumThread, ForumThread)
-	mainRoutes.GET(hmnurl.RegexForum, Forum)
-	mainRoutes.POST(hmnurl.RegexForumMarkRead, authMiddleware(csrfMiddleware(ForumMarkRead)))
-	mainRoutes.GET(hmnurl.RegexForumPost, ForumPostRedirect)
-	mainRoutes.GET(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReply))
-	mainRoutes.POST(hmnurl.RegexForumPostReply, authMiddleware(csrfMiddleware(ForumPostReplySubmit)))
-	mainRoutes.GET(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEdit))
-	mainRoutes.POST(hmnurl.RegexForumPostEdit, authMiddleware(csrfMiddleware(ForumPostEditSubmit)))
-	mainRoutes.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
-	mainRoutes.POST(hmnurl.RegexForumPostDelete, authMiddleware(csrfMiddleware(ForumPostDeleteSubmit)))
-	mainRoutes.GET(hmnurl.RegexWikiArticle, WikiArticleRedirect)
+	anyProject.GET(hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
+	anyProject.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
+	anyProject.GET(hmnurl.RegexForumThread, ForumThread)
+	anyProject.GET(hmnurl.RegexForum, Forum)
+	anyProject.POST(hmnurl.RegexForumMarkRead, authMiddleware(csrfMiddleware(ForumMarkRead)))
+	anyProject.GET(hmnurl.RegexForumPost, ForumPostRedirect)
+	anyProject.GET(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReply))
+	anyProject.POST(hmnurl.RegexForumPostReply, authMiddleware(csrfMiddleware(ForumPostReplySubmit)))
+	anyProject.GET(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEdit))
+	anyProject.POST(hmnurl.RegexForumPostEdit, authMiddleware(csrfMiddleware(ForumPostEditSubmit)))
+	anyProject.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
+	anyProject.POST(hmnurl.RegexForumPostDelete, authMiddleware(csrfMiddleware(ForumPostDeleteSubmit)))
+	anyProject.GET(hmnurl.RegexWikiArticle, WikiArticleRedirect)
 
-	mainRoutes.GET(hmnurl.RegexBlog, BlogIndex)
-	mainRoutes.GET(hmnurl.RegexBlogNewThread, authMiddleware(BlogNewThread))
-	mainRoutes.POST(hmnurl.RegexBlogNewThread, authMiddleware(csrfMiddleware(BlogNewThreadSubmit)))
-	mainRoutes.GET(hmnurl.RegexBlogThread, BlogThread)
-	mainRoutes.GET(hmnurl.RegexBlogPost, BlogPostRedirectToThread)
-	mainRoutes.GET(hmnurl.RegexBlogPostReply, authMiddleware(BlogPostReply))
-	mainRoutes.POST(hmnurl.RegexBlogPostReply, authMiddleware(csrfMiddleware(BlogPostReplySubmit)))
-	mainRoutes.GET(hmnurl.RegexBlogPostEdit, authMiddleware(BlogPostEdit))
-	mainRoutes.POST(hmnurl.RegexBlogPostEdit, authMiddleware(csrfMiddleware(BlogPostEditSubmit)))
-	mainRoutes.GET(hmnurl.RegexBlogPostDelete, authMiddleware(BlogPostDelete))
-	mainRoutes.POST(hmnurl.RegexBlogPostDelete, authMiddleware(csrfMiddleware(BlogPostDeleteSubmit)))
-	mainRoutes.GET(hmnurl.RegexBlogsRedirect, func(c *RequestContext) ResponseData {
+	anyProject.GET(hmnurl.RegexBlog, BlogIndex)
+	anyProject.GET(hmnurl.RegexBlogNewThread, authMiddleware(BlogNewThread))
+	anyProject.POST(hmnurl.RegexBlogNewThread, authMiddleware(csrfMiddleware(BlogNewThreadSubmit)))
+	anyProject.GET(hmnurl.RegexBlogThread, BlogThread)
+	anyProject.GET(hmnurl.RegexBlogPost, BlogPostRedirectToThread)
+	anyProject.GET(hmnurl.RegexBlogPostReply, authMiddleware(BlogPostReply))
+	anyProject.POST(hmnurl.RegexBlogPostReply, authMiddleware(csrfMiddleware(BlogPostReplySubmit)))
+	anyProject.GET(hmnurl.RegexBlogPostEdit, authMiddleware(BlogPostEdit))
+	anyProject.POST(hmnurl.RegexBlogPostEdit, authMiddleware(csrfMiddleware(BlogPostEditSubmit)))
+	anyProject.GET(hmnurl.RegexBlogPostDelete, authMiddleware(BlogPostDelete))
+	anyProject.POST(hmnurl.RegexBlogPostDelete, authMiddleware(csrfMiddleware(BlogPostDeleteSubmit)))
+	anyProject.GET(hmnurl.RegexBlogsRedirect, func(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.ProjectUrl(
 			fmt.Sprintf("blog%s", c.PathParams["remainder"]), nil,
 			c.CurrentProject.Slug,
 		), http.StatusMovedPermanently)
 	})
 
-	mainRoutes.POST(hmnurl.RegexAssetUpload, AssetUpload)
+	anyProject.POST(hmnurl.RegexAssetUpload, AssetUpload)
 
-	mainRoutes.GET(hmnurl.RegexPodcast, PodcastIndex)
-	mainRoutes.GET(hmnurl.RegexPodcastEdit, PodcastEdit)
-	mainRoutes.POST(hmnurl.RegexPodcastEdit, PodcastEditSubmit)
-	mainRoutes.GET(hmnurl.RegexPodcastEpisodeNew, PodcastEpisodeNew)
-	mainRoutes.POST(hmnurl.RegexPodcastEpisodeNew, PodcastEpisodeSubmit)
-	mainRoutes.GET(hmnurl.RegexPodcastEpisodeEdit, PodcastEpisodeEdit)
-	mainRoutes.POST(hmnurl.RegexPodcastEpisodeEdit, PodcastEpisodeSubmit)
-	mainRoutes.GET(hmnurl.RegexPodcastEpisode, PodcastEpisode)
-	mainRoutes.GET(hmnurl.RegexPodcastRSS, PodcastRSS)
+	anyProject.GET(hmnurl.RegexEpisodeList, EpisodeList)
+	anyProject.GET(hmnurl.RegexEpisode, Episode)
+	anyProject.GET(hmnurl.RegexCineraIndex, CineraIndex)
 
-	mainRoutes.GET(hmnurl.RegexEpisodeList, EpisodeList)
-	mainRoutes.GET(hmnurl.RegexEpisode, Episode)
-	mainRoutes.GET(hmnurl.RegexCineraIndex, CineraIndex)
-
-	mainRoutes.GET(hmnurl.RegexProjectCSS, ProjectCSS)
-	mainRoutes.GET(hmnurl.RegexEditorPreviewsJS, func(c *RequestContext) ResponseData {
+	anyProject.GET(hmnurl.RegexProjectCSS, ProjectCSS)
+	anyProject.GET(hmnurl.RegexEditorPreviewsJS, func(c *RequestContext) ResponseData {
 		var res ResponseData
 		res.MustWriteTemplate("editorpreviews.js", nil, c.Perf)
 		res.Header().Add("Content-Type", "application/javascript")
 		return res
 	})
 
-	mainRoutes.GET(hmnurl.RegexLibraryAny, LibraryNotPortedYet)
-
 	// Other
-	mainRoutes.AnyMethod(hmnurl.RegexCatchAll, FourOhFour)
+	anyProject.AnyMethod(hmnurl.RegexCatchAll, FourOhFour)
 
 	return router
 }
@@ -342,9 +342,9 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 			HMNHomepageUrl:  hmnurl.BuildHomepage(),
 			ProjectIndexUrl: hmnurl.BuildProjectIndex(1),
-			PodcastUrl:      hmnurl.BuildPodcast(c.CurrentProject.Slug),
+			PodcastUrl:      hmnurl.BuildPodcast(),
 			ForumsUrl:       hmnurl.BuildForum(c.CurrentProject.Slug, nil, 1),
-			LibraryUrl:      hmnurl.BuildLibrary(c.CurrentProject.Slug),
+			LibraryUrl:      hmnurl.BuildLibrary(),
 		},
 		Footer: templates.Footer{
 			HomepageUrl:                hmnurl.BuildHomepage(),

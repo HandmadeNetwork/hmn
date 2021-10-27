@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 )
 
@@ -316,49 +317,49 @@ func BuildProjectEdit(slug string, section string) string {
 
 var RegexPodcast = regexp.MustCompile(`^/podcast$`)
 
-func BuildPodcast(projectSlug string) string {
+func BuildPodcast() string {
 	defer CatchPanic()
-	return ProjectUrl("/podcast", nil, projectSlug)
+	return Url("/podcast", nil)
 }
 
 var RegexPodcastEdit = regexp.MustCompile(`^/podcast/edit$`)
 
-func BuildPodcastEdit(projectSlug string) string {
+func BuildPodcastEdit() string {
 	defer CatchPanic()
-	return ProjectUrl("/podcast/edit", nil, projectSlug)
+	return Url("/podcast/edit", nil)
 }
 
 var RegexPodcastEpisode = regexp.MustCompile(`^/podcast/ep/(?P<episodeid>[^/]+)$`)
 
-func BuildPodcastEpisode(projectSlug string, episodeGUID string) string {
+func BuildPodcastEpisode(episodeGUID string) string {
 	defer CatchPanic()
-	return ProjectUrl(fmt.Sprintf("/podcast/ep/%s", episodeGUID), nil, projectSlug)
+	return Url(fmt.Sprintf("/podcast/ep/%s", episodeGUID), nil)
 }
 
 var RegexPodcastEpisodeNew = regexp.MustCompile(`^/podcast/ep/new$`)
 
-func BuildPodcastEpisodeNew(projectSlug string) string {
+func BuildPodcastEpisodeNew() string {
 	defer CatchPanic()
-	return ProjectUrl("/podcast/ep/new", nil, projectSlug)
+	return Url("/podcast/ep/new", nil)
 }
 
 var RegexPodcastEpisodeEdit = regexp.MustCompile(`^/podcast/ep/(?P<episodeid>[^/]+)/edit$`)
 
-func BuildPodcastEpisodeEdit(projectSlug string, episodeGUID string) string {
+func BuildPodcastEpisodeEdit(episodeGUID string) string {
 	defer CatchPanic()
-	return ProjectUrl(fmt.Sprintf("/podcast/ep/%s/edit", episodeGUID), nil, projectSlug)
+	return Url(fmt.Sprintf("/podcast/ep/%s/edit", episodeGUID), nil)
 }
 
 var RegexPodcastRSS = regexp.MustCompile(`^/podcast/podcast.xml$`)
 
-func BuildPodcastRSS(projectSlug string) string {
+func BuildPodcastRSS() string {
 	defer CatchPanic()
-	return ProjectUrl("/podcast/podcast.xml", nil, projectSlug)
+	return Url("/podcast/podcast.xml", nil)
 }
 
-func BuildPodcastEpisodeFile(projectSlug string, filename string) string {
+func BuildPodcastEpisodeFile(filename string) string {
 	defer CatchPanic()
-	return BuildUserFile(fmt.Sprintf("podcast/%s/%s", projectSlug, filename))
+	return BuildUserFile(fmt.Sprintf("podcast/%s/%s", models.HMNProjectSlug, filename))
 }
 
 /*
@@ -540,21 +541,21 @@ var RegexLibraryAny = regexp.MustCompile(`^/library`)
 
 var RegexLibrary = regexp.MustCompile(`^/library$`)
 
-func BuildLibrary(projectSlug string) string {
+func BuildLibrary() string {
 	defer CatchPanic()
-	return ProjectUrl("/library", nil, projectSlug)
+	return Url("/library", nil)
 }
 
 var RegexLibraryAll = regexp.MustCompile(`^/library/all$`)
 
-func BuildLibraryAll(projectSlug string) string {
+func BuildLibraryAll() string {
 	defer CatchPanic()
-	return ProjectUrl("/library/all", nil, projectSlug)
+	return Url("/library/all", nil)
 }
 
 var RegexLibraryTopic = regexp.MustCompile(`^/library/topic/(?P<topicid>\d+)$`)
 
-func BuildLibraryTopic(projectSlug string, topicId int) string {
+func BuildLibraryTopic(topicId int) string {
 	defer CatchPanic()
 	if topicId < 1 {
 		panic(oops.New(nil, "Invalid library topic ID (%d), must be >= 1", topicId))
@@ -564,16 +565,16 @@ func BuildLibraryTopic(projectSlug string, topicId int) string {
 	builder.WriteString("/library/topic/")
 	builder.WriteString(strconv.Itoa(topicId))
 
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return Url(builder.String(), nil)
 }
 
 var RegexLibraryResource = regexp.MustCompile(`^/library/resource/(?P<resourceid>\d+)$`)
 
-func BuildLibraryResource(projectSlug string, resourceId int) string {
+func BuildLibraryResource(resourceId int) string {
 	defer CatchPanic()
 	builder := buildLibraryResourcePath(resourceId)
 
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return Url(builder.String(), nil)
 }
 
 /*

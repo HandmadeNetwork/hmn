@@ -140,30 +140,27 @@ func TestProjectEdit(t *testing.T) {
 }
 
 func TestPodcast(t *testing.T) {
-	AssertRegexMatch(t, BuildPodcast(""), RegexPodcast, nil)
-	AssertSubdomain(t, BuildPodcast(""), "")
-	AssertSubdomain(t, BuildPodcast("hmn"), "")
-	AssertSubdomain(t, BuildPodcast("hero"), "hero")
+	AssertRegexMatch(t, BuildPodcast(), RegexPodcast, nil)
 }
 
 func TestPodcastEdit(t *testing.T) {
-	AssertRegexMatch(t, BuildPodcastEdit(""), RegexPodcastEdit, nil)
+	AssertRegexMatch(t, BuildPodcastEdit(), RegexPodcastEdit, nil)
 }
 
 func TestPodcastEpisode(t *testing.T) {
-	AssertRegexMatch(t, BuildPodcastEpisode("", "test"), RegexPodcastEpisode, map[string]string{"episodeid": "test"})
+	AssertRegexMatch(t, BuildPodcastEpisode("test"), RegexPodcastEpisode, map[string]string{"episodeid": "test"})
 }
 
 func TestPodcastEpisodeNew(t *testing.T) {
-	AssertRegexMatch(t, BuildPodcastEpisodeNew(""), RegexPodcastEpisodeNew, nil)
+	AssertRegexMatch(t, BuildPodcastEpisodeNew(), RegexPodcastEpisodeNew, nil)
 }
 
 func TestPodcastEpisodeEdit(t *testing.T) {
-	AssertRegexMatch(t, BuildPodcastEpisodeEdit("", "test"), RegexPodcastEpisodeEdit, map[string]string{"episodeid": "test"})
+	AssertRegexMatch(t, BuildPodcastEpisodeEdit("test"), RegexPodcastEpisodeEdit, map[string]string{"episodeid": "test"})
 }
 
 func TestPodcastRSS(t *testing.T) {
-	AssertRegexMatch(t, BuildPodcastRSS(""), RegexPodcastRSS, nil)
+	AssertRegexMatch(t, BuildPodcastRSS(), RegexPodcastRSS, nil)
 }
 
 func TestForum(t *testing.T) {
@@ -265,23 +262,19 @@ func TestBlogPostReply(t *testing.T) {
 }
 
 func TestLibrary(t *testing.T) {
-	AssertRegexMatch(t, BuildLibrary(""), RegexLibrary, nil)
-	AssertSubdomain(t, BuildLibrary("hero"), "hero")
+	AssertRegexMatch(t, BuildLibrary(), RegexLibrary, nil)
 }
 
 func TestLibraryAll(t *testing.T) {
-	AssertRegexMatch(t, BuildLibraryAll(""), RegexLibraryAll, nil)
-	AssertSubdomain(t, BuildLibraryAll("hero"), "hero")
+	AssertRegexMatch(t, BuildLibraryAll(), RegexLibraryAll, nil)
 }
 
 func TestLibraryTopic(t *testing.T) {
-	AssertRegexMatch(t, BuildLibraryTopic("", 1), RegexLibraryTopic, map[string]string{"topicid": "1"})
-	AssertSubdomain(t, BuildLibraryTopic("hero", 1), "hero")
+	AssertRegexMatch(t, BuildLibraryTopic(1), RegexLibraryTopic, map[string]string{"topicid": "1"})
 }
 
 func TestLibraryResource(t *testing.T) {
-	AssertRegexMatch(t, BuildLibraryResource("", 1), RegexLibraryResource, map[string]string{"resourceid": "1"})
-	AssertSubdomain(t, BuildLibraryResource("hero", 1), "hero")
+	AssertRegexMatch(t, BuildLibraryResource(1), RegexLibraryResource, map[string]string{"resourceid": "1"})
 }
 
 func TestEpisodeGuide(t *testing.T) {
@@ -429,5 +422,5 @@ func AssertRegexNoMatch(t *testing.T, fullUrl string, regex *regexp.Regexp) {
 
 func TestThingsThatDontNeedCoverage(t *testing.T) {
 	// look the other way ಠ_ಠ
-	BuildPodcastEpisodeFile("foo", "bar")
+	BuildPodcastEpisodeFile("foo")
 }
