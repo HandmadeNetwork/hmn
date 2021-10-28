@@ -16,9 +16,10 @@ type BaseData struct {
 	Notices           []Notice
 	ReportIssueMailto string
 
-	CurrentUrl    string
-	LoginPageUrl  string
-	ProjectCSSUrl string
+	CurrentUrl        string
+	CurrentProjectUrl string
+	LoginPageUrl      string
+	ProjectCSSUrl     string
 
 	Project Project
 	User    *User
@@ -50,6 +51,17 @@ type Header struct {
 	PodcastUrl      string
 	ForumsUrl       string
 	LibraryUrl      string
+
+	Project *ProjectHeader
+}
+
+type ProjectHeader struct {
+	HasForums       bool
+	HasBlog         bool
+	HasEpisodeGuide bool
+	ForumsUrl       string
+	BlogUrl         string
+	EpisodeGuideUrl string
 }
 
 type Footer struct {

@@ -25,9 +25,6 @@ type LandingTemplateData struct {
 	FeedUrl        string
 	PodcastUrl     string
 	StreamsUrl     string
-	IRCUrl         string
-	DiscordUrl     string
-	ShowUrl        string
 	ShowcaseUrl    string
 	AtomFeedUrl    string
 	MarkAllReadUrl string
@@ -168,9 +165,6 @@ func Index(c *RequestContext) ResponseData {
 		FeedUrl:        hmnurl.BuildFeed(),
 		PodcastUrl:     hmnurl.BuildPodcast(),
 		StreamsUrl:     hmnurl.BuildStreams(),
-		IRCUrl:         hmnurl.BuildBlogThread(models.HMNProjectSlug, 1138, "[Tutorial] Handmade Network IRC"),
-		DiscordUrl:     "https://discord.gg/hxWxDee",
-		ShowUrl:        "https://handmadedev.show/",
 		ShowcaseUrl:    hmnurl.BuildShowcase(),
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
 		MarkAllReadUrl: hmnurl.BuildForumMarkRead(models.HMNProjectSlug, 0),

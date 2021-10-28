@@ -7,10 +7,32 @@
 {{ end }}
 
 {{ define "content" }}
-<div class="flex flex-column flex-row-l">
-    <div class="flex-grow-1 overflow-hidden">
+<div class="flex flex-column flex-row-ns">
+    <div class="sidebar flex-shrink-0 mw5 self-center self-start-ns mh3 ml0-ns overflow-hidden">
+		<img alt="{{ .Project.Name }}" class="br3" src="{{ .Project.Logo }}" />
+		<a href="{{ .CurrentProjectUrl }}">
+			<h2 class="mt3">{{ .Project.Name }}</h2>
+		</a>
+		<div class="mt3">
+			<div class="mb3">
+				{{ range $i, $owner := .Owners }}
+					<div class="flex mv3 items-center {{ if eq $i 0 }}mt2{{ end }}">
+						<img class="avatar-icon mr2" src="{{ $owner.AvatarUrl }}" />
+						<a class="user-link" href="{{ $owner.ProfileUrl }}">{{ $owner.Name }}</a>
+					</div>
+				{{ end }}
+			</div>
+			{{ range .ProjectLinks }}
+				<div class="pair flex">
+					<div class="key flex-auto flex-shrink-0 mr2">{{ .Name }}</div>
+					<div class="value projectlink truncate"><a class="external" href="{{ .Url }}" ><span class="icon-{{ .Icon }}"></span> {{ .LinkText }}</a></div>
+				</div>
+			{{ end }}
+		</div>
+	</div>
+	<div class="flex-grow-1 overflow-hidden">
 		{{ with .Screenshots }}
-			<div class="carousel-container mw-100 mv2 mv3-ns margin-center">
+			<div class="carousel-container mw-100 mb3">
 				<div class="carousel aspect-ratio aspect-ratio--16x9 overflow-hidden bg--dim br2-ns">
 					<div class="dn db-l">
 						{{ range $index, $screenshot := . }}
@@ -48,27 +70,6 @@
 			</div>
 		{{ end }}
 	</div>
-    <div class="sidebar flex-shrink-0 mw6 w-30-l self-center self-start-l mh3 mh0-ns ml3-l overflow-hidden">
-		<div class="content-block">
-			<img alt="{{ .Project.Name }} Logo" class="br3" src="{{ .Project.Logo }}" />
-			<div class="mv3 relative">
-				<div class="mb3">
-					{{ range $i, $owner := .Owners }}
-						<div class="flex mv3 items-center {{ if eq $i 0 }}mt2{{ end }}">
-							<img class="avatar-icon mr2" src="{{ $owner.AvatarUrl }}" />
-							<a class="user-link" href="{{ $owner.ProfileUrl }}">{{ $owner.Name }}</a>
-						</div>
-					{{ end }}
-				</div>
-				{{ range .ProjectLinks }}
-					<div class="pair flex flex-wrap">
-						<div class="key flex-auto mr1">{{ .Name }}</div>
-						<div class="value projectlink"><a class="external" href="{{ .Url }}" ><span class="icon-{{ .Icon }}"></span> {{ .LinkText }}</a></div>
-					</div>
-				{{ end }}
-			</div>
-		</div>
-	</div>
 </div>
 <script>
 	const numCarouselItems = {{ len .Screenshots }};
@@ -89,6 +90,10 @@
 
 	let carouselTimerCurrent = 0;
 	const carouselTimer = setInterval(() => {
+		if (numCarouselItems === 0) {
+			return;
+		}
+
 		const next = (carouselTimerCurrent + 1) % numCarouselItems;
 		activateCarouselItem(next);
 		carouselTimerCurrent = next;
