@@ -167,7 +167,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 					handmade_project AS project
 				WHERE
 					project.lifecycle = ANY($1)
-					AND project.flags = 0
+					AND NOT project.hidden
 				ORDER BY date_approved DESC
 				LIMIT $2
 				`,

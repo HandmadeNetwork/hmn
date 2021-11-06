@@ -15,7 +15,7 @@ var ProjectType = reflect.TypeOf(Project{})
 type ProjectLifecycle int
 
 const (
-	ProjectLifecycleUnapproved = iota
+	ProjectLifecycleUnapproved ProjectLifecycle = iota
 	ProjectLifecycleApprovalRequired
 	ProjectLifecycleActive
 	ProjectLifecycleHiatus
@@ -41,6 +41,7 @@ type Project struct {
 
 	Slug              string `db:"slug"`
 	Name              string `db:"name"`
+	Tag               string `db:"tag"`
 	Blurb             string `db:"blurb"`
 	Description       string `db:"description"`
 	ParsedDescription string `db:"descparsed"`
@@ -53,7 +54,8 @@ type Project struct {
 	LogoLight string `db:"logolight"`
 	LogoDark  string `db:"logodark"`
 
-	Flags                 int       `db:"flags"` // NOTE(asaf): Flags is currently only used to mark a project as hidden. Flags == 1 means hidden. Flags == 0 means visible.
+	Personal              bool      `db:"personal"`
+	Hidden                bool      `db:"hidden"`
 	Featured              bool      `db:"featured"`
 	DateApproved          time.Time `db:"date_approved"`
 	AllLastUpdated        time.Time `db:"all_last_updated"`

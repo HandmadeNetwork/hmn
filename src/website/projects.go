@@ -6,7 +6,6 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -24,10 +23,7 @@ type ProjectTemplateData struct {
 	Pagination       templates.Pagination
 	CarouselProjects []templates.Project
 	Projects         []templates.Project
-
-	UserPendingProjectUnderReview bool
-	UserPendingProject            *templates.Project
-	UserApprovedProjects          []templates.Project
+	PersonalProjects []templates.Project
 
 	ProjectAtomFeedUrl string
 	WIPForumUrl        string
@@ -36,47 +32,19 @@ type ProjectTemplateData struct {
 func ProjectIndex(c *RequestContext) ResponseData {
 	const projectsPerPage = 20
 	const maxCarouselProjects = 10
+	const maxPersonalProjects = 10
 
-	page := 1
-	pageString, hasPage := c.PathParams["page"]
-	if hasPage && pageString != "" {
-		if pageParsed, err := strconv.Atoi(pageString); err == nil {
-			page = pageParsed
-		} else {
-			return c.Redirect(hmnurl.BuildProjectIndex(1), http.StatusSeeOther)
-		}
-	}
-
-	if page < 1 {
-		return c.Redirect(hmnurl.BuildProjectIndex(1), http.StatusSeeOther)
-	}
-
-	c.Perf.StartBlock("SQL", "Fetching all visible projects")
-	type projectResult struct {
-		Project models.Project `db:"project"`
-	}
-	allProjects, err := db.Query(c.Context(), c.Conn, projectResult{},
-		`
-		SELECT $columns
-		FROM
-			handmade_project AS project
-		WHERE
-			project.lifecycle = ANY($1)
-			AND project.flags = 0
-		ORDER BY project.date_approved ASC
-		`,
-		models.VisibleProjectLifecycles,
-	)
+	officialProjects, err := FetchProjects(c.Context(), c.Conn, c.CurrentUser, ProjectsQuery{
+		Types: OfficialProjects,
+	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch projects"))
 	}
-	allProjectsSlice := allProjects.ToSlice()
-	c.Perf.EndBlock()
 
-	numPages := int(math.Ceil(float64(len(allProjectsSlice)) / projectsPerPage))
-
-	if page > numPages {
-		return c.Redirect(hmnurl.BuildProjectIndex(numPages), http.StatusSeeOther)
+	numPages := int(math.Ceil(float64(len(officialProjects)) / projectsPerPage))
+	page, numPages, ok := getPageInfo(c.PathParams["page"], len(officialProjects), feedPostsPerPage)
+	if !ok {
+		return c.Redirect(hmnurl.BuildProjectIndex(1), http.StatusSeeOther)
 	}
 
 	pagination := templates.Pagination{
@@ -89,63 +57,22 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		PreviousUrl: hmnurl.BuildProjectIndex(utils.IntClamp(1, page-1, numPages)),
 	}
 
-	var userApprovedProjects []templates.Project
-	var userPendingProject *templates.Project
-	userPendingProjectUnderReview := false
-	if c.CurrentUser != nil {
-		c.Perf.StartBlock("SQL", "fetching user projects")
-		type UserProjectQuery struct {
-			Project models.Project `db:"project"`
-		}
-		userProjectsResult, err := db.Query(c.Context(), c.Conn, UserProjectQuery{},
-			`
-			SELECT $columns
-			FROM
-				handmade_project AS project
-				INNER JOIN handmade_user_projects AS uproj ON uproj.project_id = project.id
-			WHERE
-				uproj.user_id = $1
-			`,
-			c.CurrentUser.ID,
-		)
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
-		}
-		for _, project := range userProjectsResult.ToSlice() {
-			p := project.(*UserProjectQuery).Project
-			if p.Lifecycle == models.ProjectLifecycleUnapproved || p.Lifecycle == models.ProjectLifecycleApprovalRequired {
-				if userPendingProject == nil {
-					// NOTE(asaf): Technically a user could have more than one pending project.
-					//			   For example, if they created one project themselves and were added as an additional owner to another user's project.
-					//             So we'll just take the first one. I don't think it matters. I guess it especially won't matter after Projects 2.0.
-					tmplProject := templates.ProjectToTemplate(&p, c.Theme)
-					userPendingProject = &tmplProject
-					userPendingProjectUnderReview = (p.Lifecycle == models.ProjectLifecycleApprovalRequired)
-				}
-			} else {
-				userApprovedProjects = append(userApprovedProjects, templates.ProjectToTemplate(&p, c.Theme))
-			}
-		}
-		c.Perf.EndBlock()
-	}
-
 	c.Perf.StartBlock("PROJECTS", "Grouping and sorting")
 	var handmadeHero *templates.Project
 	var featuredProjects []templates.Project
 	var recentProjects []templates.Project
 	var restProjects []templates.Project
 	now := time.Now()
-	for _, p := range allProjectsSlice {
-		project := &p.(*projectResult).Project
-		templateProject := templates.ProjectToTemplate(project, c.Theme)
-		if project.Slug == "hero" {
+	for _, p := range officialProjects {
+		templateProject := templates.ProjectToTemplate(&p.Project, c.Theme)
+		if p.Project.Slug == "hero" {
 			// NOTE(asaf): Handmade Hero gets special treatment. Must always be first in the list.
 			handmadeHero = &templateProject
 			continue
 		}
-		if project.Featured {
+		if p.Project.Featured {
 			featuredProjects = append(featuredProjects, templateProject)
-		} else if now.Sub(project.AllLastUpdated).Seconds() < models.RecentProjectUpdateTimespanSec {
+		} else if now.Sub(p.Project.AllLastUpdated).Seconds() < models.RecentProjectUpdateTimespanSec {
 			recentProjects = append(recentProjects, templateProject)
 		} else {
 			restProjects = append(restProjects, templateProject)
@@ -178,6 +105,28 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
+	// Fetch and highlight a random selection of personal projects
+	var personalProjects []templates.Project
+	{
+		projects, err := FetchProjects(c.Context(), c.Conn, c.CurrentUser, ProjectsQuery{
+			Types: PersonalProjects,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch personal projects"))
+		}
+
+		randSeed := now.YearDay()
+		random := rand.New(rand.NewSource(int64(randSeed)))
+		random.Shuffle(len(projects), func(i, j int) { projects[i], projects[j] = projects[j], projects[i] })
+
+		for i, p := range projects {
+			if i >= maxPersonalProjects {
+				break
+			}
+			personalProjects = append(personalProjects, templates.ProjectToTemplate(&p.Project, c.Theme))
+		}
+	}
+
 	baseData := getBaseDataAutocrumb(c, "Projects")
 	var res ResponseData
 	res.MustWriteTemplate("project_index.html", ProjectTemplateData{
@@ -186,10 +135,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		Pagination:       pagination,
 		CarouselProjects: carouselProjects,
 		Projects:         pageProjects,
-
-		UserPendingProjectUnderReview: userPendingProjectUnderReview,
-		UserPendingProject:            userPendingProject,
-		UserApprovedProjects:          userApprovedProjects,
+		PersonalProjects: personalProjects,
 
 		ProjectAtomFeedUrl: hmnurl.BuildAtomFeedForProjects(),
 		WIPForumUrl:        hmnurl.BuildForum(models.HMNProjectSlug, []string{"wip"}, 1),
@@ -253,7 +199,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	owners, err := FetchProjectOwners(c, project.ID)
+	owners, err := FetchProjectOwners(c.Context(), c.Conn, project.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -275,7 +221,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		}
 	}
 	if !canView {
-		if project.Flags == 0 {
+		if !project.Hidden {
 			for _, lc := range models.VisibleProjectLifecycles {
 				if project.Lifecycle == lc {
 					canView = true
@@ -377,7 +323,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		projectHomepageData.Owners = append(projectHomepageData.Owners, templates.UserToTemplate(owner, c.Theme))
 	}
 
-	if project.Flags == 1 {
+	if project.Hidden {
 		projectHomepageData.BaseData.AddImmediateNotice(
 			"hidden",
 			"NOTICE: This project is hidden. It is currently visible only to owners and site admins.",

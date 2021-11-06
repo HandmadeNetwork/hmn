@@ -88,7 +88,7 @@ func FetchThreads(
 		WHERE
 			NOT thread.deleted
 			AND ( -- project has valid lifecycle
-				project.flags = 0 AND project.lifecycle = ANY($?)
+				NOT project.hidden AND project.lifecycle = ANY($?)
 				OR project.id = $?
 			)
 		`,
@@ -219,7 +219,7 @@ func CountThreads(
 		WHERE
 			NOT thread.deleted
 			AND ( -- project has valid lifecycle
-				project.flags = 0 AND project.lifecycle = ANY($?)
+				NOT project.hidden AND project.lifecycle = ANY($?)
 				OR project.id = $?
 			)
 		`,
@@ -343,7 +343,7 @@ func FetchPosts(
 			NOT thread.deleted
 			AND NOT post.deleted
 			AND ( -- project has valid lifecycle
-				project.flags = 0 AND project.lifecycle = ANY($?)
+				NOT project.hidden AND project.lifecycle = ANY($?)
 				OR project.id = $?
 			)
 		`,
@@ -543,7 +543,7 @@ func CountPosts(
 			NOT thread.deleted
 			AND NOT post.deleted
 			AND ( -- project has valid lifecycle
-				project.flags = 0 AND project.lifecycle = ANY($?)
+				NOT project.hidden AND project.lifecycle = ANY($?)
 				OR project.id = $?
 			)
 		`,
