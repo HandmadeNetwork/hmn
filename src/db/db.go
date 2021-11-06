@@ -60,6 +60,12 @@ type ConnOrTx interface {
 	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
 	Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error)
+
+	// Both raw database connections and transactions in pgx can begin/commit
+	// transactions. For database connections it does the obvious thing; for
+	// transactions it creates a "pseudo-nested transaction" but conceptually
+	// works the same. See the documentation of pgx.Tx.Begin.
+	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
 var connInfo = pgtype.NewConnInfo()

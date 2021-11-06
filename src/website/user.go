@@ -108,7 +108,7 @@ func UserProfile(c *RequestContext) ResponseData {
 			INNER JOIN handmade_user_projects AS uproj ON uproj.project_id = project.id
 		WHERE
 			uproj.user_id = $1
-			AND ($2 OR (project.flags = 0 AND project.lifecycle = ANY ($3)))
+			AND ($2 OR (NOT project.hidden AND project.lifecycle = ANY ($3)))
 		`,
 		profileUser.ID,
 		(c.CurrentUser != nil && (profileUser == c.CurrentUser || c.CurrentUser.IsStaff)),
