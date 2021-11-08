@@ -24,7 +24,7 @@ func BuildHomepage() string {
 	return Url("/", nil)
 }
 
-func BuildProjectHomepage(projectSlug string) string {
+func BuildOfficialProjectHomepage(projectSlug string) string {
 	defer CatchPanic()
 	return ProjectUrl("/", nil, projectSlug)
 }
@@ -295,12 +295,11 @@ func BuildProjectNew() string {
 	return Url("/projects/new", nil)
 }
 
-var RegexProjectNotApproved = regexp.MustCompile("^/p/(?P<slug>.+)$")
+var RegexPersonalProjectHomepage = regexp.MustCompile("^/p/(?P<id>[0-9]+)(/(?P<slug>[^/]*))?")
 
-func BuildProjectNotApproved(slug string) string {
+func BuildPersonalProjectHomepage(id int, slug string) string {
 	defer CatchPanic()
-
-	return Url(fmt.Sprintf("/p/%s", slug), nil)
+	return Url(fmt.Sprintf("/p/%d/%s", id, slug), nil)
 }
 
 var RegexProjectEdit = regexp.MustCompile("^/p/(?P<slug>.+)/edit$")

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 )
@@ -16,8 +17,13 @@ const (
 )
 
 type ProjectsQuery struct {
-	Lifecycles []models.ProjectLifecycle
-	Types      ProjectTypeQuery // bitfield
+	// Available on all project queries
+	Lifecycles []models.ProjectLifecycle // if empty, defaults to models.VisibleProjectLifecycles
+	Types      ProjectTypeQuery          // bitfield
+
+	// Ignored when using FetchProject
+	ProjectIDs []int    // if empty, all projects
+	Slugs      []string // if empty, all projects
 
 	// Ignored when using CountProjects
 	Limit, Offset int // if empty, no pagination
@@ -58,6 +64,12 @@ func FetchProjects(
 		WHERE
 			NOT hidden
 	`)
+	if len(q.ProjectIDs) > 0 {
+		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
+	}
+	if len(q.Slugs) > 0 {
+		qb.Add(`AND project.slug = ANY ($?)`, q.Slugs)
+	}
 	if len(q.Lifecycles) > 0 {
 		qb.Add(`AND project.lifecycle = ANY($?)`, q.Lifecycles)
 	} else {
@@ -138,6 +150,62 @@ func FetchProjects(
 	}
 
 	return res, nil
+}
+
+/*
+Fetches a single project. A wrapper around FetchProjects.
+
+Returns db.NotFound if no result is found.
+*/
+func FetchProject(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	projectID int,
+	q ProjectsQuery,
+) (ProjectAndStuff, error) {
+	q.ProjectIDs = []int{projectID}
+	q.Limit = 1
+	q.Offset = 0
+
+	res, err := FetchProjects(ctx, dbConn, currentUser, q)
+	if err != nil {
+		return ProjectAndStuff{}, oops.New(err, "failed to fetch project")
+	}
+
+	if len(res) == 0 {
+		return ProjectAndStuff{}, db.NotFound
+	}
+
+	return res[0], nil
+}
+
+/*
+Fetches a single project by slug. A wrapper around FetchProjects.
+
+Returns db.NotFound if no result is found.
+*/
+func FetchProjectBySlug(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	projectSlug string,
+	q ProjectsQuery,
+) (ProjectAndStuff, error) {
+	q.Slugs = []string{projectSlug}
+	q.Limit = 1
+	q.Offset = 0
+
+	res, err := FetchProjects(ctx, dbConn, currentUser, q)
+	if err != nil {
+		return ProjectAndStuff{}, oops.New(err, "failed to fetch project")
+	}
+
+	if len(res) == 0 {
+		return ProjectAndStuff{}, db.NotFound
+	}
+
+	return res[0], nil
 }
 
 func CountProjects(
@@ -314,4 +382,12 @@ func FetchProjectOwners(
 	}
 
 	return projectOwners[0].Owners, nil
+}
+
+func UrlForProject(p *models.Project) string {
+	if p.Personal {
+		return hmnurl.BuildPersonalProjectHomepage(p.ID, models.GeneratePersonalProjectSlug(p.Name))
+	} else {
+		return hmnurl.BuildOfficialProjectHomepage(p.Slug)
+	}
 }

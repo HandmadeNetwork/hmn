@@ -6,7 +6,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
-	"strings"
+	"strconv"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
@@ -158,39 +158,34 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	var project *models.Project
 
 	if c.CurrentProject.IsHMN() {
-		slug, hasSlug := c.PathParams["slug"]
-		if hasSlug && slug != "" {
-			slug = strings.ToLower(slug)
-			if slug == models.HMNProjectSlug {
-				return c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
-			}
-			c.Perf.StartBlock("SQL", "Fetching project by slug")
-			type projectQuery struct {
-				Project models.Project `db:"Project"`
-			}
-			projectQueryResult, err := db.QueryOne(c.Context(), c.Conn, projectQuery{},
-				`
-					SELECT $columns
-					FROM
-						handmade_project AS project
-					WHERE
-						LOWER(project.slug) = $1
-				`,
-				slug,
-			)
-			c.Perf.EndBlock()
-			if err != nil {
-				if errors.Is(err, db.NotFound) {
-					return FourOhFour(c)
-				} else {
-					return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project by slug"))
-				}
-			}
-			project = &projectQueryResult.(*projectQuery).Project
-			if project.Lifecycle != models.ProjectLifecycleUnapproved && project.Lifecycle != models.ProjectLifecycleApprovalRequired {
-				return c.Redirect(hmnurl.BuildProjectHomepage(project.Slug), http.StatusSeeOther)
+		// Viewing a personal project
+		idStr := c.PathParams["id"]
+		slug := c.PathParams["slug"]
+
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			panic(oops.New(err, "id was not numeric (bad regex in routing)"))
+		}
+
+		if id == models.HMNProjectID {
+			return c.Redirect(hmnurl.BuildHomepage(), http.StatusPermanentRedirect)
+		}
+
+		p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, id, ProjectsQuery{})
+		if err != nil {
+			if errors.Is(err, db.NotFound) {
+				return FourOhFour(c)
+			} else {
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project by slug"))
 			}
 		}
+
+		correctSlug := models.GeneratePersonalProjectSlug(p.Project.Name)
+		if slug != correctSlug {
+			return c.Redirect(hmnurl.BuildPersonalProjectHomepage(id, correctSlug), http.StatusPermanentRedirect)
+		}
+
+		project = &p.Project
 	} else {
 		project = c.CurrentProject
 	}
@@ -199,40 +194,12 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
+	// There are no further permission checks to do, because permissions are
+	// checked whatever way we fetch the project.
+
 	owners, err := FetchProjectOwners(c.Context(), c.Conn, project.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
-
-	canView := false
-	canEdit := false
-	if c.CurrentUser != nil {
-		if c.CurrentUser.IsStaff {
-			canView = true
-			canEdit = true
-		} else {
-			for _, owner := range owners {
-				if owner.ID == c.CurrentUser.ID {
-					canView = true
-					canEdit = true
-					break
-				}
-			}
-		}
-	}
-	if !canView {
-		if !project.Hidden {
-			for _, lc := range models.VisibleProjectLifecycles {
-				if project.Lifecycle == lc {
-					canView = true
-					break
-				}
-			}
-		}
-	}
-
-	if !canView {
-		return FourOhFour(c)
 	}
 
 	c.Perf.StartBlock("SQL", "Fetching screenshots")
