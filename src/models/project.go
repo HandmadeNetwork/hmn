@@ -2,6 +2,8 @@ package models
 
 import (
 	"reflect"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -78,4 +80,18 @@ func (p *Project) Subdomain() string {
 	}
 
 	return p.Slug
+}
+
+var slugUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9-]`)
+var slugHyphenRun = regexp.MustCompile(`-+`)
+
+// Generates a URL-safe version of a personal project's name.
+func GeneratePersonalProjectSlug(name string) string {
+	slug := name
+	slug = slugUnsafeChars.ReplaceAllLiteralString(slug, "-")
+	slug = slugHyphenRun.ReplaceAllLiteralString(slug, "-")
+	slug = strings.Trim(slug, "-")
+	slug = strings.ToLower(slug)
+
+	return slug
 }

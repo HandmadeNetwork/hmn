@@ -202,7 +202,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	hmnOnly.GET(hmnurl.RegexShowcase, Showcase)
 	hmnOnly.GET(hmnurl.RegexSnippet, Snippet)
 	hmnOnly.GET(hmnurl.RegexProjectIndex, ProjectIndex)
-	hmnOnly.GET(hmnurl.RegexProjectNotApproved, ProjectHomepage)
+	hmnOnly.GET(hmnurl.RegexPersonalProjectHomepage, ProjectHomepage)
 
 	hmnOnly.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
 	hmnOnly.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
@@ -275,31 +275,6 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	anyProject.AnyMethod(hmnurl.RegexCatchAll, FourOhFour)
 
 	return router
-}
-
-func FetchProjectBySlug(ctx context.Context, conn *pgxpool.Pool, slug string) (*models.Project, error) {
-	if len(slug) > 0 && slug != models.HMNProjectSlug {
-		subdomainProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE slug = $1", slug)
-		if err == nil {
-			subdomainProject := subdomainProjectRow.(*models.Project)
-			return subdomainProject, nil
-		} else if !errors.Is(err, db.NotFound) {
-			return nil, oops.New(err, "failed to get projects by slug")
-		} else {
-			return nil, nil
-		}
-	} else {
-		defaultProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE id = $1", models.HMNProjectID)
-		if err != nil {
-			if errors.Is(err, db.NotFound) {
-				return nil, oops.New(nil, "default project didn't exist in the database")
-			} else {
-				return nil, oops.New(err, "failed to get default project")
-			}
-		}
-		defaultProject := defaultProjectRow.(*models.Project)
-		return defaultProject, nil
-	}
 }
 
 func ProjectCSS(c *RequestContext) ResponseData {
@@ -382,22 +357,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 	c.Perf.StartBlock("MIDDLEWARE", "Load common website data")
 	defer c.Perf.EndBlock()
 
-	// get project
-	{
-		hostPrefix := strings.TrimSuffix(c.Req.Host, hmnurl.GetBaseHost())
-		slug := strings.TrimRight(hostPrefix, ".")
-
-		dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, slug)
-		if err != nil {
-			return false, c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
-		}
-		if dbProject == nil {
-			return false, c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
-		}
-
-		c.CurrentProject = dbProject
-	}
-
+	// get user
 	{
 		sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
 		if err == nil {
@@ -410,6 +370,23 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 			c.CurrentSession = session
 		}
 		// http.ErrNoCookie is the only error Cookie ever returns, so no further handling to do here.
+	}
+
+	// get official project
+	{
+		hostPrefix := strings.TrimSuffix(c.Req.Host, hmnurl.GetBaseHost())
+		slug := strings.TrimRight(hostPrefix, ".")
+
+		dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, ProjectsQuery{})
+		if err != nil {
+			if errors.Is(err, db.NotFound) {
+				return false, c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
+			} else {
+				return false, c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
+			}
+		}
+
+		c.CurrentProject = &dbProject.Project
 	}
 
 	theme := "light"
