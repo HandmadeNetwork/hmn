@@ -53,7 +53,7 @@ func EpisodeList(c *RequestContext) ResponseData {
 	defaultTopic, hasEpisodeGuide := config.Config.EpisodeGuide.Projects[slug]
 
 	if !hasEpisodeGuide {
-		return c.Redirect(hmnurl.BuildProjectHomepage(slug), http.StatusSeeOther)
+		return c.Redirect(UrlForProject(c.CurrentProject), http.StatusSeeOther)
 	}
 
 	if topic == "" {
@@ -114,7 +114,7 @@ func Episode(c *RequestContext) ResponseData {
 	_, hasEpisodeGuide := config.Config.EpisodeGuide.Projects[slug]
 
 	if !hasEpisodeGuide {
-		return c.Redirect(hmnurl.BuildProjectHomepage(slug), http.StatusSeeOther)
+		return c.Redirect(UrlForProject(c.CurrentProject), http.StatusSeeOther)
 	}
 
 	_, foundTopic := topicsForProject(slug, topic)

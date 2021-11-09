@@ -18,8 +18,9 @@ const (
 
 type ProjectsQuery struct {
 	// Available on all project queries
-	Lifecycles []models.ProjectLifecycle // if empty, defaults to models.VisibleProjectLifecycles
-	Types      ProjectTypeQuery          // bitfield
+	Lifecycles    []models.ProjectLifecycle // if empty, defaults to models.VisibleProjectLifecycles
+	Types         ProjectTypeQuery          // bitfield
+	IncludeHidden bool
 
 	// Ignored when using FetchProject
 	ProjectIDs []int    // if empty, all projects
@@ -62,8 +63,11 @@ func FetchProjects(
 		FROM
 			handmade_project AS project
 		WHERE
-			NOT hidden
+			TRUE
 	`)
+	if !q.IncludeHidden {
+		qb.Add(`AND NOT hidden`)
+	}
 	if len(q.ProjectIDs) > 0 {
 		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
 	}
@@ -386,7 +390,7 @@ func FetchProjectOwners(
 
 func UrlForProject(p *models.Project) string {
 	if p.Personal {
-		return hmnurl.BuildPersonalProjectHomepage(p.ID, models.GeneratePersonalProjectSlug(p.Name))
+		return hmnurl.BuildPersonalProject(p.ID, models.GeneratePersonalProjectSlug(p.Name))
 	} else {
 		return hmnurl.BuildOfficialProjectHomepage(p.Slug)
 	}

@@ -1,12 +1,10 @@
 package website
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
@@ -155,49 +153,15 @@ type ProjectHomepageData struct {
 
 func ProjectHomepage(c *RequestContext) ResponseData {
 	maxRecentActivity := 15
-	var project *models.Project
 
-	if c.CurrentProject.IsHMN() {
-		// Viewing a personal project
-		idStr := c.PathParams["id"]
-		slug := c.PathParams["slug"]
-
-		id, err := strconv.Atoi(idStr)
-		if err != nil {
-			panic(oops.New(err, "id was not numeric (bad regex in routing)"))
-		}
-
-		if id == models.HMNProjectID {
-			return c.Redirect(hmnurl.BuildHomepage(), http.StatusPermanentRedirect)
-		}
-
-		p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, id, ProjectsQuery{})
-		if err != nil {
-			if errors.Is(err, db.NotFound) {
-				return FourOhFour(c)
-			} else {
-				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project by slug"))
-			}
-		}
-
-		correctSlug := models.GeneratePersonalProjectSlug(p.Project.Name)
-		if slug != correctSlug {
-			return c.Redirect(hmnurl.BuildPersonalProjectHomepage(id, correctSlug), http.StatusPermanentRedirect)
-		}
-
-		project = &p.Project
-	} else {
-		project = c.CurrentProject
-	}
-
-	if project == nil {
+	if c.CurrentProject == nil {
 		return FourOhFour(c)
 	}
 
 	// There are no further permission checks to do, because permissions are
 	// checked whatever way we fetch the project.
 
-	owners, err := FetchProjectOwners(c.Context(), c.Conn, project.ID)
+	owners, err := FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -215,7 +179,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		WHERE
 			handmade_project_screenshots.project_id = $1
 		`,
-		project.ID,
+		c.CurrentProject.ID,
 	)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch screenshots for project"))
@@ -235,7 +199,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			link.project_id = $1
 		ORDER BY link.ordering ASC
 		`,
-		project.ID,
+		c.CurrentProject.ID,
 	)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
@@ -265,7 +229,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		ORDER BY post.postdate DESC
 		LIMIT $2
 		`,
-		project.ID,
+		c.CurrentProject.ID,
 		maxRecentActivity,
 	)
 	if err != nil {
@@ -275,36 +239,36 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	var projectHomepageData ProjectHomepageData
 
-	projectHomepageData.BaseData = getBaseData(c, project.Name, nil)
-	if canEdit {
-		// TODO: Move to project-specific navigation
-		// projectHomepageData.BaseData.Header.EditURL = hmnurl.BuildProjectEdit(project.Slug, "")
-	}
+	projectHomepageData.BaseData = getBaseData(c, c.CurrentProject.Name, nil)
+	//if canEdit {
+	//	// TODO: Move to project-specific navigation
+	//	// projectHomepageData.BaseData.Header.EditURL = hmnurl.BuildProjectEdit(project.Slug, "")
+	//}
 	projectHomepageData.BaseData.OpenGraphItems = append(projectHomepageData.BaseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
-		Value:    project.Blurb,
+		Value:    c.CurrentProject.Blurb,
 	})
 
-	projectHomepageData.Project = templates.ProjectToTemplate(project, c.Theme)
+	projectHomepageData.Project = templates.ProjectToTemplate(c.CurrentProject, c.Theme)
 	for _, owner := range owners {
 		projectHomepageData.Owners = append(projectHomepageData.Owners, templates.UserToTemplate(owner, c.Theme))
 	}
 
-	if project.Hidden {
+	if c.CurrentProject.Hidden {
 		projectHomepageData.BaseData.AddImmediateNotice(
 			"hidden",
 			"NOTICE: This project is hidden. It is currently visible only to owners and site admins.",
 		)
 	}
 
-	if project.Lifecycle != models.ProjectLifecycleActive {
-		switch project.Lifecycle {
+	if c.CurrentProject.Lifecycle != models.ProjectLifecycleActive {
+		switch c.CurrentProject.Lifecycle {
 		case models.ProjectLifecycleUnapproved:
 			projectHomepageData.BaseData.AddImmediateNotice(
 				"unapproved",
 				fmt.Sprintf(
 					"NOTICE: This project has not yet been submitted for approval. It is only visible to owners. Please <a href=\"%s\">submit it for approval</a> when the project content is ready for review.",
-					hmnurl.BuildProjectEdit(project.Slug, "submit"),
+					hmnurl.BuildProjectEdit(c.CurrentProject.Slug, "submit"),
 				),
 			)
 		case models.ProjectLifecycleApprovalRequired:
@@ -348,7 +312,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			lineageBuilder,
 			&post.(*postQuery).Post,
 			&post.(*postQuery).Thread,
-			project,
+			c.CurrentProject,
 			&post.(*postQuery).Author,
 			c.Theme,
 		))

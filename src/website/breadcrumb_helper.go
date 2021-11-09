@@ -9,7 +9,7 @@ import (
 func ProjectBreadcrumb(project *models.Project) templates.Breadcrumb {
 	return templates.Breadcrumb{
 		Name: project.Name,
-		Url:  hmnurl.BuildProjectHomepage(project.Slug),
+		Url:  UrlForProject(project),
 	}
 }
 

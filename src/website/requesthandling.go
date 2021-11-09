@@ -30,12 +30,13 @@ type Router struct {
 
 type Route struct {
 	Method  string
-	Regex   *regexp.Regexp
+	Regexes []*regexp.Regexp
 	Handler Handler
 }
 
 type RouteBuilder struct {
 	Router     *Router
+	Prefixes   []*regexp.Regexp
 	Middleware Middleware
 }
 
@@ -44,11 +45,17 @@ type Handler func(c *RequestContext) ResponseData
 type Middleware func(h Handler) Handler
 
 func (rb *RouteBuilder) Handle(methods []string, regex *regexp.Regexp, h Handler) {
+	// Ensure that this regex matches the start of the string
+	regexStr := regex.String()
+	if len(regexStr) == 0 || regexStr[0] != '^' {
+		panic("All routing regexes must begin with '^'")
+	}
+
 	h = rb.Middleware(h)
 	for _, method := range methods {
 		rb.Router.Routes = append(rb.Router.Routes, Route{
 			Method:  method,
-			Regex:   regex,
+			Regexes: append(rb.Prefixes, regex),
 			Handler: h,
 		})
 	}
@@ -66,33 +73,36 @@ func (rb *RouteBuilder) POST(regex *regexp.Regexp, h Handler) {
 	rb.Handle([]string{http.MethodPost}, regex, h)
 }
 
+func (rb *RouteBuilder) Group(regex *regexp.Regexp, addRoutes func(rb *RouteBuilder)) {
+	newRb := *rb
+	newRb.Prefixes = append(newRb.Prefixes, regex)
+	addRoutes(&newRb)
+}
+
 func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	path := req.URL.Path
+nextroute:
 	for _, route := range r.Routes {
 		if route.Method != "" && req.Method != route.Method {
 			continue
 		}
 
-		path = strings.TrimSuffix(path, "/")
-		if path == "" {
-			path = "/"
+		currentPath := strings.TrimSuffix(req.URL.Path, "/")
+		if currentPath == "" {
+			currentPath = "/"
 		}
 
-		match := route.Regex.FindStringSubmatch(path)
-		if match == nil {
-			continue
-		}
+		var params map[string]string
+		for _, regex := range route.Regexes {
 
-		c := &RequestContext{
-			Route:  route.Regex.String(),
-			Logger: logging.GlobalLogger(),
-			Req:    req,
-			Res:    rw,
-		}
+			match := regex.FindStringSubmatch(currentPath)
+			if len(match) == 0 {
+				continue nextroute
+			}
 
-		if len(match) > 0 {
-			params := map[string]string{}
-			subexpNames := route.Regex.SubexpNames()
+			if params == nil {
+				params = map[string]string{}
+			}
+			subexpNames := regex.SubexpNames()
 			for i, paramValue := range match {
 				paramName := subexpNames[i]
 				if paramName == "" {
@@ -100,15 +110,35 @@ func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 				}
 				params[paramName] = paramValue
 			}
-			c.PathParams = params
+
+			// Make sure that we never consume trailing slashes even if the route regex matches them
+			toConsume := strings.TrimSuffix(match[0], "/")
+			currentPath = currentPath[len(toConsume):]
+			if currentPath == "" {
+				currentPath = "/"
+			}
 		}
+
+		var routeStrings []string
+		for _, regex := range route.Regexes {
+			routeStrings = append(routeStrings, regex.String())
+		}
+
+		c := &RequestContext{
+			Route:      fmt.Sprintf("%v", routeStrings),
+			Logger:     logging.GlobalLogger(),
+			Req:        req,
+			Res:        rw,
+			PathParams: params,
+		}
+		c.PathParams = params
 
 		doRequest(rw, c, route.Handler)
 
 		return
 	}
 
-	panic(fmt.Sprintf("Path '%s' did not match any routes! Make sure to register a wildcard route to act as a 404.", path))
+	panic(fmt.Sprintf("Path '%s' did not match any routes! Make sure to register a wildcard route to act as a 404.", req.URL))
 }
 
 type RequestContext struct {

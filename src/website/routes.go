@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -154,14 +155,6 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		return res
 	})
 
-	anyProject.GET(hmnurl.RegexHomepage, func(c *RequestContext) ResponseData {
-		if c.CurrentProject.IsHMN() {
-			return Index(c)
-		} else {
-			return ProjectHomepage(c)
-		}
-	})
-
 	// NOTE(asaf): HMN-only routes:
 	hmnOnly.GET(hmnurl.RegexManifesto, Manifesto)
 	hmnOnly.GET(hmnurl.RegexAbout, About)
@@ -175,14 +168,13 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 
 	hmnOnly.GET(hmnurl.RegexOldHome, Index)
 
-	hmnOnly.POST(hmnurl.RegexLoginAction, securityTimerMiddleware(time.Millisecond*100, Login)) // TODO(asaf): Adjust this after launch
+	hmnOnly.POST(hmnurl.RegexLoginAction, securityTimerMiddleware(time.Millisecond*100, Login))
 	hmnOnly.GET(hmnurl.RegexLogoutAction, Logout)
 	hmnOnly.GET(hmnurl.RegexLoginPage, LoginPage)
 
 	hmnOnly.GET(hmnurl.RegexRegister, RegisterNewUser)
 	hmnOnly.POST(hmnurl.RegexRegister, securityTimerMiddleware(email.ExpectedEmailSendDuration, RegisterNewUserSubmit))
 	hmnOnly.GET(hmnurl.RegexRegistrationSuccess, RegisterNewUserSuccess)
-	hmnOnly.GET(hmnurl.RegexOldEmailConfirmation, EmailConfirmation) // TODO(asaf): Delete this a bit after launch
 	hmnOnly.GET(hmnurl.RegexEmailConfirmation, EmailConfirmation)
 	hmnOnly.POST(hmnurl.RegexEmailConfirmation, EmailConfirmationSubmit)
 
@@ -202,7 +194,6 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	hmnOnly.GET(hmnurl.RegexShowcase, Showcase)
 	hmnOnly.GET(hmnurl.RegexSnippet, Snippet)
 	hmnOnly.GET(hmnurl.RegexProjectIndex, ProjectIndex)
-	hmnOnly.GET(hmnurl.RegexPersonalProjectHomepage, ProjectHomepage)
 
 	hmnOnly.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
 	hmnOnly.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
@@ -225,36 +216,97 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	hmnOnly.GET(hmnurl.RegexLibraryAny, LibraryNotPortedYet)
 
 	// NOTE(asaf): Any-project routes:
-	anyProject.GET(hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
-	anyProject.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
-	anyProject.GET(hmnurl.RegexForumThread, ForumThread)
-	anyProject.GET(hmnurl.RegexForum, Forum)
-	anyProject.POST(hmnurl.RegexForumMarkRead, authMiddleware(csrfMiddleware(ForumMarkRead)))
-	anyProject.GET(hmnurl.RegexForumPost, ForumPostRedirect)
-	anyProject.GET(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReply))
-	anyProject.POST(hmnurl.RegexForumPostReply, authMiddleware(csrfMiddleware(ForumPostReplySubmit)))
-	anyProject.GET(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEdit))
-	anyProject.POST(hmnurl.RegexForumPostEdit, authMiddleware(csrfMiddleware(ForumPostEditSubmit)))
-	anyProject.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
-	anyProject.POST(hmnurl.RegexForumPostDelete, authMiddleware(csrfMiddleware(ForumPostDeleteSubmit)))
-	anyProject.GET(hmnurl.RegexWikiArticle, WikiArticleRedirect)
+	attachProjectRoutes := func(rb *RouteBuilder) {
+		rb.GET(hmnurl.RegexHomepage, func(c *RequestContext) ResponseData {
+			if c.CurrentProject.IsHMN() {
+				return Index(c)
+			} else {
+				return ProjectHomepage(c)
+			}
+		})
 
-	anyProject.GET(hmnurl.RegexBlog, BlogIndex)
-	anyProject.GET(hmnurl.RegexBlogNewThread, authMiddleware(BlogNewThread))
-	anyProject.POST(hmnurl.RegexBlogNewThread, authMiddleware(csrfMiddleware(BlogNewThreadSubmit)))
-	anyProject.GET(hmnurl.RegexBlogThread, BlogThread)
-	anyProject.GET(hmnurl.RegexBlogPost, BlogPostRedirectToThread)
-	anyProject.GET(hmnurl.RegexBlogPostReply, authMiddleware(BlogPostReply))
-	anyProject.POST(hmnurl.RegexBlogPostReply, authMiddleware(csrfMiddleware(BlogPostReplySubmit)))
-	anyProject.GET(hmnurl.RegexBlogPostEdit, authMiddleware(BlogPostEdit))
-	anyProject.POST(hmnurl.RegexBlogPostEdit, authMiddleware(csrfMiddleware(BlogPostEditSubmit)))
-	anyProject.GET(hmnurl.RegexBlogPostDelete, authMiddleware(BlogPostDelete))
-	anyProject.POST(hmnurl.RegexBlogPostDelete, authMiddleware(csrfMiddleware(BlogPostDeleteSubmit)))
-	anyProject.GET(hmnurl.RegexBlogsRedirect, func(c *RequestContext) ResponseData {
-		return c.Redirect(hmnurl.ProjectUrl(
-			fmt.Sprintf("blog%s", c.PathParams["remainder"]), nil,
-			c.CurrentProject.Slug,
-		), http.StatusMovedPermanently)
+		rb.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
+		rb.GET(hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
+		rb.GET(hmnurl.RegexForumThread, ForumThread)
+		rb.GET(hmnurl.RegexForum, Forum)
+		rb.POST(hmnurl.RegexForumMarkRead, authMiddleware(csrfMiddleware(ForumMarkRead)))
+		rb.GET(hmnurl.RegexForumPost, ForumPostRedirect)
+		rb.GET(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReply))
+		rb.POST(hmnurl.RegexForumPostReply, authMiddleware(csrfMiddleware(ForumPostReplySubmit)))
+		rb.GET(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEdit))
+		rb.POST(hmnurl.RegexForumPostEdit, authMiddleware(csrfMiddleware(ForumPostEditSubmit)))
+		rb.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
+		rb.POST(hmnurl.RegexForumPostDelete, authMiddleware(csrfMiddleware(ForumPostDeleteSubmit)))
+		rb.GET(hmnurl.RegexWikiArticle, WikiArticleRedirect)
+
+		rb.GET(hmnurl.RegexBlog, BlogIndex)
+		rb.GET(hmnurl.RegexBlogNewThread, authMiddleware(BlogNewThread))
+		rb.POST(hmnurl.RegexBlogNewThread, authMiddleware(csrfMiddleware(BlogNewThreadSubmit)))
+		rb.GET(hmnurl.RegexBlogThread, BlogThread)
+		rb.GET(hmnurl.RegexBlogPost, BlogPostRedirectToThread)
+		rb.GET(hmnurl.RegexBlogPostReply, authMiddleware(BlogPostReply))
+		rb.POST(hmnurl.RegexBlogPostReply, authMiddleware(csrfMiddleware(BlogPostReplySubmit)))
+		rb.GET(hmnurl.RegexBlogPostEdit, authMiddleware(BlogPostEdit))
+		rb.POST(hmnurl.RegexBlogPostEdit, authMiddleware(csrfMiddleware(BlogPostEditSubmit)))
+		rb.GET(hmnurl.RegexBlogPostDelete, authMiddleware(BlogPostDelete))
+		rb.POST(hmnurl.RegexBlogPostDelete, authMiddleware(csrfMiddleware(BlogPostDeleteSubmit)))
+		rb.GET(hmnurl.RegexBlogsRedirect, func(c *RequestContext) ResponseData {
+			return c.Redirect(hmnurl.ProjectUrl(
+				fmt.Sprintf("blog%s", c.PathParams["remainder"]), nil,
+				c.CurrentProject.Slug,
+			), http.StatusMovedPermanently)
+		})
+	}
+	hmnOnly.Group(hmnurl.RegexPersonalProject, func(rb *RouteBuilder) {
+		// TODO(ben): Perhaps someday we can make this middleware modification feel better? It seems
+		// pretty common to run the outermost middleware first before doing other stuff, but having
+		// to nest functions this way feels real bad.
+		rb.Middleware = func(h Handler) Handler {
+			return hmnOnly.Middleware(func(c *RequestContext) ResponseData {
+				// At this point we are definitely on the plain old HMN subdomain.
+
+				// Fetch personal project and do whatever
+				id, err := strconv.Atoi(c.PathParams["projectid"])
+				if err != nil {
+					panic(oops.New(err, "project id was not numeric (bad regex in routing)"))
+				}
+				p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, id, ProjectsQuery{})
+				if err != nil {
+					if errors.Is(err, db.NotFound) {
+						return FourOhFour(c)
+					} else {
+						return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch personal project"))
+					}
+				}
+
+				if !p.Project.Personal {
+					// TODO: Redirect to the same page on the other prefix
+					return c.Redirect(hmnurl.BuildOfficialProjectHomepage(p.Project.Slug), http.StatusSeeOther)
+				}
+
+				c.CurrentProject = &p.Project
+
+				return h(c)
+			})
+		}
+		attachProjectRoutes(rb)
+	})
+	anyProject.Group(hmnurl.RegexHomepage, func(rb *RouteBuilder) {
+		rb.Middleware = func(h Handler) Handler {
+			return anyProject.Middleware(func(c *RequestContext) ResponseData {
+				// We could be on any project's subdomain.
+
+				// Check if the current project (matched by subdomain) is actually no longer official
+				// and therefore needs to be redirected to the personal project version of the route.
+				if c.CurrentProject.Personal {
+					// TODO: Redirect to the same page on the other prefix
+					return c.Redirect(hmnurl.BuildPersonalProject(c.CurrentProject.ID, c.CurrentProject.Slug), http.StatusSeeOther)
+				}
+
+				return h(c)
+			})
+		}
+		attachProjectRoutes(rb)
 	})
 
 	anyProject.POST(hmnurl.RegexAssetUpload, AssetUpload)
@@ -378,15 +430,29 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		slug := strings.TrimRight(hostPrefix, ".")
 
 		dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, ProjectsQuery{})
-		if err != nil {
+		if err == nil {
+			c.CurrentProject = &dbProject.Project
+		} else {
 			if errors.Is(err, db.NotFound) {
-				return false, c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
+				// do nothing, this is fine
 			} else {
 				return false, c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
 			}
 		}
 
-		c.CurrentProject = &dbProject.Project
+		if c.CurrentProject == nil {
+			dbProject, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, models.HMNProjectID, ProjectsQuery{
+				IncludeHidden: true,
+			})
+			if err != nil {
+				panic(oops.New(err, "failed to fetch HMN project"))
+			}
+			c.CurrentProject = &dbProject.Project
+		}
+
+		if c.CurrentProject == nil {
+			panic("failed to load project data")
+		}
 	}
 
 	theme := "light"

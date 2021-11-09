@@ -97,8 +97,6 @@ func BuildRegistrationSuccess() string {
 	return Url("/registered_successfully", nil)
 }
 
-// TODO(asaf): Delete the old version a bit after launch
-var RegexOldEmailConfirmation = regexp.MustCompile(`^/_register/confirm/(?P<username>[\w\ \.\,\-@\+\_]+)/(?P<hash>[\d\w]+)/(?P<nonce>.+)[\/]?$`)
 var RegexEmailConfirmation = regexp.MustCompile("^/email_confirmation/(?P<username>[^/]+)/(?P<token>[^/]+)$")
 
 func BuildEmailConfirmation(username, token string) string {
@@ -295,14 +293,14 @@ func BuildProjectNew() string {
 	return Url("/projects/new", nil)
 }
 
-var RegexPersonalProjectHomepage = regexp.MustCompile("^/p/(?P<id>[0-9]+)(/(?P<slug>[^/]*))?")
+var RegexPersonalProject = regexp.MustCompile("^/p/(?P<projectid>[0-9]+)(/(?P<slug>[a-zA-Z0-9-]+))?")
 
-func BuildPersonalProjectHomepage(id int, slug string) string {
+func BuildPersonalProject(id int, slug string) string {
 	defer CatchPanic()
 	return Url(fmt.Sprintf("/p/%d/%s", id, slug), nil)
 }
 
-var RegexProjectEdit = regexp.MustCompile("^/p/(?P<slug>.+)/edit$")
+var RegexProjectEdit = regexp.MustCompile("^/edit$")
 
 func BuildProjectEdit(slug string, section string) string {
 	defer CatchPanic()
@@ -730,7 +728,7 @@ func BuildForumMarkRead(projectSlug string, subforumId int) string {
 	return ProjectUrl(builder.String(), nil, projectSlug)
 }
 
-var RegexCatchAll = regexp.MustCompile("")
+var RegexCatchAll = regexp.MustCompile("^")
 
 /*
 * Helper functions
