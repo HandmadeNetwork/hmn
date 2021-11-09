@@ -26,7 +26,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	notices := getNoticesFromCookie(c)
 
 	if len(breadcrumbs) > 0 {
-		projectUrl := hmnurl.BuildProjectHomepage(c.CurrentProject.Slug)
+		projectUrl := UrlForProject(c.CurrentProject)
 		if breadcrumbs[0].Url != projectUrl {
 			rootBreadcrumb := templates.Breadcrumb{
 				Name: c.CurrentProject.Name,
@@ -42,7 +42,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		Breadcrumbs: breadcrumbs,
 
 		CurrentUrl:        c.FullUrl(),
-		CurrentProjectUrl: hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
+		CurrentProjectUrl: UrlForProject(c.CurrentProject),
 		LoginPageUrl:      hmnurl.BuildLoginPage(c.FullUrl()),
 		ProjectCSSUrl:     hmnurl.BuildProjectCSS(c.CurrentProject.Color1),
 

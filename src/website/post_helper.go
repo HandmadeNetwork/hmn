@@ -15,7 +15,7 @@ func UrlForGenericThread(thread *models.Thread, lineageBuilder *models.SubforumL
 		return hmnurl.BuildForumThread(projectSlug, lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), thread.ID, thread.Title, 1)
 	}
 
-	return hmnurl.BuildProjectHomepage(projectSlug)
+	return hmnurl.BuildOfficialProjectHomepage(projectSlug) // TODO: both official and personal projects
 }
 
 func UrlForGenericPost(thread *models.Thread, post *models.Post, lineageBuilder *models.SubforumLineageBuilder, projectSlug string) string {
@@ -26,7 +26,7 @@ func UrlForGenericPost(thread *models.Thread, post *models.Post, lineageBuilder 
 		return hmnurl.BuildForumPost(projectSlug, lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), post.ThreadID, post.ID)
 	}
 
-	return hmnurl.BuildProjectHomepage(projectSlug)
+	return hmnurl.BuildOfficialProjectHomepage(projectSlug) // TODO: both official and personal projects
 }
 
 var PostTypeMap = map[models.ThreadType][]templates.PostType{
@@ -55,7 +55,7 @@ func GenericThreadBreadcrumbs(lineageBuilder *models.SubforumLineageBuilder, pro
 		result = []templates.Breadcrumb{
 			{
 				Name: project.Name,
-				Url:  hmnurl.BuildProjectHomepage(project.Slug),
+				Url:  UrlForProject(project),
 			},
 			{
 				Name: ThreadTypeDisplayNames[thread.Type],
@@ -73,7 +73,7 @@ func BuildProjectRootResourceUrl(projectSlug string, kind models.ThreadType) str
 	case models.ThreadTypeForumPost:
 		return hmnurl.BuildForum(projectSlug, nil, 1)
 	}
-	return hmnurl.BuildProjectHomepage(projectSlug)
+	return hmnurl.BuildOfficialProjectHomepage(projectSlug) // TODO: both official and personal projects
 }
 
 func MakePostListItem(

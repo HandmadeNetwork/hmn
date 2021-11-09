@@ -517,7 +517,7 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 	}
 
 	if threadDeleted {
-		projectUrl := hmnurl.BuildProjectHomepage(c.CurrentProject.Slug)
+		projectUrl := UrlForProject(c.CurrentProject)
 		return c.Redirect(projectUrl, http.StatusSeeOther)
 	} else {
 		thread, err := FetchThread(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, ThreadsQuery{

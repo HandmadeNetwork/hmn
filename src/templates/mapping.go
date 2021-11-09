@@ -62,7 +62,7 @@ var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
 func ProjectUrl(p *models.Project) string {
 	var url string
 	if p.Personal {
-		url = hmnurl.BuildPersonalProjectHomepage(p.ID, models.GeneratePersonalProjectSlug(p.Name))
+		url = hmnurl.BuildPersonalProject(p.ID, models.GeneratePersonalProjectSlug(p.Name))
 	} else {
 		url = hmnurl.BuildOfficialProjectHomepage(p.Slug)
 	}
