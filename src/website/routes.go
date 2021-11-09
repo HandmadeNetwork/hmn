@@ -284,6 +284,11 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 					return c.Redirect(hmnurl.BuildOfficialProjectHomepage(p.Project.Slug), http.StatusSeeOther)
 				}
 
+				if c.PathParams["slug"] != models.GeneratePersonalProjectSlug(p.Project.Name) {
+					// TODO: Redirect to the same page on the other path
+					return c.Redirect(hmnurl.BuildPersonalProject(p.Project.ID, models.GeneratePersonalProjectSlug(p.Project.Name)), http.StatusSeeOther)
+				}
+
 				c.CurrentProject = &p.Project
 
 				return h(c)
