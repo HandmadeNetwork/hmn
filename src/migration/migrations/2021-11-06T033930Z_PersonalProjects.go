@@ -28,7 +28,26 @@ func (m PersonalProjects) Description() string {
 }
 
 func (m PersonalProjects) Up(ctx context.Context, tx pgx.Tx) error {
-	_, err := tx.Exec(ctx, `
+	var err error
+
+	_, err = tx.Exec(ctx, `
+		CREATE TABLE tags (
+			id SERIAL NOT NULL PRIMARY KEY,
+			text VARCHAR(20) NOT NULL
+		);
+
+		ALTER TABLE tags
+			ADD CONSTRAINT tag_syntax CHECK (
+				text ~ '^([a-z0-9]+(-[a-z0-9]+)*)?$'
+			);
+
+		CREATE INDEX tags_by_text ON tags (text);
+	`)
+	if err != nil {
+		return oops.New(err, "failed to add tags table")
+	}
+
+	_, err = tx.Exec(ctx, `
 		ALTER TABLE handmade_project
 			DROP featurevotes,
 			DROP parent_id,
@@ -46,7 +65,7 @@ func (m PersonalProjects) Up(ctx context.Context, tx pgx.Tx) error {
 	_, err = tx.Exec(ctx, `
 		ALTER TABLE handmade_project
 			ADD personal BOOLEAN NOT NULL DEFAULT TRUE,
-			ADD tag VARCHAR(20) NOT NULL DEFAULT '';
+			ADD tag INT REFERENCES tags (id);
 	`)
 	if err != nil {
 		return oops.New(err, "failed to add new fields")
@@ -56,10 +75,7 @@ func (m PersonalProjects) Up(ctx context.Context, tx pgx.Tx) error {
 		ALTER TABLE handmade_project	
 			ADD CONSTRAINT slug_syntax CHECK (
 				slug ~ '^([a-z0-9]+(-[a-z0-9]+)*)?$'
-			),
-			ADD CONSTRAINT tag_syntax CHECK (
-				tag ~ '^([a-z0-9]+(-[a-z0-9]+)*)?$'
-			)
+			);
 	`)
 	if err != nil {
 		return oops.New(err, "failed to add check constraints")
@@ -82,7 +98,6 @@ func (m PersonalProjects) Down(ctx context.Context, tx pgx.Tx) error {
 	_, err = tx.Exec(ctx, `
 		ALTER TABLE handmade_project
 			DROP CONSTRAINT slug_syntax,
-			DROP CONSTRAINT tag_syntax,
 			DROP personal,
 			DROP tag,
 			ADD featurevotes INT NOT NULL DEFAULT 0,
@@ -97,6 +112,13 @@ func (m PersonalProjects) Down(ctx context.Context, tx pgx.Tx) error {
 	`)
 	if err != nil {
 		return oops.New(err, "failed to revert personal project changes")
+	}
+
+	_, err = tx.Exec(ctx, `
+		DROP TABLE tags;
+	`)
+	if err != nil {
+		return oops.New(err, "failed to drop tags table")
 	}
 
 	return nil
