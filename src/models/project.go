@@ -67,7 +67,7 @@ type Project struct {
 
 	ForumEnabled   bool `db:"forum_enabled"`
 	BlogEnabled    bool `db:"blog_enabled"`
-	LibraryEnabled bool `db:"library_enabled"`
+	LibraryEnabled bool `db:"library_enabled"` // TODO: Delete this field from the db
 }
 
 func (p *Project) IsHMN() bool {
@@ -80,6 +80,19 @@ func (p *Project) Subdomain() string {
 	}
 
 	return p.Slug
+}
+
+// Checks whether the project has forums enabled. This should restrict the creation of new forum
+// content, but it should NOT prevent the viewing of existing forum content. (Projects may at one
+// point have forums enabled, write some stuff, and then later disable forums, and we want that
+// content to stay accessible.) Hiding the navigation is ok.
+func (p *Project) HasForums() bool {
+	return !p.Personal && p.ForumEnabled
+}
+
+// Same as HasForums, but for blogs.
+func (p *Project) HasBlog() bool {
+	return !p.Personal && p.BlogEnabled
 }
 
 var slugUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9-]`)

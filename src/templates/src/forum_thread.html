@@ -61,7 +61,7 @@
                         <div class="postid">
                             <a name="{{ .ID }}" href="{{ .Url }}">#{{ .ID }}</a>
                         </div>
-                        {{ if $.User }}
+                        {{ if and $.User $.Project.HasForum }}
                             <div class="flex pr3">
                                 {{ if or (eq .Author.ID $.User.ID) $.User.IsStaff }}
                                     <a class="delete action button" href="{{ .DeleteUrl }}" title="Delete">&#10006;</a>&nbsp;
@@ -120,10 +120,12 @@
             <a class="button" href="{{ .SubforumUrl }}">&larr; Back to index</a>
             {{ if .Thread.Locked }}
                 <span>Thread is locked.</span>
-            {{ else if .User }}
-                <a class="button" href="{{ .ReplyUrl }}">&#10551; Reply to Thread</a>
-            {{ else }}
-                <span class="pa2"><a href="{{ .LoginPageUrl }}">Log in</a> to reply</span>
+            {{ else if .Project.HasForum }}
+                {{ if .User }}
+                    <a class="button" href="{{ .ReplyUrl }}">&#10551; Reply to Thread</a>
+                {{ else }}
+                    <span class="pa2"><a href="{{ .LoginPageUrl }}">Log in</a> to reply</span>
+                {{ end }}
             {{ end }}
         </div>
         <div class="options order-0 order-last-ns">

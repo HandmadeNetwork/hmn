@@ -94,8 +94,8 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		}
 
 		baseData.Header.Project = &templates.ProjectHeader{
-			HasForums:       c.CurrentProject.ForumEnabled,
-			HasBlog:         c.CurrentProject.BlogEnabled,
+			HasForums:       c.CurrentProject.HasForums(),
+			HasBlog:         c.CurrentProject.HasBlog(),
 			HasEpisodeGuide: hasAnnotations,
 			ForumsUrl:       c.UrlContext.BuildForum(nil, 1),
 			BlogUrl:         c.UrlContext.BuildBlog(1),
