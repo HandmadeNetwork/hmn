@@ -80,8 +80,8 @@ func ProjectToTemplate(p *models.Project, url string, theme string) Project {
 
 		IsHMN: p.IsHMN(),
 
-		HasBlog:  p.BlogEnabled,
-		HasForum: p.ForumEnabled,
+		HasBlog:  p.HasBlog(),
+		HasForum: p.HasForums(),
 
 		DateApproved: p.DateApproved,
 	}

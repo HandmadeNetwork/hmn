@@ -35,7 +35,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 
 	const postsPerPage = 5
 
-	numPosts, err := CountPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+	numThreads, err := CountThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -43,7 +43,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch total number of blog posts"))
 	}
 
-	numPages := utils.NumPages(numPosts, postsPerPage)
+	numPages := utils.NumPages(numThreads, postsPerPage)
 	page, ok := ParsePageNumber(c, "page", numPages)
 	if !ok {
 		c.Redirect(c.UrlContext.BuildBlog(page), http.StatusSeeOther)
@@ -73,7 +73,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)})
 
 	canCreate := false
-	if c.CurrentUser != nil {
+	if c.CurrentProject.HasBlog() && c.CurrentUser != nil {
 		isProjectOwner := false
 		owners, err := FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
 		if err != nil {

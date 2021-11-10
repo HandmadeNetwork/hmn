@@ -216,7 +216,6 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 
 	hmnOnly.GET(hmnurl.RegexLibraryAny, LibraryNotPortedYet)
 
-	// NOTE(asaf): Any-project routes:
 	attachProjectRoutes := func(rb *RouteBuilder) {
 		rb.GET(hmnurl.RegexHomepage, func(c *RequestContext) ResponseData {
 			if c.CurrentProject.IsHMN() {
@@ -226,31 +225,53 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 			}
 		})
 
-		rb.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
-		rb.GET(hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
+		// Middleware used for forum action routes - anything related to actually creating or editing forum content
+		needsForums := func(h Handler) Handler {
+			return func(c *RequestContext) ResponseData {
+				// 404 if the project has forums disabled
+				if !c.CurrentProject.HasForums() {
+					return FourOhFour(c)
+				}
+				// Require auth if forums are enabled
+				return authMiddleware(h)(c)
+			}
+		}
+		rb.POST(hmnurl.RegexForumNewThreadSubmit, needsForums(csrfMiddleware(ForumNewThreadSubmit)))
+		rb.GET(hmnurl.RegexForumNewThread, needsForums(ForumNewThread))
 		rb.GET(hmnurl.RegexForumThread, ForumThread)
 		rb.GET(hmnurl.RegexForum, Forum)
-		rb.POST(hmnurl.RegexForumMarkRead, authMiddleware(csrfMiddleware(ForumMarkRead)))
+		rb.POST(hmnurl.RegexForumMarkRead, authMiddleware(csrfMiddleware(ForumMarkRead))) // needs auth but doesn't need forums enabled
 		rb.GET(hmnurl.RegexForumPost, ForumPostRedirect)
-		rb.GET(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReply))
-		rb.POST(hmnurl.RegexForumPostReply, authMiddleware(csrfMiddleware(ForumPostReplySubmit)))
-		rb.GET(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEdit))
-		rb.POST(hmnurl.RegexForumPostEdit, authMiddleware(csrfMiddleware(ForumPostEditSubmit)))
-		rb.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
-		rb.POST(hmnurl.RegexForumPostDelete, authMiddleware(csrfMiddleware(ForumPostDeleteSubmit)))
+		rb.GET(hmnurl.RegexForumPostReply, needsForums(ForumPostReply))
+		rb.POST(hmnurl.RegexForumPostReply, needsForums(csrfMiddleware(ForumPostReplySubmit)))
+		rb.GET(hmnurl.RegexForumPostEdit, needsForums(ForumPostEdit))
+		rb.POST(hmnurl.RegexForumPostEdit, needsForums(csrfMiddleware(ForumPostEditSubmit)))
+		rb.GET(hmnurl.RegexForumPostDelete, needsForums(ForumPostDelete))
+		rb.POST(hmnurl.RegexForumPostDelete, needsForums(csrfMiddleware(ForumPostDeleteSubmit)))
 		rb.GET(hmnurl.RegexWikiArticle, WikiArticleRedirect)
 
+		// Middleware used for blog action routes - anything related to actually creating or editing blog content
+		needsBlogs := func(h Handler) Handler {
+			return func(c *RequestContext) ResponseData {
+				// 404 if the project has blogs disabled
+				if !c.CurrentProject.HasBlog() {
+					return FourOhFour(c)
+				}
+				// Require auth if blogs are enabled
+				return authMiddleware(h)(c)
+			}
+		}
 		rb.GET(hmnurl.RegexBlog, BlogIndex)
-		rb.GET(hmnurl.RegexBlogNewThread, authMiddleware(BlogNewThread))
-		rb.POST(hmnurl.RegexBlogNewThread, authMiddleware(csrfMiddleware(BlogNewThreadSubmit)))
+		rb.GET(hmnurl.RegexBlogNewThread, needsBlogs(BlogNewThread))
+		rb.POST(hmnurl.RegexBlogNewThread, needsBlogs(csrfMiddleware(BlogNewThreadSubmit)))
 		rb.GET(hmnurl.RegexBlogThread, BlogThread)
 		rb.GET(hmnurl.RegexBlogPost, BlogPostRedirectToThread)
-		rb.GET(hmnurl.RegexBlogPostReply, authMiddleware(BlogPostReply))
-		rb.POST(hmnurl.RegexBlogPostReply, authMiddleware(csrfMiddleware(BlogPostReplySubmit)))
-		rb.GET(hmnurl.RegexBlogPostEdit, authMiddleware(BlogPostEdit))
-		rb.POST(hmnurl.RegexBlogPostEdit, authMiddleware(csrfMiddleware(BlogPostEditSubmit)))
-		rb.GET(hmnurl.RegexBlogPostDelete, authMiddleware(BlogPostDelete))
-		rb.POST(hmnurl.RegexBlogPostDelete, authMiddleware(csrfMiddleware(BlogPostDeleteSubmit)))
+		rb.GET(hmnurl.RegexBlogPostReply, needsBlogs(BlogPostReply))
+		rb.POST(hmnurl.RegexBlogPostReply, needsBlogs(csrfMiddleware(BlogPostReplySubmit)))
+		rb.GET(hmnurl.RegexBlogPostEdit, needsBlogs(BlogPostEdit))
+		rb.POST(hmnurl.RegexBlogPostEdit, needsBlogs(csrfMiddleware(BlogPostEditSubmit)))
+		rb.GET(hmnurl.RegexBlogPostDelete, needsBlogs(BlogPostDelete))
+		rb.POST(hmnurl.RegexBlogPostDelete, needsBlogs(csrfMiddleware(BlogPostDeleteSubmit)))
 		rb.GET(hmnurl.RegexBlogsRedirect, func(c *RequestContext) ResponseData {
 			return c.Redirect(c.UrlContext.Url(
 				fmt.Sprintf("blog%s", c.PathParams["remainder"]), nil,
