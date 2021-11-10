@@ -62,7 +62,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	var restProjects []templates.Project
 	now := time.Now()
 	for _, p := range officialProjects {
-		templateProject := templates.ProjectToTemplate(&p.Project, c.Theme)
+		templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
 		if p.Project.Slug == "hero" {
 			// NOTE(asaf): Handmade Hero gets special treatment. Must always be first in the list.
 			handmadeHero = &templateProject
@@ -121,7 +121,11 @@ func ProjectIndex(c *RequestContext) ResponseData {
 			if i >= maxPersonalProjects {
 				break
 			}
-			personalProjects = append(personalProjects, templates.ProjectToTemplate(&p.Project, c.Theme))
+			personalProjects = append(personalProjects, templates.ProjectToTemplate(
+				&p.Project,
+				UrlContextForProject(&p.Project).BuildHomepage(),
+				c.Theme,
+			))
 		}
 	}
 
@@ -136,7 +140,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		PersonalProjects: personalProjects,
 
 		ProjectAtomFeedUrl: hmnurl.BuildAtomFeedForProjects(),
-		WIPForumUrl:        hmnurl.BuildForum(models.HMNProjectSlug, []string{"wip"}, 1),
+		WIPForumUrl:        hmnurl.HMNProjectContext.BuildForum([]string{"wip"}, 1),
 	}, c.Perf)
 	return res
 }
@@ -249,7 +253,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		Value:    c.CurrentProject.Blurb,
 	})
 
-	projectHomepageData.Project = templates.ProjectToTemplate(c.CurrentProject, c.Theme)
+	projectHomepageData.Project = templates.ProjectToTemplate(c.CurrentProject, c.UrlContext.BuildHomepage(), c.Theme)
 	for _, owner := range owners {
 		projectHomepageData.Owners = append(projectHomepageData.Owners, templates.UserToTemplate(owner, c.Theme))
 	}
@@ -268,7 +272,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 				"unapproved",
 				fmt.Sprintf(
 					"NOTICE: This project has not yet been submitted for approval. It is only visible to owners. Please <a href=\"%s\">submit it for approval</a> when the project content is ready for review.",
-					hmnurl.BuildProjectEdit(c.CurrentProject.Slug, "submit"),
+					c.UrlContext.BuildProjectEdit("submit"),
 				),
 			)
 		case models.ProjectLifecycleApprovalRequired:
@@ -309,10 +313,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	for _, post := range postQueryResult.ToSlice() {
 		projectHomepageData.RecentActivity = append(projectHomepageData.RecentActivity, PostToTimelineItem(
+			c.UrlContext,
 			lineageBuilder,
 			&post.(*postQuery).Post,
 			&post.(*postQuery).Thread,
-			c.CurrentProject,
 			&post.(*postQuery).Author,
 			c.Theme,
 		))

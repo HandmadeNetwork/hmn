@@ -21,12 +21,11 @@ var RegexOldHome = regexp.MustCompile("^/home$")
 var RegexHomepage = regexp.MustCompile("^/$")
 
 func BuildHomepage() string {
-	return Url("/", nil)
+	return HMNProjectContext.BuildHomepage()
 }
 
-func BuildOfficialProjectHomepage(projectSlug string) string {
-	defer CatchPanic()
-	return ProjectUrl("/", nil, projectSlug)
+func (c *UrlContext) BuildHomepage() string {
+	return c.Url("/", nil)
 }
 
 var RegexShowcase = regexp.MustCompile("^/showcase$")
@@ -196,7 +195,7 @@ func BuildUserProfile(username string) string {
 var RegexUserSettings = regexp.MustCompile(`^/settings$`)
 
 func BuildUserSettings(section string) string {
-	return ProjectUrlWithFragment("/settings", nil, "", section)
+	return UrlWithFragment("/settings", nil, section)
 }
 
 /*
@@ -302,10 +301,10 @@ func BuildPersonalProject(id int, slug string) string {
 
 var RegexProjectEdit = regexp.MustCompile("^/edit$")
 
-func BuildProjectEdit(slug string, section string) string {
+func (c *UrlContext) BuildProjectEdit(section string) string {
 	defer CatchPanic()
 
-	return ProjectUrlWithFragment(fmt.Sprintf("/p/%s/edit", slug), nil, "", section)
+	return c.UrlWithFragment("/edit", nil, section)
 }
 
 /*
@@ -367,7 +366,50 @@ func BuildPodcastEpisodeFile(filename string) string {
 // Make sure to match Thread before Subforum in the router.
 var RegexForum = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?(/(?P<page>\d+))?$`)
 
-func BuildForum(projectSlug string, subforums []string, page int) string {
+func (c *UrlContext) Url(path string, query []Q) string {
+	return c.UrlWithFragment(path, query, "")
+}
+
+func (c *UrlContext) UrlWithFragment(path string, query []Q, fragment string) string {
+	if c == nil {
+		logging.Warn().Stack().Msg("URL context was nil; defaulting to the HMN URL context")
+		c = &HMNProjectContext
+	}
+
+	if c.PersonalProject {
+		url := url.URL{
+			Scheme:   baseUrlParsed.Scheme,
+			Host:     baseUrlParsed.Host,
+			Path:     fmt.Sprintf("p/%d/%s/%s", c.ProjectID, models.GeneratePersonalProjectSlug(c.ProjectName), trim(path)),
+			RawQuery: encodeQuery(query),
+			Fragment: fragment,
+		}
+
+		return url.String()
+	} else {
+		subdomain := c.ProjectSlug
+		if c.ProjectSlug == models.HMNProjectSlug {
+			subdomain = ""
+		}
+
+		host := baseUrlParsed.Host
+		if len(subdomain) > 0 {
+			host = c.ProjectSlug + "." + host
+		}
+
+		url := url.URL{
+			Scheme:   baseUrlParsed.Scheme,
+			Host:     host,
+			Path:     trim(path),
+			RawQuery: encodeQuery(query),
+			Fragment: fragment,
+		}
+
+		return url.String()
+	}
+}
+
+func (c *UrlContext) BuildForum(subforums []string, page int) string {
 	defer CatchPanic()
 	if page < 1 {
 		panic(oops.New(nil, "Invalid forum thread page (%d), must be >= 1", page))
@@ -380,13 +422,13 @@ func BuildForum(projectSlug string, subforums []string, page int) string {
 		builder.WriteString(strconv.Itoa(page))
 	}
 
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexForumNewThread = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/new$`)
 var RegexForumNewThreadSubmit = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/new/submit$`)
 
-func BuildForumNewThread(projectSlug string, subforums []string, submit bool) string {
+func (c *UrlContext) BuildForumNewThread(subforums []string, submit bool) string {
 	defer CatchPanic()
 	builder := buildSubforumPath(subforums)
 	builder.WriteString("/t/new")
@@ -394,59 +436,59 @@ func BuildForumNewThread(projectSlug string, subforums []string, submit bool) st
 		builder.WriteString("/submit")
 	}
 
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexForumThread = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)(-([^/]+))?(/(?P<page>\d+))?$`)
 
-func BuildForumThread(projectSlug string, subforums []string, threadId int, title string, page int) string {
+func (c *UrlContext) BuildForumThread(subforums []string, threadId int, title string, page int) string {
 	defer CatchPanic()
 	builder := buildForumThreadPath(subforums, threadId, title, page)
 
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
-func BuildForumThreadWithPostHash(projectSlug string, subforums []string, threadId int, title string, page int, postId int) string {
+func (c *UrlContext) BuildForumThreadWithPostHash(subforums []string, threadId int, title string, page int, postId int) string {
 	defer CatchPanic()
 	builder := buildForumThreadPath(subforums, threadId, title, page)
 
-	return ProjectUrlWithFragment(builder.String(), nil, projectSlug, strconv.Itoa(postId))
+	return UrlWithFragment(builder.String(), nil, strconv.Itoa(postId))
 }
 
 var RegexForumPost = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)/p/(?P<postid>\d+)$`)
 
-func BuildForumPost(projectSlug string, subforums []string, threadId int, postId int) string {
+func (c *UrlContext) BuildForumPost(subforums []string, threadId int, postId int) string {
 	defer CatchPanic()
 	builder := buildForumPostPath(subforums, threadId, postId)
 
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexForumPostDelete = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)/p/(?P<postid>\d+)/delete$`)
 
-func BuildForumPostDelete(projectSlug string, subforums []string, threadId int, postId int) string {
+func (c *UrlContext) BuildForumPostDelete(subforums []string, threadId int, postId int) string {
 	defer CatchPanic()
 	builder := buildForumPostPath(subforums, threadId, postId)
 	builder.WriteString("/delete")
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexForumPostEdit = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)/p/(?P<postid>\d+)/edit$`)
 
-func BuildForumPostEdit(projectSlug string, subforums []string, threadId int, postId int) string {
+func (c *UrlContext) BuildForumPostEdit(subforums []string, threadId int, postId int) string {
 	defer CatchPanic()
 	builder := buildForumPostPath(subforums, threadId, postId)
 	builder.WriteString("/edit")
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexForumPostReply = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)/p/(?P<postid>\d+)/reply$`)
 
-func BuildForumPostReply(projectSlug string, subforums []string, threadId int, postId int) string {
+func (c *UrlContext) BuildForumPostReply(subforums []string, threadId int, postId int) string {
 	defer CatchPanic()
 	builder := buildForumPostPath(subforums, threadId, postId)
 	builder.WriteString("/reply")
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexWikiArticle = regexp.MustCompile(`^/wiki/(?P<threadid>\d+)(-([^/]+))?$`)
@@ -459,7 +501,7 @@ var RegexBlogsRedirect = regexp.MustCompile(`^/blogs(?P<remainder>.*)`)
 
 var RegexBlog = regexp.MustCompile(`^/blog(/(?P<page>\d+))?$`)
 
-func BuildBlog(projectSlug string, page int) string {
+func (c *UrlContext) BuildBlog(page int) string {
 	defer CatchPanic()
 	if page < 1 {
 		panic(oops.New(nil, "Invalid blog page (%d), must be >= 1", page))
@@ -470,63 +512,63 @@ func BuildBlog(projectSlug string, page int) string {
 		path += "/" + strconv.Itoa(page)
 	}
 
-	return ProjectUrl(path, nil, projectSlug)
+	return c.Url(path, nil)
 }
 
 var RegexBlogThread = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)(-([^/]+))?$`)
 
-func BuildBlogThread(projectSlug string, threadId int, title string) string {
+func (c *UrlContext) BuildBlogThread(threadId int, title string) string {
 	defer CatchPanic()
 	builder := buildBlogThreadPath(threadId, title)
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
-func BuildBlogThreadWithPostHash(projectSlug string, threadId int, title string, postId int) string {
+func (c *UrlContext) BuildBlogThreadWithPostHash(threadId int, title string, postId int) string {
 	defer CatchPanic()
 	builder := buildBlogThreadPath(threadId, title)
-	return ProjectUrlWithFragment(builder.String(), nil, projectSlug, strconv.Itoa(postId))
+	return c.UrlWithFragment(builder.String(), nil, strconv.Itoa(postId))
 }
 
 var RegexBlogNewThread = regexp.MustCompile(`^/blog/new$`)
 
-func BuildBlogNewThread(projectSlug string) string {
+func (c *UrlContext) BuildBlogNewThread() string {
 	defer CatchPanic()
-	return ProjectUrl("/blog/new", nil, projectSlug)
+	return c.Url("/blog/new", nil)
 }
 
 var RegexBlogPost = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)/e/(?P<postid>\d+)$`)
 
-func BuildBlogPost(projectSlug string, threadId int, postId int) string {
+func (c *UrlContext) BuildBlogPost(threadId int, postId int) string {
 	defer CatchPanic()
 	builder := buildBlogPostPath(threadId, postId)
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexBlogPostDelete = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)/e/(?P<postid>\d+)/delete$`)
 
-func BuildBlogPostDelete(projectSlug string, threadId int, postId int) string {
+func (c *UrlContext) BuildBlogPostDelete(threadId int, postId int) string {
 	defer CatchPanic()
 	builder := buildBlogPostPath(threadId, postId)
 	builder.WriteString("/delete")
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexBlogPostEdit = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)/e/(?P<postid>\d+)/edit$`)
 
-func BuildBlogPostEdit(projectSlug string, threadId int, postId int) string {
+func (c *UrlContext) BuildBlogPostEdit(threadId int, postId int) string {
 	defer CatchPanic()
 	builder := buildBlogPostPath(threadId, postId)
 	builder.WriteString("/edit")
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexBlogPostReply = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)/e/(?P<postid>\d+)/reply$`)
 
-func BuildBlogPostReply(projectSlug string, threadId int, postId int) string {
+func (c *UrlContext) BuildBlogPostReply(threadId int, postId int) string {
 	defer CatchPanic()
 	builder := buildBlogPostPath(threadId, postId)
 	builder.WriteString("/reply")
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 /*
@@ -580,7 +622,7 @@ func BuildLibraryResource(resourceId int) string {
 
 var RegexEpisodeList = regexp.MustCompile(`^/episode(/(?P<topic>[^/]+))?$`)
 
-func BuildEpisodeList(projectSlug string, topic string) string {
+func (c *UrlContext) BuildEpisodeList(topic string) string {
 	defer CatchPanic()
 
 	var builder strings.Builder
@@ -589,21 +631,21 @@ func BuildEpisodeList(projectSlug string, topic string) string {
 		builder.WriteString("/")
 		builder.WriteString(topic)
 	}
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexEpisode = regexp.MustCompile(`^/episode/(?P<topic>[^/]+)/(?P<episode>[^/]+)$`)
 
-func BuildEpisode(projectSlug string, topic string, episode string) string {
+func (c *UrlContext) BuildEpisode(topic string, episode string) string {
 	defer CatchPanic()
-	return ProjectUrl(fmt.Sprintf("/episode/%s/%s", topic, episode), nil, projectSlug)
+	return c.Url(fmt.Sprintf("/episode/%s/%s", topic, episode), nil)
 }
 
 var RegexCineraIndex = regexp.MustCompile(`^/(?P<topic>[^/]+).index$`)
 
-func BuildCineraIndex(projectSlug string, topic string) string {
+func (c *UrlContext) BuildCineraIndex(topic string) string {
 	defer CatchPanic()
-	return ProjectUrl(fmt.Sprintf("/%s.index", topic), nil, projectSlug)
+	return c.Url(fmt.Sprintf("/%s.index", topic), nil)
 }
 
 /*
@@ -635,8 +677,8 @@ func BuildDiscordShowcaseBacklog() string {
 var RegexAssetUpload = regexp.MustCompile("^/upload_asset$")
 
 // NOTE(asaf): Providing the projectSlug avoids any CORS problems.
-func BuildAssetUpload(projectSlug string) string {
-	return ProjectUrl("/upload_asset", nil, projectSlug)
+func (c *UrlContext) BuildAssetUpload() string {
+	return c.Url("/upload_asset", nil)
 }
 
 /*
@@ -715,7 +757,7 @@ func BuildUserFile(filepath string) string {
 var RegexForumMarkRead = regexp.MustCompile(`^/markread/(?P<sfid>\d+)$`)
 
 // NOTE(asaf): subforumId == 0 means ALL SUBFORUMS
-func BuildForumMarkRead(projectSlug string, subforumId int) string {
+func (c *UrlContext) BuildForumMarkRead(subforumId int) string {
 	defer CatchPanic()
 	if subforumId < 0 {
 		panic(oops.New(nil, "Invalid subforum ID (%d), must be >= 0", subforumId))
@@ -725,7 +767,7 @@ func BuildForumMarkRead(projectSlug string, subforumId int) string {
 	builder.WriteString("/markread/")
 	builder.WriteString(strconv.Itoa(subforumId))
 
-	return ProjectUrl(builder.String(), nil, projectSlug)
+	return c.Url(builder.String(), nil)
 }
 
 var RegexCatchAll = regexp.MustCompile("^")

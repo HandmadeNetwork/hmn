@@ -126,9 +126,8 @@ type Project struct {
 
 	IsHMN bool
 
-	HasBlog    bool
-	HasForum   bool
-	HasLibrary bool
+	HasBlog  bool
+	HasForum bool
 
 	UUID         string
 	DateApproved time.Time

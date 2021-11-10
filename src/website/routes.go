@@ -251,9 +251,8 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		rb.GET(hmnurl.RegexBlogPostDelete, authMiddleware(BlogPostDelete))
 		rb.POST(hmnurl.RegexBlogPostDelete, authMiddleware(csrfMiddleware(BlogPostDeleteSubmit)))
 		rb.GET(hmnurl.RegexBlogsRedirect, func(c *RequestContext) ResponseData {
-			return c.Redirect(hmnurl.ProjectUrl(
+			return c.Redirect(c.UrlContext.Url(
 				fmt.Sprintf("blog%s", c.PathParams["remainder"]), nil,
-				c.CurrentProject.Slug,
 			), http.StatusMovedPermanently)
 		})
 	}
@@ -281,7 +280,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 
 				if !p.Project.Personal {
 					// TODO: Redirect to the same page on the other prefix
-					return c.Redirect(hmnurl.BuildOfficialProjectHomepage(p.Project.Slug), http.StatusSeeOther)
+					return c.Redirect(UrlContextForProject(&p.Project).BuildHomepage(), http.StatusSeeOther)
 				}
 
 				if c.PathParams["slug"] != models.GeneratePersonalProjectSlug(p.Project.Name) {
@@ -290,6 +289,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 				}
 
 				c.CurrentProject = &p.Project
+				c.UrlContext = UrlContextForProject(c.CurrentProject)
 
 				return h(c)
 			})
@@ -458,14 +458,14 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		if c.CurrentProject == nil {
 			panic("failed to load project data")
 		}
+
+		c.UrlContext = UrlContextForProject(c.CurrentProject)
 	}
 
-	theme := "light"
+	c.Theme = "light"
 	if c.CurrentUser != nil && c.CurrentUser.DarkTheme {
-		theme = "dark"
+		c.Theme = "dark"
 	}
-
-	c.Theme = theme
 
 	return true, ResponseData{}
 }

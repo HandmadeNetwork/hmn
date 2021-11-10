@@ -59,22 +59,11 @@ var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
 	models.ProjectLifecycleLTS:              "Complete",
 }
 
-func ProjectUrl(p *models.Project) string {
-	var url string
-	if p.Personal {
-		url = hmnurl.BuildPersonalProject(p.ID, models.GeneratePersonalProjectSlug(p.Name))
-	} else {
-		url = hmnurl.BuildOfficialProjectHomepage(p.Slug)
-	}
-	return url
-}
-
-func ProjectToTemplate(p *models.Project, theme string) Project {
+func ProjectToTemplate(p *models.Project, url string, theme string) Project {
 	logo := p.LogoLight
 	if theme == "dark" {
 		logo = p.LogoDark
 	}
-	url := ProjectUrl(p)
 	return Project{
 		Name:              p.Name,
 		Subdomain:         p.Subdomain(),
@@ -91,9 +80,8 @@ func ProjectToTemplate(p *models.Project, theme string) Project {
 
 		IsHMN: p.IsHMN(),
 
-		HasBlog:    p.BlogEnabled,
-		HasForum:   p.ForumEnabled,
-		HasLibrary: false, // TODO: port the library lol
+		HasBlog:  p.BlogEnabled,
+		HasForum: p.ForumEnabled,
 
 		DateApproved: p.DateApproved,
 	}

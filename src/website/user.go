@@ -121,7 +121,11 @@ func UserProfile(c *RequestContext) ResponseData {
 	templateProjects := make([]templates.Project, 0, len(projectQuerySlice))
 	for _, projectRow := range projectQuerySlice {
 		projectData := projectRow.(*projectQuery)
-		templateProjects = append(templateProjects, templates.ProjectToTemplate(&projectData.Project, c.Theme))
+		templateProjects = append(templateProjects, templates.ProjectToTemplate(
+			&projectData.Project,
+			UrlContextForProject(&projectData.Project).BuildHomepage(),
+			c.Theme,
+		))
 	}
 	c.Perf.EndBlock()
 
@@ -166,10 +170,10 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	for _, post := range posts {
 		timelineItems = append(timelineItems, PostToTimelineItem(
+			UrlContextForProject(&post.Project),
 			lineageBuilder,
 			&post.Post,
 			&post.Thread,
-			&post.Project,
 			profileUser,
 			c.Theme,
 		))
