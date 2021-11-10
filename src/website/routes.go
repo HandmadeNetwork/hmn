@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -278,25 +279,23 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 					}
 				}
 
+				c.CurrentProject = &p.Project
+				c.UrlContext = UrlContextForProject(c.CurrentProject)
+
 				if !p.Project.Personal {
-					// TODO: Redirect to the same page on the other prefix
-					return c.Redirect(UrlContextForProject(&p.Project).BuildHomepage(), http.StatusSeeOther)
+					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
 				}
 
 				if c.PathParams["slug"] != models.GeneratePersonalProjectSlug(p.Project.Name) {
-					// TODO: Redirect to the same page on the other path
-					return c.Redirect(hmnurl.BuildPersonalProject(p.Project.ID, models.GeneratePersonalProjectSlug(p.Project.Name)), http.StatusSeeOther)
+					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
 				}
-
-				c.CurrentProject = &p.Project
-				c.UrlContext = UrlContextForProject(c.CurrentProject)
 
 				return h(c)
 			})
 		}
 		attachProjectRoutes(rb)
 	})
-	anyProject.Group(hmnurl.RegexHomepage, func(rb *RouteBuilder) {
+	anyProject.Group(regexp.MustCompile("^"), func(rb *RouteBuilder) {
 		rb.Middleware = func(h Handler) Handler {
 			return anyProject.Middleware(func(c *RequestContext) ResponseData {
 				// We could be on any project's subdomain.
@@ -304,8 +303,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 				// Check if the current project (matched by subdomain) is actually no longer official
 				// and therefore needs to be redirected to the personal project version of the route.
 				if c.CurrentProject.Personal {
-					// TODO: Redirect to the same page on the other prefix
-					return c.Redirect(hmnurl.BuildPersonalProject(c.CurrentProject.ID, c.CurrentProject.Slug), http.StatusSeeOther)
+					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
 				}
 
 				return h(c)
