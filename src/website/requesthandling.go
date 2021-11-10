@@ -34,6 +34,14 @@ type Route struct {
 	Handler Handler
 }
 
+func (r *Route) String() string {
+	var routeStrings []string
+	for _, regex := range r.Regexes {
+		routeStrings = append(routeStrings, regex.String())
+	}
+	return fmt.Sprintf("%s %v", r.Method, routeStrings)
+}
+
 type RouteBuilder struct {
 	Router     *Router
 	Prefixes   []*regexp.Regexp
@@ -107,6 +115,12 @@ nextroute:
 				if paramName == "" {
 					continue
 				}
+				if _, alreadyExists := params[paramName]; alreadyExists {
+					logging.Warn().
+						Str("route", route.String()).
+						Str("paramName", paramName).
+						Msg("duplicate names for path parameters; last one wins")
+				}
 				params[paramName] = paramValue
 			}
 
@@ -118,13 +132,8 @@ nextroute:
 			}
 		}
 
-		var routeStrings []string
-		for _, regex := range route.Regexes {
-			routeStrings = append(routeStrings, regex.String())
-		}
-
 		c := &RequestContext{
-			Route:      fmt.Sprintf("%v", routeStrings),
+			Route:      route.String(),
 			Logger:     logging.GlobalLogger(),
 			Req:        req,
 			Res:        rw,

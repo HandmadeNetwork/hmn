@@ -292,7 +292,7 @@ func BuildProjectNew() string {
 	return Url("/projects/new", nil)
 }
 
-var RegexPersonalProject = regexp.MustCompile("^/p/(?P<projectid>[0-9]+)(/(?P<slug>[a-zA-Z0-9-]+))?")
+var RegexPersonalProject = regexp.MustCompile("^/p/(?P<projectid>[0-9]+)(/(?P<projectslug>[a-zA-Z0-9-]+))?")
 
 func BuildPersonalProject(id int, slug string) string {
 	defer CatchPanic()
@@ -452,7 +452,7 @@ func (c *UrlContext) BuildForumThreadWithPostHash(subforums []string, threadId i
 	defer CatchPanic()
 	builder := buildForumThreadPath(subforums, threadId, title, page)
 
-	return UrlWithFragment(builder.String(), nil, strconv.Itoa(postId))
+	return c.UrlWithFragment(builder.String(), nil, strconv.Itoa(postId))
 }
 
 var RegexForumPost = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)/p/(?P<postid>\d+)$`)
