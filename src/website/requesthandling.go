@@ -93,7 +93,6 @@ nextroute:
 
 		var params map[string]string
 		for _, regex := range route.Regexes {
-
 			match := regex.FindStringSubmatch(currentPath)
 			if len(match) == 0 {
 				continue nextroute

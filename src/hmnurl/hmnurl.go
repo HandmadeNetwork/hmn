@@ -84,6 +84,12 @@ func UrlWithFragment(path string, query []Q, fragment string) string {
 	return HMNProjectContext.UrlWithFragment(path, query, fragment)
 }
 
+func (c *UrlContext) RewriteProjectUrl(u *url.URL) string {
+	// we need to strip anything matching the personal project regex to get the base path
+	match := RegexPersonalProject.FindString(u.Path)
+	return c.Url(u.Path[len(match):], QFromURL(u))
+}
+
 func trim(path string) string {
 	if len(path) > 0 && path[0] == '/' {
 		return path[1:]
