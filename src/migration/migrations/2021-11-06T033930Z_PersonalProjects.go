@@ -77,5 +77,27 @@ func (m PersonalProjects) Up(ctx context.Context, tx pgx.Tx) error {
 }
 
 func (m PersonalProjects) Down(ctx context.Context, tx pgx.Tx) error {
-	panic("Implement me")
+	var err error
+
+	_, err = tx.Exec(ctx, `
+		ALTER TABLE handmade_project
+			DROP CONSTRAINT slug_syntax,
+			DROP CONSTRAINT tag_syntax,
+			DROP personal,
+			DROP tag,
+			ADD featurevotes INT NOT NULL DEFAULT 0,
+			-- no projects actually have a parent id so thankfully no further updates to do
+			ADD parent_id INT REFERENCES handmade_project (id) ON DELETE SET NULL,
+			ADD quota INT NOT NULL DEFAULT 0,
+			ADD quota_used INT NOT NULL DEFAULT 0,
+			ADD standalone BOOLEAN NOT NULL DEFAULT FALSE,
+			ALTER hidden TYPE INT USING CASE WHEN hidden THEN 1 ELSE 0 END;
+
+		ALTER TABLE handmade_project RENAME hidden TO flags;
+	`)
+	if err != nil {
+		return oops.New(err, "failed to revert personal project changes")
+	}
+
+	return nil
 }

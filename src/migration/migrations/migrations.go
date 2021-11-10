@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-var All map[types.MigrationVersion]types.Migration = make(map[types.MigrationVersion]types.Migration)
+var All = make(map[types.MigrationVersion]types.Migration)
 
 func registerMigration(m types.Migration) {
 	All[m.Version()] = m
