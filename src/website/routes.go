@@ -307,7 +307,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
 				}
 
-				if c.PathParams["slug"] != models.GeneratePersonalProjectSlug(p.Project.Name) {
+				if c.PathParams["projectslug"] != models.GeneratePersonalProjectSlug(p.Project.Name) {
 					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
 				}
 
