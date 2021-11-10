@@ -35,8 +35,6 @@ type forumSubforumData struct {
 	TotalThreads int
 }
 
-type editActionType string
-
 type editorData struct {
 	templates.BaseData
 	SubmitUrl   string
@@ -54,13 +52,13 @@ type editorData struct {
 	UploadUrl   string
 }
 
-func getEditorDataForNew(currentUser *models.User, baseData templates.BaseData, replyPost *templates.Post) editorData {
+func getEditorDataForNew(urlContext *hmnurl.UrlContext, currentUser *models.User, baseData templates.BaseData, replyPost *templates.Post) editorData {
 	result := editorData{
 		BaseData:       baseData,
 		CanEditTitle:   replyPost == nil,
 		PostReplyingTo: replyPost,
 		MaxFileSize:    AssetMaxSize(currentUser),
-		UploadUrl:      hmnurl.BuildAssetUpload(baseData.Project.Subdomain),
+		UploadUrl:      urlContext.BuildAssetUpload(),
 	}
 
 	if replyPost != nil {
@@ -70,7 +68,7 @@ func getEditorDataForNew(currentUser *models.User, baseData templates.BaseData, 
 	return result
 }
 
-func getEditorDataForEdit(currentUser *models.User, baseData templates.BaseData, p PostAndStuff) editorData {
+func getEditorDataForEdit(urlContext *hmnurl.UrlContext, currentUser *models.User, baseData templates.BaseData, p PostAndStuff) editorData {
 	return editorData{
 		BaseData:            baseData,
 		Title:               p.Thread.Title,
@@ -78,7 +76,7 @@ func getEditorDataForEdit(currentUser *models.User, baseData templates.BaseData,
 		IsEditing:           true,
 		EditInitialContents: p.CurrentVersion.TextRaw,
 		MaxFileSize:         AssetMaxSize(currentUser),
-		UploadUrl:           hmnurl.BuildAssetUpload(baseData.Project.Subdomain),
+		UploadUrl:           urlContext.BuildAssetUpload(),
 	}
 }
 
@@ -104,7 +102,7 @@ func Forum(c *RequestContext) ResponseData {
 	numPages := utils.NumPages(numThreads, threadsPerPage)
 	page, ok := ParsePageNumber(c, "page", numPages)
 	if !ok {
-		c.Redirect(hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, page), http.StatusSeeOther)
+		c.Redirect(c.UrlContext.BuildForum(currentSubforumSlugs, page), http.StatusSeeOther)
 	}
 	howManyThreadsToSkip := (page - 1) * threadsPerPage
 
@@ -119,7 +117,7 @@ func Forum(c *RequestContext) ResponseData {
 	makeThreadListItem := func(row ThreadAndStuff) templates.ThreadListItem {
 		return templates.ThreadListItem{
 			Title:     row.Thread.Title,
-			Url:       hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(*row.Thread.SubforumID), row.Thread.ID, row.Thread.Title, 1),
+			Url:       c.UrlContext.BuildForumThread(cd.LineageBuilder.GetSubforumLineageSlugs(*row.Thread.SubforumID), row.Thread.ID, row.Thread.Title, 1),
 			FirstUser: templates.UserToTemplate(row.FirstPostAuthor, c.Theme),
 			FirstDate: row.FirstPost.PostDate,
 			LastUser:  templates.UserToTemplate(row.LastPostAuthor, c.Theme),
@@ -165,7 +163,7 @@ func Forum(c *RequestContext) ResponseData {
 
 			subforums = append(subforums, forumSubforumData{
 				Name:         sfNode.Name,
-				Url:          hmnurl.BuildForum(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(sfNode.ID), 1),
+				Url:          c.UrlContext.BuildForum(cd.LineageBuilder.GetSubforumLineageSlugs(sfNode.ID), 1),
 				Threads:      threads,
 				TotalThreads: numThreads,
 			})
@@ -179,23 +177,23 @@ func Forum(c *RequestContext) ResponseData {
 	baseData := getBaseData(
 		c,
 		fmt.Sprintf("%s Forums", c.CurrentProject.Name),
-		SubforumBreadcrumbs(cd.LineageBuilder, c.CurrentProject, cd.SubforumID),
+		SubforumBreadcrumbs(c.UrlContext, cd.LineageBuilder, cd.SubforumID),
 	)
 
 	var res ResponseData
 	res.MustWriteTemplate("forum.html", forumData{
 		BaseData:     baseData,
-		NewThreadUrl: hmnurl.BuildForumNewThread(c.CurrentProject.Slug, currentSubforumSlugs, false),
-		MarkReadUrl:  hmnurl.BuildForumMarkRead(c.CurrentProject.Slug, cd.SubforumID),
+		NewThreadUrl: c.UrlContext.BuildForumNewThread(currentSubforumSlugs, false),
+		MarkReadUrl:  c.UrlContext.BuildForumMarkRead(cd.SubforumID),
 		Threads:      threads,
 		Pagination: templates.Pagination{
 			Current: page,
 			Total:   numPages,
 
-			FirstUrl:    hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, 1),
-			LastUrl:     hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, numPages),
-			NextUrl:     hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, utils.IntClamp(1, page+1, numPages)),
-			PreviousUrl: hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, utils.IntClamp(1, page-1, numPages)),
+			FirstUrl:    c.UrlContext.BuildForum(currentSubforumSlugs, 1),
+			LastUrl:     c.UrlContext.BuildForum(currentSubforumSlugs, numPages),
+			NextUrl:     c.UrlContext.BuildForum(currentSubforumSlugs, utils.IntClamp(1, page+1, numPages)),
+			PreviousUrl: c.UrlContext.BuildForum(currentSubforumSlugs, utils.IntClamp(1, page-1, numPages)),
 		},
 		Subforums: subforums,
 	}, c.Perf)
@@ -308,7 +306,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 	if sfId == 0 {
 		redirUrl = hmnurl.BuildFeed()
 	} else {
-		redirUrl = hmnurl.BuildForum(c.CurrentProject.Slug, lineageBuilder.GetSubforumLineageSlugs(sfId), 1)
+		redirUrl = c.UrlContext.BuildForum(lineageBuilder.GetSubforumLineageSlugs(sfId), 1)
 	}
 	return c.Redirect(redirUrl, http.StatusSeeOther)
 }
@@ -358,17 +356,17 @@ func ForumThread(c *RequestContext) ResponseData {
 	}
 	page, numPages, ok := getPageInfo(c.PathParams["page"], numPosts, threadPostsPerPage)
 	if !ok {
-		urlNoPage := hmnurl.BuildForumThread(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, thread.Title, 1)
+		urlNoPage := c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, 1)
 		return c.Redirect(urlNoPage, http.StatusSeeOther)
 	}
 	pagination := templates.Pagination{
 		Current: page,
 		Total:   numPages,
 
-		FirstUrl:    hmnurl.BuildForumThread(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, thread.Title, 1),
-		LastUrl:     hmnurl.BuildForumThread(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, thread.Title, numPages),
-		NextUrl:     hmnurl.BuildForumThread(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, thread.Title, utils.IntClamp(1, page+1, numPages)),
-		PreviousUrl: hmnurl.BuildForumThread(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, thread.Title, utils.IntClamp(1, page-1, numPages)),
+		FirstUrl:    c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, 1),
+		LastUrl:     c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, numPages),
+		NextUrl:     c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, utils.IntClamp(1, page+1, numPages)),
+		PreviousUrl: c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, utils.IntClamp(1, page-1, numPages)),
 	}
 
 	postsAndStuff, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
@@ -385,11 +383,11 @@ func ForumThread(c *RequestContext) ResponseData {
 	for _, p := range postsAndStuff {
 		post := templates.PostToTemplate(&p.Post, p.Author, c.Theme)
 		post.AddContentVersion(p.CurrentVersion, p.Editor)
-		addForumUrlsToPost(&post, c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, post.ID)
+		addForumUrlsToPost(c.UrlContext, &post, currentSubforumSlugs, thread.ID, post.ID)
 
 		if p.ReplyPost != nil {
 			reply := templates.PostToTemplate(p.ReplyPost, p.ReplyAuthor, c.Theme)
-			addForumUrlsToPost(&reply, c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, reply.ID)
+			addForumUrlsToPost(c.UrlContext, &reply, currentSubforumSlugs, thread.ID, reply.ID)
 			post.ReplyPost = &reply
 		}
 
@@ -418,7 +416,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title, SubforumBreadcrumbs(cd.LineageBuilder, c.CurrentProject, cd.SubforumID))
+	baseData := getBaseData(c, thread.Title, SubforumBreadcrumbs(c.UrlContext, cd.LineageBuilder, cd.SubforumID))
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    threadResult.FirstPost.Preview,
@@ -429,8 +427,8 @@ func ForumThread(c *RequestContext) ResponseData {
 		BaseData:    baseData,
 		Thread:      templates.ThreadToTemplate(&thread),
 		Posts:       posts,
-		SubforumUrl: hmnurl.BuildForum(c.CurrentProject.Slug, currentSubforumSlugs, 1),
-		ReplyUrl:    hmnurl.BuildForumPostReply(c.CurrentProject.Slug, currentSubforumSlugs, thread.ID, thread.FirstID),
+		SubforumUrl: c.UrlContext.BuildForum(currentSubforumSlugs, 1),
+		ReplyUrl:    c.UrlContext.BuildForumPostReply(currentSubforumSlugs, thread.ID, thread.FirstID),
 		Pagination:  pagination,
 	}, c.Perf)
 	return res
@@ -466,8 +464,7 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 
 	page := (postIdx / threadPostsPerPage) + 1
 
-	return c.Redirect(hmnurl.BuildForumThreadWithPostHash(
-		c.CurrentProject.Slug,
+	return c.Redirect(c.UrlContext.BuildForumThreadWithPostHash(
 		cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID),
 		cd.ThreadID,
 		post.Thread.Title,
@@ -482,9 +479,9 @@ func ForumNewThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	baseData := getBaseData(c, "Create New Thread", SubforumBreadcrumbs(cd.LineageBuilder, c.CurrentProject, cd.SubforumID))
-	editData := getEditorDataForNew(c.CurrentUser, baseData, nil)
-	editData.SubmitUrl = hmnurl.BuildForumNewThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), true)
+	baseData := getBaseData(c, "Create New Thread", SubforumBreadcrumbs(c.UrlContext, cd.LineageBuilder, cd.SubforumID))
+	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
+	editData.SubmitUrl = c.UrlContext.BuildForumNewThread(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), true)
 	editData.SubmitLabel = "Post New Thread"
 
 	var res ResponseData
@@ -549,7 +546,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new forum thread"))
 	}
 
-	newThreadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), threadId, title, 1)
+	newThreadUrl := c.UrlContext.BuildForumThread(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), threadId, title, 1)
 	return c.Redirect(newThreadUrl, http.StatusSeeOther)
 }
 
@@ -572,14 +569,14 @@ func ForumPostReply(c *RequestContext) ResponseData {
 	baseData := getBaseData(
 		c,
 		fmt.Sprintf("Replying to post | %s", cd.SubforumTree[cd.SubforumID].Name),
-		ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &post.Thread),
+		ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread),
 	)
 
 	replyPost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
 
-	editData := getEditorDataForNew(c.CurrentUser, baseData, &replyPost)
-	editData.SubmitUrl = hmnurl.BuildForumPostReply(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
+	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, &replyPost)
+	editData.SubmitUrl = c.UrlContext.BuildForumPostReply(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Reply"
 
 	var res ResponseData
@@ -629,7 +626,7 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to forum post"))
 	}
 
-	newPostUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, newPostId)
+	newPostUrl := c.UrlContext.BuildForumPost(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, newPostId)
 	return c.Redirect(newPostUrl, http.StatusSeeOther)
 }
 
@@ -659,10 +656,10 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 	} else {
 		title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[cd.SubforumID].Name)
 	}
-	baseData := getBaseData(c, title, ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &post.Thread))
+	baseData := getBaseData(c, title, ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread))
 
-	editData := getEditorDataForEdit(c.CurrentUser, baseData, post)
-	editData.SubmitUrl = hmnurl.BuildForumPostEdit(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
+	editData := getEditorDataForEdit(c.UrlContext, c.CurrentUser, baseData, post)
+	editData.SubmitUrl = c.UrlContext.BuildForumPostEdit(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Edited Post"
 
 	var res ResponseData
@@ -727,7 +724,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit forum post"))
 	}
 
-	postUrl := hmnurl.BuildForumPost(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
+	postUrl := c.UrlContext.BuildForumPost(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
 	return c.Redirect(postUrl, http.StatusSeeOther)
 }
 
@@ -754,7 +751,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 	baseData := getBaseData(
 		c,
 		fmt.Sprintf("Deleting post in \"%s\" | %s", post.Thread.Title, cd.SubforumTree[cd.SubforumID].Name),
-		ForumThreadBreadcrumbs(cd.LineageBuilder, c.CurrentProject, &post.Thread),
+		ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread),
 	)
 
 	templatePost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
@@ -769,7 +766,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("forum_post_delete.html", forumPostDeleteData{
 		BaseData:  baseData,
-		SubmitUrl: hmnurl.BuildForumPostDelete(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID),
+		SubmitUrl: c.UrlContext.BuildForumPostDelete(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID),
 		Post:      templatePost,
 	}, c.Perf)
 	return res
@@ -799,10 +796,10 @@ func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
 	}
 
 	if threadDeleted {
-		forumUrl := hmnurl.BuildForum(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), 1)
+		forumUrl := c.UrlContext.BuildForum(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), 1)
 		return c.Redirect(forumUrl, http.StatusSeeOther)
 	} else {
-		threadUrl := hmnurl.BuildForumThread(c.CurrentProject.Slug, cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, "", 1) // TODO: Go to the last page of the thread? Or the post before the post we just deleted?
+		threadUrl := c.UrlContext.BuildForumThread(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, "", 1) // TODO: Go to the last page of the thread? Or the post before the post we just deleted?
 		return c.Redirect(threadUrl, http.StatusSeeOther)
 	}
 }
@@ -829,7 +826,7 @@ func WikiArticleRedirect(c *RequestContext) ResponseData {
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
-	dest := UrlForGenericThread(&thread.Thread, lineageBuilder, c.CurrentProject.Slug)
+	dest := UrlForGenericThread(c.UrlContext, &thread.Thread, lineageBuilder)
 	return c.Redirect(dest, http.StatusFound)
 }
 
@@ -928,11 +925,11 @@ func validateSubforums(lineageBuilder *models.SubforumLineageBuilder, project *m
 	return subforumId, valid
 }
 
-func addForumUrlsToPost(p *templates.Post, projectSlug string, subforums []string, threadId int, postId int) {
-	p.Url = hmnurl.BuildForumPost(projectSlug, subforums, threadId, postId)
-	p.DeleteUrl = hmnurl.BuildForumPostDelete(projectSlug, subforums, threadId, postId)
-	p.EditUrl = hmnurl.BuildForumPostEdit(projectSlug, subforums, threadId, postId)
-	p.ReplyUrl = hmnurl.BuildForumPostReply(projectSlug, subforums, threadId, postId)
+func addForumUrlsToPost(urlContext *hmnurl.UrlContext, p *templates.Post, subforums []string, threadId int, postId int) {
+	p.Url = urlContext.BuildForumPost(subforums, threadId, postId)
+	p.DeleteUrl = urlContext.BuildForumPostDelete(subforums, threadId, postId)
+	p.EditUrl = urlContext.BuildForumPostEdit(subforums, threadId, postId)
+	p.ReplyUrl = urlContext.BuildForumPostReply(subforums, threadId, postId)
 }
 
 // Takes a template post and adds information about how many posts the user has made

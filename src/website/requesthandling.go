@@ -156,6 +156,7 @@ type RequestContext struct {
 	CurrentUser    *models.User
 	CurrentSession *models.Session
 	Theme          string
+	UrlContext     *hmnurl.UrlContext
 
 	Perf *perf.RequestPerf
 

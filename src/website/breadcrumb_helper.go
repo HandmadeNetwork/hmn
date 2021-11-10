@@ -6,58 +6,58 @@ import (
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
-func ProjectBreadcrumb(project *models.Project) templates.Breadcrumb {
+func ProjectBreadcrumb(projectUrlContext *hmnurl.UrlContext) templates.Breadcrumb {
 	return templates.Breadcrumb{
-		Name: project.Name,
-		Url:  UrlForProject(project),
+		Name: projectUrlContext.ProjectName,
+		Url:  projectUrlContext.BuildHomepage(),
 	}
 }
 
-func ForumBreadcrumb(projectSlug string) templates.Breadcrumb {
+func ForumBreadcrumb(projectUrlContext *hmnurl.UrlContext) templates.Breadcrumb {
 	return templates.Breadcrumb{
 		Name: "Forums",
-		Url:  hmnurl.BuildForum(projectSlug, nil, 1),
+		Url:  projectUrlContext.BuildForum(nil, 1),
 	}
 }
 
-func SubforumBreadcrumbs(lineageBuilder *models.SubforumLineageBuilder, project *models.Project, subforumID int) []templates.Breadcrumb {
+func SubforumBreadcrumbs(projectUrlContext *hmnurl.UrlContext, lineageBuilder *models.SubforumLineageBuilder, subforumID int) []templates.Breadcrumb {
 	var result []templates.Breadcrumb
 	result = []templates.Breadcrumb{
-		ProjectBreadcrumb(project),
-		ForumBreadcrumb(project.Slug),
+		ProjectBreadcrumb(projectUrlContext),
+		ForumBreadcrumb(projectUrlContext),
 	}
 	subforums := lineageBuilder.GetSubforumLineage(subforumID)
 	slugs := lineageBuilder.GetSubforumLineageSlugs(subforumID)
 	for i, subforum := range subforums {
 		result = append(result, templates.Breadcrumb{
 			Name: subforum.Name,
-			Url:  hmnurl.BuildForum(project.Slug, slugs[0:i+1], 1),
+			Url:  projectUrlContext.BuildForum(slugs[0:i+1], 1),
 		})
 	}
 
 	return result
 }
 
-func ForumThreadBreadcrumbs(lineageBuilder *models.SubforumLineageBuilder, project *models.Project, thread *models.Thread) []templates.Breadcrumb {
-	result := SubforumBreadcrumbs(lineageBuilder, project, *thread.SubforumID)
+func ForumThreadBreadcrumbs(projectUrlContext *hmnurl.UrlContext, lineageBuilder *models.SubforumLineageBuilder, thread *models.Thread) []templates.Breadcrumb {
+	result := SubforumBreadcrumbs(projectUrlContext, lineageBuilder, *thread.SubforumID)
 	result = append(result, templates.Breadcrumb{
 		Name: thread.Title,
-		Url:  hmnurl.BuildForumThread(project.Slug, lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), thread.ID, thread.Title, 1),
+		Url:  projectUrlContext.BuildForumThread(lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), thread.ID, thread.Title, 1),
 	})
 	return result
 }
 
-func BlogBreadcrumb(projectSlug string) templates.Breadcrumb {
+func BlogBreadcrumb(projectUrlContext *hmnurl.UrlContext) templates.Breadcrumb {
 	return templates.Breadcrumb{
 		Name: "Blog",
-		Url:  hmnurl.BuildBlog(projectSlug, 1),
+		Url:  projectUrlContext.BuildBlog(1),
 	}
 }
 
-func BlogThreadBreadcrumbs(projectSlug string, thread *models.Thread) []templates.Breadcrumb {
+func BlogThreadBreadcrumbs(projectUrlContext *hmnurl.UrlContext, thread *models.Thread) []templates.Breadcrumb {
 	result := []templates.Breadcrumb{
-		BlogBreadcrumb(projectSlug),
-		{Name: thread.Title, Url: hmnurl.BuildBlogThread(projectSlug, thread.ID, thread.Title)},
+		BlogBreadcrumb(projectUrlContext),
+		{Name: thread.Title, Url: projectUrlContext.BuildBlogThread(thread.ID, thread.Title)},
 	}
 	return result
 }

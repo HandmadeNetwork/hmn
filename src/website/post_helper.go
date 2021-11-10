@@ -7,26 +7,26 @@ import (
 )
 
 // NOTE(asaf): Please don't use these if you already know the kind of the thread beforehand. Just call the appropriate build function.
-func UrlForGenericThread(thread *models.Thread, lineageBuilder *models.SubforumLineageBuilder, projectSlug string) string {
+func UrlForGenericThread(urlContext *hmnurl.UrlContext, thread *models.Thread, lineageBuilder *models.SubforumLineageBuilder) string {
 	switch thread.Type {
 	case models.ThreadTypeProjectBlogPost:
-		return hmnurl.BuildBlogThread(projectSlug, thread.ID, thread.Title)
+		return urlContext.BuildBlogThread(thread.ID, thread.Title)
 	case models.ThreadTypeForumPost:
-		return hmnurl.BuildForumThread(projectSlug, lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), thread.ID, thread.Title, 1)
+		return urlContext.BuildForumThread(lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), thread.ID, thread.Title, 1)
 	}
 
-	return hmnurl.BuildOfficialProjectHomepage(projectSlug) // TODO: both official and personal projects
+	return urlContext.BuildHomepage()
 }
 
-func UrlForGenericPost(thread *models.Thread, post *models.Post, lineageBuilder *models.SubforumLineageBuilder, projectSlug string) string {
+func UrlForGenericPost(urlContext *hmnurl.UrlContext, thread *models.Thread, post *models.Post, lineageBuilder *models.SubforumLineageBuilder) string {
 	switch post.ThreadType {
 	case models.ThreadTypeProjectBlogPost:
-		return hmnurl.BuildBlogThreadWithPostHash(projectSlug, post.ThreadID, thread.Title, post.ID)
+		return urlContext.BuildBlogThreadWithPostHash(post.ThreadID, thread.Title, post.ID)
 	case models.ThreadTypeForumPost:
-		return hmnurl.BuildForumPost(projectSlug, lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), post.ThreadID, post.ID)
+		return urlContext.BuildForumPost(lineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID), post.ThreadID, post.ID)
 	}
 
-	return hmnurl.BuildOfficialProjectHomepage(projectSlug) // TODO: both official and personal projects
+	return urlContext.BuildHomepage()
 }
 
 var PostTypeMap = map[models.ThreadType][]templates.PostType{
@@ -47,33 +47,33 @@ var ThreadTypeDisplayNames = map[models.ThreadType]string{
 	models.ThreadTypeForumPost:       "Forums",
 }
 
-func GenericThreadBreadcrumbs(lineageBuilder *models.SubforumLineageBuilder, project *models.Project, thread *models.Thread) []templates.Breadcrumb {
+func GenericThreadBreadcrumbs(urlContext *hmnurl.UrlContext, lineageBuilder *models.SubforumLineageBuilder, thread *models.Thread) []templates.Breadcrumb {
 	var result []templates.Breadcrumb
 	if thread.Type == models.ThreadTypeForumPost {
-		result = SubforumBreadcrumbs(lineageBuilder, project, *thread.SubforumID)
+		result = SubforumBreadcrumbs(urlContext, lineageBuilder, *thread.SubforumID)
 	} else {
 		result = []templates.Breadcrumb{
 			{
-				Name: project.Name,
-				Url:  UrlForProject(project),
+				Name: urlContext.ProjectName,
+				Url:  urlContext.BuildHomepage(),
 			},
 			{
 				Name: ThreadTypeDisplayNames[thread.Type],
-				Url:  BuildProjectRootResourceUrl(project.Slug, thread.Type),
+				Url:  BuildProjectRootResourceUrl(urlContext, thread.Type),
 			},
 		}
 	}
 	return result
 }
 
-func BuildProjectRootResourceUrl(projectSlug string, kind models.ThreadType) string {
+func BuildProjectRootResourceUrl(urlContext *hmnurl.UrlContext, kind models.ThreadType) string {
 	switch kind {
 	case models.ThreadTypeProjectBlogPost:
-		return hmnurl.BuildBlog(projectSlug, 1)
+		return urlContext.BuildBlog(1)
 	case models.ThreadTypeForumPost:
-		return hmnurl.BuildForum(projectSlug, nil, 1)
+		return urlContext.BuildForum(nil, 1)
 	}
-	return hmnurl.BuildOfficialProjectHomepage(projectSlug) // TODO: both official and personal projects
+	return urlContext.BuildHomepage()
 }
 
 func MakePostListItem(
@@ -88,11 +88,13 @@ func MakePostListItem(
 ) templates.PostListItem {
 	var result templates.PostListItem
 
+	urlContext := UrlContextForProject(project)
+
 	result.Title = thread.Title
 	result.User = templates.UserToTemplate(user, currentTheme)
 	result.Date = post.PostDate
 	result.Unread = unread
-	result.Url = UrlForGenericPost(thread, post, lineageBuilder, project.Slug)
+	result.Url = UrlForGenericPost(urlContext, thread, post, lineageBuilder)
 	result.Preview = post.Preview
 
 	postType := templates.PostTypeUnknown
@@ -108,7 +110,7 @@ func MakePostListItem(
 	result.PostTypePrefix = PostTypePrefix[result.PostType]
 
 	if includeBreadcrumbs {
-		result.Breadcrumbs = GenericThreadBreadcrumbs(lineageBuilder, project, thread)
+		result.Breadcrumbs = GenericThreadBreadcrumbs(urlContext, lineageBuilder, thread)
 	}
 
 	return result

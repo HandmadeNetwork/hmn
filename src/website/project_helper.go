@@ -3,8 +3,9 @@ package website
 import (
 	"context"
 
-	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+
+	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 )
@@ -388,10 +389,11 @@ func FetchProjectOwners(
 	return projectOwners[0].Owners, nil
 }
 
-func UrlForProject(p *models.Project) string {
-	if p.Personal {
-		return hmnurl.BuildPersonalProject(p.ID, models.GeneratePersonalProjectSlug(p.Name))
-	} else {
-		return hmnurl.BuildOfficialProjectHomepage(p.Slug)
+func UrlContextForProject(p *models.Project) *hmnurl.UrlContext {
+	return &hmnurl.UrlContext{
+		PersonalProject: p.Personal,
+		ProjectID:       p.ID,
+		ProjectSlug:     p.Slug,
+		ProjectName:     p.Name,
 	}
 }

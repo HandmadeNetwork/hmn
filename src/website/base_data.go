@@ -26,7 +26,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	notices := getNoticesFromCookie(c)
 
 	if len(breadcrumbs) > 0 {
-		projectUrl := UrlForProject(c.CurrentProject)
+		projectUrl := c.UrlContext.BuildHomepage()
 		if breadcrumbs[0].Url != projectUrl {
 			rootBreadcrumb := templates.Breadcrumb{
 				Name: c.CurrentProject.Name,
@@ -42,11 +42,11 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		Breadcrumbs: breadcrumbs,
 
 		CurrentUrl:        c.FullUrl(),
-		CurrentProjectUrl: UrlForProject(c.CurrentProject),
+		CurrentProjectUrl: c.UrlContext.BuildHomepage(),
 		LoginPageUrl:      hmnurl.BuildLoginPage(c.FullUrl()),
 		ProjectCSSUrl:     hmnurl.BuildProjectCSS(c.CurrentProject.Color1),
 
-		Project: templates.ProjectToTemplate(c.CurrentProject, c.Theme),
+		Project: templates.ProjectToTemplate(c.CurrentProject, c.UrlContext.BuildHomepage(), c.Theme),
 		User:    templateUser,
 		Session: templateSession,
 		Notices: notices,
@@ -67,7 +67,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			HMNHomepageUrl:  hmnurl.BuildHomepage(),
 			ProjectIndexUrl: hmnurl.BuildProjectIndex(1),
 			PodcastUrl:      hmnurl.BuildPodcast(),
-			ForumsUrl:       hmnurl.BuildForum(models.HMNProjectSlug, nil, 1),
+			ForumsUrl:       hmnurl.HMNProjectContext.BuildForum(nil, 1),
 			LibraryUrl:      hmnurl.BuildLibrary(),
 		},
 		Footer: templates.Footer{
@@ -77,7 +77,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			CodeOfConductUrl:           hmnurl.BuildCodeOfConduct(),
 			CommunicationGuidelinesUrl: hmnurl.BuildCommunicationGuidelines(),
 			ProjectIndexUrl:            hmnurl.BuildProjectIndex(1),
-			ForumsUrl:                  hmnurl.BuildForum(models.HMNProjectSlug, nil, 1),
+			ForumsUrl:                  hmnurl.HMNProjectContext.BuildForum(nil, 1),
 			ContactUrl:                 hmnurl.BuildContactPage(),
 		},
 	}
@@ -90,15 +90,15 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		episodeGuideUrl := ""
 		defaultTopic, hasAnnotations := config.Config.EpisodeGuide.Projects[c.CurrentProject.Slug]
 		if hasAnnotations {
-			episodeGuideUrl = hmnurl.BuildEpisodeList(c.CurrentProject.Slug, defaultTopic)
+			episodeGuideUrl = c.UrlContext.BuildEpisodeList(defaultTopic)
 		}
 
 		baseData.Header.Project = &templates.ProjectHeader{
 			HasForums:       c.CurrentProject.ForumEnabled,
 			HasBlog:         c.CurrentProject.BlogEnabled,
 			HasEpisodeGuide: hasAnnotations,
-			ForumsUrl:       hmnurl.BuildForum(c.CurrentProject.Slug, nil, 1),
-			BlogUrl:         hmnurl.BuildBlog(c.CurrentProject.Slug, 1),
+			ForumsUrl:       c.UrlContext.BuildForum(nil, 1),
+			BlogUrl:         c.UrlContext.BuildBlog(1),
 			EpisodeGuideUrl: episodeGuideUrl,
 		}
 	}

@@ -71,7 +71,7 @@ func Feed(c *RequestContext) ResponseData {
 		BaseData: baseData,
 
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
-		MarkAllReadUrl: hmnurl.BuildForumMarkRead(c.CurrentProject.Slug, 0),
+		MarkAllReadUrl: c.UrlContext.BuildForumMarkRead(0),
 		Posts:          posts,
 		Pagination:     pagination,
 	}, c.Perf)
@@ -181,7 +181,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 			projectMap := make(map[int]int) // map[project id]index in slice
 			for _, p := range projects.ToSlice() {
 				project := p.(*projectResult).Project
-				templateProject := templates.ProjectToTemplate(&project, c.Theme)
+				templateProject := templates.ProjectToTemplate(&project, UrlContextForProject(&project).BuildHomepage(), c.Theme)
 				templateProject.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(templateProject.Url)).URN()
 
 				projectIds = append(projectIds, project.ID)

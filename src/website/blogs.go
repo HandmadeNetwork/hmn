@@ -46,7 +46,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 	numPages := utils.NumPages(numPosts, postsPerPage)
 	page, ok := ParsePageNumber(c, "page", numPages)
 	if !ok {
-		c.Redirect(hmnurl.BuildBlog(c.CurrentProject.Slug, page), http.StatusSeeOther)
+		c.Redirect(c.UrlContext.BuildBlog(page), http.StatusSeeOther)
 	}
 
 	threads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
@@ -63,14 +63,14 @@ func BlogIndex(c *RequestContext) ResponseData {
 	for _, thread := range threads {
 		entries = append(entries, blogIndexEntry{
 			Title:   thread.Thread.Title,
-			Url:     hmnurl.BuildBlogThread(c.CurrentProject.Slug, thread.Thread.ID, thread.Thread.Title),
+			Url:     c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title),
 			Author:  templates.UserToTemplate(thread.FirstPostAuthor, c.Theme),
 			Date:    thread.FirstPost.PostDate,
 			Content: template.HTML(thread.FirstPostCurrentVersion.TextParsed),
 		})
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.Breadcrumb{BlogBreadcrumb(c.CurrentProject.Slug)})
+	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)})
 
 	canCreate := false
 	if c.CurrentUser != nil {
@@ -97,14 +97,14 @@ func BlogIndex(c *RequestContext) ResponseData {
 			Current: page,
 			Total:   numPages,
 
-			FirstUrl:    hmnurl.BuildBlog(c.CurrentProject.Slug, 1),
-			LastUrl:     hmnurl.BuildBlog(c.CurrentProject.Slug, numPages),
-			PreviousUrl: hmnurl.BuildBlog(c.CurrentProject.Slug, utils.IntClamp(1, page-1, numPages)),
-			NextUrl:     hmnurl.BuildBlog(c.CurrentProject.Slug, utils.IntClamp(1, page+1, numPages)),
+			FirstUrl:    c.UrlContext.BuildBlog(1),
+			LastUrl:     c.UrlContext.BuildBlog(numPages),
+			PreviousUrl: c.UrlContext.BuildBlog(utils.IntClamp(1, page-1, numPages)),
+			NextUrl:     c.UrlContext.BuildBlog(utils.IntClamp(1, page+1, numPages)),
 		},
 
 		CanCreatePost: canCreate,
-		NewPostUrl:    hmnurl.BuildBlogNewThread(c.CurrentProject.Slug),
+		NewPostUrl:    c.UrlContext.BuildBlogNewThread(),
 	}, c.Perf)
 	return res
 }
@@ -138,11 +138,11 @@ func BlogThread(c *RequestContext) ResponseData {
 	for _, p := range posts {
 		post := templates.PostToTemplate(&p.Post, p.Author, c.Theme)
 		post.AddContentVersion(p.CurrentVersion, p.Editor)
-		addBlogUrlsToPost(&post, c.CurrentProject.Slug, &p.Thread, p.Post.ID)
+		addBlogUrlsToPost(c.UrlContext, &post, &p.Thread, p.Post.ID)
 
 		if p.ReplyPost != nil {
 			reply := templates.PostToTemplate(p.ReplyPost, p.ReplyAuthor, c.Theme)
-			addBlogUrlsToPost(&reply, c.CurrentProject.Slug, &p.Thread, p.Post.ID)
+			addBlogUrlsToPost(c.UrlContext, &reply, &p.Thread, p.Post.ID)
 			post.ReplyPost = &reply
 		}
 
@@ -168,7 +168,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title, []templates.Breadcrumb{BlogBreadcrumb(c.CurrentProject.Slug)})
+	baseData := getBaseData(c, thread.Title, []templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)})
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    posts[0].Post.Preview,
@@ -180,7 +180,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		Thread:    templates.ThreadToTemplate(&thread),
 		MainPost:  templatePosts[0],
 		Comments:  templatePosts[1:],
-		ReplyLink: hmnurl.BuildBlogPostReply(c.CurrentProject.Slug, cd.ThreadID, posts[0].Post.ID),
+		ReplyLink: c.UrlContext.BuildBlogPostReply(cd.ThreadID, posts[0].Post.ID),
 		LoginLink: hmnurl.BuildLoginPage(c.FullUrl()),
 	}, c.Perf)
 	return res
@@ -202,7 +202,7 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread for blog redirect"))
 	}
 
-	threadUrl := hmnurl.BuildBlogThreadWithPostHash(c.CurrentProject.Slug, cd.ThreadID, thread.Thread.Title, cd.PostID)
+	threadUrl := c.UrlContext.BuildBlogThreadWithPostHash(cd.ThreadID, thread.Thread.Title, cd.PostID)
 	return c.Redirect(threadUrl, http.StatusFound)
 }
 
@@ -210,11 +210,11 @@ func BlogNewThread(c *RequestContext) ResponseData {
 	baseData := getBaseData(
 		c,
 		fmt.Sprintf("Create New Post | %s", c.CurrentProject.Name),
-		[]templates.Breadcrumb{BlogBreadcrumb(c.CurrentProject.Slug)},
+		[]templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)},
 	)
 
-	editData := getEditorDataForNew(c.CurrentUser, baseData, nil)
-	editData.SubmitUrl = hmnurl.BuildBlogNewThread(c.CurrentProject.Slug)
+	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
+	editData.SubmitUrl = c.UrlContext.BuildBlogNewThread()
 	editData.SubmitLabel = "Create Post"
 
 	var res ResponseData
@@ -268,7 +268,7 @@ func BlogNewThreadSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new blog post"))
 	}
 
-	newThreadUrl := hmnurl.BuildBlogThread(c.CurrentProject.Slug, threadId, title)
+	newThreadUrl := c.UrlContext.BuildBlogThread(threadId, title)
 	return c.Redirect(newThreadUrl, http.StatusSeeOther)
 }
 
@@ -301,11 +301,11 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 	baseData := getBaseData(
 		c,
 		title,
-		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &post.Thread),
+		BlogThreadBreadcrumbs(c.UrlContext, &post.Thread),
 	)
 
-	editData := getEditorDataForEdit(c.CurrentUser, baseData, post)
-	editData.SubmitUrl = hmnurl.BuildBlogPostEdit(c.CurrentProject.Slug, cd.ThreadID, cd.PostID)
+	editData := getEditorDataForEdit(c.UrlContext, c.CurrentUser, baseData, post)
+	editData.SubmitUrl = c.UrlContext.BuildBlogPostEdit(cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Edited Post"
 	if post.Thread.FirstID != post.Post.ID {
 		editData.SubmitLabel = "Submit Edited Comment"
@@ -373,7 +373,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit blog post"))
 	}
 
-	postUrl := hmnurl.BuildBlogThreadWithPostHash(c.CurrentProject.Slug, cd.ThreadID, post.Thread.Title, cd.PostID)
+	postUrl := c.UrlContext.BuildBlogThreadWithPostHash(cd.ThreadID, post.Thread.Title, cd.PostID)
 	return c.Redirect(postUrl, http.StatusSeeOther)
 }
 
@@ -396,14 +396,14 @@ func BlogPostReply(c *RequestContext) ResponseData {
 	baseData := getBaseData(
 		c,
 		fmt.Sprintf("Replying to comment in \"%s\" | %s", post.Thread.Title, c.CurrentProject.Name),
-		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &post.Thread),
+		BlogThreadBreadcrumbs(c.UrlContext, &post.Thread),
 	)
 
 	replyPost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
 
-	editData := getEditorDataForNew(c.CurrentUser, baseData, &replyPost)
-	editData.SubmitUrl = hmnurl.BuildBlogPostReply(c.CurrentProject.Slug, cd.ThreadID, cd.PostID)
+	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, &replyPost)
+	editData.SubmitUrl = c.UrlContext.BuildBlogPostReply(cd.ThreadID, cd.PostID)
 	editData.SubmitLabel = "Submit Reply"
 
 	var res ResponseData
@@ -439,7 +439,7 @@ func BlogPostReplySubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to blog post"))
 	}
 
-	newPostUrl := hmnurl.BuildBlogPost(c.CurrentProject.Slug, cd.ThreadID, newPostId)
+	newPostUrl := c.UrlContext.BuildBlogPost(cd.ThreadID, newPostId)
 	return c.Redirect(newPostUrl, http.StatusSeeOther)
 }
 
@@ -472,7 +472,7 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 	baseData := getBaseData(
 		c,
 		title,
-		BlogThreadBreadcrumbs(c.CurrentProject.Slug, &post.Thread),
+		BlogThreadBreadcrumbs(c.UrlContext, &post.Thread),
 	)
 
 	templatePost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
@@ -487,7 +487,7 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("blog_post_delete.html", blogPostDeleteData{
 		BaseData:  baseData,
-		SubmitUrl: hmnurl.BuildBlogPostDelete(c.CurrentProject.Slug, cd.ThreadID, cd.PostID),
+		SubmitUrl: c.UrlContext.BuildBlogPostDelete(cd.ThreadID, cd.PostID),
 		Post:      templatePost,
 	}, c.Perf)
 	return res
@@ -517,8 +517,7 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 	}
 
 	if threadDeleted {
-		projectUrl := UrlForProject(c.CurrentProject)
-		return c.Redirect(projectUrl, http.StatusSeeOther)
+		return c.Redirect(c.UrlContext.BuildHomepage(), http.StatusSeeOther)
 	} else {
 		thread, err := FetchThread(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, ThreadsQuery{
 			ProjectIDs:  []int{c.CurrentProject.ID},
@@ -529,7 +528,7 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 		} else if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread after blog post delete"))
 		}
-		threadUrl := hmnurl.BuildBlogThread(c.CurrentProject.Slug, thread.Thread.ID, thread.Thread.Title)
+		threadUrl := c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title)
 		return c.Redirect(threadUrl, http.StatusSeeOther)
 	}
 }
@@ -608,9 +607,9 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 	return res, true
 }
 
-func addBlogUrlsToPost(p *templates.Post, projectSlug string, thread *models.Thread, postId int) {
-	p.Url = hmnurl.BuildBlogThreadWithPostHash(projectSlug, thread.ID, thread.Title, postId)
-	p.DeleteUrl = hmnurl.BuildBlogPostDelete(projectSlug, thread.ID, postId)
-	p.EditUrl = hmnurl.BuildBlogPostEdit(projectSlug, thread.ID, postId)
-	p.ReplyUrl = hmnurl.BuildBlogPostReply(projectSlug, thread.ID, postId)
+func addBlogUrlsToPost(urlContext *hmnurl.UrlContext, p *templates.Post, thread *models.Thread, postId int) {
+	p.Url = urlContext.BuildBlogThreadWithPostHash(thread.ID, thread.Title, postId)
+	p.DeleteUrl = urlContext.BuildBlogPostDelete(thread.ID, postId)
+	p.EditUrl = urlContext.BuildBlogPostEdit(thread.ID, postId)
+	p.ReplyUrl = urlContext.BuildBlogPostReply(thread.ID, postId)
 }

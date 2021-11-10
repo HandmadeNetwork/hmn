@@ -74,7 +74,7 @@ func Index(c *RequestContext) ResponseData {
 		c.Logger.Warn().Err(err).Msg("failed to fetch latest posts")
 	}
 	for _, p := range posts {
-		item := PostToTimelineItem(lineageBuilder, &p.Post, &p.Thread, &p.Project, p.Author, c.Theme)
+		item := PostToTimelineItem(UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, p.Author, c.Theme)
 		if p.Thread.Type == models.ThreadTypeProjectBlogPost && p.Post.ID == p.Thread.FirstID {
 			// blog post
 			item.Description = template.HTML(p.CurrentVersion.TextParsed)
@@ -95,7 +95,7 @@ func Index(c *RequestContext) ResponseData {
 	var newsPostItem *templates.TimelineItem
 	if len(newsThreads) > 0 {
 		t := newsThreads[0]
-		item := PostToTimelineItem(lineageBuilder, &t.FirstPost, &t.Thread, &t.Project, t.FirstPostAuthor, c.Theme)
+		item := PostToTimelineItem(UrlContextForProject(&t.Project), lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor, c.Theme)
 		item.OwnerAvatarUrl = ""
 		item.Breadcrumbs = nil
 		item.TypeTitle = ""
@@ -167,7 +167,7 @@ func Index(c *RequestContext) ResponseData {
 		StreamsUrl:     hmnurl.BuildStreams(),
 		ShowcaseUrl:    hmnurl.BuildShowcase(),
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
-		MarkAllReadUrl: hmnurl.BuildForumMarkRead(models.HMNProjectSlug, 0),
+		MarkAllReadUrl: hmnurl.HMNProjectContext.BuildForumMarkRead(0),
 
 		WheelJamUrl: hmnurl.BuildJamIndex(),
 	}, c.Perf)
