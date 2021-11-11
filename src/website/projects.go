@@ -5,6 +5,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"sort"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
@@ -241,25 +242,25 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	var projectHomepageData ProjectHomepageData
+	var templateData ProjectHomepageData
 
-	projectHomepageData.BaseData = getBaseData(c, c.CurrentProject.Name, nil)
+	templateData.BaseData = getBaseData(c, c.CurrentProject.Name, nil)
 	//if canEdit {
 	//	// TODO: Move to project-specific navigation
-	//	// projectHomepageData.BaseData.Header.EditURL = hmnurl.BuildProjectEdit(project.Slug, "")
+	//	// templateData.BaseData.Header.EditURL = hmnurl.BuildProjectEdit(project.Slug, "")
 	//}
-	projectHomepageData.BaseData.OpenGraphItems = append(projectHomepageData.BaseData.OpenGraphItems, templates.OpenGraphItem{
+	templateData.BaseData.OpenGraphItems = append(templateData.BaseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    c.CurrentProject.Blurb,
 	})
 
-	projectHomepageData.Project = templates.ProjectToTemplate(c.CurrentProject, c.UrlContext.BuildHomepage(), c.Theme)
+	templateData.Project = templates.ProjectToTemplate(c.CurrentProject, c.UrlContext.BuildHomepage(), c.Theme)
 	for _, owner := range owners {
-		projectHomepageData.Owners = append(projectHomepageData.Owners, templates.UserToTemplate(owner, c.Theme))
+		templateData.Owners = append(templateData.Owners, templates.UserToTemplate(owner, c.Theme))
 	}
 
 	if c.CurrentProject.Hidden {
-		projectHomepageData.BaseData.AddImmediateNotice(
+		templateData.BaseData.AddImmediateNotice(
 			"hidden",
 			"NOTICE: This project is hidden. It is currently visible only to owners and site admins.",
 		)
@@ -268,7 +269,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if c.CurrentProject.Lifecycle != models.ProjectLifecycleActive {
 		switch c.CurrentProject.Lifecycle {
 		case models.ProjectLifecycleUnapproved:
-			projectHomepageData.BaseData.AddImmediateNotice(
+			templateData.BaseData.AddImmediateNotice(
 				"unapproved",
 				fmt.Sprintf(
 					"NOTICE: This project has not yet been submitted for approval. It is only visible to owners. Please <a href=\"%s\">submit it for approval</a> when the project content is ready for review.",
@@ -276,27 +277,27 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 				),
 			)
 		case models.ProjectLifecycleApprovalRequired:
-			projectHomepageData.BaseData.AddImmediateNotice(
+			templateData.BaseData.AddImmediateNotice(
 				"unapproved",
 				"NOTICE: This project is awaiting approval. It is only visible to owners and site admins.",
 			)
 		case models.ProjectLifecycleHiatus:
-			projectHomepageData.BaseData.AddImmediateNotice(
+			templateData.BaseData.AddImmediateNotice(
 				"hiatus",
 				"NOTICE: This project is on hiatus and may not update for a while.",
 			)
 		case models.ProjectLifecycleDead:
-			projectHomepageData.BaseData.AddImmediateNotice(
+			templateData.BaseData.AddImmediateNotice(
 				"dead",
 				"NOTICE: Site staff have marked this project as being dead. If you intend to revive it, please contact a member of the Handmade Network staff.",
 			)
 		case models.ProjectLifecycleLTSRequired:
-			projectHomepageData.BaseData.AddImmediateNotice(
+			templateData.BaseData.AddImmediateNotice(
 				"lts-reqd",
 				"NOTICE: This project is awaiting approval for maintenance-mode status.",
 			)
 		case models.ProjectLifecycleLTS:
-			projectHomepageData.BaseData.AddImmediateNotice(
+			templateData.BaseData.AddImmediateNotice(
 				"lts",
 				"NOTICE: This project has reached a state of completion.",
 			)
@@ -304,15 +305,15 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	}
 
 	for _, screenshot := range screenshotQueryResult.ToSlice() {
-		projectHomepageData.Screenshots = append(projectHomepageData.Screenshots, hmnurl.BuildUserFile(screenshot.(*screenshotQuery).Filename))
+		templateData.Screenshots = append(templateData.Screenshots, hmnurl.BuildUserFile(screenshot.(*screenshotQuery).Filename))
 	}
 
 	for _, link := range projectLinkResult.ToSlice() {
-		projectHomepageData.ProjectLinks = append(projectHomepageData.ProjectLinks, templates.LinkToTemplate(&link.(*projectLinkQuery).Link))
+		templateData.ProjectLinks = append(templateData.ProjectLinks, templates.LinkToTemplate(&link.(*projectLinkQuery).Link))
 	}
 
 	for _, post := range postQueryResult.ToSlice() {
-		projectHomepageData.RecentActivity = append(projectHomepageData.RecentActivity, PostToTimelineItem(
+		templateData.RecentActivity = append(templateData.RecentActivity, PostToTimelineItem(
 			c.UrlContext,
 			lineageBuilder,
 			&post.(*postQuery).Post,
@@ -322,8 +323,38 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		))
 	}
 
+	tagId := -1
+	if c.CurrentProject.TagID != nil {
+		tagId = *c.CurrentProject.TagID
+	}
+
+	snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{
+		Tags: []int{tagId},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project snippets"))
+	}
+	for _, s := range snippets {
+		item := SnippetToTimelineItem(
+			&s.Snippet,
+			s.Asset,
+			s.DiscordMessage,
+			s.Tags,
+			s.Owner,
+			c.Theme,
+		)
+		item.SmallInfo = true
+		templateData.RecentActivity = append(templateData.RecentActivity, item)
+	}
+
+	c.Perf.StartBlock("PROFILE", "Sort timeline")
+	sort.Slice(templateData.RecentActivity, func(i, j int) bool {
+		return templateData.RecentActivity[j].Date.Before(templateData.RecentActivity[i].Date)
+	})
+	c.Perf.EndBlock()
+
 	var res ResponseData
-	err = res.WriteTemplate("project_homepage.html", projectHomepageData, c.Perf)
+	err = res.WriteTemplate("project_homepage.html", templateData, c.Perf)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render project homepage template"))
 	}

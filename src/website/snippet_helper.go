@@ -153,19 +153,38 @@ func FetchSnippet(
 	return res[0], nil
 }
 
-func FetchTags(ctx context.Context, dbConn db.ConnOrTx, text []string) ([]*models.Tag, error) {
+type TagQuery struct {
+	IDs  []int
+	Text []string
+
+	Limit, Offset int
+}
+
+func FetchTags(ctx context.Context, dbConn db.ConnOrTx, q TagQuery) ([]*models.Tag, error) {
 	perf := ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Fetch snippets")
 	defer perf.EndBlock()
 
-	it, err := db.Query(ctx, dbConn, models.Tag{},
+	var qb db.QueryBuilder
+	qb.Add(
 		`
 		SELECT $columns
 		FROM tags
-		WHERE text = ANY ($1)
+		WHERE
+			TRUE
 		`,
-		text,
 	)
+	if len(q.IDs) > 0 {
+		qb.Add(`AND id = ANY ($?)`, q.IDs)
+	}
+	if len(q.Text) > 0 {
+		qb.Add(`AND text = ANY ($?)`, q.Text)
+	}
+	if q.Limit > 0 {
+		qb.Add(`LIMIT $? OFFSET $?`, q.Limit, q.Offset)
+	}
+
+	it, err := db.Query(ctx, dbConn, models.Tag{}, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch tags")
 	}
@@ -180,8 +199,8 @@ func FetchTags(ctx context.Context, dbConn db.ConnOrTx, text []string) ([]*model
 	return res, nil
 }
 
-func FetchTag(ctx context.Context, dbConn db.ConnOrTx, text string) (*models.Tag, error) {
-	tags, err := FetchTags(ctx, dbConn, []string{text})
+func FetchTag(ctx context.Context, dbConn db.ConnOrTx, q TagQuery) (*models.Tag, error) {
+	tags, err := FetchTags(ctx, dbConn, q)
 	if err != nil {
 		return nil, err
 	}
