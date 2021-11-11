@@ -18,16 +18,18 @@ func JamIndex(c *RequestContext) ResponseData {
 		daysUntil = 0
 	}
 
-	var tagIds []int
-	jamTag, err := FetchTag(c.Context(), c.Conn, "wheeljam")
+	tagId := -1
+	jamTag, err := FetchTag(c.Context(), c.Conn, TagQuery{
+		Text: []string{"wheeljam"},
+	})
 	if err == nil {
-		tagIds = []int{jamTag.ID}
+		tagId = jamTag.ID
 	} else {
 		c.Logger.Warn().Err(err).Msg("failed to fetch jam tag; will fetch all snippets as a result")
 	}
 
 	snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{
-		Tags: tagIds,
+		Tags: []int{tagId},
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam snippets"))
