@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/db"
+
 	"git.handmade.network/hmn/hmn/src/migration/types"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/jackc/pgx/v4"
@@ -35,16 +37,31 @@ func (m PersonalProjects) Up(ctx context.Context, tx pgx.Tx) error {
 			id SERIAL NOT NULL PRIMARY KEY,
 			text VARCHAR(20) NOT NULL
 		);
+		CREATE INDEX tags_by_text ON tags (text);
 
 		ALTER TABLE tags
 			ADD CONSTRAINT tag_syntax CHECK (
 				text ~ '^([a-z0-9]+(-[a-z0-9]+)*)?$'
 			);
 
-		CREATE INDEX tags_by_text ON tags (text);
+		CREATE TABLE snippet_tags (
+			snippet_id INT NOT NULL REFERENCES handmade_snippet (id) ON DELETE CASCADE,
+			tag_id INT NOT NULL REFERENCES tags (id) ON DELETE CASCADE,
+			PRIMARY KEY (snippet_id, tag_id)
+		);
 	`)
 	if err != nil {
-		return oops.New(err, "failed to add tags table")
+		return oops.New(err, "failed to add tags tables")
+	}
+
+	_, err = tx.Exec(ctx, `
+		ALTER TABLE handmade_snippet
+			DROP CONSTRAINT handmade_snippet_owner_id_fkey,
+			ALTER owner_id DROP NOT NULL,
+			ADD CONSTRAINT handmade_snippet_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth_user (id) ON DELETE SET NULL;
+	`)
+	if err != nil {
+		return oops.New(err, "failed to update snippet constraints")
 	}
 
 	_, err = tx.Exec(ctx, `
@@ -89,11 +106,63 @@ func (m PersonalProjects) Up(ctx context.Context, tx pgx.Tx) error {
 		return oops.New(err, "failed to make existing projects official")
 	}
 
+	//
+	// Port "jam snippets" to use a tag
+	//
+
+	jamTagId, err := db.QueryInt(ctx, tx, `INSERT INTO tags (text) VALUES ('wheeljam') RETURNING id`)
+	if err != nil {
+		return oops.New(err, "failed to create jam tag")
+	}
+
+	_, err = tx.Exec(ctx,
+		`
+		INSERT INTO snippet_tags
+			SELECT id, $1
+			FROM handmade_snippet
+			WHERE is_jam
+		`,
+		jamTagId,
+	)
+	if err != nil {
+		return oops.New(err, "failed to add jam tag to jam snippets")
+	}
+
+	_, err = tx.Exec(ctx, `
+		ALTER TABLE handmade_snippet
+			DROP is_jam;
+	`)
+	if err != nil {
+		return oops.New(err, "failed to drop is_jam column from snippets")
+	}
+
 	return nil
 }
 
 func (m PersonalProjects) Down(ctx context.Context, tx pgx.Tx) error {
 	var err error
+
+	_, err = tx.Exec(ctx, `
+		ALTER TABLE handmade_snippet
+			ADD is_jam BOOLEAN NOT NULL DEFAULT FALSE;
+
+		UPDATE handmade_snippet
+		SET is_jam = TRUE
+		WHERE id IN (
+			SELECT snippet.id
+			FROM
+				handmade_snippet AS snippet
+				JOIN snippet_tags ON snippet.id = snippet_tags.snippet_id
+				JOIN tags ON snippet_tags.tag_id = tags.id
+			WHERE
+				tags.text = 'wheeljam'
+		);
+
+		DELETE FROM tags WHERE text = 'wheeljam';
+	`)
+	if err != nil {
+		return oops.New(err, "failed to revert jam snippets")
+	}
 
 	_, err = tx.Exec(ctx, `
 		ALTER TABLE handmade_project
@@ -115,6 +184,17 @@ func (m PersonalProjects) Down(ctx context.Context, tx pgx.Tx) error {
 	}
 
 	_, err = tx.Exec(ctx, `
+		ALTER TABLE handmade_snippet
+			DROP CONSTRAINT handmade_snippet_owner_id_fkey,
+			ALTER owner_id SET NOT NULL,
+			ADD CONSTRAINT handmade_snippet_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth_user (id) ON DELETE CASCADE;
+	`)
+	if err != nil {
+		return oops.New(err, "failed to revert snippet constraint changes")
+	}
+
+	_, err = tx.Exec(ctx, `
+		DROP TABLE snippet_tags;		
 		DROP TABLE tags;
 	`)
 	if err != nil {

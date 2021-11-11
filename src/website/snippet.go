@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"git.handmade.network/hmn/hmn/src/db"
-	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
 )
@@ -30,25 +29,7 @@ func Snippet(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	c.Perf.StartBlock("SQL", "Fetch snippet")
-	type snippetQuery struct {
-		Owner          models.User            `db:"owner"`
-		Snippet        models.Snippet         `db:"snippet"`
-		Asset          *models.Asset          `db:"asset"`
-		DiscordMessage *models.DiscordMessage `db:"discord_message"`
-	}
-	snippetQueryResult, err := db.QueryOne(c.Context(), c.Conn, snippetQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_snippet AS snippet
-			INNER JOIN auth_user AS owner ON owner.id = snippet.owner_id
-			LEFT JOIN handmade_asset AS asset ON asset.id = snippet.asset_id
-			LEFT JOIN handmade_discordmessage AS discord_message ON discord_message.id = snippet.discord_message_id
-		WHERE snippet.id = $1
-		`,
-		snippetId,
-	)
+	s, err := FetchSnippet(c.Context(), c.Conn, c.CurrentUser, snippetId, SnippetQuery{})
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			return FourOhFour(c)
@@ -58,9 +39,7 @@ func Snippet(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	snippetData := snippetQueryResult.(*snippetQuery)
-
-	snippet := SnippetToTimelineItem(&snippetData.Snippet, snippetData.Asset, snippetData.DiscordMessage, &snippetData.Owner, c.Theme)
+	snippet := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Tags, s.Owner, c.Theme)
 
 	opengraph := []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade.Network"},

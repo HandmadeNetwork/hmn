@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"regexp"
+	"sort"
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
@@ -63,6 +64,7 @@ func SnippetToTimelineItem(
 	snippet *models.Snippet,
 	asset *models.Asset,
 	discordMessage *models.DiscordMessage,
+	tags []*models.Tag,
 	owner *models.User,
 	currentTheme string,
 ) templates.TimelineItem {
@@ -104,6 +106,13 @@ func SnippetToTimelineItem(
 
 	if discordMessage != nil {
 		item.DiscordMessageUrl = discordMessage.Url
+	}
+
+	sort.Slice(tags, func(i, j int) bool {
+		return tags[i].Text < tags[j].Text
+	})
+	for _, tag := range tags {
+		item.Tags = append(item.Tags, templates.TagToTemplate(tag))
 	}
 
 	return item

@@ -228,35 +228,14 @@ func AtomFeed(c *RequestContext) ResponseData {
 			feedData.AtomFeedUrl = hmnurl.BuildAtomFeedForShowcase()
 			feedData.FeedUrl = hmnurl.BuildShowcase()
 
-			c.Perf.StartBlock("SQL", "Fetch showcase snippets")
-			type snippetQuery struct {
-				Owner          models.User            `db:"owner"`
-				Snippet        models.Snippet         `db:"snippet"`
-				Asset          *models.Asset          `db:"asset"`
-				DiscordMessage *models.DiscordMessage `db:"discord_message"`
-			}
-			snippetQueryResult, err := db.Query(c.Context(), c.Conn, snippetQuery{},
-				`
-				SELECT $columns
-				FROM
-					handmade_snippet AS snippet
-					INNER JOIN auth_user AS owner ON owner.id = snippet.owner_id
-					LEFT JOIN handmade_asset AS asset ON asset.id = snippet.asset_id
-					LEFT JOIN handmade_discordmessage AS discord_message ON discord_message.id = snippet.discord_message_id
-				WHERE
-					NOT snippet.is_jam
-				ORDER BY snippet.when DESC
-				LIMIT $1
-				`,
-				itemsPerFeed,
-			)
+			snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{
+				Limit: itemsPerFeed,
+			})
 			if err != nil {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
 			}
-			snippetQuerySlice := snippetQueryResult.ToSlice()
-			for _, s := range snippetQuerySlice {
-				row := s.(*snippetQuery)
-				timelineItem := SnippetToTimelineItem(&row.Snippet, row.Asset, row.DiscordMessage, &row.Owner, c.Theme)
+			for _, s := range snippets {
+				timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Tags, s.Owner, c.Theme)
 				feedData.Snippets = append(feedData.Snippets, timelineItem)
 			}
 			c.Perf.EndBlock()

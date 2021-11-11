@@ -64,7 +64,12 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message, is
 		}
 
 		if isJam {
-			_, err := tx.Exec(ctx, `UPDATE handmade_snippet SET is_jam = TRUE WHERE id = $1`, snippet.ID)
+			tagId, err := db.QueryInt(ctx, tx, `SELECT id FROM tags WHERE text = 'wheeljam'`)
+			if err != nil {
+				return oops.New(err, "failed to fetch id of jam tag")
+			}
+
+			_, err = tx.Exec(ctx, `INSERT INTO snippet_tags (snippet_id, tag_id) VALUES ($1, $2)`, snippet.ID, tagId)
 			if err != nil {
 				return oops.New(err, "failed to mark snippet as a jam snippet")
 			}
