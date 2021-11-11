@@ -307,7 +307,23 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 
 		builder.WriteString(`"discord_message_url":"`)
 		builder.WriteString(item.DiscordMessageUrl)
-		builder.WriteString(`"`)
+		builder.WriteString(`",`)
+
+		builder.WriteString(`"tags":[`)
+		for _, tag := range item.Tags {
+			builder.WriteString(`{`)
+
+			builder.WriteString(`"text":"`)
+			builder.WriteString(tag.Text)
+			builder.WriteString(`",`)
+
+			builder.WriteString(`"url":"`)
+			builder.WriteString(tag.Url)
+			builder.WriteString(`"`)
+
+			builder.WriteString(`}`)
+		}
+		builder.WriteString(`]`)
 
 		builder.WriteRune('}')
 	}
