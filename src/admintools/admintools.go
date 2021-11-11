@@ -297,4 +297,6 @@ func init() {
 	moveThreadsToSubforumCommand.MarkFlagRequired("project_slug")
 	moveThreadsToSubforumCommand.MarkFlagRequired("subforum_slug")
 	adminCommand.AddCommand(moveThreadsToSubforumCommand)
+
+	addProjectCommands(adminCommand)
 }

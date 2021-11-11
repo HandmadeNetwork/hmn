@@ -28,7 +28,7 @@ import (
 	"github.com/teacat/noire"
 )
 
-func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, perfCollector *perf.PerfCollector) http.Handler {
+func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) http.Handler {
 	router := &Router{}
 	routes := RouteBuilder{
 		Router: router,
@@ -36,7 +36,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 			return func(c *RequestContext) (res ResponseData) {
 				c.Conn = conn
 
-				logPerf := TrackRequestPerf(c, perfCollector)
+				logPerf := TrackRequestPerf(c)
 				defer logPerf()
 
 				defer LogContextErrorsFromResponse(c, &res)
@@ -52,7 +52,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		return func(c *RequestContext) (res ResponseData) {
 			c.Conn = conn
 
-			logPerf := TrackRequestPerf(c, perfCollector)
+			logPerf := TrackRequestPerf(c)
 			defer logPerf()
 
 			defer LogContextErrorsFromResponse(c, &res)
@@ -74,7 +74,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		return func(c *RequestContext) (res ResponseData) {
 			c.Conn = conn
 
-			logPerf := TrackRequestPerf(c, perfCollector)
+			logPerf := TrackRequestPerf(c)
 			defer logPerf()
 
 			defer LogContextErrorsFromResponse(c, &res)
@@ -534,7 +534,7 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 
 const PerfContextKey = "HMNPerf"
 
-func TrackRequestPerf(c *RequestContext, perfCollector *perf.PerfCollector) (after func()) {
+func TrackRequestPerf(c *RequestContext) (after func()) {
 	c.Perf = perf.MakeNewRequestPerf(c.Route, c.Req.Method, c.Req.URL.Path)
 	c.ctx = context.WithValue(c.Context(), PerfContextKey, c.Perf)
 

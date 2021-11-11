@@ -37,7 +37,7 @@ var WebsiteCommand = &cobra.Command{
 
 		server := http.Server{
 			Addr:    config.Config.Addr,
-			Handler: NewWebsiteRoutes(longRequestContext, conn, perfCollector),
+			Handler: NewWebsiteRoutes(longRequestContext, conn),
 		}
 
 		backgroundJobsDone := zipJobs(

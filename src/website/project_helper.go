@@ -73,7 +73,7 @@ func FetchProjects(
 		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
 	}
 	if len(q.Slugs) > 0 {
-		qb.Add(`AND project.slug = ANY ($?)`, q.Slugs)
+		qb.Add(`AND (project.slug != '' AND project.slug = ANY ($?))`, q.Slugs)
 	}
 	if len(q.Lifecycles) > 0 {
 		qb.Add(`AND project.lifecycle = ANY($?)`, q.Lifecycles)
