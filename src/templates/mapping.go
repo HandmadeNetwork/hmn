@@ -368,6 +368,13 @@ func DiscordUserToTemplate(d *models.DiscordUser) DiscordUser {
 	}
 }
 
+func TagToTemplate(t *models.Tag) Tag {
+	return Tag{
+		Text: t.Text,
+		// TODO: Url
+	}
+}
+
 func maybeString(s *string) string {
 	if s == nil {
 		return ""

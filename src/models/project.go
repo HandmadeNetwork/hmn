@@ -43,7 +43,7 @@ type Project struct {
 
 	Slug              string `db:"slug"`
 	Name              string `db:"name"`
-	Tag               string `db:"tag"`
+	TagID             *int   `db:"tag"`
 	Blurb             string `db:"blurb"`
 	Description       string `db:"description"`
 	ParsedDescription string `db:"descparsed"`

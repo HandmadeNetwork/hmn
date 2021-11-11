@@ -268,6 +268,7 @@ type TimelineItem struct {
 	OwnerName      string
 	OwnerUrl       string
 
+	Tags        []Tag
 	Description template.HTML
 
 	PreviewMedia TimelineItemMedia
@@ -329,4 +330,9 @@ type DiscordUser struct {
 	Username      string
 	Discriminator string
 	Avatar        string
+}
+
+type Tag struct {
+	Text string
+	Url  string
 }

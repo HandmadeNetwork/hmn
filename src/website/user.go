@@ -136,29 +136,12 @@ func UserProfile(c *RequestContext) ResponseData {
 	})
 	c.Perf.EndBlock()
 
-	type snippetQuery struct {
-		Snippet        models.Snippet         `db:"snippet"`
-		Asset          *models.Asset          `db:"asset"`
-		DiscordMessage *models.DiscordMessage `db:"discord_message"`
-	}
-	c.Perf.StartBlock("SQL", "Fetch snippets")
-	snippetQueryResult, err := db.Query(c.Context(), c.Conn, snippetQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_snippet AS snippet
-			LEFT JOIN handmade_asset AS asset ON asset.id = snippet.asset_id
-			LEFT JOIN handmade_discordmessage AS discord_message ON discord_message.id = snippet.discord_message_id
-		WHERE
-			snippet.owner_id = $1
-		`,
-		profileUser.ID,
-	)
+	snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{
+		OwnerIDs: []int{profileUser.ID},
+	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for user: %s", username))
 	}
-	snippetQuerySlice := snippetQueryResult.ToSlice()
-	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
@@ -166,7 +149,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("PROFILE", "Construct timeline items")
-	timelineItems := make([]templates.TimelineItem, 0, len(posts)+len(snippetQuerySlice))
+	timelineItems := make([]templates.TimelineItem, 0, len(posts)+len(snippets))
 
 	for _, post := range posts {
 		timelineItems = append(timelineItems, PostToTimelineItem(
@@ -179,12 +162,12 @@ func UserProfile(c *RequestContext) ResponseData {
 		))
 	}
 
-	for _, snippetRow := range snippetQuerySlice {
-		snippetData := snippetRow.(*snippetQuery)
+	for _, s := range snippets {
 		item := SnippetToTimelineItem(
-			&snippetData.Snippet,
-			snippetData.Asset,
-			snippetData.DiscordMessage,
+			&s.Snippet,
+			s.Asset,
+			s.DiscordMessage,
+			s.Tags,
 			profileUser,
 			c.Theme,
 		)
