@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/config"
-	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
@@ -53,11 +52,11 @@ func EpisodeList(c *RequestContext) ResponseData {
 	defaultTopic, hasEpisodeGuide := config.Config.EpisodeGuide.Projects[slug]
 
 	if !hasEpisodeGuide {
-		return c.Redirect(hmnurl.BuildProjectHomepage(slug), http.StatusSeeOther)
+		return c.Redirect(c.UrlContext.BuildHomepage(), http.StatusSeeOther)
 	}
 
 	if topic == "" {
-		return c.Redirect(hmnurl.BuildEpisodeList(slug, defaultTopic), http.StatusSeeOther)
+		return c.Redirect(c.UrlContext.BuildEpisodeList(defaultTopic), http.StatusSeeOther)
 	}
 
 	allTopics, foundTopic := topicsForProject(slug, topic)
@@ -82,7 +81,7 @@ func EpisodeList(c *RequestContext) ResponseData {
 	for _, t := range allTopics {
 		url := ""
 		if t != foundTopic {
-			url = hmnurl.BuildEpisodeList(slug, t)
+			url = c.UrlContext.BuildEpisodeList(t)
 		}
 		topicLinks = append(topicLinks, templates.Link{LinkText: t, Url: url})
 	}
@@ -114,7 +113,7 @@ func Episode(c *RequestContext) ResponseData {
 	_, hasEpisodeGuide := config.Config.EpisodeGuide.Projects[slug]
 
 	if !hasEpisodeGuide {
-		return c.Redirect(hmnurl.BuildProjectHomepage(slug), http.StatusSeeOther)
+		return c.Redirect(c.UrlContext.BuildHomepage(), http.StatusSeeOther)
 	}
 
 	_, foundTopic := topicsForProject(slug, topic)
@@ -150,7 +149,7 @@ func Episode(c *RequestContext) ResponseData {
 	baseData := getBaseData(
 		c,
 		title,
-		[]templates.Breadcrumb{{Name: "Episode Guide", Url: hmnurl.BuildEpisodeList(c.CurrentProject.Slug, foundTopic)}},
+		[]templates.Breadcrumb{{Name: "Episode Guide", Url: c.UrlContext.BuildEpisodeList(foundTopic)}},
 	)
 	res.MustWriteTemplate("episode.html", EpisodeData{
 		BaseData: baseData,

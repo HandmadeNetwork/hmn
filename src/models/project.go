@@ -2,6 +2,8 @@ package models
 
 import (
 	"reflect"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -15,7 +17,7 @@ var ProjectType = reflect.TypeOf(Project{})
 type ProjectLifecycle int
 
 const (
-	ProjectLifecycleUnapproved = iota
+	ProjectLifecycleUnapproved ProjectLifecycle = iota
 	ProjectLifecycleApprovalRequired
 	ProjectLifecycleActive
 	ProjectLifecycleHiatus
@@ -41,6 +43,7 @@ type Project struct {
 
 	Slug              string `db:"slug"`
 	Name              string `db:"name"`
+	TagID             *int   `db:"tag"`
 	Blurb             string `db:"blurb"`
 	Description       string `db:"description"`
 	ParsedDescription string `db:"descparsed"`
@@ -53,7 +56,8 @@ type Project struct {
 	LogoLight string `db:"logolight"`
 	LogoDark  string `db:"logodark"`
 
-	Flags                 int       `db:"flags"` // NOTE(asaf): Flags is currently only used to mark a project as hidden. Flags == 1 means hidden. Flags == 0 means visible.
+	Personal              bool      `db:"personal"`
+	Hidden                bool      `db:"hidden"`
 	Featured              bool      `db:"featured"`
 	DateApproved          time.Time `db:"date_approved"`
 	AllLastUpdated        time.Time `db:"all_last_updated"`
@@ -63,7 +67,7 @@ type Project struct {
 
 	ForumEnabled   bool `db:"forum_enabled"`
 	BlogEnabled    bool `db:"blog_enabled"`
-	LibraryEnabled bool `db:"library_enabled"`
+	LibraryEnabled bool `db:"library_enabled"` // TODO: Delete this field from the db
 }
 
 func (p *Project) IsHMN() bool {
@@ -76,4 +80,31 @@ func (p *Project) Subdomain() string {
 	}
 
 	return p.Slug
+}
+
+// Checks whether the project has forums enabled. This should restrict the creation of new forum
+// content, but it should NOT prevent the viewing of existing forum content. (Projects may at one
+// point have forums enabled, write some stuff, and then later disable forums, and we want that
+// content to stay accessible.) Hiding the navigation is ok.
+func (p *Project) HasForums() bool {
+	return !p.Personal && p.ForumEnabled
+}
+
+// Same as HasForums, but for blogs.
+func (p *Project) HasBlog() bool {
+	return !p.Personal && p.BlogEnabled
+}
+
+var slugUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9-]`)
+var slugHyphenRun = regexp.MustCompile(`-+`)
+
+// Generates a URL-safe version of a personal project's name.
+func GeneratePersonalProjectSlug(name string) string {
+	slug := name
+	slug = slugUnsafeChars.ReplaceAllLiteralString(slug, "-")
+	slug = slugHyphenRun.ReplaceAllLiteralString(slug, "-")
+	slug = strings.Trim(slug, "-")
+	slug = strings.ToLower(slug)
+
+	return slug
 }

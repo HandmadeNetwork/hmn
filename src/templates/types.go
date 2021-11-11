@@ -126,9 +126,8 @@ type Project struct {
 
 	IsHMN bool
 
-	HasBlog    bool
-	HasForum   bool
-	HasLibrary bool
+	HasBlog  bool
+	HasForum bool
 
 	UUID         string
 	DateApproved time.Time
@@ -269,6 +268,7 @@ type TimelineItem struct {
 	OwnerName      string
 	OwnerUrl       string
 
+	Tags        []Tag
 	Description template.HTML
 
 	PreviewMedia TimelineItemMedia
@@ -330,4 +330,9 @@ type DiscordUser struct {
 	Username      string
 	Discriminator string
 	Avatar        string
+}
+
+type Tag struct {
+	Text string
+	Url  string
 }

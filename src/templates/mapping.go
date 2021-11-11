@@ -59,22 +59,11 @@ var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
 	models.ProjectLifecycleLTS:              "Complete",
 }
 
-func ProjectUrl(p *models.Project) string {
-	var url string
-	if p.Lifecycle == models.ProjectLifecycleUnapproved || p.Lifecycle == models.ProjectLifecycleApprovalRequired {
-		url = hmnurl.BuildProjectNotApproved(p.Slug)
-	} else {
-		url = hmnurl.BuildProjectHomepage(p.Slug)
-	}
-	return url
-}
-
-func ProjectToTemplate(p *models.Project, theme string) Project {
+func ProjectToTemplate(p *models.Project, url string, theme string) Project {
 	logo := p.LogoLight
 	if theme == "dark" {
 		logo = p.LogoDark
 	}
-	url := ProjectUrl(p)
 	return Project{
 		Name:              p.Name,
 		Subdomain:         p.Subdomain(),
@@ -91,9 +80,8 @@ func ProjectToTemplate(p *models.Project, theme string) Project {
 
 		IsHMN: p.IsHMN(),
 
-		HasBlog:    p.BlogEnabled,
-		HasForum:   p.ForumEnabled,
-		HasLibrary: false, // TODO: port the library lol
+		HasBlog:  p.HasBlog(),
+		HasForum: p.HasForums(),
 
 		DateApproved: p.DateApproved,
 	}
@@ -319,7 +307,23 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 
 		builder.WriteString(`"discord_message_url":"`)
 		builder.WriteString(item.DiscordMessageUrl)
-		builder.WriteString(`"`)
+		builder.WriteString(`",`)
+
+		builder.WriteString(`"tags":[`)
+		for _, tag := range item.Tags {
+			builder.WriteString(`{`)
+
+			builder.WriteString(`"text":"`)
+			builder.WriteString(tag.Text)
+			builder.WriteString(`",`)
+
+			builder.WriteString(`"url":"`)
+			builder.WriteString(tag.Url)
+			builder.WriteString(`"`)
+
+			builder.WriteString(`}`)
+		}
+		builder.WriteString(`]`)
 
 		builder.WriteRune('}')
 	}
@@ -377,6 +381,13 @@ func DiscordUserToTemplate(d *models.DiscordUser) DiscordUser {
 		Username:      d.Username,
 		Discriminator: d.Discriminator,
 		Avatar:        avatarUrl,
+	}
+}
+
+func TagToTemplate(t *models.Tag) Tag {
+	return Tag{
+		Text: t.Text,
+		// TODO: Url
 	}
 }
 

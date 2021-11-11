@@ -14,6 +14,11 @@ func getBaseDataAutocrumb(c *RequestContext, title string) templates.BaseData {
 // NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
 //             If you pass nil, no breadcrumbs will be created.
 func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadcrumb) templates.BaseData {
+	var project models.Project
+	if c.CurrentProject != nil {
+		project = *c.CurrentProject
+	}
+
 	var templateUser *templates.User
 	var templateSession *templates.Session
 	if c.CurrentUser != nil {
@@ -26,10 +31,10 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	notices := getNoticesFromCookie(c)
 
 	if len(breadcrumbs) > 0 {
-		projectUrl := hmnurl.BuildProjectHomepage(c.CurrentProject.Slug)
+		projectUrl := c.UrlContext.BuildHomepage()
 		if breadcrumbs[0].Url != projectUrl {
 			rootBreadcrumb := templates.Breadcrumb{
-				Name: c.CurrentProject.Name,
+				Name: project.Name,
 				Url:  projectUrl,
 			}
 			breadcrumbs = append([]templates.Breadcrumb{rootBreadcrumb}, breadcrumbs...)
@@ -42,20 +47,20 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		Breadcrumbs: breadcrumbs,
 
 		CurrentUrl:        c.FullUrl(),
-		CurrentProjectUrl: hmnurl.BuildProjectHomepage(c.CurrentProject.Slug),
+		CurrentProjectUrl: c.UrlContext.BuildHomepage(),
 		LoginPageUrl:      hmnurl.BuildLoginPage(c.FullUrl()),
-		ProjectCSSUrl:     hmnurl.BuildProjectCSS(c.CurrentProject.Color1),
+		ProjectCSSUrl:     hmnurl.BuildProjectCSS(project.Color1),
 
-		Project: templates.ProjectToTemplate(c.CurrentProject, c.Theme),
+		Project: templates.ProjectToTemplate(&project, c.UrlContext.BuildHomepage(), c.Theme),
 		User:    templateUser,
 		Session: templateSession,
 		Notices: notices,
 
 		ReportIssueMailto: "team@handmade.network",
 
-		OpenGraphItems: buildDefaultOpenGraphItems(c.CurrentProject, title),
+		OpenGraphItems: buildDefaultOpenGraphItems(&project, title),
 
-		IsProjectPage: !c.CurrentProject.IsHMN(),
+		IsProjectPage: !project.IsHMN(),
 		Header: templates.Header{
 			AdminUrl:          hmnurl.BuildAdminApprovalQueue(), // TODO(asaf): Replace with general-purpose admin page
 			UserSettingsUrl:   hmnurl.BuildUserSettings(""),
@@ -67,7 +72,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			HMNHomepageUrl:  hmnurl.BuildHomepage(),
 			ProjectIndexUrl: hmnurl.BuildProjectIndex(1),
 			PodcastUrl:      hmnurl.BuildPodcast(),
-			ForumsUrl:       hmnurl.BuildForum(models.HMNProjectSlug, nil, 1),
+			ForumsUrl:       hmnurl.HMNProjectContext.BuildForum(nil, 1),
 			LibraryUrl:      hmnurl.BuildLibrary(),
 		},
 		Footer: templates.Footer{
@@ -77,7 +82,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			CodeOfConductUrl:           hmnurl.BuildCodeOfConduct(),
 			CommunicationGuidelinesUrl: hmnurl.BuildCommunicationGuidelines(),
 			ProjectIndexUrl:            hmnurl.BuildProjectIndex(1),
-			ForumsUrl:                  hmnurl.BuildForum(models.HMNProjectSlug, nil, 1),
+			ForumsUrl:                  hmnurl.HMNProjectContext.BuildForum(nil, 1),
 			ContactUrl:                 hmnurl.BuildContactPage(),
 		},
 	}
@@ -86,19 +91,19 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		baseData.Header.UserProfileUrl = hmnurl.BuildUserProfile(c.CurrentUser.Username)
 	}
 
-	if !c.CurrentProject.IsHMN() {
+	if !project.IsHMN() {
 		episodeGuideUrl := ""
-		defaultTopic, hasAnnotations := config.Config.EpisodeGuide.Projects[c.CurrentProject.Slug]
+		defaultTopic, hasAnnotations := config.Config.EpisodeGuide.Projects[project.Slug]
 		if hasAnnotations {
-			episodeGuideUrl = hmnurl.BuildEpisodeList(c.CurrentProject.Slug, defaultTopic)
+			episodeGuideUrl = c.UrlContext.BuildEpisodeList(defaultTopic)
 		}
 
 		baseData.Header.Project = &templates.ProjectHeader{
-			HasForums:       c.CurrentProject.ForumEnabled,
-			HasBlog:         c.CurrentProject.BlogEnabled,
+			HasForums:       project.HasForums(),
+			HasBlog:         project.HasBlog(),
 			HasEpisodeGuide: hasAnnotations,
-			ForumsUrl:       hmnurl.BuildForum(c.CurrentProject.Slug, nil, 1),
-			BlogUrl:         hmnurl.BuildBlog(c.CurrentProject.Slug, 1),
+			ForumsUrl:       c.UrlContext.BuildForum(nil, 1),
+			BlogUrl:         c.UrlContext.BuildBlog(1),
 			EpisodeGuideUrl: episodeGuideUrl,
 		}
 	}

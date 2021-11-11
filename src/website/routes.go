@@ -8,6 +8,8 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -154,14 +156,6 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 		return res
 	})
 
-	anyProject.GET(hmnurl.RegexHomepage, func(c *RequestContext) ResponseData {
-		if c.CurrentProject.IsHMN() {
-			return Index(c)
-		} else {
-			return ProjectHomepage(c)
-		}
-	})
-
 	// NOTE(asaf): HMN-only routes:
 	hmnOnly.GET(hmnurl.RegexManifesto, Manifesto)
 	hmnOnly.GET(hmnurl.RegexAbout, About)
@@ -175,14 +169,13 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 
 	hmnOnly.GET(hmnurl.RegexOldHome, Index)
 
-	hmnOnly.POST(hmnurl.RegexLoginAction, securityTimerMiddleware(time.Millisecond*100, Login)) // TODO(asaf): Adjust this after launch
+	hmnOnly.POST(hmnurl.RegexLoginAction, securityTimerMiddleware(time.Millisecond*100, Login))
 	hmnOnly.GET(hmnurl.RegexLogoutAction, Logout)
 	hmnOnly.GET(hmnurl.RegexLoginPage, LoginPage)
 
 	hmnOnly.GET(hmnurl.RegexRegister, RegisterNewUser)
 	hmnOnly.POST(hmnurl.RegexRegister, securityTimerMiddleware(email.ExpectedEmailSendDuration, RegisterNewUserSubmit))
 	hmnOnly.GET(hmnurl.RegexRegistrationSuccess, RegisterNewUserSuccess)
-	hmnOnly.GET(hmnurl.RegexOldEmailConfirmation, EmailConfirmation) // TODO(asaf): Delete this a bit after launch
 	hmnOnly.GET(hmnurl.RegexEmailConfirmation, EmailConfirmation)
 	hmnOnly.POST(hmnurl.RegexEmailConfirmation, EmailConfirmationSubmit)
 
@@ -202,7 +195,6 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	hmnOnly.GET(hmnurl.RegexShowcase, Showcase)
 	hmnOnly.GET(hmnurl.RegexSnippet, Snippet)
 	hmnOnly.GET(hmnurl.RegexProjectIndex, ProjectIndex)
-	hmnOnly.GET(hmnurl.RegexProjectNotApproved, ProjectHomepage)
 
 	hmnOnly.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
 	hmnOnly.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
@@ -224,37 +216,121 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 
 	hmnOnly.GET(hmnurl.RegexLibraryAny, LibraryNotPortedYet)
 
-	// NOTE(asaf): Any-project routes:
-	anyProject.GET(hmnurl.RegexForumNewThread, authMiddleware(ForumNewThread))
-	anyProject.POST(hmnurl.RegexForumNewThreadSubmit, authMiddleware(csrfMiddleware(ForumNewThreadSubmit)))
-	anyProject.GET(hmnurl.RegexForumThread, ForumThread)
-	anyProject.GET(hmnurl.RegexForum, Forum)
-	anyProject.POST(hmnurl.RegexForumMarkRead, authMiddleware(csrfMiddleware(ForumMarkRead)))
-	anyProject.GET(hmnurl.RegexForumPost, ForumPostRedirect)
-	anyProject.GET(hmnurl.RegexForumPostReply, authMiddleware(ForumPostReply))
-	anyProject.POST(hmnurl.RegexForumPostReply, authMiddleware(csrfMiddleware(ForumPostReplySubmit)))
-	anyProject.GET(hmnurl.RegexForumPostEdit, authMiddleware(ForumPostEdit))
-	anyProject.POST(hmnurl.RegexForumPostEdit, authMiddleware(csrfMiddleware(ForumPostEditSubmit)))
-	anyProject.GET(hmnurl.RegexForumPostDelete, authMiddleware(ForumPostDelete))
-	anyProject.POST(hmnurl.RegexForumPostDelete, authMiddleware(csrfMiddleware(ForumPostDeleteSubmit)))
-	anyProject.GET(hmnurl.RegexWikiArticle, WikiArticleRedirect)
+	attachProjectRoutes := func(rb *RouteBuilder) {
+		rb.GET(hmnurl.RegexHomepage, func(c *RequestContext) ResponseData {
+			if c.CurrentProject.IsHMN() {
+				return Index(c)
+			} else {
+				return ProjectHomepage(c)
+			}
+		})
 
-	anyProject.GET(hmnurl.RegexBlog, BlogIndex)
-	anyProject.GET(hmnurl.RegexBlogNewThread, authMiddleware(BlogNewThread))
-	anyProject.POST(hmnurl.RegexBlogNewThread, authMiddleware(csrfMiddleware(BlogNewThreadSubmit)))
-	anyProject.GET(hmnurl.RegexBlogThread, BlogThread)
-	anyProject.GET(hmnurl.RegexBlogPost, BlogPostRedirectToThread)
-	anyProject.GET(hmnurl.RegexBlogPostReply, authMiddleware(BlogPostReply))
-	anyProject.POST(hmnurl.RegexBlogPostReply, authMiddleware(csrfMiddleware(BlogPostReplySubmit)))
-	anyProject.GET(hmnurl.RegexBlogPostEdit, authMiddleware(BlogPostEdit))
-	anyProject.POST(hmnurl.RegexBlogPostEdit, authMiddleware(csrfMiddleware(BlogPostEditSubmit)))
-	anyProject.GET(hmnurl.RegexBlogPostDelete, authMiddleware(BlogPostDelete))
-	anyProject.POST(hmnurl.RegexBlogPostDelete, authMiddleware(csrfMiddleware(BlogPostDeleteSubmit)))
-	anyProject.GET(hmnurl.RegexBlogsRedirect, func(c *RequestContext) ResponseData {
-		return c.Redirect(hmnurl.ProjectUrl(
-			fmt.Sprintf("blog%s", c.PathParams["remainder"]), nil,
-			c.CurrentProject.Slug,
-		), http.StatusMovedPermanently)
+		// Middleware used for forum action routes - anything related to actually creating or editing forum content
+		needsForums := func(h Handler) Handler {
+			return func(c *RequestContext) ResponseData {
+				// 404 if the project has forums disabled
+				if !c.CurrentProject.HasForums() {
+					return FourOhFour(c)
+				}
+				// Require auth if forums are enabled
+				return authMiddleware(h)(c)
+			}
+		}
+		rb.POST(hmnurl.RegexForumNewThreadSubmit, needsForums(csrfMiddleware(ForumNewThreadSubmit)))
+		rb.GET(hmnurl.RegexForumNewThread, needsForums(ForumNewThread))
+		rb.GET(hmnurl.RegexForumThread, ForumThread)
+		rb.GET(hmnurl.RegexForum, Forum)
+		rb.POST(hmnurl.RegexForumMarkRead, authMiddleware(csrfMiddleware(ForumMarkRead))) // needs auth but doesn't need forums enabled
+		rb.GET(hmnurl.RegexForumPost, ForumPostRedirect)
+		rb.GET(hmnurl.RegexForumPostReply, needsForums(ForumPostReply))
+		rb.POST(hmnurl.RegexForumPostReply, needsForums(csrfMiddleware(ForumPostReplySubmit)))
+		rb.GET(hmnurl.RegexForumPostEdit, needsForums(ForumPostEdit))
+		rb.POST(hmnurl.RegexForumPostEdit, needsForums(csrfMiddleware(ForumPostEditSubmit)))
+		rb.GET(hmnurl.RegexForumPostDelete, needsForums(ForumPostDelete))
+		rb.POST(hmnurl.RegexForumPostDelete, needsForums(csrfMiddleware(ForumPostDeleteSubmit)))
+		rb.GET(hmnurl.RegexWikiArticle, WikiArticleRedirect)
+
+		// Middleware used for blog action routes - anything related to actually creating or editing blog content
+		needsBlogs := func(h Handler) Handler {
+			return func(c *RequestContext) ResponseData {
+				// 404 if the project has blogs disabled
+				if !c.CurrentProject.HasBlog() {
+					return FourOhFour(c)
+				}
+				// Require auth if blogs are enabled
+				return authMiddleware(h)(c)
+			}
+		}
+		rb.GET(hmnurl.RegexBlog, BlogIndex)
+		rb.GET(hmnurl.RegexBlogNewThread, needsBlogs(BlogNewThread))
+		rb.POST(hmnurl.RegexBlogNewThread, needsBlogs(csrfMiddleware(BlogNewThreadSubmit)))
+		rb.GET(hmnurl.RegexBlogThread, BlogThread)
+		rb.GET(hmnurl.RegexBlogPost, BlogPostRedirectToThread)
+		rb.GET(hmnurl.RegexBlogPostReply, needsBlogs(BlogPostReply))
+		rb.POST(hmnurl.RegexBlogPostReply, needsBlogs(csrfMiddleware(BlogPostReplySubmit)))
+		rb.GET(hmnurl.RegexBlogPostEdit, needsBlogs(BlogPostEdit))
+		rb.POST(hmnurl.RegexBlogPostEdit, needsBlogs(csrfMiddleware(BlogPostEditSubmit)))
+		rb.GET(hmnurl.RegexBlogPostDelete, needsBlogs(BlogPostDelete))
+		rb.POST(hmnurl.RegexBlogPostDelete, needsBlogs(csrfMiddleware(BlogPostDeleteSubmit)))
+		rb.GET(hmnurl.RegexBlogsRedirect, func(c *RequestContext) ResponseData {
+			return c.Redirect(c.UrlContext.Url(
+				fmt.Sprintf("blog%s", c.PathParams["remainder"]), nil,
+			), http.StatusMovedPermanently)
+		})
+	}
+	hmnOnly.Group(hmnurl.RegexPersonalProject, func(rb *RouteBuilder) {
+		// TODO(ben): Perhaps someday we can make this middleware modification feel better? It seems
+		// pretty common to run the outermost middleware first before doing other stuff, but having
+		// to nest functions this way feels real bad.
+		rb.Middleware = func(h Handler) Handler {
+			return hmnOnly.Middleware(func(c *RequestContext) ResponseData {
+				// At this point we are definitely on the plain old HMN subdomain.
+
+				// Fetch personal project and do whatever
+				id, err := strconv.Atoi(c.PathParams["projectid"])
+				if err != nil {
+					panic(oops.New(err, "project id was not numeric (bad regex in routing)"))
+				}
+				p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, id, ProjectsQuery{})
+				if err != nil {
+					if errors.Is(err, db.NotFound) {
+						return FourOhFour(c)
+					} else {
+						return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch personal project"))
+					}
+				}
+
+				c.CurrentProject = &p.Project
+				c.UrlContext = UrlContextForProject(c.CurrentProject)
+
+				if !p.Project.Personal {
+					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
+				}
+
+				if c.PathParams["projectslug"] != models.GeneratePersonalProjectSlug(p.Project.Name) {
+					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
+				}
+
+				return h(c)
+			})
+		}
+		attachProjectRoutes(rb)
+	})
+	anyProject.Group(regexp.MustCompile("^"), func(rb *RouteBuilder) {
+		rb.Middleware = func(h Handler) Handler {
+			return anyProject.Middleware(func(c *RequestContext) ResponseData {
+				// We could be on any project's subdomain.
+
+				// Check if the current project (matched by subdomain) is actually no longer official
+				// and therefore needs to be redirected to the personal project version of the route.
+				if c.CurrentProject.Personal {
+					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
+				}
+
+				return h(c)
+			})
+		}
+		attachProjectRoutes(rb)
 	})
 
 	anyProject.POST(hmnurl.RegexAssetUpload, AssetUpload)
@@ -275,31 +351,6 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool, pe
 	anyProject.AnyMethod(hmnurl.RegexCatchAll, FourOhFour)
 
 	return router
-}
-
-func FetchProjectBySlug(ctx context.Context, conn *pgxpool.Pool, slug string) (*models.Project, error) {
-	if len(slug) > 0 && slug != models.HMNProjectSlug {
-		subdomainProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE slug = $1", slug)
-		if err == nil {
-			subdomainProject := subdomainProjectRow.(*models.Project)
-			return subdomainProject, nil
-		} else if !errors.Is(err, db.NotFound) {
-			return nil, oops.New(err, "failed to get projects by slug")
-		} else {
-			return nil, nil
-		}
-	} else {
-		defaultProjectRow, err := db.QueryOne(ctx, conn, models.Project{}, "SELECT $columns FROM handmade_project WHERE id = $1", models.HMNProjectID)
-		if err != nil {
-			if errors.Is(err, db.NotFound) {
-				return nil, oops.New(nil, "default project didn't exist in the database")
-			} else {
-				return nil, oops.New(err, "failed to get default project")
-			}
-		}
-		defaultProject := defaultProjectRow.(*models.Project)
-		return defaultProject, nil
-	}
 }
 
 func ProjectCSS(c *RequestContext) ResponseData {
@@ -382,22 +433,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 	c.Perf.StartBlock("MIDDLEWARE", "Load common website data")
 	defer c.Perf.EndBlock()
 
-	// get project
-	{
-		hostPrefix := strings.TrimSuffix(c.Req.Host, hmnurl.GetBaseHost())
-		slug := strings.TrimRight(hostPrefix, ".")
-
-		dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, slug)
-		if err != nil {
-			return false, c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
-		}
-		if dbProject == nil {
-			return false, c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
-		}
-
-		c.CurrentProject = dbProject
-	}
-
+	// get user
 	{
 		sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
 		if err == nil {
@@ -412,12 +448,43 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		// http.ErrNoCookie is the only error Cookie ever returns, so no further handling to do here.
 	}
 
-	theme := "light"
-	if c.CurrentUser != nil && c.CurrentUser.DarkTheme {
-		theme = "dark"
+	// get official project
+	{
+		hostPrefix := strings.TrimSuffix(c.Req.Host, hmnurl.GetBaseHost())
+		slug := strings.TrimRight(hostPrefix, ".")
+
+		dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, ProjectsQuery{})
+		if err == nil {
+			c.CurrentProject = &dbProject.Project
+		} else {
+			if errors.Is(err, db.NotFound) {
+				// do nothing, this is fine
+			} else {
+				return false, c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
+			}
+		}
+
+		if c.CurrentProject == nil {
+			dbProject, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, models.HMNProjectID, ProjectsQuery{
+				IncludeHidden: true,
+			})
+			if err != nil {
+				panic(oops.New(err, "failed to fetch HMN project"))
+			}
+			c.CurrentProject = &dbProject.Project
+		}
+
+		if c.CurrentProject == nil {
+			panic("failed to load project data")
+		}
+
+		c.UrlContext = UrlContextForProject(c.CurrentProject)
 	}
 
-	c.Theme = theme
+	c.Theme = "light"
+	if c.CurrentUser != nil && c.CurrentUser.DarkTheme {
+		c.Theme = "dark"
+	}
 
 	return true, ResponseData{}
 }

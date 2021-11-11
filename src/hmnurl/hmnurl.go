@@ -6,8 +6,9 @@ import (
 	"regexp"
 	"time"
 
-	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/models"
+
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/oops"
 )
 
@@ -62,34 +63,31 @@ func GetBaseHost() string {
 	return baseUrlParsed.Host
 }
 
+type UrlContext struct {
+	PersonalProject bool
+	ProjectID       int
+	ProjectSlug     string
+	ProjectName     string
+}
+
+var HMNProjectContext = UrlContext{
+	PersonalProject: false,
+	ProjectID:       models.HMNProjectID,
+	ProjectSlug:     models.HMNProjectSlug,
+}
+
 func Url(path string, query []Q) string {
-	return ProjectUrl(path, query, "")
+	return UrlWithFragment(path, query, "")
 }
 
-func ProjectUrl(path string, query []Q, slug string) string {
-	return ProjectUrlWithFragment(path, query, slug, "")
+func UrlWithFragment(path string, query []Q, fragment string) string {
+	return HMNProjectContext.UrlWithFragment(path, query, fragment)
 }
 
-func ProjectUrlWithFragment(path string, query []Q, slug string, fragment string) string {
-	subdomain := slug
-	if slug == models.HMNProjectSlug {
-		subdomain = ""
-	}
-
-	host := baseUrlParsed.Host
-	if len(subdomain) > 0 {
-		host = slug + "." + host
-	}
-
-	url := url.URL{
-		Scheme:   baseUrlParsed.Scheme,
-		Host:     host,
-		Path:     trim(path),
-		RawQuery: encodeQuery(query),
-		Fragment: fragment,
-	}
-
-	return url.String()
+func (c *UrlContext) RewriteProjectUrl(u *url.URL) string {
+	// we need to strip anything matching the personal project regex to get the base path
+	match := RegexPersonalProject.FindString(u.Path)
+	return c.Url(u.Path[len(match):], QFromURL(u))
 }
 
 func trim(path string) string {

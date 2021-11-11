@@ -10,7 +10,7 @@ set -euxo pipefail
 
 THIS_PATH=$(pwd)
 #BETA_PATH='/mnt/c/Users/bvisn/Developer/handmade/handmade-beta'
- BETA_PATH='/Users/benvisness/Developer/handmade/handmade-beta'
+BETA_PATH='/Users/benvisness/Developer/handmade/handmade-beta'
 
 pushd $BETA_PATH
     docker-compose down -v
@@ -19,4 +19,5 @@ pushd $BETA_PATH
 
     docker-compose exec postgres bash -c "psql -U postgres -c \"CREATE ROLE hmn CREATEDB LOGIN PASSWORD 'password';\""
 popd
+#go run src/main.go seedfile local/backups/hmn_pg_dump_live_2021-09-06
 go run src/main.go seedfile local/backups/hmn_pg_dump_live_2021-10-23

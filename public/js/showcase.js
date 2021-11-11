@@ -7,6 +7,7 @@ const TimelineMediaTypes = {
 
 const showcaseItemTemplate = makeTemplateCloner("showcase_item");
 const modalTemplate = makeTemplateCloner("timeline_modal");
+const tagTemplate = makeTemplateCloner("timeline_item_tag");
 
 function showcaseTimestamp(rawDate) {
     const date = new Date(rawDate*1000);
@@ -94,6 +95,17 @@ function makeShowcaseItem(timelineItem) {
             modalEl.userLink.href = timelineItem.owner_url;
             modalEl.date.textContent = timestamp;
             modalEl.date.setAttribute("href", timelineItem.snippet_url);
+
+            if (timelineItem.tags.length === 0) {
+                modalEl.tags.remove();
+            } else {
+                for (const tag of timelineItem.tags) {
+                    const tagItem = tagTemplate();
+                    tagItem.tag.innerText = tag.text;
+
+                    modalEl.tags.appendChild(tagItem.root);
+                }
+            }
 
             modalEl.discord_link.href = timelineItem.discord_message_url;
 

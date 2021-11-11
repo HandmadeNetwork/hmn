@@ -137,7 +137,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 	for _, p := range posts {
 		post := templates.PostToTemplate(&p.Post, &p.Author, c.Theme)
 		post.AddContentVersion(p.CurrentVersion, &p.Author) // NOTE(asaf): Don't care about editors here
-		post.Url = UrlForGenericPost(&p.Thread, &p.Post, lineageBuilder, p.Project.Slug)
+		post.Url = UrlForGenericPost(UrlContextForProject(&p.Project), &p.Thread, &p.Post, lineageBuilder)
 		data.Posts = append(data.Posts, postWithTitle{
 			Post:  post,
 			Title: p.Thread.Title,

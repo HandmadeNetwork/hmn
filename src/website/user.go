@@ -108,7 +108,7 @@ func UserProfile(c *RequestContext) ResponseData {
 			INNER JOIN handmade_user_projects AS uproj ON uproj.project_id = project.id
 		WHERE
 			uproj.user_id = $1
-			AND ($2 OR (project.flags = 0 AND project.lifecycle = ANY ($3)))
+			AND ($2 OR (NOT project.hidden AND project.lifecycle = ANY ($3)))
 		`,
 		profileUser.ID,
 		(c.CurrentUser != nil && (profileUser == c.CurrentUser || c.CurrentUser.IsStaff)),
@@ -121,7 +121,11 @@ func UserProfile(c *RequestContext) ResponseData {
 	templateProjects := make([]templates.Project, 0, len(projectQuerySlice))
 	for _, projectRow := range projectQuerySlice {
 		projectData := projectRow.(*projectQuery)
-		templateProjects = append(templateProjects, templates.ProjectToTemplate(&projectData.Project, c.Theme))
+		templateProjects = append(templateProjects, templates.ProjectToTemplate(
+			&projectData.Project,
+			UrlContextForProject(&projectData.Project).BuildHomepage(),
+			c.Theme,
+		))
 	}
 	c.Perf.EndBlock()
 
@@ -132,29 +136,12 @@ func UserProfile(c *RequestContext) ResponseData {
 	})
 	c.Perf.EndBlock()
 
-	type snippetQuery struct {
-		Snippet        models.Snippet         `db:"snippet"`
-		Asset          *models.Asset          `db:"asset"`
-		DiscordMessage *models.DiscordMessage `db:"discord_message"`
-	}
-	c.Perf.StartBlock("SQL", "Fetch snippets")
-	snippetQueryResult, err := db.Query(c.Context(), c.Conn, snippetQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_snippet AS snippet
-			LEFT JOIN handmade_asset AS asset ON asset.id = snippet.asset_id
-			LEFT JOIN handmade_discordmessage AS discord_message ON discord_message.id = snippet.discord_message_id
-		WHERE
-			snippet.owner_id = $1
-		`,
-		profileUser.ID,
-	)
+	snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{
+		OwnerIDs: []int{profileUser.ID},
+	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for user: %s", username))
 	}
-	snippetQuerySlice := snippetQueryResult.ToSlice()
-	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
@@ -162,25 +149,25 @@ func UserProfile(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("PROFILE", "Construct timeline items")
-	timelineItems := make([]templates.TimelineItem, 0, len(posts)+len(snippetQuerySlice))
+	timelineItems := make([]templates.TimelineItem, 0, len(posts)+len(snippets))
 
 	for _, post := range posts {
 		timelineItems = append(timelineItems, PostToTimelineItem(
+			UrlContextForProject(&post.Project),
 			lineageBuilder,
 			&post.Post,
 			&post.Thread,
-			&post.Project,
 			profileUser,
 			c.Theme,
 		))
 	}
 
-	for _, snippetRow := range snippetQuerySlice {
-		snippetData := snippetRow.(*snippetQuery)
+	for _, s := range snippets {
 		item := SnippetToTimelineItem(
-			&snippetData.Snippet,
-			snippetData.Asset,
-			snippetData.DiscordMessage,
+			&s.Snippet,
+			s.Asset,
+			s.DiscordMessage,
+			s.Tags,
 			profileUser,
 			c.Theme,
 		)
