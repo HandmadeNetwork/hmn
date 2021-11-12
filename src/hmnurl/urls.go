@@ -746,6 +746,10 @@ func BuildTheme(filepath string, theme string, cachebust bool) string {
 }
 
 func BuildUserFile(filepath string) string {
+	if filepath == "" {
+		return ""
+	}
+
 	filepath = strings.Trim(filepath, "/")
 	return BuildPublic(fmt.Sprintf("media/%s", filepath), false)
 }
