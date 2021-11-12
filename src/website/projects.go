@@ -114,9 +114,11 @@ func ProjectIndex(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch personal projects"))
 		}
 
-		randSeed := now.YearDay()
-		random := rand.New(rand.NewSource(int64(randSeed)))
-		random.Shuffle(len(projects), func(i, j int) { projects[i], projects[j] = projects[j], projects[i] })
+		sort.Slice(projects, func(i, j int) bool {
+			p1 := projects[i].Project
+			p2 := projects[j].Project
+			return p2.AllLastUpdated.Before(p1.AllLastUpdated) // sort backwards - recent first
+		})
 
 		for i, p := range projects {
 			if i >= maxPersonalProjects {
