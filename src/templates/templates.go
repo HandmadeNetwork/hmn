@@ -110,6 +110,9 @@ var HMNTemplateFuncs = template.FuncMap{
 	"csrftoken": func(s Session) template.HTML {
 		return template.HTML(fmt.Sprintf(`<input type="hidden" name="%s" value="%s">`, auth.CSRFFieldName, s.CSRFToken))
 	},
+	"csrftokenjs": func(s Session) template.HTML {
+		return template.HTML(fmt.Sprintf(`{ "field": "%s", "token": "%s" }`, auth.CSRFFieldName, s.CSRFToken))
+	},
 	"darken": func(amount float64, color noire.Color) noire.Color {
 		return color.Shade(amount)
 	},
@@ -196,6 +199,14 @@ var HMNTemplateFuncs = template.FuncMap{
 		return ProjectCardData{
 			Project: &project,
 			Classes: classes,
+		}
+	},
+
+	"imageselectordata": func(name string, src string, required bool) ImageSelectorData {
+		return ImageSelectorData{
+			Name:     name,
+			Src:      src,
+			Required: required,
 		}
 	},
 

@@ -99,6 +99,61 @@ func init() {
 	}
 	adminCommand.AddCommand(activateUserCommand)
 
+	userStatusCommand := &cobra.Command{
+		Use:   "userstatus [username] [status]",
+		Short: "Set a user's status manually",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 2 {
+				fmt.Printf("You must provide a username and status.\n\n")
+				fmt.Printf("Statuses:\n")
+				fmt.Printf("1. inactive:\n")
+				fmt.Printf("2. confirmed:\n")
+				fmt.Printf("3. approved:\n")
+				fmt.Printf("4. banned:\n")
+				cmd.Usage()
+				os.Exit(1)
+			}
+
+			username := args[0]
+			statusStr := args[1]
+			status := models.UserStatusInactive
+			switch statusStr {
+			case "inactive":
+				status = models.UserStatusInactive
+			case "confirmed":
+				status = models.UserStatusConfirmed
+			case "approved":
+				status = models.UserStatusApproved
+			case "banned":
+				status = models.UserStatusBanned
+			default:
+				fmt.Printf("You must provide a valid status\n\n")
+				fmt.Printf("Statuses:\n")
+				fmt.Printf("1. inactive:\n")
+				fmt.Printf("2. confirmed:\n")
+				fmt.Printf("3. approved:\n")
+				fmt.Printf("4. banned:\n")
+				cmd.Usage()
+				os.Exit(1)
+			}
+
+			ctx := context.Background()
+			conn := db.NewConnPool(1, 1)
+			defer conn.Close()
+
+			res, err := conn.Exec(ctx, "UPDATE auth_user SET status = $1 WHERE LOWER(username) = LOWER($2);", status, username)
+			if err != nil {
+				panic(err)
+			}
+			if res.RowsAffected() == 0 {
+				fmt.Printf("User not found.\n\n")
+			}
+
+			fmt.Printf("%s is now %s\n\n", username, statusStr)
+		},
+	}
+	adminCommand.AddCommand(userStatusCommand)
+
 	sendTestMailCommand := &cobra.Command{
 		Use:   "sendtestmail [type] [toAddress] [toName]",
 		Short: "Sends a test mail",

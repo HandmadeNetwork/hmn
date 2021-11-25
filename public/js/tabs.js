@@ -92,3 +92,15 @@ function switchTab(container, slug) {
 
     window.location.hash = slug;
 }
+
+function switchToTabOfElement(container, el) {
+    const tabs = Array.from(container.querySelectorAll('.tab'));
+	let target = el.parentElement;
+	while (target) {
+		if (tabs.includes(target)) {
+			switchTab(container, target.getAttribute("data-slug"));
+			return;
+		}
+		target = target.parentElement;
+	}
+}

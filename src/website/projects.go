@@ -362,3 +362,53 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	}
 	return res
 }
+
+var ProjectLogoMaxFileSize = 2 * 1024 * 1024
+
+type ProjectEditData struct {
+	templates.BaseData
+
+	Editing         bool
+	ProjectSettings templates.ProjectSettings
+
+	APICheckUsernameUrl string
+	LogoMaxFileSize     int
+}
+
+func ProjectNew(c *RequestContext) ResponseData {
+	var project templates.ProjectSettings
+	project.Owners = append(project.Owners, templates.UserToTemplate(c.CurrentUser, c.Theme))
+	project.Personal = true
+	var res ResponseData
+	res.MustWriteTemplate("project_edit.html", ProjectEditData{
+		BaseData:        getBaseDataAutocrumb(c, "New Project"),
+		Editing:         false,
+		ProjectSettings: project,
+
+		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
+		LogoMaxFileSize:     ProjectLogoMaxFileSize,
+	}, c.Perf)
+	return res
+}
+
+func ProjectNewSubmit(c *RequestContext) ResponseData {
+	return FourOhFour(c)
+}
+
+func ProjectEdit(c *RequestContext) ResponseData {
+	// Find project
+	// Convert to template
+	var project templates.ProjectSettings
+
+	var res ResponseData
+	res.MustWriteTemplate("project_edit.html", ProjectEditData{
+		BaseData:        getBaseDataAutocrumb(c, "Edit Project"),
+		Editing:         true,
+		ProjectSettings: project,
+	}, c.Perf)
+	return res
+}
+
+func ProjectEditSubmit(c *RequestContext) ResponseData {
+	return FourOhFour(c)
+}

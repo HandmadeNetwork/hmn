@@ -196,6 +196,9 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 	hmnOnly.GET(hmnurl.RegexSnippet, Snippet)
 	hmnOnly.GET(hmnurl.RegexProjectIndex, ProjectIndex)
 
+	hmnOnly.GET(hmnurl.RegexProjectNew, authMiddleware(ProjectNew))
+	hmnOnly.POST(hmnurl.RegexProjectNew, authMiddleware(csrfMiddleware(ProjectNewSubmit)))
+
 	hmnOnly.GET(hmnurl.RegexDiscordOAuthCallback, authMiddleware(DiscordOAuthCallback))
 	hmnOnly.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
 	hmnOnly.POST(hmnurl.RegexDiscordShowcaseBacklog, authMiddleware(csrfMiddleware(DiscordShowcaseBacklog)))
@@ -214,6 +217,8 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 	hmnOnly.GET(hmnurl.RegexPodcastEpisode, PodcastEpisode)
 	hmnOnly.GET(hmnurl.RegexPodcastRSS, PodcastRSS)
 
+	hmnOnly.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
+
 	hmnOnly.GET(hmnurl.RegexLibraryAny, LibraryNotPortedYet)
 
 	attachProjectRoutes := func(rb *RouteBuilder) {
@@ -224,6 +229,9 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 				return ProjectHomepage(c)
 			}
 		})
+
+		rb.GET(hmnurl.RegexProjectEdit, authMiddleware(ProjectEdit))
+		rb.POST(hmnurl.RegexProjectEdit, authMiddleware(csrfMiddleware(ProjectEditSubmit)))
 
 		// Middleware used for forum action routes - anything related to actually creating or editing forum content
 		needsForums := func(h Handler) Handler {

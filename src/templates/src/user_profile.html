@@ -36,31 +36,33 @@
 		</div>
 	</div>
     <div class="flex-grow-1 overflow-hidden">
-		{{ with .ProfileUserProjects }}
+		{{ if or .OwnProfile .ProfileUserProjects }}
 			<div class="content-block ph3 ph0-ns">
-				<h2>Projects</h2>
-				{{ range . }}
+				<h2>{{ if .OwnProfile }}My {{ end }}Projects</h2>
+				{{ range .ProfileUserProjects }}
 					<div class="mv3">
 						{{ template "project_card.html" projectcarddata . "" }}
 					</div>
 				{{ end }}
+				{{ if .OwnProfile }}
+					<a href="{{ .NewProjectUrl }}">+ New Project</a>
+				{{ end }}
+			</div>
+		{{ end }}
+		{{ if eq 1 0 }}
+			<div class="content-block ph3 ph0-ns">
+				<h2>Add Snippets</h2>
+				<div class="note">
+					Show us what you're working on.<br />
+					You can upload videos, images, and audio clips.<br />
+					Your snippets may appear on the <a href="{{ .ShowcaseUrl }}">showcase page</a>.
+				</div>
 			</div>
 		{{ end }}
 		{{ if gt (len .TimelineItems) 0 }}
-			<div class="content-block timeline-container ph3 ph0-ns">
+			<div class="mv3 content-block timeline-container ph3 ph0-ns">
 				<h2>Recent Activity</h2>
 				<div class="timeline-filters mb2">
-					{{/*
-					{{ if gt .NumForums 0 }}
-						<div class="dib filter forums mr2"><input data-type="forums" class="v-mid mr1" type="checkbox" id="timeline-checkbox-forums" checked /><label class="v-mid" for="timeline-checkbox-forums">Forums (<span class="count">{{ .NumForums }}</span>)</label></div>
-					{{ end }}
-					{{ if gt .NumBlogs 0 }}
-						<div class="dib filter blogs mr2"><input data-type="blogs" class="v-mid mr1" type="checkbox" id="timeline-checkbox-blogs" checked /><label class="v-mid" for="timeline-checkbox-blogs">Blogs (<span class="count">{{ .NumBlogs }}</span>)</label></div>
-					{{ end }}
-					{{ if gt .NumSnippets 0 }}
-						<div class="dib filter snippets mr2"><input data-type="snippets" class="v-mid mr1" type="checkbox" id="timeline-checkbox-snippets" checked /><label class="v-mid" for="timeline-checkbox-snippets">Snippets (<span class="count">{{ .NumSnippets }}</span>)</label></div>
-					{{ end }}
-					*/}}
 				</div>
 				<div class="timeline">
 					{{ range .TimelineItems }}

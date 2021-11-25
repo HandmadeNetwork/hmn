@@ -284,12 +284,12 @@ func BuildProjectIndex(page int) string {
 	}
 }
 
-var RegexProjectNew = regexp.MustCompile("^/projects/new$")
+var RegexProjectNew = regexp.MustCompile("^/p/new$")
 
 func BuildProjectNew() string {
 	defer CatchPanic()
 
-	return Url("/projects/new", nil)
+	return Url("/p/new", nil)
 }
 
 var RegexPersonalProject = regexp.MustCompile("^/p/(?P<projectid>[0-9]+)(/(?P<projectslug>[a-zA-Z0-9-]+))?")
@@ -668,6 +668,16 @@ var RegexDiscordShowcaseBacklog = regexp.MustCompile("^/discord_showcase_backlog
 
 func BuildDiscordShowcaseBacklog() string {
 	return Url("/discord_showcase_backlog", nil)
+}
+
+/*
+* API
+ */
+
+var RegexAPICheckUsername = regexp.MustCompile("^/api/check_username$")
+
+func BuildAPICheckUsername() string {
+	return Url("/api/check_username", nil)
 }
 
 /*

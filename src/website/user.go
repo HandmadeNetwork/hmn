@@ -26,6 +26,9 @@ type UserProfileTemplateData struct {
 	ProfileUserLinks    []templates.Link
 	ProfileUserProjects []templates.Project
 	TimelineItems       []templates.TimelineItem
+	OwnProfile          bool
+	ShowcaseUrl         string
+	NewProjectUrl       string
 }
 
 func UserProfile(c *RequestContext) ResponseData {
@@ -194,6 +197,9 @@ func UserProfile(c *RequestContext) ResponseData {
 		ProfileUserLinks:    profileUserLinks,
 		ProfileUserProjects: templateProjects,
 		TimelineItems:       timelineItems,
+		OwnProfile:          c.CurrentUser.ID == profileUser.ID,
+		ShowcaseUrl:         hmnurl.BuildShowcase(),
+		NewProjectUrl:       hmnurl.BuildProjectNew(),
 	}, c.Perf)
 	return res
 }

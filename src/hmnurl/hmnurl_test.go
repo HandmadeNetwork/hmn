@@ -302,6 +302,10 @@ func TestEditorPreviewsJS(t *testing.T) {
 	AssertRegexMatch(t, BuildEditorPreviewsJS(), RegexEditorPreviewsJS, nil)
 }
 
+func TestAPICheckUsername(t *testing.T) {
+	AssertRegexmatch(t, BuildAPICheckUsername(), RegexAPICheckUsername, nil)
+}
+
 func TestPublic(t *testing.T) {
 	AssertRegexMatch(t, BuildPublic("test", false), RegexPublic, nil)
 	AssertRegexMatch(t, BuildPublic("/test", true), RegexPublic, nil)

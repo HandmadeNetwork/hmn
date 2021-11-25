@@ -133,6 +133,22 @@ type Project struct {
 	DateApproved time.Time
 }
 
+type ProjectSettings struct {
+	Name      string
+	Slug      string
+	Hidden    bool
+	Featured  bool
+	Personal  bool
+	Lifecycle string
+
+	Blurb       string
+	Description string
+	Owners      []User
+
+	LightLogo string
+	DarkLogo  string
+}
+
 type User struct {
 	ID       int
 	Username string
@@ -302,6 +318,12 @@ type TimelineItemMedia struct {
 type ProjectCardData struct {
 	Project *Project
 	Classes string
+}
+
+type ImageSelectorData struct {
+	Name     string
+	Src      string
+	Required bool
 }
 
 type Breadcrumb struct {

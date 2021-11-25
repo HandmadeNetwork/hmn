@@ -1,0 +1,287 @@
+{{ template "base.html" . }}
+
+{{ define "extrahead" }}
+	<script src="{{ static "js/tabs.js" }}"></script>
+	<script src="{{ static "js/image_selector.js" }}"></script>
+	<script src="{{ static "js/templates.js" }}"></script>
+{{ end }}
+
+{{ define "content" }}
+	<div class="content-block">
+		{{ if .Editing }}
+			<h1>Edit {{ .ProjectSettings.Name }}</h1>
+		{{ else }}
+			<h1>Create a new project</h1>
+		{{ end }}
+		<form id="project_form" class="tabbed edit-form" method="POST" enctype="multipart/form-data">
+			{{ csrftoken .Session }}
+			<div class="tab" data-name="General" data-slug="general">
+				<div class="edit-form-row">
+					<div class="pt-input-ns">Project name:</div>
+					<div>
+						<input required type="text" name="project_name" maxlength="255" class="textbox" value="{{ .ProjectSettings.Name }}">
+						<span class="note">* Required</span>
+					</div>
+				</div>
+				<div class="edit-form-row">
+					<div class="pt-input-ns">Status:</div>
+					<div>
+						<select name="lifecycle">
+							<option value="active" {{ if eq .ProjectSettings.Lifecycle "active" }}selected{{ end }}>Active</option>
+							<option value="hiatus" {{ if eq .ProjectSettings.Lifecycle "hiatus" }}selected{{ end }}>Hiatus</option>
+							<option value="done"   {{ if eq .ProjectSettings.Lifecycle "done"   }}selected{{ end }}>Completed</option>
+							<option value="dead"   {{ if eq .ProjectSettings.Lifecycle "dead"   }}selected{{ end }}>Abandoned</option>
+						</select>
+					</div>
+				</div>
+				<div class="edit-form-row">
+					{{/* TODO(asaf): Should this be admin only??*/}}
+					<div>Hidden:</div>
+					<div>
+						<input id="hidden" type="checkbox" name="hidden" {{ if .ProjectSettings.Hidden }}checked{{ end }} />
+						<label for="hidden">Hide</label>
+					</div>
+				</div>
+				<div class="edit-form-row">
+					<div class="pt-input-ns">Owners:</div>
+					<div>
+						<input id="owner_name" form="" type="text" placeholder="Enter another user's username" />
+						<a href="javascript:;" id="owner_add" class="">Add</a>
+						<span id="owners_error" class="note"></span>
+						<div id="owner_list" class="pt1">
+							<template id="owner_row">
+								<div class="owner_row flex flex-row bg--card w5 pv1 ph2" data-tmpl="root">
+									<input type="hidden" name="owners" data-tmpl="input" />
+									<span class="flex-grow-1" data-tmpl="name"></span>
+									<a class="remove_owner" href="javascript:;">X</a>
+								</div>
+							</template>
+							{{ range .ProjectSettings.Owners }}
+								<div class="owner_row flex flex-row bg--card w5 pv1 ph2">
+									<input type="hidden" name="owners" value="{{ .Username }}" />
+									<span class="flex-grow-1">{{ .Username }}</span>
+									{{ if ne .ID $.User.ID }}
+										<a class="remove_owner" href="javascript:;">X</a>
+									{{ end }}
+								</div>
+							{{ end }}
+						</div>
+					</div>
+				</div>
+				{{ if .User.IsStaff }}
+					<div class="edit-form-row">
+						<div class="pt-input-ns">Admin settings</div>
+					</div>
+					<div class="edit-form-row">
+						<div class="pt-input-ns">Slug:</div>
+						<div>
+							<input type="text" name="slug" maxlength="255" class="textbox" value="{{ .ProjectSettings.Slug }}">
+						</div>
+					</div>
+					<div class="edit-form-row">
+						<div>Official:</div>
+						<div>
+							<input id="official" type="checkbox" name="official" {{ if not .ProjectSettings.Personal }}checked{{ end }} />
+							<label for="official">Official HMN project</label>
+						</div>
+					</div>
+					<div class="edit-form-row">
+						<div>Featured:</div>
+						<div>
+							<input id="featured" type="checkbox" name="featured" {{ if .ProjectSettings.Featured }}checked{{ end }} />
+							<label for="featured">Featured</label>
+							<div class="c--dim f7">Bump to the top of the project index and show in the carousel.</div>
+						</div>
+					</div>
+				{{ end }}
+				<div class="edit-form-row">
+					<div></div>
+					<div>
+						{{ if .Editing }}
+							<input type="submit" value="Save" />
+						{{ else }}
+							<a class="button" href="javascript:;" onclick="gotoTab('description');">Next</a>
+						{{ end }}
+					</div>
+				</div>
+			</div>
+			<div class="tab" data-name="Description" data-slug="description">
+				<div class="edit-form-row">
+					<div class="pt-input-ns">Short description:</div>
+					<div>
+						<textarea maxlength="140" name="shortdesc">
+							{{- .ProjectSettings.Blurb -}}
+						</textarea>
+						<div class="c--dim f7">Plaintext only. No links or markdown.</div>
+					</div>
+				</div>
+				<div class="edit-form-row">
+					<div class="pt-input-ns">Full description:</div>
+					<div>
+						<textarea class="w-100 h6 minh-6 mono lh-copy" name="description">
+							{{- .ProjectSettings.Description -}}
+						</textarea>
+						{{/* TODO(asaf): Replace with the full editor */}}
+					</div>
+				</div>
+				<div class="edit-form-row">
+					<div></div>
+					<div>
+						{{ if .Editing }}
+							<input type="submit" value="Save" />
+						{{ else }}
+							<a class="button" href="javascript:;" onclick="gotoTab('assets');">Next</a>
+						{{ end }}
+					</div>
+				</div>
+			</div>
+			<div class="tab" data-name="Assets" data-slug="assets">
+				<div class="edit-form-row">
+					<div>Light theme logo:</div>
+					<div class="light_logo">
+						{{ template "image_selector.html" imageselectordata "light_logo" .ProjectSettings.LightLogo false }}
+					</div>
+				</div>
+				<div class="edit-form-row">
+					<div>Dark theme logo:</div>
+					<div class="dark_logo">
+						{{ template "image_selector.html" imageselectordata "dark_logo" .ProjectSettings.DarkLogo false }}
+					</div>
+				</div>
+				<div class="edit-form-row">
+					<div></div>
+					<div>
+						{{ if .Editing }}
+							<input type="submit" value="Save" />
+						{{ else }}
+							<input type="submit" value="Create project" />
+						{{ end }}
+					</div>
+				</div>
+			</div>
+		</form>
+	</div>
+	<script>
+	let csrf = JSON.parse({{ csrftokenjs .Session }});
+
+	let projectForm = document.querySelector("#project_form")
+
+	projectForm.addEventListener("invalid", function(ev) {
+		switchToTabOfElement(document.body, ev.target);
+	}, true);
+
+	function gotoTab(tabName) {
+		switchTab(document.body, tabName);
+	}
+
+	//////////////////////
+	// Owner management //
+	//////////////////////
+
+	const OWNER_QUERY_STATE_IDLE = 0;
+	const OWNER_QUERY_STATE_QUERYING = 1;
+
+	let ownerCheckUrl = "{{ .APICheckUsernameUrl }}";
+	let ownerQueryState = OWNER_QUERY_STATE_IDLE;
+	let addOwnerInput = document.querySelector("#owner_name");
+	let addOwnerButton = document.querySelector("#owner_add");
+	let ownersError = document.querySelector("#owners_error");
+	let ownerList = document.querySelector("#owner_list");
+	let ownerTemplate = makeTemplateCloner("owner_row");
+
+	addOwnerInput.addEventListener("keypress", function(ev) {
+		if (ev.which == 13) {
+			startAddOwner();
+			ev.preventDefault();
+			ev.stopPropagation();
+		}
+	});
+
+	addOwnerButton.addEventListener("click", function(ev) {
+		startAddOwner();
+	});
+
+	function startAddOwner() {
+		if (ownerQueryState == OWNER_QUERY_STATE_QUERYING) {
+			return;
+		}
+		let newOwner = addOwnerInput.value.trim().toLowerCase();
+		if (newOwner.length == 0) {
+			return;
+		}
+		let ownerEls = ownerList.querySelectorAll(".owner_row input[name='owners']");
+		for (let i = 0; i < ownerEls.length; ++i) {
+			let existingOwner = ownerEls[i].value.toLowerCase();
+			if (newOwner == existingOwner) {
+				return;
+			}
+		}
+
+		ownersError.textContent = "";
+		let xhr = new XMLHttpRequest();
+		xhr.open("POST", ownerCheckUrl);
+		xhr.responseType = "json";
+		xhr.addEventListener("load", function(ev) {
+			let result = xhr.response;
+			if (result.found) {
+				addOwner(result.canonical);
+				addOwnerInput.value = "";
+			} else {
+				ownersError.textContent = "Username not found";
+			}
+			setOwnerQueryState(OWNER_QUERY_STATE_IDLE);
+			if (document.activeElement == addOwnerButton) {
+				addOwnerInput.focus();
+			}
+		});
+		xhr.addEventListener("error", function(ev) {
+			ownersError.textContent = "There was an issue validating this username";
+			setOwnerQueryState(OWNER_QUERY_STATE_IDLE);
+		});
+		let data = new FormData();
+		data.append(csrf.field, csrf.token);
+		data.append("username", newOwner);
+		xhr.send(data);
+		setOwnerQueryState(OWNER_QUERY_STATE_QUERYING);
+	}
+
+	function setOwnerQueryState(state) {
+		ownerQueryState = state;
+		querying = (ownerQueryState == OWNER_QUERY_STATE_QUERYING);
+		addOwnerInput.disabled = querying;
+		addOwnerButton.disabled = querying;
+	}
+
+	function addOwner(username) {
+		let ownerEl = ownerTemplate();
+		ownerEl.input.value = username;
+		ownerEl.name.textContent = username;
+		ownerList.appendChild(ownerEl.root);
+	}
+
+	ownerList.addEventListener("click", function(ev) {
+		if (ev.target.classList.contains("remove_owner")) {
+			ev.target.parentElement.remove();
+		}
+	});
+
+	/////////////////////
+	// Logo management //
+	/////////////////////
+
+	const logoMaxFileSize = {{ .LogoMaxFileSize }};
+
+	let lightLogoSelector = new ImageSelector(
+		document.querySelector("#project_form"),
+		logoMaxFileSize,
+		document.querySelector(".light_logo")
+	);
+	
+	let darkLogoSelector = new ImageSelector(
+		document.querySelector("#project_form"),
+		logoMaxFileSize,
+		document.querySelector(".dark_logo")
+	);
+	
+	</script>
+{{ end }}
