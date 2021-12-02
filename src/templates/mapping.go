@@ -59,11 +59,23 @@ var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
 	models.ProjectLifecycleLTS:              "Complete",
 }
 
-func ProjectToTemplate(p *models.Project, url string, theme string) Project {
-	logo := p.LogoLight
+func ProjectLogoUrl(p *models.ProjectWithLogos, theme string) string {
 	if theme == "dark" {
-		logo = p.LogoDark
+		if p.LogoDarkAsset != nil {
+			return hmnurl.BuildS3Asset(p.LogoDarkAsset.S3Key)
+		} else {
+			return hmnurl.BuildUserFile(p.Project.LogoDark)
+		}
+	} else {
+		if p.LogoLightAsset != nil {
+			return hmnurl.BuildS3Asset(p.LogoLightAsset.S3Key)
+		} else {
+			return hmnurl.BuildUserFile(p.Project.LogoLight)
+		}
 	}
+}
+
+func ProjectToTemplate(p *models.ProjectWithLogos, url string, theme string) Project {
 	return Project{
 		Name:              p.Name,
 		Subdomain:         p.Subdomain(),
@@ -73,7 +85,7 @@ func ProjectToTemplate(p *models.Project, url string, theme string) Project {
 		Blurb:             p.Blurb,
 		ParsedDescription: template.HTML(p.ParsedDescription),
 
-		Logo: hmnurl.BuildUserFile(logo),
+		Logo: ProjectLogoUrl(p, theme),
 
 		LifecycleBadgeClass: LifecycleBadgeClasses[p.Lifecycle],
 		LifecycleString:     LifecycleBadgeStrings[p.Lifecycle],

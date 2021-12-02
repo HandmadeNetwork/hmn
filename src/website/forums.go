@@ -865,7 +865,7 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 	}
 
 	if subforums, hasSubforums := c.PathParams["subforums"]; hasSubforums {
-		sfId, valid := validateSubforums(lineageBuilder, c.CurrentProject, subforums)
+		sfId, valid := validateSubforums(lineageBuilder, &c.CurrentProject.Project, subforums)
 		if !valid {
 			return commonForumData{}, false
 		}

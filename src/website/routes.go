@@ -299,7 +299,9 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 				if err != nil {
 					panic(oops.New(err, "project id was not numeric (bad regex in routing)"))
 				}
-				p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, id, ProjectsQuery{})
+				p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, id, ProjectsQuery{
+					AlwaysVisibleToOwnerAndStaff: true,
+				})
 				if err != nil {
 					if errors.Is(err, db.NotFound) {
 						return FourOhFour(c)
@@ -309,7 +311,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 				}
 
 				c.CurrentProject = &p.Project
-				c.UrlContext = UrlContextForProject(c.CurrentProject)
+				c.UrlContext = UrlContextForProject(&c.CurrentProject.Project)
 
 				if !p.Project.Personal {
 					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
@@ -461,14 +463,16 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		hostPrefix := strings.TrimSuffix(c.Req.Host, hmnurl.GetBaseHost())
 		slug := strings.TrimRight(hostPrefix, ".")
 
-		dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, ProjectsQuery{})
-		if err == nil {
-			c.CurrentProject = &dbProject.Project
-		} else {
-			if errors.Is(err, db.NotFound) {
-				// do nothing, this is fine
+		if len(slug) > 0 {
+			dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, ProjectsQuery{AlwaysVisibleToOwnerAndStaff: true})
+			if err == nil {
+				c.CurrentProject = &dbProject.Project
 			} else {
-				return false, c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
+				if errors.Is(err, db.NotFound) {
+					// do nothing, this is fine
+				} else {
+					return false, c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
+				}
 			}
 		}
 
@@ -486,7 +490,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 			panic("failed to load project data")
 		}
 
-		c.UrlContext = UrlContextForProject(c.CurrentProject)
+		c.UrlContext = UrlContextForProject(&c.CurrentProject.Project)
 	}
 
 	c.Theme = "light"

@@ -1,19 +1,26 @@
 package website
 
 import (
+	"errors"
 	"fmt"
+	"image"
+	"io"
 	"math"
 	"math/rand"
 	"net/http"
 	"sort"
+	"strings"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
+	"github.com/google/uuid"
 )
 
 type ProjectTemplateData struct {
@@ -63,7 +70,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	var restProjects []templates.Project
 	now := time.Now()
 	for _, p := range officialProjects {
-		templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
+		templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project.Project).BuildHomepage(), c.Theme)
 		if p.Project.Slug == "hero" {
 			// NOTE(asaf): Handmade Hero gets special treatment. Must always be first in the list.
 			handmadeHero = &templateProject
@@ -126,7 +133,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 			}
 			personalProjects = append(personalProjects, templates.ProjectToTemplate(
 				&p.Project,
-				UrlContextForProject(&p.Project).BuildHomepage(),
+				UrlContextForProject(&p.Project.Project).BuildHomepage(),
 				c.Theme,
 			))
 		}
@@ -291,7 +298,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		case models.ProjectLifecycleDead:
 			templateData.BaseData.AddImmediateNotice(
 				"dead",
-				"NOTICE: Site staff have marked this project as being dead. If you intend to revive it, please contact a member of the Handmade Network staff.",
+				"NOTICE: This project is has been marked dead and is only visible to owners and site admins.",
 			)
 		case models.ProjectLifecycleLTSRequired:
 			templateData.BaseData.AddImmediateNotice(
@@ -392,7 +399,166 @@ func ProjectNew(c *RequestContext) ResponseData {
 }
 
 func ProjectNewSubmit(c *RequestContext) ResponseData {
-	return FourOhFour(c)
+	maxBodySize := int64(ProjectLogoMaxFileSize*2 + 1024*1024)
+	c.Req.Body = http.MaxBytesReader(c.Res, c.Req.Body, maxBodySize)
+	err := c.Req.ParseMultipartForm(maxBodySize)
+	if err != nil {
+		// NOTE(asaf): The error for exceeding the max filesize doesn't have a special type, so we can't easily detect it here.
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to parse form"))
+	}
+
+	projectName := strings.TrimSpace(c.Req.Form.Get("project_name"))
+	if len(projectName) == 0 {
+		return RejectRequest(c, "Project name is empty")
+	}
+
+	shortDesc := strings.TrimSpace(c.Req.Form.Get("shortdesc"))
+	if len(shortDesc) == 0 {
+		return RejectRequest(c, "Projects must have a short description")
+	}
+	description := c.Req.Form.Get("description")
+	parsedDescription := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
+
+	lifecycleStr := c.Req.Form.Get("lifecycle")
+	var lifecycle models.ProjectLifecycle
+	switch lifecycleStr {
+	case "active":
+		lifecycle = models.ProjectLifecycleActive
+	case "hiatus":
+		lifecycle = models.ProjectLifecycleHiatus
+	case "done":
+		lifecycle = models.ProjectLifecycleLTS
+	case "dead":
+		lifecycle = models.ProjectLifecycleDead
+	default:
+		return RejectRequest(c, "Project status is invalid")
+	}
+
+	hiddenStr := c.Req.Form.Get("hidden")
+	hidden := len(hiddenStr) > 0
+
+	lightLogo, err := GetFormImage(c, "light_logo")
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to read image from form"))
+	}
+	darkLogo, err := GetFormImage(c, "dark_logo")
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to read image from form"))
+	}
+
+	owners := c.Req.Form["owners"]
+
+	tx, err := c.Conn.Begin(c.Context())
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to start db transaction"))
+	}
+	defer tx.Rollback(c.Context())
+
+	var lightLogoUUID *uuid.UUID
+	if lightLogo.Exists {
+		lightLogoAsset, err := assets.Create(c.Context(), tx, assets.CreateInput{
+			Content:     lightLogo.Content,
+			Filename:    lightLogo.Filename,
+			ContentType: lightLogo.Mime,
+			UploaderID:  &c.CurrentUser.ID,
+			Width:       lightLogo.Width,
+			Height:      lightLogo.Height,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to save asset"))
+		}
+		lightLogoUUID = &lightLogoAsset.ID
+	}
+
+	var darkLogoUUID *uuid.UUID
+	if darkLogo.Exists {
+		darkLogoAsset, err := assets.Create(c.Context(), tx, assets.CreateInput{
+			Content:     darkLogo.Content,
+			Filename:    darkLogo.Filename,
+			ContentType: darkLogo.Mime,
+			UploaderID:  &c.CurrentUser.ID,
+			Width:       darkLogo.Width,
+			Height:      darkLogo.Height,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to save asset"))
+		}
+		darkLogoUUID = &darkLogoAsset.ID
+	}
+
+	hasSelf := false
+	selfUsername := strings.ToLower(c.CurrentUser.Username)
+	for i, _ := range owners {
+		owners[i] = strings.ToLower(owners[i])
+		if owners[i] == selfUsername {
+			hasSelf = true
+		}
+	}
+
+	if !hasSelf {
+		owners = append(owners, selfUsername)
+	}
+
+	userResult, err := db.Query(c.Context(), c.Conn, models.User{},
+		`
+		SELECT $columns
+		FROM auth_user
+		WHERE LOWER(username) = ANY ($1)
+		`,
+		owners,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to query users"))
+	}
+
+	var projectId int
+	err = tx.QueryRow(c.Context(),
+		`
+		INSERT INTO handmade_project
+			(name, blurb, description, descparsed, logodark_asset_id, logolight_asset_id, lifecycle, hidden, date_created, all_last_updated)
+		VALUES
+			($1,   $2,    $3,          $4,         $5,                $6,                 $7,        $8,     $9,           $9)
+		RETURNING id
+		`,
+		projectName,
+		shortDesc,
+		description,
+		parsedDescription,
+		darkLogoUUID,
+		lightLogoUUID,
+		lifecycle,
+		hidden,
+		time.Now(), // NOTE(asaf): Using this param twice.
+	).Scan(&projectId)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to insert new project"))
+	}
+
+	for _, ownerRow := range userResult.ToSlice() {
+		_, err = tx.Exec(c.Context(),
+			`
+			INSERT INTO handmade_user_projects
+				(user_id, project_id)
+			VALUES
+				($1,      $2)
+			`,
+			ownerRow.(*models.User).ID,
+			projectId,
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to insert project owner"))
+		}
+	}
+
+	tx.Commit(c.Context())
+
+	urlContext := &hmnurl.UrlContext{
+		PersonalProject: true,
+		ProjectID:       projectId,
+		ProjectName:     projectName,
+	}
+
+	return c.Redirect(urlContext.BuildHomepage(), http.StatusSeeOther)
 }
 
 func ProjectEdit(c *RequestContext) ResponseData {
@@ -411,4 +577,49 @@ func ProjectEdit(c *RequestContext) ResponseData {
 
 func ProjectEditSubmit(c *RequestContext) ResponseData {
 	return FourOhFour(c)
+}
+
+type FormImage struct {
+	Exists   bool
+	Filename string
+	Mime     string
+	Content  []byte
+	Width    int
+	Height   int
+	Size     int64
+}
+
+// NOTE(asaf): This assumes that you already called ParseMultipartForm (which is why there's no size limit here).
+func GetFormImage(c *RequestContext, fieldName string) (FormImage, error) {
+	var res FormImage
+	res.Exists = false
+
+	img, header, err := c.Req.FormFile(fieldName)
+	if err != nil {
+		if errors.Is(err, http.ErrMissingFile) {
+			return res, nil
+		} else {
+			return FormImage{}, err
+		}
+	}
+
+	if header != nil {
+		res.Exists = true
+		res.Size = header.Size
+		res.Filename = header.Filename
+
+		res.Content = make([]byte, res.Size)
+		img.Read(res.Content)
+		img.Seek(0, io.SeekStart)
+
+		config, _, err := image.DecodeConfig(img)
+		if err != nil {
+			return FormImage{}, err
+		}
+		res.Width = config.Width
+		res.Height = config.Height
+		res.Mime = http.DetectContentType(res.Content)
+	}
+
+	return res, nil
 }

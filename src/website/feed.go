@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -153,68 +152,30 @@ func AtomFeed(c *RequestContext) ResponseData {
 			feedData.FeedUrl = hmnurl.BuildProjectIndex(1)
 
 			c.Perf.StartBlock("SQL", "Fetching projects")
-			type projectResult struct {
-				Project models.Project `db:"project"`
-			}
 			_, hasAll := c.Req.URL.Query()["all"]
 			if hasAll {
 				itemsPerFeed = 100000
 			}
-			projects, err := db.Query(c.Context(), c.Conn, projectResult{},
-				`
-				SELECT $columns
-				FROM
-					handmade_project AS project
-				WHERE
-					project.lifecycle = ANY($1)
-					AND NOT project.hidden
-				ORDER BY date_approved DESC
-				LIMIT $2
-				`,
-				models.VisibleProjectLifecycles,
-				itemsPerFeed,
-			)
+			projectsAndStuff, err := FetchProjects(c.Context(), c.Conn, nil, ProjectsQuery{
+				Lifecycles: models.VisibleProjectLifecycles,
+				Limit:      itemsPerFeed,
+				Types:      OfficialProjects,
+				OrderBy:    "date_approved DESC",
+			})
 			if err != nil {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects"))
 			}
-			var projectIds []int
-			projectMap := make(map[int]int) // map[project id]index in slice
-			for _, p := range projects.ToSlice() {
-				project := p.(*projectResult).Project
-				templateProject := templates.ProjectToTemplate(&project, UrlContextForProject(&project).BuildHomepage(), c.Theme)
+			for _, p := range projectsAndStuff {
+				templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project.Project).BuildHomepage(), c.Theme)
 				templateProject.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(templateProject.Url)).URN()
+				for _, owner := range p.Owners {
+					templateProject.Owners = append(templateProject.Owners, templates.UserToTemplate(owner, ""))
+				}
 
-				projectIds = append(projectIds, project.ID)
 				feedData.Projects = append(feedData.Projects, templateProject)
-				projectMap[project.ID] = len(feedData.Projects) - 1
 			}
 			c.Perf.EndBlock()
 
-			c.Perf.StartBlock("SQL", "Fetching project owners")
-			type ownerResult struct {
-				User      models.User `db:"auth_user"`
-				ProjectID int         `db:"uproj.project_id"`
-			}
-			owners, err := db.Query(c.Context(), c.Conn, ownerResult{},
-				`
-				SELECT $columns
-				FROM
-					handmade_user_projects AS uproj
-					JOIN auth_user ON uproj.user_id = auth_user.id
-				WHERE
-					uproj.project_id = ANY($1)
-				`,
-				projectIds,
-			)
-			if err != nil {
-				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects owners"))
-			}
-			for _, res := range owners.ToSlice() {
-				owner := res.(*ownerResult)
-				templateProject := &feedData.Projects[projectMap[owner.ProjectID]]
-				templateProject.Owners = append(templateProject.Owners, templates.UserToTemplate(&owner.User, ""))
-			}
-			c.Perf.EndBlock()
 			updated := time.Now()
 			if len(feedData.Projects) > 0 {
 				updated = feedData.Projects[0].DateApproved

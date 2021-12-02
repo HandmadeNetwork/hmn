@@ -285,10 +285,36 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix strin
 		return nil, nil, oops.New(nil, "can only get column names and paths from a struct, got type '%v' (at prefix '%v')", destType.Name(), prefix)
 	}
 
+	type AnonPrefix struct {
+		Path   []int
+		Prefix string
+	}
+	var anonPrefixes []AnonPrefix
+
 	for _, field := range reflect.VisibleFields(destType) {
 		path := append(pathSoFar, field.Index...)
 
 		if columnName := field.Tag.Get("db"); columnName != "" {
+			if field.Anonymous {
+				anonPrefixes = append(anonPrefixes, AnonPrefix{Path: field.Index, Prefix: columnName})
+				continue
+			} else {
+				for _, anonPrefix := range anonPrefixes {
+					if len(field.Index) > len(anonPrefix.Path) {
+						equal := true
+						for i := range anonPrefix.Path {
+							if anonPrefix.Path[i] != field.Index[i] {
+								equal = false
+								break
+							}
+						}
+						if equal {
+							columnName = anonPrefix.Prefix + "." + columnName
+							break
+						}
+					}
+				}
+			}
 			fieldType := field.Type
 			if fieldType.Kind() == reflect.Ptr {
 				fieldType = fieldType.Elem()

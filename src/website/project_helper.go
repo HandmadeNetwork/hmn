@@ -2,6 +2,7 @@ package website
 
 import (
 	"context"
+	"fmt"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 
@@ -19,20 +20,23 @@ const (
 
 type ProjectsQuery struct {
 	// Available on all project queries
-	Lifecycles    []models.ProjectLifecycle // if empty, defaults to models.VisibleProjectLifecycles
-	Types         ProjectTypeQuery          // bitfield
-	IncludeHidden bool
+	Lifecycles                   []models.ProjectLifecycle // if empty, defaults to models.VisibleProjectLifecycles
+	Types                        ProjectTypeQuery          // bitfield
+	IncludeHidden                bool
+	AlwaysVisibleToOwnerAndStaff bool
 
 	// Ignored when using FetchProject
 	ProjectIDs []int    // if empty, all projects
 	Slugs      []string // if empty, all projects
+	OwnerIDs   []int    // if empty, all projects
 
 	// Ignored when using CountProjects
 	Limit, Offset int // if empty, no pagination
+	OrderBy       string
 }
 
 type ProjectAndStuff struct {
-	Project models.Project
+	Project models.ProjectWithLogos
 	Owners  []*models.User
 }
 
@@ -59,26 +63,39 @@ func FetchProjects(
 
 	// Fetch all valid projects (not yet subject to user permission checks)
 	var qb db.QueryBuilder
+	if len(q.OrderBy) > 0 {
+		qb.Add(`SELECT * FROM (`)
+	}
 	qb.Add(`
-		SELECT $columns
+		SELECT DISTINCT ON (project.id) $columns
 		FROM
 			handmade_project AS project
+			LEFT JOIN handmade_asset AS logolight_asset ON logolight_asset.id = project.logolight_asset_id
+			LEFT JOIN handmade_asset AS logodark_asset ON logodark_asset.id = project.logodark_asset_id
+	`)
+	if len(q.OwnerIDs) > 0 {
+		qb.Add(`
+			INNER JOIN handmade_user_projects AS owner_filter ON owner_filter.project_id = project.id
+		`)
+	}
+	if q.AlwaysVisibleToOwnerAndStaff && currentUser != nil {
+		qb.Add(`
+			LEFT JOIN handmade_user_projects AS owner_visibility ON owner_visibility.project_id = project.id
+		`)
+	}
+	qb.Add(`
 		WHERE
 			TRUE
 	`)
-	if !q.IncludeHidden {
-		qb.Add(`AND NOT hidden`)
-	}
+	// Filters
 	if len(q.ProjectIDs) > 0 {
 		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
 	}
 	if len(q.Slugs) > 0 {
 		qb.Add(`AND (project.slug != '' AND project.slug = ANY ($?))`, q.Slugs)
 	}
-	if len(q.Lifecycles) > 0 {
-		qb.Add(`AND project.lifecycle = ANY($?)`, q.Lifecycles)
-	} else {
-		qb.Add(`AND project.lifecycle = ANY($?)`, models.VisibleProjectLifecycles)
+	if len(q.OwnerIDs) > 0 {
+		qb.Add(`AND (owner_filter.user_id = ANY ($?))`, q.OwnerIDs)
 	}
 	if q.Types != 0 {
 		qb.Add(`AND (FALSE`)
@@ -90,10 +107,31 @@ func FetchProjects(
 		}
 		qb.Add(`)`)
 	}
+
+	// Visibility
+	if q.AlwaysVisibleToOwnerAndStaff && currentUser != nil {
+		qb.Add(`AND ($? = TRUE OR owner_visibility.user_id = $? OR (TRUE`, currentUser.IsStaff, currentUser.ID)
+	}
+	if !q.IncludeHidden {
+		qb.Add(`AND NOT hidden`)
+	}
+	if len(q.Lifecycles) > 0 {
+		qb.Add(`AND project.lifecycle = ANY($?)`, q.Lifecycles)
+	} else {
+		qb.Add(`AND project.lifecycle = ANY($?)`, models.VisibleProjectLifecycles)
+	}
+	if q.AlwaysVisibleToOwnerAndStaff && currentUser != nil {
+		qb.Add(`))`)
+	}
+
+	// Output
 	if q.Limit > 0 {
 		qb.Add(`LIMIT $? OFFSET $?`, q.Limit, q.Offset)
 	}
-	itProjects, err := db.Query(ctx, dbConn, models.Project{}, qb.String(), qb.Args()...)
+	if len(q.OrderBy) > 0 {
+		qb.Add(fmt.Sprintf(`) q ORDER BY %s`, q.OrderBy))
+	}
+	itProjects, err := db.Query(ctx, dbConn, models.ProjectWithLogos{}, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch projects")
 	}
@@ -102,7 +140,7 @@ func FetchProjects(
 	// Fetch project owners to do permission checks
 	projectIds := make([]int, len(iprojects))
 	for i, iproject := range iprojects {
-		projectIds[i] = iproject.(*models.Project).ID
+		projectIds[i] = iproject.(*models.ProjectWithLogos).ID
 	}
 	projectOwners, err := FetchMultipleProjectsOwners(ctx, tx, projectIds)
 	if err != nil {
@@ -111,7 +149,7 @@ func FetchProjects(
 
 	var res []ProjectAndStuff
 	for i, iproject := range iprojects {
-		project := iproject.(*models.Project)
+		project := iproject.(*models.ProjectWithLogos)
 		owners := projectOwners[i].Owners
 
 		/*

@@ -48,6 +48,7 @@ func addCreateProjectCommand(projectCommand *cobra.Command) {
 
 			p, err := website.FetchProject(ctx, tx, nil, models.HMNProjectID, website.ProjectsQuery{
 				IncludeHidden: true,
+				Lifecycles:    models.AllProjectLifecycles,
 			})
 			if err != nil {
 				panic(err)
@@ -170,6 +171,7 @@ func addProjectTagCommand(projectCommand *cobra.Command) {
 
 			p, err := website.FetchProject(ctx, tx, nil, projectID, website.ProjectsQuery{
 				IncludeHidden: true,
+				Lifecycles:    models.AllProjectLifecycles,
 			})
 			if err != nil {
 				panic(err)

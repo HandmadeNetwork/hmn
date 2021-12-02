@@ -26,6 +26,16 @@ const (
 	ProjectLifecycleLTS
 )
 
+var AllProjectLifecycles = []ProjectLifecycle{
+	ProjectLifecycleUnapproved,
+	ProjectLifecycleApprovalRequired,
+	ProjectLifecycleActive,
+	ProjectLifecycleHiatus,
+	ProjectLifecycleDead,
+	ProjectLifecycleLTSRequired,
+	ProjectLifecycleLTS,
+}
+
 // NOTE(asaf): Just checking the lifecycle is not sufficient. Visible projects also must have flags = 0.
 var VisibleProjectLifecycles = []ProjectLifecycle{
 	ProjectLifecycleActive,
@@ -68,6 +78,12 @@ type Project struct {
 	ForumEnabled   bool `db:"forum_enabled"`
 	BlogEnabled    bool `db:"blog_enabled"`
 	LibraryEnabled bool `db:"library_enabled"` // TODO: Delete this field from the db
+}
+
+type ProjectWithLogos struct {
+	Project        `db:"project"`
+	LogoLightAsset *Asset `db:"logolight_asset"`
+	LogoDarkAsset  *Asset `db:"logodark_asset"`
 }
 
 func (p *Project) IsHMN() bool {

@@ -99,34 +99,19 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	type projectQuery struct {
-		Project models.Project `db:"project"`
+	projectsQuery := ProjectsQuery{
+		OwnerIDs:                     []int{profileUser.ID},
+		Lifecycles:                   models.VisibleProjectLifecycles,
+		AlwaysVisibleToOwnerAndStaff: true,
+		OrderBy:                      "all_last_updated DESC",
 	}
-	c.Perf.StartBlock("SQL", "Fetch projects")
-	projectQueryResult, err := db.Query(c.Context(), c.Conn, projectQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_project AS project
-			INNER JOIN handmade_user_projects AS uproj ON uproj.project_id = project.id
-		WHERE
-			uproj.user_id = $1
-			AND ($2 OR (NOT project.hidden AND project.lifecycle = ANY ($3)))
-		`,
-		profileUser.ID,
-		(c.CurrentUser != nil && (profileUser == c.CurrentUser || c.CurrentUser.IsStaff)),
-		models.VisibleProjectLifecycles,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch projects for user: %s", username))
-	}
-	projectQuerySlice := projectQueryResult.ToSlice()
-	templateProjects := make([]templates.Project, 0, len(projectQuerySlice))
-	for _, projectRow := range projectQuerySlice {
-		projectData := projectRow.(*projectQuery)
+
+	projectsAndStuff, err := FetchProjects(c.Context(), c.Conn, c.CurrentUser, projectsQuery)
+	templateProjects := make([]templates.Project, 0, len(projectsAndStuff))
+	for _, p := range projectsAndStuff {
 		templateProjects = append(templateProjects, templates.ProjectToTemplate(
-			&projectData.Project,
-			UrlContextForProject(&projectData.Project).BuildHomepage(),
+			&p.Project,
+			UrlContextForProject(&p.Project.Project).BuildHomepage(),
 			c.Theme,
 		))
 	}
@@ -197,7 +182,7 @@ func UserProfile(c *RequestContext) ResponseData {
 		ProfileUserLinks:    profileUserLinks,
 		ProfileUserProjects: templateProjects,
 		TimelineItems:       timelineItems,
-		OwnProfile:          c.CurrentUser.ID == profileUser.ID,
+		OwnProfile:          (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID),
 		ShowcaseUrl:         hmnurl.BuildShowcase(),
 		NewProjectUrl:       hmnurl.BuildProjectNew(),
 	}, c.Perf)

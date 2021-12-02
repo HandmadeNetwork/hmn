@@ -160,7 +160,7 @@ type RequestContext struct {
 	Res http.ResponseWriter
 
 	Conn           *pgxpool.Pool
-	CurrentProject *models.Project
+	CurrentProject *models.ProjectWithLogos
 	CurrentUser    *models.User
 	CurrentSession *models.Session
 	Theme          string
