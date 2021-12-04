@@ -102,9 +102,11 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			HasForums:       project.HasForums(),
 			HasBlog:         project.HasBlog(),
 			HasEpisodeGuide: hasAnnotations,
+			CanEdit:         c.CurrentUserCanEditCurrentProject,
 			ForumsUrl:       c.UrlContext.BuildForum(nil, 1),
 			BlogUrl:         c.UrlContext.BuildBlog(1),
 			EpisodeGuideUrl: episodeGuideUrl,
+			EditUrl:         c.UrlContext.BuildProjectEdit(""),
 		}
 	}
 

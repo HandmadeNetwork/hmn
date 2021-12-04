@@ -59,9 +59,11 @@ type ProjectHeader struct {
 	HasForums       bool
 	HasBlog         bool
 	HasEpisodeGuide bool
+	CanEdit         bool
 	ForumsUrl       string
 	BlogUrl         string
 	EpisodeGuideUrl string
+	EditUrl         string
 }
 
 type Footer struct {

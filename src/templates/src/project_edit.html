@@ -60,7 +60,7 @@
 								<div class="owner_row flex flex-row bg--card w5 pv1 ph2">
 									<input type="hidden" name="owners" value="{{ .Username }}" />
 									<span class="flex-grow-1">{{ .Username }}</span>
-									{{ if ne .ID $.User.ID }}
+									{{ if (or $.User.IsStaff (ne .ID $.User.ID)) }}
 										<a class="remove_owner" href="javascript:;">X</a>
 									{{ end }}
 								</div>
@@ -219,15 +219,20 @@
 
 		ownersError.textContent = "";
 		let xhr = new XMLHttpRequest();
+		xhr.withCredentials = true;
 		xhr.open("POST", ownerCheckUrl);
 		xhr.responseType = "json";
 		xhr.addEventListener("load", function(ev) {
 			let result = xhr.response;
-			if (result.found) {
-				addOwner(result.canonical);
-				addOwnerInput.value = "";
+			if (result) {
+				if (result.found) {
+					addOwner(result.canonical);
+					addOwnerInput.value = "";
+				} else {
+					ownersError.textContent = "Username not found";
+				}
 			} else {
-				ownersError.textContent = "Username not found";
+				ownersError.textContent = "There was an issue validating this username";
 			}
 			setOwnerQueryState(OWNER_QUERY_STATE_IDLE);
 			if (document.activeElement == addOwnerButton) {

@@ -99,6 +99,42 @@ func ProjectToTemplate(p *models.ProjectWithLogos, url string, theme string) Pro
 	}
 }
 
+var ProjectLifecycleValues = map[models.ProjectLifecycle]string{
+	models.ProjectLifecycleActive: "active",
+	models.ProjectLifecycleHiatus: "hiatus",
+	models.ProjectLifecycleDead:   "dead",
+	models.ProjectLifecycleLTS:    "done",
+}
+
+func ProjectLifecycleFromValue(value string) (models.ProjectLifecycle, bool) {
+	for k, v := range ProjectLifecycleValues {
+		if v == value {
+			return k, true
+		}
+	}
+	return models.ProjectLifecycleUnapproved, false
+}
+
+func ProjectToProjectSettings(p *models.ProjectWithLogos, owners []*models.User, currentTheme string) ProjectSettings {
+	ownerUsers := make([]User, 0, len(owners))
+	for _, owner := range owners {
+		ownerUsers = append(ownerUsers, UserToTemplate(owner, currentTheme))
+	}
+	return ProjectSettings{
+		Name:        p.Name,
+		Slug:        p.Slug,
+		Hidden:      p.Hidden,
+		Featured:    p.Featured,
+		Personal:    p.Personal,
+		Lifecycle:   ProjectLifecycleValues[p.Lifecycle],
+		Blurb:       p.Blurb,
+		Description: p.Description,
+		Owners:      ownerUsers,
+		LightLogo:   ProjectLogoUrl(p, "light"),
+		DarkLogo:    ProjectLogoUrl(p, "dark"),
+	}
+}
+
 func SessionToTemplate(s *models.Session) Session {
 	return Session{
 		CSRFToken: s.CSRFToken,

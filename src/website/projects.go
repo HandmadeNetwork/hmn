@@ -1,6 +1,7 @@
 package website
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"image"
@@ -254,10 +255,6 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	var templateData ProjectHomepageData
 
 	templateData.BaseData = getBaseData(c, c.CurrentProject.Name, nil)
-	//if canEdit {
-	//	// TODO: Move to project-specific navigation
-	//	// templateData.BaseData.Header.EditURL = hmnurl.BuildProjectEdit(project.Slug, "")
-	//}
 	templateData.BaseData.OpenGraphItems = append(templateData.BaseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    c.CurrentProject.Blurb,
@@ -399,54 +396,13 @@ func ProjectNew(c *RequestContext) ResponseData {
 }
 
 func ProjectNewSubmit(c *RequestContext) ResponseData {
-	maxBodySize := int64(ProjectLogoMaxFileSize*2 + 1024*1024)
-	c.Req.Body = http.MaxBytesReader(c.Res, c.Req.Body, maxBodySize)
-	err := c.Req.ParseMultipartForm(maxBodySize)
-	if err != nil {
-		// NOTE(asaf): The error for exceeding the max filesize doesn't have a special type, so we can't easily detect it here.
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to parse form"))
+	formResult := ParseProjectEditForm(c)
+	if formResult.Error != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, formResult.Error)
 	}
-
-	projectName := strings.TrimSpace(c.Req.Form.Get("project_name"))
-	if len(projectName) == 0 {
-		return RejectRequest(c, "Project name is empty")
+	if len(formResult.RejectionReason) != 0 {
+		return RejectRequest(c, formResult.RejectionReason)
 	}
-
-	shortDesc := strings.TrimSpace(c.Req.Form.Get("shortdesc"))
-	if len(shortDesc) == 0 {
-		return RejectRequest(c, "Projects must have a short description")
-	}
-	description := c.Req.Form.Get("description")
-	parsedDescription := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
-
-	lifecycleStr := c.Req.Form.Get("lifecycle")
-	var lifecycle models.ProjectLifecycle
-	switch lifecycleStr {
-	case "active":
-		lifecycle = models.ProjectLifecycleActive
-	case "hiatus":
-		lifecycle = models.ProjectLifecycleHiatus
-	case "done":
-		lifecycle = models.ProjectLifecycleLTS
-	case "dead":
-		lifecycle = models.ProjectLifecycleDead
-	default:
-		return RejectRequest(c, "Project status is invalid")
-	}
-
-	hiddenStr := c.Req.Form.Get("hidden")
-	hidden := len(hiddenStr) > 0
-
-	lightLogo, err := GetFormImage(c, "light_logo")
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to read image from form"))
-	}
-	darkLogo, err := GetFormImage(c, "dark_logo")
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to read image from form"))
-	}
-
-	owners := c.Req.Form["owners"]
 
 	tx, err := c.Conn.Begin(c.Context())
 	if err != nil {
@@ -454,100 +410,31 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	var lightLogoUUID *uuid.UUID
-	if lightLogo.Exists {
-		lightLogoAsset, err := assets.Create(c.Context(), tx, assets.CreateInput{
-			Content:     lightLogo.Content,
-			Filename:    lightLogo.Filename,
-			ContentType: lightLogo.Mime,
-			UploaderID:  &c.CurrentUser.ID,
-			Width:       lightLogo.Width,
-			Height:      lightLogo.Height,
-		})
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to save asset"))
-		}
-		lightLogoUUID = &lightLogoAsset.ID
-	}
-
-	var darkLogoUUID *uuid.UUID
-	if darkLogo.Exists {
-		darkLogoAsset, err := assets.Create(c.Context(), tx, assets.CreateInput{
-			Content:     darkLogo.Content,
-			Filename:    darkLogo.Filename,
-			ContentType: darkLogo.Mime,
-			UploaderID:  &c.CurrentUser.ID,
-			Width:       darkLogo.Width,
-			Height:      darkLogo.Height,
-		})
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to save asset"))
-		}
-		darkLogoUUID = &darkLogoAsset.ID
-	}
-
-	hasSelf := false
-	selfUsername := strings.ToLower(c.CurrentUser.Username)
-	for i, _ := range owners {
-		owners[i] = strings.ToLower(owners[i])
-		if owners[i] == selfUsername {
-			hasSelf = true
-		}
-	}
-
-	if !hasSelf {
-		owners = append(owners, selfUsername)
-	}
-
-	userResult, err := db.Query(c.Context(), c.Conn, models.User{},
-		`
-		SELECT $columns
-		FROM auth_user
-		WHERE LOWER(username) = ANY ($1)
-		`,
-		owners,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to query users"))
-	}
-
 	var projectId int
 	err = tx.QueryRow(c.Context(),
 		`
 		INSERT INTO handmade_project
-			(name, blurb, description, descparsed, logodark_asset_id, logolight_asset_id, lifecycle, hidden, date_created, all_last_updated)
+			(name, blurb, description, descparsed, lifecycle, date_created, all_last_updated)
 		VALUES
-			($1,   $2,    $3,          $4,         $5,                $6,                 $7,        $8,     $9,           $9)
+			($1,   $2,    $3,          $4,         $5,        $6,           $6)
 		RETURNING id
 		`,
-		projectName,
-		shortDesc,
-		description,
-		parsedDescription,
-		darkLogoUUID,
-		lightLogoUUID,
-		lifecycle,
-		hidden,
+		"",
+		"",
+		"",
+		"",
+		models.ProjectLifecycleUnapproved,
 		time.Now(), // NOTE(asaf): Using this param twice.
 	).Scan(&projectId)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to insert new project"))
 	}
 
-	for _, ownerRow := range userResult.ToSlice() {
-		_, err = tx.Exec(c.Context(),
-			`
-			INSERT INTO handmade_user_projects
-				(user_id, project_id)
-			VALUES
-				($1,      $2)
-			`,
-			ownerRow.(*models.User).ID,
-			projectId,
-		)
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to insert project owner"))
-		}
+	formResult.Payload.ProjectID = projectId
+
+	err = UpdateProject(c.Context(), tx, c.CurrentUser, &formResult.Payload)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	tx.Commit(c.Context())
@@ -555,32 +442,345 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 	urlContext := &hmnurl.UrlContext{
 		PersonalProject: true,
 		ProjectID:       projectId,
-		ProjectName:     projectName,
+		ProjectName:     formResult.Payload.Name,
 	}
 
 	return c.Redirect(urlContext.BuildHomepage(), http.StatusSeeOther)
 }
 
 func ProjectEdit(c *RequestContext) ResponseData {
-	// Find project
-	// Convert to template
-	var project templates.ProjectSettings
+	project := c.CurrentProject
+	if !c.CurrentUserCanEditCurrentProject {
+		return FourOhFour(c)
+	}
+
+	owners, err := FetchProjectOwners(c.Context(), c.Conn, project.ID)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch project owners"))
+	}
+	projectSettings := templates.ProjectToProjectSettings(project, owners, c.Theme)
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
 		BaseData:        getBaseDataAutocrumb(c, "Edit Project"),
 		Editing:         true,
-		ProjectSettings: project,
+		ProjectSettings: projectSettings,
+
+		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
+		LogoMaxFileSize:     ProjectLogoMaxFileSize,
 	}, c.Perf)
 	return res
 }
 
 func ProjectEditSubmit(c *RequestContext) ResponseData {
-	return FourOhFour(c)
+	if !c.CurrentUserCanEditCurrentProject {
+		return FourOhFour(c)
+	}
+	formResult := ParseProjectEditForm(c)
+	if formResult.Error != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, formResult.Error)
+	}
+	if len(formResult.RejectionReason) != 0 {
+		return RejectRequest(c, formResult.RejectionReason)
+	}
+
+	tx, err := c.Conn.Begin(c.Context())
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to start db transaction"))
+	}
+	defer tx.Rollback(c.Context())
+
+	formResult.Payload.ProjectID = c.CurrentProject.ID
+
+	err = UpdateProject(c.Context(), tx, c.CurrentUser, &formResult.Payload)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	tx.Commit(c.Context())
+
+	urlContext := &hmnurl.UrlContext{
+		PersonalProject: formResult.Payload.Personal,
+		ProjectSlug:     formResult.Payload.Slug,
+		ProjectID:       formResult.Payload.ProjectID,
+		ProjectName:     formResult.Payload.Name,
+	}
+
+	return c.Redirect(urlContext.BuildHomepage(), http.StatusSeeOther)
+}
+
+type ProjectPayload struct {
+	ProjectID         int
+	Name              string
+	Blurb             string
+	Description       string
+	ParsedDescription string
+	Lifecycle         models.ProjectLifecycle
+	Hidden            bool
+	OwnerUsernames    []string
+	LightLogo         FormImage
+	DarkLogo          FormImage
+
+	Slug     string
+	Featured bool
+	Personal bool
+}
+
+type ProjectEditFormResult struct {
+	Payload         ProjectPayload
+	RejectionReason string
+	Error           error
+}
+
+func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
+	var res ProjectEditFormResult
+	maxBodySize := int64(ProjectLogoMaxFileSize*2 + 1024*1024)
+	c.Req.Body = http.MaxBytesReader(c.Res, c.Req.Body, maxBodySize)
+	err := c.Req.ParseMultipartForm(maxBodySize)
+	if err != nil {
+		// NOTE(asaf): The error for exceeding the max filesize doesn't have a special type, so we can't easily detect it here.
+		res.Error = oops.New(err, "failed to parse form")
+		return res
+	}
+
+	projectName := strings.TrimSpace(c.Req.Form.Get("project_name"))
+	if len(projectName) == 0 {
+		res.RejectionReason = "Project name is empty"
+		return res
+	}
+
+	shortDesc := strings.TrimSpace(c.Req.Form.Get("shortdesc"))
+	if len(shortDesc) == 0 {
+		res.RejectionReason = "Projects must have a short description"
+		return res
+	}
+	description := c.Req.Form.Get("description")
+	parsedDescription := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
+
+	lifecycleStr := c.Req.Form.Get("lifecycle")
+	lifecycle, found := templates.ProjectLifecycleFromValue(lifecycleStr)
+	if !found {
+		res.RejectionReason = "Project status is invalid"
+		return res
+	}
+
+	hiddenStr := c.Req.Form.Get("hidden")
+	hidden := len(hiddenStr) > 0
+
+	lightLogo, err := GetFormImage(c, "light_logo")
+	if err != nil {
+		res.Error = oops.New(err, "Failed to read image from form")
+		return res
+	}
+	darkLogo, err := GetFormImage(c, "dark_logo")
+	if err != nil {
+		res.Error = oops.New(err, "Failed to read image from form")
+		return res
+	}
+
+	owners := c.Req.Form["owners"]
+
+	slug := strings.TrimSpace(c.Req.Form.Get("slug"))
+	officialStr := c.Req.Form.Get("official")
+	official := len(officialStr) > 0
+	featuredStr := c.Req.Form.Get("featured")
+	featured := len(featuredStr) > 0
+
+	if official && len(slug) == 0 {
+		res.RejectionReason = "Official projects must have a slug"
+		return res
+	}
+
+	res.Payload = ProjectPayload{
+		Name:              projectName,
+		Blurb:             shortDesc,
+		Description:       description,
+		ParsedDescription: parsedDescription,
+		Lifecycle:         lifecycle,
+		Hidden:            hidden,
+		OwnerUsernames:    owners,
+		LightLogo:         lightLogo,
+		DarkLogo:          darkLogo,
+		Slug:              slug,
+		Personal:          !official,
+		Featured:          featured,
+	}
+
+	return res
+}
+
+func UpdateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, payload *ProjectPayload) error {
+	var lightLogoUUID *uuid.UUID
+	if payload.LightLogo.Exists {
+		lightLogo := &payload.LightLogo
+		lightLogoAsset, err := assets.Create(ctx, conn, assets.CreateInput{
+			Content:     lightLogo.Content,
+			Filename:    lightLogo.Filename,
+			ContentType: lightLogo.Mime,
+			UploaderID:  &user.ID,
+			Width:       lightLogo.Width,
+			Height:      lightLogo.Height,
+		})
+		if err != nil {
+			return oops.New(err, "Failed to save asset")
+		}
+		lightLogoUUID = &lightLogoAsset.ID
+	}
+
+	var darkLogoUUID *uuid.UUID
+	if payload.DarkLogo.Exists {
+		darkLogo := &payload.DarkLogo
+		darkLogoAsset, err := assets.Create(ctx, conn, assets.CreateInput{
+			Content:     darkLogo.Content,
+			Filename:    darkLogo.Filename,
+			ContentType: darkLogo.Mime,
+			UploaderID:  &user.ID,
+			Width:       darkLogo.Width,
+			Height:      darkLogo.Height,
+		})
+		if err != nil {
+			return oops.New(err, "Failed to save asset")
+		}
+		darkLogoUUID = &darkLogoAsset.ID
+	}
+
+	hasSelf := false
+	selfUsername := strings.ToLower(user.Username)
+	for i, _ := range payload.OwnerUsernames {
+		payload.OwnerUsernames[i] = strings.ToLower(payload.OwnerUsernames[i])
+		if payload.OwnerUsernames[i] == selfUsername {
+			hasSelf = true
+		}
+	}
+
+	if !hasSelf && !user.IsStaff {
+		payload.OwnerUsernames = append(payload.OwnerUsernames, selfUsername)
+	}
+
+	_, err := conn.Exec(ctx,
+		`
+		UPDATE handmade_project SET
+			name = $2,
+			blurb = $3,
+			description = $4,
+			descparsed = $5,
+			lifecycle = $6,
+			hidden = $7
+		WHERE
+			id = $1
+		`,
+		payload.ProjectID,
+		payload.Name,
+		payload.Blurb,
+		payload.Description,
+		payload.ParsedDescription,
+		payload.Lifecycle,
+		payload.Hidden,
+	)
+	if err != nil {
+		return oops.New(err, "Failed to update project")
+	}
+
+	if user.IsStaff {
+		_, err = conn.Exec(ctx,
+			`
+			UPDATE handmade_project SET
+				slug = $2,
+				featured = $3,
+				personal = $4
+			WHERE
+				id = $1
+			`,
+			payload.ProjectID,
+			payload.Slug,
+			payload.Featured,
+			payload.Personal,
+		)
+		if err != nil {
+			return oops.New(err, "Failed to update project with admin fields")
+		}
+	}
+
+	if payload.LightLogo.Exists || payload.LightLogo.Remove {
+		_, err = conn.Exec(ctx,
+			`
+			UPDATE handmade_project
+			SET
+				logolight_asset_id = $2
+			WHERE
+				id = $1
+			`,
+			payload.ProjectID,
+			lightLogoUUID,
+		)
+		if err != nil {
+			return oops.New(err, "Failed to update project's light logo")
+		}
+	}
+
+	if payload.DarkLogo.Exists || payload.DarkLogo.Remove {
+		_, err = conn.Exec(ctx,
+			`
+			UPDATE handmade_project
+			SET
+				logodark_asset_id = $2
+			WHERE
+				id = $1
+			`,
+			payload.ProjectID,
+			darkLogoUUID,
+		)
+		if err != nil {
+			return oops.New(err, "Failed to update project's dark logo")
+		}
+	}
+
+	ownerResult, err := db.Query(ctx, conn, models.User{},
+		`
+		SELECT $columns
+		FROM auth_user
+		WHERE LOWER(username) = ANY ($1)
+		`,
+		payload.OwnerUsernames,
+	)
+	if err != nil {
+		return oops.New(err, "Failed to query users")
+	}
+	ownerRows := ownerResult.ToSlice()
+
+	_, err = conn.Exec(ctx,
+		`
+		DELETE FROM handmade_user_projects
+		WHERE project_id = $1
+		`,
+		payload.ProjectID,
+	)
+	if err != nil {
+		return oops.New(err, "Failed to delete project owners")
+	}
+
+	for _, ownerRow := range ownerRows {
+		_, err = conn.Exec(ctx,
+			`
+			INSERT INTO handmade_user_projects
+				(user_id, project_id)
+			VALUES
+				($1,      $2)
+			`,
+			ownerRow.(*models.User).ID,
+			payload.ProjectID,
+		)
+		if err != nil {
+			return oops.New(err, "Failed to insert project owner")
+		}
+	}
+
+	return nil
 }
 
 type FormImage struct {
 	Exists   bool
+	Remove   bool
 	Filename string
 	Mime     string
 	Content  []byte
@@ -594,6 +794,8 @@ func GetFormImage(c *RequestContext, fieldName string) (FormImage, error) {
 	var res FormImage
 	res.Exists = false
 
+	removeStr := c.Req.Form.Get("remove_" + fieldName)
+	res.Remove = (removeStr == "true")
 	img, header, err := c.Req.FormFile(fieldName)
 	if err != nil {
 		if errors.Is(err, http.ErrMissingFile) {

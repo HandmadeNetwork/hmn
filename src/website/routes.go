@@ -462,11 +462,13 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 	{
 		hostPrefix := strings.TrimSuffix(c.Req.Host, hmnurl.GetBaseHost())
 		slug := strings.TrimRight(hostPrefix, ".")
+		var owners []*models.User
 
 		if len(slug) > 0 {
 			dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, ProjectsQuery{AlwaysVisibleToOwnerAndStaff: true})
 			if err == nil {
 				c.CurrentProject = &dbProject.Project
+				owners = dbProject.Owners
 			} else {
 				if errors.Is(err, db.NotFound) {
 					// do nothing, this is fine
@@ -484,11 +486,26 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 				panic(oops.New(err, "failed to fetch HMN project"))
 			}
 			c.CurrentProject = &dbProject.Project
+			owners = dbProject.Owners
 		}
 
 		if c.CurrentProject == nil {
 			panic("failed to load project data")
 		}
+
+		canEditProject := false
+		if c.CurrentUser != nil {
+			canEditProject = c.CurrentUser.IsStaff
+			if !canEditProject {
+				for _, o := range owners {
+					if o.ID == c.CurrentUser.ID {
+						c.CurrentUserCanEditCurrentProject = true
+						break
+					}
+				}
+			}
+		}
+		c.CurrentUserCanEditCurrentProject = canEditProject
 
 		c.UrlContext = UrlContextForProject(&c.CurrentProject.Project)
 	}
@@ -514,6 +531,7 @@ func AddCORSHeaders(c *RequestContext, res *ResponseData) {
 	}
 	if strings.HasSuffix(origin, parsed.Host) {
 		res.Header().Add("Access-Control-Allow-Origin", origin)
+		res.Header().Add("Access-Control-Allow-Credentials", "true")
 		res.Header().Add("Vary", "Origin")
 	}
 }

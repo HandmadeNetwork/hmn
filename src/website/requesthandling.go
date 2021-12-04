@@ -166,6 +166,8 @@ type RequestContext struct {
 	Theme          string
 	UrlContext     *hmnurl.UrlContext
 
+	CurrentUserCanEditCurrentProject bool
+
 	Perf *perf.RequestPerf
 
 	ctx context.Context

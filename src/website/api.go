@@ -45,6 +45,7 @@ func APICheckUsername(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.Header().Set("Content-Type", "application/json")
+	AddCORSHeaders(c, &res)
 	if found {
 		res.Write([]byte(fmt.Sprintf(`{ "found": true, "canonical": "%s" }`, canonicalUsername)))
 	} else {
