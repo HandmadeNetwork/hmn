@@ -14,9 +14,9 @@ type QueryBuilder struct {
 Adds the given SQL and arguments to the query. Any occurrences
 of `$?` will be replaced with the correct argument number.
 
-foo $? bar $? baz $?
-foo ARG1 bar ARG2 baz $?
-foo ARG1 bar ARG2 baz ARG3
+	foo $? bar $? baz $?
+	foo ARG1 bar ARG2 baz $?
+	foo ARG1 bar ARG2 baz ARG3
 */
 func (qb *QueryBuilder) Add(sql string, args ...interface{}) {
 	numPlaceholders := strings.Count(sql, "$?")

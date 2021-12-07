@@ -432,7 +432,7 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 
 	formResult.Payload.ProjectID = projectId
 
-	err = UpdateProject(c.Context(), tx, c.CurrentUser, &formResult.Payload)
+	err = updateProject(c.Context(), tx, c.CurrentUser, &formResult.Payload)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -492,7 +492,7 @@ func ProjectEditSubmit(c *RequestContext) ResponseData {
 
 	formResult.Payload.ProjectID = c.CurrentProject.ID
 
-	err = UpdateProject(c.Context(), tx, c.CurrentUser, &formResult.Payload)
+	err = updateProject(c.Context(), tx, c.CurrentUser, &formResult.Payload)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -609,7 +609,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	return res
 }
 
-func UpdateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, payload *ProjectPayload) error {
+func updateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, payload *ProjectPayload) error {
 	var lightLogoUUID *uuid.UUID
 	if payload.LightLogo.Exists {
 		lightLogo := &payload.LightLogo
@@ -657,26 +657,28 @@ func UpdateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, pay
 		payload.OwnerUsernames = append(payload.OwnerUsernames, selfUsername)
 	}
 
-	_, err := conn.Exec(ctx,
+	var qb db.QueryBuilder
+	qb.Add(
 		`
 		UPDATE handmade_project SET
-			name = $2,
-			blurb = $3,
-			description = $4,
-			descparsed = $5,
-			lifecycle = $6,
-			hidden = $7
-		WHERE
-			id = $1
+			name = $?,
+			blurb = $?,
+			description = $?,
+			descparsed = $?,
+			lifecycle = $?,
 		`,
-		payload.ProjectID,
 		payload.Name,
 		payload.Blurb,
 		payload.Description,
 		payload.ParsedDescription,
 		payload.Lifecycle,
-		payload.Hidden,
 	)
+	if user.IsStaff {
+		qb.Add(`hidden = $?`, payload.Hidden)
+	}
+	qb.Add(`WHERE id = $?`, payload.ProjectID)
+
+	_, err := conn.Exec(ctx, qb.String(), qb.Args()...)
 	if err != nil {
 		return oops.New(err, "Failed to update project")
 	}

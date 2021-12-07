@@ -350,9 +350,9 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 	anyProject.GET(hmnurl.RegexCineraIndex, CineraIndex)
 
 	anyProject.GET(hmnurl.RegexProjectCSS, ProjectCSS)
-	anyProject.GET(hmnurl.RegexEditorPreviewsJS, func(c *RequestContext) ResponseData {
+	anyProject.GET(hmnurl.RegexMarkdownWorkerJS, func(c *RequestContext) ResponseData {
 		var res ResponseData
-		res.MustWriteTemplate("editorpreviews.js", nil, c.Perf)
+		res.MustWriteTemplate("markdown_worker.js", nil, c.Perf)
 		res.Header().Add("Content-Type", "application/javascript")
 		return res
 	})

@@ -702,11 +702,11 @@ func BuildProjectCSS(color string) string {
 	return Url("/assets/project.css", []Q{{"color", color}})
 }
 
-var RegexEditorPreviewsJS = regexp.MustCompile("^/assets/editorpreviews.js$")
+var RegexMarkdownWorkerJS = regexp.MustCompile("^/assets/markdown_worker.js$")
 
-func BuildEditorPreviewsJS() string {
+func BuildMarkdownWorkerJS() string {
 	defer CatchPanic()
-	return Url("/assets/editorpreviews.js", nil)
+	return Url("/assets/markdown_worker.js", nil)
 }
 
 var RegexS3Asset *regexp.Regexp

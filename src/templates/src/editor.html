@@ -1,11 +1,9 @@
 {{ template "base.html" . }}
 
 {{ define "extrahead" }}
-    <script src="{{ static "go_wasm_exec.js" }}"></script>
+    {{ template "markdown_previews.html" . }}
+
     <script src="{{ static "js/base64.js" }}"></script>
-    <script>
-        const previewWorker = new Worker('/assets/editorpreviews.js');
-    </script>
 
     <style>
         #editor {
@@ -73,15 +71,6 @@
                     <input name="editreason" maxlength="255" type="text" id="editreason" />
                 </span>
             {{ end }}
-            
-            {{/* TODO: Sticky threads
-            {% if user.is_staff and post and post.depth == 0 %}
-                <div class="checkbox sticky">
-                    <input type="checkbox" name="sticky" id="sticky" {% if thread.sticky %}checked{% endif%} />
-                    <label for="sticky">Sticky thread</label>
-                </div>
-            {% endif %}
-            */}}
 
             {{ with .PostReplyingTo }}
                 <h4 class="mt3">The post you're replying to:</h4>
@@ -89,27 +78,6 @@
                     {{ template "forum_post_standalone.html" . }}
                 </div>
             {{ end }}
-
-            {{/*
-
-            {% if context_newer %}
-                <h4>Replies since then:</h4>
-                <div class="recent-posts">
-                    {% for post in posts_newer %}
-                        {% include "forum_thread_single_post.html" %}
-                    {% endfor %}
-                </div>
-            {% endif %}
-
-            {% if context_older %}
-                <h4>Replies before then:</h4>
-                <div class="recent-posts">
-                    {% for post in posts_older %}
-                        {% include "forum_thread_single_post.html" %}
-                    {% endfor %}
-                </div>
-            {% endif %}
-            */}}
         </form>
         <div id="preview-container" class="post post-preview mathjax flex-fair-ns overflow-auto mv3 mv0-ns ml3-ns pa3 br3 bg--dim">
             <div id="preview" class="post-content"></div>
@@ -127,74 +95,28 @@
     const textField = document.querySelector('#editor');
     const preview = document.querySelector('#preview');
 
-    const storagePrefix = 'post-contents';
-
-    // Delete old irrelevant local post contents
-    const aWeekAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
-    for (const key in window.localStorage) {
-        if (!window.localStorage.hasOwnProperty(key)) {
-            continue;
-        }
-
-        if (key.startsWith(storagePrefix)) {
-            try {
-                const { when } = JSON.parse(window.localStorage.getItem(key));
-                if (when <= aWeekAgo) {
-                    window.localStorage.removeItem(key);
-                }
-            } catch (e) {
-                console.error(e);
-            }
-        }
-    }
-
-    // Load any stored content from localStorage
-    const storageKey = `${storagePrefix}/${window.location.host}${window.location.pathname}`;
-    const storedContents = window.localStorage.getItem(storageKey);
-    if (storedContents && !textField.value) {
-        try {
-            const { title, contents } = JSON.parse(storedContents);
-            if (titleField) {
-                titleField.value = title;
-            }
-            textField.value = contents;
-        } catch (e) {
-            console.error(e);
-        }
-    }
-
-    function updatePreview(previewHtml) {
-        preview.innerHTML = previewHtml;
-        MathJax.typeset();
-    }
-
-    previewWorker.onmessage = ({ data }) => {
-        updatePreview(data);
-    };
-
-    function doMarkdown() {
-        const md = textField.value;
-        previewWorker.postMessage(md);
-        updateContentCache();
-    }
-
-    function updateContentCache() {
-        window.localStorage.setItem(storageKey, JSON.stringify({
-            when: new Date().getTime(),
-            title: titleField ? titleField.value : '',
-            contents: textField.value,
-        }));
-    }
-
-    doMarkdown();
-    textField.addEventListener('input', () => doMarkdown());
+    // Save content on change, clear on submit
+    const clearFuncs = [];
     if (titleField) {
-        titleField.addEventListener('input', () => updateContentCache());
+        const { clear: clearTitle } = autosaveContent({
+            inputEl: titleField,
+            storageKey: `post-title/${window.location.host}${window.location.pathname}`,
+        });
+        clearFuncs.push(clearTitle);
     }
-
-    form.addEventListener('submit', e => {
-        window.localStorage.removeItem(storageKey);
+    const { clear: clearContent } = autosaveContent({
+        inputEl: textField,
+        storageKey: `post-content/${window.location.host}${window.location.pathname}`,
     });
+    clearFuncs.push(clearContent);
+    form.addEventListener('submit', e => {
+        for (const clear of clearFuncs) {
+            clear();
+        }
+    });
+
+    // Do live Markdown previews
+    initLiveMarkdown({ inputEl: textField, previewEl: preview });
 
     /*
     / Asset upload

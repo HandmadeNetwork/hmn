@@ -1,13 +1,22 @@
 {{ template "base.html" . }}
 
 {{ define "extrahead" }}
+	{{ template "markdown_previews.html" . }}
 	<script src="{{ static "js/tabs.js" }}"></script>
 	<script src="{{ static "js/image_selector.js" }}"></script>
 	<script src="{{ static "js/templates.js" }}"></script>
+	
+	<style>
+		#desc-preview:empty::after {
+			content: 'A preview of your description will appear here.';
+			color: var(--dimmer-color);
+			font-style: italic;
+		}
+	</style>
 {{ end }}
 
 {{ define "content" }}
-	<div class="content-block">
+	<div class="ph3 ph0-ns">
 		{{ if .Editing }}
 			<h1>Edit {{ .ProjectSettings.Name }}</h1>
 		{{ else }}
@@ -28,18 +37,10 @@
 					<div>
 						<select name="lifecycle">
 							<option value="active" {{ if eq .ProjectSettings.Lifecycle "active" }}selected{{ end }}>Active</option>
-							<option value="hiatus" {{ if eq .ProjectSettings.Lifecycle "hiatus" }}selected{{ end }}>Hiatus</option>
+							<option value="hiatus" {{ if eq .ProjectSettings.Lifecycle "hiatus" }}selected{{ end }}>On Hiatus</option>
 							<option value="done"   {{ if eq .ProjectSettings.Lifecycle "done"   }}selected{{ end }}>Completed</option>
 							<option value="dead"   {{ if eq .ProjectSettings.Lifecycle "dead"   }}selected{{ end }}>Abandoned</option>
 						</select>
-					</div>
-				</div>
-				<div class="edit-form-row">
-					{{/* TODO(asaf): Should this be admin only??*/}}
-					<div>Hidden:</div>
-					<div>
-						<input id="hidden" type="checkbox" name="hidden" {{ if .ProjectSettings.Hidden }}checked{{ end }} />
-						<label for="hidden">Hide</label>
 					</div>
 				</div>
 				<div class="edit-form-row">
@@ -73,12 +74,6 @@
 						<div class="pt-input-ns">Admin settings</div>
 					</div>
 					<div class="edit-form-row">
-						<div class="pt-input-ns">Slug:</div>
-						<div>
-							<input type="text" name="slug" maxlength="255" class="textbox" value="{{ .ProjectSettings.Slug }}">
-						</div>
-					</div>
-					<div class="edit-form-row">
 						<div>Official:</div>
 						<div>
 							<input id="official" type="checkbox" name="official" {{ if not .ProjectSettings.Personal }}checked{{ end }} />
@@ -86,11 +81,26 @@
 						</div>
 					</div>
 					<div class="edit-form-row">
+						<div>Hidden:</div>
+						<div>
+							<input id="hidden" type="checkbox" name="hidden" {{ if .ProjectSettings.Hidden }}checked{{ end }} />
+							<label for="hidden">Hide</label>
+						</div>
+					</div>
+					<div class="edit-form-row">
+						<div class="pt-input-ns">Slug:</div>
+						<div>
+							<input type="text" name="slug" maxlength="255" class="textbox" value="{{ .ProjectSettings.Slug }}">
+							<div class="c--dim f7">Has no effect for personal projects. Personal projects have a slug derived from the title.</div>
+							<div class="c--dim f7">If you change this, make sure to change DNS too!</div>
+						</div>
+					</div>
+					<div class="edit-form-row">
 						<div>Featured:</div>
 						<div>
 							<input id="featured" type="checkbox" name="featured" {{ if .ProjectSettings.Featured }}checked{{ end }} />
 							<label for="featured">Featured</label>
-							<div class="c--dim f7">Bump to the top of the project index and show in the carousel.</div>
+							<div class="c--dim f7">Bump to the top of the project index and show in the carousel. Has no effect for personal projects.</div>
 						</div>
 					</div>
 				{{ end }}
@@ -118,10 +128,11 @@
 				<div class="edit-form-row">
 					<div class="pt-input-ns">Full description:</div>
 					<div>
-						<textarea class="w-100 h6 minh-6 mono lh-copy" name="description">
+						<textarea id="description" class="w-100 h5 minh-5 mono lh-copy" name="description">
 							{{- .ProjectSettings.Description -}}
 						</textarea>
-						{{/* TODO(asaf): Replace with the full editor */}}
+						<div class="b mt3 mb2">Preview:</div>
+						<div id="desc-preview" class="w-100"></div>
 					</div>
 				</div>
 				<div class="edit-form-row">
@@ -164,7 +175,7 @@
 	<script>
 	let csrf = JSON.parse({{ csrftokenjs .Session }});
 
-	let projectForm = document.querySelector("#project_form")
+	let projectForm = document.querySelector("#project_form");
 
 	projectForm.addEventListener("invalid", function(ev) {
 		switchToTabOfElement(document.body, ev.target);
@@ -173,6 +184,25 @@
 	function gotoTab(tabName) {
 		switchTab(document.body, tabName);
 	}
+
+	////////////////////////////
+	// Description management //
+	////////////////////////////
+
+	{{ if .Editing }}
+		const projectName = "new-project";
+	{{ else }}
+		const projectName = "{{ .Project.Name }}";
+	{{ end }}
+	const description = document.querySelector('#description');
+	const descPreview = document.querySelector('#desc-preview');
+	const { clear: clearDescription } = autosaveContent({
+		inputEl: description,
+		storageKey: `project-description/${projectName}`,
+	});
+	projectForm.addEventListener('submit', () => clearDescription());
+
+	initLiveMarkdown({ inputEl: description, previewEl: descPreview });
 
 	//////////////////////
 	// Owner management //

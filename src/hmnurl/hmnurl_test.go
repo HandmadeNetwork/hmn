@@ -298,12 +298,12 @@ func TestProjectCSS(t *testing.T) {
 	AssertRegexMatch(t, BuildProjectCSS("000000"), RegexProjectCSS, nil)
 }
 
-func TestEditorPreviewsJS(t *testing.T) {
-	AssertRegexMatch(t, BuildEditorPreviewsJS(), RegexEditorPreviewsJS, nil)
+func TestMarkdownWorkerJS(t *testing.T) {
+	AssertRegexMatch(t, BuildMarkdownWorkerJS(), RegexMarkdownWorkerJS, nil)
 }
 
 func TestAPICheckUsername(t *testing.T) {
-	AssertRegexmatch(t, BuildAPICheckUsername(), RegexAPICheckUsername, nil)
+	AssertRegexMatch(t, BuildAPICheckUsername(), RegexAPICheckUsername, nil)
 }
 
 func TestPublic(t *testing.T) {
