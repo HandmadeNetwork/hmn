@@ -69,6 +69,18 @@
 						</div>
 					</div>
 				</div>
+				<div class="edit-form-row">
+					<div class="pt-input-ns">Tag:</div>
+					<div>
+						<input
+							id="tag" name="tag" type="text"
+							pattern="^[a-z0-9]+(-[a-z0-9]+)*$" maxlength="20"
+							value="{{ .ProjectSettings.Tag }}"
+						/>
+						<div class="c--dim f7 mt1">e.g. "imgui" or "text-editor". Tags must be all lowercase, and can use hyphens to separate words.</div>
+						<div class="c--dim f7" id="tag-discord-info">If you have linked your Discord account, any #project-showcase messages with the tag "&gt;<span id="tag-preview"></span>" will automatically be associated with this project.</div>
+					</div>
+				</div>
 				{{ if and .Editing .User.IsStaff }}
 					<div class="edit-form-row">
 						<div class="pt-input-ns">Admin settings</div>
@@ -91,7 +103,7 @@
 						<div class="pt-input-ns">Slug:</div>
 						<div>
 							<input type="text" name="slug" maxlength="255" class="textbox" value="{{ .ProjectSettings.Slug }}">
-							<div class="c--dim f7">Has no effect for personal projects. Personal projects have a slug derived from the title.</div>
+							<div class="c--dim f7 mt1">Has no effect for personal projects. Personal projects have a slug derived from the title.</div>
 							<div class="c--dim f7">If you change this, make sure to change DNS too!</div>
 						</div>
 					</div>
@@ -184,6 +196,19 @@
 	function gotoTab(tabName) {
 		switchTab(document.body, tabName);
 	}
+
+	//////////
+	// Tags //
+	//////////
+
+	const tag = document.querySelector('#tag');
+	const tagPreview = document.querySelector('#tag-preview');
+	function updateTagPreview() {
+		tagPreview.innerText = tag.value;
+		document.querySelector('#tag-discord-info').classList.toggle('dn', tag.value.length === 0);
+	}
+	updateTagPreview();
+	tag.addEventListener('input', () => updateTagPreview());
 
 	////////////////////////////
 	// Description management //

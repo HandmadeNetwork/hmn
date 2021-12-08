@@ -299,9 +299,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 				if err != nil {
 					panic(oops.New(err, "project id was not numeric (bad regex in routing)"))
 				}
-				p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, id, ProjectsQuery{
-					AlwaysVisibleToOwnerAndStaff: true,
-				})
+				p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, id, ProjectsQuery{})
 				if err != nil {
 					if errors.Is(err, db.NotFound) {
 						return FourOhFour(c)
@@ -311,7 +309,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 				}
 
 				c.CurrentProject = &p.Project
-				c.UrlContext = UrlContextForProject(&c.CurrentProject.Project)
+				c.UrlContext = UrlContextForProject(c.CurrentProject)
 
 				if !p.Project.Personal {
 					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
@@ -465,7 +463,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		var owners []*models.User
 
 		if len(slug) > 0 {
-			dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, ProjectsQuery{AlwaysVisibleToOwnerAndStaff: true})
+			dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, ProjectsQuery{})
 			if err == nil {
 				c.CurrentProject = &dbProject.Project
 				owners = dbProject.Owners
@@ -507,7 +505,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		}
 		c.CurrentUserCanEditCurrentProject = canEditProject
 
-		c.UrlContext = UrlContextForProject(&c.CurrentProject.Project)
+		c.UrlContext = UrlContextForProject(c.CurrentProject)
 	}
 
 	c.Theme = "light"

@@ -163,66 +163,16 @@ func addProjectTagCommand(projectCommand *cobra.Command) {
 			conn := db.NewConnPool(1, 1)
 			defer conn.Close()
 
-			tx, err := conn.Begin(ctx)
-			if err != nil {
-				panic(err)
-			}
-			defer tx.Rollback(ctx)
-
-			p, err := website.FetchProject(ctx, tx, nil, projectID, website.ProjectsQuery{
-				IncludeHidden: true,
-				Lifecycles:    models.AllProjectLifecycles,
-			})
+			resultTag, err := website.SetProjectTag(ctx, conn, projectID, tag)
 			if err != nil {
 				panic(err)
 			}
 
-			if p.Project.TagID == nil {
-				// Create a tag
-				tagID, err := db.QueryInt(ctx, tx,
-					`
-					INSERT INTO tags (text) VALUES ($1)
-					RETURNING id
-					`,
-					tag,
-				)
-				if err != nil {
-					panic(err)
-				}
-
-				// Attach it to the project
-				_, err = tx.Exec(ctx,
-					`
-					UPDATE handmade_project
-					SET tag = $1
-					WHERE id = $2
-					`,
-					tagID, projectID,
-				)
-				if err != nil {
-					panic(err)
-				}
+			if resultTag == nil {
+				fmt.Printf("Project tag was deleted.\n")
 			} else {
-				// Update the text of an existing one
-				_, err := tx.Exec(ctx,
-					`
-					UPDATE tags
-					SET text = $1
-					WHERE id = (SELECT tag FROM handmade_project WHERE id = $2)
-					`,
-					tag, projectID,
-				)
-				if err != nil {
-					panic(err)
-				}
+				fmt.Printf("Project now has tag: %s\n", tag)
 			}
-
-			err = tx.Commit(ctx)
-			if err != nil {
-				panic(err)
-			}
-
-			fmt.Printf("Project now has tag: %s\n", tag)
 		},
 	}
 	projectTagCommand.Flags().Int("projectid", 0, "")

@@ -100,20 +100,17 @@ func UserProfile(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	projectsQuery := ProjectsQuery{
-		OwnerIDs:                     []int{profileUser.ID},
-		Lifecycles:                   models.VisibleProjectLifecycles,
-		AlwaysVisibleToOwnerAndStaff: true,
-		OrderBy:                      "all_last_updated DESC",
+		OwnerIDs:   []int{profileUser.ID},
+		Lifecycles: models.VisibleProjectLifecycles,
+		OrderBy:    "all_last_updated DESC",
 	}
 
 	projectsAndStuff, err := FetchProjects(c.Context(), c.Conn, c.CurrentUser, projectsQuery)
 	templateProjects := make([]templates.Project, 0, len(projectsAndStuff))
 	for _, p := range projectsAndStuff {
-		templateProjects = append(templateProjects, templates.ProjectToTemplate(
-			&p.Project,
-			UrlContextForProject(&p.Project.Project).BuildHomepage(),
-			c.Theme,
-		))
+		templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project).BuildHomepage())
+		templateProject.AddLogo(p.LogoURL(c.Theme))
+		templateProjects = append(templateProjects, templateProject)
 	}
 	c.Perf.EndBlock()
 

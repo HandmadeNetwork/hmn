@@ -59,23 +59,26 @@ var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
 	models.ProjectLifecycleLTS:              "Complete",
 }
 
-func ProjectLogoUrl(p *models.ProjectWithLogos, theme string) string {
+func ProjectLogoUrl(p *models.Project, lightAsset *models.Asset, darkAsset *models.Asset, theme string) string {
 	if theme == "dark" {
-		if p.LogoDarkAsset != nil {
-			return hmnurl.BuildS3Asset(p.LogoDarkAsset.S3Key)
+		if darkAsset != nil {
+			return hmnurl.BuildS3Asset(darkAsset.S3Key)
 		} else {
-			return hmnurl.BuildUserFile(p.Project.LogoDark)
+			return hmnurl.BuildUserFile(p.LogoDark)
 		}
 	} else {
-		if p.LogoLightAsset != nil {
-			return hmnurl.BuildS3Asset(p.LogoLightAsset.S3Key)
+		if lightAsset != nil {
+			return hmnurl.BuildS3Asset(lightAsset.S3Key)
 		} else {
-			return hmnurl.BuildUserFile(p.Project.LogoLight)
+			return hmnurl.BuildUserFile(p.LogoLight)
 		}
 	}
 }
 
-func ProjectToTemplate(p *models.ProjectWithLogos, url string, theme string) Project {
+func ProjectToTemplate(
+	p *models.Project,
+	url string,
+) Project {
 	return Project{
 		Name:              p.Name,
 		Subdomain:         p.Subdomain(),
@@ -84,8 +87,6 @@ func ProjectToTemplate(p *models.ProjectWithLogos, url string, theme string) Pro
 		Url:               url,
 		Blurb:             p.Blurb,
 		ParsedDescription: template.HTML(p.ParsedDescription),
-
-		Logo: ProjectLogoUrl(p, theme),
 
 		LifecycleBadgeClass: LifecycleBadgeClasses[p.Lifecycle],
 		LifecycleString:     LifecycleBadgeStrings[p.Lifecycle],
@@ -97,6 +98,10 @@ func ProjectToTemplate(p *models.ProjectWithLogos, url string, theme string) Pro
 
 		DateApproved: p.DateApproved,
 	}
+}
+
+func (p *Project) AddLogo(logoUrl string) {
+	p.Logo = logoUrl
 }
 
 var ProjectLifecycleValues = map[models.ProjectLifecycle]string{
@@ -115,7 +120,13 @@ func ProjectLifecycleFromValue(value string) (models.ProjectLifecycle, bool) {
 	return models.ProjectLifecycleUnapproved, false
 }
 
-func ProjectToProjectSettings(p *models.ProjectWithLogos, owners []*models.User, currentTheme string) ProjectSettings {
+func ProjectToProjectSettings(
+	p *models.Project,
+	owners []*models.User,
+	tag string,
+	lightLogoUrl, darkLogoUrl string,
+	currentTheme string,
+) ProjectSettings {
 	ownerUsers := make([]User, 0, len(owners))
 	for _, owner := range owners {
 		ownerUsers = append(ownerUsers, UserToTemplate(owner, currentTheme))
@@ -127,11 +138,12 @@ func ProjectToProjectSettings(p *models.ProjectWithLogos, owners []*models.User,
 		Featured:    p.Featured,
 		Personal:    p.Personal,
 		Lifecycle:   ProjectLifecycleValues[p.Lifecycle],
+		Tag:         tag,
 		Blurb:       p.Blurb,
 		Description: p.Description,
 		Owners:      ownerUsers,
-		LightLogo:   ProjectLogoUrl(p, "light"),
-		DarkLogo:    ProjectLogoUrl(p, "dark"),
+		LightLogo:   lightLogoUrl,
+		DarkLogo:    darkLogoUrl,
 	}
 }
 

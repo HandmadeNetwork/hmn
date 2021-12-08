@@ -14,7 +14,7 @@ func getBaseDataAutocrumb(c *RequestContext, title string) templates.BaseData {
 // NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
 //             If you pass nil, no breadcrumbs will be created.
 func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadcrumb) templates.BaseData {
-	var project models.ProjectWithLogos
+	var project models.Project
 	if c.CurrentProject != nil {
 		project = *c.CurrentProject
 	}
@@ -51,14 +51,14 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		LoginPageUrl:      hmnurl.BuildLoginPage(c.FullUrl()),
 		ProjectCSSUrl:     hmnurl.BuildProjectCSS(project.Color1),
 
-		Project: templates.ProjectToTemplate(&project, c.UrlContext.BuildHomepage(), c.Theme),
+		Project: templates.ProjectToTemplate(&project, c.UrlContext.BuildHomepage()),
 		User:    templateUser,
 		Session: templateSession,
 		Notices: notices,
 
 		ReportIssueMailto: "team@handmade.network",
 
-		OpenGraphItems: buildDefaultOpenGraphItems(&project.Project, title),
+		OpenGraphItems: buildDefaultOpenGraphItems(&project, title),
 
 		IsProjectPage: !project.IsHMN(),
 		Header: templates.Header{

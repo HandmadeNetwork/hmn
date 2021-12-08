@@ -80,12 +80,6 @@ type Project struct {
 	LibraryEnabled bool `db:"library_enabled"` // TODO: Delete this field from the db
 }
 
-type ProjectWithLogos struct {
-	Project        `db:"project"`
-	LogoLightAsset *Asset `db:"logolight_asset"`
-	LogoDarkAsset  *Asset `db:"logodark_asset"`
-}
-
 func (p *Project) IsHMN() bool {
 	return p.ID == HMNProjectID
 }

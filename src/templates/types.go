@@ -142,6 +142,7 @@ type ProjectSettings struct {
 	Featured  bool
 	Personal  bool
 	Lifecycle string
+	Tag       string
 
 	Blurb       string
 	Description string

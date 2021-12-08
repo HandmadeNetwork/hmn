@@ -166,7 +166,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects"))
 			}
 			for _, p := range projectsAndStuff {
-				templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project.Project).BuildHomepage(), c.Theme)
+				templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project).BuildHomepage())
 				templateProject.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(templateProject.Url)).URN()
 				for _, owner := range p.Owners {
 					templateProject.Owners = append(templateProject.Owners, templates.UserToTemplate(owner, ""))

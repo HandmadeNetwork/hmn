@@ -22,6 +22,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v4"
 )
 
 type ProjectTemplateData struct {
@@ -71,7 +72,9 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	var restProjects []templates.Project
 	now := time.Now()
 	for _, p := range officialProjects {
-		templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project.Project).BuildHomepage(), c.Theme)
+		templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project).BuildHomepage())
+		templateProject.AddLogo(p.LogoURL(c.Theme))
+
 		if p.Project.Slug == "hero" {
 			// NOTE(asaf): Handmade Hero gets special treatment. Must always be first in the list.
 			handmadeHero = &templateProject
@@ -132,11 +135,9 @@ func ProjectIndex(c *RequestContext) ResponseData {
 			if i >= maxPersonalProjects {
 				break
 			}
-			personalProjects = append(personalProjects, templates.ProjectToTemplate(
-				&p.Project,
-				UrlContextForProject(&p.Project.Project).BuildHomepage(),
-				c.Theme,
-			))
+			templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project).BuildHomepage())
+			templateProject.AddLogo(p.LogoURL(c.Theme))
+			personalProjects = append(personalProjects, templateProject)
 		}
 	}
 
@@ -260,7 +261,12 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		Value:    c.CurrentProject.Blurb,
 	})
 
-	templateData.Project = templates.ProjectToTemplate(c.CurrentProject, c.UrlContext.BuildHomepage(), c.Theme)
+	p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, c.CurrentProject.ID, ProjectsQuery{})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project details"))
+	}
+	templateData.Project = templates.ProjectToTemplate(c.CurrentProject, c.UrlContext.BuildHomepage())
+	templateData.Project.AddLogo(p.LogoURL(c.Theme))
 	for _, owner := range owners {
 		templateData.Owners = append(templateData.Owners, templates.UserToTemplate(owner, c.Theme))
 	}
@@ -449,16 +455,28 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 }
 
 func ProjectEdit(c *RequestContext) ResponseData {
-	project := c.CurrentProject
 	if !c.CurrentUserCanEditCurrentProject {
 		return FourOhFour(c)
 	}
 
-	owners, err := FetchProjectOwners(c.Context(), c.Conn, project.ID)
+	p, err := FetchProject(
+		c.Context(), c.Conn,
+		c.CurrentUser, c.CurrentProject.ID,
+		ProjectsQuery{
+			IncludeHidden: true,
+		},
+	)
+	owners, err := FetchProjectOwners(c.Context(), c.Conn, p.Project.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch project owners"))
 	}
-	projectSettings := templates.ProjectToProjectSettings(project, owners, c.Theme)
+	projectSettings := templates.ProjectToProjectSettings(
+		&p.Project,
+		owners,
+		p.TagText(),
+		p.LogoURL("light"), p.LogoURL("dark"),
+		c.Theme,
+	)
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
@@ -520,6 +538,7 @@ type ProjectPayload struct {
 	OwnerUsernames    []string
 	LightLogo         FormImage
 	DarkLogo          FormImage
+	Tag               string
 
 	Slug     string
 	Featured bool
@@ -564,6 +583,12 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		return res
 	}
 
+	tag := c.Req.Form.Get("tag")
+	if !models.ValidateTagText(tag) {
+		res.RejectionReason = "Project tag is invalid"
+		return res
+	}
+
 	hiddenStr := c.Req.Form.Get("hidden")
 	hidden := len(hiddenStr) > 0
 
@@ -601,6 +626,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		OwnerUsernames:    owners,
 		LightLogo:         lightLogo,
 		DarkLogo:          darkLogo,
+		Tag:               tag,
 		Slug:              slug,
 		Personal:          !official,
 		Featured:          featured,
@@ -609,11 +635,11 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	return res
 }
 
-func updateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, payload *ProjectPayload) error {
+func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *ProjectPayload) error {
 	var lightLogoUUID *uuid.UUID
 	if payload.LightLogo.Exists {
 		lightLogo := &payload.LightLogo
-		lightLogoAsset, err := assets.Create(ctx, conn, assets.CreateInput{
+		lightLogoAsset, err := assets.Create(ctx, tx, assets.CreateInput{
 			Content:     lightLogo.Content,
 			Filename:    lightLogo.Filename,
 			ContentType: lightLogo.Mime,
@@ -630,7 +656,7 @@ func updateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, pay
 	var darkLogoUUID *uuid.UUID
 	if payload.DarkLogo.Exists {
 		darkLogo := &payload.DarkLogo
-		darkLogoAsset, err := assets.Create(ctx, conn, assets.CreateInput{
+		darkLogoAsset, err := assets.Create(ctx, tx, assets.CreateInput{
 			Content:     darkLogo.Content,
 			Filename:    darkLogo.Filename,
 			ContentType: darkLogo.Mime,
@@ -678,13 +704,15 @@ func updateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, pay
 	}
 	qb.Add(`WHERE id = $?`, payload.ProjectID)
 
-	_, err := conn.Exec(ctx, qb.String(), qb.Args()...)
+	_, err := tx.Exec(ctx, qb.String(), qb.Args()...)
 	if err != nil {
 		return oops.New(err, "Failed to update project")
 	}
 
+	SetProjectTag(ctx, tx, payload.ProjectID, payload.Tag)
+
 	if user.IsStaff {
-		_, err = conn.Exec(ctx,
+		_, err = tx.Exec(ctx,
 			`
 			UPDATE handmade_project SET
 				slug = $2,
@@ -704,7 +732,7 @@ func updateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, pay
 	}
 
 	if payload.LightLogo.Exists || payload.LightLogo.Remove {
-		_, err = conn.Exec(ctx,
+		_, err = tx.Exec(ctx,
 			`
 			UPDATE handmade_project
 			SET
@@ -721,7 +749,7 @@ func updateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, pay
 	}
 
 	if payload.DarkLogo.Exists || payload.DarkLogo.Remove {
-		_, err = conn.Exec(ctx,
+		_, err = tx.Exec(ctx,
 			`
 			UPDATE handmade_project
 			SET
@@ -737,7 +765,7 @@ func updateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, pay
 		}
 	}
 
-	ownerResult, err := db.Query(ctx, conn, models.User{},
+	ownerResult, err := db.Query(ctx, tx, models.User{},
 		`
 		SELECT $columns
 		FROM auth_user
@@ -750,7 +778,7 @@ func updateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, pay
 	}
 	ownerRows := ownerResult.ToSlice()
 
-	_, err = conn.Exec(ctx,
+	_, err = tx.Exec(ctx,
 		`
 		DELETE FROM handmade_user_projects
 		WHERE project_id = $1
@@ -762,7 +790,7 @@ func updateProject(ctx context.Context, conn db.ConnOrTx, user *models.User, pay
 	}
 
 	for _, ownerRow := range ownerRows {
-		_, err = conn.Exec(ctx,
+		_, err = tx.Exec(ctx,
 			`
 			INSERT INTO handmade_user_projects
 				(user_id, project_id)

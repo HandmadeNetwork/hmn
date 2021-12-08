@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/templates"
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -20,10 +21,9 @@ const (
 
 type ProjectsQuery struct {
 	// Available on all project queries
-	Lifecycles                   []models.ProjectLifecycle // if empty, defaults to models.VisibleProjectLifecycles
-	Types                        ProjectTypeQuery          // bitfield
-	IncludeHidden                bool
-	AlwaysVisibleToOwnerAndStaff bool
+	Lifecycles    []models.ProjectLifecycle // if empty, defaults to models.VisibleProjectLifecycles
+	Types         ProjectTypeQuery          // bitfield
+	IncludeHidden bool
 
 	// Ignored when using FetchProject
 	ProjectIDs []int    // if empty, all projects
@@ -36,8 +36,23 @@ type ProjectsQuery struct {
 }
 
 type ProjectAndStuff struct {
-	Project models.ProjectWithLogos
-	Owners  []*models.User
+	Project        models.Project
+	LogoLightAsset *models.Asset `db:"logolight_asset"`
+	LogoDarkAsset  *models.Asset `db:"logodark_asset"`
+	Owners         []*models.User
+	Tag            *models.Tag
+}
+
+func (p *ProjectAndStuff) TagText() string {
+	if p.Tag == nil {
+		return ""
+	} else {
+		return p.Tag.Text
+	}
+}
+
+func (p *ProjectAndStuff) LogoURL(theme string) string {
+	return templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, theme)
 }
 
 func FetchProjects(
@@ -61,6 +76,15 @@ func FetchProjects(
 	}
 	defer tx.Rollback(ctx)
 
+	type projectRow struct {
+		Project        models.Project `db:"project"`
+		LogoLightAsset *models.Asset  `db:"logolight_asset"`
+		LogoDarkAsset  *models.Asset  `db:"logodark_asset"`
+	}
+
+	// If true, join against the project owners table and check visibility permissions
+	checkOwnerVisibility := q.IncludeHidden && currentUser != nil
+
 	// Fetch all valid projects (not yet subject to user permission checks)
 	var qb db.QueryBuilder
 	if len(q.OrderBy) > 0 {
@@ -78,7 +102,7 @@ func FetchProjects(
 			INNER JOIN handmade_user_projects AS owner_filter ON owner_filter.project_id = project.id
 		`)
 	}
-	if q.AlwaysVisibleToOwnerAndStaff && currentUser != nil {
+	if checkOwnerVisibility {
 		qb.Add(`
 			LEFT JOIN handmade_user_projects AS owner_visibility ON owner_visibility.project_id = project.id
 		`)
@@ -87,6 +111,7 @@ func FetchProjects(
 		WHERE
 			TRUE
 	`)
+
 	// Filters
 	if len(q.ProjectIDs) > 0 {
 		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
@@ -109,8 +134,8 @@ func FetchProjects(
 	}
 
 	// Visibility
-	if q.AlwaysVisibleToOwnerAndStaff && currentUser != nil {
-		qb.Add(`AND ($? = TRUE OR owner_visibility.user_id = $? OR (TRUE`, currentUser.IsStaff, currentUser.ID)
+	if checkOwnerVisibility {
+		qb.Add(`AND ($? OR owner_visibility.user_id = $? OR (TRUE`, currentUser.IsStaff, currentUser.ID)
 	}
 	if !q.IncludeHidden {
 		qb.Add(`AND NOT hidden`)
@@ -120,7 +145,7 @@ func FetchProjects(
 	} else {
 		qb.Add(`AND project.lifecycle = ANY($?)`, models.VisibleProjectLifecycles)
 	}
-	if q.AlwaysVisibleToOwnerAndStaff && currentUser != nil {
+	if checkOwnerVisibility {
 		qb.Add(`))`)
 	}
 
@@ -131,16 +156,33 @@ func FetchProjects(
 	if len(q.OrderBy) > 0 {
 		qb.Add(fmt.Sprintf(`) q ORDER BY %s`, q.OrderBy))
 	}
-	itProjects, err := db.Query(ctx, dbConn, models.ProjectWithLogos{}, qb.String(), qb.Args()...)
+
+	// Do the query
+	itProjects, err := db.Query(ctx, dbConn, projectRow{}, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch projects")
 	}
 	iprojects := itProjects.ToSlice()
 
+	// Fetch project tags
+	var tagIDs []int
+	for _, iproject := range iprojects {
+		tagID := iproject.(*projectRow).Project.TagID
+		if tagID != nil {
+			tagIDs = append(tagIDs, *tagID)
+		}
+	}
+	tags, err := FetchTags(ctx, tx, TagQuery{
+		IDs: tagIDs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	// Fetch project owners to do permission checks
 	projectIds := make([]int, len(iprojects))
 	for i, iproject := range iprojects {
-		projectIds[i] = iproject.(*models.ProjectWithLogos).ID
+		projectIds[i] = iproject.(*projectRow).Project.ID
 	}
 	projectOwners, err := FetchMultipleProjectsOwners(ctx, tx, projectIds)
 	if err != nil {
@@ -149,7 +191,7 @@ func FetchProjects(
 
 	var res []ProjectAndStuff
 	for i, iproject := range iprojects {
-		project := iproject.(*models.ProjectWithLogos)
+		row := iproject.(*projectRow)
 		owners := projectOwners[i].Owners
 
 		/*
@@ -162,7 +204,7 @@ func FetchProjects(
 		*/
 
 		var projectVisible bool
-		if project.Personal {
+		if row.Project.Personal {
 			allOwnersApproved := true
 			for _, owner := range owners {
 				if owner.Status != models.UserStatusApproved {
@@ -180,9 +222,22 @@ func FetchProjects(
 		}
 
 		if projectVisible {
+			var projectTag *models.Tag
+			if row.Project.TagID != nil {
+				for _, tag := range tags {
+					if tag.ID == *row.Project.TagID {
+						projectTag = tag
+						break
+					}
+				}
+			}
+
 			res = append(res, ProjectAndStuff{
-				Project: *project,
-				Owners:  owners,
+				Project:        row.Project,
+				LogoLightAsset: row.LogoLightAsset,
+				LogoDarkAsset:  row.LogoDarkAsset,
+				Owners:         owners,
+				Tag:            projectTag,
 			})
 		}
 	}
@@ -434,4 +489,79 @@ func UrlContextForProject(p *models.Project) *hmnurl.UrlContext {
 		ProjectSlug:     p.Slug,
 		ProjectName:     p.Name,
 	}
+}
+
+func SetProjectTag(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	projectID int,
+	tagText string,
+) (*models.Tag, error) {
+	tx, err := dbConn.Begin(ctx)
+	if err != nil {
+		return nil, oops.New(err, "failed to start transaction")
+	}
+	defer tx.Rollback(ctx)
+
+	p, err := FetchProject(ctx, tx, nil, projectID, ProjectsQuery{
+		IncludeHidden: true,
+		Lifecycles:    models.AllProjectLifecycles,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var resultTag *models.Tag
+	if tagText == "" {
+		// Once a project's tag is set, it cannot be unset. Return the existing tag.
+		resultTag = p.Tag
+	} else if p.Project.TagID == nil {
+		// Create a tag
+		itag, err := db.QueryOne(ctx, tx, models.Tag{},
+			`
+			INSERT INTO tags (text) VALUES ($1)
+			RETURNING $columns
+			`,
+			tagText,
+		)
+		if err != nil {
+			return nil, oops.New(err, "failed to create new tag for project")
+		}
+		resultTag = itag.(*models.Tag)
+
+		// Attach it to the project
+		_, err = tx.Exec(ctx,
+			`
+			UPDATE handmade_project
+			SET tag = $1
+			WHERE id = $2
+			`,
+			resultTag.ID, projectID,
+		)
+		if err != nil {
+			return nil, oops.New(err, "failed to attach new tag to project")
+		}
+	} else {
+		// Update the text of an existing one
+		itag, err := db.QueryOne(ctx, tx, models.Tag{},
+			`
+			UPDATE tags
+			SET text = $1
+			WHERE id = (SELECT tag FROM handmade_project WHERE id = $2)
+			RETURNING $columns
+			`,
+			tagText, projectID,
+		)
+		if err != nil {
+			return nil, oops.New(err, "failed to update existing tag")
+		}
+		resultTag = itag.(*models.Tag)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, oops.New(err, "failed to commit transaction")
+	}
+
+	return resultTag, nil
 }
