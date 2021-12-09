@@ -1,12 +1,12 @@
-package website
+package hmndata
 
 import (
 	"context"
 
-	"git.handmade.network/hmn/hmn/src/oops"
-
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/perf"
 )
 
 type SnippetQuery struct {
@@ -31,7 +31,7 @@ func FetchSnippets(
 	currentUser *models.User,
 	q SnippetQuery,
 ) ([]SnippetAndStuff, error) {
-	perf := ExtractPerf(ctx)
+	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Fetch snippets")
 	defer perf.EndBlock()
 

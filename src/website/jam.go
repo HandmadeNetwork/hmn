@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -19,7 +20,7 @@ func JamIndex(c *RequestContext) ResponseData {
 	}
 
 	tagId := -1
-	jamTag, err := FetchTag(c.Context(), c.Conn, TagQuery{
+	jamTag, err := hmndata.FetchTag(c.Context(), c.Conn, hmndata.TagQuery{
 		Text: []string{"wheeljam"},
 	})
 	if err == nil {
@@ -28,7 +29,7 @@ func JamIndex(c *RequestContext) ResponseData {
 		c.Logger.Warn().Err(err).Msg("failed to fetch jam tag; will fetch all snippets as a result")
 	}
 
-	snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{
+	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		Tags: []int{tagId},
 	})
 	if err != nil {

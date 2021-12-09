@@ -5,6 +5,7 @@ import (
 	"math"
 	"net/http"
 
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -39,7 +40,7 @@ func Index(c *RequestContext) ResponseData {
 
 	var timelineItems []templates.TimelineItem
 
-	numPosts, err := CountPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+	numPosts, err := hmndata.CountPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ThreadTypes: feedThreadTypes,
 	})
 	if err != nil {
@@ -64,7 +65,7 @@ func Index(c *RequestContext) ResponseData {
 	}
 
 	// This is essentially an alternate for feed page 1.
-	posts, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+	posts, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ThreadTypes:    feedThreadTypes,
 		Limit:          feedPostsPerPage,
 		SortDescending: true,
@@ -73,7 +74,7 @@ func Index(c *RequestContext) ResponseData {
 		c.Logger.Warn().Err(err).Msg("failed to fetch latest posts")
 	}
 	for _, p := range posts {
-		item := PostToTimelineItem(UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, p.Author, c.Theme)
+		item := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, p.Author, c.Theme)
 		if p.Thread.Type == models.ThreadTypeProjectBlogPost && p.Post.ID == p.Thread.FirstID {
 			// blog post
 			item.Description = template.HTML(p.CurrentVersion.TextParsed)
@@ -83,7 +84,7 @@ func Index(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Get news")
-	newsThreads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+	newsThreads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{models.HMNProjectID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 		Limit:       1,
@@ -94,7 +95,7 @@ func Index(c *RequestContext) ResponseData {
 	var newsPostItem *templates.TimelineItem
 	if len(newsThreads) > 0 {
 		t := newsThreads[0]
-		item := PostToTimelineItem(UrlContextForProject(&t.Project), lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor, c.Theme)
+		item := PostToTimelineItem(hmndata.UrlContextForProject(&t.Project), lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor, c.Theme)
 		item.OwnerAvatarUrl = ""
 		item.Breadcrumbs = nil
 		item.TypeTitle = ""
@@ -105,7 +106,7 @@ func Index(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{
+	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		Limit: 40,
 	})
 	if err != nil {

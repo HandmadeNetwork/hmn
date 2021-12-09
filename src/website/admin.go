@@ -12,6 +12,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -137,7 +138,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 	for _, p := range posts {
 		post := templates.PostToTemplate(&p.Post, &p.Author, c.Theme)
 		post.AddContentVersion(p.CurrentVersion, &p.Author) // NOTE(asaf): Don't care about editors here
-		post.Url = UrlForGenericPost(UrlContextForProject(&p.Project), &p.Thread, &p.Post, lineageBuilder)
+		post.Url = UrlForGenericPost(hmndata.UrlContextForProject(&p.Project), &p.Thread, &p.Post, lineageBuilder)
 		data.Posts = append(data.Posts, postWithTitle{
 			Post:  post,
 			Title: p.Thread.Title,
@@ -282,7 +283,7 @@ func deleteAllPostsForUser(ctx context.Context, conn *pgxpool.Pool, userId int) 
 
 	for _, iResult := range it.ToSlice() {
 		row := iResult.(*toDelete)
-		DeletePost(ctx, tx, row.ThreadID, row.PostID)
+		hmndata.DeletePost(ctx, tx, row.ThreadID, row.PostID)
 	}
 	err = tx.Commit(ctx)
 	if err != nil {

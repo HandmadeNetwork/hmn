@@ -1,4 +1,4 @@
-package website
+package hmndata
 
 import (
 	"context"
@@ -14,6 +14,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/parsing"
+	"git.handmade.network/hmn/hmn/src/perf"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 )
@@ -54,7 +55,7 @@ func FetchThreads(
 	currentUser *models.User,
 	q ThreadsQuery,
 ) ([]ThreadAndStuff, error) {
-	perf := ExtractPerf(ctx)
+	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Fetch threads")
 	defer perf.EndBlock()
 
@@ -197,7 +198,7 @@ func CountThreads(
 	currentUser *models.User,
 	q ThreadsQuery,
 ) (int, error) {
-	perf := ExtractPerf(ctx)
+	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Count threads")
 	defer perf.EndBlock()
 
@@ -299,7 +300,7 @@ func FetchPosts(
 	currentUser *models.User,
 	q PostsQuery,
 ) ([]PostAndStuff, error) {
-	perf := ExtractPerf(ctx)
+	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Fetch posts")
 	defer perf.EndBlock()
 
@@ -520,7 +521,7 @@ func CountPosts(
 	currentUser *models.User,
 	q PostsQuery,
 ) (int, error) {
-	perf := ExtractPerf(ctx)
+	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Count posts")
 	defer perf.EndBlock()
 

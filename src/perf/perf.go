@@ -167,3 +167,13 @@ func LogPerf(perf *RequestPerf, log *zerolog.Event) {
 	}
 	log.Msg(fmt.Sprintf("Served [%s] %s in %.4fms", perf.Method, perf.Path, float64(perf.End.Sub(perf.Start).Nanoseconds())/1000/1000))
 }
+
+const PerfContextKey = "HMNPerf"
+
+func ExtractPerf(ctx context.Context) *RequestPerf {
+	iperf := ctx.Value(PerfContextKey)
+	if iperf == nil {
+		return nil
+	}
+	return iperf.(*RequestPerf)
+}

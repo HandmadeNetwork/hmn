@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
 )
@@ -29,7 +30,7 @@ func Snippet(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	s, err := FetchSnippet(c.Context(), c.Conn, c.CurrentUser, snippetId, SnippetQuery{})
+	s, err := hmndata.FetchSnippet(c.Context(), c.Conn, c.CurrentUser, snippetId, hmndata.SnippetQuery{})
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			return FourOhFour(c)

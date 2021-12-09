@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -68,7 +69,7 @@ func getEditorDataForNew(urlContext *hmnurl.UrlContext, currentUser *models.User
 	return result
 }
 
-func getEditorDataForEdit(urlContext *hmnurl.UrlContext, currentUser *models.User, baseData templates.BaseData, p PostAndStuff) editorData {
+func getEditorDataForEdit(urlContext *hmnurl.UrlContext, currentUser *models.User, baseData templates.BaseData, p hmndata.PostAndStuff) editorData {
 	return editorData{
 		BaseData:            baseData,
 		Title:               p.Thread.Title,
@@ -90,7 +91,7 @@ func Forum(c *RequestContext) ResponseData {
 
 	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID)
 
-	numThreads, err := CountThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+	numThreads, err := hmndata.CountThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 		SubforumIDs: []int{cd.SubforumID},
@@ -106,7 +107,7 @@ func Forum(c *RequestContext) ResponseData {
 	}
 	howManyThreadsToSkip := (page - 1) * threadsPerPage
 
-	mainThreads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+	mainThreads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 		SubforumIDs: []int{cd.SubforumID},
@@ -114,7 +115,7 @@ func Forum(c *RequestContext) ResponseData {
 		Offset:      howManyThreadsToSkip,
 	})
 
-	makeThreadListItem := func(row ThreadAndStuff) templates.ThreadListItem {
+	makeThreadListItem := func(row hmndata.ThreadAndStuff) templates.ThreadListItem {
 		return templates.ThreadListItem{
 			Title:     row.Thread.Title,
 			Url:       c.UrlContext.BuildForumThread(cd.LineageBuilder.GetSubforumLineageSlugs(*row.Thread.SubforumID), row.Thread.ID, row.Thread.Title, 1),
@@ -140,7 +141,7 @@ func Forum(c *RequestContext) ResponseData {
 		subforumNodes := cd.SubforumTree[cd.SubforumID].Children
 
 		for _, sfNode := range subforumNodes {
-			numThreads, err := CountThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+			numThreads, err := hmndata.CountThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 				ProjectIDs:  []int{c.CurrentProject.ID},
 				ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 				SubforumIDs: []int{sfNode.ID},
@@ -149,7 +150,7 @@ func Forum(c *RequestContext) ResponseData {
 				panic(oops.New(err, "failed to get count of threads"))
 			}
 
-			subforumThreads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+			subforumThreads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 				ProjectIDs:  []int{c.CurrentProject.ID},
 				ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 				SubforumIDs: []int{sfNode.ID},
@@ -333,7 +334,7 @@ func ForumThread(c *RequestContext) ResponseData {
 
 	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID)
 
-	threads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+	threads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
 		ThreadIDs:  []int{cd.ThreadID},
 	})
@@ -346,7 +347,7 @@ func ForumThread(c *RequestContext) ResponseData {
 	threadResult := threads[0]
 	thread := threadResult.Thread
 
-	numPosts, err := CountPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+	numPosts, err := hmndata.CountPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 		ThreadIDs:   []int{cd.ThreadID},
@@ -369,7 +370,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		PreviousUrl: c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, utils.IntClamp(1, page-1, numPages)),
 	}
 
-	postsAndStuff, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+	postsAndStuff, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
 		ThreadIDs:  []int{thread.ID},
 		Limit:      threadPostsPerPage,
@@ -440,7 +441,7 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	posts, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+	posts, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 		ThreadIDs:   []int{cd.ThreadID},
@@ -449,7 +450,7 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch posts for redirect"))
 	}
 
-	var post PostAndStuff
+	var post hmndata.PostAndStuff
 	postIdx := -1
 	for i, p := range posts {
 		if p.Post.ID == cd.PostID {
@@ -539,7 +540,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 	}
 
 	// Create everything else
-	CreateNewPost(c.Context(), tx, c.CurrentProject.ID, threadId, models.ThreadTypeForumPost, c.CurrentUser.ID, nil, unparsed, c.Req.Host)
+	hmndata.CreateNewPost(c.Context(), tx, c.CurrentProject.ID, threadId, models.ThreadTypeForumPost, c.CurrentUser.ID, nil, unparsed, c.Req.Host)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
@@ -556,7 +557,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 	})
@@ -605,7 +606,7 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "Your reply cannot be empty.")
 	}
 
-	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 	})
@@ -619,7 +620,7 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 		replyPostId = &cd.PostID
 	}
 
-	newPostId, _ := CreateNewPost(c.Context(), tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeForumPost, c.CurrentUser.ID, replyPostId, unparsed, c.Req.Host)
+	newPostId, _ := hmndata.CreateNewPost(c.Context(), tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeForumPost, c.CurrentUser.ID, replyPostId, unparsed, c.Req.Host)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
@@ -636,11 +637,11 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 	})
@@ -673,7 +674,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
@@ -683,7 +684,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	post, err := FetchThreadPost(c.Context(), tx, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+	post, err := hmndata.FetchThreadPost(c.Context(), tx, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 	})
@@ -704,7 +705,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "You must provide a body for your post.")
 	}
 
-	CreatePostVersion(c.Context(), tx, cd.PostID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
+	hmndata.CreatePostVersion(c.Context(), tx, cd.PostID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
 
 	if title != "" {
 		_, err := tx.Exec(c.Context(),
@@ -734,11 +735,11 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 	})
@@ -778,7 +779,7 @@ func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
@@ -788,7 +789,7 @@ func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	threadDeleted := DeletePost(c.Context(), tx, cd.ThreadID, cd.PostID)
+	threadDeleted := hmndata.DeletePost(c.Context(), tx, cd.ThreadID, cd.PostID)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
@@ -811,7 +812,7 @@ func WikiArticleRedirect(c *RequestContext) ResponseData {
 		panic(err)
 	}
 
-	thread, err := FetchThread(c.Context(), c.Conn, c.CurrentUser, threadId, ThreadsQuery{
+	thread, err := hmndata.FetchThread(c.Context(), c.Conn, c.CurrentUser, threadId, hmndata.ThreadsQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
 		// This is the rare query where we want all thread types!
 	})

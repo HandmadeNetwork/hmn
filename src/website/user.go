@@ -13,6 +13,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/discord"
 	hmnemail "git.handmade.network/hmn/hmn/src/email"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -99,29 +100,29 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	projectsQuery := ProjectsQuery{
+	projectsQuery := hmndata.ProjectsQuery{
 		OwnerIDs:   []int{profileUser.ID},
 		Lifecycles: models.VisibleProjectLifecycles,
 		OrderBy:    "all_last_updated DESC",
 	}
 
-	projectsAndStuff, err := FetchProjects(c.Context(), c.Conn, c.CurrentUser, projectsQuery)
+	projectsAndStuff, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, projectsQuery)
 	templateProjects := make([]templates.Project, 0, len(projectsAndStuff))
 	for _, p := range projectsAndStuff {
-		templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project).BuildHomepage())
+		templateProject := templates.ProjectToTemplate(&p.Project, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 		templateProject.AddLogo(p.LogoURL(c.Theme))
 		templateProjects = append(templateProjects, templateProject)
 	}
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetch posts")
-	posts, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+	posts, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		UserIDs:        []int{profileUser.ID},
 		SortDescending: true,
 	})
 	c.Perf.EndBlock()
 
-	snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{
+	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		OwnerIDs: []int{profileUser.ID},
 	})
 	if err != nil {
@@ -138,7 +139,7 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	for _, post := range posts {
 		timelineItems = append(timelineItems, PostToTimelineItem(
-			UrlContextForProject(&post.Project),
+			hmndata.UrlContextForProject(&post.Project),
 			lineageBuilder,
 			&post.Post,
 			&post.Thread,

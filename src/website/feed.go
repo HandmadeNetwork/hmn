@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
-
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
+	"github.com/google/uuid"
 )
 
 type FeedData struct {
@@ -33,7 +33,7 @@ var feedThreadTypes = []models.ThreadType{
 }
 
 func Feed(c *RequestContext) ResponseData {
-	numPosts, err := CountPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+	numPosts, err := hmndata.CountPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ThreadTypes: feedThreadTypes,
 	})
 	if err != nil {
@@ -156,17 +156,17 @@ func AtomFeed(c *RequestContext) ResponseData {
 			if hasAll {
 				itemsPerFeed = 100000
 			}
-			projectsAndStuff, err := FetchProjects(c.Context(), c.Conn, nil, ProjectsQuery{
+			projectsAndStuff, err := hmndata.FetchProjects(c.Context(), c.Conn, nil, hmndata.ProjectsQuery{
 				Lifecycles: models.VisibleProjectLifecycles,
 				Limit:      itemsPerFeed,
-				Types:      OfficialProjects,
+				Types:      hmndata.OfficialProjects,
 				OrderBy:    "date_approved DESC",
 			})
 			if err != nil {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects"))
 			}
 			for _, p := range projectsAndStuff {
-				templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project).BuildHomepage())
+				templateProject := templates.ProjectToTemplate(&p.Project, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 				templateProject.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(templateProject.Url)).URN()
 				for _, owner := range p.Owners {
 					templateProject.Owners = append(templateProject.Owners, templates.UserToTemplate(owner, ""))
@@ -189,7 +189,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 			feedData.AtomFeedUrl = hmnurl.BuildAtomFeedForShowcase()
 			feedData.FeedUrl = hmnurl.BuildShowcase()
 
-			snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{
+			snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 				Limit: itemsPerFeed,
 			})
 			if err != nil {
@@ -216,7 +216,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 }
 
 func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostListItem, error) {
-	postsAndStuff, err := FetchPosts(c.Context(), c.Conn, c.CurrentUser, PostsQuery{
+	postsAndStuff, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ThreadTypes:    feedThreadTypes,
 		Limit:          limit,
 		Offset:         offset,

@@ -17,6 +17,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -299,7 +300,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 				if err != nil {
 					panic(oops.New(err, "project id was not numeric (bad regex in routing)"))
 				}
-				p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, id, ProjectsQuery{})
+				p, err := hmndata.FetchProject(c.Context(), c.Conn, c.CurrentUser, id, hmndata.ProjectsQuery{})
 				if err != nil {
 					if errors.Is(err, db.NotFound) {
 						return FourOhFour(c)
@@ -309,7 +310,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 				}
 
 				c.CurrentProject = &p.Project
-				c.UrlContext = UrlContextForProject(c.CurrentProject)
+				c.UrlContext = hmndata.UrlContextForProject(c.CurrentProject)
 
 				if !p.Project.Personal {
 					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
@@ -463,7 +464,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		var owners []*models.User
 
 		if len(slug) > 0 {
-			dbProject, err := FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, ProjectsQuery{})
+			dbProject, err := hmndata.FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, hmndata.ProjectsQuery{})
 			if err == nil {
 				c.CurrentProject = &dbProject.Project
 				owners = dbProject.Owners
@@ -477,7 +478,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		}
 
 		if c.CurrentProject == nil {
-			dbProject, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, models.HMNProjectID, ProjectsQuery{
+			dbProject, err := hmndata.FetchProject(c.Context(), c.Conn, c.CurrentUser, models.HMNProjectID, hmndata.ProjectsQuery{
 				IncludeHidden: true,
 			})
 			if err != nil {
@@ -505,7 +506,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		}
 		c.CurrentUserCanEditCurrentProject = canEditProject
 
-		c.UrlContext = UrlContextForProject(c.CurrentProject)
+		c.UrlContext = hmndata.UrlContextForProject(c.CurrentProject)
 	}
 
 	c.Theme = "light"
@@ -560,11 +561,9 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 	return user, session, nil
 }
 
-const PerfContextKey = "HMNPerf"
-
 func TrackRequestPerf(c *RequestContext) (after func()) {
 	c.Perf = perf.MakeNewRequestPerf(c.Route, c.Req.Method, c.Req.URL.Path)
-	c.ctx = context.WithValue(c.Context(), PerfContextKey, c.Perf)
+	c.ctx = context.WithValue(c.Context(), perf.PerfContextKey, c.Perf)
 
 	return func() {
 		c.Perf.EndRequest()
@@ -580,14 +579,6 @@ func TrackRequestPerf(c *RequestContext) (after func()) {
 		log.Msg(fmt.Sprintf("Served [%s] %s in %.4fms", c.Perf.Method, c.Perf.Path, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
 		// perfCollector.SubmitRun(c.Perf) // TODO(asaf): Implement a use for this
 	}
-}
-
-func ExtractPerf(ctx context.Context) *perf.RequestPerf {
-	iperf := ctx.Value(PerfContextKey)
-	if iperf == nil {
-		return nil
-	}
-	return iperf.(*perf.RequestPerf)
 }
 
 func LogContextErrors(c *RequestContext, errs ...error) {

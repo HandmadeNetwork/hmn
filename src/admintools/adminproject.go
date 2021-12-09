@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/parsing"
-	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/spf13/cobra"
 )
 
@@ -46,7 +46,7 @@ func addCreateProjectCommand(projectCommand *cobra.Command) {
 			}
 			defer tx.Rollback(ctx)
 
-			p, err := website.FetchProject(ctx, tx, nil, models.HMNProjectID, website.ProjectsQuery{
+			p, err := hmndata.FetchProject(ctx, tx, nil, models.HMNProjectID, hmndata.ProjectsQuery{
 				IncludeHidden: true,
 				Lifecycles:    models.AllProjectLifecycles,
 			})
@@ -163,7 +163,7 @@ func addProjectTagCommand(projectCommand *cobra.Command) {
 			conn := db.NewConnPool(1, 1)
 			defer conn.Close()
 
-			resultTag, err := website.SetProjectTag(ctx, conn, projectID, tag)
+			resultTag, err := hmndata.SetProjectTag(ctx, conn, projectID, tag)
 			if err != nil {
 				panic(err)
 			}

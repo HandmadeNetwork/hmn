@@ -15,6 +15,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -42,8 +43,8 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	const maxCarouselProjects = 10
 	const maxPersonalProjects = 10
 
-	officialProjects, err := FetchProjects(c.Context(), c.Conn, c.CurrentUser, ProjectsQuery{
-		Types: OfficialProjects,
+	officialProjects, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		Types: hmndata.OfficialProjects,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch projects"))
@@ -72,7 +73,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	var restProjects []templates.Project
 	now := time.Now()
 	for _, p := range officialProjects {
-		templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project).BuildHomepage())
+		templateProject := templates.ProjectToTemplate(&p.Project, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 		templateProject.AddLogo(p.LogoURL(c.Theme))
 
 		if p.Project.Slug == "hero" {
@@ -118,8 +119,8 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	// Fetch and highlight a random selection of personal projects
 	var personalProjects []templates.Project
 	{
-		projects, err := FetchProjects(c.Context(), c.Conn, c.CurrentUser, ProjectsQuery{
-			Types: PersonalProjects,
+		projects, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			Types: hmndata.PersonalProjects,
 		})
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch personal projects"))
@@ -135,7 +136,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 			if i >= maxPersonalProjects {
 				break
 			}
-			templateProject := templates.ProjectToTemplate(&p.Project, UrlContextForProject(&p.Project).BuildHomepage())
+			templateProject := templates.ProjectToTemplate(&p.Project, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 			templateProject.AddLogo(p.LogoURL(c.Theme))
 			personalProjects = append(personalProjects, templateProject)
 		}
@@ -177,7 +178,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	// There are no further permission checks to do, because permissions are
 	// checked whatever way we fetch the project.
 
-	owners, err := FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
+	owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -261,7 +262,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		Value:    c.CurrentProject.Blurb,
 	})
 
-	p, err := FetchProject(c.Context(), c.Conn, c.CurrentUser, c.CurrentProject.ID, ProjectsQuery{})
+	p, err := hmndata.FetchProject(c.Context(), c.Conn, c.CurrentUser, c.CurrentProject.ID, hmndata.ProjectsQuery{})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project details"))
 	}
@@ -340,7 +341,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		tagId = *c.CurrentProject.TagID
 	}
 
-	snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{
+	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		Tags: []int{tagId},
 	})
 	if err != nil {
@@ -459,14 +460,14 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	p, err := FetchProject(
+	p, err := hmndata.FetchProject(
 		c.Context(), c.Conn,
 		c.CurrentUser, c.CurrentProject.ID,
-		ProjectsQuery{
+		hmndata.ProjectsQuery{
 			IncludeHidden: true,
 		},
 	)
-	owners, err := FetchProjectOwners(c.Context(), c.Conn, p.Project.ID)
+	owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, p.Project.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch project owners"))
 	}
@@ -709,7 +710,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		return oops.New(err, "Failed to update project")
 	}
 
-	SetProjectTag(ctx, tx, payload.ProjectID, payload.Tag)
+	hmndata.SetProjectTag(ctx, tx, payload.ProjectID, payload.Tag)
 
 	if user.IsStaff {
 		_, err = tx.Exec(ctx,
@@ -854,4 +855,23 @@ func GetFormImage(c *RequestContext, fieldName string) (FormImage, error) {
 	}
 
 	return res, nil
+}
+
+func CanEditProject(c *RequestContext, user *models.User, projectId int) (bool, error) {
+	if user != nil {
+		if user.IsStaff {
+			return true, nil
+		} else {
+			owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, projectId)
+			if err != nil {
+				return false, err
+			}
+			for _, owner := range owners {
+				if owner.ID == user.ID {
+					return true, nil
+				}
+			}
+		}
+	}
+	return false, nil
 }

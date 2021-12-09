@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -35,7 +36,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 
 	const postsPerPage = 5
 
-	numThreads, err := CountThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+	numThreads, err := hmndata.CountThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -49,7 +50,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		c.Redirect(c.UrlContext.BuildBlog(page), http.StatusSeeOther)
 	}
 
-	threads, err := FetchThreads(c.Context(), c.Conn, c.CurrentUser, ThreadsQuery{
+	threads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 		Limit:       postsPerPage,
@@ -75,7 +76,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 	canCreate := false
 	if c.CurrentProject.HasBlog() && c.CurrentUser != nil {
 		isProjectOwner := false
-		owners, err := FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
+		owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project owners"))
 		}
@@ -124,7 +125,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	thread, posts, err := FetchThreadPosts(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, PostsQuery{
+	thread, posts, err := hmndata.FetchThreadPosts(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -192,7 +193,7 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	thread, err := FetchThread(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, ThreadsQuery{
+	thread, err := hmndata.FetchThread(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -261,7 +262,7 @@ func BlogNewThreadSubmit(c *RequestContext) ResponseData {
 	}
 
 	// Create everything else
-	CreateNewPost(c.Context(), tx, c.CurrentProject.ID, threadId, models.ThreadTypeProjectBlogPost, c.CurrentUser.ID, nil, unparsed, c.Req.Host)
+	hmndata.CreateNewPost(c.Context(), tx, c.CurrentProject.ID, threadId, models.ThreadTypeProjectBlogPost, c.CurrentUser.ID, nil, unparsed, c.Req.Host)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
@@ -278,11 +279,11 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -322,7 +323,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
@@ -332,7 +333,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	post, err := FetchThreadPost(c.Context(), tx, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+	post, err := hmndata.FetchThreadPost(c.Context(), tx, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -353,7 +354,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "You must provide a post body.")
 	}
 
-	CreatePostVersion(c.Context(), tx, post.Post.ID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
+	hmndata.CreatePostVersion(c.Context(), tx, post.Post.ID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
 
 	if title != "" {
 		_, err := tx.Exec(c.Context(),
@@ -383,7 +384,7 @@ func BlogPostReply(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -432,7 +433,7 @@ func BlogPostReplySubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "Your reply cannot be empty.")
 	}
 
-	newPostId, _ := CreateNewPost(c.Context(), tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeProjectBlogPost, c.CurrentUser.ID, &cd.PostID, unparsed, c.Req.Host)
+	newPostId, _ := hmndata.CreateNewPost(c.Context(), tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeProjectBlogPost, c.CurrentUser.ID, &cd.PostID, unparsed, c.Req.Host)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
@@ -449,11 +450,11 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	post, err := FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, PostsQuery{
+	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -499,7 +500,7 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
@@ -509,7 +510,7 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	threadDeleted := DeletePost(c.Context(), tx, cd.ThreadID, cd.PostID)
+	threadDeleted := hmndata.DeletePost(c.Context(), tx, cd.ThreadID, cd.PostID)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
@@ -519,7 +520,7 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 	if threadDeleted {
 		return c.Redirect(c.UrlContext.BuildHomepage(), http.StatusSeeOther)
 	} else {
-		thread, err := FetchThread(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, ThreadsQuery{
+		thread, err := hmndata.FetchThread(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, hmndata.ThreadsQuery{
 			ProjectIDs:  []int{c.CurrentProject.ID},
 			ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 		})

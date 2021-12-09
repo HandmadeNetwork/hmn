@@ -1,4 +1,4 @@
-package website
+package hmndata
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/perf"
 )
 
 type TagQuery struct {
@@ -16,7 +17,7 @@ type TagQuery struct {
 }
 
 func FetchTags(ctx context.Context, dbConn db.ConnOrTx, q TagQuery) ([]*models.Tag, error) {
-	perf := ExtractPerf(ctx)
+	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Fetch snippets")
 	defer perf.EndBlock()
 

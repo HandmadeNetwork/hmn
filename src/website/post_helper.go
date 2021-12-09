@@ -1,6 +1,7 @@
 package website
 
 import (
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -88,7 +89,7 @@ func MakePostListItem(
 ) templates.PostListItem {
 	var result templates.PostListItem
 
-	urlContext := UrlContextForProject(project)
+	urlContext := hmndata.UrlContextForProject(project)
 
 	result.Title = thread.Title
 	result.User = templates.UserToTemplate(user, currentTheme)

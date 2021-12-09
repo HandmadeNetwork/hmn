@@ -1,15 +1,15 @@
-package website
+package hmndata
 
 import (
 	"context"
 	"fmt"
 
-	"git.handmade.network/hmn/hmn/src/hmnurl"
-	"git.handmade.network/hmn/hmn/src/templates"
-
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/perf"
+	"git.handmade.network/hmn/hmn/src/templates"
 )
 
 type ProjectTypeQuery int
@@ -61,7 +61,7 @@ func FetchProjects(
 	currentUser *models.User,
 	q ProjectsQuery,
 ) ([]ProjectAndStuff, error) {
-	perf := ExtractPerf(ctx)
+	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Fetch projects")
 	defer perf.EndBlock()
 
@@ -312,7 +312,7 @@ func CountProjects(
 	currentUser *models.User,
 	q ProjectsQuery,
 ) (int, error) {
-	perf := ExtractPerf(ctx)
+	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Count projects")
 	defer perf.EndBlock()
 
@@ -326,25 +326,6 @@ func CountProjects(
 	}
 
 	return len(projects), nil
-}
-
-func CanEditProject(c *RequestContext, user *models.User, projectId int) (bool, error) {
-	if user != nil {
-		if user.IsStaff {
-			return true, nil
-		} else {
-			owners, err := FetchProjectOwners(c.Context(), c.Conn, projectId)
-			if err != nil {
-				return false, err
-			}
-			for _, owner := range owners {
-				if owner.ID == user.ID {
-					return true, nil
-				}
-			}
-		}
-	}
-	return false, nil
 }
 
 type ProjectOwners struct {
@@ -366,7 +347,7 @@ func FetchMultipleProjectsOwners(
 	dbConn db.ConnOrTx,
 	projectIds []int,
 ) ([]ProjectOwners, error) {
-	perf := ExtractPerf(ctx)
+	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Fetch owners for multiple projects")
 	defer perf.EndBlock()
 
@@ -470,7 +451,7 @@ func FetchProjectOwners(
 	dbConn db.ConnOrTx,
 	projectId int,
 ) ([]*models.User, error) {
-	perf := ExtractPerf(ctx)
+	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Fetch owners for project")
 	defer perf.EndBlock()
 

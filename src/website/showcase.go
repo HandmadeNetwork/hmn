@@ -3,6 +3,7 @@ package website
 import (
 	"net/http"
 
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -15,7 +16,7 @@ type ShowcaseData struct {
 }
 
 func Showcase(c *RequestContext) ResponseData {
-	snippets, err := FetchSnippets(c.Context(), c.Conn, c.CurrentUser, SnippetQuery{})
+	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
 	}
