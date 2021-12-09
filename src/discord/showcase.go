@@ -26,7 +26,6 @@ var reDiscordMessageLink = regexp.MustCompile(`https?://.+?(\s|$)`)
 
 var errNotEnoughInfo = errors.New("Discord didn't send enough info in this event for us to do this")
 
-// TODO: Turn this ad-hoc isJam parameter into a tag or something
 func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) error {
 	switch msg.Type {
 	case MessageTypeDefault, MessageTypeReply, MessageTypeApplicationCommand:
@@ -59,66 +58,9 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) er
 		return err
 	}
 	if doSnippet, err := AllowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
-		snippet, err := CreateMessageSnippet(ctx, tx, msg.ID)
+		_, err := CreateMessageSnippet(ctx, tx, newMsg.UserID, msg.ID)
 		if err != nil {
 			return oops.New(err, "failed to create snippet in gateway")
-		}
-
-		u, err := FetchDiscordUser(ctx, bot.dbConn, newMsg.UserID)
-		if err != nil {
-			return oops.New(err, "failed to look up HMN user information from Discord user")
-			// we shouldn't see a "not found" here because of the AllowedToBlahBlahBlah check.
-		}
-
-		projects, err := hmndata.FetchProjects(ctx, bot.dbConn, &u.HMNUser, hmndata.ProjectsQuery{
-			OwnerIDs: []int{u.HMNUser.ID},
-		})
-		if err != nil {
-			return oops.New(err, "failed to look up user projects")
-		}
-		projectIDs := make([]int, len(projects))
-		for i, p := range projects {
-			projectIDs[i] = p.Project.ID
-		}
-
-		// Try to associate tags in the message with project tags in HMN.
-		// Match only tags for projects in which the current user is a collaborator.
-		messageTags := getDiscordTags(msg.Content)
-		type tagsRow struct {
-			Tag models.Tag `db:"tags"`
-		}
-		itUserTags, err := db.Query(ctx, tx, tagsRow{},
-			`
-			SELECT $columns
-			FROM
-				tags
-				JOIN handmade_project AS project ON project.tag = tags.id
-				JOIN handmade_user_projects AS user_project ON user_project.project_id = project.id
-			WHERE
-				project.id = ANY ($1)
-			`,
-			projectIDs,
-		)
-		if err != nil {
-			return oops.New(err, "failed to fetch tags for user projects")
-		}
-		iUserTags := itUserTags.ToSlice()
-
-		var tagIDs []int
-		for _, itag := range iUserTags {
-			tag := itag.(*tagsRow).Tag
-			for _, messageTag := range messageTags {
-				if tag.Text == messageTag {
-					tagIDs = append(tagIDs, tag.ID)
-				}
-			}
-		}
-
-		for _, tagID := range tagIDs {
-			_, err = tx.Exec(ctx, `INSERT INTO snippet_tags (snippet_id, tag_id) VALUES ($1, $2)`, snippet.ID, tagID)
-			if err != nil {
-				return oops.New(err, "failed to add tag to snippet")
-			}
 		}
 	} else if err != nil {
 		return oops.New(err, "failed to check snippet permissions in gateway")
@@ -612,7 +554,14 @@ any content saved, nothing will happen.
 
 Does not check user preferences around snippets.
 */
-func CreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, msgID string) (*models.Snippet, error) {
+func CreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, userID, msgID string) (snippet *models.Snippet, err error) {
+	defer func() {
+		err := updateSnippetTags(ctx, tx, userID, snippet)
+		if err != nil {
+			logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to update tags for Discord snippet")
+		}
+	}()
+
 	// Check for existing snippet, maybe return it
 	type existingSnippetResult struct {
 		Message        models.DiscordMessage         `db:"msg"`
@@ -644,13 +593,14 @@ func CreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, msgID string) (*m
 			contentMarkdown := existing.MessageContent.LastContent
 			contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
 
-			_, err := tx.Exec(ctx,
+			iSnippet, err := db.QueryOne(ctx, tx, models.Snippet{},
 				`
 				UPDATE handmade_snippet
 				SET
 					description = $1,
 					_description_html = $2
 				WHERE id = $3
+				RETURNING $columns
 				`,
 				contentMarkdown,
 				contentHTML,
@@ -659,8 +609,10 @@ func CreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, msgID string) (*m
 			if err != nil {
 				logging.ExtractLogger(ctx).Warn().Err(err).Msg("failed to update content of snippet on message edit")
 			}
+			return iSnippet.(*models.Snippet), nil
+		} else {
+			return existing.Snippet, nil
 		}
-		return existing.Snippet, nil
 	}
 
 	if existing.Message.SnippetCreated {
@@ -714,6 +666,94 @@ func CreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, msgID string) (*m
 	}
 
 	return isnippet.(*models.Snippet), nil
+}
+
+/*
+Associates any Discord tags with website tags. Idempotent; will clear
+out any existing tags and then add new ones.
+*/
+func updateSnippetTags(ctx context.Context, dbConn db.ConnOrTx, userID string, snippet *models.Snippet) error {
+	tx, err := dbConn.Begin(ctx)
+	if err != nil {
+		return oops.New(err, "failed to start transaction")
+	}
+	defer tx.Rollback(ctx)
+
+	u, err := FetchDiscordUser(ctx, tx, userID)
+	if err != nil {
+		return oops.New(err, "failed to look up HMN user information from Discord user")
+		// we shouldn't see a "not found" here because of the AllowedToBlahBlahBlah check earlier in the process
+	}
+
+	projects, err := hmndata.FetchProjects(ctx, tx, &u.HMNUser, hmndata.ProjectsQuery{
+		OwnerIDs: []int{u.HMNUser.ID},
+	})
+	if err != nil {
+		return oops.New(err, "failed to look up user projects")
+	}
+	projectIDs := make([]int, len(projects))
+	for i, p := range projects {
+		projectIDs[i] = p.Project.ID
+	}
+
+	// Delete any existing tags for this snippet
+	_, err = tx.Exec(ctx,
+		`
+		DELETE FROM snippet_tags
+		WHERE snippet_id = $1
+		`,
+		snippet.ID,
+	)
+	if err != nil {
+		return oops.New(err, "failed to delete existing snippet tags")
+	}
+
+	// Try to associate tags in the message with project tags in HMN.
+	// Match only tags for projects in which the current user is a collaborator.
+	messageTags := getDiscordTags(snippet.Description)
+	type tagsRow struct {
+		Tag models.Tag `db:"tags"`
+	}
+	itUserTags, err := db.Query(ctx, tx, tagsRow{},
+		`
+		SELECT $columns
+		FROM
+			tags
+			JOIN handmade_project AS project ON project.tag = tags.id
+			JOIN handmade_user_projects AS user_project ON user_project.project_id = project.id
+		WHERE
+			project.id = ANY ($1)
+		`,
+		projectIDs,
+	)
+	if err != nil {
+		return oops.New(err, "failed to fetch tags for user projects")
+	}
+	iUserTags := itUserTags.ToSlice()
+
+	var tagIDs []int
+	for _, itag := range iUserTags {
+		tag := itag.(*tagsRow).Tag
+		for _, messageTag := range messageTags {
+			if tag.Text == messageTag {
+				tagIDs = append(tagIDs, tag.ID)
+			}
+		}
+	}
+
+	for _, tagID := range tagIDs {
+		_, err = tx.Exec(ctx, `INSERT INTO snippet_tags (snippet_id, tag_id) VALUES ($1, $2)`, snippet.ID, tagID)
+		if err != nil {
+			return oops.New(err, "failed to add tag to snippet")
+		}
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return oops.New(err, "failed to commit transaction")
+	}
+
+	return nil
 }
 
 // NOTE(ben): This is maybe redundant with the regexes we use for markdown. But

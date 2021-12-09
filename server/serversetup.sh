@@ -176,7 +176,7 @@ if [ $checkpoint -lt 82 ]; then
     do_as hmn <<'SCRIPT'
         set -euxo pipefail
         
-        if ! ssh -T -i ~/.ssh/gitlab-hmn git@gitssh.handmade.network; then
+        if ! ssh -T -i ~/.ssh/gitlab-hmn git@git.handmade.network; then
             set +x
             
             echo "Copy the following key:"
@@ -192,7 +192,7 @@ if [ $checkpoint -lt 82 ]; then
 SCRIPT
 
     do_as annotations <<'SCRIPT'
-        if ! ssh -T -i ~/.ssh/gitlab-annotation-system git@gitssh.handmade.network; then
+        if ! ssh -T -i ~/.ssh/gitlab-annotation-system git@git.handmade.network; then
             set +x
 
             echo "Copy the following key:"
@@ -206,7 +206,7 @@ SCRIPT
             exit 1
         fi
 
-        if ! ssh -T -i ~/.ssh/gitlab-hmml git@gitssh.handmade.network; then
+        if ! ssh -T -i ~/.ssh/gitlab-hmml git@git.handmade.network; then
             set +x
 
             echo "Copy the following key:"
@@ -230,7 +230,7 @@ if [ $checkpoint -lt 90 ]; then
         set -euxo pipefail
 
         cd ~
-        git clone git@gitssh.handmade.network:hmn/hmn.git
+        git clone git@git.handmade.network:hmn/hmn.git
 SCRIPT
     
     savecheckpoint 90

@@ -173,7 +173,7 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 
 	for _, imsgId := range msgIds {
 		msgId := imsgId.(*messageIdQuery)
-		_, err := discord.CreateMessageSnippet(c.Context(), c.Conn, msgId.MessageID)
+		_, err := discord.CreateMessageSnippet(c.Context(), c.Conn, duser.UserID, msgId.MessageID)
 		if err != nil {
 			c.Logger.Warn().Err(err).Msg("failed to create snippet from showcase backlog")
 			continue

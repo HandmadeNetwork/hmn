@@ -200,7 +200,7 @@ func handleHistoryMessage(ctx context.Context, dbConn *pgxpool.Pool, msg *Messag
 	}
 	if createSnippets {
 		if doSnippet, err := AllowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
-			_, err := CreateMessageSnippet(ctx, tx, msg.ID)
+			_, err := CreateMessageSnippet(ctx, tx, newMsg.UserID, msg.ID)
 			if err != nil {
 				return err
 			}
