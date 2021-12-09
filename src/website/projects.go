@@ -27,6 +27,7 @@ import (
 )
 
 const maxPersonalProjects = 5
+const maxProjectOwners = 5
 
 type ProjectTemplateData struct {
 	templates.BaseData
@@ -383,6 +384,7 @@ type ProjectEditData struct {
 
 	Editing         bool
 	ProjectSettings templates.ProjectSettings
+	MaxOwners       int
 
 	APICheckUsernameUrl string
 	LogoMaxFileSize     int
@@ -408,6 +410,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 		BaseData:        getBaseDataAutocrumb(c, "New Project"),
 		Editing:         false,
 		ProjectSettings: project,
+		MaxOwners:       maxProjectOwners,
 
 		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
 		LogoMaxFileSize:     ProjectLogoMaxFileSize,
@@ -508,6 +511,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		BaseData:        getBaseDataAutocrumb(c, "Edit Project"),
 		Editing:         true,
 		ProjectSettings: projectSettings,
+		MaxOwners:       maxProjectOwners,
 
 		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
 		LogoMaxFileSize:     ProjectLogoMaxFileSize,
@@ -629,6 +633,10 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	}
 
 	owners := c.Req.Form["owners"]
+	if len(owners) > maxProjectOwners {
+		res.RejectionReason = fmt.Sprintf("Projects can have at most %d owners", maxProjectOwners)
+		return res
+	}
 
 	slug := strings.TrimSpace(c.Req.Form.Get("slug"))
 	officialStr := c.Req.Form.Get("official")

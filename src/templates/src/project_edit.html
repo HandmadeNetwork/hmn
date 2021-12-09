@@ -236,6 +236,8 @@
 	const OWNER_QUERY_STATE_IDLE = 0;
 	const OWNER_QUERY_STATE_QUERYING = 1;
 
+	const MAX_OWNERS = {{ .MaxOwners }};
+
 	let ownerCheckUrl = "{{ .APICheckUsernameUrl }}";
 	let ownerQueryState = OWNER_QUERY_STATE_IDLE;
 	let addOwnerInput = document.querySelector("#owner_name");
@@ -255,6 +257,12 @@
 	addOwnerButton.addEventListener("click", function(ev) {
 		startAddOwner();
 	});
+
+	function updateAddOwnerStyles() {
+		const numOwnerRows = document.querySelectorAll('.owner_row').length;
+		addOwnerInput.disabled = numOwnerRows >= MAX_OWNERS;
+	}
+	updateAddOwnerStyles();
 
 	function startAddOwner() {
 		if (ownerQueryState == OWNER_QUERY_STATE_QUERYING) {
@@ -310,6 +318,7 @@
 		querying = (ownerQueryState == OWNER_QUERY_STATE_QUERYING);
 		addOwnerInput.disabled = querying;
 		addOwnerButton.disabled = querying;
+		updateAddOwnerStyles();
 	}
 
 	function addOwner(username) {
@@ -317,12 +326,14 @@
 		ownerEl.input.value = username;
 		ownerEl.name.textContent = username;
 		ownerList.appendChild(ownerEl.root);
+		updateAddOwnerStyles();
 	}
 
 	ownerList.addEventListener("click", function(ev) {
 		if (ev.target.classList.contains("remove_owner")) {
 			ev.target.parentElement.remove();
 		}
+		updateAddOwnerStyles();
 	});
 
 	/////////////////////
