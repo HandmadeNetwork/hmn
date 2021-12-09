@@ -41,6 +41,33 @@ func FetchSnippets(
 	}
 	defer tx.Rollback(ctx)
 
+	if len(q.Tags) > 0 {
+		// Get snippet IDs with this tag, then use that in the main query
+		type snippetIDRow struct {
+			SnippetID int `db:"snippet_id"`
+		}
+		itSnippetIDs, err := db.Query(ctx, tx, snippetIDRow{},
+			`
+			SELECT DISTINCT snippet_id
+			FROM
+				snippet_tags
+				JOIN tags ON snippet_tags.tag_id = tags.id
+			WHERE
+				tags.id = ANY ($1)
+			`,
+			q.Tags,
+		)
+		if err != nil {
+			return nil, oops.New(err, "failed to get snippet IDs for tag")
+		}
+		iSnippetIDs := itSnippetIDs.ToSlice()
+
+		q.IDs = make([]int, len(iSnippetIDs))
+		for i := range iSnippetIDs {
+			q.IDs[i] = iSnippetIDs[i].(*snippetIDRow).SnippetID
+		}
+	}
+
 	var qb db.QueryBuilder
 	qb.Add(
 		`
@@ -50,8 +77,6 @@ func FetchSnippets(
 			LEFT JOIN auth_user AS owner ON snippet.owner_id = owner.id
 			LEFT JOIN handmade_asset AS asset ON snippet.asset_id = asset.id
 			LEFT JOIN handmade_discordmessage AS discord_message ON snippet.discord_message_id = discord_message.id
-			LEFT JOIN snippet_tags ON snippet.id = snippet_tags.snippet_id
-			LEFT JOIN tags ON snippet_tags.tag_id = tags.id
 		WHERE
 			TRUE
 		`,
@@ -61,9 +86,6 @@ func FetchSnippets(
 	}
 	if len(q.OwnerIDs) > 0 {
 		qb.Add(`AND snippet.owner_id = ANY ($?)`, q.OwnerIDs)
-	}
-	if len(q.Tags) > 0 {
-		qb.Add(`AND snippet_tags.tag_id = ANY ($?)`, q.Tags)
 	}
 	if currentUser == nil {
 		qb.Add(
@@ -92,34 +114,59 @@ func FetchSnippets(
 		Owner          *models.User           `db:"owner"`
 		Asset          *models.Asset          `db:"asset"`
 		DiscordMessage *models.DiscordMessage `db:"discord_message"`
-		Tag            *models.Tag            `db:"tags"`
 	}
 
-	it, err := db.Query(ctx, dbConn, resultRow{}, qb.String(), qb.Args()...)
+	it, err := db.Query(ctx, tx, resultRow{}, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch threads")
 	}
 	iresults := it.ToSlice()
 
-	result := make([]SnippetAndStuff, 0, len(iresults)) // allocate extra space because why not
-	currentSnippetId := -1
-	for _, iresult := range iresults {
+	result := make([]SnippetAndStuff, len(iresults)) // allocate extra space because why not
+	snippetIDs := make([]int, len(iresults))
+	for i, iresult := range iresults {
 		row := *iresult.(*resultRow)
 
-		if row.Snippet.ID != currentSnippetId {
-			// we have moved onto a new snippet; make a new entry
-			result = append(result, SnippetAndStuff{
-				Snippet:        row.Snippet,
-				Owner:          row.Owner,
-				Asset:          row.Asset,
-				DiscordMessage: row.DiscordMessage,
-				// no tags! tags next
-			})
+		result[i] = SnippetAndStuff{
+			Snippet:        row.Snippet,
+			Owner:          row.Owner,
+			Asset:          row.Asset,
+			DiscordMessage: row.DiscordMessage,
+			// no tags! tags next
 		}
+		snippetIDs[i] = row.Snippet.ID
+	}
 
-		if row.Tag != nil {
-			result[len(result)-1].Tags = append(result[len(result)-1].Tags, row.Tag)
-		}
+	// Fetch tags
+	type snippetTagRow struct {
+		SnippetID int         `db:"snippet_tags.snippet_id"`
+		Tag       *models.Tag `db:"tags"`
+	}
+	itSnippetTags, err := db.Query(ctx, tx, snippetTagRow{},
+		`
+		SELECT $columns
+		FROM
+			snippet_tags
+			JOIN tags ON snippet_tags.tag_id = tags.id
+		WHERE
+			snippet_tags.snippet_id = ANY($1)
+		`,
+		snippetIDs,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch tags for snippets")
+	}
+	iSnippetTags := itSnippetTags.ToSlice()
+
+	// associate tags with snippets
+	resultBySnippetId := make(map[int]*SnippetAndStuff)
+	for i := range result {
+		resultBySnippetId[result[i].Snippet.ID] = &result[i]
+	}
+	for _, iSnippetTag := range iSnippetTags {
+		snippetTag := iSnippetTag.(*snippetTagRow)
+		item := resultBySnippetId[snippetTag.SnippetID]
+		item.Tags = append(item.Tags, snippetTag.Tag)
 	}
 
 	err = tx.Commit(ctx)

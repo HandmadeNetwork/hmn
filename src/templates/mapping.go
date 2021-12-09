@@ -370,7 +370,7 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 		builder.WriteString(`",`)
 
 		builder.WriteString(`"tags":[`)
-		for _, tag := range item.Tags {
+		for i, tag := range item.Tags {
 			builder.WriteString(`{`)
 
 			builder.WriteString(`"text":"`)
@@ -382,6 +382,9 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 			builder.WriteString(`"`)
 
 			builder.WriteString(`}`)
+			if i < len(item.Tags)-1 {
+				builder.WriteString(`,`)
+			}
 		}
 		builder.WriteString(`]`)
 

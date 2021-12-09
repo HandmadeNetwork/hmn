@@ -14,6 +14,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -26,7 +27,7 @@ var reDiscordMessageLink = regexp.MustCompile(`https?://.+?(\s|$)`)
 var errNotEnoughInfo = errors.New("Discord didn't send enough info in this event for us to do this")
 
 // TODO: Turn this ad-hoc isJam parameter into a tag or something
-func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message, isJam bool) error {
+func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) error {
 	switch msg.Type {
 	case MessageTypeDefault, MessageTypeReply, MessageTypeApplicationCommand:
 	default:
@@ -63,15 +64,60 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message, is
 			return oops.New(err, "failed to create snippet in gateway")
 		}
 
-		if isJam {
-			tagId, err := db.QueryInt(ctx, tx, `SELECT id FROM tags WHERE text = 'wheeljam'`)
-			if err != nil {
-				return oops.New(err, "failed to fetch id of jam tag")
-			}
+		u, err := FetchDiscordUser(ctx, bot.dbConn, newMsg.UserID)
+		if err != nil {
+			return oops.New(err, "failed to look up HMN user information from Discord user")
+			// we shouldn't see a "not found" here because of the AllowedToBlahBlahBlah check.
+		}
 
-			_, err = tx.Exec(ctx, `INSERT INTO snippet_tags (snippet_id, tag_id) VALUES ($1, $2)`, snippet.ID, tagId)
+		projects, err := hmndata.FetchProjects(ctx, bot.dbConn, &u.HMNUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{u.HMNUser.ID},
+		})
+		if err != nil {
+			return oops.New(err, "failed to look up user projects")
+		}
+		projectIDs := make([]int, len(projects))
+		for i, p := range projects {
+			projectIDs[i] = p.Project.ID
+		}
+
+		// Try to associate tags in the message with project tags in HMN.
+		// Match only tags for projects in which the current user is a collaborator.
+		messageTags := getDiscordTags(msg.Content)
+		type tagsRow struct {
+			Tag models.Tag `db:"tags"`
+		}
+		itUserTags, err := db.Query(ctx, tx, tagsRow{},
+			`
+			SELECT $columns
+			FROM
+				tags
+				JOIN handmade_project AS project ON project.tag = tags.id
+				JOIN handmade_user_projects AS user_project ON user_project.project_id = project.id
+			WHERE
+				project.id = ANY ($1)
+			`,
+			projectIDs,
+		)
+		if err != nil {
+			return oops.New(err, "failed to fetch tags for user projects")
+		}
+		iUserTags := itUserTags.ToSlice()
+
+		var tagIDs []int
+		for _, itag := range iUserTags {
+			tag := itag.(*tagsRow).Tag
+			for _, messageTag := range messageTags {
+				if tag.Text == messageTag {
+					tagIDs = append(tagIDs, tag.ID)
+				}
+			}
+		}
+
+		for _, tagID := range tagIDs {
+			_, err = tx.Exec(ctx, `INSERT INTO snippet_tags (snippet_id, tag_id) VALUES ($1, $2)`, snippet.ID, tagID)
 			if err != nil {
-				return oops.New(err, "failed to mark snippet as a jam snippet")
+				return oops.New(err, "failed to add tag to snippet")
 			}
 		}
 	} else if err != nil {
@@ -519,29 +565,42 @@ func saveEmbed(
 	return iDiscordEmbed.(*models.DiscordMessageEmbed), nil
 }
 
-/*
-Checks settings and permissions to decide whether we are allowed to create
-snippets for a user.
-*/
-func AllowedToCreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, discordUserId string) (bool, error) {
-	canSave, err := db.QueryBool(ctx, tx,
+type DiscordUserAndStuff struct {
+	DiscordUser models.DiscordUser `db:"duser"`
+	HMNUser     models.User        `db:"u"`
+}
+
+func FetchDiscordUser(ctx context.Context, dbConn db.ConnOrTx, discordUserID string) (*DiscordUserAndStuff, error) {
+	iuser, err := db.QueryOne(ctx, dbConn, DiscordUserAndStuff{},
 		`
-		SELECT u.discord_save_showcase
+		SELECT $columns
 		FROM
 			handmade_discorduser AS duser
 			JOIN auth_user AS u ON duser.hmn_user_id = u.id
 		WHERE
 			duser.userid = $1
 		`,
-		discordUserId,
+		discordUserID,
 	)
+	if err != nil {
+		return nil, err
+	}
+	return iuser.(*DiscordUserAndStuff), nil
+}
+
+/*
+Checks settings and permissions to decide whether we are allowed to create
+snippets for a user.
+*/
+func AllowedToCreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, discordUserId string) (bool, error) {
+	u, err := FetchDiscordUser(ctx, tx, discordUserId)
 	if errors.Is(err, db.NotFound) {
 		return false, nil
 	} else if err != nil {
 		return false, oops.New(err, "failed to check if we can save Discord message")
 	}
 
-	return canSave, nil
+	return u.HMNUser.DiscordSaveShowcase, nil
 }
 
 /*
@@ -719,4 +778,15 @@ func messageHasLinks(content string) bool {
 	}
 
 	return false
+}
+
+var REDiscordTag = regexp.MustCompile(`>([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*)`)
+
+func getDiscordTags(content string) []string {
+	matches := REDiscordTag.FindAllStringSubmatch(content, -1)
+	result := make([]string, len(matches))
+	for i, m := range matches {
+		result[i] = strings.ToLower(m[1])
+	}
+	return result
 }
