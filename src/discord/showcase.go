@@ -780,7 +780,7 @@ func messageHasLinks(content string) bool {
 	return false
 }
 
-var REDiscordTag = regexp.MustCompile(`>([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*)`)
+var REDiscordTag = regexp.MustCompile(`&([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*)`)
 
 func getDiscordTags(content string) []string {
 	matches := REDiscordTag.FindAllStringSubmatch(content, -1)
