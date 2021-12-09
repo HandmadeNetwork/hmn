@@ -26,6 +26,8 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
+const maxPersonalProjects = 5
+
 type ProjectTemplateData struct {
 	templates.BaseData
 
@@ -387,6 +389,17 @@ type ProjectEditData struct {
 }
 
 func ProjectNew(c *RequestContext) ResponseData {
+	numProjects, err := hmndata.CountProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		OwnerIDs: []int{c.CurrentUser.ID},
+		Types:    hmndata.PersonalProjects,
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check number of personal projects"))
+	}
+	if numProjects >= maxPersonalProjects {
+		return RejectRequest(c, fmt.Sprintf("You have already reached the maximum of %d personal projects.", maxPersonalProjects))
+	}
+
 	var project templates.ProjectSettings
 	project.Owners = append(project.Owners, templates.UserToTemplate(c.CurrentUser, c.Theme))
 	project.Personal = true
@@ -416,6 +429,17 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to start db transaction"))
 	}
 	defer tx.Rollback(c.Context())
+
+	numProjects, err := hmndata.CountProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		OwnerIDs: []int{c.CurrentUser.ID},
+		Types:    hmndata.PersonalProjects,
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check number of personal projects"))
+	}
+	if numProjects >= maxPersonalProjects {
+		return RejectRequest(c, fmt.Sprintf("You have already reached the maximum of %d personal projects.", maxPersonalProjects))
+	}
 
 	var projectId int
 	err = tx.QueryRow(c.Context(),

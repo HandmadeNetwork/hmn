@@ -29,7 +29,9 @@ type UserProfileTemplateData struct {
 	TimelineItems       []templates.TimelineItem
 	OwnProfile          bool
 	ShowcaseUrl         string
-	NewProjectUrl       string
+
+	CanAddProject bool
+	NewProjectUrl string
 }
 
 func UserProfile(c *RequestContext) ResponseData {
@@ -108,10 +110,15 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	projectsAndStuff, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, projectsQuery)
 	templateProjects := make([]templates.Project, 0, len(projectsAndStuff))
+	numPersonalProjects := 0
 	for _, p := range projectsAndStuff {
 		templateProject := templates.ProjectToTemplate(&p.Project, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 		templateProject.AddLogo(p.LogoURL(c.Theme))
 		templateProjects = append(templateProjects, templateProject)
+
+		if p.Project.Personal {
+			numPersonalProjects++
+		}
 	}
 	c.Perf.EndBlock()
 
@@ -182,7 +189,9 @@ func UserProfile(c *RequestContext) ResponseData {
 		TimelineItems:       timelineItems,
 		OwnProfile:          (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID),
 		ShowcaseUrl:         hmnurl.BuildShowcase(),
-		NewProjectUrl:       hmnurl.BuildProjectNew(),
+
+		CanAddProject: numPersonalProjects < maxPersonalProjects,
+		NewProjectUrl: hmnurl.BuildProjectNew(),
 	}, c.Perf)
 	return res
 }
