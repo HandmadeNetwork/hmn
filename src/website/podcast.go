@@ -39,10 +39,7 @@ func PodcastIndex(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
+	canEdit := c.CurrentUserCanEditCurrentProject
 
 	baseData := getBaseDataAutocrumb(c, podcastResult.Podcast.Title)
 
@@ -78,10 +75,7 @@ func PodcastEdit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
+	canEdit := c.CurrentUserCanEditCurrentProject
 
 	if podcastResult.Podcast == nil || !canEdit {
 		return FourOhFour(c)
@@ -112,10 +106,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
+	canEdit := c.CurrentUserCanEditCurrentProject
 
 	if podcastResult.Podcast == nil || !canEdit {
 		return FourOhFour(c)
@@ -218,11 +209,7 @@ func PodcastEpisode(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
-	if err != nil {
-		c.Logger.Error().Err(err).Msg("Failed to check if user can edit podcast. Assuming they can't.") // NOTE(asaf): No need to return an error response here if it failed.
-		canEdit = false
-	}
+	canEdit := c.CurrentUserCanEditCurrentProject
 
 	editUrl := ""
 	if canEdit {
@@ -268,10 +255,7 @@ func PodcastEpisodeNew(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
+	canEdit := c.CurrentUserCanEditCurrentProject
 
 	if podcastResult.Podcast == nil || !canEdit {
 		return FourOhFour(c)
@@ -311,10 +295,7 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
+	canEdit := c.CurrentUserCanEditCurrentProject
 
 	if podcastResult.Podcast == nil || len(podcastResult.Episodes) == 0 || !canEdit {
 		return FourOhFour(c)
@@ -360,10 +341,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	canEdit, err := CanEditProject(c, c.CurrentUser, podcastResult.Podcast.ProjectID)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
+	canEdit := c.CurrentUserCanEditCurrentProject
 
 	if podcastResult.Podcast == nil || (isEdit && len(podcastResult.Episodes) == 0) || !canEdit {
 		return FourOhFour(c)

@@ -62,6 +62,11 @@ func FetchSnippets(
 		}
 		iSnippetIDs := itSnippetIDs.ToSlice()
 
+		// special early-out: no snippets found for these tags at all
+		if len(iSnippetIDs) == 0 {
+			return nil, nil
+		}
+
 		q.IDs = make([]int, len(iSnippetIDs))
 		for i := range iSnippetIDs {
 			q.IDs[i] = iSnippetIDs[i].(*snippetIDRow).SnippetID

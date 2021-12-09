@@ -311,6 +311,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 
 				c.CurrentProject = &p.Project
 				c.UrlContext = hmndata.UrlContextForProject(c.CurrentProject)
+				c.CurrentUserCanEditCurrentProject = CanEditProject(c.CurrentUser, p.Owners)
 
 				if !p.Project.Personal {
 					return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
@@ -485,7 +486,6 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 				panic(oops.New(err, "failed to fetch HMN project"))
 			}
 			c.CurrentProject = &dbProject.Project
-			owners = dbProject.Owners
 		}
 
 		if c.CurrentProject == nil {
@@ -494,11 +494,12 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 
 		canEditProject := false
 		if c.CurrentUser != nil {
-			canEditProject = c.CurrentUser.IsStaff
-			if !canEditProject {
+			if c.CurrentUser.IsStaff {
+				canEditProject = true
+			} else {
 				for _, o := range owners {
 					if o.ID == c.CurrentUser.ID {
-						c.CurrentUserCanEditCurrentProject = true
+						canEditProject = true
 						break
 					}
 				}

@@ -692,7 +692,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			blurb = $?,
 			description = $?,
 			descparsed = $?,
-			lifecycle = $?,
+			lifecycle = $?
 		`,
 		payload.Name,
 		payload.Blurb,
@@ -701,7 +701,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		payload.Lifecycle,
 	)
 	if user.IsStaff {
-		qb.Add(`hidden = $?`, payload.Hidden)
+		qb.Add(`, hidden = $?`, payload.Hidden)
 	}
 	qb.Add(`WHERE id = $?`, payload.ProjectID)
 
@@ -857,21 +857,17 @@ func GetFormImage(c *RequestContext, fieldName string) (FormImage, error) {
 	return res, nil
 }
 
-func CanEditProject(c *RequestContext, user *models.User, projectId int) (bool, error) {
+func CanEditProject(user *models.User, owners []*models.User) bool {
 	if user != nil {
 		if user.IsStaff {
-			return true, nil
+			return true
 		} else {
-			owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, projectId)
-			if err != nil {
-				return false, err
-			}
 			for _, owner := range owners {
 				if owner.ID == user.ID {
-					return true, nil
+					return true
 				}
 			}
 		}
 	}
-	return false, nil
+	return false
 }
