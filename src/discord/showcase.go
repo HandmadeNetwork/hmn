@@ -742,7 +742,15 @@ func updateSnippetTags(ctx context.Context, dbConn db.ConnOrTx, userID string, s
 	}
 
 	for _, tagID := range tagIDs {
-		_, err = tx.Exec(ctx, `INSERT INTO snippet_tags (snippet_id, tag_id) VALUES ($1, $2)`, snippet.ID, tagID)
+		_, err = tx.Exec(ctx,
+			`
+			INSERT INTO snippet_tags (snippet_id, tag_id)
+			VALUES ($1, $2)
+			ON CONFLICT DO NOTHING
+			`,
+			snippet.ID,
+			tagID,
+		)
 		if err != nil {
 			return oops.New(err, "failed to add tag to snippet")
 		}

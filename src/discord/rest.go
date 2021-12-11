@@ -400,7 +400,6 @@ func RemoveGuildMemberRole(ctx context.Context, userID, roleID string) error {
 	const name = "Remove Guild Member Role"
 
 	path := fmt.Sprintf("/guilds/%s/members/%s/roles/%s", config.Config.Discord.GuildID, userID, roleID)
-	logging.ExtractLogger(ctx).Warn().Str("path", path).Msg("I dunno")
 	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
 		return makeRequest(ctx, http.MethodDelete, path, nil)
 	})
