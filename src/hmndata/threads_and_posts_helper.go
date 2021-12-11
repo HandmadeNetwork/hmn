@@ -29,7 +29,8 @@ type ThreadsQuery struct {
 	ThreadIDs []int
 
 	// Ignored when using FetchThread or CountThreads.
-	Limit, Offset int // if empty, no pagination
+	Limit, Offset  int  // if empty, no pagination
+	OrderByCreated bool // defaults to order by last updated
 }
 
 type ThreadAndStuff struct {
@@ -127,7 +128,11 @@ func FetchThreads(
 			currentUserID,
 		)
 	}
-	qb.Add(`ORDER BY last_post.postdate DESC`)
+	if q.OrderByCreated {
+		qb.Add(`ORDER BY first_post.postdate DESC`)
+	} else {
+		qb.Add(`ORDER BY last_post.postdate DESC`)
+	}
 	if q.Limit > 0 {
 		qb.Add(`LIMIT $? OFFSET $?`, q.Limit, q.Offset)
 	}

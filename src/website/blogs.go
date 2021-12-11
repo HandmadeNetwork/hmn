@@ -51,10 +51,11 @@ func BlogIndex(c *RequestContext) ResponseData {
 	}
 
 	threads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
-		ProjectIDs:  []int{c.CurrentProject.ID},
-		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
-		Limit:       postsPerPage,
-		Offset:      (page - 1) * postsPerPage,
+		ProjectIDs:     []int{c.CurrentProject.ID},
+		ThreadTypes:    []models.ThreadType{models.ThreadTypeProjectBlogPost},
+		Limit:          postsPerPage,
+		Offset:         (page - 1) * postsPerPage,
+		OrderByCreated: true,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
