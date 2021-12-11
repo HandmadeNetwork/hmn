@@ -102,13 +102,12 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	projectsQuery := hmndata.ProjectsQuery{
-		OwnerIDs:   []int{profileUser.ID},
-		Lifecycles: models.VisibleProjectLifecycles,
-		OrderBy:    "all_last_updated DESC",
-	}
-
-	projectsAndStuff, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, projectsQuery)
+	projectsAndStuff, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		OwnerIDs:      []int{profileUser.ID},
+		Lifecycles:    models.AllProjectLifecycles,
+		IncludeHidden: true,
+		OrderBy:       "all_last_updated DESC",
+	})
 	templateProjects := make([]templates.Project, 0, len(projectsAndStuff))
 	numPersonalProjects := 0
 	for _, p := range projectsAndStuff {

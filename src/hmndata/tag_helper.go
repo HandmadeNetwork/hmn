@@ -18,7 +18,7 @@ type TagQuery struct {
 
 func FetchTags(ctx context.Context, dbConn db.ConnOrTx, q TagQuery) ([]*models.Tag, error) {
 	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch snippets")
+	perf.StartBlock("SQL", "Fetch tags")
 	defer perf.EndBlock()
 
 	var qb db.QueryBuilder

@@ -300,7 +300,10 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 				if err != nil {
 					panic(oops.New(err, "project id was not numeric (bad regex in routing)"))
 				}
-				p, err := hmndata.FetchProject(c.Context(), c.Conn, c.CurrentUser, id, hmndata.ProjectsQuery{})
+				p, err := hmndata.FetchProject(c.Context(), c.Conn, c.CurrentUser, id, hmndata.ProjectsQuery{
+					Lifecycles:    models.AllProjectLifecycles,
+					IncludeHidden: true,
+				})
 				if err != nil {
 					if errors.Is(err, db.NotFound) {
 						return FourOhFour(c)
@@ -465,7 +468,10 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 		var owners []*models.User
 
 		if len(slug) > 0 {
-			dbProject, err := hmndata.FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, hmndata.ProjectsQuery{})
+			dbProject, err := hmndata.FetchProjectBySlug(c.Context(), c.Conn, c.CurrentUser, slug, hmndata.ProjectsQuery{
+				Lifecycles:    models.AllProjectLifecycles,
+				IncludeHidden: true,
+			})
 			if err == nil {
 				c.CurrentProject = &dbProject.Project
 				owners = dbProject.Owners
@@ -480,6 +486,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 
 		if c.CurrentProject == nil {
 			dbProject, err := hmndata.FetchProject(c.Context(), c.Conn, c.CurrentUser, models.HMNProjectID, hmndata.ProjectsQuery{
+				Lifecycles:    models.AllProjectLifecycles,
 				IncludeHidden: true,
 			})
 			if err != nil {

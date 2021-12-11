@@ -157,10 +157,9 @@ func AtomFeed(c *RequestContext) ResponseData {
 				itemsPerFeed = 100000
 			}
 			projectsAndStuff, err := hmndata.FetchProjects(c.Context(), c.Conn, nil, hmndata.ProjectsQuery{
-				Lifecycles: models.VisibleProjectLifecycles,
-				Limit:      itemsPerFeed,
-				Types:      hmndata.OfficialProjects,
-				OrderBy:    "date_approved DESC",
+				Limit:   itemsPerFeed,
+				Types:   hmndata.OfficialProjects,
+				OrderBy: "date_approved DESC",
 			})
 			if err != nil {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed projects"))

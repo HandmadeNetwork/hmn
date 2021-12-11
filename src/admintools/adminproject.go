@@ -47,8 +47,8 @@ func addCreateProjectCommand(projectCommand *cobra.Command) {
 			defer tx.Rollback(ctx)
 
 			p, err := hmndata.FetchProject(ctx, tx, nil, models.HMNProjectID, hmndata.ProjectsQuery{
-				IncludeHidden: true,
 				Lifecycles:    models.AllProjectLifecycles,
+				IncludeHidden: true,
 			})
 			if err != nil {
 				panic(err)

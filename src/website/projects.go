@@ -265,7 +265,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		Value:    c.CurrentProject.Blurb,
 	})
 
-	p, err := hmndata.FetchProject(c.Context(), c.Conn, c.CurrentUser, c.CurrentProject.ID, hmndata.ProjectsQuery{})
+	p, err := hmndata.FetchProject(c.Context(), c.Conn, c.CurrentUser, c.CurrentProject.ID, hmndata.ProjectsQuery{
+		Lifecycles:    models.AllProjectLifecycles,
+		IncludeHidden: true,
+	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project details"))
 	}
@@ -491,16 +494,16 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		c.Context(), c.Conn,
 		c.CurrentUser, c.CurrentProject.ID,
 		hmndata.ProjectsQuery{
+			Lifecycles:    models.AllProjectLifecycles,
 			IncludeHidden: true,
 		},
 	)
-	owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, p.Project.ID)
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch project owners"))
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 	projectSettings := templates.ProjectToProjectSettings(
 		&p.Project,
-		owners,
+		p.Owners,
 		p.TagText(),
 		p.LogoURL("light"), p.LogoURL("dark"),
 		c.Theme,

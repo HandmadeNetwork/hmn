@@ -20,8 +20,9 @@ const (
 )
 
 type ProjectsQuery struct {
-	// Available on all project queries
-	Lifecycles    []models.ProjectLifecycle // if empty, defaults to models.VisibleProjectLifecycles
+	// Available on all project queries. By default, you will get projects that
+	// are generally visible to all users.
+	Lifecycles    []models.ProjectLifecycle // If empty, defaults to visible lifecycles. Do not conflate this with permissions; those are checked separately.
 	Types         ProjectTypeQuery          // bitfield
 	IncludeHidden bool
 
@@ -65,11 +66,6 @@ func FetchProjects(
 	perf.StartBlock("SQL", "Fetch projects")
 	defer perf.EndBlock()
 
-	var currentUserID *int
-	if currentUser != nil {
-		currentUserID = &currentUser.ID
-	}
-
 	tx, err := dbConn.Begin(ctx)
 	if err != nil {
 		return nil, oops.New(err, "failed to start transaction")
@@ -80,10 +76,8 @@ func FetchProjects(
 		Project        models.Project `db:"project"`
 		LogoLightAsset *models.Asset  `db:"logolight_asset"`
 		LogoDarkAsset  *models.Asset  `db:"logodark_asset"`
+		Tag            *models.Tag    `db:"tags"`
 	}
-
-	// If true, join against the project owners table and check visibility permissions
-	checkOwnerVisibility := q.IncludeHidden && currentUser != nil
 
 	// Fetch all valid projects (not yet subject to user permission checks)
 	var qb db.QueryBuilder
@@ -96,31 +90,31 @@ func FetchProjects(
 			handmade_project AS project
 			LEFT JOIN handmade_asset AS logolight_asset ON logolight_asset.id = project.logolight_asset_id
 			LEFT JOIN handmade_asset AS logodark_asset ON logodark_asset.id = project.logodark_asset_id
+			LEFT JOIN tags ON project.tag = tags.id
 	`)
 	if len(q.OwnerIDs) > 0 {
-		qb.Add(`
-			INNER JOIN handmade_user_projects AS owner_filter ON owner_filter.project_id = project.id
-		`)
+		qb.Add(
+			`
+			JOIN (
+				SELECT project_id, array_agg(user_id) AS owner_ids
+				FROM handmade_user_projects
+				WHERE user_id = ANY ($?)
+				GROUP BY project_id
+			) AS owner_filter ON project.id = owner_filter.project_id
+			`,
+			q.OwnerIDs,
+		)
 	}
-	if checkOwnerVisibility {
-		qb.Add(`
-			LEFT JOIN handmade_user_projects AS owner_visibility ON owner_visibility.project_id = project.id
-		`)
-	}
+
+	// Filters (permissions are checked after the query, in Go)
 	qb.Add(`
 		WHERE
 			TRUE
 	`)
-
-	// Filters
-	if len(q.ProjectIDs) > 0 {
-		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
-	}
-	if len(q.Slugs) > 0 {
-		qb.Add(`AND (project.slug != '' AND project.slug = ANY ($?))`, q.Slugs)
-	}
-	if len(q.OwnerIDs) > 0 {
-		qb.Add(`AND (owner_filter.user_id = ANY ($?))`, q.OwnerIDs)
+	if len(q.Lifecycles) > 0 {
+		qb.Add(`AND project.lifecycle = ANY ($?)`, q.Lifecycles)
+	} else {
+		qb.Add(`AND project.lifecycle = ANY ($?)`, models.VisibleProjectLifecycles)
 	}
 	if q.Types != 0 {
 		qb.Add(`AND (FALSE`)
@@ -132,21 +126,14 @@ func FetchProjects(
 		}
 		qb.Add(`)`)
 	}
-
-	// Visibility
-	if checkOwnerVisibility {
-		qb.Add(`AND ($? OR owner_visibility.user_id = $? OR (TRUE`, currentUser.IsStaff, currentUser.ID)
-	}
 	if !q.IncludeHidden {
-		qb.Add(`AND NOT hidden`)
+		qb.Add(`AND NOT project.hidden`)
 	}
-	if len(q.Lifecycles) > 0 {
-		qb.Add(`AND project.lifecycle = ANY($?)`, q.Lifecycles)
-	} else {
-		qb.Add(`AND project.lifecycle = ANY($?)`, models.VisibleProjectLifecycles)
+	if len(q.ProjectIDs) > 0 {
+		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
 	}
-	if checkOwnerVisibility {
-		qb.Add(`))`)
+	if len(q.Slugs) > 0 {
+		qb.Add(`AND (project.slug != '' AND project.slug = ANY ($?))`, q.Slugs)
 	}
 
 	// Output
@@ -164,21 +151,6 @@ func FetchProjects(
 	}
 	iprojects := itProjects.ToSlice()
 
-	// Fetch project tags
-	var tagIDs []int
-	for _, iproject := range iprojects {
-		tagID := iproject.(*projectRow).Project.TagID
-		if tagID != nil {
-			tagIDs = append(tagIDs, *tagID)
-		}
-	}
-	tags, err := FetchTags(ctx, tx, TagQuery{
-		IDs: tagIDs,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	// Fetch project owners to do permission checks
 	projectIds := make([]int, len(iprojects))
 	for i, iproject := range iprojects {
@@ -195,49 +167,55 @@ func FetchProjects(
 		owners := projectOwners[i].Owners
 
 		/*
-			Per our spec, a user can see a project if:
-			- The project is official
-			- The project is personal and all of the project's owners are approved
-			- The project is personal and the current user is a collaborator (regardless of user status)
+			Here's the rundown on project permissions:
+
+			- In general, users can only see projects that are Generally Visible.
+			- As an exception, users can always see projects that they own.
+			- As an exception, staff can always see every project.
+
+			A project is Generally Visible if all the following conditions are true:
+			- The project has a "visible" lifecycle (per models.VisibleProjectLifecycles)
+			- The project is not hidden
+			- One of the following is true:
+				- The project is official
+				- The project is personal and all of the project's owners are approved
+
+			As an exception, the HMN project is always generally visible.
 
 			See https://www.notion.so/handmade-network/Technical-Plan-a11aaa9ea2f14d9a95f7d7780edd789c
 		*/
 
-		var projectVisible bool
-		if row.Project.Personal {
-			allOwnersApproved := true
-			for _, owner := range owners {
-				if owner.Status != models.UserStatusApproved {
-					allOwnersApproved = false
-				}
-				if currentUserID != nil && *currentUserID == owner.ID {
-					projectVisible = true
-				}
+		currentUserIsOwner := false
+		allOwnersApproved := true
+		for _, owner := range owners {
+			if owner.Status != models.UserStatusApproved {
+				allOwnersApproved = false
 			}
-			if allOwnersApproved {
-				projectVisible = true
+			if currentUser != nil && owner.ID == currentUser.ID {
+				currentUserIsOwner = true
 			}
-		} else {
-			projectVisible = true
 		}
 
-		if projectVisible {
-			var projectTag *models.Tag
-			if row.Project.TagID != nil {
-				for _, tag := range tags {
-					if tag.ID == *row.Project.TagID {
-						projectTag = tag
-						break
-					}
-				}
-			}
+		projectGenerallyVisible := true &&
+			row.Project.Lifecycle.In(models.VisibleProjectLifecycles) &&
+			!row.Project.Hidden &&
+			(!row.Project.Personal || allOwnersApproved || row.Project.IsHMN())
+		if row.Project.IsHMN() {
+			projectGenerallyVisible = true // hard override
+		}
 
+		projectVisible := false ||
+			projectGenerallyVisible ||
+			currentUserIsOwner ||
+			(currentUser != nil && currentUser.IsStaff)
+
+		if projectVisible {
 			res = append(res, ProjectAndStuff{
 				Project:        row.Project,
 				LogoLightAsset: row.LogoLightAsset,
 				LogoDarkAsset:  row.LogoDarkAsset,
 				Owners:         owners,
-				Tag:            projectTag,
+				Tag:            row.Tag,
 			})
 		}
 	}
@@ -485,8 +463,8 @@ func SetProjectTag(
 	defer tx.Rollback(ctx)
 
 	p, err := FetchProject(ctx, tx, nil, projectID, ProjectsQuery{
-		IncludeHidden: true,
 		Lifecycles:    models.AllProjectLifecycles,
+		IncludeHidden: true,
 	})
 	if err != nil {
 		return nil, err

@@ -36,12 +36,21 @@ var AllProjectLifecycles = []ProjectLifecycle{
 	ProjectLifecycleLTS,
 }
 
-// NOTE(asaf): Just checking the lifecycle is not sufficient. Visible projects also must have flags = 0.
+// NOTE(asaf): Just checking the lifecycle is not sufficient. Visible projects also must not be hidden.
 var VisibleProjectLifecycles = []ProjectLifecycle{
 	ProjectLifecycleActive,
 	ProjectLifecycleHiatus,
 	ProjectLifecycleLTSRequired, // NOTE(asaf): LTS means complete
 	ProjectLifecycleLTS,
+}
+
+func (lc ProjectLifecycle) In(lcs []ProjectLifecycle) bool {
+	for _, v := range lcs {
+		if lc == v {
+			return true
+		}
+	}
+	return false
 }
 
 const RecentProjectUpdateTimespanSec = 60 * 60 * 24 * 28 // NOTE(asaf): Four weeks
