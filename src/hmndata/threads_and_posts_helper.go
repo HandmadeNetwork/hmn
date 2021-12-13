@@ -696,20 +696,28 @@ func DeletePost(
 	tx pgx.Tx,
 	threadId, postId int,
 ) (threadDeleted bool) {
-	isFirstPost, err := db.QueryBool(ctx, tx,
+	type threadInfo struct {
+		FirstPostID int  `db:"first_id"`
+		Deleted     bool `db:"deleted"`
+	}
+	ti, err := db.QueryOne(ctx, tx, threadInfo{},
 		`
-		SELECT thread.first_id = $1
+		SELECT $columns
 		FROM
 			handmade_thread AS thread
 		WHERE
-			thread.id = $2
+			thread.id = $1
 		`,
-		postId,
 		threadId,
 	)
 	if err != nil {
-		panic(oops.New(err, "failed to check if post was the first post in the thread"))
+		panic(oops.New(err, "failed to fetch thread info"))
 	}
+	info := ti.(*threadInfo)
+	if info.Deleted {
+		return true
+	}
+	isFirstPost := info.FirstPostID == postId
 
 	if isFirstPost {
 		// Just delete the whole thread and all its posts.

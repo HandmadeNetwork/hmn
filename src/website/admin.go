@@ -172,7 +172,7 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 		if errors.Is(err, db.NotFound) {
 			return RejectRequest(c, "User not found")
 		} else {
-			return c.ErrorResponse(http.StatusBadRequest, oops.New(err, "failed to fetch user"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
 		}
 	}
 	user := u.(*models.User)
@@ -189,7 +189,7 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 			user.ID,
 		)
 		if err != nil {
-			return c.ErrorResponse(http.StatusBadRequest, oops.New(err, "failed to set user to approved"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to set user to approved"))
 		}
 		whatHappened = fmt.Sprintf("%s approved successfully", user.Username)
 	} else if action == ApprovalQueueActionSpammer {
@@ -203,13 +203,16 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 			user.ID,
 		)
 		if err != nil {
-			return c.ErrorResponse(http.StatusBadRequest, oops.New(err, "failed to set user to banned"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to set user to banned"))
 		}
 		err = auth.DeleteSessionForUser(c.Context(), c.Conn, user.Username)
 		if err != nil {
-			return c.ErrorResponse(http.StatusBadRequest, oops.New(err, "failed to log out user"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to log out user"))
 		}
 		err = deleteAllPostsForUser(c.Context(), c.Conn, user.ID)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete spammer's posts"))
+		}
 		whatHappened = fmt.Sprintf("%s banned successfully", user.Username)
 	} else {
 		whatHappened = fmt.Sprintf("Unrecognized action: %s", action)
@@ -240,10 +243,11 @@ func fetchUnapprovedPosts(c *RequestContext) ([]*UnapprovedPost, error) {
 			JOIN auth_user AS author ON author.id = post.author_id
 		WHERE
 			NOT thread.deleted
-			AND author.status = $1
+			AND NOT post.deleted
+			AND author.status = ANY($1)
 		ORDER BY post.postdate DESC
 		`,
-		models.UserStatusConfirmed,
+		[]models.UserStatus{models.UserStatusConfirmed},
 	)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch unapproved posts")
