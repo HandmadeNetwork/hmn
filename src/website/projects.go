@@ -315,11 +315,6 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 				"lts-reqd",
 				"NOTICE: This project is awaiting approval for maintenance-mode status.",
 			)
-		case models.ProjectLifecycleLTS:
-			templateData.BaseData.AddImmediateNotice(
-				"lts",
-				"NOTICE: This project has reached a state of completion.",
-			)
 		}
 	}
 
