@@ -601,15 +601,6 @@ func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message)
 		return nil
 	}
 
-	// if msg.ChannelID == config.Config.Discord.JamShowcaseChannelID {
-	// 	err := bot.processShowcaseMsg(ctx, msg)
-	// 	if err != nil {
-	// 		logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to process jam showcase message")
-	// 		return nil
-	// 	}
-	// 	return nil
-	// }
-
 	if msg.ChannelID == config.Config.Discord.LibraryChannelID {
 		err := bot.processLibraryMsg(ctx, msg)
 		if err != nil {
@@ -617,6 +608,11 @@ func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message)
 			return nil
 		}
 		return nil
+	}
+
+	err := UpdateSnippetTagsIfAny(ctx, bot.dbConn, msg)
+	if err != nil {
+		logging.ExtractLogger(ctx).Warn().Err(err).Msg("failed to update tags for Discord snippet")
 	}
 
 	return nil

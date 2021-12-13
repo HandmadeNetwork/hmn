@@ -47,7 +47,7 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) er
 	}
 	defer tx.Rollback(ctx)
 
-	// save the message, maybe save its contents, and maybe make a snippet too
+	// save the message, maybe save its contents
 	newMsg, err := SaveMessageAndContents(ctx, tx, msg)
 	if errors.Is(err, errNotEnoughInfo) {
 		logging.ExtractLogger(ctx).Warn().
@@ -57,13 +57,20 @@ func (bot *botInstance) processShowcaseMsg(ctx context.Context, msg *Message) er
 	} else if err != nil {
 		return err
 	}
-	if doSnippet, err := AllowedToCreateMessageSnippet(ctx, tx, newMsg.UserID); doSnippet && err == nil {
-		_, err := CreateMessageSnippet(ctx, tx, newMsg.UserID, msg.ID)
+
+	// ...and maybe make a snippet too, if the user wants us to
+	duser, err := FetchDiscordUser(ctx, tx, newMsg.UserID)
+	if err == nil && duser.HMNUser.DiscordSaveShowcase {
+		err = CreateMessageSnippets(ctx, tx, newMsg.UserID, msg.ID)
 		if err != nil {
 			return oops.New(err, "failed to create snippet in gateway")
 		}
-	} else if err != nil {
-		return oops.New(err, "failed to check snippet permissions in gateway")
+	} else {
+		if err == db.NotFound {
+			// this is fine, just don't create a snippet
+		} else {
+			return err
+		}
 	}
 
 	err = tx.Commit(ctx)
@@ -534,7 +541,7 @@ func FetchDiscordUser(ctx context.Context, dbConn db.ConnOrTx, discordUserID str
 Checks settings and permissions to decide whether we are allowed to create
 snippets for a user.
 */
-func AllowedToCreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, discordUserId string) (bool, error) {
+func AllowedToCreateMessageSnippets(ctx context.Context, tx db.ConnOrTx, discordUserId string) (bool, error) {
 	u, err := FetchDiscordUser(ctx, tx, discordUserId)
 	if errors.Is(err, db.NotFound) {
 		return false, nil
@@ -546,145 +553,167 @@ func AllowedToCreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, discordU
 }
 
 /*
-Attempts to create a snippet from a Discord message. If a snippet already
-exists, it will be returned and no new snippets will be created.
+Attempts to create snippets from Discord messages. If a snippet already exists
+for any message, no new snippet will be created.
 
-It uses the content saved in the database to do this. If we do not have
-any content saved, nothing will happen.
+It uses the content saved in the database to do this. If we do not have any
+content saved, nothing will happen.
 
-Does not check user preferences around snippets.
+If a user does not have their Discord account linked, this function will
+naturally do nothing because we have no message content saved. However, it does
+not check any user settings such as automatically creating snippets from
+#project-showcase. If we have the content, it will make a snippet for it, no
+questions asked. Bear that in mind.
 */
-func CreateMessageSnippet(ctx context.Context, tx db.ConnOrTx, userID, msgID string) (snippet *models.Snippet, err error) {
-	defer func() {
-		err := updateSnippetTags(ctx, tx, userID, snippet)
+func CreateMessageSnippets(ctx context.Context, dbConn db.ConnOrTx, msgIDs ...string) error {
+	tx, err := dbConn.Begin(ctx)
+	if err != nil {
+		return oops.New(err, "failed to begin transaction")
+	}
+	defer tx.Rollback(ctx)
+
+	for _, msgID := range msgIDs {
+		// Check for existing snippet
+		type existingSnippetResult struct {
+			Message        models.DiscordMessage         `db:"msg"`
+			MessageContent *models.DiscordMessageContent `db:"c"`
+			Snippet        *models.Snippet               `db:"snippet"`
+			DiscordUser    *models.DiscordUser           `db:"duser"`
+		}
+		iexisting, err := db.QueryOne(ctx, tx, existingSnippetResult{},
+			`
+			SELECT $columns
+			FROM
+				handmade_discordmessage AS msg
+				LEFT JOIN handmade_discordmessagecontent AS c ON c.message_id = msg.id
+				LEFT JOIN handmade_snippet AS snippet ON snippet.discord_message_id = msg.id
+				LEFT JOIN handmade_discorduser AS duser ON msg.user_id = duser.userid
+			WHERE
+				msg.id = $1
+			`,
+			msgID,
+		)
 		if err != nil {
-			logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to update tags for Discord snippet")
+			return oops.New(err, "failed to check for existing snippet for message %s", msgID)
 		}
-	}()
+		existing := iexisting.(*existingSnippetResult)
 
-	// Check for existing snippet, maybe return it
-	type existingSnippetResult struct {
-		Message        models.DiscordMessage         `db:"msg"`
-		MessageContent *models.DiscordMessageContent `db:"c"`
-		Snippet        *models.Snippet               `db:"snippet"`
-		DiscordUser    *models.DiscordUser           `db:"duser"`
-	}
-	iexisting, err := db.QueryOne(ctx, tx, existingSnippetResult{},
-		`
-		SELECT $columns
-		FROM
-			handmade_discordmessage AS msg
-			LEFT JOIN handmade_discordmessagecontent AS c ON c.message_id = msg.id
-			LEFT JOIN handmade_snippet AS snippet ON snippet.discord_message_id = msg.id
-			LEFT JOIN handmade_discorduser AS duser ON msg.user_id = duser.userid
-		WHERE
-			msg.id = $1
-		`,
-		msgID,
-	)
-	if err != nil {
-		return nil, oops.New(err, "failed to check for existing snippet for message %s", msgID)
-	}
-	existing := iexisting.(*existingSnippetResult)
+		if existing.Snippet != nil {
+			// A snippet already exists - maybe update its content.
+			if existing.MessageContent != nil && !existing.Snippet.EditedOnWebsite {
+				contentMarkdown := existing.MessageContent.LastContent
+				contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
 
-	if existing.Snippet != nil {
-		// A snippet already exists - maybe update its content, then return it
-		if existing.MessageContent != nil && !existing.Snippet.EditedOnWebsite {
-			contentMarkdown := existing.MessageContent.LastContent
-			contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
-
-			iSnippet, err := db.QueryOne(ctx, tx, models.Snippet{},
-				`
-				UPDATE handmade_snippet
-				SET
-					description = $1,
-					_description_html = $2
-				WHERE id = $3
-				RETURNING $columns
-				`,
-				contentMarkdown,
-				contentHTML,
-				existing.Snippet.ID,
-			)
-			if err != nil {
-				logging.ExtractLogger(ctx).Warn().Err(err).Msg("failed to update content of snippet on message edit")
+				_, err := tx.Exec(ctx,
+					`
+					UPDATE handmade_snippet
+					SET
+						description = $1,
+						_description_html = $2
+					WHERE id = $3
+					`,
+					contentMarkdown,
+					contentHTML,
+					existing.Snippet.ID,
+				)
+				if err != nil {
+					logging.ExtractLogger(ctx).Warn().Err(err).Msg("failed to update content of snippet on message edit")
+				}
+				continue
 			}
-			return iSnippet.(*models.Snippet), nil
-		} else {
-			return existing.Snippet, nil
+		}
+
+		if existing.Message.SnippetCreated {
+			// A snippet once existed but no longer does
+			// (we do not create another one in this case)
+			return nil
+		}
+
+		if existing.MessageContent == nil || existing.DiscordUser == nil {
+			return nil
+		}
+
+		// Get an asset ID or URL to make a snippet from
+		assetId, url, err := getSnippetAssetOrUrl(ctx, tx, &existing.Message)
+		if assetId == nil && url == nil {
+			// Nothing to make a snippet from!
+			return nil
+		}
+
+		contentMarkdown := existing.MessageContent.LastContent
+		contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
+
+		// TODO(db): Insert
+		_, err = tx.Exec(ctx,
+			`
+			INSERT INTO handmade_snippet (url, "when", description, _description_html, asset_id, discord_message_id, owner_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			`,
+			url,
+			existing.Message.SentAt,
+			contentMarkdown,
+			contentHTML,
+			assetId,
+			msgID,
+			existing.DiscordUser.HMNUserId,
+		)
+		if err != nil {
+			return oops.New(err, "failed to create snippet from attachment")
+		}
+		_, err = tx.Exec(ctx,
+			`
+			UPDATE handmade_discordmessage
+			SET snippet_created = TRUE
+			WHERE id = $1
+			`,
+			msgID,
+		)
+		if err != nil {
+			return oops.New(err, "failed to mark message as having snippet")
 		}
 	}
 
-	if existing.Message.SnippetCreated {
-		// A snippet once existed but no longer does
-		// (we do not create another one in this case)
-		return nil, nil
-	}
-
-	if existing.MessageContent == nil || existing.DiscordUser == nil {
-		return nil, nil
-	}
-
-	// Get an asset ID or URL to make a snippet from
-	assetId, url, err := getSnippetAssetOrUrl(ctx, tx, &existing.Message)
-	if assetId == nil && url == nil {
-		// Nothing to make a snippet from!
-		return nil, nil
-	}
-
-	contentMarkdown := existing.MessageContent.LastContent
-	contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
-
-	// TODO(db): Insert
-	isnippet, err := db.QueryOne(ctx, tx, models.Snippet{},
-		`
-		INSERT INTO handmade_snippet (url, "when", description, _description_html, asset_id, discord_message_id, owner_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING $columns
-		`,
-		url,
-		existing.Message.SentAt,
-		contentMarkdown,
-		contentHTML,
-		assetId,
-		msgID,
-		existing.DiscordUser.HMNUserId,
-	)
+	err = tx.Commit(ctx)
 	if err != nil {
-		return nil, oops.New(err, "failed to create snippet from attachment")
-	}
-	_, err = tx.Exec(ctx,
-		`
-		UPDATE handmade_discordmessage
-		SET snippet_created = TRUE
-		WHERE id = $1
-		`,
-		msgID,
-	)
-	if err != nil {
-		return nil, oops.New(err, "failed to mark message as having snippet")
+		return oops.New(err, "failed to commit transaction")
 	}
 
-	return isnippet.(*models.Snippet), nil
+	return nil
 }
 
 /*
-Associates any Discord tags with website tags. Idempotent; will clear
-out any existing tags and then add new ones.
+Associates any Discord tags with website tags for projects. Idempotent; will
+clear out any existing project tags and then add new ones.
+
+If no Discord user is linked, or no snippet exists, or whatever, this will do
+nothing and return no error.
 */
-func updateSnippetTags(ctx context.Context, dbConn db.ConnOrTx, userID string, snippet *models.Snippet) error {
+func UpdateSnippetTagsIfAny(ctx context.Context, dbConn db.ConnOrTx, msg *Message) error {
 	tx, err := dbConn.Begin(ctx)
 	if err != nil {
 		return oops.New(err, "failed to start transaction")
 	}
 	defer tx.Rollback(ctx)
 
-	u, err := FetchDiscordUser(ctx, tx, userID)
-	if err != nil {
+	// Fetch the Discord user; we only process messages for users with linked
+	// Discord accounts
+	u, err := FetchDiscordUser(ctx, tx, msg.Author.ID)
+	if err == db.NotFound {
+		return nil
+	} else if err != nil {
 		return oops.New(err, "failed to look up HMN user information from Discord user")
-		// we shouldn't see a "not found" here because of the AllowedToBlahBlahBlah check earlier in the process
 	}
 
+	// Fetch the s associated with this Discord message (if any). If the
+	// s has already been edited on the website we'll skip it.
+	s, err := hmndata.FetchSnippetForDiscordMessage(ctx, tx, &u.HMNUser, msg.ID, hmndata.SnippetQuery{})
+	if err == db.NotFound {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	// Fetch projects so we know what tags the user can apply to their snippet.
 	projects, err := hmndata.FetchProjects(ctx, tx, &u.HMNUser, hmndata.ProjectsQuery{
 		OwnerIDs: []int{u.HMNUser.ID},
 	})
@@ -696,13 +725,19 @@ func updateSnippetTags(ctx context.Context, dbConn db.ConnOrTx, userID string, s
 		projectIDs[i] = p.Project.ID
 	}
 
-	// Delete any existing tags for this snippet
+	// Delete any existing project tags for this snippet. We don't want to
+	// delete other tags in case in the future we have manual tagging on the
+	// website or whatever, and this would clear those out.
 	_, err = tx.Exec(ctx,
 		`
 		DELETE FROM snippet_tags
-		WHERE snippet_id = $1
+		WHERE
+			snippet_id = $1
+			AND tag_id IN (
+				SELECT tag FROM handmade_project
+			)
 		`,
-		snippet.ID,
+		s.Snippet.ID,
 	)
 	if err != nil {
 		return oops.New(err, "failed to delete existing snippet tags")
@@ -710,7 +745,7 @@ func updateSnippetTags(ctx context.Context, dbConn db.ConnOrTx, userID string, s
 
 	// Try to associate tags in the message with project tags in HMN.
 	// Match only tags for projects in which the current user is a collaborator.
-	messageTags := getDiscordTags(snippet.Description)
+	messageTags := getDiscordTags(s.Snippet.Description)
 	type tagsRow struct {
 		Tag models.Tag `db:"tags"`
 	}
@@ -748,7 +783,7 @@ func updateSnippetTags(ctx context.Context, dbConn db.ConnOrTx, userID string, s
 			VALUES ($1, $2)
 			ON CONFLICT DO NOTHING
 			`,
-			snippet.ID,
+			s.Snippet.ID,
 			tagID,
 		)
 		if err != nil {

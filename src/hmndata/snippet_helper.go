@@ -10,9 +10,10 @@ import (
 )
 
 type SnippetQuery struct {
-	IDs      []int
-	OwnerIDs []int
-	Tags     []int
+	IDs               []int
+	OwnerIDs          []int
+	Tags              []int
+	DiscordMessageIDs []string
 
 	Limit, Offset int // if empty, no pagination
 }
@@ -91,6 +92,9 @@ func FetchSnippets(
 	}
 	if len(q.OwnerIDs) > 0 {
 		qb.Add(`AND snippet.owner_id = ANY ($?)`, q.OwnerIDs)
+	}
+	if len(q.DiscordMessageIDs) > 0 {
+		qb.Add(`AND snippet.discord_message_id = ANY ($?)`, q.DiscordMessageIDs)
 	}
 	if currentUser == nil {
 		qb.Add(
@@ -196,6 +200,29 @@ func FetchSnippet(
 	res, err := FetchSnippets(ctx, dbConn, currentUser, q)
 	if err != nil {
 		return SnippetAndStuff{}, oops.New(err, "failed to fetch snippet")
+	}
+
+	if len(res) == 0 {
+		return SnippetAndStuff{}, db.NotFound
+	}
+
+	return res[0], nil
+}
+
+func FetchSnippetForDiscordMessage(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	currentUser *models.User,
+	discordMessageID string,
+	q SnippetQuery,
+) (SnippetAndStuff, error) {
+	q.DiscordMessageIDs = []string{discordMessageID}
+	q.Limit = 1
+	q.Offset = 0
+
+	res, err := FetchSnippets(ctx, dbConn, currentUser, q)
+	if err != nil {
+		return SnippetAndStuff{}, oops.New(err, "failed to fetch snippet for Discord message")
 	}
 
 	if len(res) == 0 {

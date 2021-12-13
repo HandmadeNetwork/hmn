@@ -143,7 +143,7 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 	}
 	duser := iduser.(*models.DiscordUser)
 
-	ok, err := discord.AllowedToCreateMessageSnippet(c.Context(), c.Conn, duser.UserID)
+	ok, err := discord.AllowedToCreateMessageSnippets(c.Context(), c.Conn, duser.UserID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -157,7 +157,7 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 	type messageIdQuery struct {
 		MessageID string `db:"msg.id"`
 	}
-	imsgIds, err := db.Query(c.Context(), c.Conn, messageIdQuery{},
+	itMsgIds, err := db.Query(c.Context(), c.Conn, messageIdQuery{},
 		`
 		SELECT $columns
 		FROM
@@ -169,15 +169,15 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 		duser.UserID,
 		config.Config.Discord.ShowcaseChannelID,
 	)
-	msgIds := imsgIds.ToSlice()
+	iMsgIDs := itMsgIds.ToSlice()
 
-	for _, imsgId := range msgIds {
-		msgId := imsgId.(*messageIdQuery)
-		_, err := discord.CreateMessageSnippet(c.Context(), c.Conn, duser.UserID, msgId.MessageID)
-		if err != nil {
-			c.Logger.Warn().Err(err).Msg("failed to create snippet from showcase backlog")
-			continue
-		}
+	var msgIDs []string
+	for _, imsgId := range iMsgIDs {
+		msgIDs = append(msgIDs, imsgId.(*messageIdQuery).MessageID)
+	}
+	err = discord.CreateMessageSnippets(c.Context(), c.Conn, msgIDs...)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	return c.Redirect(hmnurl.BuildUserProfile(c.CurrentUser.Username), http.StatusSeeOther)
