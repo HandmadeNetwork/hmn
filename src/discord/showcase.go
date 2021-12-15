@@ -749,7 +749,7 @@ func UpdateSnippetTagsIfAny(ctx context.Context, dbConn db.ConnOrTx, msg *Messag
 	type tagsRow struct {
 		Tag models.Tag `db:"tags"`
 	}
-	itUserTags, err := db.Query(ctx, tx, tagsRow{},
+	iUserTags, err := db.Query(ctx, tx, tagsRow{},
 		`
 		SELECT $columns
 		FROM
@@ -764,7 +764,6 @@ func UpdateSnippetTagsIfAny(ctx context.Context, dbConn db.ConnOrTx, msg *Messag
 	if err != nil {
 		return oops.New(err, "failed to fetch tags for user projects")
 	}
-	iUserTags := itUserTags.ToSlice()
 
 	var tagIDs []int
 	for _, itag := range iUserTags {
@@ -805,7 +804,7 @@ var RESnippetableUrl = regexp.MustCompile(`^https?://(youtu\.be|(www\.)?youtube\
 
 func getSnippetAssetOrUrl(ctx context.Context, tx db.ConnOrTx, msg *models.DiscordMessage) (*uuid.UUID, *string, error) {
 	// Check attachments
-	itAttachments, err := db.Query(ctx, tx, models.DiscordMessageAttachment{},
+	attachments, err := db.Query(ctx, tx, models.DiscordMessageAttachment{},
 		`
 		SELECT $columns
 		FROM handmade_discordmessageattachment
@@ -816,14 +815,13 @@ func getSnippetAssetOrUrl(ctx context.Context, tx db.ConnOrTx, msg *models.Disco
 	if err != nil {
 		return nil, nil, oops.New(err, "failed to fetch message attachments")
 	}
-	attachments := itAttachments.ToSlice()
 	for _, iattachment := range attachments {
 		attachment := iattachment.(*models.DiscordMessageAttachment)
 		return &attachment.AssetID, nil, nil
 	}
 
 	// Check embeds
-	itEmbeds, err := db.Query(ctx, tx, models.DiscordMessageEmbed{},
+	embeds, err := db.Query(ctx, tx, models.DiscordMessageEmbed{},
 		`
 		SELECT $columns
 		FROM handmade_discordmessageembed
@@ -834,7 +832,6 @@ func getSnippetAssetOrUrl(ctx context.Context, tx db.ConnOrTx, msg *models.Disco
 	if err != nil {
 		return nil, nil, oops.New(err, "failed to fetch discord embeds")
 	}
-	embeds := itEmbeds.ToSlice()
 	for _, iembed := range embeds {
 		embed := iembed.(*models.DiscordMessageEmbed)
 		if embed.VideoID != nil {

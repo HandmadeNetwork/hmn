@@ -47,7 +47,7 @@ func GetFullSubforumTree(ctx context.Context, conn *pgxpool.Pool) SubforumTree {
 	type subforumRow struct {
 		Subforum Subforum `db:"sf"`
 	}
-	rows, err := db.Query(ctx, conn, subforumRow{},
+	rowsSlice, err := db.Query(ctx, conn, subforumRow{},
 		`
 		SELECT $columns
 		FROM
@@ -59,7 +59,6 @@ func GetFullSubforumTree(ctx context.Context, conn *pgxpool.Pool) SubforumTree {
 		panic(oops.New(err, "failed to fetch subforum tree"))
 	}
 
-	rowsSlice := rows.ToSlice()
 	sfTreeMap := make(map[int]*SubforumTreeNode, len(rowsSlice))
 	for _, row := range rowsSlice {
 		sf := row.(*subforumRow).Subforum

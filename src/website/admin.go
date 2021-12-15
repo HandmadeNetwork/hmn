@@ -253,7 +253,7 @@ func fetchUnapprovedPosts(c *RequestContext) ([]*UnapprovedPost, error) {
 		return nil, oops.New(err, "failed to fetch unapproved posts")
 	}
 	var res []*UnapprovedPost
-	for _, iresult := range it.ToSlice() {
+	for _, iresult := range it {
 		res = append(res, iresult.(*UnapprovedPost))
 	}
 	return res, nil
@@ -285,7 +285,7 @@ func deleteAllPostsForUser(ctx context.Context, conn *pgxpool.Pool, userId int) 
 		return oops.New(err, "failed to fetch posts to delete for user")
 	}
 
-	for _, iResult := range it.ToSlice() {
+	for _, iResult := range it {
 		row := iResult.(*toDelete)
 		hmndata.DeletePost(ctx, tx, row.ThreadID, row.PostID)
 	}

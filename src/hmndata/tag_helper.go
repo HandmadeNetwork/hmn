@@ -40,11 +40,10 @@ func FetchTags(ctx context.Context, dbConn db.ConnOrTx, q TagQuery) ([]*models.T
 		qb.Add(`LIMIT $? OFFSET $?`, q.Limit, q.Offset)
 	}
 
-	it, err := db.Query(ctx, dbConn, models.Tag{}, qb.String(), qb.Args()...)
+	itags, err := db.Query(ctx, dbConn, models.Tag{}, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch tags")
 	}
-	itags := it.ToSlice()
 
 	res := make([]*models.Tag, len(itags))
 	for i, itag := range itags {

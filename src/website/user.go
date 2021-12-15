@@ -85,7 +85,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	type userLinkQuery struct {
 		UserLink models.Link `db:"link"`
 	}
-	userLinkQueryResult, err := db.Query(c.Context(), c.Conn, userLinkQuery{},
+	userLinksSlice, err := db.Query(c.Context(), c.Conn, userLinkQuery{},
 		`
 		SELECT $columns
 		FROM
@@ -99,7 +99,6 @@ func UserProfile(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch links for user: %s", username))
 	}
-	userLinksSlice := userLinkQueryResult.ToSlice()
 	profileUserLinks := make([]templates.Link, 0, len(userLinksSlice))
 	for _, l := range userLinksSlice {
 		profileUserLinks = append(profileUserLinks, templates.LinkToTemplate(&l.(*userLinkQuery).UserLink))
@@ -223,7 +222,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		DiscordShowcaseBacklogUrl string
 	}
 
-	ilinks, err := db.Query(c.Context(), c.Conn, models.Link{},
+	links, err := db.Query(c.Context(), c.Conn, models.Link{},
 		`
 		SELECT $columns
 		FROM handmade_links
@@ -235,7 +234,6 @@ func UserSettings(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user links"))
 	}
-	links := ilinks.ToSlice()
 
 	linksText := ""
 	for _, ilink := range links {

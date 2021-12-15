@@ -143,11 +143,10 @@ func FetchThreads(
 		ForumLastReadTime  *time.Time `db:"slri.lastread"`
 	}
 
-	it, err := db.Query(ctx, dbConn, resultRow{}, qb.String(), qb.Args()...)
+	iresults, err := db.Query(ctx, dbConn, resultRow{}, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch threads")
 	}
-	iresults := it.ToSlice()
 
 	result := make([]ThreadAndStuff, len(iresults))
 	for i, iresult := range iresults {
@@ -398,11 +397,10 @@ func FetchPosts(
 		qb.Add(`LIMIT $? OFFSET $?`, q.Limit, q.Offset)
 	}
 
-	it, err := db.Query(ctx, dbConn, resultRow{}, qb.String(), qb.Args()...)
+	iresults, err := db.Query(ctx, dbConn, resultRow{}, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch posts")
 	}
-	iresults := it.ToSlice()
 
 	result := make([]PostAndStuff, len(iresults))
 	for i, iresult := range iresults {
@@ -856,7 +854,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 
 	var values [][]interface{}
 
-	for _, asset := range assetResult.ToSlice() {
+	for _, asset := range assetResult {
 		values = append(values, []interface{}{postId, asset.(*assetId).AssetID})
 	}
 
@@ -892,7 +890,7 @@ func FixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
 	}
 
 	var firstPost, lastPost *models.Post
-	for _, ipost := range postsIter.ToSlice() {
+	for _, ipost := range postsIter {
 		post := ipost.(*models.Post)
 
 		if firstPost == nil || post.PostDate.Before(firstPost.PostDate) {

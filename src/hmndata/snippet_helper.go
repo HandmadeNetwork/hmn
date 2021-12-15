@@ -47,7 +47,7 @@ func FetchSnippets(
 		type snippetIDRow struct {
 			SnippetID int `db:"snippet_id"`
 		}
-		itSnippetIDs, err := db.Query(ctx, tx, snippetIDRow{},
+		iSnippetIDs, err := db.Query(ctx, tx, snippetIDRow{},
 			`
 			SELECT DISTINCT snippet_id
 			FROM
@@ -61,7 +61,6 @@ func FetchSnippets(
 		if err != nil {
 			return nil, oops.New(err, "failed to get snippet IDs for tag")
 		}
-		iSnippetIDs := itSnippetIDs.ToSlice()
 
 		// special early-out: no snippets found for these tags at all
 		if len(iSnippetIDs) == 0 {
@@ -125,11 +124,10 @@ func FetchSnippets(
 		DiscordMessage *models.DiscordMessage `db:"discord_message"`
 	}
 
-	it, err := db.Query(ctx, tx, resultRow{}, qb.String(), qb.Args()...)
+	iresults, err := db.Query(ctx, tx, resultRow{}, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch threads")
 	}
-	iresults := it.ToSlice()
 
 	result := make([]SnippetAndStuff, len(iresults)) // allocate extra space because why not
 	snippetIDs := make([]int, len(iresults))
@@ -151,7 +149,7 @@ func FetchSnippets(
 		SnippetID int         `db:"snippet_tags.snippet_id"`
 		Tag       *models.Tag `db:"tags"`
 	}
-	itSnippetTags, err := db.Query(ctx, tx, snippetTagRow{},
+	iSnippetTags, err := db.Query(ctx, tx, snippetTagRow{},
 		`
 		SELECT $columns
 		FROM
@@ -165,7 +163,6 @@ func FetchSnippets(
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch tags for snippets")
 	}
-	iSnippetTags := itSnippetTags.ToSlice()
 
 	// associate tags with snippets
 	resultBySnippetId := make(map[int]*SnippetAndStuff)
