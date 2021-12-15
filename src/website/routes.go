@@ -190,6 +190,8 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 	hmnOnly.GET(hmnurl.RegexAdminAtomFeed, AdminAtomFeed)
 	hmnOnly.GET(hmnurl.RegexAdminApprovalQueue, adminMiddleware(AdminApprovalQueue))
 	hmnOnly.POST(hmnurl.RegexAdminApprovalQueue, adminMiddleware(csrfMiddleware(AdminApprovalQueueSubmit)))
+	hmnOnly.POST(hmnurl.RegexAdminSetUserStatus, adminMiddleware(csrfMiddleware(UserProfileAdminSetStatus)))
+	hmnOnly.POST(hmnurl.RegexAdminNukeUser, adminMiddleware(csrfMiddleware(UserProfileAdminNuke)))
 
 	hmnOnly.GET(hmnurl.RegexFeed, Feed)
 	hmnOnly.GET(hmnurl.RegexAtomFeed, AtomFeed)

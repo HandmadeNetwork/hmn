@@ -1,5 +1,32 @@
 {{ template "base.html" . }}
 
+{{ define "extrahead" }}
+	<style>
+		.led {
+			aspect-ratio: 1;
+			border-radius: 50%;
+			border-style: solid;
+			border-width: 1.5px;
+			display: inline-block;
+		}
+
+		.led.yellow {
+			background-color: #64501f;
+			border-color: #4f3700;
+		}
+
+		.led.yellow.on {
+			background-color: #fdf2d8;
+			border-color: #f9ad04;
+			box-shadow: 0 0 7px #ee9e06;
+		}
+
+		.admin .cover {
+			background: repeating-linear-gradient( -45deg, #ff6c00, #ff6c00 12px, #000000 5px, #000000 25px );
+		}
+	</style>
+{{ end }}
+
 {{ define "content" }}
 <div class="flex flex-column flex-row-l">
 	<div class="
@@ -34,6 +61,68 @@
 				</div>
 			</div>
 		</div>
+		{{ if .User }}
+			{{ if .User.IsStaff }}
+				<div class="mt3 mt0-ns mt3-l ml3-ns ml0-l flex flex-column items-start bg--card pa2 br2 admin">
+					<div class="flex flex-row w-100 items-center">
+						<b class="flex-grow-1">Admin actions</b>
+						<div class="led yellow" style="height: 12px; margin: 3px;"></div>
+						<a href="javascript:;" class="unlock">Unlock</a>
+					</div>
+					<div class="relative w-100">
+						<div class="bg--card cover absolute w-100 h-100 br2"></div>
+						<div class="mt3">
+							<div>User status:</div>
+							<form id="admin_set_status_form" method="POST" action="{{ .AdminSetStatusUrl }}">
+								{{ csrftoken .Session }}
+								<input type="hidden" name="user_id" value="{{ .ProfileUser.ID }}" />
+								<input type="hidden" name="username" value="{{ .ProfileUser.Username }}" />
+								<select name="status">
+									<option value="inactive" {{ if eq .ProfileUser.Status 1 }}selected{{ end }}>Brand new</option>
+									<option value="confirmed" {{ if eq .ProfileUser.Status 2 }}selected{{ end }}>Email confirmed</option>
+									<option value="approved" {{ if eq .ProfileUser.Status 3 }}selected{{ end }}>Admin approved</option>
+									<option value="banned" {{ if eq .ProfileUser.Status 4 }}selected{{ end }}>Banned</option>
+								</select>
+								<input type="submit" value="Set" />
+								<div class="c--dim f7">Only sets status. Doesn't delete anything.</div>
+							</form>
+						</div>
+						<div class="mt3">
+							<div>Danger zone:</div>
+							<form id="admin_nuke_form" method="POST" action="{{ .AdminNukeUrl }}">
+								{{ csrftoken .Session }}
+								<input type="hidden" name="user_id" value="{{ .ProfileUser.ID }}" />
+								<input type="hidden" name="username" value="{{ .ProfileUser.Username }}" />
+								<input type="submit" value="Nuke posts" />
+							</form>
+						</div>
+					</div>
+					<script>
+						let unlockEl = document.querySelector(".admin .unlock");
+						let adminUnlockLed = document.querySelector(".admin .led");
+						let adminUnlocked = false;
+						let panelEl = document.querySelector(".admin .cover");
+						unlockEl.addEventListener("click", function() {
+							adminUnlocked = true;
+							adminUnlockLed.classList.add("on");
+							panelEl.style.display = "none";
+						});
+
+						document.querySelector("#admin_set_status_form").addEventListener("submit", function(ev) {
+							if (!adminUnlocked) {
+								ev.preventDefault();
+							}
+						});
+
+						document.querySelector("#admin_nuke_form").addEventListener("submit", function(ev) {
+							if (!adminUnlocked) {
+								ev.preventDefault();
+							}
+						});
+					</script>
+				</div>
+			{{ end }}
+		{{ end }}
 	</div>
     <div class="flex-grow-1 overflow-hidden">
 		{{ if or .OwnProfile .ProfileUserProjects }}

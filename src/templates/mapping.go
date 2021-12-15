@@ -193,6 +193,7 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 		Username: u.Username,
 		Email:    email,
 		IsStaff:  u.IsStaff,
+		Status:   int(u.Status),
 
 		Name:       u.BestName(),
 		Bio:        u.Bio,

@@ -105,6 +105,8 @@ func TestUserSettings(t *testing.T) {
 func TestAdmin(t *testing.T) {
 	AssertRegexMatch(t, BuildAdminAtomFeed(), RegexAdminAtomFeed, nil)
 	AssertRegexMatch(t, BuildAdminApprovalQueue(), RegexAdminApprovalQueue, nil)
+	AssertRegexMatch(t, BuildAdminSetUserStatus(), RegexAdminSetUserStatus, nil)
+	AssertRegexMatch(t, BuildAdminNukeUser(), RegexAdminNukeUser, nil)
 }
 
 func TestSnippet(t *testing.T) {

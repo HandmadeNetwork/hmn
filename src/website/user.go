@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,6 +33,9 @@ type UserProfileTemplateData struct {
 
 	CanAddProject bool
 	NewProjectUrl string
+
+	AdminSetStatusUrl string
+	AdminNukeUrl      string
 }
 
 func UserProfile(c *RequestContext) ResponseData {
@@ -191,6 +195,9 @@ func UserProfile(c *RequestContext) ResponseData {
 
 		CanAddProject: numPersonalProjects < maxPersonalProjects,
 		NewProjectUrl: hmnurl.BuildProjectNew(),
+
+		AdminSetStatusUrl: hmnurl.BuildAdminSetUserStatus(),
+		AdminNukeUrl:      hmnurl.BuildAdminNukeUser(),
 	}, c.Perf)
 	return res
 }
@@ -437,6 +444,64 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	res := c.Redirect(hmnurl.BuildUserSettings(""), http.StatusSeeOther)
 	res.AddFutureNotice("success", "User profile updated.")
 
+	return res
+}
+
+func UserProfileAdminSetStatus(c *RequestContext) ResponseData {
+	c.Req.ParseForm()
+
+	userIdStr := c.Req.Form.Get("user_id")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		return RejectRequest(c, "No user id provided")
+	}
+
+	status := c.Req.Form.Get("status")
+	var desiredStatus models.UserStatus
+	switch status {
+	case "inactive":
+		desiredStatus = models.UserStatusInactive
+	case "confirmed":
+		desiredStatus = models.UserStatusConfirmed
+	case "approved":
+		desiredStatus = models.UserStatusApproved
+	case "banned":
+		desiredStatus = models.UserStatusBanned
+	default:
+		return RejectRequest(c, "No legal user status provided")
+	}
+
+	_, err = c.Conn.Exec(c.Context(),
+		`
+		UPDATE auth_user
+		SET status = $1
+		WHERE id = $2
+		`,
+		desiredStatus,
+		userId,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user status"))
+	}
+	res := c.Redirect(hmnurl.BuildUserProfile(c.Req.Form.Get("username")), http.StatusSeeOther)
+	res.AddFutureNotice("success", "Successfully set status")
+	return res
+}
+
+func UserProfileAdminNuke(c *RequestContext) ResponseData {
+	c.Req.ParseForm()
+	userIdStr := c.Req.Form.Get("user_id")
+	userId, err := strconv.Atoi(userIdStr)
+	if err != nil {
+		return RejectRequest(c, "No user id provided")
+	}
+
+	err = deleteAllPostsForUser(c.Context(), c.Conn, userId)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete user posts"))
+	}
+	res := c.Redirect(hmnurl.BuildUserProfile(c.Req.Form.Get("username")), http.StatusSeeOther)
+	res.AddFutureNotice("success", "Successfully nuked user")
 	return res
 }
 
