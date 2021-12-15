@@ -216,6 +216,20 @@ func BuildAdminApprovalQueue() string {
 	return Url("/admin/approvals", nil)
 }
 
+var RegexAdminSetUserStatus = regexp.MustCompile(`^/admin/setuserstatus$`)
+
+func BuildAdminSetUserStatus() string {
+	defer CatchPanic()
+	return Url("/admin/setuserstatus", nil)
+}
+
+var RegexAdminNukeUser = regexp.MustCompile(`^/admin/nukeuser$`)
+
+func BuildAdminNukeUser() string {
+	defer CatchPanic()
+	return Url("/admin/nukeuser", nil)
+}
+
 /*
 * Snippets
  */

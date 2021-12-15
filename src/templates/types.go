@@ -157,6 +157,7 @@ type User struct {
 	Username string
 	Email    string
 	IsStaff  bool
+	Status   int
 
 	Name       string
 	Blurb      string

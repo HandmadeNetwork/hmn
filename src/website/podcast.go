@@ -573,7 +573,7 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 			if err != nil {
 				return result, oops.New(err, "failed to fetch podcast episodes")
 			}
-			for _, episodeRow := range podcastEpisodeQueryResult.ToSlice() {
+			for _, episodeRow := range podcastEpisodeQueryResult {
 				result.Episodes = append(result.Episodes, &episodeRow.(*podcastEpisodeQuery).Episode)
 			}
 		} else {

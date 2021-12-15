@@ -231,7 +231,16 @@ func followPathThroughStructs(structPtrVal reflect.Value, path []int) (reflect.V
 	return val, field
 }
 
-func Query(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) (*StructQueryIterator, error) {
+func Query(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) ([]interface{}, error) {
+	it, err := QueryIterator(ctx, conn, destExample, query, args...)
+	if err != nil {
+		return nil, err
+	} else {
+		return it.ToSlice(), nil
+	}
+}
+
+func QueryIterator(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) (*StructQueryIterator, error) {
 	destType := reflect.TypeOf(destExample)
 	columnNames, fieldPaths, err := getColumnNamesAndPaths(destType, nil, "")
 	if err != nil {
@@ -347,7 +356,7 @@ result but find nothing.
 var NotFound = errors.New("not found")
 
 func QueryOne(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) (interface{}, error) {
-	rows, err := Query(ctx, conn, destExample, query, args...)
+	rows, err := QueryIterator(ctx, conn, destExample, query, args...)
 	if err != nil {
 		return nil, err
 	}

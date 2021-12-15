@@ -157,7 +157,7 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 	type messageIdQuery struct {
 		MessageID string `db:"msg.id"`
 	}
-	itMsgIds, err := db.Query(c.Context(), c.Conn, messageIdQuery{},
+	iMsgIDs, err := db.Query(c.Context(), c.Conn, messageIdQuery{},
 		`
 		SELECT $columns
 		FROM
@@ -169,7 +169,9 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 		duser.UserID,
 		config.Config.Discord.ShowcaseChannelID,
 	)
-	iMsgIDs := itMsgIds.ToSlice()
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
 
 	var msgIDs []string
 	for _, imsgId := range iMsgIDs {

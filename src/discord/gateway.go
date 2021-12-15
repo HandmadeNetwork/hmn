@@ -408,7 +408,7 @@ func (bot *botInstance) doSender(ctx context.Context) {
 				}
 				defer tx.Rollback(ctx)
 
-				itMessages, err := db.Query(ctx, tx, models.DiscordOutgoingMessage{}, `
+				msgs, err := db.Query(ctx, tx, models.DiscordOutgoingMessage{}, `
 					SELECT $columns
 					FROM discord_outgoingmessages
 					ORDER BY id ASC
@@ -418,7 +418,6 @@ func (bot *botInstance) doSender(ctx context.Context) {
 					return
 				}
 
-				msgs := itMessages.ToSlice()
 				for _, imsg := range msgs {
 					msg := imsg.(*models.DiscordOutgoingMessage)
 					if time.Now().After(msg.ExpiresAt) {

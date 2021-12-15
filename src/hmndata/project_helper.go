@@ -145,11 +145,10 @@ func FetchProjects(
 	}
 
 	// Do the query
-	itProjects, err := db.Query(ctx, dbConn, projectRow{}, qb.String(), qb.Args()...)
+	iprojects, err := db.Query(ctx, dbConn, projectRow{}, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch projects")
 	}
-	iprojects := itProjects.ToSlice()
 
 	// Fetch project owners to do permission checks
 	projectIds := make([]int, len(iprojects))
@@ -340,7 +339,7 @@ func FetchMultipleProjectsOwners(
 		UserID    int `db:"user_id"`
 		ProjectID int `db:"project_id"`
 	}
-	it, err := db.Query(ctx, tx, userProject{},
+	iuserprojects, err := db.Query(ctx, tx, userProject{},
 		`
 		SELECT $columns
 		FROM handmade_user_projects
@@ -351,7 +350,6 @@ func FetchMultipleProjectsOwners(
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch project IDs")
 	}
-	iuserprojects := it.ToSlice()
 
 	// Get the unique user IDs from this set and fetch the users from the db
 	var userIds []int
@@ -368,7 +366,7 @@ func FetchMultipleProjectsOwners(
 			userIds = append(userIds, userProject.UserID)
 		}
 	}
-	it, err = db.Query(ctx, tx, models.User{},
+	iusers, err := db.Query(ctx, tx, models.User{},
 		`
 		SELECT $columns
 		FROM auth_user
@@ -380,7 +378,6 @@ func FetchMultipleProjectsOwners(
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch users for projects")
 	}
-	iusers := it.ToSlice()
 
 	// Build the final result set with real user data
 	res := make([]ProjectOwners, len(projectIds))

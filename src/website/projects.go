@@ -318,15 +318,15 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		}
 	}
 
-	for _, screenshot := range screenshotQueryResult.ToSlice() {
+	for _, screenshot := range screenshotQueryResult {
 		templateData.Screenshots = append(templateData.Screenshots, hmnurl.BuildUserFile(screenshot.(*screenshotQuery).Filename))
 	}
 
-	for _, link := range projectLinkResult.ToSlice() {
+	for _, link := range projectLinkResult {
 		templateData.ProjectLinks = append(templateData.ProjectLinks, templates.LinkToTemplate(&link.(*projectLinkQuery).Link))
 	}
 
-	for _, post := range postQueryResult.ToSlice() {
+	for _, post := range postQueryResult {
 		templateData.RecentActivity = append(templateData.RecentActivity, PostToTimelineItem(
 			c.UrlContext,
 			lineageBuilder,
@@ -796,7 +796,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 	}
 
-	ownerResult, err := db.Query(ctx, tx, models.User{},
+	ownerRows, err := db.Query(ctx, tx, models.User{},
 		`
 		SELECT $columns
 		FROM auth_user
@@ -807,7 +807,6 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	if err != nil {
 		return oops.New(err, "Failed to query users")
 	}
-	ownerRows := ownerResult.ToSlice()
 
 	_, err = tx.Exec(ctx,
 		`

@@ -64,7 +64,7 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 	type query struct {
 		Message models.DiscordMessage `db:"msg"`
 	}
-	result, err := db.Query(ctx, dbConn, query{},
+	imessagesWithoutContent, err := db.Query(ctx, dbConn, query{},
 		`
 		SELECT $columns
 		FROM
@@ -82,7 +82,6 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 		log.Error().Err(err).Msg("failed to check for messages without content")
 		return
 	}
-	imessagesWithoutContent := result.ToSlice()
 
 	if len(imessagesWithoutContent) > 0 {
 		log.Info().Msgf("There are %d Discord messages without content, fetching their content now...", len(imessagesWithoutContent))
