@@ -481,6 +481,12 @@ func UserProfileAdminSetStatus(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user status"))
 	}
+	if desiredStatus == models.UserStatusBanned {
+		err = auth.DeleteSessionForUser(c.Context(), c.Conn, c.Req.Form.Get("username"))
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to log out user"))
+		}
+	}
 	res := c.Redirect(hmnurl.BuildUserProfile(c.Req.Form.Get("username")), http.StatusSeeOther)
 	res.AddFutureNotice("success", "Successfully set status")
 	return res
