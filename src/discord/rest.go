@@ -13,7 +13,6 @@ import (
 	"net/textproto"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
@@ -301,16 +300,7 @@ func ExchangeOAuthCode(ctx context.Context, code, redirectURI string) (*OAuthCod
 	bodyStr := body.Encode()
 
 	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		req, err := http.NewRequestWithContext(
-			ctx,
-			http.MethodPost,
-			"https://discord.com/api/oauth2/token",
-			strings.NewReader(bodyStr),
-		)
-		if err != nil {
-			panic(err)
-		}
-		req.Header.Add("User-Agent", UserAgent)
+		req := makeRequest(ctx, http.MethodPost, "/oauth2/token", []byte(bodyStr))
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 		return req
@@ -613,7 +603,7 @@ func GetAuthorizeUrl(state string) string {
 	params.Set("scope", "identify")
 	params.Set("state", state)
 	params.Set("redirect_uri", hmnurl.BuildDiscordOAuthCallback())
-	return fmt.Sprintf("https://discord.com/api/oauth2/authorize?%s", params.Encode())
+	return fmt.Sprintf("%s?%s", buildUrl("/oauth2/authorize"), params.Encode())
 }
 
 type FileUpload struct {
