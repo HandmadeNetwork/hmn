@@ -189,7 +189,7 @@ func BuildUserProfile(username string) string {
 	if len(username) == 0 {
 		panic(oops.New(nil, "Username must not be blank"))
 	}
-	return Url("/m/"+url.PathEscape(username), nil)
+	return Url("/m/"+username, nil)
 }
 
 var RegexUserSettings = regexp.MustCompile(`^/settings$`)
