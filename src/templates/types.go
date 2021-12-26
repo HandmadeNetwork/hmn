@@ -146,6 +146,7 @@ type ProjectSettings struct {
 
 	Blurb       string
 	Description string
+	LinksText   string
 	Owners      []User
 
 	LightLogo string

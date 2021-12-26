@@ -235,11 +235,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user links"))
 	}
 
-	linksText := ""
-	for _, ilink := range links {
-		link := ilink.(*models.Link)
-		linksText += fmt.Sprintf("%s %s\n", link.URL, link.Name)
-	}
+	linksText := LinksToText(links)
 
 	var tduser *templates.DiscordUser
 	var numUnsavedMessages int
@@ -365,31 +361,19 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 
 	// Process links
 	linksText := form.Get("links")
-	links := strings.Split(linksText, "\n")
+	links := ParseLinks(linksText)
 	_, err = tx.Exec(c.Context(), `DELETE FROM handmade_links WHERE user_id = $1`, c.CurrentUser.ID)
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to delete old links")
 	} else {
 		for i, link := range links {
-			link = strings.TrimSpace(link)
-			linkParts := strings.SplitN(link, " ", 2)
-			url := strings.TrimSpace(linkParts[0])
-			name := ""
-			if len(linkParts) > 1 {
-				name = strings.TrimSpace(linkParts[1])
-			}
-
-			if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-				continue
-			}
-
 			_, err := tx.Exec(c.Context(),
 				`
 				INSERT INTO handmade_links (name, url, ordering, user_id)
 				VALUES ($1, $2, $3, $4)
 				`,
-				name,
-				url,
+				link.Name,
+				link.Url,
 				i,
 				c.CurrentUser.ID,
 			)

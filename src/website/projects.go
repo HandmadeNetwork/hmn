@@ -496,6 +496,24 @@ func ProjectEdit(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
+
+	c.Perf.StartBlock("SQL", "Fetching project links")
+	projectLinkResult, err := db.Query(c.Context(), c.Conn, models.Link{},
+		`
+		SELECT $columns
+		FROM
+			handmade_links as link
+		WHERE
+			link.project_id = $1
+		ORDER BY link.ordering ASC
+		`,
+		p.Project.ID,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
+	}
+	c.Perf.EndBlock()
+
 	projectSettings := templates.ProjectToProjectSettings(
 		&p.Project,
 		p.Owners,
@@ -503,6 +521,8 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		p.LogoURL("light"), p.LogoURL("dark"),
 		c.Theme,
 	)
+
+	projectSettings.LinksText = LinksToText(projectLinkResult)
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
@@ -558,6 +578,7 @@ type ProjectPayload struct {
 	ProjectID         int
 	Name              string
 	Blurb             string
+	Links             []ParsedLink
 	Description       string
 	ParsedDescription string
 	Lifecycle         models.ProjectLifecycle
@@ -600,6 +621,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		res.RejectionReason = "Projects must have a short description"
 		return res
 	}
+	links := ParseLinks(c.Req.Form.Get("links"))
 	description := c.Req.Form.Get("description")
 	parsedDescription := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
 
@@ -650,6 +672,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	res.Payload = ProjectPayload{
 		Name:              projectName,
 		Blurb:             shortDesc,
+		Links:             links,
 		Description:       description,
 		ParsedDescription: parsedDescription,
 		Lifecycle:         lifecycle,
@@ -714,28 +737,23 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		payload.OwnerUsernames = append(payload.OwnerUsernames, selfUsername)
 	}
 
-	var qb db.QueryBuilder
-	qb.Add(
+	_, err := tx.Exec(ctx,
 		`
 		UPDATE handmade_project SET
-			name = $?,
-			blurb = $?,
-			description = $?,
-			descparsed = $?,
-			lifecycle = $?
+			name = $2,
+			blurb = $3,
+			description = $4,
+			descparsed = $5,
+			lifecycle = $6
+		WHERE id = $1
 		`,
+		payload.ProjectID,
 		payload.Name,
 		payload.Blurb,
 		payload.Description,
 		payload.ParsedDescription,
 		payload.Lifecycle,
 	)
-	if user.IsStaff {
-		qb.Add(`, hidden = $?`, payload.Hidden)
-	}
-	qb.Add(`WHERE id = $?`, payload.ProjectID)
-
-	_, err := tx.Exec(ctx, qb.String(), qb.Args()...)
 	if err != nil {
 		return oops.New(err, "Failed to update project")
 	}
@@ -748,7 +766,8 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			UPDATE handmade_project SET
 				slug = $2,
 				featured = $3,
-				personal = $4
+				personal = $4,
+				hidden = $5
 			WHERE
 				id = $1
 			`,
@@ -756,6 +775,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			payload.Slug,
 			payload.Featured,
 			payload.Personal,
+			payload.Hidden,
 		)
 		if err != nil {
 			return oops.New(err, "Failed to update project with admin fields")
@@ -832,6 +852,26 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		)
 		if err != nil {
 			return oops.New(err, "Failed to insert project owner")
+		}
+	}
+
+	_, err = tx.Exec(ctx, `DELETE FROM handmade_links WHERE project_id = $1`, payload.ProjectID)
+	if err != nil {
+		return oops.New(err, "Failed to delete project links")
+	}
+	for i, link := range payload.Links {
+		_, err = tx.Exec(ctx,
+			`
+			INSERT INTO handmade_links (name, url, ordering, project_id)
+			VALUES ($1, $2, $3, $4)
+			`,
+			link.Name,
+			link.Url,
+			i,
+			payload.ProjectID,
+		)
+		if err != nil {
+			return oops.New(err, "Failed to insert new project link")
 		}
 	}
 
