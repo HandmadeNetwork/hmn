@@ -526,6 +526,7 @@ func FetchDiscordUser(ctx context.Context, dbConn db.ConnOrTx, discordUserID str
 		FROM
 			handmade_discorduser AS duser
 			JOIN auth_user AS u ON duser.hmn_user_id = u.id
+			LEFT JOIN handmade_asset AS u_avatar ON u_avatar.id = u.avatar_asset_id
 		WHERE
 			duser.userid = $1
 		`,

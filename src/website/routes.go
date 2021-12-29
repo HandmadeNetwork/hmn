@@ -501,20 +501,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 			panic("failed to load project data")
 		}
 
-		canEditProject := false
-		if c.CurrentUser != nil {
-			if c.CurrentUser.IsStaff {
-				canEditProject = true
-			} else {
-				for _, o := range owners {
-					if o.ID == c.CurrentUser.ID {
-						canEditProject = true
-						break
-					}
-				}
-			}
-		}
-		c.CurrentUserCanEditCurrentProject = canEditProject
+		c.CurrentUserCanEditCurrentProject = CanEditProject(c.CurrentUser, owners)
 
 		c.UrlContext = hmndata.UrlContextForProject(c.CurrentProject)
 	}
@@ -557,7 +544,18 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 		}
 	}
 
-	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{}, "SELECT $columns FROM auth_user WHERE username = $1", session.Username)
+	type userQuery struct {
+		User models.User `db:"auth_user"`
+	}
+	userRow, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
+		`
+		SELECT $columns
+			FROM auth_user
+			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+		WHERE username = $1
+		`,
+		session.Username,
+	)
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			logging.Debug().Str("username", session.Username).Msg("returning no current user for this request because the user for the session couldn't be found")
@@ -566,7 +564,7 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 			return nil, nil, oops.New(err, "failed to get user for session")
 		}
 	}
-	user := userRow.(*models.User)
+	user := &userRow.(*userQuery).User
 
 	return user, session, nil
 }

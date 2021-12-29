@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"net/http"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -76,8 +77,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	var restProjects []templates.Project
 	now := time.Now()
 	for _, p := range officialProjects {
-		templateProject := templates.ProjectToTemplate(&p.Project, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
-		templateProject.AddLogo(p.LogoURL(c.Theme))
+		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
 
 		if p.Project.Slug == "hero" {
 			// NOTE(asaf): Handmade Hero gets special treatment. Must always be first in the list.
@@ -139,8 +139,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 			if i >= maxPersonalProjects {
 				break
 			}
-			templateProject := templates.ProjectToTemplate(&p.Project, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
-			templateProject.AddLogo(p.LogoURL(c.Theme))
+			templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
 			personalProjects = append(personalProjects, templateProject)
 		}
 	}
@@ -244,6 +243,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			handmade_post AS post
 			INNER JOIN handmade_thread AS thread ON thread.id = post.thread_id
 			INNER JOIN auth_user AS author ON author.id = post.author_id
+			LEFT JOIN handmade_asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
 		WHERE
 			post.project_id = $1
 		ORDER BY post.postdate DESC
@@ -272,8 +272,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project details"))
 	}
-	templateData.Project = templates.ProjectToTemplate(c.CurrentProject, c.UrlContext.BuildHomepage())
-	templateData.Project.AddLogo(p.LogoURL(c.Theme))
+	templateData.Project = templates.ProjectAndStuffToTemplate(&p, c.UrlContext.BuildHomepage(), c.Theme)
 	for _, owner := range owners {
 		templateData.Owners = append(templateData.Owners, templates.UserToTemplate(owner, c.Theme))
 	}
@@ -514,11 +513,14 @@ func ProjectEdit(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
+	lightLogoUrl := templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, "light")
+	darkLogoUrl := templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, "dark")
+
 	projectSettings := templates.ProjectToProjectSettings(
 		&p.Project,
 		p.Owners,
 		p.TagText(),
-		p.LogoURL("light"), p.LogoURL("dark"),
+		lightLogoUrl, darkLogoUrl,
 		c.Theme,
 	)
 
@@ -816,10 +818,14 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 	}
 
-	ownerRows, err := db.Query(ctx, tx, models.User{},
+	type userQuery struct {
+		User models.User `db:"auth_user"`
+	}
+	ownerRows, err := db.Query(ctx, tx, userQuery{},
 		`
 		SELECT $columns
 		FROM auth_user
+		LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		WHERE LOWER(username) = ANY ($1)
 		`,
 		payload.OwnerUsernames,
@@ -847,7 +853,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			VALUES
 				($1,      $2)
 			`,
-			ownerRow.(*models.User).ID,
+			ownerRow.(*userQuery).User.ID,
 			payload.ProjectID,
 		)
 		if err != nil {
@@ -914,13 +920,28 @@ func GetFormImage(c *RequestContext, fieldName string) (FormImage, error) {
 		img.Read(res.Content)
 		img.Seek(0, io.SeekStart)
 
-		config, _, err := image.DecodeConfig(img)
-		if err != nil {
-			return FormImage{}, err
+		fileExtensionOverrides := []string{".svg"}
+		fileExt := strings.ToLower(path.Ext(res.Filename))
+		tryDecode := true
+		for _, ext := range fileExtensionOverrides {
+			if fileExt == ext {
+				tryDecode = false
+			}
 		}
-		res.Width = config.Width
-		res.Height = config.Height
-		res.Mime = http.DetectContentType(res.Content)
+
+		if tryDecode {
+			config, _, err := image.DecodeConfig(img)
+			if err != nil {
+				return FormImage{}, err
+			}
+			res.Width = config.Width
+			res.Height = config.Height
+			res.Mime = http.DetectContentType(res.Content)
+		} else {
+			if fileExt == ".svg" {
+				res.Mime = "image/svg+xml"
+			}
+		}
 	}
 
 	return res, nil

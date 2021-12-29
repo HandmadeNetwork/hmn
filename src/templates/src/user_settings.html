@@ -2,6 +2,7 @@
 
 {{ define "extrahead" }}
 	<script src="{{ static "js/tabs.js" }}"></script>
+	<script src="{{ static "js/image_selector.js" }}"></script>
 {{ end }}
 
 {{ define "content" }}
@@ -41,12 +42,19 @@
         </div>
         <div class="edit-form-row">
             <div>Avatar:</div>
-            <div>
-                <input type="file" name="avatar" id="avatar">
-                <div class="avatar-preview"><img src="{{ .User.AvatarUrl }}" width="200px">
-                </div>
+            <div class="user_avatar">
+				{{ template "image_selector.html" imageselectordata "avatar" .User.AvatarUrl false }}
                 <div class="c--dim f7">(Allowed image types: PNG, JPEG and GIF. Avatars may weigh up to 1MB and will be resized if larger than 400x400 pixels)</div>
             </div>
+			<script>
+				let avatarMaxFileSize = {{ .AvatarMaxFileSize }};
+				let avatarSelector = new ImageSelector(
+					document.querySelector("#user_form"),
+					avatarMaxFileSize,
+					document.querySelector(".user_avatar"),
+					{{ .DefaultAvatarUrl }}
+				);
+			</script>
         </div>
         <div class="edit-form-row">
             <div class="pt-input-ns">Short bio:</div>

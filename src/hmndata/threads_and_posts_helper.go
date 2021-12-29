@@ -78,7 +78,9 @@ func FetchThreads(
 			JOIN handmade_postversion AS first_version ON first_version.id = first_post.current_id
 			JOIN handmade_postversion AS last_version ON last_version.id = last_post.current_id
 			LEFT JOIN auth_user AS first_author ON first_author.id = first_post.author_id
+			LEFT JOIN handmade_asset AS first_author_avatar ON first_author_avatar.id = first_author.avatar_asset_id
 			LEFT JOIN auth_user AS last_author ON last_author.id = last_post.author_id
+			LEFT JOIN handmade_asset AS last_author_avatar ON last_author_avatar.id = last_author.avatar_asset_id
 			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
 				tlri.thread_id = thread.id
 				AND tlri.user_id = $?
@@ -221,6 +223,7 @@ func CountThreads(
 			JOIN handmade_project AS project ON thread.project_id = project.id
 			JOIN handmade_post AS first_post ON first_post.id = thread.first_id
 			LEFT JOIN auth_user AS first_author ON first_author.id = first_post.author_id
+			LEFT JOIN handmade_asset AS first_author_avatar ON first_author_avatar.id = first_author.avatar_asset_id
 		WHERE
 			NOT thread.deleted
 			AND ( -- project has valid lifecycle
@@ -330,7 +333,9 @@ func FetchPosts(
 			JOIN handmade_project AS project ON post.project_id = project.id
 			JOIN handmade_postversion AS ver ON ver.id = post.current_id
 			LEFT JOIN auth_user AS author ON author.id = post.author_id
+			LEFT JOIN handmade_asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
 			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
+			LEFT JOIN handmade_asset AS editor_avatar ON editor_avatar.id = editor.avatar_asset_id
 			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
 				tlri.thread_id = thread.id
 				AND tlri.user_id = $?
@@ -344,6 +349,7 @@ func FetchPosts(
 			-- check fails.
 			LEFT JOIN handmade_post AS reply_post ON reply_post.id = post.reply_id
 			LEFT JOIN auth_user AS reply_author ON reply_post.author_id = reply_author.id
+			LEFT JOIN handmade_asset AS reply_author_avatar ON reply_author_avatar.id = reply_author.avatar_asset_id
 		WHERE
 			NOT thread.deleted
 			AND NOT post.deleted
@@ -543,6 +549,7 @@ func CountPosts(
 			JOIN handmade_thread AS thread ON post.thread_id = thread.id
 			JOIN handmade_project AS project ON post.project_id = project.id
 			LEFT JOIN auth_user AS author ON author.id = post.author_id
+			LEFT JOIN handmade_asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
 		WHERE
 			NOT thread.deleted
 			AND NOT post.deleted

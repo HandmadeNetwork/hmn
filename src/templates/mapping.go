@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 )
@@ -100,8 +101,10 @@ func ProjectToTemplate(
 	}
 }
 
-func (p *Project) AddLogo(logoUrl string) {
-	p.Logo = logoUrl
+func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff, url string, theme string) Project {
+	res := ProjectToTemplate(&p.Project, url)
+	res.Logo = ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, theme)
+	return res
 }
 
 var ProjectLifecycleValues = map[models.ProjectLifecycle]string{
@@ -161,15 +164,23 @@ func ThreadToTemplate(t *models.Thread) Thread {
 	}
 }
 
+func UserAvatarDefaultUrl(currentTheme string) string {
+	return hmnurl.BuildTheme("empty-avatar.svg", currentTheme, true)
+}
+
 func UserAvatarUrl(u *models.User, currentTheme string) string {
 	if currentTheme == "" {
 		currentTheme = "light"
 	}
 	avatar := ""
-	if u != nil && u.Avatar != nil && len(*u.Avatar) > 0 {
-		avatar = hmnurl.BuildUserFile(*u.Avatar)
+	if u != nil && (u.AvatarAsset != nil || (u.Avatar != nil && len(*u.Avatar) > 0)) {
+		if u.AvatarAsset != nil {
+			avatar = hmnurl.BuildS3Asset(u.AvatarAsset.S3Key)
+		} else {
+			avatar = hmnurl.BuildUserFile(*u.Avatar)
+		}
 	} else {
-		avatar = hmnurl.BuildTheme("empty-avatar.svg", currentTheme, true)
+		avatar = UserAvatarDefaultUrl(currentTheme)
 	}
 	return avatar
 }
@@ -178,7 +189,7 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 	if u == nil {
 		return User{
 			Name:      "Deleted user",
-			AvatarUrl: UserAvatarUrl(u, currentTheme),
+			AvatarUrl: UserAvatarUrl(nil, currentTheme),
 		}
 	}
 
@@ -200,8 +211,8 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 		Blurb:      u.Blurb,
 		Signature:  u.Signature,
 		DateJoined: u.DateJoined,
-		AvatarUrl:  UserAvatarUrl(u, currentTheme),
 		ProfileUrl: hmnurl.BuildUserProfile(u.Username),
+		AvatarUrl:  UserAvatarUrl(u, currentTheme),
 
 		DarkTheme: u.DarkTheme,
 		Timezone:  u.Timezone,

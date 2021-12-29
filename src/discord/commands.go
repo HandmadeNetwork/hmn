@@ -97,6 +97,7 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 		FROM
 			handmade_discorduser AS duser
 			JOIN auth_user ON duser.hmn_user_id = auth_user.id
+			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		WHERE
 			duser.userid = $1
 		`,

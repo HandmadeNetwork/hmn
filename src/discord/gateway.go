@@ -640,6 +640,7 @@ func (bot *botInstance) messageDelete(ctx context.Context, msgDelete MessageDele
 			handmade_discordmessage AS msg
 			LEFT JOIN handmade_discorduser AS duser ON msg.user_id = duser.userid
 			LEFT JOIN auth_user AS hmnuser ON duser.hmn_user_id = hmnuser.id
+			LEFT JOIN handmade_asset AS hmnuser_avatar ON hmnuser_avatar.id = hmnuser.avatar_asset_id
 			LEFT JOIN handmade_snippet AS snippet ON snippet.discord_message_id = msg.id
 		WHERE msg.id = $1 AND msg.channel_id = $2
 		`,

@@ -3,6 +3,8 @@ package models
 import (
 	"reflect"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 var UserType = reflect.TypeOf(User{})
@@ -29,11 +31,13 @@ type User struct {
 	IsStaff bool       `db:"is_staff"`
 	Status  UserStatus `db:"status"`
 
-	Name      string  `db:"name"`
-	Bio       string  `db:"bio"`
-	Blurb     string  `db:"blurb"`
-	Signature string  `db:"signature"`
-	Avatar    *string `db:"avatar"`
+	Name          string     `db:"name"`
+	Bio           string     `db:"bio"`
+	Blurb         string     `db:"blurb"`
+	Signature     string     `db:"signature"`
+	Avatar        *string    `db:"avatar"`
+	AvatarAssetID *uuid.UUID `db:"avatar_asset_id"`
+	AvatarAsset   *Asset     `db:"avatar"`
 
 	DarkTheme bool   `db:"darktheme"`
 	Timezone  string `db:"timezone"`

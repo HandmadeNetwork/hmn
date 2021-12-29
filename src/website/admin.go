@@ -162,9 +162,15 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "User id can't be parsed")
 	}
 
-	u, err := db.QueryOne(c.Context(), c.Conn, models.User{},
+	type userQuery struct {
+		User models.User `db:"auth_user"`
+	}
+	u, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
 		`
-		SELECT $columns FROM auth_user WHERE id = $1
+		SELECT $columns
+			FROM auth_user
+			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+		WHERE auth_user.id = $1
 		`,
 		userId,
 	)
@@ -175,7 +181,7 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
 		}
 	}
-	user := u.(*models.User)
+	user := u.(*userQuery).User
 
 	whatHappened := ""
 	if action == ApprovalQueueActionApprove {
@@ -241,6 +247,7 @@ func fetchUnapprovedPosts(c *RequestContext) ([]*UnapprovedPost, error) {
 			JOIN handmade_thread AS thread ON post.thread_id = thread.id
 			JOIN handmade_postversion AS ver ON ver.id = post.current_id
 			JOIN auth_user AS author ON author.id = post.author_id
+			LEFT JOIN handmade_asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
 		WHERE
 			NOT thread.deleted
 			AND NOT post.deleted

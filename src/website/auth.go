@@ -75,7 +75,18 @@ func Login(c *RequestContext) ResponseData {
 		return res
 	}
 
-	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{}, "SELECT $columns FROM auth_user WHERE LOWER(username) = LOWER($1)", username)
+	type userQuery struct {
+		User models.User `db:"auth_user"`
+	}
+	userRow, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
+		`
+		SELECT $columns
+			FROM auth_user
+			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+		WHERE LOWER(username) = LOWER($1)
+		`,
+		username,
+	)
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			return showLoginWithFailure(c, redirect)
@@ -83,7 +94,7 @@ func Login(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
 		}
 	}
-	user := userRow.(*models.User)
+	user := &userRow.(*userQuery).User
 
 	success, err := tryLogin(c, user, password)
 
@@ -446,10 +457,14 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 	var user *models.User
 
 	c.Perf.StartBlock("SQL", "Fetching user")
-	userRow, err := db.QueryOne(c.Context(), c.Conn, models.User{},
+	type userQuery struct {
+		User models.User `db:"auth_user"`
+	}
+	userRow, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
 		`
 		SELECT $columns
 		FROM auth_user
+		LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		WHERE
 			LOWER(username) = LOWER($1)
 			AND LOWER(email) = LOWER($2)
@@ -464,7 +479,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 		}
 	}
 	if userRow != nil {
-		user = userRow.(*models.User)
+		user = &userRow.(*userQuery).User
 	}
 
 	if user != nil {
@@ -776,6 +791,7 @@ func validateUsernameAndToken(c *RequestContext, username string, token string, 
 		`
 		SELECT $columns
 		FROM auth_user
+		LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		LEFT JOIN handmade_onetimetoken AS onetimetoken ON onetimetoken.owner_id = auth_user.id
 		WHERE
 			LOWER(auth_user.username) = LOWER($1)

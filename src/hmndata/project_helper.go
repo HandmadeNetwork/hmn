@@ -9,7 +9,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
-	"git.handmade.network/hmn/hmn/src/templates"
 )
 
 type ProjectTypeQuery int
@@ -50,10 +49,6 @@ func (p *ProjectAndStuff) TagText() string {
 	} else {
 		return p.Tag.Text
 	}
-}
-
-func (p *ProjectAndStuff) LogoURL(theme string) string {
-	return templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, theme)
 }
 
 func FetchProjects(
@@ -366,12 +361,16 @@ func FetchMultipleProjectsOwners(
 			userIds = append(userIds, userProject.UserID)
 		}
 	}
-	iusers, err := db.Query(ctx, tx, models.User{},
+	type userQuery struct {
+		User models.User `db:"auth_user"`
+	}
+	iusers, err := db.Query(ctx, tx, userQuery{},
 		`
 		SELECT $columns
 		FROM auth_user
+		LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		WHERE
-			id = ANY($1)
+			auth_user.id = ANY($1)
 		`,
 		userIds,
 	)
@@ -398,9 +397,9 @@ func FetchMultipleProjectsOwners(
 		// Get the full user record we fetched
 		var user *models.User
 		for _, iuser := range iusers {
-			u := iuser.(*models.User)
+			u := iuser.(*userQuery).User
 			if u.ID == userProject.UserID {
-				user = u
+				user = &u
 			}
 		}
 		if user == nil {

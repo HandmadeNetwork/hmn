@@ -399,6 +399,7 @@ func init() {
 				}
 				width := 0
 				height := 0
+				mime := ""
 				fileExtensionOverrides := []string{".svg"}
 				fileExt := strings.ToLower(path.Ext(filepath))
 				tryDecode := true
@@ -414,9 +415,13 @@ func init() {
 					}
 					width = config.Width
 					height = config.Height
+					mime = http.DetectContentType(contents)
+				} else {
+					if fileExt == ".svg" {
+						mime = "image/svg+xml"
+					}
 				}
 
-				mime := http.DetectContentType(contents)
 				filename := path.Base(filepath)
 
 				asset, err := assets.Create(ctx, conn, assets.CreateInput{
@@ -489,6 +494,110 @@ func init() {
 		},
 	}
 	adminCommand.AddCommand(uploadProjectLogos)
+
+	uploadUserAvatars := &cobra.Command{
+		Use:   "uploaduseravatars",
+		Short: "Uploads avatar imagefiles to S3 and replaces them with assets",
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx := context.Background()
+			conn := db.NewConnPool(1, 1)
+			defer conn.Close()
+
+			type userQuery struct {
+				User models.User `db:"auth_user"`
+			}
+			allUsers, err := db.Query(ctx, conn, userQuery{}, `SELECT $columns FROM auth_user LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id`)
+			if err != nil {
+				panic(oops.New(err, "Failed to fetch projects from db"))
+			}
+
+			var fixupUsers []*models.User
+			numImages := 0
+			for _, user := range allUsers {
+				u := &user.(*userQuery).User
+				if u.Avatar != nil && *u.Avatar != "" {
+					fixupUsers = append(fixupUsers, u)
+					numImages += 1
+				}
+			}
+
+			fmt.Printf("%d images to upload\n", numImages)
+
+			uploadImage := func(ctx context.Context, conn db.ConnOrTx, filepath string, owner *models.User) *models.Asset {
+				filepath = "./public/media/" + filepath
+				contents, err := os.ReadFile(filepath)
+				if err != nil {
+					panic(oops.New(err, fmt.Sprintf("Failed to read file: %s", filepath)))
+				}
+				width := 0
+				height := 0
+				mime := ""
+				fileExtensionOverrides := []string{".svg"}
+				fileExt := strings.ToLower(path.Ext(filepath))
+				tryDecode := true
+				for _, ext := range fileExtensionOverrides {
+					if fileExt == ext {
+						tryDecode = false
+					}
+				}
+				if tryDecode {
+					config, _, err := image.DecodeConfig(bytes.NewReader(contents))
+					if err != nil {
+						panic(oops.New(err, fmt.Sprintf("Failed to decode file: %s", filepath)))
+					}
+					width = config.Width
+					height = config.Height
+					mime = http.DetectContentType(contents)
+				} else {
+					if fileExt == ".svg" {
+						mime = "image/svg+xml"
+					}
+				}
+
+				filename := path.Base(filepath)
+
+				asset, err := assets.Create(ctx, conn, assets.CreateInput{
+					Content:     contents,
+					Filename:    filename,
+					ContentType: mime,
+					UploaderID:  &owner.ID,
+					Width:       width,
+					Height:      height,
+				})
+				if err != nil {
+					panic(oops.New(err, "Failed to create asset"))
+				}
+
+				return asset
+			}
+
+			for _, u := range fixupUsers {
+				if u.Avatar != nil && *u.Avatar != "" {
+					avatarAsset := uploadImage(ctx, conn, *u.Avatar, u)
+					_, err := conn.Exec(ctx,
+						`
+						UPDATE auth_user
+						SET
+							avatar_asset_id = $2,
+							avatar = NULL
+						WHERE
+							id = $1
+						`,
+						u.ID,
+						avatarAsset.ID,
+					)
+					if err != nil {
+						panic(oops.New(err, "Failed to update user"))
+					}
+					numImages -= 1
+					fmt.Printf(".")
+				}
+			}
+
+			fmt.Printf("\nDone! %d images not patched for some reason.\n\n", numImages)
+		},
+	}
+	adminCommand.AddCommand(uploadUserAvatars)
 
 	addProjectCommands(adminCommand)
 }

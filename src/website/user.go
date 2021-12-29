@@ -2,13 +2,12 @@ package website
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
+	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
@@ -19,6 +18,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 )
 
@@ -52,11 +52,15 @@ func UserProfile(c *RequestContext) ResponseData {
 		profileUser = c.CurrentUser
 	} else {
 		c.Perf.StartBlock("SQL", "Fetch user")
-		userResult, err := db.QueryOne(c.Context(), c.Conn, models.User{},
+		type userQuery struct {
+			User models.User `db:"auth_user"`
+		}
+		userResult, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
 			`
 			SELECT $columns
 			FROM
 				auth_user
+				LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 			WHERE
 				LOWER(auth_user.username) = $1
 			`,
@@ -70,7 +74,7 @@ func UserProfile(c *RequestContext) ResponseData {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user: %s", username))
 			}
 		}
-		profileUser = userResult.(*models.User)
+		profileUser = &userResult.(*userQuery).User
 	}
 
 	{
@@ -114,8 +118,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	templateProjects := make([]templates.Project, 0, len(projectsAndStuff))
 	numPersonalProjects := 0
 	for _, p := range projectsAndStuff {
-		templateProject := templates.ProjectToTemplate(&p.Project, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
-		templateProject.AddLogo(p.LogoURL(c.Theme))
+		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
 		templateProjects = append(templateProjects, templateProject)
 
 		if p.Project.Personal {
@@ -201,11 +204,16 @@ func UserProfile(c *RequestContext) ResponseData {
 	return res
 }
 
+var UserAvatarMaxFileSize = 1 * 1024 * 1024
+
 func UserSettings(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	type UserSettingsTemplateData struct {
 		templates.BaseData
+
+		AvatarMaxFileSize int
+		DefaultAvatarUrl  string
 
 		User      templates.User
 		Email     string // these fields are handled specially on templates.User
@@ -280,11 +288,13 @@ func UserSettings(c *RequestContext) ResponseData {
 	baseData := getBaseDataAutocrumb(c, templateUser.Name)
 
 	res.MustWriteTemplate("user_settings.html", UserSettingsTemplateData{
-		BaseData:  baseData,
-		User:      templateUser,
-		Email:     c.CurrentUser.Email,
-		ShowEmail: c.CurrentUser.ShowEmail,
-		LinksText: linksText,
+		BaseData:          baseData,
+		AvatarMaxFileSize: UserAvatarMaxFileSize,
+		DefaultAvatarUrl:  templates.UserAvatarDefaultUrl(c.Theme),
+		User:              templateUser,
+		Email:             c.CurrentUser.Email,
+		ShowEmail:         c.CurrentUser.ShowEmail,
+		LinksText:         linksText,
 
 		SubmitUrl:  hmnurl.BuildUserSettings(""),
 		ContactUrl: hmnurl.BuildContactPage(),
@@ -299,6 +309,14 @@ func UserSettings(c *RequestContext) ResponseData {
 }
 
 func UserSettingsSave(c *RequestContext) ResponseData {
+	maxBodySize := int64(UserAvatarMaxFileSize + 2*1024*1024)
+	c.Req.Body = http.MaxBytesReader(c.Res, c.Req.Body, maxBodySize)
+	err := c.Req.ParseMultipartForm(maxBodySize)
+	if err != nil {
+		// NOTE(asaf): The error for exceeding the max filesize doesn't have a special type, so we can't easily detect it here.
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to parse form"))
+	}
+
 	tx, err := c.Conn.Begin(c.Context())
 	if err != nil {
 		panic(err)
@@ -396,25 +414,39 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	}
 
 	// Update avatar
-	imageSaveResult := SaveImageFile(c, tx, "avatar", 1*1024*1024, fmt.Sprintf("members/avatars/%s-%d", c.CurrentUser.Username, time.Now().UTC().Unix()))
-	if imageSaveResult.ValidationError != "" {
-		return RejectRequest(c, imageSaveResult.ValidationError)
-	} else if imageSaveResult.FatalError != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(imageSaveResult.FatalError, "failed to save new avatar"))
-	} else if imageSaveResult.ImageFile != nil {
-		_, err = tx.Exec(c.Context(),
+	newAvatar, err := GetFormImage(c, "avatar")
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to read image from form"))
+	}
+	var avatarUUID *uuid.UUID
+	if newAvatar.Exists {
+		avatarAsset, err := assets.Create(c.Context(), tx, assets.CreateInput{
+			Content:     newAvatar.Content,
+			Filename:    newAvatar.Filename,
+			ContentType: newAvatar.Mime,
+			UploaderID:  &c.CurrentUser.ID,
+			Width:       newAvatar.Width,
+			Height:      newAvatar.Height,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to upload avatar"))
+		}
+		avatarUUID = &avatarAsset.ID
+	}
+	if newAvatar.Exists || newAvatar.Remove {
+		_, err := tx.Exec(c.Context(),
 			`
 			UPDATE auth_user
 			SET
-				avatar = $2
+				avatar_asset_id = $2
 			WHERE
 				id = $1
 			`,
 			c.CurrentUser.ID,
-			imageSaveResult.ImageFile.File,
+			avatarUUID,
 		)
 		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user's avatar"))
 		}
 	}
 

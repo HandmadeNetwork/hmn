@@ -242,12 +242,22 @@ func Query(ctx context.Context, conn ConnOrTx, destExample interface{}, query st
 
 func QueryIterator(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) (*StructQueryIterator, error) {
 	destType := reflect.TypeOf(destExample)
-	columnNames, fieldPaths, err := getColumnNamesAndPaths(destType, nil, "")
+	columnNames, fieldPaths, err := getColumnNamesAndPaths(destType, nil, nil)
 	if err != nil {
 		return nil, oops.New(err, "failed to generate column names")
 	}
 
-	columnNamesString := strings.Join(columnNames, ", ")
+	columns := make([]string, 0, len(columnNames))
+	for _, strSlice := range columnNames {
+		tableName := strings.Join(strSlice[0:len(strSlice)-1], "_")
+		fullName := strSlice[len(strSlice)-1]
+		if tableName != "" {
+			fullName = tableName + "." + fullName
+		}
+		columns = append(columns, fullName)
+	}
+
+	columnNamesString := strings.Join(columns, ", ")
 	query = strings.Replace(query, "$columns", columnNamesString, -1)
 
 	rows, err := conn.Query(ctx, query, args...)
@@ -282,8 +292,8 @@ func QueryIterator(ctx context.Context, conn ConnOrTx, destExample interface{}, 
 	return it, nil
 }
 
-func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix string) (names []string, paths [][]int, err error) {
-	var columnNames []string
+func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix []string) (names [][]string, paths [][]int, err error) {
+	var columnNames [][]string
 	var fieldPaths [][]int
 
 	if destType.Kind() == reflect.Ptr {
@@ -301,7 +311,10 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix strin
 	var anonPrefixes []AnonPrefix
 
 	for _, field := range reflect.VisibleFields(destType) {
-		path := append(pathSoFar, field.Index...)
+		path := make([]int, len(pathSoFar))
+		copy(path, pathSoFar)
+		path = append(path, field.Index...)
+		fieldColumnNames := prefix[:]
 
 		if columnName := field.Tag.Get("db"); columnName != "" {
 			if field.Anonymous {
@@ -318,7 +331,7 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix strin
 							}
 						}
 						if equal {
-							columnName = anonPrefix.Prefix + "." + columnName
+							fieldColumnNames = append(fieldColumnNames, anonPrefix.Prefix)
 							break
 						}
 					}
@@ -329,11 +342,13 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix strin
 				fieldType = fieldType.Elem()
 			}
 
+			fieldColumnNames = append(fieldColumnNames, columnName)
+
 			if typeIsQueryable(fieldType) {
-				columnNames = append(columnNames, prefix+columnName)
+				columnNames = append(columnNames, fieldColumnNames)
 				fieldPaths = append(fieldPaths, path)
 			} else if fieldType.Kind() == reflect.Struct {
-				subCols, subPaths, err := getColumnNamesAndPaths(fieldType, path, columnName+".")
+				subCols, subPaths, err := getColumnNamesAndPaths(fieldType, path, fieldColumnNames)
 				if err != nil {
 					return nil, nil, err
 				}

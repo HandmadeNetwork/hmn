@@ -80,6 +80,7 @@ func FetchSnippets(
 		FROM
 			handmade_snippet AS snippet
 			LEFT JOIN auth_user AS owner ON snippet.owner_id = owner.id
+			LEFT JOIN handmade_asset AS owner_avatar ON owner_avatar.id = owner.avatar_asset_id
 			LEFT JOIN handmade_asset AS asset ON snippet.asset_id = asset.id
 			LEFT JOIN handmade_discordmessage AS discord_message ON snippet.discord_message_id = discord_message.id
 		WHERE
