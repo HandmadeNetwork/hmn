@@ -463,7 +463,7 @@ func SetProjectTag(
 		IncludeHidden: true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, oops.New(err, "Failed to fetch project")
 	}
 
 	var resultTag *models.Tag

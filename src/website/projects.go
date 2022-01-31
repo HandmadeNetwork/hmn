@@ -760,7 +760,10 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		return oops.New(err, "Failed to update project")
 	}
 
-	hmndata.SetProjectTag(ctx, tx, payload.ProjectID, payload.Tag)
+	_, err = hmndata.SetProjectTag(ctx, tx, payload.ProjectID, payload.Tag)
+	if err != nil {
+		return err
+	}
 
 	if user.IsStaff {
 		_, err = tx.Exec(ctx,

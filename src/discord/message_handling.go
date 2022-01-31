@@ -798,45 +798,43 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 		var desiredTags []int
 		var allTags []int
 
-		if len(messageTags) > 0 {
-			// Fetch projects so we know what tags the user can apply to their snippet.
-			projects, err := hmndata.FetchProjects(ctx, tx, interned.HMNUser, hmndata.ProjectsQuery{
-				OwnerIDs: []int{interned.HMNUser.ID},
-			})
-			if err != nil {
-				return oops.New(err, "failed to look up user projects")
-			}
+		// Fetch projects so we know what tags the user can apply to their snippet.
+		projects, err := hmndata.FetchProjects(ctx, tx, interned.HMNUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{interned.HMNUser.ID},
+		})
+		if err != nil {
+			return oops.New(err, "failed to look up user projects")
+		}
 
-			projectIDs := make([]int, len(projects))
-			for i, p := range projects {
-				projectIDs[i] = p.Project.ID
-			}
+		projectIDs := make([]int, len(projects))
+		for i, p := range projects {
+			projectIDs[i] = p.Project.ID
+		}
 
-			type tagsRow struct {
-				Tag models.Tag `db:"tags"`
-			}
-			iUserTags, err := db.Query(ctx, tx, tagsRow{},
-				`
-				SELECT $columns
-				FROM
-					tags
-					JOIN handmade_project AS project ON project.tag = tags.id
-				WHERE
-					project.id = ANY ($1)
-				`,
-				projectIDs,
-			)
-			if err != nil {
-				return oops.New(err, "failed to fetch tags for user projects")
-			}
+		type tagsRow struct {
+			Tag models.Tag `db:"tags"`
+		}
+		iUserTags, err := db.Query(ctx, tx, tagsRow{},
+			`
+			SELECT $columns
+			FROM
+				tags
+				JOIN handmade_project AS project ON project.tag = tags.id
+			WHERE
+				project.id = ANY ($1)
+			`,
+			projectIDs,
+		)
+		if err != nil {
+			return oops.New(err, "failed to fetch tags for user projects")
+		}
 
-			for _, itag := range iUserTags {
-				tag := itag.(*tagsRow).Tag
-				for _, messageTag := range messageTags {
-					allTags = append(allTags, tag.ID)
-					if strings.EqualFold(tag.Text, messageTag) {
-						desiredTags = append(desiredTags, tag.ID)
-					}
+		for _, itag := range iUserTags {
+			tag := itag.(*tagsRow).Tag
+			allTags = append(allTags, tag.ID)
+			for _, messageTag := range messageTags {
+				if strings.EqualFold(tag.Text, messageTag) {
+					desiredTags = append(desiredTags, tag.ID)
 				}
 			}
 		}
