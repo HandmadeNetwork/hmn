@@ -143,17 +143,6 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 	}
 	duser := iduser.(*models.DiscordUser)
 
-	ok, err := discord.AllowedToCreateMessageSnippets(c.Context(), c.Conn, duser.UserID)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
-
-	if !ok {
-		// Not allowed to do this, bail out
-		c.Logger.Warn().Msg("was not allowed to save user snippets")
-		return c.Redirect(hmnurl.BuildUserProfile(c.CurrentUser.Username), http.StatusSeeOther)
-	}
-
 	type messageIdQuery struct {
 		MessageID string `db:"msg.id"`
 	}
@@ -177,9 +166,18 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 	for _, imsgId := range iMsgIDs {
 		msgIDs = append(msgIDs, imsgId.(*messageIdQuery).MessageID)
 	}
-	err = discord.CreateMessageSnippets(c.Context(), c.Conn, msgIDs...)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
+	for _, msgID := range msgIDs {
+		interned, err := discord.FetchInternedMessage(c.Context(), c.Conn, msgID)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, err)
+		}
+		if interned != nil {
+			// NOTE(asaf): Creating snippet even if the checkbox is off because the user asked us to.
+			err = discord.HandleSnippetForInternedMessage(c.Context(), c.Conn, interned, true)
+			if err != nil {
+				return c.ErrorResponse(http.StatusInternalServerError, err)
+			}
+		}
 	}
 
 	return c.Redirect(hmnurl.BuildUserProfile(c.CurrentUser.Username), http.StatusSeeOther)

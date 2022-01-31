@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"os"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
@@ -35,18 +38,45 @@ func init() {
 	rootCommand.AddCommand(scrapeCommand)
 
 	makeSnippetCommand := &cobra.Command{
-		Use:   "makesnippet [<message id>...]",
+		Use:   "makesnippet <channel id> [<message id>...]",
 		Short: "Make snippets from saved Discord messages",
 		Long:  "Make snippets from Discord messages whose content we have already saved. Useful for creating snippets from messages in non-showcase channels.",
 		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 2 {
+				cmd.Usage()
+				os.Exit(1)
+			}
 			ctx := context.Background()
 			conn := db.NewConnPool(1, 1)
 			defer conn.Close()
 
-			err := discord.CreateMessageSnippets(ctx, conn, args...)
-			if err != nil {
-				logging.Error().Err(err).Msg("failed to create snippets")
+			chanID := args[0]
+
+			count := 0
+
+			for _, msgID := range args[1:] {
+				message, err := discord.GetChannelMessage(ctx, chanID, msgID)
+				if errors.Is(err, discord.NotFound) {
+					logging.Warn().Msg(fmt.Sprintf("no message found on discord for id %s", msgID))
+					continue
+				} else if err != nil {
+					logging.Error().Msg(fmt.Sprintf("failed to fetch discord message id %s", msgID))
+					continue
+				}
+				err = discord.InternMessage(ctx, conn, message)
+				if err != nil {
+					logging.Error().Msg(fmt.Sprintf("failed to intern discord message id %s", msgID))
+					continue
+				}
+				err = discord.HandleInternedMessage(ctx, conn, message, false, true)
+				if err != nil {
+					logging.Error().Msg(fmt.Sprintf("failed to handle interned message id %s", msgID))
+					continue
+				}
+				count += 1
 			}
+
+			logging.Info().Msg(fmt.Sprintf("Handled %d messages", count))
 		},
 	}
 	rootCommand.AddCommand(makeSnippetCommand)

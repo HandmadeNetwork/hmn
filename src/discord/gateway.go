@@ -591,102 +591,30 @@ func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message)
 		return nil
 	}
 
-	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID {
-		err := bot.processShowcaseMsg(ctx, msg)
-		if err != nil {
-			logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to process showcase message")
-			return nil
-		}
-		return nil
-	}
-
-	if msg.ChannelID == config.Config.Discord.LibraryChannelID {
-		err := bot.processLibraryMsg(ctx, msg)
-		if err != nil {
-			logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to process library message")
-			return nil
-		}
-		return nil
-	}
-
-	err := UpdateSnippetTagsIfAny(ctx, bot.dbConn, msg)
+	err := HandleIncomingMessage(ctx, bot.dbConn, msg, true)
 	if err != nil {
-		logging.ExtractLogger(ctx).Warn().Err(err).Msg("failed to update tags for Discord snippet")
+		logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to handle incoming message")
 	}
 
+	// NOTE(asaf): Since any error from HandleIncomingMessage is an internal error and not a discord
+	//			   error, we only want to log it and not restart the bot. So we're not returning the error.
 	return nil
 }
 
 func (bot *botInstance) messageDelete(ctx context.Context, msgDelete MessageDelete) {
 	log := logging.ExtractLogger(ctx)
 
-	tx, err := bot.dbConn.Begin(ctx)
+	interned, err := FetchInternedMessage(ctx, bot.dbConn, msgDelete.ID)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to start transaction")
+		log.Error().Err(err).Msg("failed to fetch interned message")
 		return
 	}
-	defer tx.Rollback(ctx)
-
-	type deleteMessageQuery struct {
-		Message     models.DiscordMessage `db:"msg"`
-		DiscordUser *models.DiscordUser   `db:"duser"`
-		HMNUser     *models.User          `db:"hmnuser"`
-		SnippetID   *int                  `db:"snippet.id"`
-	}
-	iresult, err := db.QueryOne(ctx, tx, deleteMessageQuery{},
-		`
-		SELECT $columns
-		FROM
-			handmade_discordmessage AS msg
-			LEFT JOIN handmade_discorduser AS duser ON msg.user_id = duser.userid
-			LEFT JOIN auth_user AS hmnuser ON duser.hmn_user_id = hmnuser.id
-			LEFT JOIN handmade_asset AS hmnuser_avatar ON hmnuser_avatar.id = hmnuser.avatar_asset_id
-			LEFT JOIN handmade_snippet AS snippet ON snippet.discord_message_id = msg.id
-		WHERE msg.id = $1 AND msg.channel_id = $2
-		`,
-		msgDelete.ID, msgDelete.ChannelID,
-	)
-	if errors.Is(err, db.NotFound) {
-		return
-	} else if err != nil {
-		log.Error().Err(err).Msg("failed to check for message to delete")
-		return
-	}
-	result := iresult.(*deleteMessageQuery)
-
-	log.Debug().Msg("deleting Discord message")
-	_, err = tx.Exec(ctx,
-		`
-		DELETE FROM handmade_discordmessage
-		WHERE id = $1 AND channel_id = $2
-		`,
-		msgDelete.ID,
-		msgDelete.ChannelID,
-	)
-
-	shouldDeleteSnippet := result.HMNUser != nil && result.HMNUser.DiscordDeleteSnippetOnMessageDelete
-	if result.SnippetID != nil && shouldDeleteSnippet {
-		log.Debug().
-			Int("snippet_id", *result.SnippetID).
-			Int("user_id", result.HMNUser.ID).
-			Msg("deleting snippet from Discord message")
-		_, err = tx.Exec(ctx,
-			`
-			DELETE FROM handmade_snippet
-			WHERE id = $1
-			`,
-			result.SnippetID,
-		)
+	if interned != nil {
+		err = DeleteInternedMessage(ctx, bot.dbConn, interned)
 		if err != nil {
-			log.Error().Err(err).Msg("failed to delete snippet")
+			log.Error().Err(err).Msg("failed to delete interned message")
 			return
 		}
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		log.Error().Err(err).Msg("failed to delete Discord message")
-		return
 	}
 }
 
@@ -698,7 +626,7 @@ type MessageToSend struct {
 
 func SendMessages(
 	ctx context.Context,
-	conn *pgxpool.Pool,
+	conn db.ConnOrTx,
 	msgs ...MessageToSend,
 ) error {
 	tx, err := conn.Begin(ctx)

@@ -9,7 +9,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
-	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -34,7 +33,10 @@ func RunHistoryWatcher(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{
 		backfillInterval := 1 * time.Hour
 
 		newUserTicker := time.NewTicker(5 * time.Second)
-		backfillTicker := time.NewTicker(backfillInterval)
+
+		// NOTE(asaf): 5 seconds to ensure this runs on start, we then reset it to the correct
+		//		       interval after the first run.
+		backfillTicker := time.NewTicker(5 * time.Second)
 
 		lastBackfillTime := time.Now().Add(-backfillInterval)
 		for {
@@ -45,6 +47,10 @@ func RunHistoryWatcher(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{
 				// Get content for messages when a user links their account (but do not create snippets)
 				fetchMissingContent(ctx, dbConn)
 			case <-backfillTicker.C:
+				backfillTicker.Reset(backfillInterval)
+				// TODO(asaf): Do we need to update lastBackfillTime here? Otherwise we'll be rescraping
+				//			   from (start up time - 1 hour) every time.
+
 				// Run a backfill to patch up places where the Discord bot missed (does create snippets)
 				Scrape(ctx, dbConn,
 					config.Config.Discord.ShowcaseChannelID,
@@ -99,13 +105,16 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 			discordMsg, err := GetChannelMessage(ctx, msg.ChannelID, msg.ID)
 			if errors.Is(err, NotFound) {
 				// This message has apparently been deleted; delete it from our database
-				_, err = dbConn.Exec(ctx,
-					`
-					DELETE FROM handmade_discordmessage
-					WHERE id = $1
-					`,
-					msg.ID,
-				)
+				interned, err := FetchInternedMessage(ctx, dbConn, msg.ID)
+				if err != nil {
+					log.Error().Err(err).Msg("failed to fetch interned message")
+					continue
+				}
+				if interned == nil {
+					log.Error().Msg("couldn't find interned message")
+					continue
+				}
+				err = DeleteInternedMessage(ctx, dbConn, interned)
 				if err != nil {
 					log.Error().Err(err).Msg("failed to delete missing message")
 					continue
@@ -119,7 +128,7 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 
 			log.Info().Str("msg", discordMsg.ShortString()).Msg("fetched message for content")
 
-			err = handleHistoryMessage(ctx, dbConn, discordMsg, false)
+			err = HandleInternedMessage(ctx, dbConn, discordMsg, false, false)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to save content for message")
 				continue
@@ -166,50 +175,14 @@ func Scrape(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earlies
 				return
 			}
 
-			err := handleHistoryMessage(ctx, dbConn, &msg, createSnippets)
+			err := HandleIncomingMessage(ctx, dbConn, &msg, createSnippets)
+
 			if err != nil {
 				errLog := logging.ExtractLogger(ctx).Error()
-				if errors.Is(err, errNotEnoughInfo) {
-					errLog = logging.ExtractLogger(ctx).Warn()
-				}
 				errLog.Err(err).Msg("failed to process Discord message")
 			}
 
 			before = msg.ID
 		}
 	}
-}
-
-func handleHistoryMessage(ctx context.Context, dbConn *pgxpool.Pool, msg *Message, createSnippets bool) error {
-	var tx pgx.Tx
-	for {
-		var err error
-		tx, err = dbConn.Begin(ctx)
-		if err != nil {
-			logging.ExtractLogger(ctx).Warn().Err(err).Msg("failed to start transaction for message")
-			time.Sleep(1 * time.Second)
-			continue
-		}
-		break
-	}
-
-	newMsg, err := SaveMessageAndContents(ctx, tx, msg)
-	if err != nil {
-		return err
-	}
-	if createSnippets {
-		if doSnippet, err := AllowedToCreateMessageSnippets(ctx, tx, newMsg.UserID); doSnippet && err == nil {
-			err := CreateMessageSnippets(ctx, tx, msg.ID)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
