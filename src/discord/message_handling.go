@@ -359,12 +359,12 @@ func SaveMessageContents(
 		if msg.OriginalHasFields("content") {
 			_, err := dbConn.Exec(ctx,
 				`
-			INSERT INTO handmade_discordmessagecontent (message_id, discord_id, last_content)
-			VALUES ($1, $2, $3)
-			ON CONFLICT (message_id) DO UPDATE SET
-				discord_id = EXCLUDED.discord_id,
-				last_content = EXCLUDED.last_content
-			`,
+				INSERT INTO handmade_discordmessagecontent (message_id, discord_id, last_content)
+				VALUES ($1, $2, $3)
+				ON CONFLICT (message_id) DO UPDATE SET
+					discord_id = EXCLUDED.discord_id,
+					last_content = EXCLUDED.last_content
+				`,
 				interned.Message.ID,
 				interned.DiscordUser.ID,
 				CleanUpMarkdown(ctx, msg.Content),
