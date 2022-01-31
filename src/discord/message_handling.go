@@ -387,7 +387,7 @@ func SaveMessageContents(
 				return oops.New(err, "failed to fetch message contents")
 			}
 			interned.MessageContent = icontent.(*models.DiscordMessageContent)
-		} // TODO(asaf): What happens if we edit the message and delete the content but keep the attachment??
+		}
 
 		// Save attachments
 		if msg.OriginalHasFields("attachments") {
