@@ -39,8 +39,8 @@ func init() {
 
 	makeSnippetCommand := &cobra.Command{
 		Use:   "makesnippet <channel id> [<message id>...]",
-		Short: "Make snippets from saved Discord messages",
-		Long:  "Make snippets from Discord messages whose content we have already saved. Useful for creating snippets from messages in non-showcase channels.",
+		Short: "Make snippets from Discord messages",
+		Long:  "Creates snippets from the specified messages in the specified channel. Will create a snippet as long as the poster of the message linked their account regardless of user settings.",
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) < 2 {
 				cmd.Usage()
