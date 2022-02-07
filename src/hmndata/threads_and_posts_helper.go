@@ -155,7 +155,9 @@ func FetchThreads(
 		row := *iresult.(*resultRow)
 
 		hasRead := false
-		if row.ThreadLastReadTime != nil && row.ThreadLastReadTime.After(row.LastPost.PostDate) {
+		if currentUser != nil && currentUser.MarkedAllReadAt.After(row.LastPost.PostDate) {
+			hasRead = true
+		} else if row.ThreadLastReadTime != nil && row.ThreadLastReadTime.After(row.LastPost.PostDate) {
 			hasRead = true
 		} else if row.ForumLastReadTime != nil && row.ForumLastReadTime.After(row.LastPost.PostDate) {
 			hasRead = true
@@ -413,7 +415,9 @@ func FetchPosts(
 		row := *iresult.(*resultRow)
 
 		hasRead := false
-		if row.ThreadLastReadTime != nil && row.ThreadLastReadTime.After(row.Post.PostDate) {
+		if currentUser != nil && currentUser.MarkedAllReadAt.After(row.Post.PostDate) {
+			hasRead = true
+		} else if row.ThreadLastReadTime != nil && row.ThreadLastReadTime.After(row.Post.PostDate) {
 			hasRead = true
 		} else if row.ForumLastReadTime != nil && row.ForumLastReadTime.After(row.Post.PostDate) {
 			hasRead = true
