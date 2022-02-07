@@ -30,15 +30,28 @@ func RunHistoryWatcher(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{
 			done <- struct{}{}
 		}()
 
-		backfillInterval := 1 * time.Hour
-
 		newUserTicker := time.NewTicker(5 * time.Second)
 
-		// NOTE(asaf): 5 seconds to ensure this runs on start, we then reset it to the correct
-		//		       interval after the first run.
-		backfillTicker := time.NewTicker(5 * time.Second)
+		backfillFirstRun := make(chan struct{}, 1)
+		backfillFirstRun <- struct{}{}
+		backfillTicker := time.NewTicker(1 * time.Hour)
 
-		lastBackfillTime := time.Now().Add(-backfillInterval)
+		lastBackfillTime := time.Now().Add(-3 * time.Hour)
+
+		runBackfill := func() {
+			log.Info().Msg("Running backfill")
+			// Run a backfill to patch up places where the Discord bot missed (does create snippets)
+			now := time.Now()
+			done := Scrape(ctx, dbConn,
+				config.Config.Discord.ShowcaseChannelID,
+				lastBackfillTime,
+				true,
+			)
+			if done {
+				lastBackfillTime = now
+			}
+		}
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -46,17 +59,10 @@ func RunHistoryWatcher(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{
 			case <-newUserTicker.C:
 				// Get content for messages when a user links their account (but do not create snippets)
 				fetchMissingContent(ctx, dbConn)
+			case <-backfillFirstRun:
+				runBackfill()
 			case <-backfillTicker.C:
-				backfillTicker.Reset(backfillInterval)
-				// TODO(asaf): Do we need to update lastBackfillTime here? Otherwise we'll be rescraping
-				//			   from (start up time - 1 hour) every time.
-
-				// Run a backfill to patch up places where the Discord bot missed (does create snippets)
-				Scrape(ctx, dbConn,
-					config.Config.Discord.ShowcaseChannelID,
-					lastBackfillTime,
-					true,
-				)
+				runBackfill()
 			}
 		}
 	}()
@@ -107,11 +113,11 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 				// This message has apparently been deleted; delete it from our database
 				interned, err := FetchInternedMessage(ctx, dbConn, msg.ID)
 				if err != nil {
-					log.Error().Err(err).Msg("failed to fetch interned message")
-					continue
-				}
-				if interned == nil {
-					log.Error().Msg("couldn't find interned message")
+					if !errors.Is(err, db.NotFound) {
+						log.Error().Str("Message ID", msg.ID).Msg("couldn't find interned message")
+					} else {
+						log.Error().Err(err).Msg("failed to fetch interned message")
+					}
 					continue
 				}
 				err = DeleteInternedMessage(ctx, dbConn, interned)
@@ -138,7 +144,7 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 	}
 }
 
-func Scrape(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earliestMessageTime time.Time, createSnippets bool) {
+func Scrape(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earliestMessageTime time.Time, createSnippets bool) bool {
 	log := logging.ExtractLogger(ctx)
 
 	log.Info().Msg("Starting scrape")
@@ -152,19 +158,19 @@ func Scrape(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earlies
 		})
 		if err != nil {
 			logging.Error().Err(err).Msg("failed to get messages while scraping")
-			return
+			return false
 		}
 
 		if len(msgs) == 0 {
 			logging.Debug().Msg("out of messages, stopping scrape")
-			return
+			return true
 		}
 
 		for _, msg := range msgs {
 			select {
 			case <-ctx.Done():
 				log.Info().Msg("Scrape was canceled")
-				return
+				return false
 			default:
 			}
 
@@ -172,7 +178,7 @@ func Scrape(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earlies
 
 			if !earliestMessageTime.IsZero() && msg.Time().Before(earliestMessageTime) {
 				logging.ExtractLogger(ctx).Info().Time("earliest", earliestMessageTime).Msg("Saw a message before the specified earliest time; exiting")
-				return
+				return true
 			}
 
 			err := HandleIncomingMessage(ctx, dbConn, &msg, createSnippets)

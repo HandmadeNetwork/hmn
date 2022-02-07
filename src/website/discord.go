@@ -168,10 +168,9 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 	}
 	for _, msgID := range msgIDs {
 		interned, err := discord.FetchInternedMessage(c.Context(), c.Conn, msgID)
-		if err != nil {
+		if err != nil && !errors.Is(err, db.NotFound) {
 			return c.ErrorResponse(http.StatusInternalServerError, err)
-		}
-		if interned != nil {
+		} else if err == nil {
 			// NOTE(asaf): Creating snippet even if the checkbox is off because the user asked us to.
 			err = discord.HandleSnippetForInternedMessage(c.Context(), c.Conn, interned, true)
 			if err != nil {

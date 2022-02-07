@@ -151,6 +151,8 @@ func MaybeInternMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message) e
 	return nil
 }
 
+var errNotEnoughInfo = errors.New("Discord didn't send enough info in this event for us to do this")
+
 /*
 Ensures that a Discord message is stored in the database. This function is
 idempotent and can be called regardless of whether the item already exists in
@@ -158,8 +160,6 @@ the database.
 
 This does not create snippets or save content or do anything besides save the message itself.
 */
-var errNotEnoughInfo = errors.New("Discord didn't send enough info in this event for us to do this")
-
 func InternMessage(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
@@ -233,11 +233,7 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 		msgId,
 	)
 	if err != nil {
-		if errors.Is(err, db.NotFound) {
-			return nil, nil
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	interned := result.(*InternedMessage)
@@ -256,11 +252,9 @@ func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	defer tx.Rollback(ctx)
 
 	interned, err := FetchInternedMessage(ctx, tx, msg.ID)
-	if err != nil {
+	if err != nil && !errors.Is(err, db.NotFound) {
 		return err
-	}
-
-	if interned != nil {
+	} else if err == nil {
 		if !deleted {
 			err = SaveMessageContents(ctx, tx, interned, msg)
 			if err != nil {
@@ -717,8 +711,8 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 		// TODO(asaf): We're not handling the case where embeds were removed or modified.
 		//             Also not handling the case where a message had both an attachment and an embed
 		//             and the attachment was removed (leaving only the embed).
-		LinkedUserIsSnippetOwner := existingSnippet.OwnerID == interned.DiscordUser.HMNUserId
-		if LinkedUserIsSnippetOwner && !existingSnippet.EditedOnWebsite {
+		linkedUserIsSnippetOwner := existingSnippet.OwnerID == interned.DiscordUser.HMNUserId
+		if linkedUserIsSnippetOwner && !existingSnippet.EditedOnWebsite {
 			contentMarkdown := interned.MessageContent.LastContent
 			contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
 

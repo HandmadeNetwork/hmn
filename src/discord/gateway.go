@@ -597,7 +597,7 @@ func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message)
 	}
 
 	// NOTE(asaf): Since any error from HandleIncomingMessage is an internal error and not a discord
-	//			   error, we only want to log it and not restart the bot. So we're not returning the error.
+	//             error, we only want to log it and not restart the bot. So we're not returning the error.
 	return nil
 }
 
@@ -606,15 +606,15 @@ func (bot *botInstance) messageDelete(ctx context.Context, msgDelete MessageDele
 
 	interned, err := FetchInternedMessage(ctx, bot.dbConn, msgDelete.ID)
 	if err != nil {
-		log.Error().Err(err).Msg("failed to fetch interned message")
+		if !errors.Is(err, db.NotFound) {
+			log.Error().Err(err).Msg("failed to fetch interned message")
+		}
 		return
 	}
-	if interned != nil {
-		err = DeleteInternedMessage(ctx, bot.dbConn, interned)
-		if err != nil {
-			log.Error().Err(err).Msg("failed to delete interned message")
-			return
-		}
+	err = DeleteInternedMessage(ctx, bot.dbConn, interned)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to delete interned message")
+		return
 	}
 }
 
