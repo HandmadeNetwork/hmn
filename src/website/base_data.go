@@ -84,6 +84,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			ProjectIndexUrl:            hmnurl.BuildProjectIndex(1),
 			ForumsUrl:                  hmnurl.HMNProjectContext.BuildForum(nil, 1),
 			ContactUrl:                 hmnurl.BuildContactPage(),
+			SearchActionUrl:            "https://duckduckgo.com",
 		},
 	}
 
