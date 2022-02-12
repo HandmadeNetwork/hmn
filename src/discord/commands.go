@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"git.handmade.network/hmn/hmn/src/hmndata"
+
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
@@ -122,11 +124,31 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 	}
 	res := ires.(*profileResult)
 
+	projectsAndStuff, err := hmndata.FetchProjects(ctx, bot.dbConn, nil, hmndata.ProjectsQuery{
+		OwnerIDs: []int{res.HMNUser.ID},
+	})
+	if err != nil {
+		logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to fetch user projects")
+	}
+
 	url := hmnurl.BuildUserProfile(res.HMNUser.Username)
+	msg := fmt.Sprintf("<@%s>'s profile can be viewed at %s.", member.User.ID, url)
+	if len(projectsAndStuff) > 0 {
+		projectNoun := "projects"
+		if len(projectsAndStuff) == 1 {
+			projectNoun = "project"
+		}
+		msg += fmt.Sprintf(" They have %d %s:\n", len(projectsAndStuff), projectNoun)
+
+		for _, p := range projectsAndStuff {
+			msg += fmt.Sprintf("- %s: %s\n", p.Project.Name, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
+		}
+	}
+
 	err = CreateInteractionResponse(ctx, i.ID, i.Token, InteractionResponse{
 		Type: InteractionCallbackTypeChannelMessageWithSource,
 		Data: &InteractionCallbackData{
-			Content: fmt.Sprintf("<@%s>'s profile can be viewed at %s.", member.User.ID, url),
+			Content: msg,
 			Flags:   FlagEphemeral,
 		},
 	})
