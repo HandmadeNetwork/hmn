@@ -20,18 +20,6 @@ func About(c *RequestContext) ResponseData {
 	return res
 }
 
-func CodeOfConduct(c *RequestContext) ResponseData {
-	baseData := getBaseDataAutocrumb(c, "Code of Conduct")
-	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
-		Property: "og:description",
-		Value:    "The Handmade community is an international community of creatives dedicated to building and improving high quality software. These are the guidelines we pledge to uphold to maintain a healthy community.",
-	})
-
-	var res ResponseData
-	res.MustWriteTemplate("code_of_conduct.html", baseData, c.Perf)
-	return res
-}
-
 func CommunicationGuidelines(c *RequestContext) ResponseData {
 	baseData := getBaseDataAutocrumb(c, "Communication Guidelines")
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{

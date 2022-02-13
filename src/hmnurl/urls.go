@@ -143,13 +143,6 @@ func BuildAbout() string {
 	return Url("/about", nil)
 }
 
-var RegexCodeOfConduct = regexp.MustCompile("^/code-of-conduct$")
-
-func BuildCodeOfConduct() string {
-	defer CatchPanic()
-	return Url("/code-of-conduct", nil)
-}
-
 var RegexCommunicationGuidelines = regexp.MustCompile("^/communication-guidelines$")
 
 func BuildCommunicationGuidelines() string {

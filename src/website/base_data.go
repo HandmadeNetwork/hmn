@@ -79,7 +79,6 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			HomepageUrl:                hmnurl.BuildHomepage(),
 			AboutUrl:                   hmnurl.BuildAbout(),
 			ManifestoUrl:               hmnurl.BuildManifesto(),
-			CodeOfConductUrl:           hmnurl.BuildCodeOfConduct(),
 			CommunicationGuidelinesUrl: hmnurl.BuildCommunicationGuidelines(),
 			ProjectIndexUrl:            hmnurl.BuildProjectIndex(1),
 			ForumsUrl:                  hmnurl.HMNProjectContext.BuildForum(nil, 1),

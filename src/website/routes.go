@@ -160,7 +160,6 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 	// NOTE(asaf): HMN-only routes:
 	hmnOnly.GET(hmnurl.RegexManifesto, Manifesto)
 	hmnOnly.GET(hmnurl.RegexAbout, About)
-	hmnOnly.GET(hmnurl.RegexCodeOfConduct, CodeOfConduct)
 	hmnOnly.GET(hmnurl.RegexCommunicationGuidelines, CommunicationGuidelines)
 	hmnOnly.GET(hmnurl.RegexContactPage, ContactPage)
 	hmnOnly.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
