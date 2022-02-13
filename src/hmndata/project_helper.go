@@ -449,6 +449,7 @@ func UrlContextForProject(p *models.Project) *hmnurl.UrlContext {
 func SetProjectTag(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
+	currentUser *models.User,
 	projectID int,
 	tagText string,
 ) (*models.Tag, error) {
@@ -458,7 +459,7 @@ func SetProjectTag(
 	}
 	defer tx.Rollback(ctx)
 
-	p, err := FetchProject(ctx, tx, nil, projectID, ProjectsQuery{
+	p, err := FetchProject(ctx, tx, currentUser, projectID, ProjectsQuery{
 		Lifecycles:    models.AllProjectLifecycles,
 		IncludeHidden: true,
 	})

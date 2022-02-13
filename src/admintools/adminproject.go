@@ -163,7 +163,7 @@ func addProjectTagCommand(projectCommand *cobra.Command) {
 			conn := db.NewConnPool(1, 1)
 			defer conn.Close()
 
-			resultTag, err := hmndata.SetProjectTag(ctx, conn, projectID, tag)
+			resultTag, err := hmndata.SetProjectTag(ctx, conn, nil, projectID, tag)
 			if err != nil {
 				panic(err)
 			}
