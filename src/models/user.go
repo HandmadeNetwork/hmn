@@ -35,7 +35,6 @@ type User struct {
 	Bio           string     `db:"bio"`
 	Blurb         string     `db:"blurb"`
 	Signature     string     `db:"signature"`
-	Avatar        *string    `db:"avatar"`
 	AvatarAssetID *uuid.UUID `db:"avatar_asset_id"`
 	AvatarAsset   *Asset     `db:"avatar"`
 

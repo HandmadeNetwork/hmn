@@ -173,12 +173,8 @@ func UserAvatarUrl(u *models.User, currentTheme string) string {
 		currentTheme = "light"
 	}
 	avatar := ""
-	if u != nil && (u.AvatarAsset != nil || (u.Avatar != nil && len(*u.Avatar) > 0)) {
-		if u.AvatarAsset != nil {
-			avatar = hmnurl.BuildS3Asset(u.AvatarAsset.S3Key)
-		} else {
-			avatar = hmnurl.BuildUserFile(*u.Avatar)
-		}
+	if u != nil && u.AvatarAsset != nil {
+		avatar = hmnurl.BuildS3Asset(u.AvatarAsset.S3Key)
 	} else {
 		avatar = UserAvatarDefaultUrl(currentTheme)
 	}
