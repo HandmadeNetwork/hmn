@@ -64,16 +64,13 @@ func ProjectLogoUrl(p *models.Project, lightAsset *models.Asset, darkAsset *mode
 	if theme == "dark" {
 		if darkAsset != nil {
 			return hmnurl.BuildS3Asset(darkAsset.S3Key)
-		} else {
-			return hmnurl.BuildUserFile(p.LogoDark)
 		}
 	} else {
 		if lightAsset != nil {
 			return hmnurl.BuildS3Asset(lightAsset.S3Key)
-		} else {
-			return hmnurl.BuildUserFile(p.LogoLight)
 		}
 	}
+	return ""
 }
 
 func ProjectToTemplate(

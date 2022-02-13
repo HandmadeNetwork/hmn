@@ -58,7 +58,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 		ReportIssueMailto: "team@handmade.network",
 
-		OpenGraphItems: buildDefaultOpenGraphItems(&project, title),
+		OpenGraphItems: buildDefaultOpenGraphItems(&project, c.CurrentProjectLogoUrl, title),
 
 		IsProjectPage: !project.IsHMN(),
 		Header: templates.Header{
@@ -114,14 +114,14 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	return baseData
 }
 
-func buildDefaultOpenGraphItems(project *models.Project, title string) []templates.OpenGraphItem {
+func buildDefaultOpenGraphItems(project *models.Project, projectLogoUrl string, title string) []templates.OpenGraphItem {
 	if title == "" {
 		title = "Handmade Network"
 	}
 
 	image := hmnurl.BuildPublic("logo.png", false)
 	if !project.IsHMN() {
-		image = hmnurl.BuildUserFile(project.LogoLight)
+		image = projectLogoUrl
 	}
 
 	return []templates.OpenGraphItem{

@@ -159,12 +159,13 @@ type RequestContext struct {
 	//             We sometimes need the original response object so that some functions of the http package can set connection-management flags on it.
 	Res http.ResponseWriter
 
-	Conn           *pgxpool.Pool
-	CurrentProject *models.Project
-	CurrentUser    *models.User
-	CurrentSession *models.Session
-	Theme          string
-	UrlContext     *hmnurl.UrlContext
+	Conn                  *pgxpool.Pool
+	CurrentProject        *models.Project
+	CurrentProjectLogoUrl string
+	CurrentUser           *models.User
+	CurrentSession        *models.Session
+	Theme                 string
+	UrlContext            *hmnurl.UrlContext
 
 	CurrentUserCanEditCurrentProject bool
 

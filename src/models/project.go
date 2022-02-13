@@ -72,9 +72,6 @@ type Project struct {
 	Color1 string `db:"color_1"`
 	Color2 string `db:"color_2"`
 
-	LogoLight string `db:"logolight"`
-	LogoDark  string `db:"logodark"`
-
 	Personal              bool      `db:"personal"`
 	Hidden                bool      `db:"hidden"`
 	Featured              bool      `db:"featured"`

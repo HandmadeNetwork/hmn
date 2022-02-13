@@ -1,23 +1,16 @@
 package admintools
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"image"
-	"net/http"
 	"os"
-	"path"
 	"strconv"
-	"strings"
 	"time"
 
-	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
-	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -359,141 +352,6 @@ func init() {
 	moveThreadsToSubforumCommand.MarkFlagRequired("project_slug")
 	moveThreadsToSubforumCommand.MarkFlagRequired("subforum_slug")
 	adminCommand.AddCommand(moveThreadsToSubforumCommand)
-
-	uploadProjectLogos := &cobra.Command{
-		Use:   "uploadprojectlogos",
-		Short: "Uploads project imagefiles to S3 and replaces them with assets",
-		Run: func(cmd *cobra.Command, args []string) {
-			ctx := context.Background()
-			conn := db.NewConnPool(1, 1)
-			defer conn.Close()
-
-			allProjects, err := db.Query(ctx, conn, models.Project{}, `SELECT $columns FROM handmade_project`)
-			if err != nil {
-				panic(oops.New(err, "Failed to fetch projects from db"))
-			}
-
-			var fixupProjects []*models.Project
-			numImages := 0
-			for _, project := range allProjects {
-				p := project.(*models.Project)
-				if p.LogoLight != "" || p.LogoDark != "" {
-					fixupProjects = append(fixupProjects, p)
-				}
-
-				if p.LogoLight != "" {
-					numImages += 1
-				}
-				if p.LogoDark != "" {
-					numImages += 1
-				}
-			}
-
-			fmt.Printf("%d images to upload\n", numImages)
-
-			uploadImage := func(ctx context.Context, conn db.ConnOrTx, filepath string, owner *models.User) *models.Asset {
-				filepath = "./public/media/" + filepath
-				contents, err := os.ReadFile(filepath)
-				if err != nil {
-					panic(oops.New(err, fmt.Sprintf("Failed to read file: %s", filepath)))
-				}
-				width := 0
-				height := 0
-				mime := ""
-				fileExtensionOverrides := []string{".svg"}
-				fileExt := strings.ToLower(path.Ext(filepath))
-				tryDecode := true
-				for _, ext := range fileExtensionOverrides {
-					if fileExt == ext {
-						tryDecode = false
-					}
-				}
-				if tryDecode {
-					config, _, err := image.DecodeConfig(bytes.NewReader(contents))
-					if err != nil {
-						panic(oops.New(err, fmt.Sprintf("Failed to decode file: %s", filepath)))
-					}
-					width = config.Width
-					height = config.Height
-					mime = http.DetectContentType(contents)
-				} else {
-					if fileExt == ".svg" {
-						mime = "image/svg+xml"
-					}
-				}
-
-				filename := path.Base(filepath)
-
-				asset, err := assets.Create(ctx, conn, assets.CreateInput{
-					Content:     contents,
-					Filename:    filename,
-					ContentType: mime,
-					UploaderID:  &owner.ID,
-					Width:       width,
-					Height:      height,
-				})
-				if err != nil {
-					panic(oops.New(err, "Failed to create asset"))
-				}
-
-				return asset
-			}
-
-			for _, p := range fixupProjects {
-				owners, err := hmndata.FetchProjectOwners(ctx, conn, p.ID)
-				if err != nil {
-					panic(oops.New(err, "Failed to fetch project owners"))
-				}
-				if len(owners) == 0 {
-					fmt.Printf("PROBLEM!! Project %d (%s) doesn't have owners!!\n", p.ID, p.Name)
-					continue
-				}
-				if p.LogoLight != "" {
-					lightAsset := uploadImage(ctx, conn, p.LogoLight, owners[0])
-					_, err := conn.Exec(ctx,
-						`
-						UPDATE handmade_project
-						SET
-							logolight_asset_id = $2,
-							logolight = NULL
-						WHERE
-							id = $1
-						`,
-						p.ID,
-						lightAsset.ID,
-					)
-					if err != nil {
-						panic(oops.New(err, "Failed to update project"))
-					}
-					numImages -= 1
-					fmt.Printf(".")
-				}
-				if p.LogoDark != "" {
-					darkAsset := uploadImage(ctx, conn, p.LogoDark, owners[0])
-					_, err := conn.Exec(ctx,
-						`
-						UPDATE handmade_project
-						SET
-							logodark_asset_id = $2,
-							logodark = NULL
-						WHERE
-							id = $1
-						`,
-						p.ID,
-						darkAsset.ID,
-					)
-					if err != nil {
-						panic(oops.New(err, "Failed to update project"))
-					}
-					numImages -= 1
-					fmt.Printf(".")
-				}
-			}
-
-			fmt.Printf("\nDone! %d images not patched for some reason.\n\n", numImages)
-		},
-	}
-	adminCommand.AddCommand(uploadProjectLogos)
 
 	addProjectCommands(adminCommand)
 }

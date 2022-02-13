@@ -476,6 +476,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 			})
 			if err == nil {
 				c.CurrentProject = &dbProject.Project
+				c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(&dbProject.Project, dbProject.LogoLightAsset, dbProject.LogoDarkAsset, c.Theme)
 				owners = dbProject.Owners
 			} else {
 				if errors.Is(err, db.NotFound) {
@@ -495,6 +496,7 @@ func LoadCommonWebsiteData(c *RequestContext) (bool, ResponseData) {
 				panic(oops.New(err, "failed to fetch HMN project"))
 			}
 			c.CurrentProject = &dbProject.Project
+			c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(&dbProject.Project, dbProject.LogoLightAsset, dbProject.LogoDarkAsset, c.Theme)
 		}
 
 		if c.CurrentProject == nil {
