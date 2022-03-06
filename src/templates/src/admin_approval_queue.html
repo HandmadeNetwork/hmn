@@ -2,74 +2,105 @@
 
 {{ define "content" }}
 <div class="content-block">
-    {{ range .Posts }}
-        <div class="post background-even pa3">
-            <div class="fl w-100 w-25-l pt3 pa3-l flex tc-l">
-                <div class="fl w-20 mw3 dn-l w3">
-                    <!-- Mobile avatar -->
-                    <div class="aspect-ratio--1x1 contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
-                </div>
-                <div class="w-100-l pl3 pl0-l flex flex-column items-center-l">
-                    <div>
-                        <a class="username" href="{{ .Author.ProfileUrl }}" target="_blank">{{ .Author.Username }}</a>
-                    </div>
-                    {{ if and .Author.Name (ne .Author.Name .Author.Username) }}
-                        <div class="c--dim f7"> {{ .Author.Name }} </div>
-                    {{ end }}
-                    <!-- Large avatar -->
-                    <div class="dn db-l w-60 pv2">
-                        <div class="aspect-ratio--1x1 contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
-                    </div>
-                    <div class="i c--dim f7">
-                        {{ if .Author.Blurb }}
-                            {{ .Author.Blurb }} {{/* TODO: Linebreaks? */}}
-                        {{ else if .Author.Bio }}
-                            {{ .Author.Bio }}
-                        {{ end }}
-                    </div>
-                </div>
-            </div>
-            <div class="fl w-100 w-75-l pv3 pa3-l">
-                <div class="w-100 flex-l flex-row-reverse-l">
-                    <div class="inline-flex flex-row-reverse pl3-l pb3 items-center">
-                        <div class="postid">
-                            <a name="{{ .ID }}" href="{{ .Url }}">#{{ .ID }}</a>
-                        </div>
-						<div class="flex pr3">
-							<form method="POST" class="mr4" action="{{ $.SubmitUrl }}">
-								{{ csrftoken $.Session }}
-								<input type="hidden" name="action" value="{{ $.ApprovalAction }}" />
-								<input type="hidden" name="user_id" value="{{ .Author.ID }}" />
-								<input type="submit" value="Approve User" />
-							</form>
-							<form method="POST" action="{{ $.SubmitUrl }}">
-								{{ csrftoken $.Session }}
-								<input type="hidden" name="action" value="{{ $.SpammerAction }}" />
-								<input type="hidden" name="user_id" value="{{ .Author.ID }}" />
-								<input type="submit" value="Mark as spammer" />
-							</form>
-						</div>
-                    </div>
-                    <div class="w-100 pb3">
-                        <div class="b" role="heading" aria-level="2">{{ .Title }}</div>
-                        {{ timehtml (relativedate .PostDate) .PostDate }}
-						{{ if and $.User.IsStaff .IP }}
-							<span>[{{ .IP }}]</span>
+	{{ range .UnapprovedUsers }}
+		<div class="flex flex-row bg--card mb3 pa2">
+			<div class="
+				sidebar flex-shrink-0 
+				flex flex-column items-stretch-l
+				overflow-hidden
+			" style="width: 200px;">
+				<a class="db" href="{{ .User.ProfileUrl }}">{{ .User.Username }}</a>
+				<div>{{ .User.Name }}</div>
+				<div class="w-100 flex-shrink-0 flex justify-center">
+					<img class="br3" alt="{{ .User.Name }}'s Avatar" src="{{ .User.AvatarUrl }}">
+				</div>
+				<div class="mt3 mt0-ns mt3-l ml3-ns ml0-l flex flex-column items-start overflow-hidden">
+					{{ with or .User.Bio .User.Blurb }}
+						<div class="mb3">{{ . }}</div>
+					{{ end }}
+					<div class="w-100 w-auto-ns w-100-l">
+						{{ if .User.Email }}
+							<div class="pair flex">
+								<div class="key flex-auto flex-shrink-0 mr2">Email</div>
+								<div class="value projectlink truncate">{{ .User.Email }}</div>
+							</div>
 						{{ end }}
-                    </div>
-                </div>
-                <div class="post-content overflow-x-auto">
-                    {{ .Content }}
-                </div>
-                {{/* {% if post.author.signature|length %}
-                    <div class="signature"><hr />
-                        {{ post.author.signature|bbdecode|safe }}
-                    </div>
-                {% endif %} */}}
-            </div>
-            <div class="cb"></div>
-        </div>
-    {{ end }}
+						{{ range .UserLinks }}
+							<div class="pair flex">
+								<div class="key flex-auto flex-shrink-0 mr2">{{ .Name }}</div>
+								<div class="value projectlink truncate"><a class="external" href="{{ .Url }}" ><span class="icon-{{ .Icon }}"></span> {{ .LinkText }}</a></div>
+							</div>
+						{{ end }}
+
+						<div>{{ absoluteshortdate .User.DateJoined }}</div>
+					</div>
+				</div>
+				<div>
+					<form method="POST" class="mb2" action="{{ $.SubmitUrl }}">
+						{{ csrftoken $.Session }}
+						<input type="hidden" name="action" value="{{ $.ApprovalAction }}" />
+						<input type="hidden" name="user_id" value="{{ .User.ID }}" />
+						<input type="submit" class="w-100" value="Approve User" />
+					</form>
+					<form method="POST" action="{{ $.SubmitUrl }}">
+						{{ csrftoken $.Session }}
+						<input type="hidden" name="action" value="{{ $.SpammerAction }}" />
+						<input type="hidden" name="user_id" value="{{ .User.ID }}" />
+						<input type="submit" class="w-100" value="Mark as spammer" />
+					</form>
+				</div>
+			</div>
+			<div class="flex-grow-1 flex flex-column ml3">
+				{{ range .ProjectsWithLinks }}
+					<div class="project-card flex br2 overflow-hidden items-center relative mv3 w-100">
+						{{ with .Project.Logo }}
+							<div class="image-container flex-shrink-0">
+								<div class="image bg-center cover" style="background-image:url({{ . }})"></div>
+							</div>
+						{{ end }}
+						<div class="details pa3 flex-grow-1">
+							<h3 class="mb1"><a href="{{ .Project.Url }}">{{ .Project.Name }}</a></h3>
+							<div class="blurb">{{ .Project.Blurb }}</div>
+							<div class="badges mt2">
+								{{ if .Project.LifecycleString }}
+									<span class="badge {{ .Project.LifecycleBadgeClass }}">{{ .Project.LifecycleString }}</span>
+								{{ end }}
+							</div>
+							{{ range .Links }}
+								<div class="pair flex">
+									<div class="key flex-auto flex-shrink-0 mr2">{{ .Name }}</div>
+									<div class="value projectlink truncate"><a class="external" href="{{ .Url }}" ><span class="icon-{{ .Icon }}"></span> {{ .LinkText }}</a></div>
+								</div>
+							{{ end }}
+						</div>
+					</div>
+				{{ end }}
+				{{ range .Posts }}
+					<div class="post background-even pa3">
+						<div class="fl w-100 pv3 pa3-l">
+							<div class="w-100 flex-l flex-row-reverse-l">
+								<div class="inline-flex flex-row-reverse pl3-l pb3 items-center">
+									<div class="postid">
+										<a name="{{ .ID }}" href="{{ .Url }}">#{{ .ID }}</a>
+									</div>
+								</div>
+								<div class="w-100 pb3">
+									<div class="b" role="heading" aria-level="2">{{ .Title }}</div>
+									{{ timehtml (relativedate .PostDate) .PostDate }}
+									{{ if and $.User.IsStaff .IP }}
+										<span>[{{ .IP }}]</span>
+									{{ end }}
+								</div>
+							</div>
+							<div class="post-content overflow-x-auto">
+								{{ .Content }}
+							</div>
+						</div>
+					</div>
+				{{ end }}
+			</div>
+		</div>
+	{{ end }}
 </div>
 {{ end }}
 

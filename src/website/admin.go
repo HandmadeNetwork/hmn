@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -112,10 +113,23 @@ type postWithTitle struct {
 type adminApprovalQueueData struct {
 	templates.BaseData
 
-	Posts          []postWithTitle
-	SubmitUrl      string
-	ApprovalAction string
-	SpammerAction  string
+	UnapprovedUsers []*unapprovedUserData
+	SubmitUrl       string
+	ApprovalAction  string
+	SpammerAction   string
+}
+
+type projectWithLinks struct {
+	Project templates.Project
+	Links   []templates.Link
+}
+
+type unapprovedUserData struct {
+	User              templates.User
+	Date              time.Time
+	UserLinks         []templates.Link
+	Posts             []postWithTitle
+	ProjectsWithLinks []projectWithLinks
 }
 
 func AdminApprovalQueue(c *RequestContext) ResponseData {
@@ -129,20 +143,101 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch unapproved posts"))
 	}
 
-	data := adminApprovalQueueData{
-		BaseData:       getBaseDataAutocrumb(c, "Admin approval queue"),
-		SubmitUrl:      hmnurl.BuildAdminApprovalQueue(),
-		ApprovalAction: ApprovalQueueActionApprove,
-		SpammerAction:  ApprovalQueueActionSpammer,
+	projects, err := fetchUnapprovedProjects(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch unapproved projects"))
 	}
+
+	unapprovedUsers := make([]*unapprovedUserData, 0)
+	userIDToDataIdx := make(map[int]int)
+
 	for _, p := range posts {
+		var userData *unapprovedUserData
+		if idx, ok := userIDToDataIdx[p.Author.ID]; ok {
+			userData = unapprovedUsers[idx]
+		} else {
+			userData = &unapprovedUserData{
+				User:      templates.UserToTemplate(&p.Author, c.Theme),
+				UserLinks: make([]templates.Link, 0, 10),
+			}
+			unapprovedUsers = append(unapprovedUsers, userData)
+			userIDToDataIdx[p.Author.ID] = len(unapprovedUsers) - 1
+		}
+
+		if p.Post.PostDate.After(userData.Date) {
+			userData.Date = p.Post.PostDate
+		}
 		post := templates.PostToTemplate(&p.Post, &p.Author, c.Theme)
 		post.AddContentVersion(p.CurrentVersion, &p.Author) // NOTE(asaf): Don't care about editors here
 		post.Url = UrlForGenericPost(hmndata.UrlContextForProject(&p.Project), &p.Thread, &p.Post, lineageBuilder)
-		data.Posts = append(data.Posts, postWithTitle{
+		userData.Posts = append(userData.Posts, postWithTitle{
 			Post:  post,
 			Title: p.Thread.Title,
 		})
+	}
+
+	for _, p := range projects {
+		var userData *unapprovedUserData
+		if idx, ok := userIDToDataIdx[p.User.ID]; ok {
+			userData = unapprovedUsers[idx]
+		} else {
+			userData = &unapprovedUserData{
+				User:      templates.UserToTemplate(p.User, c.Theme),
+				UserLinks: make([]templates.Link, 0, 10),
+			}
+			unapprovedUsers = append(unapprovedUsers, userData)
+			userIDToDataIdx[p.User.ID] = len(unapprovedUsers) - 1
+		}
+
+		projectLinks := make([]templates.Link, 0, len(p.ProjectLinks))
+		for _, l := range p.ProjectLinks {
+			projectLinks = append(projectLinks, templates.LinkToTemplate(l))
+		}
+		if p.ProjectAndStuff.Project.DateCreated.After(userData.Date) {
+			userData.Date = p.ProjectAndStuff.Project.DateCreated
+		}
+		userData.ProjectsWithLinks = append(userData.ProjectsWithLinks, projectWithLinks{
+			Project: templates.ProjectAndStuffToTemplate(p.ProjectAndStuff, hmndata.UrlContextForProject(&p.ProjectAndStuff.Project).BuildHomepage(), c.Theme),
+			Links:   projectLinks,
+		})
+	}
+
+	userIds := make([]int, 0, len(unapprovedUsers))
+	for _, u := range unapprovedUsers {
+		userIds = append(userIds, u.User.ID)
+	}
+
+	userLinks, err := db.Query(c.Context(), c.Conn, models.Link{},
+		`
+		SELECT $columns
+		FROM
+			handmade_links
+		WHERE
+			user_id = ANY($1)
+		ORDER BY ordering ASC
+		`,
+		userIds,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user links"))
+	}
+
+	for _, ul := range userLinks {
+		link := ul.(*models.Link)
+		userData := unapprovedUsers[userIDToDataIdx[*link.UserID]]
+		userData.UserLinks = append(userData.UserLinks, templates.LinkToTemplate(link))
+	}
+
+	sort.Slice(unapprovedUsers, func(a, b int) bool {
+		return unapprovedUsers[a].Date.After(unapprovedUsers[b].Date)
+	})
+
+	data := adminApprovalQueueData{
+		BaseData:        getBaseDataAutocrumb(c, "Admin approval queue"),
+		UnapprovedUsers: unapprovedUsers,
+		SubmitUrl:       hmnurl.BuildAdminApprovalQueue(),
+		ApprovalAction:  ApprovalQueueActionApprove,
+		SpammerAction:   ApprovalQueueActionSpammer,
 	}
 
 	var res ResponseData
@@ -219,6 +314,10 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete spammer's posts"))
 		}
+		err = deleteAllProjectsForUser(c.Context(), c.Conn, user.ID)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete spammer's projects"))
+		}
 		whatHappened = fmt.Sprintf("%s banned successfully", user.Username)
 	} else {
 		whatHappened = fmt.Sprintf("Unrecognized action: %s", action)
@@ -266,6 +365,86 @@ func fetchUnapprovedPosts(c *RequestContext) ([]*UnapprovedPost, error) {
 	return res, nil
 }
 
+type UnapprovedProject struct {
+	User            *models.User
+	ProjectAndStuff *hmndata.ProjectAndStuff
+	ProjectLinks    []*models.Link
+}
+
+func fetchUnapprovedProjects(c *RequestContext) ([]UnapprovedProject, error) {
+	type unapprovedUser struct {
+		ID int `db:"id"`
+	}
+	it, err := db.Query(c.Context(), c.Conn, unapprovedUser{},
+		`
+		SELECT $columns
+		FROM
+			auth_user AS u
+		WHERE
+			u.status = ANY($1)
+		`,
+		[]models.UserStatus{models.UserStatusConfirmed},
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch unapproved users")
+	}
+	ownerIDs := make([]int, 0, len(it))
+	for _, uid := range it {
+		ownerIDs = append(ownerIDs, uid.(*unapprovedUser).ID)
+	}
+
+	projects, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		OwnerIDs:      ownerIDs,
+		IncludeHidden: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	projectIDs := make([]int, 0, len(projects))
+	for _, p := range projects {
+		projectIDs = append(projectIDs, p.Project.ID)
+	}
+
+	projectLinks, err := db.Query(c.Context(), c.Conn, models.Link{},
+		`
+		SELECT $columns
+		FROM
+			handmade_links AS link
+		WHERE
+			link.project_id = ANY($1)
+		ORDER BY link.ordering ASC
+		`,
+		projectIDs,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch links for projects")
+	}
+
+	var result []UnapprovedProject
+
+	for idx, proj := range projects {
+		links := make([]*models.Link, 0, 10) // NOTE(asaf): 10 should be enough for most projects.
+		for _, l := range projectLinks {
+			link := l.(*models.Link)
+			if *link.ProjectID == proj.Project.ID {
+				links = append(links, link)
+			}
+		}
+		for _, u := range proj.Owners {
+			if u.Status == models.UserStatusConfirmed {
+				result = append(result, UnapprovedProject{
+					User:            u,
+					ProjectAndStuff: &projects[idx],
+					ProjectLinks:    links,
+				})
+			}
+		}
+	}
+
+	return result, nil
+}
+
 func deleteAllPostsForUser(ctx context.Context, conn *pgxpool.Pool, userId int) error {
 	tx, err := conn.Begin(ctx)
 	if err != nil {
@@ -300,5 +479,52 @@ func deleteAllPostsForUser(ctx context.Context, conn *pgxpool.Pool, userId int) 
 	if err != nil {
 		return oops.New(err, "failed to commit transaction")
 	}
+	return nil
+}
+
+func deleteAllProjectsForUser(ctx context.Context, conn *pgxpool.Pool, userId int) error {
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return oops.New(err, "failed to start transaction")
+	}
+	defer tx.Rollback(ctx)
+
+	toDelete, err := db.Query(ctx, tx, models.Project{},
+		`
+		SELECT $columns
+		FROM
+			handmade_project AS project
+			JOIN handmade_user_projects AS up ON up.project_id = project.id
+		WHERE
+			up.user_id = $1
+		`,
+		userId,
+	)
+	if err != nil {
+		return oops.New(err, "failed to fetch user's projects")
+	}
+
+	var projectIds []int
+	for _, p := range toDelete {
+		projectIds = append(projectIds, p.(*models.Project).ID)
+	}
+
+	if len(projectIds) > 0 {
+		_, err = tx.Exec(ctx,
+			`
+			DELETE FROM handmade_project WHERE id = ANY($1)
+			`,
+			projectIds,
+		)
+		if err != nil {
+			return oops.New(err, "failed to delete user's projects")
+		}
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return oops.New(err, "failed to commit transaction")
+	}
+
 	return nil
 }
