@@ -199,7 +199,7 @@ func getEventSubscriptions(ctx context.Context) ([]twitchEventSub, error) {
 		type twitchResponse struct {
 			Data       []eventSub `json:"data"`
 			Pagination *struct {
-				After string `json:"after"`
+				After string `json:"cursor"`
 			} `json:"pagination"`
 		}
 
