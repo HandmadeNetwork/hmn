@@ -271,7 +271,7 @@ func subscribeToEvent(ctx context.Context, eventType string, twitchID string) er
 	}
 	defer readAndClose(res)
 
-	if res.StatusCode != 201 {
+	if res.StatusCode >= 300 {
 		body, err := io.ReadAll(res.Body)
 		res.Body.Close()
 		if err != nil {
@@ -296,7 +296,7 @@ func unsubscribeFromEvent(ctx context.Context, eventID string) error {
 	}
 	defer readAndClose(res)
 
-	if res.StatusCode != 204 {
+	if res.StatusCode > 300 {
 		body, err := io.ReadAll(res.Body)
 		res.Body.Close()
 		if err != nil {
