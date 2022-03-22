@@ -212,6 +212,7 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 		return
 	}
 	p.EndBlock()
+	log.Info().Interface("Subscriptions", subscriptions).Msg("Got subs from twitch")
 
 	const (
 		EventSubNone    = 0 // No event of this type found
@@ -244,7 +245,7 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 					log.Debug().Str("TwitchID", sub.TwitchID).Str("Event Type", sub.Type).Msg("Twitch doesn't like our sub")
 					toUnsub = append(toUnsub, unsubEvent{TwitchID: sub.TwitchID, EventID: sub.EventID})
 				} else {
-					eventSubs[sub.Type] = true
+					streamerEventSubs[sub.TwitchID][sub.Type] = true
 				}
 				handled = true
 			}
@@ -270,6 +271,7 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 		for twitchID, evStatuses := range streamerEventSubs {
 			for evType, isSubbed := range evStatuses {
 				if !isSubbed {
+					log.Info().Str("TwitchID", twitchID).Str("Type", evType).Msg("Subscribing")
 					err = subscribeToEvent(ctx, evType, twitchID)
 					if err != nil {
 						log.Error().Err(err).Msg("Error while monitoring twitch")
