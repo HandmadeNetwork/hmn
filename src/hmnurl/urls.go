@@ -688,6 +688,18 @@ func BuildAPICheckUsername() string {
 }
 
 /*
+* Twitch stuff
+ */
+
+var RegexTwitchEventSubCallback = regexp.MustCompile("^/twitch_eventsub$")
+
+func BuildTwitchEventSubCallback() string {
+	return Url("/twitch_eventsub", nil)
+}
+
+var RegexTwitchDebugPage = regexp.MustCompile("^/twitch_debug$")
+
+/*
 * User assets
  */
 

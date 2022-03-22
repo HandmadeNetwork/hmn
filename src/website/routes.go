@@ -205,6 +205,9 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 	hmnOnly.POST(hmnurl.RegexDiscordUnlink, authMiddleware(csrfMiddleware(DiscordUnlink)))
 	hmnOnly.POST(hmnurl.RegexDiscordShowcaseBacklog, authMiddleware(csrfMiddleware(DiscordShowcaseBacklog)))
 
+	hmnOnly.POST(hmnurl.RegexTwitchEventSubCallback, TwitchEventSubCallback)
+	hmnOnly.GET(hmnurl.RegexTwitchDebugPage, TwitchDebugPage)
+
 	hmnOnly.GET(hmnurl.RegexUserProfile, UserProfile)
 	hmnOnly.GET(hmnurl.RegexUserSettings, authMiddleware(UserSettings))
 	hmnOnly.POST(hmnurl.RegexUserSettings, authMiddleware(csrfMiddleware(UserSettingsSave)))

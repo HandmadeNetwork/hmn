@@ -27,6 +27,7 @@ type HMNConfig struct {
 	Email        EmailConfig
 	DigitalOcean DigitalOceanConfig
 	Discord      DiscordConfig
+	Twitch       TwitchConfig
 	EpisodeGuide EpisodeGuide
 }
 
@@ -76,7 +77,16 @@ type DiscordConfig struct {
 	MemberRoleID         string
 	ShowcaseChannelID    string
 	LibraryChannelID     string
+	StreamsChannelID     string
 	JamShowcaseChannelID string
+}
+
+type TwitchConfig struct {
+	ClientID       string
+	ClientSecret   string
+	EventSubSecret string // NOTE(asaf): Between 10-100 chars long. Anything will do.
+	BaseUrl        string
+	BaseIDUrl      string
 }
 
 type EpisodeGuide struct {

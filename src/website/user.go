@@ -18,6 +18,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/twitch"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 )
@@ -378,6 +379,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	}
 
 	// Process links
+	twitchLoginsPreChange, preErr := hmndata.FetchTwitchLoginsForUserOrProject(c.Context(), tx, &c.CurrentUser.ID, nil)
 	linksText := form.Get("links")
 	links := ParseLinks(linksText)
 	_, err = tx.Exec(c.Context(), `DELETE FROM handmade_links WHERE user_id = $1`, c.CurrentUser.ID)
@@ -400,6 +402,10 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 				continue
 			}
 		}
+	}
+	twitchLoginsPostChange, postErr := hmndata.FetchTwitchLoginsForUserOrProject(c.Context(), tx, &c.CurrentUser.ID, nil)
+	if preErr == nil && postErr == nil {
+		twitch.UserOrProjectLinksUpdated(twitchLoginsPreChange, twitchLoginsPostChange)
 	}
 
 	// Update password

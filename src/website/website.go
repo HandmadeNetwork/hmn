@@ -17,6 +17,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/twitch"
 	"github.com/spf13/cobra"
 )
 
@@ -46,6 +47,7 @@ var WebsiteCommand = &cobra.Command{
 			perfCollector.Done,
 			discord.RunDiscordBot(backgroundJobContext, conn),
 			discord.RunHistoryWatcher(backgroundJobContext, conn),
+			twitch.MonitorTwitchSubscriptions(backgroundJobContext, conn),
 		)
 
 		signals := make(chan os.Signal, 1)

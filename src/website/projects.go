@@ -22,6 +22,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/twitch"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
@@ -864,6 +865,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 	}
 
+	twitchLoginsPreChange, preErr := hmndata.FetchTwitchLoginsForUserOrProject(ctx, tx, nil, &payload.ProjectID)
 	_, err = tx.Exec(ctx, `DELETE FROM handmade_links WHERE project_id = $1`, payload.ProjectID)
 	if err != nil {
 		return oops.New(err, "Failed to delete project links")
@@ -882,6 +884,10 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		if err != nil {
 			return oops.New(err, "Failed to insert new project link")
 		}
+	}
+	twitchLoginsPostChange, postErr := hmndata.FetchTwitchLoginsForUserOrProject(ctx, tx, nil, &payload.ProjectID)
+	if preErr == nil && postErr == nil {
+		twitch.UserOrProjectLinksUpdated(twitchLoginsPreChange, twitchLoginsPostChange)
 	}
 
 	return nil
