@@ -11,6 +11,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/discord"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -343,13 +344,13 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 	log.Info().Interface("Stats", stats).Msg("Twitch sync done")
 }
 
-func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx, twitchLogin string) error {
+func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx, twitchLogin string, title string) error {
 	var err error
 	if config.Config.Discord.StreamsChannelID != "" {
 		err = discord.SendMessages(ctx, dbConn, discord.MessageToSend{
 			ChannelID: config.Config.Discord.StreamsChannelID,
 			Req: discord.CreateMessageRequest{
-				Content: fmt.Sprintf("%s is live: https://twitch.tv/%s", twitchLogin, twitchLogin),
+				Content: fmt.Sprintf("%s is live: https://twitch.tv/%s\n%s", twitchLogin, twitchLogin, title),
 			},
 		})
 	}
@@ -390,8 +391,8 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 	if err != nil {
 		log.Error().Err(err).Msg("failed to update twitch stream status")
 	}
-	if inserted && notification.Type == notificationTypeOnline {
-		err = notifyDiscordOfLiveStream(ctx, dbConn, status.TwitchLogin)
+	if inserted {
+		err = notifyDiscordOfLiveStream(ctx, dbConn, status.TwitchLogin, status.Title)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to notify discord")
 		}
@@ -401,7 +402,20 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *streamStatus) (bool, error) {
 	inserted := false
 	if isStatusRelevant(status) {
-		_, err := conn.Exec(ctx,
+		_, err := db.QueryOne(ctx, conn, models.TwitchStream{},
+			`
+			SELECT $columns
+			FROM twitch_streams
+			WHERE twitch_id = $1
+			`,
+			status.TwitchID,
+		)
+		if err == db.NotFound {
+			inserted = true
+		} else if err != nil {
+			return false, oops.New(err, "failed to query existing stream")
+		}
+		_, err = conn.Exec(ctx,
 			`
 			INSERT INTO twitch_streams (twitch_id, twitch_login, title, started_at)
 				VALUES ($1, $2, $3, $4)
@@ -417,7 +431,6 @@ func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *strea
 		if err != nil {
 			return false, oops.New(err, "failed to insert twitch streamer into db")
 		}
-		inserted = true
 	} else {
 		_, err := conn.Exec(ctx,
 			`
