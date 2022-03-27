@@ -40,6 +40,8 @@ func TwitchEventSubCallback(c *RequestContext) ResponseData {
 		return res
 	}
 
+	c.Logger.Debug().Str("Body", string(body[:])).Str("Type", messageType).Msg("Got twitch webhook")
+
 	if messageType == "webhook_callback_verification" {
 		type challengeReq struct {
 			Challenge string `json:"challenge"`

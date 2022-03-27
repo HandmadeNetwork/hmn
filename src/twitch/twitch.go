@@ -350,7 +350,7 @@ func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx, twitchLo
 		err = discord.SendMessages(ctx, dbConn, discord.MessageToSend{
 			ChannelID: config.Config.Discord.StreamsChannelID,
 			Req: discord.CreateMessageRequest{
-				Content: fmt.Sprintf("%s is live: https://twitch.tv/%s\n%s", twitchLogin, twitchLogin, title),
+				Content: fmt.Sprintf("%s is live: https://twitch.tv/%s\n> %s", twitchLogin, twitchLogin, title),
 			},
 		})
 	}
@@ -358,11 +358,12 @@ func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx, twitchLo
 }
 
 func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notification *twitchNotification) {
+	log := logging.ExtractLogger(ctx)
+	log.Debug().Interface("Notification", notification).Msg("Processing twitch notification")
 	if notification.Type == notificationTypeNone {
 		return
 	}
 
-	log := logging.ExtractLogger(ctx)
 	status := streamStatus{
 		TwitchID: notification.TwitchID,
 		Live:     false,
@@ -387,11 +388,13 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 		}
 	}
 
+	log.Debug().Interface("Status", status).Msg("Updating status")
 	inserted, err := updateStreamStatusInDB(ctx, dbConn, &status)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to update twitch stream status")
 	}
 	if inserted {
+		log.Debug().Msg("Notifying discord")
 		err = notifyDiscordOfLiveStream(ctx, dbConn, status.TwitchLogin, status.Title)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to notify discord")
@@ -400,8 +403,10 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 }
 
 func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *streamStatus) (bool, error) {
+	log := logging.ExtractLogger(ctx)
 	inserted := false
 	if isStatusRelevant(status) {
+		log.Debug().Msg("Status relevant")
 		_, err := db.QueryOne(ctx, conn, models.TwitchStream{},
 			`
 			SELECT $columns
@@ -411,6 +416,7 @@ func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *strea
 			status.TwitchID,
 		)
 		if err == db.NotFound {
+			log.Debug().Msg("Inserting new stream")
 			inserted = true
 		} else if err != nil {
 			return false, oops.New(err, "failed to query existing stream")
@@ -432,6 +438,7 @@ func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *strea
 			return false, oops.New(err, "failed to insert twitch streamer into db")
 		}
 	} else {
+		log.Debug().Msg("Stream not relevant")
 		_, err := conn.Exec(ctx,
 			`
 			DELETE FROM twitch_streams WHERE twitch_id = $1
@@ -441,7 +448,6 @@ func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *strea
 		if err != nil {
 			return false, oops.New(err, "failed to remove twitch streamer from db")
 		}
-		inserted = false
 	}
 	return inserted, nil
 }
