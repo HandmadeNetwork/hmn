@@ -193,6 +193,25 @@ var HMNTemplateFuncs = template.FuncMap{
 	"noescape": func(str string) template.HTML {
 		return template.HTML(str)
 	},
+	"filesize": func(numBytes int) string {
+		scales := []string{
+			" bytes",
+			"kb",
+			"mb",
+			"gb",
+		}
+		num := float64(numBytes)
+		scale := 0
+		for num > 1024 && scale < len(scales)-1 {
+			num /= 1024
+			scale += 1
+		}
+		precision := 0
+		if scale > 0 {
+			precision = 2
+		}
+		return fmt.Sprintf("%.*f%s", precision, num, scales[scale])
+	},
 
 	// NOTE(asaf): Template specific functions:
 	"projectcarddata": func(project Project, classes string) ProjectCardData {

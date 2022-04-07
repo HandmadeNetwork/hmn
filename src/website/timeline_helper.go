@@ -89,6 +89,8 @@ func SnippetToTimelineItem(
 			item.EmbedMedia = append(item.EmbedMedia, videoMediaItem(asset))
 		} else if strings.HasPrefix(asset.MimeType, "audio/") {
 			item.EmbedMedia = append(item.EmbedMedia, audioMediaItem(asset))
+		} else {
+			item.EmbedMedia = append(item.EmbedMedia, unknownMediaItem(asset))
 		}
 	}
 
@@ -100,7 +102,8 @@ func SnippetToTimelineItem(
 		}
 	}
 
-	if len(item.EmbedMedia) > 0 && (item.EmbedMedia[0].Width == 0 || item.EmbedMedia[0].Height == 0) {
+	if len(item.EmbedMedia) == 0 ||
+		(len(item.EmbedMedia) > 0 && (item.EmbedMedia[0].Width == 0 || item.EmbedMedia[0].Height == 0)) {
 		item.CanShowcase = false
 	}
 
@@ -183,5 +186,17 @@ func youtubeMediaItem(videoId string) templates.TimelineItemMedia {
 			{Property: "og:video", Value: fmt.Sprintf("https://youtube.com/watch?v=%s", videoId)},
 			{Name: "twitter:card", Value: "player"},
 		},
+	}
+}
+
+func unknownMediaItem(asset *models.Asset) templates.TimelineItemMedia {
+	assetUrl := hmnurl.BuildS3Asset(asset.S3Key)
+
+	return templates.TimelineItemMedia{
+		Type:     templates.TimelineItemMediaTypeUnknown,
+		AssetUrl: assetUrl,
+		MimeType: asset.MimeType,
+		Filename: asset.Filename,
+		FileSize: asset.Size,
 	}
 }

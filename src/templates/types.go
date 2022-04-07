@@ -305,7 +305,8 @@ type TimelineItem struct {
 type TimelineItemMediaType int
 
 const (
-	TimelineItemMediaTypeImage TimelineItemMediaType = iota + 1
+	TimelineItemMediaTypeUnknown TimelineItemMediaType = iota
+	TimelineItemMediaTypeImage
 	TimelineItemMediaTypeVideo
 	TimelineItemMediaTypeAudio
 	TimelineItemMediaTypeEmbed
@@ -318,6 +319,8 @@ type TimelineItemMedia struct {
 	ThumbnailUrl        string
 	MimeType            string
 	Width, Height       int
+	Filename            string
+	FileSize            int
 	ExtraOpenGraphItems []OpenGraphItem
 }
 

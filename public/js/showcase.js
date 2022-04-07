@@ -1,4 +1,5 @@
 const TimelineMediaTypes = {
+	UNKNOWN: 0,
     IMAGE: 1,
     VIDEO: 2,
     AUDIO: 3,
