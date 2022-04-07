@@ -78,6 +78,22 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save new Discord user info"))
 	}
 
+	if c.CurrentUser.Status == models.UserStatusConfirmed {
+		_, err = c.Conn.Exec(c.Context(),
+			`
+			UPDATE auth_user
+			SET status = $1
+			WHERE id = $2
+			`,
+			models.UserStatusApproved,
+			c.CurrentUser.ID,
+		)
+		if err != nil {
+			c.Logger.Error().Err(err).Msg("failed to set user status to approved after linking discord account")
+			// NOTE(asaf): It's not worth failing the request over this, so we're not returning an error to the user.
+		}
+	}
+
 	return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)
 }
 
