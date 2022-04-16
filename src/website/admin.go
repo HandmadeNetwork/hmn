@@ -207,7 +207,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		userIds = append(userIds, u.User.ID)
 	}
 
-	userLinks, err := db.Query(c.Context(), c.Conn, models.Link{},
+	userLinks, err := db.Query[models.Link](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -222,8 +222,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user links"))
 	}
 
-	for _, ul := range userLinks {
-		link := ul.(*models.Link)
+	for _, link := range userLinks {
 		userData := unapprovedUsers[userIDToDataIdx[*link.UserID]]
 		userData.UserLinks = append(userData.UserLinks, templates.LinkToTemplate(link))
 	}
@@ -257,12 +256,9 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "User id can't be parsed")
 	}
 
-	type userQuery struct {
-		User models.User `db:"auth_user"`
-	}
-	u, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
+	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 		`
-		SELECT $columns
+		SELECT $columns{auth_user}
 			FROM auth_user
 			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		WHERE auth_user.id = $1
@@ -276,7 +272,6 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
 		}
 	}
-	user := u.(*userQuery).User
 
 	whatHappened := ""
 	if action == ApprovalQueueActionApprove {
@@ -337,7 +332,7 @@ type UnapprovedPost struct {
 }
 
 func fetchUnapprovedPosts(c *RequestContext) ([]*UnapprovedPost, error) {
-	it, err := db.Query(c.Context(), c.Conn, UnapprovedPost{},
+	posts, err := db.Query[UnapprovedPost](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -358,11 +353,7 @@ func fetchUnapprovedPosts(c *RequestContext) ([]*UnapprovedPost, error) {
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch unapproved posts")
 	}
-	var res []*UnapprovedPost
-	for _, iresult := range it {
-		res = append(res, iresult.(*UnapprovedPost))
-	}
-	return res, nil
+	return posts, nil
 }
 
 type UnapprovedProject struct {
@@ -372,12 +363,9 @@ type UnapprovedProject struct {
 }
 
 func fetchUnapprovedProjects(c *RequestContext) ([]UnapprovedProject, error) {
-	type unapprovedUser struct {
-		ID int `db:"id"`
-	}
-	it, err := db.Query(c.Context(), c.Conn, unapprovedUser{},
+	ownerIDs, err := db.QueryScalar[int](c.Context(), c.Conn,
 		`
-		SELECT $columns
+		SELECT id
 		FROM
 			auth_user AS u
 		WHERE
@@ -387,10 +375,6 @@ func fetchUnapprovedProjects(c *RequestContext) ([]UnapprovedProject, error) {
 	)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch unapproved users")
-	}
-	ownerIDs := make([]int, 0, len(it))
-	for _, uid := range it {
-		ownerIDs = append(ownerIDs, uid.(*unapprovedUser).ID)
 	}
 
 	projects, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
@@ -406,7 +390,7 @@ func fetchUnapprovedProjects(c *RequestContext) ([]UnapprovedProject, error) {
 		projectIDs = append(projectIDs, p.Project.ID)
 	}
 
-	projectLinks, err := db.Query(c.Context(), c.Conn, models.Link{},
+	projectLinks, err := db.Query[models.Link](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -425,8 +409,7 @@ func fetchUnapprovedProjects(c *RequestContext) ([]UnapprovedProject, error) {
 
 	for idx, proj := range projects {
 		links := make([]*models.Link, 0, 10) // NOTE(asaf): 10 should be enough for most projects.
-		for _, l := range projectLinks {
-			link := l.(*models.Link)
+		for _, link := range projectLinks {
 			if *link.ProjectID == proj.Project.ID {
 				links = append(links, link)
 			}
@@ -455,7 +438,7 @@ func deleteAllPostsForUser(ctx context.Context, conn *pgxpool.Pool, userId int) 
 		ThreadID int `db:"thread.id"`
 		PostID   int `db:"post.id"`
 	}
-	it, err := db.Query(ctx, tx, toDelete{},
+	rows, err := db.Query[toDelete](ctx, tx,
 		`
 		SELECT $columns
 		FROM
@@ -471,8 +454,7 @@ func deleteAllPostsForUser(ctx context.Context, conn *pgxpool.Pool, userId int) 
 		return oops.New(err, "failed to fetch posts to delete for user")
 	}
 
-	for _, iResult := range it {
-		row := iResult.(*toDelete)
+	for _, row := range rows {
 		hmndata.DeletePost(ctx, tx, row.ThreadID, row.PostID)
 	}
 	err = tx.Commit(ctx)
@@ -489,9 +471,9 @@ func deleteAllProjectsForUser(ctx context.Context, conn *pgxpool.Pool, userId in
 	}
 	defer tx.Rollback(ctx)
 
-	toDelete, err := db.Query(ctx, tx, models.Project{},
+	projectIDsToDelete, err := db.QueryScalar[int](ctx, tx,
 		`
-		SELECT $columns
+		SELECT project.id
 		FROM
 			handmade_project AS project
 			JOIN handmade_user_projects AS up ON up.project_id = project.id
@@ -504,17 +486,12 @@ func deleteAllProjectsForUser(ctx context.Context, conn *pgxpool.Pool, userId in
 		return oops.New(err, "failed to fetch user's projects")
 	}
 
-	var projectIds []int
-	for _, p := range toDelete {
-		projectIds = append(projectIds, p.(*models.Project).ID)
-	}
-
-	if len(projectIds) > 0 {
+	if len(projectIDsToDelete) > 0 {
 		_, err = tx.Exec(ctx,
 			`
 			DELETE FROM handmade_project WHERE id = ANY($1)
 			`,
-			projectIds,
+			projectIDsToDelete,
 		)
 		if err != nil {
 			return oops.New(err, "failed to delete user's projects")

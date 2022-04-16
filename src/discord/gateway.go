@@ -250,7 +250,7 @@ func (bot *botInstance) connect(ctx context.Context) error {
 	// an old one or starting a new one.
 
 	shouldResume := true
-	isession, err := db.QueryOne(ctx, bot.dbConn, models.DiscordSession{}, `SELECT $columns FROM discord_session`)
+	session, err := db.QueryOne[models.DiscordSession](ctx, bot.dbConn, `SELECT $columns FROM discord_session`)
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			// No session yet! Just identify and get on with it
@@ -262,8 +262,6 @@ func (bot *botInstance) connect(ctx context.Context) error {
 
 	if shouldResume {
 		// Reconnect to the previous session
-		session := isession.(*models.DiscordSession)
-
 		err := bot.sendGatewayMessage(ctx, GatewayMessage{
 			Opcode: OpcodeResume,
 			Data: Resume{
@@ -356,7 +354,7 @@ func (bot *botInstance) doSender(ctx context.Context) {
 		}
 		bot.didAckHeartbeat = false
 
-		latestSequenceNumber, err := db.QueryInt(ctx, bot.dbConn, `SELECT sequence_number FROM discord_session`)
+		latestSequenceNumber, err := db.QueryOneScalar[int](ctx, bot.dbConn, `SELECT sequence_number FROM discord_session`)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to fetch latest sequence number from the db")
 			return false
@@ -408,7 +406,7 @@ func (bot *botInstance) doSender(ctx context.Context) {
 				}
 				defer tx.Rollback(ctx)
 
-				msgs, err := db.Query(ctx, tx, models.DiscordOutgoingMessage{}, `
+				msgs, err := db.Query[models.DiscordOutgoingMessage](ctx, tx, `
 					SELECT $columns
 					FROM discord_outgoingmessages
 					ORDER BY id ASC
@@ -418,8 +416,7 @@ func (bot *botInstance) doSender(ctx context.Context) {
 					return
 				}
 
-				for _, imsg := range msgs {
-					msg := imsg.(*models.DiscordOutgoingMessage)
+				for _, msg := range msgs {
 					if time.Now().After(msg.ExpiresAt) {
 						continue
 					}

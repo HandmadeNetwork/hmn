@@ -22,12 +22,9 @@ type TwitchStreamer struct {
 var twitchRegex = regexp.MustCompile(`twitch\.tv/(?P<login>[^/]+)$`)
 
 func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx) ([]TwitchStreamer, error) {
-	type linkResult struct {
-		Link models.Link `db:"link"`
-	}
-	streamers, err := db.Query(ctx, dbConn, linkResult{},
+	dbStreamers, err := db.Query[models.Link](ctx, dbConn,
 		`
-		SELECT $columns
+		SELECT $columns{link}
 		FROM
 			handmade_links AS link
 			LEFT JOIN auth_user AS link_owner ON link_owner.id = link.user_id
@@ -49,10 +46,8 @@ func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx) ([]TwitchStre
 		return nil, oops.New(err, "failed to fetch twitch links")
 	}
 
-	result := make([]TwitchStreamer, 0, len(streamers))
-	for _, s := range streamers {
-		dbStreamer := s.(*linkResult).Link
-
+	result := make([]TwitchStreamer, 0, len(dbStreamers))
+	for _, dbStreamer := range dbStreamers {
 		streamer := TwitchStreamer{
 			UserID:    dbStreamer.UserID,
 			ProjectID: dbStreamer.ProjectID,
@@ -81,7 +76,7 @@ func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx) ([]TwitchStre
 }
 
 func FetchTwitchLoginsForUserOrProject(ctx context.Context, dbConn db.ConnOrTx, userId *int, projectId *int) ([]string, error) {
-	links, err := db.Query(ctx, dbConn, models.Link{},
+	links, err := db.Query[models.Link](ctx, dbConn,
 		`
 		SELECT $columns
 		FROM
@@ -100,8 +95,7 @@ func FetchTwitchLoginsForUserOrProject(ctx context.Context, dbConn db.ConnOrTx, 
 	result := make([]string, 0, len(links))
 
 	for _, l := range links {
-		url := l.(*models.Link).URL
-		match := twitchRegex.FindStringSubmatch(url)
+		match := twitchRegex.FindStringSubmatch(l.URL)
 		if match != nil {
 			login := strings.ToLower(match[twitchRegex.SubexpIndex("login")])
 			result = append(result, login)

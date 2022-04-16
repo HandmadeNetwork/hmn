@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/config"
@@ -20,46 +21,17 @@ import (
 )
 
 /*
-Values of these kinds are ok to query even if they are not directly understood by pgtype.
-This is common for custom types like:
-
-	type ThreadType int
+A general error to be used when no results are found. This is the error returned
+by QueryOne, and can generally be used by other database helpers that fetch a single
+result but find nothing.
 */
-var queryableKinds = []reflect.Kind{
-	reflect.Int,
-}
-
-/*
-Checks if we are able to handle a particular type in a database query. This applies only to
-primitive types and not structs, since the database only returns individual primitive types
-and it is our job to stitch them back together into structs later.
-*/
-func typeIsQueryable(t reflect.Type) bool {
-	_, isRecognizedByPgtype := connInfo.DataTypeForValue(reflect.New(t).Elem().Interface()) // if pgtype recognizes it, we don't need to dig in further for more `db` tags
-	// NOTE: boy it would be nice if we didn't have to do reflect.New here, considering that pgtype is just doing reflection on the value anyway
-
-	if isRecognizedByPgtype {
-		return true
-	} else if t == reflect.TypeOf(uuid.UUID{}) {
-		return true
-	}
-
-	// pgtype doesn't recognize it, but maybe it's a primitive type we can deal with
-	k := t.Kind()
-	for _, qk := range queryableKinds {
-		if k == qk {
-			return true
-		}
-	}
-
-	return false
-}
+var NotFound = errors.New("not found")
 
 // This interface should match both a direct pgx connection or a pgx transaction.
 type ConnOrTx interface {
-	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
-	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
-	Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 
 	// Both raw database connections and transactions in pgx can begin/commit
 	// transactions. For database connections it does the obvious thing; for
@@ -70,6 +42,8 @@ type ConnOrTx interface {
 
 var connInfo = pgtype.NewConnInfo()
 
+// Creates a new connection to the HMN database.
+// This connection is not safe for concurrent use.
 func NewConn() *pgx.Conn {
 	conn, err := pgx.Connect(context.Background(), config.Config.Postgres.DSN())
 	if err != nil {
@@ -79,6 +53,8 @@ func NewConn() *pgx.Conn {
 	return conn
 }
 
+// Creates a connection pool for the HMN database.
+// The resulting pool is safe for concurrent use.
 func NewConnPool(minConns, maxConns int32) *pgxpool.Pool {
 	cfg, err := pgxpool.ParseConfig(config.Config.Postgres.DSN())
 
@@ -95,144 +71,20 @@ func NewConnPool(minConns, maxConns int32) *pgxpool.Pool {
 	return conn
 }
 
-type StructQueryIterator struct {
-	fieldPaths [][]int
-	rows       pgx.Rows
-	destType   reflect.Type
-	closed     chan struct{}
-}
+/*
+Performs a SQL query and returns a slice of all the result rows. The query is just plain SQL, but make sure to read the package documentation for details. You must explicitly provide the type argument - this is how it knows what Go type to map the results to, and it cannot be inferred.
 
-func (it *StructQueryIterator) Next() (interface{}, bool) {
-	hasNext := it.rows.Next()
-	if !hasNext {
-		it.Close()
-		return nil, false
-	}
+Any SQL query may be performed, including INSERT and UPDATE - as long as it returns a result set, you can use this. If the query does not return a result set, or you simply do not care about the result set, call Exec directly on your pgx connection.
 
-	result := reflect.New(it.destType)
-
-	vals, err := it.rows.Values()
-	if err != nil {
-		panic(err)
-	}
-
-	// Better logging of panics in this confusing reflection process
-	var currentField reflect.StructField
-	var currentValue reflect.Value
-	var currentIdx int
-	defer func() {
-		if r := recover(); r != nil {
-			if currentValue.IsValid() {
-				logging.Error().
-					Int("index", currentIdx).
-					Str("field name", currentField.Name).
-					Stringer("field type", currentField.Type).
-					Interface("value", currentValue.Interface()).
-					Stringer("value type", currentValue.Type()).
-					Msg("panic in iterator")
-			}
-
-			if currentField.Name != "" {
-				panic(fmt.Errorf("panic while processing field '%s': %v", currentField.Name, r))
-			} else {
-				panic(r)
-			}
-		}
-	}()
-
-	for i, val := range vals {
-		currentIdx = i
-		if val == nil {
-			continue
-		}
-
-		var field reflect.Value
-		field, currentField = followPathThroughStructs(result, it.fieldPaths[i])
-		if field.Kind() == reflect.Ptr {
-			field.Set(reflect.New(field.Type().Elem()))
-			field = field.Elem()
-		}
-
-		// Some actual values still come through as pointers (like net.IPNet). Dunno why.
-		// Regardless, we know it's not nil, so we can get at the contents.
-		valReflected := reflect.ValueOf(val)
-		if valReflected.Kind() == reflect.Ptr {
-			valReflected = valReflected.Elem()
-		}
-		currentValue = valReflected
-
-		switch field.Kind() {
-		case reflect.Int:
-			field.SetInt(valReflected.Int())
-		default:
-			field.Set(valReflected)
-		}
-
-		currentField = reflect.StructField{}
-		currentValue = reflect.Value{}
-	}
-
-	return result.Interface(), true
-}
-
-func (it *StructQueryIterator) Close() {
-	it.rows.Close()
-	select {
-	case it.closed <- struct{}{}:
-	default:
-	}
-}
-
-func (it *StructQueryIterator) ToSlice() []interface{} {
-	defer it.Close()
-	var result []interface{}
-	for {
-		row, ok := it.Next()
-		if !ok {
-			err := it.rows.Err()
-			if err != nil {
-				panic(oops.New(err, "error while iterating through db results"))
-			}
-			break
-		}
-		result = append(result, row)
-	}
-	return result
-}
-
-func followPathThroughStructs(structPtrVal reflect.Value, path []int) (reflect.Value, reflect.StructField) {
-	if len(path) < 1 {
-		panic(oops.New(nil, "can't follow an empty path"))
-	}
-
-	if structPtrVal.Kind() != reflect.Ptr || structPtrVal.Elem().Kind() != reflect.Struct {
-		panic(oops.New(nil, "structPtrVal must be a pointer to a struct; got value of type %s", structPtrVal.Type()))
-	}
-
-	// more informative panic recovery
-	var field reflect.StructField
-	defer func() {
-		if r := recover(); r != nil {
-			panic(oops.New(nil, "panic at field '%s': %v", field.Name, r))
-		}
-	}()
-
-	val := structPtrVal
-	for _, i := range path {
-		if val.Kind() == reflect.Ptr && val.Type().Elem().Kind() == reflect.Struct {
-			if val.IsNil() {
-				val.Set(reflect.New(val.Type().Elem()))
-			}
-			val = val.Elem()
-		}
-		field = val.Type().Field(i)
-		val = val.Field(i)
-	}
-	return val, field
-}
-
-func Query(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) ([]interface{}, error) {
-	it, err := QueryIterator(ctx, conn, destExample, query, args...)
+This function always returns pointers to the values. This is convenient for structs, but for other types, you may wish to use QueryScalar.
+*/
+func Query[T any](
+	ctx context.Context,
+	conn ConnOrTx,
+	query string,
+	args ...any,
+) ([]*T, error) {
+	it, err := QueryIterator[T](ctx, conn, query, args...)
 	if err != nil {
 		return nil, err
 	} else {
@@ -240,27 +92,99 @@ func Query(ctx context.Context, conn ConnOrTx, destExample interface{}, query st
 	}
 }
 
-func QueryIterator(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) (*StructQueryIterator, error) {
-	destType := reflect.TypeOf(destExample)
-	columnNames, fieldPaths, err := getColumnNamesAndPaths(destType, nil, nil)
+/*
+Identical to Query, but returns only the first result row. If there are no
+rows in the result set, returns NotFound.
+*/
+func QueryOne[T any](
+	ctx context.Context,
+	conn ConnOrTx,
+	query string,
+	args ...any,
+) (*T, error) {
+	rows, err := QueryIterator[T](ctx, conn, query, args...)
 	if err != nil {
-		return nil, oops.New(err, "failed to generate column names")
+		return nil, err
+	}
+	defer rows.Close()
+
+	result, hasRow := rows.Next()
+	if !hasRow {
+		return nil, NotFound
 	}
 
-	columns := make([]string, 0, len(columnNames))
-	for _, strSlice := range columnNames {
-		tableName := strings.Join(strSlice[0:len(strSlice)-1], "_")
-		fullName := strSlice[len(strSlice)-1]
-		if tableName != "" {
-			fullName = tableName + "." + fullName
+	return result, nil
+}
+
+/*
+Identical to Query, but returns concrete values instead of pointers. More convenient
+for primitive types.
+*/
+func QueryScalar[T any](
+	ctx context.Context,
+	conn ConnOrTx,
+	query string,
+	args ...any,
+) ([]T, error) {
+	rows, err := QueryIterator[T](ctx, conn, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []T
+	for {
+		val, hasRow := rows.Next()
+		if !hasRow {
+			break
 		}
-		columns = append(columns, fullName)
+		result = append(result, *val)
 	}
 
-	columnNamesString := strings.Join(columns, ", ")
-	query = strings.Replace(query, "$columns", columnNamesString, -1)
+	return result, nil
+}
 
-	rows, err := conn.Query(ctx, query, args...)
+/*
+Identical to QueryScalar, but returns only the first result value. If there are
+no rows in the result set, returns NotFound.
+*/
+func QueryOneScalar[T any](
+	ctx context.Context,
+	conn ConnOrTx,
+	query string,
+	args ...any,
+) (T, error) {
+	rows, err := QueryIterator[T](ctx, conn, query, args...)
+	if err != nil {
+		var zero T
+		return zero, err
+	}
+	defer rows.Close()
+
+	result, hasRow := rows.Next()
+	if !hasRow {
+		var zero T
+		return zero, NotFound
+	}
+
+	return *result, nil
+}
+
+/*
+Identical to Query, but returns the ResultIterator instead of automatically converting the results to a slice. The iterator must be closed after use.
+*/
+func QueryIterator[T any](
+	ctx context.Context,
+	conn ConnOrTx,
+	query string,
+	args ...any,
+) (*Iterator[T], error) {
+	var destExample T
+	destType := reflect.TypeOf(destExample)
+
+	compiled := compileQuery(query, destType)
+
+	rows, err := conn.Query(ctx, compiled.query, args...)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			panic("query exceeded its deadline")
@@ -268,11 +192,12 @@ func QueryIterator(ctx context.Context, conn ConnOrTx, destExample interface{}, 
 		return nil, err
 	}
 
-	it := &StructQueryIterator{
-		fieldPaths: fieldPaths,
-		rows:       rows,
-		destType:   destType,
-		closed:     make(chan struct{}, 1),
+	it := &Iterator[T]{
+		fieldPaths:       compiled.fieldPaths,
+		rows:             rows,
+		destType:         compiled.destType,
+		destTypeIsScalar: typeIsQueryable(compiled.destType),
+		closed:           make(chan struct{}, 1),
 	}
 
 	// Ensure that iterators are closed if context is cancelled. Otherwise, iterators can hold
@@ -292,16 +217,72 @@ func QueryIterator(ctx context.Context, conn ConnOrTx, destExample interface{}, 
 	return it, nil
 }
 
-func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix []string) (names [][]string, paths [][]int, err error) {
-	var columnNames [][]string
-	var fieldPaths [][]int
+// TODO: QueryFunc?
+
+type compiledQuery struct {
+	query      string
+	destType   reflect.Type
+	fieldPaths []fieldPath
+}
+
+var reColumnsPlaceholder = regexp.MustCompile(`\$columns({(.*?)})?`)
+
+func compileQuery(query string, destType reflect.Type) compiledQuery {
+	columnsMatch := reColumnsPlaceholder.FindStringSubmatch(query)
+	hasColumnsPlaceholder := columnsMatch != nil
+
+	if hasColumnsPlaceholder {
+		// The presence of the $columns placeholder means that the destination type
+		// must be a struct, and we will plonk that struct's fields into the query.
+
+		if destType.Kind() != reflect.Struct {
+			panic("$columns can only be used when querying into a struct")
+		}
+
+		var prefix []string
+		prefixText := columnsMatch[2]
+		if prefixText != "" {
+			prefix = []string{prefixText}
+		}
+
+		columnNames, fieldPaths := getColumnNamesAndPaths(destType, nil, prefix)
+
+		columns := make([]string, 0, len(columnNames))
+		for _, strSlice := range columnNames {
+			tableName := strings.Join(strSlice[0:len(strSlice)-1], "_")
+			fullName := strSlice[len(strSlice)-1]
+			if tableName != "" {
+				fullName = tableName + "." + fullName
+			}
+			columns = append(columns, fullName)
+		}
+
+		columnNamesString := strings.Join(columns, ", ")
+		query = reColumnsPlaceholder.ReplaceAllString(query, columnNamesString)
+
+		return compiledQuery{
+			query:      query,
+			destType:   destType,
+			fieldPaths: fieldPaths,
+		}
+	} else {
+		return compiledQuery{
+			query:    query,
+			destType: destType,
+		}
+	}
+}
+
+func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix []string) (names []columnName, paths []fieldPath) {
+	var columnNames []columnName
+	var fieldPaths []fieldPath
 
 	if destType.Kind() == reflect.Ptr {
 		destType = destType.Elem()
 	}
 
 	if destType.Kind() != reflect.Struct {
-		return nil, nil, oops.New(nil, "can only get column names and paths from a struct, got type '%v' (at prefix '%v')", destType.Name(), prefix)
+		panic(fmt.Errorf("can only get column names and paths from a struct, got type '%v' (at prefix '%v')", destType.Name(), prefix))
 	}
 
 	type AnonPrefix struct {
@@ -348,108 +329,214 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix []str
 				columnNames = append(columnNames, fieldColumnNames)
 				fieldPaths = append(fieldPaths, path)
 			} else if fieldType.Kind() == reflect.Struct {
-				subCols, subPaths, err := getColumnNamesAndPaths(fieldType, path, fieldColumnNames)
-				if err != nil {
-					return nil, nil, err
-				}
+				subCols, subPaths := getColumnNamesAndPaths(fieldType, path, fieldColumnNames)
 				columnNames = append(columnNames, subCols...)
 				fieldPaths = append(fieldPaths, subPaths...)
 			} else {
-				return nil, nil, oops.New(nil, "field '%s' in type %s has invalid type '%s'", field.Name, destType, field.Type)
+				panic(fmt.Errorf("field '%s' in type %s has invalid type '%s'", field.Name, destType, field.Type))
 			}
 		}
 	}
 
-	return columnNames, fieldPaths, nil
+	return columnNames, fieldPaths
 }
 
 /*
-A general error to be used when no results are found. This is the error returned
-by QueryOne, and can generally be used by other database helpers that fetch a single
-result but find nothing.
+Values of these kinds are ok to query even if they are not directly understood by pgtype.
+This is common for custom types like:
+
+	type ThreadType int
 */
-var NotFound = errors.New("not found")
-
-func QueryOne(ctx context.Context, conn ConnOrTx, destExample interface{}, query string, args ...interface{}) (interface{}, error) {
-	rows, err := QueryIterator(ctx, conn, destExample, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	result, hasRow := rows.Next()
-	if !hasRow {
-		return nil, NotFound
-	}
-
-	return result, nil
+var queryableKinds = []reflect.Kind{
+	reflect.Int,
 }
 
-func QueryScalar(ctx context.Context, conn ConnOrTx, query string, args ...interface{}) (interface{}, error) {
-	rows, err := conn.Query(ctx, query, args...)
-	if err != nil {
-		return nil, err
+/*
+Checks if we are able to handle a particular type in a database query. This applies only to
+primitive types and not structs, since the database only returns individual primitive types
+and it is our job to stitch them back together into structs later.
+*/
+func typeIsQueryable(t reflect.Type) bool {
+	_, isRecognizedByPgtype := connInfo.DataTypeForValue(reflect.New(t).Elem().Interface()) // if pgtype recognizes it, we don't need to dig in further for more `db` tags
+	// NOTE: boy it would be nice if we didn't have to do reflect.New here, considering that pgtype is just doing reflection on the value anyway
+
+	if isRecognizedByPgtype {
+		return true
+	} else if t == reflect.TypeOf(uuid.UUID{}) {
+		return true
 	}
-	defer rows.Close()
 
-	if rows.Next() {
-		vals, err := rows.Values()
-		if err != nil {
-			panic(err)
+	// pgtype doesn't recognize it, but maybe it's a primitive type we can deal with
+	k := t.Kind()
+	for _, qk := range queryableKinds {
+		if k == qk {
+			return true
 		}
+	}
 
+	return false
+}
+
+type columnName []string
+
+// A path to a particular field in query's destination type. Each index in the slice
+// corresponds to a field index for use with Field on a reflect.Type or reflect.Value.
+type fieldPath []int
+
+type Iterator[T any] struct {
+	fieldPaths       []fieldPath
+	rows             pgx.Rows
+	destType         reflect.Type
+	destTypeIsScalar bool // NOTE(ben): Make sure this gets set every time destType gets set, based on typeIsQueryable(destType). This is kinda fragile...but also contained to this file, so doesn't seem worth a lazy evaluation or a constructor function.
+	closed           chan struct{}
+}
+
+func (it *Iterator[T]) Next() (*T, bool) {
+	// TODO(ben): What happens if this panics? Does it leak resources? Do we need
+	// to put a recover() here and close the rows?
+
+	hasNext := it.rows.Next()
+	if !hasNext {
+		it.Close()
+		return nil, false
+	}
+
+	result := reflect.New(it.destType)
+
+	vals, err := it.rows.Values()
+	if err != nil {
+		panic(err)
+	}
+
+	if it.destTypeIsScalar {
+		// This type can be directly queried, meaning pgx recognizes it, it's
+		// a simple scalar thing, and we can just take the easy way out.
 		if len(vals) != 1 {
-			return nil, oops.New(nil, "you must query exactly one field with QueryScalar, not %v", len(vals))
+			panic(fmt.Errorf("tried to query a scalar value, but got %v values in the row", len(vals)))
+		}
+		setValueFromDB(result.Elem(), reflect.ValueOf(vals[0]))
+		return result.Interface().(*T), true
+	} else {
+		var currentField reflect.StructField
+		var currentValue reflect.Value
+		var currentIdx int
+
+		// Better logging of panics in this confusing reflection process
+		defer func() {
+			if r := recover(); r != nil {
+				if currentValue.IsValid() {
+					logging.Error().
+						Int("index", currentIdx).
+						Str("field name", currentField.Name).
+						Stringer("field type", currentField.Type).
+						Interface("value", currentValue.Interface()).
+						Stringer("value type", currentValue.Type()).
+						Msg("panic in iterator")
+				}
+
+				if currentField.Name != "" {
+					panic(fmt.Errorf("panic while processing field '%s': %v", currentField.Name, r))
+				} else {
+					panic(r)
+				}
+			}
+		}()
+
+		for i, val := range vals {
+			currentIdx = i
+			if val == nil {
+				continue
+			}
+
+			var field reflect.Value
+			field, currentField = followPathThroughStructs(result, it.fieldPaths[i])
+			if field.Kind() == reflect.Ptr {
+				field.Set(reflect.New(field.Type().Elem()))
+				field = field.Elem()
+			}
+
+			// Some actual values still come through as pointers (like net.IPNet). Dunno why.
+			// Regardless, we know it's not nil, so we can get at the contents.
+			valReflected := reflect.ValueOf(val)
+			if valReflected.Kind() == reflect.Ptr {
+				valReflected = valReflected.Elem()
+			}
+			currentValue = valReflected
+
+			setValueFromDB(field, valReflected)
+
+			currentField = reflect.StructField{}
+			currentValue = reflect.Value{}
 		}
 
-		return vals[0], nil
-	}
-
-	return nil, NotFound
-}
-
-func QueryString(ctx context.Context, conn ConnOrTx, query string, args ...interface{}) (string, error) {
-	result, err := QueryScalar(ctx, conn, query, args...)
-	if err != nil {
-		return "", err
-	}
-
-	switch r := result.(type) {
-	case string:
-		return r, nil
-	default:
-		return "", oops.New(nil, "QueryString got a non-string result: %v", result)
+		return result.Interface().(*T), true
 	}
 }
 
-func QueryInt(ctx context.Context, conn ConnOrTx, query string, args ...interface{}) (int, error) {
-	result, err := QueryScalar(ctx, conn, query, args...)
-	if err != nil {
-		return 0, err
-	}
-
-	switch r := result.(type) {
-	case int:
-		return r, nil
-	case int32:
-		return int(r), nil
-	case int64:
-		return int(r), nil
+func setValueFromDB(dest reflect.Value, value reflect.Value) {
+	switch dest.Kind() {
+	case reflect.Int:
+		dest.SetInt(value.Int())
 	default:
-		return 0, oops.New(nil, "QueryInt got a non-int result: %v", result)
+		dest.Set(value)
 	}
 }
 
-func QueryBool(ctx context.Context, conn ConnOrTx, query string, args ...interface{}) (bool, error) {
-	result, err := QueryScalar(ctx, conn, query, args...)
-	if err != nil {
-		return false, err
+func (it *Iterator[any]) Close() {
+	it.rows.Close()
+	select {
+	case it.closed <- struct{}{}:
+	default:
+	}
+}
+
+/*
+Pulls all the remaining values into a slice, and closes the iterator.
+*/
+func (it *Iterator[T]) ToSlice() []*T {
+	defer it.Close()
+	var result []*T
+	for {
+		row, ok := it.Next()
+		if !ok {
+			err := it.rows.Err()
+			if err != nil {
+				panic(oops.New(err, "error while iterating through db results"))
+			}
+			break
+		}
+		result = append(result, row)
+	}
+	return result
+}
+
+func followPathThroughStructs(structPtrVal reflect.Value, path []int) (reflect.Value, reflect.StructField) {
+	if len(path) < 1 {
+		panic(oops.New(nil, "can't follow an empty path"))
 	}
 
-	switch r := result.(type) {
-	case bool:
-		return r, nil
-	default:
-		return false, oops.New(nil, "QueryBool got a non-bool result: %v", result)
+	if structPtrVal.Kind() != reflect.Ptr || structPtrVal.Elem().Kind() != reflect.Struct {
+		panic(oops.New(nil, "structPtrVal must be a pointer to a struct; got value of type %s", structPtrVal.Type()))
 	}
+
+	// more informative panic recovery
+	var field reflect.StructField
+	defer func() {
+		if r := recover(); r != nil {
+			panic(oops.New(nil, "panic at field '%s': %v", field.Name, r))
+		}
+	}()
+
+	val := structPtrVal
+	for _, i := range path {
+		if val.Kind() == reflect.Ptr && val.Type().Elem().Kind() == reflect.Struct {
+			if val.IsNil() {
+				val.Set(reflect.New(val.Type().Elem()))
+			}
+			val = val.Elem()
+		}
+		field = val.Type().Field(i)
+		val = val.Field(i)
+	}
+	return val, field
 }

@@ -140,7 +140,7 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 	}
 
 	// Fetch and return the new record
-	iasset, err := db.QueryOne(ctx, dbConn, models.Asset{},
+	asset, err := db.QueryOne[models.Asset](ctx, dbConn,
 		`
 		SELECT $columns
 		FROM handmade_asset
@@ -152,5 +152,5 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 		return nil, oops.New(err, "failed to fetch newly-created asset")
 	}
 
-	return iasset.(*models.Asset), nil
+	return asset, nil
 }

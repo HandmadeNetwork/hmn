@@ -104,7 +104,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c.Context())
 
-	iDiscordUser, err := db.QueryOne(c.Context(), tx, models.DiscordUser{},
+	discordUser, err := db.QueryOne[models.DiscordUser](c.Context(), tx,
 		`
 		SELECT $columns
 		FROM handmade_discorduser
@@ -119,7 +119,6 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get Discord user for unlink"))
 		}
 	}
-	discordUser := iDiscordUser.(*models.DiscordUser)
 
 	_, err = tx.Exec(c.Context(),
 		`
@@ -146,7 +145,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 }
 
 func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
-	iduser, err := db.QueryOne(c.Context(), c.Conn, models.DiscordUser{},
+	duser, err := db.QueryOne[models.DiscordUser](c.Context(), c.Conn,
 		`SELECT $columns FROM handmade_discorduser WHERE hmn_user_id = $1`,
 		c.CurrentUser.ID,
 	)
@@ -157,14 +156,10 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 	} else if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get discord user"))
 	}
-	duser := iduser.(*models.DiscordUser)
 
-	type messageIdQuery struct {
-		MessageID string `db:"msg.id"`
-	}
-	iMsgIDs, err := db.Query(c.Context(), c.Conn, messageIdQuery{},
+	msgIDs, err := db.QueryScalar[string](c.Context(), c.Conn,
 		`
-		SELECT $columns
+		SELECT msg.id
 		FROM
 			handmade_discordmessage AS msg
 		WHERE
@@ -178,10 +173,6 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	var msgIDs []string
-	for _, imsgId := range iMsgIDs {
-		msgIDs = append(msgIDs, imsgId.(*messageIdQuery).MessageID)
-	}
 	for _, msgID := range msgIDs {
 		interned, err := discord.FetchInternedMessage(c.Context(), c.Conn, msgID)
 		if err != nil && !errors.Is(err, db.NotFound) {

@@ -187,12 +187,9 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Fetching screenshots")
-	type screenshotQuery struct {
-		Filename string `db:"screenshot.file"`
-	}
-	screenshotQueryResult, err := db.Query(c.Context(), c.Conn, screenshotQuery{},
+	screenshotFilenames, err := db.QueryScalar[string](c.Context(), c.Conn,
 		`
-		SELECT $columns
+		SELECT screenshot.file
 		FROM
 			handmade_imagefile AS screenshot
 			INNER JOIN handmade_project_screenshots ON screenshot.id = handmade_project_screenshots.imagefile_id
@@ -207,10 +204,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetching project links")
-	type projectLinkQuery struct {
-		Link models.Link `db:"link"`
-	}
-	projectLinkResult, err := db.Query(c.Context(), c.Conn, projectLinkQuery{},
+	projectLinks, err := db.Query[models.Link](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -237,7 +231,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		Thread models.Thread `db:"thread"`
 		Author models.User   `db:"author"`
 	}
-	postQueryResult, err := db.Query(c.Context(), c.Conn, postQuery{},
+	posts, err := db.Query[postQuery](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -318,21 +312,21 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		}
 	}
 
-	for _, screenshot := range screenshotQueryResult {
-		templateData.Screenshots = append(templateData.Screenshots, hmnurl.BuildUserFile(screenshot.(*screenshotQuery).Filename))
+	for _, screenshotFilename := range screenshotFilenames {
+		templateData.Screenshots = append(templateData.Screenshots, hmnurl.BuildUserFile(screenshotFilename))
 	}
 
-	for _, link := range projectLinkResult {
-		templateData.ProjectLinks = append(templateData.ProjectLinks, templates.LinkToTemplate(&link.(*projectLinkQuery).Link))
+	for _, link := range projectLinks {
+		templateData.ProjectLinks = append(templateData.ProjectLinks, templates.LinkToTemplate(link))
 	}
 
-	for _, post := range postQueryResult {
+	for _, post := range posts {
 		templateData.RecentActivity = append(templateData.RecentActivity, PostToTimelineItem(
 			c.UrlContext,
 			lineageBuilder,
-			&post.(*postQuery).Post,
-			&post.(*postQuery).Thread,
-			&post.(*postQuery).Author,
+			&post.Post,
+			&post.Thread,
+			&post.Author,
 			c.Theme,
 		))
 	}
@@ -498,7 +492,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Fetching project links")
-	projectLinkResult, err := db.Query(c.Context(), c.Conn, models.Link{},
+	projectLinks, err := db.Query[models.Link](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -525,7 +519,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		c.Theme,
 	)
 
-	projectSettings.LinksText = LinksToText(projectLinkResult)
+	projectSettings.LinksText = LinksToText(projectLinks)
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
@@ -822,14 +816,12 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 	}
 
-	type userQuery struct {
-		User models.User `db:"auth_user"`
-	}
-	ownerRows, err := db.Query(ctx, tx, userQuery{},
+	owners, err := db.Query[models.User](ctx, tx,
 		`
-		SELECT $columns
-		FROM auth_user
-		LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+		SELECT $columns{auth_user}
+		FROM
+			auth_user
+			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		WHERE LOWER(username) = ANY ($1)
 		`,
 		payload.OwnerUsernames,
@@ -849,7 +841,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		return oops.New(err, "Failed to delete project owners")
 	}
 
-	for _, ownerRow := range ownerRows {
+	for _, owner := range owners {
 		_, err = tx.Exec(ctx,
 			`
 			INSERT INTO handmade_user_projects
@@ -857,7 +849,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			VALUES
 				($1,      $2)
 			`,
-			ownerRow.(*userQuery).User.ID,
+			owner.ID,
 			payload.ProjectID,
 		)
 		if err != nil {

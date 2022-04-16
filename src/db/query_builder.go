@@ -7,7 +7,7 @@ import (
 
 type QueryBuilder struct {
 	sql  strings.Builder
-	args []interface{}
+	args []any
 }
 
 /*
@@ -18,7 +18,7 @@ of `$?` will be replaced with the correct argument number.
 	foo ARG1 bar ARG2 baz $?
 	foo ARG1 bar ARG2 baz ARG3
 */
-func (qb *QueryBuilder) Add(sql string, args ...interface{}) {
+func (qb *QueryBuilder) Add(sql string, args ...any) {
 	numPlaceholders := strings.Count(sql, "$?")
 	if numPlaceholders != len(args) {
 		panic(fmt.Errorf("cannot add chunk to query; expected %d arguments but got %d", numPlaceholders, len(args)))
@@ -37,6 +37,6 @@ func (qb *QueryBuilder) String() string {
 	return qb.sql.String()
 }
 
-func (qb *QueryBuilder) Args() []interface{} {
+func (qb *QueryBuilder) Args() []any {
 	return qb.args
 }

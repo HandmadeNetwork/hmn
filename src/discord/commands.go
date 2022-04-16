@@ -90,12 +90,9 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 		return
 	}
 
-	type profileResult struct {
-		HMNUser models.User `db:"auth_user"`
-	}
-	ires, err := db.QueryOne(ctx, bot.dbConn, profileResult{},
+	hmnUser, err := db.QueryOne[models.User](ctx, bot.dbConn,
 		`
-		SELECT $columns
+		SELECT $columns{auth_user}
 		FROM
 			handmade_discorduser AS duser
 			JOIN auth_user ON duser.hmn_user_id = auth_user.id
@@ -122,16 +119,15 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 		}
 		return
 	}
-	res := ires.(*profileResult)
 
 	projectsAndStuff, err := hmndata.FetchProjects(ctx, bot.dbConn, nil, hmndata.ProjectsQuery{
-		OwnerIDs: []int{res.HMNUser.ID},
+		OwnerIDs: []int{hmnUser.ID},
 	})
 	if err != nil {
 		logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to fetch user projects")
 	}
 
-	url := hmnurl.BuildUserProfile(res.HMNUser.Username)
+	url := hmnurl.BuildUserProfile(hmnUser.Username)
 	msg := fmt.Sprintf("<@%s>'s profile can be viewed at %s.", member.User.ID, url)
 	if len(projectsAndStuff) > 0 {
 		projectNoun := "projects"

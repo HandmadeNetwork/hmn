@@ -532,11 +532,12 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 		Podcast       models.Podcast `db:"podcast"`
 		ImageFilename string         `db:"imagefile.file"`
 	}
-	podcastQueryResult, err := db.QueryOne(c.Context(), c.Conn, podcastQuery{},
+	podcastQueryResult, err := db.QueryOne[podcastQuery](c.Context(), c.Conn,
 		`
 		SELECT $columns
-		FROM handmade_podcast AS podcast
-		LEFT JOIN handmade_imagefile AS imagefile ON imagefile.id = podcast.image_id
+		FROM
+			handmade_podcast AS podcast
+			LEFT JOIN handmade_imagefile AS imagefile ON imagefile.id = podcast.image_id
 		WHERE podcast.project_id = $1
 		`,
 		projectId,
@@ -549,18 +550,15 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 			return result, oops.New(err, "failed to fetch podcast")
 		}
 	}
-	podcast := podcastQueryResult.(*podcastQuery).Podcast
-	podcastImageFilename := podcastQueryResult.(*podcastQuery).ImageFilename
+	podcast := podcastQueryResult.Podcast
+	podcastImageFilename := podcastQueryResult.ImageFilename
 	result.Podcast = &podcast
 	result.ImageFile = podcastImageFilename
 
 	if fetchEpisodes {
-		type podcastEpisodeQuery struct {
-			Episode models.PodcastEpisode `db:"episode"`
-		}
 		if episodeGUID == "" {
 			c.Perf.StartBlock("SQL", "Fetch podcast episodes")
-			podcastEpisodeQueryResult, err := db.Query(c.Context(), c.Conn, podcastEpisodeQuery{},
+			episodes, err := db.Query[models.PodcastEpisode](c.Context(), c.Conn,
 				`
 				SELECT $columns
 				FROM handmade_podcastepisode AS episode
@@ -573,16 +571,14 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 			if err != nil {
 				return result, oops.New(err, "failed to fetch podcast episodes")
 			}
-			for _, episodeRow := range podcastEpisodeQueryResult {
-				result.Episodes = append(result.Episodes, &episodeRow.(*podcastEpisodeQuery).Episode)
-			}
+			result.Episodes = episodes
 		} else {
 			guid, err := uuid.Parse(episodeGUID)
 			if err != nil {
 				return result, err
 			}
 			c.Perf.StartBlock("SQL", "Fetch podcast episode")
-			podcastEpisodeQueryResult, err := db.QueryOne(c.Context(), c.Conn, podcastEpisodeQuery{},
+			episode, err := db.QueryOne[models.PodcastEpisode](c.Context(), c.Conn,
 				`
 				SELECT $columns
 				FROM handmade_podcastepisode AS episode
@@ -599,8 +595,7 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 					return result, oops.New(err, "failed to fetch podcast episode")
 				}
 			}
-			episode := podcastEpisodeQueryResult.(*podcastEpisodeQuery).Episode
-			result.Episodes = append(result.Episodes, &episode)
+			result.Episodes = append(result.Episodes, episode)
 		}
 	}
 

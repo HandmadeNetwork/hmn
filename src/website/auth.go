@@ -75,13 +75,11 @@ func Login(c *RequestContext) ResponseData {
 		return res
 	}
 
-	type userQuery struct {
-		User models.User `db:"auth_user"`
-	}
-	userRow, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
+	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 		`
-		SELECT $columns
-			FROM auth_user
+		SELECT $columns{auth_user}
+		FROM
+			auth_user
 			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		WHERE LOWER(username) = LOWER($1)
 		`,
@@ -94,7 +92,6 @@ func Login(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
 		}
 	}
-	user := &userRow.(*userQuery).User
 
 	success, err := tryLogin(c, user, password)
 
@@ -174,7 +171,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 
 	c.Perf.StartBlock("SQL", "Check for existing usernames and emails")
 	userAlreadyExists := true
-	_, err := db.QueryInt(c.Context(), c.Conn,
+	_, err := db.QueryOneScalar[int](c.Context(), c.Conn,
 		`
 		SELECT id
 		FROM auth_user
@@ -195,7 +192,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	}
 
 	emailAlreadyExists := true
-	_, err = db.QueryInt(c.Context(), c.Conn,
+	_, err = db.QueryOneScalar[int](c.Context(), c.Conn,
 		`
 		SELECT id
 		FROM auth_user
@@ -454,17 +451,16 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "You must provide a username and an email address.")
 	}
 
-	var user *models.User
-
 	c.Perf.StartBlock("SQL", "Fetching user")
 	type userQuery struct {
 		User models.User `db:"auth_user"`
 	}
-	userRow, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
+	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 		`
-		SELECT $columns
-		FROM auth_user
-		LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+		SELECT $columns{auth_user}
+		FROM
+			auth_user
+			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		WHERE
 			LOWER(username) = LOWER($1)
 			AND LOWER(email) = LOWER($2)
@@ -478,13 +474,10 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
 		}
 	}
-	if userRow != nil {
-		user = &userRow.(*userQuery).User
-	}
 
 	if user != nil {
 		c.Perf.StartBlock("SQL", "Fetching existing token")
-		tokenRow, err := db.QueryOne(c.Context(), c.Conn, models.OneTimeToken{},
+		resetToken, err := db.QueryOne[models.OneTimeToken](c.Context(), c.Conn,
 			`
 			SELECT $columns
 			FROM handmade_onetimetoken
@@ -500,10 +493,6 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 			if !errors.Is(err, db.NotFound) {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch onetimetoken for user"))
 			}
-		}
-		var resetToken *models.OneTimeToken
-		if tokenRow != nil {
-			resetToken = tokenRow.(*models.OneTimeToken)
 		}
 		now := time.Now()
 
@@ -527,7 +516,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 
 		if resetToken == nil {
 			c.Perf.StartBlock("SQL", "Creating new token")
-			tokenRow, err := db.QueryOne(c.Context(), c.Conn, models.OneTimeToken{},
+			newToken, err := db.QueryOne[models.OneTimeToken](c.Context(), c.Conn,
 				`
 				INSERT INTO handmade_onetimetoken (token_type, created, expires, token_content, owner_id)
 				VALUES ($1, $2, $3, $4, $5)
@@ -543,7 +532,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 			if err != nil {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create onetimetoken"))
 			}
-			resetToken = tokenRow.(*models.OneTimeToken)
+			resetToken = newToken
 
 			err = email.SendPasswordReset(user.Email, user.BestName(), user.Username, resetToken.Content, resetToken.Expires, c.Perf)
 			if err != nil {
@@ -787,7 +776,7 @@ func validateUsernameAndToken(c *RequestContext, username string, token string, 
 		User         models.User          `db:"auth_user"`
 		OneTimeToken *models.OneTimeToken `db:"onetimetoken"`
 	}
-	row, err := db.QueryOne(c.Context(), c.Conn, userAndTokenQuery{},
+	data, err := db.QueryOne[userAndTokenQuery](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM auth_user
@@ -807,8 +796,7 @@ func validateUsernameAndToken(c *RequestContext, username string, token string, 
 			return result
 		}
 	}
-	if row != nil {
-		data := row.(*userAndTokenQuery)
+	if data != nil {
 		result.User = &data.User
 		result.OneTimeToken = data.OneTimeToken
 		if result.OneTimeToken != nil {

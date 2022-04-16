@@ -210,7 +210,7 @@ func init() {
 			}
 			defer tx.Rollback(ctx)
 
-			projectId, err := db.QueryInt(ctx, tx, `SELECT id FROM handmade_project WHERE slug = $1`, projectSlug)
+			projectId, err := db.QueryOneScalar[int](ctx, tx, `SELECT id FROM handmade_project WHERE slug = $1`, projectSlug)
 			if err != nil {
 				panic(err)
 			}
@@ -218,7 +218,7 @@ func init() {
 			var parentId *int
 			if parentSlug == "" {
 				// Select the root subforum
-				id, err := db.QueryInt(ctx, tx,
+				id, err := db.QueryOneScalar[int](ctx, tx,
 					`SELECT id FROM handmade_subforum WHERE parent_id IS NULL AND project_id = $1`,
 					projectId,
 				)
@@ -228,7 +228,7 @@ func init() {
 				parentId = &id
 			} else {
 				// Select the parent
-				id, err := db.QueryInt(ctx, tx,
+				id, err := db.QueryOneScalar[int](ctx, tx,
 					`SELECT id FROM handmade_subforum WHERE slug = $1 AND project_id = $2`,
 					parentSlug, projectId,
 				)
@@ -238,7 +238,7 @@ func init() {
 				parentId = &id
 			}
 
-			newId, err := db.QueryInt(ctx, tx,
+			newId, err := db.QueryOneScalar[int](ctx, tx,
 				`
 				INSERT INTO handmade_subforum (name, slug, blurb, parent_id, project_id)
 				VALUES ($1, $2, $3, $4, $5)
@@ -289,12 +289,12 @@ func init() {
 			}
 			defer tx.Rollback(ctx)
 
-			projectId, err := db.QueryInt(ctx, tx, `SELECT id FROM handmade_project WHERE slug = $1`, projectSlug)
+			projectId, err := db.QueryOneScalar[int](ctx, tx, `SELECT id FROM handmade_project WHERE slug = $1`, projectSlug)
 			if err != nil {
 				panic(err)
 			}
 
-			subforumId, err := db.QueryInt(ctx, tx,
+			subforumId, err := db.QueryOneScalar[int](ctx, tx,
 				`SELECT id FROM handmade_subforum WHERE slug = $1 AND project_id = $2`,
 				subforumSlug, projectId,
 			)

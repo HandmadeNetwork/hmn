@@ -89,8 +89,7 @@ func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, 
 		img.Seek(0, io.SeekStart)
 		io.Copy(hasher, img) // NOTE(asaf): Writing to hash.Hash never returns an error according to the docs
 		sha1sum := hasher.Sum(nil)
-		// TODO(db): Should use insert helper
-		imageFile, err := db.QueryOne(c.Context(), dbConn, models.ImageFile{},
+		imageFile, err := db.QueryOne[models.ImageFile](c.Context(), dbConn,
 			`
 			INSERT INTO handmade_imagefile (file, size, sha1sum, protected, width, height)
 			VALUES ($1, $2, $3, $4, $5, $6)
@@ -105,7 +104,7 @@ func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, 
 		}
 
 		return SaveImageFileResult{
-			ImageFile: imageFile.(*models.ImageFile),
+			ImageFile: imageFile,
 		}
 	}
 

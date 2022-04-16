@@ -19,12 +19,9 @@ func APICheckUsername(c *RequestContext) ResponseData {
 		requestedUsername := usernameArgs[0]
 		found = true
 		c.Perf.StartBlock("SQL", "Fetch user")
-		type userQuery struct {
-			User models.User `db:"auth_user"`
-		}
-		userResult, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
+		user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 			`
-			SELECT $columns
+			SELECT $columns{auth_user}
 			FROM
 				auth_user
 				LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
@@ -43,7 +40,7 @@ func APICheckUsername(c *RequestContext) ResponseData {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user: %s", requestedUsername))
 			}
 		} else {
-			canonicalUsername = userResult.(*userQuery).User.Username
+			canonicalUsername = user.Username
 		}
 	}
 

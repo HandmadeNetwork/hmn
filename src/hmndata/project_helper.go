@@ -140,15 +140,15 @@ func FetchProjects(
 	}
 
 	// Do the query
-	iprojects, err := db.Query(ctx, dbConn, projectRow{}, qb.String(), qb.Args()...)
+	projectRows, err := db.Query[projectRow](ctx, dbConn, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch projects")
 	}
 
 	// Fetch project owners to do permission checks
-	projectIds := make([]int, len(iprojects))
-	for i, iproject := range iprojects {
-		projectIds[i] = iproject.(*projectRow).Project.ID
+	projectIds := make([]int, len(projectRows))
+	for i, p := range projectRows {
+		projectIds[i] = p.Project.ID
 	}
 	projectOwners, err := FetchMultipleProjectsOwners(ctx, tx, projectIds)
 	if err != nil {
@@ -156,8 +156,7 @@ func FetchProjects(
 	}
 
 	var res []ProjectAndStuff
-	for i, iproject := range iprojects {
-		row := iproject.(*projectRow)
+	for i, p := range projectRows {
 		owners := projectOwners[i].Owners
 
 		/*
@@ -191,10 +190,10 @@ func FetchProjects(
 		}
 
 		projectGenerallyVisible := true &&
-			row.Project.Lifecycle.In(models.VisibleProjectLifecycles) &&
-			!row.Project.Hidden &&
-			(!row.Project.Personal || allOwnersApproved || row.Project.IsHMN())
-		if row.Project.IsHMN() {
+			p.Project.Lifecycle.In(models.VisibleProjectLifecycles) &&
+			!p.Project.Hidden &&
+			(!p.Project.Personal || allOwnersApproved || p.Project.IsHMN())
+		if p.Project.IsHMN() {
 			projectGenerallyVisible = true // hard override
 		}
 
@@ -205,11 +204,11 @@ func FetchProjects(
 
 		if projectVisible {
 			res = append(res, ProjectAndStuff{
-				Project:        row.Project,
-				LogoLightAsset: row.LogoLightAsset,
-				LogoDarkAsset:  row.LogoDarkAsset,
+				Project:        p.Project,
+				LogoLightAsset: p.LogoLightAsset,
+				LogoDarkAsset:  p.LogoDarkAsset,
 				Owners:         owners,
-				Tag:            row.Tag,
+				Tag:            p.Tag,
 			})
 		}
 	}
@@ -334,7 +333,7 @@ func FetchMultipleProjectsOwners(
 		UserID    int `db:"user_id"`
 		ProjectID int `db:"project_id"`
 	}
-	iuserprojects, err := db.Query(ctx, tx, userProject{},
+	userProjects, err := db.Query[userProject](ctx, tx,
 		`
 		SELECT $columns
 		FROM handmade_user_projects
@@ -348,9 +347,7 @@ func FetchMultipleProjectsOwners(
 
 	// Get the unique user IDs from this set and fetch the users from the db
 	var userIds []int
-	for _, iuserproject := range iuserprojects {
-		userProject := iuserproject.(*userProject)
-
+	for _, userProject := range userProjects {
 		addUserId := true
 		for _, uid := range userIds {
 			if uid == userProject.UserID {
@@ -361,14 +358,12 @@ func FetchMultipleProjectsOwners(
 			userIds = append(userIds, userProject.UserID)
 		}
 	}
-	type userQuery struct {
-		User models.User `db:"auth_user"`
-	}
-	iusers, err := db.Query(ctx, tx, userQuery{},
+	users, err := db.Query[models.User](ctx, tx,
 		`
-		SELECT $columns
-		FROM auth_user
-		LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+		SELECT $columns{auth_user}
+		FROM
+			auth_user
+			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		WHERE
 			auth_user.id = ANY($1)
 		`,
@@ -383,9 +378,7 @@ func FetchMultipleProjectsOwners(
 	for i, pid := range projectIds {
 		res[i] = ProjectOwners{ProjectID: pid}
 	}
-	for _, iuserproject := range iuserprojects {
-		userProject := iuserproject.(*userProject)
-
+	for _, userProject := range userProjects {
 		// Get a pointer to the existing record in the result
 		var projectOwners *ProjectOwners
 		for i := range res {
@@ -396,10 +389,9 @@ func FetchMultipleProjectsOwners(
 
 		// Get the full user record we fetched
 		var user *models.User
-		for _, iuser := range iusers {
-			u := iuser.(*userQuery).User
+		for _, u := range users {
 			if u.ID == userProject.UserID {
-				user = &u
+				user = u
 			}
 		}
 		if user == nil {
@@ -473,7 +465,7 @@ func SetProjectTag(
 		resultTag = p.Tag
 	} else if p.Project.TagID == nil {
 		// Create a tag
-		itag, err := db.QueryOne(ctx, tx, models.Tag{},
+		tag, err := db.QueryOne[models.Tag](ctx, tx,
 			`
 			INSERT INTO tags (text) VALUES ($1)
 			RETURNING $columns
@@ -483,7 +475,7 @@ func SetProjectTag(
 		if err != nil {
 			return nil, oops.New(err, "failed to create new tag for project")
 		}
-		resultTag = itag.(*models.Tag)
+		resultTag = tag
 
 		// Attach it to the project
 		_, err = tx.Exec(ctx,
@@ -499,7 +491,7 @@ func SetProjectTag(
 		}
 	} else {
 		// Update the text of an existing one
-		itag, err := db.QueryOne(ctx, tx, models.Tag{},
+		tag, err := db.QueryOne[models.Tag](ctx, tx,
 			`
 			UPDATE tags
 			SET text = $1
@@ -511,7 +503,7 @@ func SetProjectTag(
 		if err != nil {
 			return nil, oops.New(err, "failed to update existing tag")
 		}
-		resultTag = itag.(*models.Tag)
+		resultTag = tag
 	}
 
 	err = tx.Commit(ctx)

@@ -145,15 +145,13 @@ func FetchThreads(
 		ForumLastReadTime  *time.Time `db:"slri.lastread"`
 	}
 
-	iresults, err := db.Query(ctx, dbConn, resultRow{}, qb.String(), qb.Args()...)
+	rows, err := db.Query[resultRow](ctx, dbConn, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch threads")
 	}
 
-	result := make([]ThreadAndStuff, len(iresults))
-	for i, iresult := range iresults {
-		row := *iresult.(*resultRow)
-
+	result := make([]ThreadAndStuff, len(rows))
+	for i, row := range rows {
 		hasRead := false
 		if currentUser != nil && currentUser.MarkedAllReadAt.After(row.LastPost.PostDate) {
 			hasRead = true
@@ -263,7 +261,7 @@ func CountThreads(
 		)
 	}
 
-	count, err := db.QueryInt(ctx, dbConn, qb.String(), qb.Args()...)
+	count, err := db.QueryOneScalar[int](ctx, dbConn, qb.String(), qb.Args()...)
 	if err != nil {
 		return 0, oops.New(err, "failed to fetch count of threads")
 	}
@@ -405,15 +403,13 @@ func FetchPosts(
 		qb.Add(`LIMIT $? OFFSET $?`, q.Limit, q.Offset)
 	}
 
-	iresults, err := db.Query(ctx, dbConn, resultRow{}, qb.String(), qb.Args()...)
+	rows, err := db.Query[resultRow](ctx, dbConn, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch posts")
 	}
 
-	result := make([]PostAndStuff, len(iresults))
-	for i, iresult := range iresults {
-		row := *iresult.(*resultRow)
-
+	result := make([]PostAndStuff, len(rows))
+	for i, row := range rows {
 		hasRead := false
 		if currentUser != nil && currentUser.MarkedAllReadAt.After(row.Post.PostDate) {
 			hasRead = true
@@ -595,7 +591,7 @@ func CountPosts(
 		)
 	}
 
-	count, err := db.QueryInt(ctx, dbConn, qb.String(), qb.Args()...)
+	count, err := db.QueryOneScalar[int](ctx, dbConn, qb.String(), qb.Args()...)
 	if err != nil {
 		return 0, oops.New(err, "failed to count posts")
 	}
@@ -608,12 +604,9 @@ func UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User
 		return true
 	}
 
-	type postResult struct {
-		AuthorID *int `db:"post.author_id"`
-	}
-	iresult, err := db.QueryOne(ctx, connOrTx, postResult{},
+	authorID, err := db.QueryOneScalar[*int](ctx, connOrTx,
 		`
-		SELECT $columns
+		SELECT post.author_id
 		FROM
 			handmade_post AS post
 		WHERE
@@ -629,9 +622,8 @@ func UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User
 			panic(oops.New(err, "failed to get author of post when checking permissions"))
 		}
 	}
-	result := iresult.(*postResult)
 
-	return result.AuthorID != nil && *result.AuthorID == user.ID
+	return authorID != nil && *authorID == user.ID
 }
 
 func CreateNewPost(
@@ -709,7 +701,7 @@ func DeletePost(
 		FirstPostID int  `db:"first_id"`
 		Deleted     bool `db:"deleted"`
 	}
-	ti, err := db.QueryOne(ctx, tx, threadInfo{},
+	info, err := db.QueryOne[threadInfo](ctx, tx,
 		`
 		SELECT $columns
 		FROM
@@ -722,7 +714,6 @@ func DeletePost(
 	if err != nil {
 		panic(oops.New(err, "failed to fetch thread info"))
 	}
-	info := ti.(*threadInfo)
 	if info.Deleted {
 		return true
 	}
@@ -848,12 +839,9 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 		keys = append(keys, key)
 	}
 
-	type assetId struct {
-		AssetID uuid.UUID `db:"id"`
-	}
-	assetResult, err := db.Query(ctx, tx, assetId{},
+	assetIDs, err := db.QueryScalar[uuid.UUID](ctx, tx,
 		`
-		SELECT $columns
+		SELECT id
 		FROM handmade_asset
 		WHERE s3_key = ANY($1)
 		`,
@@ -865,8 +853,8 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 
 	var values [][]interface{}
 
-	for _, asset := range assetResult {
-		values = append(values, []interface{}{postId, asset.(*assetId).AssetID})
+	for _, assetID := range assetIDs {
+		values = append(values, []interface{}{postId, assetID})
 	}
 
 	_, err = tx.CopyFrom(ctx, pgx.Identifier{"handmade_post_asset_usage"}, []string{"post_id", "asset_id"}, pgx.CopyFromRows(values))
@@ -886,7 +874,7 @@ Returns errThreadEmpty if the thread contains no visible posts any more.
 You should probably mark the thread as deleted in this case.
 */
 func FixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
-	postsIter, err := db.Query(ctx, tx, models.Post{},
+	posts, err := db.Query[models.Post](ctx, tx,
 		`
 		SELECT $columns
 		FROM handmade_post
@@ -901,9 +889,7 @@ func FixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
 	}
 
 	var firstPost, lastPost *models.Post
-	for _, ipost := range postsIter {
-		post := ipost.(*models.Post)
-
+	for _, post := range posts {
 		if firstPost == nil || post.PostDate.Before(firstPost.PostDate) {
 			firstPost = post
 		}

@@ -55,7 +55,7 @@ func addCreateProjectCommand(projectCommand *cobra.Command) {
 			}
 			hmn := p.Project
 
-			newProjectID, err := db.QueryInt(ctx, tx,
+			newProjectID, err := db.QueryOneScalar[int](ctx, tx,
 				`
 				INSERT INTO handmade_project (
 					slug,

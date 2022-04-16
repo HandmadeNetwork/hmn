@@ -165,7 +165,7 @@ func InternMessage(
 	dbConn db.ConnOrTx,
 	msg *Message,
 ) error {
-	_, err := db.QueryOne(ctx, dbConn, models.DiscordMessage{},
+	_, err := db.QueryOne[models.DiscordMessage](ctx, dbConn,
 		`
 		SELECT $columns
 		FROM handmade_discordmessage
@@ -219,7 +219,7 @@ type InternedMessage struct {
 }
 
 func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string) (*InternedMessage, error) {
-	result, err := db.QueryOne(ctx, dbConn, InternedMessage{},
+	interned, err := db.QueryOne[InternedMessage](ctx, dbConn,
 		`
 		SELECT $columns
 		FROM
@@ -235,8 +235,6 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 	if err != nil {
 		return nil, err
 	}
-
-	interned := result.(*InternedMessage)
 	return interned, nil
 }
 
@@ -283,7 +281,7 @@ func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 }
 
 func DeleteInternedMessage(ctx context.Context, dbConn db.ConnOrTx, interned *InternedMessage) error {
-	isnippet, err := db.QueryOne(ctx, dbConn, models.Snippet{},
+	snippet, err := db.QueryOne[models.Snippet](ctx, dbConn,
 		`
 		SELECT $columns
 		FROM handmade_snippet
@@ -293,10 +291,6 @@ func DeleteInternedMessage(ctx context.Context, dbConn db.ConnOrTx, interned *In
 	)
 	if err != nil && !errors.Is(err, db.NotFound) {
 		return oops.New(err, "failed to fetch snippet for discord message")
-	}
-	var snippet *models.Snippet
-	if !errors.Is(err, db.NotFound) {
-		snippet = isnippet.(*models.Snippet)
 	}
 
 	// NOTE(asaf): Also deletes the following through a db cascade:
@@ -367,7 +361,7 @@ func SaveMessageContents(
 				return oops.New(err, "failed to create or update message contents")
 			}
 
-			icontent, err := db.QueryOne(ctx, dbConn, models.DiscordMessageContent{},
+			content, err := db.QueryOne[models.DiscordMessageContent](ctx, dbConn,
 				`
 				SELECT $columns
 				FROM
@@ -380,7 +374,7 @@ func SaveMessageContents(
 			if err != nil {
 				return oops.New(err, "failed to fetch message contents")
 			}
-			interned.MessageContent = icontent.(*models.DiscordMessageContent)
+			interned.MessageContent = content
 		}
 
 		// Save attachments
@@ -395,12 +389,12 @@ func SaveMessageContents(
 
 		// Save / delete embeds
 		if msg.OriginalHasFields("embeds") {
-			numSavedEmbeds, err := db.QueryInt(ctx, dbConn,
+			numSavedEmbeds, err := db.QueryOneScalar[int](ctx, dbConn,
 				`
-			SELECT COUNT(*)
-			FROM handmade_discordmessageembed
-			WHERE message_id = $1
-			`,
+				SELECT COUNT(*)
+				FROM handmade_discordmessageembed
+				WHERE message_id = $1
+				`,
 				msg.ID,
 			)
 			if err != nil {
@@ -472,7 +466,7 @@ func saveAttachment(
 	hmnUserID int,
 	discordMessageID string,
 ) (*models.DiscordMessageAttachment, error) {
-	iexisting, err := db.QueryOne(ctx, tx, models.DiscordMessageAttachment{},
+	existing, err := db.QueryOne[models.DiscordMessageAttachment](ctx, tx,
 		`
 		SELECT $columns
 		FROM handmade_discordmessageattachment
@@ -481,7 +475,7 @@ func saveAttachment(
 		attachment.ID,
 	)
 	if err == nil {
-		return iexisting.(*models.DiscordMessageAttachment), nil
+		return existing, nil
 	} else if errors.Is(err, db.NotFound) {
 		// this is fine, just create it
 	} else {
@@ -534,7 +528,7 @@ func saveAttachment(
 		return nil, oops.New(err, "failed to save Discord attachment data")
 	}
 
-	iDiscordAttachment, err := db.QueryOne(ctx, tx, models.DiscordMessageAttachment{},
+	discordAttachment, err := db.QueryOne[models.DiscordMessageAttachment](ctx, tx,
 		`
 		SELECT $columns
 		FROM handmade_discordmessageattachment
@@ -546,7 +540,7 @@ func saveAttachment(
 		return nil, oops.New(err, "failed to fetch new Discord attachment data")
 	}
 
-	return iDiscordAttachment.(*models.DiscordMessageAttachment), nil
+	return discordAttachment, nil
 }
 
 // Saves an embed from Discord. NOTE: This is _not_ idempotent, so only call it
@@ -636,7 +630,7 @@ func saveEmbed(
 		return nil, oops.New(err, "failed to insert new embed")
 	}
 
-	iDiscordEmbed, err := db.QueryOne(ctx, tx, models.DiscordMessageEmbed{},
+	discordEmbed, err := db.QueryOne[models.DiscordMessageEmbed](ctx, tx,
 		`
 		SELECT $columns
 		FROM handmade_discordmessageembed
@@ -648,11 +642,11 @@ func saveEmbed(
 		return nil, oops.New(err, "failed to fetch new Discord embed data")
 	}
 
-	return iDiscordEmbed.(*models.DiscordMessageEmbed), nil
+	return discordEmbed, nil
 }
 
 func FetchSnippetForMessage(ctx context.Context, dbConn db.ConnOrTx, msgID string) (*models.Snippet, error) {
-	iresult, err := db.QueryOne(ctx, dbConn, models.Snippet{},
+	snippet, err := db.QueryOne[models.Snippet](ctx, dbConn,
 		`
 		SELECT $columns
 		FROM handmade_snippet
@@ -669,7 +663,7 @@ func FetchSnippetForMessage(ctx context.Context, dbConn db.ConnOrTx, msgID strin
 		}
 	}
 
-	return iresult.(*models.Snippet), nil
+	return snippet, nil
 }
 
 /*
@@ -805,12 +799,9 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 			projectIDs[i] = p.Project.ID
 		}
 
-		type tagsRow struct {
-			Tag models.Tag `db:"tags"`
-		}
-		iUserTags, err := db.Query(ctx, tx, tagsRow{},
+		userTags, err := db.Query[models.Tag](ctx, tx,
 			`
-			SELECT $columns
+			SELECT $columns{tags}
 			FROM
 				tags
 				JOIN handmade_project AS project ON project.tag = tags.id
@@ -823,8 +814,7 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 			return oops.New(err, "failed to fetch tags for user projects")
 		}
 
-		for _, itag := range iUserTags {
-			tag := itag.(*tagsRow).Tag
+		for _, tag := range userTags {
 			allTags = append(allTags, tag.ID)
 			for _, messageTag := range messageTags {
 				if strings.EqualFold(tag.Text, messageTag) {
@@ -890,7 +880,7 @@ var RESnippetableUrl = regexp.MustCompile(`^https?://(youtu\.be|(www\.)?youtube\
 
 func getSnippetAssetOrUrl(ctx context.Context, tx db.ConnOrTx, msg *models.DiscordMessage) (*uuid.UUID, *string, error) {
 	// Check attachments
-	attachments, err := db.Query(ctx, tx, models.DiscordMessageAttachment{},
+	attachments, err := db.Query[models.DiscordMessageAttachment](ctx, tx,
 		`
 		SELECT $columns
 		FROM handmade_discordmessageattachment
@@ -901,13 +891,12 @@ func getSnippetAssetOrUrl(ctx context.Context, tx db.ConnOrTx, msg *models.Disco
 	if err != nil {
 		return nil, nil, oops.New(err, "failed to fetch message attachments")
 	}
-	for _, iattachment := range attachments {
-		attachment := iattachment.(*models.DiscordMessageAttachment)
+	for _, attachment := range attachments {
 		return &attachment.AssetID, nil, nil
 	}
 
 	// Check embeds
-	embeds, err := db.Query(ctx, tx, models.DiscordMessageEmbed{},
+	embeds, err := db.Query[models.DiscordMessageEmbed](ctx, tx,
 		`
 		SELECT $columns
 		FROM handmade_discordmessageembed
@@ -918,8 +907,7 @@ func getSnippetAssetOrUrl(ctx context.Context, tx db.ConnOrTx, msg *models.Disco
 	if err != nil {
 		return nil, nil, oops.New(err, "failed to fetch discord embeds")
 	}
-	for _, iembed := range embeds {
-		embed := iembed.(*models.DiscordMessageEmbed)
+	for _, embed := range embeds {
 		if embed.VideoID != nil {
 			return embed.VideoID, nil, nil
 		} else if embed.ImageID != nil {

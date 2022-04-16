@@ -548,13 +548,11 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 		}
 	}
 
-	type userQuery struct {
-		User models.User `db:"auth_user"`
-	}
-	userRow, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
+	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 		`
-		SELECT $columns
-			FROM auth_user
+		SELECT $columns{auth_user}
+		FROM
+			auth_user
 			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
 		WHERE username = $1
 		`,
@@ -568,7 +566,6 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 			return nil, nil, oops.New(err, "failed to get user for session")
 		}
 	}
-	user := &userRow.(*userQuery).User
 
 	return user, session, nil
 }

@@ -53,12 +53,9 @@ func UserProfile(c *RequestContext) ResponseData {
 		profileUser = c.CurrentUser
 	} else {
 		c.Perf.StartBlock("SQL", "Fetch user")
-		type userQuery struct {
-			User models.User `db:"auth_user"`
-		}
-		userResult, err := db.QueryOne(c.Context(), c.Conn, userQuery{},
+		user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 			`
-			SELECT $columns
+			SELECT $columns{auth_user}
 			FROM
 				auth_user
 				LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
@@ -75,7 +72,7 @@ func UserProfile(c *RequestContext) ResponseData {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user: %s", username))
 			}
 		}
-		profileUser = &userResult.(*userQuery).User
+		profileUser = user
 	}
 
 	{
@@ -87,10 +84,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Fetch user links")
-	type userLinkQuery struct {
-		UserLink models.Link `db:"link"`
-	}
-	userLinksSlice, err := db.Query(c.Context(), c.Conn, userLinkQuery{},
+	userLinks, err := db.Query[models.Link](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -104,9 +98,9 @@ func UserProfile(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch links for user: %s", username))
 	}
-	profileUserLinks := make([]templates.Link, 0, len(userLinksSlice))
-	for _, l := range userLinksSlice {
-		profileUserLinks = append(profileUserLinks, templates.LinkToTemplate(&l.(*userLinkQuery).UserLink))
+	profileUserLinks := make([]templates.Link, 0, len(userLinks))
+	for _, l := range userLinks {
+		profileUserLinks = append(profileUserLinks, templates.LinkToTemplate(l))
 	}
 	c.Perf.EndBlock()
 
@@ -231,7 +225,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		DiscordShowcaseBacklogUrl string
 	}
 
-	links, err := db.Query(c.Context(), c.Conn, models.Link{},
+	links, err := db.Query[models.Link](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM handmade_links
@@ -248,7 +242,7 @@ func UserSettings(c *RequestContext) ResponseData {
 
 	var tduser *templates.DiscordUser
 	var numUnsavedMessages int
-	iduser, err := db.QueryOne(c.Context(), c.Conn, models.DiscordUser{},
+	duser, err := db.QueryOne[models.DiscordUser](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM handmade_discorduser
@@ -261,11 +255,10 @@ func UserSettings(c *RequestContext) ResponseData {
 	} else if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user's Discord account"))
 	} else {
-		duser := iduser.(*models.DiscordUser)
 		tmp := templates.DiscordUserToTemplate(duser)
 		tduser = &tmp
 
-		numUnsavedMessages, err = db.QueryInt(c.Context(), c.Conn,
+		numUnsavedMessages, err = db.QueryOneScalar[int](c.Context(), c.Conn,
 			`
 			SELECT COUNT(*)
 			FROM

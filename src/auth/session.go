@@ -45,7 +45,7 @@ func makeCSRFToken() string {
 var ErrNoSession = errors.New("no session found")
 
 func GetSession(ctx context.Context, conn *pgxpool.Pool, id string) (*models.Session, error) {
-	row, err := db.QueryOne(ctx, conn, models.Session{}, "SELECT $columns FROM sessions WHERE id = $1", id)
+	sess, err := db.QueryOne[models.Session](ctx, conn, "SELECT $columns FROM sessions WHERE id = $1", id)
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			return nil, ErrNoSession
@@ -53,7 +53,6 @@ func GetSession(ctx context.Context, conn *pgxpool.Pool, id string) (*models.Ses
 			return nil, oops.New(err, "failed to get session")
 		}
 	}
-	sess := row.(*models.Session)
 
 	return sess, nil
 }

@@ -73,12 +73,9 @@ func RunHistoryWatcher(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{
 func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 	log := logging.ExtractLogger(ctx)
 
-	type query struct {
-		Message models.DiscordMessage `db:"msg"`
-	}
-	imessagesWithoutContent, err := db.Query(ctx, dbConn, query{},
+	messagesWithoutContent, err := db.Query[models.DiscordMessage](ctx, dbConn,
 		`
-		SELECT $columns
+		SELECT $columns{msg}
 		FROM
 			handmade_discordmessage AS msg
 			JOIN handmade_discorduser AS duser ON msg.user_id = duser.userid -- only fetch messages for linked discord users
@@ -95,18 +92,16 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 		return
 	}
 
-	if len(imessagesWithoutContent) > 0 {
-		log.Info().Msgf("There are %d Discord messages without content, fetching their content now...", len(imessagesWithoutContent))
+	if len(messagesWithoutContent) > 0 {
+		log.Info().Msgf("There are %d Discord messages without content, fetching their content now...", len(messagesWithoutContent))
 	msgloop:
-		for _, imsg := range imessagesWithoutContent {
+		for _, msg := range messagesWithoutContent {
 			select {
 			case <-ctx.Done():
 				log.Info().Msg("Scrape was canceled")
 				break msgloop
 			default:
 			}
-
-			msg := imsg.(*query).Message
 
 			discordMsg, err := GetChannelMessage(ctx, msg.ChannelID, msg.ID)
 			if errors.Is(err, NotFound) {

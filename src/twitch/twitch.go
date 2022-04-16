@@ -440,7 +440,7 @@ func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *strea
 	inserted := false
 	if isStatusRelevant(status) {
 		log.Debug().Msg("Status relevant")
-		_, err := db.QueryOne(ctx, conn, models.TwitchStream{},
+		_, err := db.QueryOne[models.TwitchStream](ctx, conn,
 			`
 			SELECT $columns
 			FROM twitch_streams

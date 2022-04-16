@@ -936,7 +936,7 @@ func addForumUrlsToPost(urlContext *hmnurl.UrlContext, p *templates.Post, subfor
 // Takes a template post and adds information about how many posts the user has made
 // on the site.
 func addAuthorCountsToPost(ctx context.Context, conn db.ConnOrTx, p *templates.Post) {
-	numPosts, err := db.QueryInt(ctx, conn,
+	numPosts, err := db.QueryOneScalar[int](ctx, conn,
 		`
 		SELECT COUNT(*)
 		FROM
@@ -956,7 +956,7 @@ func addAuthorCountsToPost(ctx context.Context, conn db.ConnOrTx, p *templates.P
 		p.AuthorNumPosts = numPosts
 	}
 
-	numProjects, err := db.QueryInt(ctx, conn,
+	numProjects, err := db.QueryOneScalar[int](ctx, conn,
 		`
 		SELECT COUNT(*)
 		FROM

@@ -44,10 +44,7 @@ func FetchSnippets(
 
 	if len(q.Tags) > 0 {
 		// Get snippet IDs with this tag, then use that in the main query
-		type snippetIDRow struct {
-			SnippetID int `db:"snippet_id"`
-		}
-		iSnippetIDs, err := db.Query(ctx, tx, snippetIDRow{},
+		snippetIDs, err := db.QueryScalar[int](ctx, tx,
 			`
 			SELECT DISTINCT snippet_id
 			FROM
@@ -63,14 +60,11 @@ func FetchSnippets(
 		}
 
 		// special early-out: no snippets found for these tags at all
-		if len(iSnippetIDs) == 0 {
+		if len(snippetIDs) == 0 {
 			return nil, nil
 		}
 
-		q.IDs = make([]int, len(iSnippetIDs))
-		for i := range iSnippetIDs {
-			q.IDs[i] = iSnippetIDs[i].(*snippetIDRow).SnippetID
-		}
+		q.IDs = snippetIDs
 	}
 
 	var qb db.QueryBuilder
@@ -125,16 +119,14 @@ func FetchSnippets(
 		DiscordMessage *models.DiscordMessage `db:"discord_message"`
 	}
 
-	iresults, err := db.Query(ctx, tx, resultRow{}, qb.String(), qb.Args()...)
+	results, err := db.Query[resultRow](ctx, tx, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch threads")
 	}
 
-	result := make([]SnippetAndStuff, len(iresults)) // allocate extra space because why not
-	snippetIDs := make([]int, len(iresults))
-	for i, iresult := range iresults {
-		row := *iresult.(*resultRow)
-
+	result := make([]SnippetAndStuff, len(results)) // allocate extra space because why not
+	snippetIDs := make([]int, len(results))
+	for i, row := range results {
 		result[i] = SnippetAndStuff{
 			Snippet:        row.Snippet,
 			Owner:          row.Owner,
@@ -150,7 +142,7 @@ func FetchSnippets(
 		SnippetID int         `db:"snippet_tags.snippet_id"`
 		Tag       *models.Tag `db:"tags"`
 	}
-	iSnippetTags, err := db.Query(ctx, tx, snippetTagRow{},
+	snippetTags, err := db.Query[snippetTagRow](ctx, tx,
 		`
 		SELECT $columns
 		FROM
@@ -170,8 +162,7 @@ func FetchSnippets(
 	for i := range result {
 		resultBySnippetId[result[i].Snippet.ID] = &result[i]
 	}
-	for _, iSnippetTag := range iSnippetTags {
-		snippetTag := iSnippetTag.(*snippetTagRow)
+	for _, snippetTag := range snippetTags {
 		item := resultBySnippetId[snippetTag.SnippetID]
 		item.Tags = append(item.Tags, snippetTag.Tag)
 	}

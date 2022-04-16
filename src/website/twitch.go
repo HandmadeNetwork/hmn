@@ -70,7 +70,7 @@ func TwitchEventSubCallback(c *RequestContext) ResponseData {
 }
 
 func TwitchDebugPage(c *RequestContext) ResponseData {
-	streams, err := db.Query(c.Context(), c.Conn, models.TwitchStream{},
+	streams, err := db.Query[models.TwitchStream](c.Context(), c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -83,8 +83,7 @@ func TwitchDebugPage(c *RequestContext) ResponseData {
 	}
 
 	html := ""
-	for _, stream := range streams {
-		s := stream.(*models.TwitchStream)
+	for _, s := range streams {
 		html += fmt.Sprintf(`<a href="https://twitch.tv/%s">%s</a>%s<br />`, s.Login, s.Login, s.Title)
 	}
 	var res ResponseData

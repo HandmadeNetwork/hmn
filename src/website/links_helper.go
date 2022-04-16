@@ -30,10 +30,9 @@ func ParseLinks(text string) []ParsedLink {
 	return res
 }
 
-func LinksToText(links []interface{}) string {
+func LinksToText(links []*models.Link) string {
 	linksText := ""
-	for _, l := range links {
-		link := l.(*models.Link)
+	for _, link := range links {
 		linksText += fmt.Sprintf("%s %s\n", link.URL, link.Name)
 	}
 	return linksText

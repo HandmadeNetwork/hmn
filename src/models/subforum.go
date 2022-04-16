@@ -44,14 +44,10 @@ func (node *SubforumTreeNode) GetLineage() []*Subforum {
 }
 
 func GetFullSubforumTree(ctx context.Context, conn *pgxpool.Pool) SubforumTree {
-	type subforumRow struct {
-		Subforum Subforum `db:"sf"`
-	}
-	rowsSlice, err := db.Query(ctx, conn, subforumRow{},
+	subforums, err := db.Query[Subforum](ctx, conn,
 		`
 		SELECT $columns
-		FROM
-			handmade_subforum as sf
+		FROM handmade_subforum
 		ORDER BY sort, id ASC
 		`,
 	)
@@ -59,10 +55,9 @@ func GetFullSubforumTree(ctx context.Context, conn *pgxpool.Pool) SubforumTree {
 		panic(oops.New(err, "failed to fetch subforum tree"))
 	}
 
-	sfTreeMap := make(map[int]*SubforumTreeNode, len(rowsSlice))
-	for _, row := range rowsSlice {
-		sf := row.(*subforumRow).Subforum
-		sfTreeMap[sf.ID] = &SubforumTreeNode{Subforum: sf}
+	sfTreeMap := make(map[int]*SubforumTreeNode, len(subforums))
+	for _, sf := range subforums {
+		sfTreeMap[sf.ID] = &SubforumTreeNode{Subforum: *sf}
 	}
 
 	for _, node := range sfTreeMap {
@@ -71,9 +66,8 @@ func GetFullSubforumTree(ctx context.Context, conn *pgxpool.Pool) SubforumTree {
 		}
 	}
 
-	for _, row := range rowsSlice {
+	for _, cat := range subforums {
 		// NOTE(asaf): Doing this in a separate loop over rowsSlice to ensure that Children are in db order.
-		cat := row.(*subforumRow).Subforum
 		node := sfTreeMap[cat.ID]
 		if node.Parent != nil {
 			node.Parent.Children = append(node.Parent.Children, node)

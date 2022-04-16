@@ -558,7 +558,7 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 		res.ThreadID = threadId
 
 		c.Perf.StartBlock("SQL", "Verify that the thread exists")
-		threadExists, err := db.QueryBool(c.Context(), c.Conn,
+		threadExists, err := db.QueryOneScalar[bool](c.Context(), c.Conn,
 			`
 			SELECT COUNT(*) > 0
 			FROM handmade_thread
@@ -586,7 +586,7 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 		res.PostID = postId
 
 		c.Perf.StartBlock("SQL", "Verify that the post exists")
-		postExists, err := db.QueryBool(c.Context(), c.Conn,
+		postExists, err := db.QueryOneScalar[bool](c.Context(), c.Conn,
 			`
 			SELECT COUNT(*) > 0
 			FROM handmade_post
