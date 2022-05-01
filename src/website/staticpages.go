@@ -6,7 +6,7 @@ func Manifesto(c *RequestContext) ResponseData {
 	baseData := getBaseDataAutocrumb(c, "Handmade Manifesto")
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
-		Value:    "Modern computer hardware is amazing. Manufacturers have orchestrated billions of pieces of silicon into terrifyingly complex and efficient structures…",
+		Value:    "Computers are amazing. So why is software so terrible?",
 	})
 
 	var res ResponseData
