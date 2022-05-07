@@ -16,6 +16,9 @@ func TestLogContextErrors(t *testing.T) {
 	err1 := errors.New("test error 1")
 	err2 := errors.New("test error 2")
 
+	defer zerolog.SetGlobalLevel(zerolog.GlobalLevel())
+	zerolog.SetGlobalLevel(zerolog.TraceLevel)
+
 	var buf bytes.Buffer
 	logger := zerolog.New(&buf)
 	logger.Print("sanity check")

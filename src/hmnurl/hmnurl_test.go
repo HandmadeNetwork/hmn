@@ -26,10 +26,18 @@ func TestUrl(t *testing.T) {
 	})
 }
 
+var hmn = HMNProjectContext
+var hero = UrlContext{
+	PersonalProject: false,
+	ProjectID:       2,
+	ProjectSlug:     "hero",
+	ProjectName:     "Handmade Hero",
+}
+
 func TestHomepage(t *testing.T) {
 	AssertRegexMatch(t, BuildHomepage(), RegexHomepage, nil)
-	AssertRegexMatch(t, BuildProjectHomepage("hero"), RegexHomepage, nil)
-	AssertSubdomain(t, BuildProjectHomepage("hero"), "hero")
+	AssertRegexMatch(t, hero.BuildHomepage(), RegexHomepage, nil)
+	AssertSubdomain(t, hero.BuildHomepage(), "hero")
 }
 
 func TestShowcase(t *testing.T) {
@@ -87,7 +95,6 @@ func TestPasswordReset(t *testing.T) {
 func TestStaticPages(t *testing.T) {
 	AssertRegexMatch(t, BuildManifesto(), RegexManifesto, nil)
 	AssertRegexMatch(t, BuildAbout(), RegexAbout, nil)
-	AssertRegexMatch(t, BuildCodeOfConduct(), RegexCodeOfConduct, nil)
 	AssertRegexMatch(t, BuildCommunicationGuidelines(), RegexCommunicationGuidelines, nil)
 	AssertRegexMatch(t, BuildContactPage(), RegexContactPage, nil)
 	AssertRegexMatch(t, BuildMonthlyUpdatePolicy(), RegexMonthlyUpdatePolicy, nil)
@@ -133,12 +140,12 @@ func TestProjectNew(t *testing.T) {
 	AssertRegexMatch(t, BuildProjectNew(), RegexProjectNew, nil)
 }
 
-func TestProjectNotApproved(t *testing.T) {
-	AssertRegexMatch(t, BuildProjectNotApproved("test"), RegexProjectNotApproved, map[string]string{"slug": "test"})
+func TestPersonalProject(t *testing.T) {
+	AssertRegexMatch(t, BuildPersonalProject(123, "test"), RegexPersonalProject, nil)
 }
 
 func TestProjectEdit(t *testing.T) {
-	AssertRegexMatch(t, BuildProjectEdit("test", "foo"), RegexProjectEdit, map[string]string{"slug": "test"})
+	AssertRegexMatch(t, hero.BuildProjectEdit("foo"), RegexProjectEdit, nil)
 }
 
 func TestPodcast(t *testing.T) {
@@ -166,101 +173,100 @@ func TestPodcastRSS(t *testing.T) {
 }
 
 func TestForum(t *testing.T) {
-	AssertRegexMatch(t, BuildForum("", nil, 1), RegexForum, nil)
-	AssertRegexMatch(t, BuildForum("", []string{"wip"}, 2), RegexForum, map[string]string{"subforums": "wip", "page": "2"})
-	AssertRegexMatch(t, BuildForum("", []string{"sub", "wip"}, 2), RegexForum, map[string]string{"subforums": "sub/wip", "page": "2"})
-	AssertSubdomain(t, BuildForum("hmn", nil, 1), "")
-	AssertSubdomain(t, BuildForum("", nil, 1), "")
-	AssertSubdomain(t, BuildForum("hero", nil, 1), "hero")
-	assert.Panics(t, func() { BuildForum("", nil, 0) })
-	assert.Panics(t, func() { BuildForum("", []string{"", "wip"}, 1) })
-	assert.Panics(t, func() { BuildForum("", []string{" ", "wip"}, 1) })
-	assert.Panics(t, func() { BuildForum("", []string{"wip/jobs"}, 1) })
+	AssertRegexMatch(t, hmn.BuildForum(nil, 1), RegexForum, nil)
+	AssertRegexMatch(t, hmn.BuildForum([]string{"wip"}, 2), RegexForum, map[string]string{"subforums": "wip", "page": "2"})
+	AssertRegexMatch(t, hmn.BuildForum([]string{"sub", "wip"}, 2), RegexForum, map[string]string{"subforums": "sub/wip", "page": "2"})
+	AssertSubdomain(t, hmn.BuildForum(nil, 1), "")
+	AssertSubdomain(t, hero.BuildForum(nil, 1), "hero")
+	assert.Panics(t, func() { hmn.BuildForum(nil, 0) })
+	assert.Panics(t, func() { hmn.BuildForum([]string{"", "wip"}, 1) })
+	assert.Panics(t, func() { hmn.BuildForum([]string{" ", "wip"}, 1) })
+	assert.Panics(t, func() { hmn.BuildForum([]string{"wip/jobs"}, 1) })
 }
 
 func TestForumNewThread(t *testing.T) {
-	AssertRegexMatch(t, BuildForumNewThread("", []string{"sub", "wip"}, false), RegexForumNewThread, map[string]string{"subforums": "sub/wip"})
-	AssertRegexMatch(t, BuildForumNewThread("", []string{"sub", "wip"}, true), RegexForumNewThreadSubmit, map[string]string{"subforums": "sub/wip"})
+	AssertRegexMatch(t, hmn.BuildForumNewThread([]string{"sub", "wip"}, false), RegexForumNewThread, map[string]string{"subforums": "sub/wip"})
+	AssertRegexMatch(t, hmn.BuildForumNewThread([]string{"sub", "wip"}, true), RegexForumNewThreadSubmit, map[string]string{"subforums": "sub/wip"})
 }
 
 func TestForumThread(t *testing.T) {
-	AssertRegexMatch(t, BuildForumThread("", nil, 1, "", 1), RegexForumThread, map[string]string{"threadid": "1"})
-	AssertRegexMatch(t, BuildForumThread("", nil, 1, "thread/title/123http://", 2), RegexForumThread, map[string]string{"threadid": "1", "page": "2"})
-	AssertRegexMatch(t, BuildForumThreadWithPostHash("", nil, 1, "thread/title/123http://", 2, 123), RegexForumThread, map[string]string{"threadid": "1", "page": "2"})
-	AssertSubdomain(t, BuildForumThread("hero", nil, 1, "", 1), "hero")
-	assert.Panics(t, func() { BuildForumThread("", nil, -1, "", 1) })
-	assert.Panics(t, func() { BuildForumThread("", nil, 1, "", -1) })
+	AssertRegexMatch(t, hmn.BuildForumThread(nil, 1, "", 1), RegexForumThread, map[string]string{"threadid": "1"})
+	AssertRegexMatch(t, hmn.BuildForumThread(nil, 1, "thread/title/123http://", 2), RegexForumThread, map[string]string{"threadid": "1", "page": "2"})
+	AssertRegexMatch(t, hmn.BuildForumThreadWithPostHash(nil, 1, "thread/title/123http://", 2, 123), RegexForumThread, map[string]string{"threadid": "1", "page": "2"})
+	AssertSubdomain(t, hero.BuildForumThread(nil, 1, "", 1), "hero")
+	assert.Panics(t, func() { hmn.BuildForumThread(nil, -1, "", 1) })
+	assert.Panics(t, func() { hmn.BuildForumThread(nil, 1, "", -1) })
 }
 
 func TestForumPost(t *testing.T) {
-	AssertRegexMatch(t, BuildForumPost("", nil, 1, 2), RegexForumPost, map[string]string{"threadid": "1", "postid": "2"})
-	AssertRegexNoMatch(t, BuildForumPost("", nil, 1, 2), RegexForumThread)
-	AssertSubdomain(t, BuildForumPost("hero", nil, 1, 2), "hero")
-	assert.Panics(t, func() { BuildForumPost("", nil, 1, -1) })
+	AssertRegexMatch(t, hmn.BuildForumPost(nil, 1, 2), RegexForumPost, map[string]string{"threadid": "1", "postid": "2"})
+	AssertRegexNoMatch(t, hmn.BuildForumPost(nil, 1, 2), RegexForumThread)
+	AssertSubdomain(t, hero.BuildForumPost(nil, 1, 2), "hero")
+	assert.Panics(t, func() { hmn.BuildForumPost(nil, 1, -1) })
 }
 
 func TestForumPostDelete(t *testing.T) {
-	AssertRegexMatch(t, BuildForumPostDelete("", nil, 1, 2), RegexForumPostDelete, map[string]string{"threadid": "1", "postid": "2"})
-	AssertRegexNoMatch(t, BuildForumPostDelete("", nil, 1, 2), RegexForumPost)
-	AssertSubdomain(t, BuildForumPostDelete("hero", nil, 1, 2), "hero")
+	AssertRegexMatch(t, hmn.BuildForumPostDelete(nil, 1, 2), RegexForumPostDelete, map[string]string{"threadid": "1", "postid": "2"})
+	AssertRegexNoMatch(t, hmn.BuildForumPostDelete(nil, 1, 2), RegexForumPost)
+	AssertSubdomain(t, hero.BuildForumPostDelete(nil, 1, 2), "hero")
 }
 
 func TestForumPostEdit(t *testing.T) {
-	AssertRegexMatch(t, BuildForumPostEdit("", nil, 1, 2), RegexForumPostEdit, map[string]string{"threadid": "1", "postid": "2"})
-	AssertRegexNoMatch(t, BuildForumPostEdit("", nil, 1, 2), RegexForumPost)
-	AssertSubdomain(t, BuildForumPostEdit("hero", nil, 1, 2), "hero")
+	AssertRegexMatch(t, hmn.BuildForumPostEdit(nil, 1, 2), RegexForumPostEdit, map[string]string{"threadid": "1", "postid": "2"})
+	AssertRegexNoMatch(t, hmn.BuildForumPostEdit(nil, 1, 2), RegexForumPost)
+	AssertSubdomain(t, hero.BuildForumPostEdit(nil, 1, 2), "hero")
 }
 
 func TestForumPostReply(t *testing.T) {
-	AssertRegexMatch(t, BuildForumPostReply("", nil, 1, 2), RegexForumPostReply, map[string]string{"threadid": "1", "postid": "2"})
-	AssertRegexNoMatch(t, BuildForumPostReply("", nil, 1, 2), RegexForumPost)
-	AssertSubdomain(t, BuildForumPostReply("hero", nil, 1, 2), "hero")
+	AssertRegexMatch(t, hmn.BuildForumPostReply(nil, 1, 2), RegexForumPostReply, map[string]string{"threadid": "1", "postid": "2"})
+	AssertRegexNoMatch(t, hmn.BuildForumPostReply(nil, 1, 2), RegexForumPost)
+	AssertSubdomain(t, hero.BuildForumPostReply(nil, 1, 2), "hero")
 }
 
 func TestBlog(t *testing.T) {
-	AssertRegexMatch(t, BuildBlog("", 1), RegexBlog, nil)
-	AssertRegexMatch(t, BuildBlog("", 2), RegexBlog, map[string]string{"page": "2"})
-	AssertSubdomain(t, BuildBlog("hero", 1), "hero")
+	AssertRegexMatch(t, hmn.BuildBlog(1), RegexBlog, nil)
+	AssertRegexMatch(t, hmn.BuildBlog(2), RegexBlog, map[string]string{"page": "2"})
+	AssertSubdomain(t, hero.BuildBlog(1), "hero")
 }
 
 func TestBlogNewThread(t *testing.T) {
-	AssertRegexMatch(t, BuildBlogNewThread(""), RegexBlogNewThread, nil)
-	AssertSubdomain(t, BuildBlogNewThread(""), "")
-	AssertRegexMatch(t, BuildBlogNewThread("hero"), RegexBlogNewThread, nil)
-	AssertSubdomain(t, BuildBlogNewThread("hero"), "hero")
+	AssertRegexMatch(t, hmn.BuildBlogNewThread(), RegexBlogNewThread, nil)
+	AssertSubdomain(t, hmn.BuildBlogNewThread(), "")
+	AssertRegexMatch(t, hero.BuildBlogNewThread(), RegexBlogNewThread, nil)
+	AssertSubdomain(t, hero.BuildBlogNewThread(), "hero")
 }
 
 func TestBlogThread(t *testing.T) {
-	AssertRegexMatch(t, BuildBlogThread("", 1, ""), RegexBlogThread, map[string]string{"threadid": "1"})
-	AssertRegexMatch(t, BuildBlogThread("", 1, ""), RegexBlogThread, map[string]string{"threadid": "1"})
-	AssertRegexMatch(t, BuildBlogThread("", 1, "title/bla/http://"), RegexBlogThread, map[string]string{"threadid": "1"})
-	AssertRegexMatch(t, BuildBlogThreadWithPostHash("", 1, "title/bla/http://", 123), RegexBlogThread, map[string]string{"threadid": "1"})
-	AssertRegexNoMatch(t, BuildBlogThread("", 1, ""), RegexBlog)
-	AssertSubdomain(t, BuildBlogThread("hero", 1, ""), "hero")
+	AssertRegexMatch(t, hmn.BuildBlogThread(1, ""), RegexBlogThread, map[string]string{"threadid": "1"})
+	AssertRegexMatch(t, hmn.BuildBlogThread(1, ""), RegexBlogThread, map[string]string{"threadid": "1"})
+	AssertRegexMatch(t, hmn.BuildBlogThread(1, "title/bla/http://"), RegexBlogThread, map[string]string{"threadid": "1"})
+	AssertRegexMatch(t, hmn.BuildBlogThreadWithPostHash(1, "title/bla/http://", 123), RegexBlogThread, map[string]string{"threadid": "1"})
+	AssertRegexNoMatch(t, hmn.BuildBlogThread(1, ""), RegexBlog)
+	AssertSubdomain(t, hero.BuildBlogThread(1, ""), "hero")
 }
 
 func TestBlogPost(t *testing.T) {
-	AssertRegexMatch(t, BuildBlogPost("", 1, 2), RegexBlogPost, map[string]string{"threadid": "1", "postid": "2"})
-	AssertRegexNoMatch(t, BuildBlogPost("", 1, 2), RegexBlogThread)
-	AssertSubdomain(t, BuildBlogPost("hero", 1, 2), "hero")
+	AssertRegexMatch(t, hmn.BuildBlogPost(1, 2), RegexBlogPost, map[string]string{"threadid": "1", "postid": "2"})
+	AssertRegexNoMatch(t, hmn.BuildBlogPost(1, 2), RegexBlogThread)
+	AssertSubdomain(t, hero.BuildBlogPost(1, 2), "hero")
 }
 
 func TestBlogPostDelete(t *testing.T) {
-	AssertRegexMatch(t, BuildBlogPostDelete("", 1, 2), RegexBlogPostDelete, map[string]string{"threadid": "1", "postid": "2"})
-	AssertRegexNoMatch(t, BuildBlogPostDelete("", 1, 2), RegexBlogPost)
-	AssertSubdomain(t, BuildBlogPostDelete("hero", 1, 2), "hero")
+	AssertRegexMatch(t, hmn.BuildBlogPostDelete(1, 2), RegexBlogPostDelete, map[string]string{"threadid": "1", "postid": "2"})
+	AssertRegexNoMatch(t, hmn.BuildBlogPostDelete(1, 2), RegexBlogPost)
+	AssertSubdomain(t, hero.BuildBlogPostDelete(1, 2), "hero")
 }
 
 func TestBlogPostEdit(t *testing.T) {
-	AssertRegexMatch(t, BuildBlogPostEdit("", 1, 2), RegexBlogPostEdit, map[string]string{"threadid": "1", "postid": "2"})
-	AssertRegexNoMatch(t, BuildBlogPostEdit("", 1, 2), RegexBlogPost)
-	AssertSubdomain(t, BuildBlogPostEdit("hero", 1, 2), "hero")
+	AssertRegexMatch(t, hmn.BuildBlogPostEdit(1, 2), RegexBlogPostEdit, map[string]string{"threadid": "1", "postid": "2"})
+	AssertRegexNoMatch(t, hmn.BuildBlogPostEdit(1, 2), RegexBlogPost)
+	AssertSubdomain(t, hero.BuildBlogPostEdit(1, 2), "hero")
 }
 
 func TestBlogPostReply(t *testing.T) {
-	AssertRegexMatch(t, BuildBlogPostReply("", 1, 2), RegexBlogPostReply, map[string]string{"threadid": "1", "postid": "2"})
-	AssertRegexNoMatch(t, BuildBlogPostReply("", 1, 2), RegexBlogPost)
-	AssertSubdomain(t, BuildBlogPostReply("hero", 1, 2), "hero")
+	AssertRegexMatch(t, hmn.BuildBlogPostReply(1, 2), RegexBlogPostReply, map[string]string{"threadid": "1", "postid": "2"})
+	AssertRegexNoMatch(t, hmn.BuildBlogPostReply(1, 2), RegexBlogPost)
+	AssertSubdomain(t, hero.BuildBlogPostReply(1, 2), "hero")
 }
 
 func TestLibrary(t *testing.T) {
@@ -280,20 +286,20 @@ func TestLibraryResource(t *testing.T) {
 }
 
 func TestEpisodeGuide(t *testing.T) {
-	AssertRegexMatch(t, BuildEpisodeList("hero", ""), RegexEpisodeList, map[string]string{"topic": ""})
-	AssertRegexMatch(t, BuildEpisodeList("hero", "code"), RegexEpisodeList, map[string]string{"topic": "code"})
-	AssertSubdomain(t, BuildEpisodeList("hero", "code"), "hero")
+	AssertRegexMatch(t, hero.BuildEpisodeList(""), RegexEpisodeList, map[string]string{"topic": ""})
+	AssertRegexMatch(t, hero.BuildEpisodeList("code"), RegexEpisodeList, map[string]string{"topic": "code"})
+	AssertSubdomain(t, hero.BuildEpisodeList("code"), "hero")
 
-	AssertRegexMatch(t, BuildEpisode("hero", "code", "day001"), RegexEpisode, map[string]string{"topic": "code", "episode": "day001"})
-	AssertSubdomain(t, BuildEpisode("hero", "code", "day001"), "hero")
+	AssertRegexMatch(t, hero.BuildEpisode("code", "day001"), RegexEpisode, map[string]string{"topic": "code", "episode": "day001"})
+	AssertSubdomain(t, hero.BuildEpisode("code", "day001"), "hero")
 
-	AssertRegexMatch(t, BuildCineraIndex("hero", "code"), RegexCineraIndex, map[string]string{"topic": "code"})
-	AssertSubdomain(t, BuildCineraIndex("hero", "code"), "hero")
+	AssertRegexMatch(t, hero.BuildCineraIndex("code"), RegexCineraIndex, map[string]string{"topic": "code"})
+	AssertSubdomain(t, hero.BuildCineraIndex("code"), "hero")
 }
 
 func TestAssetUpload(t *testing.T) {
-	AssertRegexMatch(t, BuildAssetUpload("hero"), RegexAssetUpload, nil)
-	AssertSubdomain(t, BuildAssetUpload("hero"), "hero")
+	AssertRegexMatch(t, hero.BuildAssetUpload(), RegexAssetUpload, nil)
+	AssertSubdomain(t, hero.BuildAssetUpload(), "hero")
 }
 
 func TestProjectCSS(t *testing.T) {
@@ -306,6 +312,10 @@ func TestMarkdownWorkerJS(t *testing.T) {
 
 func TestAPICheckUsername(t *testing.T) {
 	AssertRegexMatch(t, BuildAPICheckUsername(), RegexAPICheckUsername, nil)
+}
+
+func TestTwitchEventSubCallback(t *testing.T) {
+	AssertRegexMatch(t, BuildTwitchEventSubCallback(), RegexTwitchEventSubCallback, nil)
 }
 
 func TestPublic(t *testing.T) {
@@ -324,8 +334,8 @@ func TestPublic(t *testing.T) {
 }
 
 func TestForumMarkRead(t *testing.T) {
-	AssertRegexMatch(t, BuildForumMarkRead("hero", 5), RegexForumMarkRead, map[string]string{"sfid": "5"})
-	AssertSubdomain(t, BuildForumMarkRead("hero", 5), "hero")
+	AssertRegexMatch(t, hero.BuildForumMarkRead(5), RegexForumMarkRead, map[string]string{"sfid": "5"})
+	AssertSubdomain(t, hero.BuildForumMarkRead(5), "hero")
 }
 
 func TestS3Asset(t *testing.T) {
