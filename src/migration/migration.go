@@ -15,6 +15,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/migration/migrations"
 	"git.handmade.network/hmn/hmn/src/migration/types"
+	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -69,6 +70,15 @@ func init() {
 		},
 	}
 
+	seedCommand := &cobra.Command{
+		Use:   "seed",
+		Short: "Resets the db and populates it with sample data.",
+		Run: func(cmd *cobra.Command, args []string) {
+			ResetDB()
+			SampleSeed()
+		},
+	}
+
 	seedFromFileCommand := &cobra.Command{
 		Use:   "seedfile <filename>",
 		Short: "Resets the db and runs the seed file.",
@@ -79,6 +89,7 @@ func init() {
 				os.Exit(1)
 			}
 
+			ResetDB()
 			SeedFromFile(args[0])
 		},
 	}
@@ -86,6 +97,7 @@ func init() {
 	website.WebsiteCommand.AddCommand(dbCommand)
 	dbCommand.AddCommand(migrateCommand)
 	dbCommand.AddCommand(makeMigrationCommand)
+	dbCommand.AddCommand(seedCommand)
 	dbCommand.AddCommand(seedFromFileCommand)
 }
 
@@ -140,6 +152,13 @@ func ListMigrations() {
 	}
 }
 
+func LatestVersion() types.MigrationVersion {
+	allVersions := getSortedMigrationVersions()
+	return allVersions[len(allVersions)-1]
+}
+
+// Migrates either forward or backward to the selected migration version. You probably want to
+// use LatestVersion to get the most recent migration.
 func Migrate(targetVersion types.MigrationVersion) {
 	ctx := context.Background() // In the future, this could actually do something cool.
 
@@ -183,7 +202,7 @@ func Migrate(targetVersion types.MigrationVersion) {
 
 	allVersions := getSortedMigrationVersions()
 	if targetVersion.IsZero() {
-		targetVersion = allVersions[len(allVersions)-1]
+		targetVersion = LatestVersion()
 	}
 
 	currentIndex := -1
@@ -296,6 +315,60 @@ func MakeMigration(name, description string) {
 	fmt.Println(path)
 }
 
+func ResetDB() {
+	fmt.Println("Resetting database...")
+
+	ctx := context.Background()
+	// NOTE(asaf): We connect to db "template1", because we have to connect to something other than our own db in order to drop it.
+	template1DSN := fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s",
+		config.Config.Postgres.User,
+		config.Config.Postgres.Password,
+		config.Config.Postgres.Hostname,
+		config.Config.Postgres.Port,
+		"template1", // NOTE(asaf): template1 must always exist in postgres, as it's the db that gets cloned when you create new DBs
+	)
+	// NOTE(asaf): We have to use the low-level API of pgconn, because the pgx Exec always wraps the query in a transaction.
+	lowLevelConn, err := pgconn.Connect(ctx, template1DSN)
+	if err != nil {
+		panic(fmt.Errorf("failed to connect to db: %w", err))
+	}
+	defer lowLevelConn.Close(ctx)
+
+	// Disconnect all other users
+	{
+		result := lowLevelConn.ExecParams(ctx, fmt.Sprintf(`
+			SELECT pg_terminate_backend(pid)
+			FROM pg_stat_activity
+			WHERE datname = '%s' AND pid <> pg_backend_pid()
+		`, config.Config.Postgres.DbName), nil, nil, nil, nil)
+		_, err := result.Close()
+		if err != nil {
+			panic(fmt.Errorf("failed to disconnect other users: %w", err))
+		}
+	}
+
+	// Drop the database
+	{
+		result := lowLevelConn.ExecParams(ctx, fmt.Sprintf("DROP DATABASE %s", config.Config.Postgres.DbName), nil, nil, nil, nil)
+		_, err = result.Close()
+		pgErr, isPgError := err.(*pgconn.PgError)
+		if err != nil {
+			if !(isPgError && pgErr.SQLState() == "3D000") { // NOTE(asaf): 3D000 means "Database does not exist"
+				panic(fmt.Errorf("failed to drop db: %w", err))
+			}
+		}
+	}
+
+	// Create the database again
+	{
+		result := lowLevelConn.ExecParams(ctx, fmt.Sprintf("CREATE DATABASE %s", config.Config.Postgres.DbName), nil, nil, nil, nil)
+		_, err = result.Close()
+		if err != nil {
+			panic(fmt.Errorf("failed to create db: %w", err))
+		}
+	}
+}
+
 // Applies a cloned db to the local db.
 // Applies the seed after the migration specified in `afterMigration`.
 // NOTE(asaf): The db role specified in the config must have the CREATEDB attribute! `ALTER ROLE hmn WITH CREATEDB;`
@@ -305,40 +378,6 @@ func SeedFromFile(seedFile string) {
 		panic(fmt.Errorf("couldn't open seed file %s: %w", seedFile, err))
 	}
 	file.Close()
-
-	fmt.Println("Resetting database...")
-	{
-		ctx := context.Background()
-		// NOTE(asaf): We connect to db "template1", because we have to connect to something other than our own db in order to drop it.
-		template1DSN := fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s",
-			config.Config.Postgres.User,
-			config.Config.Postgres.Password,
-			config.Config.Postgres.Hostname,
-			config.Config.Postgres.Port,
-			"template1", // NOTE(asaf): template1 must always exist in postgres, as it's the db that gets cloned when you create new DBs
-		)
-		// NOTE(asaf): We have to use the low-level API of pgconn, because the pgx Exec always wraps the query in a transaction.
-		lowLevelConn, err := pgconn.Connect(ctx, template1DSN)
-		if err != nil {
-			panic(fmt.Errorf("failed to connect to db: %w", err))
-		}
-		defer lowLevelConn.Close(ctx)
-
-		result := lowLevelConn.ExecParams(ctx, fmt.Sprintf("DROP DATABASE %s", config.Config.Postgres.DbName), nil, nil, nil, nil)
-		_, err = result.Close()
-		pgErr, isPgError := err.(*pgconn.PgError)
-		if err != nil {
-			if !(isPgError && pgErr.SQLState() == "3D000") { // NOTE(asaf): 3D000 means "Database does not exist"
-				panic(fmt.Errorf("failed to drop db: %w", err))
-			}
-		}
-
-		result = lowLevelConn.ExecParams(ctx, fmt.Sprintf("CREATE DATABASE %s", config.Config.Postgres.DbName), nil, nil, nil, nil)
-		_, err = result.Close()
-		if err != nil {
-			panic(fmt.Errorf("failed to create db: %w", err))
-		}
-	}
 
 	fmt.Println("Executing seed...")
 	cmd := exec.Command("pg_restore",
@@ -360,12 +399,69 @@ func SeedFromFile(seedFile string) {
 // Creates only what's necessary for a fresh deployment with no data
 // TODO(opensource)
 func BareMinimumSeed() {
+	Migrate(LatestVersion())
+
+	ctx := context.Background()
+	conn := db.NewConnPool(1, 1)
+	defer conn.Close()
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Create the HMN project
+	_, err = tx.Exec(ctx,
+		`
+		INSERT INTO project (id, slug, name, blurb, description, personal, lifecycle, color_1, color_2, forum_enabled, blog_enabled, date_created)
+		VALUES (1, 'hmn', 'Handmade Network', '', '', FALSE, $1, 'ab4c47', 'a5467d', TRUE, TRUE, '2017-01-01T00:00:00Z')
+		`,
+		models.ProjectLifecycleActive,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create the base forum
+	_, err = tx.Exec(ctx, `
+		INSERT INTO subforum (id, slug, name, parent_id, project_id)
+		VALUES (2, '', 'Handmade Network', null, 1)
+	`)
+	if err != nil {
+		panic(err)
+	}
+
+	// Associate the forum with the HMN project
+	_, err = tx.Exec(ctx, `
+		UPDATE project SET forum_id = 2 WHERE slug = 'hmn'
+	`)
+	if err != nil {
+		panic(err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // NOTE(asaf): This will be useful for open-sourcing the website, but is not yet necessary.
 // Creates enough data for development
 // TODO(opensource)
 func SampleSeed() {
+	BareMinimumSeed()
+
+	ctx := context.Background()
+	conn := db.NewConnPool(1, 1)
+	defer conn.Close()
+
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback(ctx)
+
 	// admin := CreateAdminUser("admin", "12345678")
 	// user := CreateUser("regular_user", "12345678")
 	// hmnProject := CreateProject("hmn", "Handmade Network")
@@ -376,4 +472,9 @@ func SampleSeed() {
 	// Create showcase items
 	// Create codelanguages
 	// Create library and library resources
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		panic(err)
+	}
 }
