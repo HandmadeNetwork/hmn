@@ -111,15 +111,15 @@ func SampleSeed() {
 	defer tx.Rollback(ctx)
 
 	fmt.Println("Creating admin user (\"admin\"/\"password\")...")
-	seedUser(ctx, conn, models.User{Username: "admin", Email: "admin@handmade.network", IsStaff: true})
+	admin := seedUser(ctx, tx, models.User{Username: "admin", Name: "Admin", Email: "admin@handmade.network", IsStaff: true})
 
 	fmt.Println("Creating normal users (all with password \"password\")...")
-	alice := seedUser(ctx, conn, models.User{Username: "alice", Name: "Alice"})
-	bob := seedUser(ctx, conn, models.User{Username: "bob", Name: "Bob"})
-	charlie := seedUser(ctx, conn, models.User{Username: "charlie", Name: "Charlie"})
+	alice := seedUser(ctx, tx, models.User{Username: "alice", Name: "Alice"})
+	bob := seedUser(ctx, tx, models.User{Username: "bob", Name: "Bob"})
+	charlie := seedUser(ctx, tx, models.User{Username: "charlie", Name: "Charlie"})
 
 	fmt.Println("Creating a spammer...")
-	spammer := seedUser(ctx, conn, models.User{
+	spammer := seedUser(ctx, tx, models.User{
 		Username: "spam",
 		Status:   models.UserStatusConfirmed,
 		Name:     "Hot singletons in your local area",
@@ -128,16 +128,24 @@ func SampleSeed() {
 
 	users := []*models.User{alice, bob, charlie, spammer}
 
-	fmt.Println("Creating some threads...")
+	fmt.Println("Creating some forum threads...")
 	for i := 0; i < 5; i++ {
-		thread := seedThread(ctx, conn, models.Thread{})
-		populateThread(ctx, conn, thread, users, rand.Intn(5)+1)
+		thread := seedThread(ctx, tx, models.Thread{})
+		populateThread(ctx, tx, thread, users, rand.Intn(5)+1)
 	}
 
 	// spam-only thread
 	{
-		thread := seedThread(ctx, conn, models.Thread{})
-		populateThread(ctx, conn, thread, []*models.User{spammer}, 1)
+		thread := seedThread(ctx, tx, models.Thread{})
+		populateThread(ctx, tx, thread, []*models.User{spammer}, 1)
+	}
+
+	fmt.Println("Creating the news posts...")
+	{
+		for i := 0; i < 3; i++ {
+			thread := seedThread(ctx, tx, models.Thread{Type: models.ThreadTypeProjectBlogPost})
+			populateThread(ctx, tx, thread, []*models.User{admin, alice, bob, charlie}, rand.Intn(5)+1)
+		}
 	}
 
 	// admin := CreateAdminUser("admin", "12345678")
@@ -197,7 +205,7 @@ func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.
 	return user
 }
 
-func seedThread(ctx context.Context, conn db.ConnOrTx, input models.Thread) *models.Thread {
+func seedThread(ctx context.Context, tx pgx.Tx, input models.Thread) *models.Thread {
 	input.Type = utils.OrDefault(input.Type, models.ThreadTypeForumPost)
 
 	var defaultSubforum *int
@@ -206,7 +214,7 @@ func seedThread(ctx context.Context, conn db.ConnOrTx, input models.Thread) *mod
 		defaultSubforum = &id
 	}
 
-	thread, err := db.QueryOne[models.Thread](ctx, conn,
+	thread, err := db.QueryOne[models.Thread](ctx, tx,
 		`
 		INSERT INTO thread (
 			title,
@@ -234,7 +242,7 @@ func seedThread(ctx context.Context, conn db.ConnOrTx, input models.Thread) *mod
 	return thread
 }
 
-func populateThread(ctx context.Context, conn db.ConnOrTx, thread *models.Thread, users []*models.User, numPosts int) {
+func populateThread(ctx context.Context, tx pgx.Tx, thread *models.Thread, users []*models.User, numPosts int) {
 	var lastPostId int
 	for i := 0; i < numPosts; i++ {
 		user := users[i%len(users)]
@@ -246,7 +254,7 @@ func populateThread(ctx context.Context, conn db.ConnOrTx, thread *models.Thread
 			}
 		}
 
-		hmndata.CreateNewPost(ctx, conn, thread.ProjectID, thread.ID, thread.Type, user.ID, replyId, lorem.Paragraph(1, 10), "192.168.2.1")
+		hmndata.CreateNewPost(ctx, tx, thread.ProjectID, thread.ID, thread.Type, user.ID, replyId, lorem.Paragraph(1, 10), "192.168.2.1")
 	}
 }
 
