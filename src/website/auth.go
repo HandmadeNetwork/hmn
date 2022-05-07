@@ -77,10 +77,8 @@ func Login(c *RequestContext) ResponseData {
 
 	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 		`
-		SELECT $columns{hmn_user}
-		FROM
-			hmn_user
-			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
+		SELECT $columns
+		FROM hmn_user
 		WHERE LOWER(username) = LOWER($1)
 		`,
 		username,
@@ -457,10 +455,8 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 	}
 	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 		`
-		SELECT $columns{hmn_user}
-		FROM
-			hmn_user
-			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
+		SELECT $columns
+		FROM hmn_user
 		WHERE
 			LOWER(username) = LOWER($1)
 			AND LOWER(email) = LOWER($2)

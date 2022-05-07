@@ -190,6 +190,11 @@ func UpdatePassword(ctx context.Context, conn db.ConnOrTx, username string, hp H
 	return nil
 }
 
+func SetPassword(ctx context.Context, conn db.ConnOrTx, username string, password string) error {
+	hp := HashPassword(password)
+	return UpdatePassword(ctx, conn, username, hp)
+}
+
 func DeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) (int64, error) {
 	tag, err := conn.Exec(ctx,
 		`

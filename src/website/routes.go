@@ -548,16 +548,9 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 		}
 	}
 
-	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
-		`
-		SELECT $columns{hmn_user}
-		FROM
-			hmn_user
-			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
-		WHERE username = $1
-		`,
-		session.Username,
-	)
+	user, err := hmndata.FetchUserByUsername(c.Context(), c.Conn, nil, session.Username, hmndata.UsersQuery{
+		AnyStatus: true,
+	})
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			logging.Debug().Str("username", session.Username).Msg("returning no current user for this request because the user for the session couldn't be found")

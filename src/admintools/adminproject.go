@@ -37,8 +37,8 @@ func addCreateProjectCommand(projectCommand *cobra.Command) {
 			descParsed := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
 
 			ctx := context.Background()
-			conn := db.NewConnPool(1, 1)
-			defer conn.Close()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
 
 			tx, err := conn.Begin(ctx)
 			if err != nil {
@@ -160,8 +160,8 @@ func addProjectTagCommand(projectCommand *cobra.Command) {
 			tag, _ := cmd.Flags().GetString("tag")
 
 			ctx := context.Background()
-			conn := db.NewConnPool(1, 1)
-			defer conn.Close()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
 
 			resultTag, err := hmndata.SetProjectTag(ctx, conn, nil, projectID, tag)
 			if err != nil {

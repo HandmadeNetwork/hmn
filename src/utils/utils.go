@@ -10,6 +10,16 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 )
 
+// Returns the provided value, or a default value if the input was zero.
+func OrDefault[T comparable](v T, def T) T {
+	var zero T
+	if v == zero {
+		return def
+	} else {
+		return v
+	}
+}
+
 func IntMin(a, b int) int {
 	if a < b {
 		return a

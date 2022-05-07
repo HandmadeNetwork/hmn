@@ -96,11 +96,12 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 		FROM
 			discord_user AS duser
 			JOIN hmn_user ON duser.hmn_user_id = hmn_user.id
-			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
 		WHERE
 			duser.userid = $1
+			AND hmn_user.status = $2
 		`,
 		userID,
+		models.UserStatusApproved,
 	)
 	if err != nil {
 		if errors.Is(err, db.NotFound) {

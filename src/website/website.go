@@ -33,7 +33,7 @@ var WebsiteCommand = &cobra.Command{
 		backgroundJobContext, cancelBackgroundJobs := context.WithCancel(context.Background())
 		longRequestContext, cancelLongRequests := context.WithCancel(context.Background())
 
-		conn := db.NewConnPool(config.Config.Postgres.MinConn, config.Config.Postgres.MaxConn)
+		conn := db.NewConnPool()
 		perfCollector := perf.RunPerfCollector(backgroundJobContext)
 
 		server := http.Server{

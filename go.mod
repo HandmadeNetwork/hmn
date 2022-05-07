@@ -3,6 +3,7 @@ module git.handmade.network/hmn/hmn
 go 1.18
 
 require (
+	github.com/HandmadeNetwork/golorem v0.0.0-20220507185207-414965a3a817
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/alecthomas/chroma v0.9.2
 	github.com/aws/aws-sdk-go-v2 v1.8.1

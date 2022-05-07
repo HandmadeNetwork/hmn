@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -15,7 +14,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/migration/migrations"
 	"git.handmade.network/hmn/hmn/src/migration/types"
-	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
@@ -162,7 +160,9 @@ func LatestVersion() types.MigrationVersion {
 func Migrate(targetVersion types.MigrationVersion) {
 	ctx := context.Background() // In the future, this could actually do something cool.
 
-	conn := db.NewConn()
+	conn := db.NewConnWithConfig(config.PostgresConfig{
+		LogLevel: pgx.LogLevelWarn,
+	})
 	defer conn.Close(ctx)
 
 	// create migration table
@@ -366,115 +366,5 @@ func ResetDB() {
 		if err != nil {
 			panic(fmt.Errorf("failed to create db: %w", err))
 		}
-	}
-}
-
-// Applies a cloned db to the local db.
-// Applies the seed after the migration specified in `afterMigration`.
-// NOTE(asaf): The db role specified in the config must have the CREATEDB attribute! `ALTER ROLE hmn WITH CREATEDB;`
-func SeedFromFile(seedFile string) {
-	file, err := os.Open(seedFile)
-	if err != nil {
-		panic(fmt.Errorf("couldn't open seed file %s: %w", seedFile, err))
-	}
-	file.Close()
-
-	fmt.Println("Executing seed...")
-	cmd := exec.Command("pg_restore",
-		"--single-transaction",
-		"--dbname", config.Config.Postgres.DSN(),
-		seedFile,
-	)
-	fmt.Println("Running command:", cmd)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		fmt.Print(string(output))
-		panic(fmt.Errorf("failed to execute seed: %w", err))
-	}
-
-	fmt.Println("Done! You may want to migrate forward from here.")
-	ListMigrations()
-}
-
-// NOTE(asaf): This will be useful for open-sourcing the website, but is not yet necessary.
-// Creates only what's necessary for a fresh deployment with no data
-// TODO(opensource)
-func BareMinimumSeed() {
-	Migrate(LatestVersion())
-
-	ctx := context.Background()
-	conn := db.NewConnPool(1, 1)
-	defer conn.Close()
-
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		panic(err)
-	}
-	defer tx.Rollback(ctx)
-
-	// Create the HMN project
-	_, err = tx.Exec(ctx,
-		`
-		INSERT INTO project (id, slug, name, blurb, description, personal, lifecycle, color_1, color_2, forum_enabled, blog_enabled, date_created)
-		VALUES (1, 'hmn', 'Handmade Network', '', '', FALSE, $1, 'ab4c47', 'a5467d', TRUE, TRUE, '2017-01-01T00:00:00Z')
-		`,
-		models.ProjectLifecycleActive,
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	// Create the base forum
-	_, err = tx.Exec(ctx, `
-		INSERT INTO subforum (id, slug, name, parent_id, project_id)
-		VALUES (2, '', 'Handmade Network', null, 1)
-	`)
-	if err != nil {
-		panic(err)
-	}
-
-	// Associate the forum with the HMN project
-	_, err = tx.Exec(ctx, `
-		UPDATE project SET forum_id = 2 WHERE slug = 'hmn'
-	`)
-	if err != nil {
-		panic(err)
-	}
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// NOTE(asaf): This will be useful for open-sourcing the website, but is not yet necessary.
-// Creates enough data for development
-// TODO(opensource)
-func SampleSeed() {
-	BareMinimumSeed()
-
-	ctx := context.Background()
-	conn := db.NewConnPool(1, 1)
-	defer conn.Close()
-
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		panic(err)
-	}
-	defer tx.Rollback(ctx)
-
-	// admin := CreateAdminUser("admin", "12345678")
-	// user := CreateUser("regular_user", "12345678")
-	// hmnProject := CreateProject("hmn", "Handmade Network")
-	// Create category
-	// Create thread
-	// Create accepted user project
-	// Create pending user project
-	// Create showcase items
-	// Create codelanguages
-	// Create library and library resources
-
-	err = tx.Commit(ctx)
-	if err != nil {
-		panic(err)
 	}
 }

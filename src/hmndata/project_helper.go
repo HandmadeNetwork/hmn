@@ -150,7 +150,7 @@ func FetchProjects(
 	for i, p := range projectRows {
 		projectIds[i] = p.Project.ID
 	}
-	projectOwners, err := FetchMultipleProjectsOwners(ctx, tx, projectIds)
+	projectOwners, err := FetchMultipleProjectsOwners(ctx, tx, currentUser, projectIds)
 	if err != nil {
 		return nil, err
 	}
@@ -316,6 +316,7 @@ type ProjectOwners struct {
 func FetchMultipleProjectsOwners(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
+	currentUser *models.User,
 	projectIds []int,
 ) ([]ProjectOwners, error) {
 	perf := perf.ExtractPerf(ctx)
@@ -358,17 +359,9 @@ func FetchMultipleProjectsOwners(
 			userIds = append(userIds, userProject.UserID)
 		}
 	}
-	users, err := db.Query[models.User](ctx, tx,
-		`
-		SELECT $columns{hmn_user}
-		FROM
-			hmn_user
-			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
-		WHERE
-			hmn_user.id = ANY($1)
-		`,
-		userIds,
-	)
+	users, err := FetchUsers(ctx, tx, currentUser, UsersQuery{
+		UserIDs: userIds,
+	})
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch users for projects")
 	}
@@ -415,13 +408,14 @@ func FetchMultipleProjectsOwners(
 func FetchProjectOwners(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
+	currentUser *models.User,
 	projectId int,
 ) ([]*models.User, error) {
 	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Fetch owners for project")
 	defer perf.EndBlock()
 
-	projectOwners, err := FetchMultipleProjectsOwners(ctx, dbConn, []int{projectId})
+	projectOwners, err := FetchMultipleProjectsOwners(ctx, dbConn, currentUser, []int{projectId})
 	if err != nil {
 		return nil, err
 	}

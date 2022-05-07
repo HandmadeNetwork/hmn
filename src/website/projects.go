@@ -181,7 +181,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	// There are no further permission checks to do, because permissions are
 	// checked whatever way we fetch the project.
 
-	owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
+	owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, c.CurrentUser, c.CurrentProject.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -818,10 +818,8 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 
 	owners, err := db.Query[models.User](ctx, tx,
 		`
-		SELECT $columns{hmn_user}
-		FROM
-			hmn_user
-			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
+		SELECT $columns
+		FROM hmn_user
 		WHERE LOWER(username) = ANY ($1)
 		`,
 		payload.OwnerUsernames,

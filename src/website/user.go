@@ -52,19 +52,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	if c.CurrentUser != nil && strings.ToLower(c.CurrentUser.Username) == username {
 		profileUser = c.CurrentUser
 	} else {
-		c.Perf.StartBlock("SQL", "Fetch user")
-		user, err := db.QueryOne[models.User](c.Context(), c.Conn,
-			`
-			SELECT $columns{hmn_user}
-			FROM
-				hmn_user
-				LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
-			WHERE
-				LOWER(hmn_user.username) = $1
-			`,
-			username,
-		)
-		c.Perf.EndBlock()
+		user, err := hmndata.FetchUserByUsername(c.Context(), c.Conn, c.CurrentUser, username, hmndata.UsersQuery{})
 		if err != nil {
 			if errors.Is(err, db.NotFound) {
 				return FourOhFour(c)

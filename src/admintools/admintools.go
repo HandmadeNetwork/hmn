@@ -42,8 +42,8 @@ func init() {
 			password := args[1]
 
 			ctx := context.Background()
-			conn := db.NewConnPool(1, 1)
-			defer conn.Close()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
 
 			row := conn.QueryRow(ctx, "SELECT id, username FROM hmn_user WHERE lower(username) = lower($1)", username)
 			var id int
@@ -83,8 +83,8 @@ func init() {
 			username := args[0]
 
 			ctx := context.Background()
-			conn := db.NewConnPool(1, 1)
-			defer conn.Close()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
 
 			res, err := conn.Exec(ctx, "UPDATE hmn_user SET status = $1 WHERE LOWER(username) = LOWER($2);", models.UserStatusConfirmed, username)
 			if err != nil {
@@ -138,8 +138,8 @@ func init() {
 			}
 
 			ctx := context.Background()
-			conn := db.NewConnPool(1, 1)
-			defer conn.Close()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
 
 			res, err := conn.Exec(ctx, "UPDATE hmn_user SET status = $1 WHERE LOWER(username) = LOWER($2);", status, username)
 			if err != nil {
@@ -201,8 +201,8 @@ func init() {
 			projectSlug, _ := cmd.Flags().GetString("project_slug")
 
 			ctx := context.Background()
-			conn := db.NewConnPool(1, 1)
-			defer conn.Close()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
 
 			tx, err := conn.Begin(ctx)
 			if err != nil {
@@ -280,8 +280,8 @@ func init() {
 			subforumSlug, _ := cmd.Flags().GetString("subforum_slug")
 
 			ctx := context.Background()
-			conn := db.NewConnPool(1, 1)
-			defer conn.Close()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
 
 			tx, err := conn.Begin(ctx)
 			if err != nil {

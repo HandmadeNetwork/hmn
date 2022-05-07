@@ -256,15 +256,7 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "User id can't be parsed")
 	}
 
-	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
-		`
-		SELECT $columns{hmn_user}
-			FROM hmn_user
-			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
-		WHERE hmn_user.id = $1
-		`,
-		userId,
-	)
+	user, err := hmndata.FetchUser(c.Context(), c.Conn, c.CurrentUser, userId, hmndata.UsersQuery{})
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			return RejectRequest(c, "User not found")

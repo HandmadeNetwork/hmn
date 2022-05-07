@@ -11,6 +11,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
@@ -45,7 +46,18 @@ var connInfo = pgtype.NewConnInfo()
 // Creates a new connection to the HMN database.
 // This connection is not safe for concurrent use.
 func NewConn() *pgx.Conn {
-	conn, err := pgx.Connect(context.Background(), config.Config.Postgres.DSN())
+	return NewConnWithConfig(config.PostgresConfig{})
+}
+
+func NewConnWithConfig(cfg config.PostgresConfig) *pgx.Conn {
+	cfg = overrideDefaultConfig(cfg)
+
+	pgcfg, err := pgx.ParseConfig(cfg.DSN())
+
+	pgcfg.Logger = zerologadapter.NewLogger(log.Logger)
+	pgcfg.LogLevel = cfg.LogLevel
+
+	conn, err := pgx.ConnectConfig(context.Background(), pgcfg)
 	if err != nil {
 		panic(oops.New(err, "failed to connect to database"))
 	}
@@ -55,20 +67,39 @@ func NewConn() *pgx.Conn {
 
 // Creates a connection pool for the HMN database.
 // The resulting pool is safe for concurrent use.
-func NewConnPool(minConns, maxConns int32) *pgxpool.Pool {
-	cfg, err := pgxpool.ParseConfig(config.Config.Postgres.DSN())
+func NewConnPool() *pgxpool.Pool {
+	return NewConnPoolWithConfig(config.PostgresConfig{})
+}
 
-	cfg.MinConns = minConns
-	cfg.MaxConns = maxConns
-	cfg.ConnConfig.Logger = zerologadapter.NewLogger(log.Logger)
-	cfg.ConnConfig.LogLevel = config.Config.Postgres.LogLevel
+func NewConnPoolWithConfig(cfg config.PostgresConfig) *pgxpool.Pool {
+	cfg = overrideDefaultConfig(cfg)
 
-	conn, err := pgxpool.ConnectConfig(context.Background(), cfg)
+	pgcfg, err := pgxpool.ParseConfig(cfg.DSN())
+
+	pgcfg.MinConns = cfg.MinConn
+	pgcfg.MaxConns = cfg.MaxConn
+	pgcfg.ConnConfig.Logger = zerologadapter.NewLogger(log.Logger)
+	pgcfg.ConnConfig.LogLevel = cfg.LogLevel
+
+	conn, err := pgxpool.ConnectConfig(context.Background(), pgcfg)
 	if err != nil {
 		panic(oops.New(err, "failed to create database connection pool"))
 	}
 
 	return conn
+}
+
+func overrideDefaultConfig(cfg config.PostgresConfig) config.PostgresConfig {
+	return config.PostgresConfig{
+		User:     utils.OrDefault(cfg.User, config.Config.Postgres.User),
+		Password: utils.OrDefault(cfg.Password, config.Config.Postgres.Password),
+		Hostname: utils.OrDefault(cfg.Hostname, config.Config.Postgres.Hostname),
+		Port:     utils.OrDefault(cfg.Port, config.Config.Postgres.Port),
+		DbName:   utils.OrDefault(cfg.DbName, config.Config.Postgres.DbName),
+		LogLevel: utils.OrDefault(cfg.LogLevel, config.Config.Postgres.LogLevel),
+		MinConn:  utils.OrDefault(cfg.MinConn, config.Config.Postgres.MinConn),
+		MaxConn:  utils.OrDefault(cfg.MaxConn, config.Config.Postgres.MaxConn),
+	}
 }
 
 /*

@@ -21,10 +21,9 @@ func APICheckUsername(c *RequestContext) ResponseData {
 		c.Perf.StartBlock("SQL", "Fetch user")
 		user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 			`
-			SELECT $columns{hmn_user}
+			SELECT $columns
 			FROM
 				hmn_user
-				LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
 			WHERE
 				LOWER(hmn_user.username) = LOWER($1)
 				AND status = ANY ($2)
