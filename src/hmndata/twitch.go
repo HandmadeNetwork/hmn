@@ -26,15 +26,15 @@ func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx) ([]TwitchStre
 		`
 		SELECT $columns{link}
 		FROM
-			handmade_links AS link
-			LEFT JOIN auth_user AS link_owner ON link_owner.id = link.user_id
+			link
+			LEFT JOIN hmn_user AS link_owner ON link_owner.id = link.user_id
 		WHERE
 			url ~* 'twitch\.tv/([^/]+)$' AND
 			((link.user_id IS NOT NULL AND link_owner.status = $1) OR (link.project_id IS NOT NULL AND
 			(SELECT COUNT(*)
 			FROM
-				handmade_user_projects AS hup
-				JOIN auth_user AS project_owner ON project_owner.id = hup.user_id
+				user_project AS hup
+				JOIN hmn_user AS project_owner ON project_owner.id = hup.user_id
 			WHERE
 				hup.project_id = link.project_id AND
 				project_owner.status != $1
@@ -80,7 +80,7 @@ func FetchTwitchLoginsForUserOrProject(ctx context.Context, dbConn db.ConnOrTx, 
 		`
 		SELECT $columns
 		FROM
-			handmade_links AS link
+			link
 		WHERE
 			url ~* 'twitch\.tv/([^/]+)$'
 			AND ((user_id = $1 AND project_id IS NULL) OR (user_id IS NULL AND project_id = $2))

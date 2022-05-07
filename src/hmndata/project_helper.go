@@ -71,7 +71,7 @@ func FetchProjects(
 		Project        models.Project `db:"project"`
 		LogoLightAsset *models.Asset  `db:"logolight_asset"`
 		LogoDarkAsset  *models.Asset  `db:"logodark_asset"`
-		Tag            *models.Tag    `db:"tags"`
+		Tag            *models.Tag    `db:"tag"`
 	}
 
 	// Fetch all valid projects (not yet subject to user permission checks)
@@ -82,17 +82,17 @@ func FetchProjects(
 	qb.Add(`
 		SELECT DISTINCT ON (project.id) $columns
 		FROM
-			handmade_project AS project
-			LEFT JOIN handmade_asset AS logolight_asset ON logolight_asset.id = project.logolight_asset_id
-			LEFT JOIN handmade_asset AS logodark_asset ON logodark_asset.id = project.logodark_asset_id
-			LEFT JOIN tags ON project.tag = tags.id
+			project
+			LEFT JOIN asset AS logolight_asset ON logolight_asset.id = project.logolight_asset_id
+			LEFT JOIN asset AS logodark_asset ON logodark_asset.id = project.logodark_asset_id
+			LEFT JOIN tag ON project.tag = tag.id
 	`)
 	if len(q.OwnerIDs) > 0 {
 		qb.Add(
 			`
 			JOIN (
 				SELECT project_id, array_agg(user_id) AS owner_ids
-				FROM handmade_user_projects
+				FROM user_project
 				WHERE user_id = ANY ($?)
 				GROUP BY project_id
 			) AS owner_filter ON project.id = owner_filter.project_id
@@ -336,7 +336,7 @@ func FetchMultipleProjectsOwners(
 	userProjects, err := db.Query[userProject](ctx, tx,
 		`
 		SELECT $columns
-		FROM handmade_user_projects
+		FROM user_project
 		WHERE project_id = ANY($1)
 		`,
 		projectIds,
@@ -360,12 +360,12 @@ func FetchMultipleProjectsOwners(
 	}
 	users, err := db.Query[models.User](ctx, tx,
 		`
-		SELECT $columns{auth_user}
+		SELECT $columns{hmn_user}
 		FROM
-			auth_user
-			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+			hmn_user
+			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
 		WHERE
-			auth_user.id = ANY($1)
+			hmn_user.id = ANY($1)
 		`,
 		userIds,
 	)
@@ -467,7 +467,7 @@ func SetProjectTag(
 		// Create a tag
 		tag, err := db.QueryOne[models.Tag](ctx, tx,
 			`
-			INSERT INTO tags (text) VALUES ($1)
+			INSERT INTO tag (text) VALUES ($1)
 			RETURNING $columns
 			`,
 			tagText,
@@ -480,7 +480,7 @@ func SetProjectTag(
 		// Attach it to the project
 		_, err = tx.Exec(ctx,
 			`
-			UPDATE handmade_project
+			UPDATE project
 			SET tag = $1
 			WHERE id = $2
 			`,
@@ -493,9 +493,9 @@ func SetProjectTag(
 		// Update the text of an existing one
 		tag, err := db.QueryOne[models.Tag](ctx, tx,
 			`
-			UPDATE tags
+			UPDATE tag
 			SET text = $1
-			WHERE id = (SELECT tag FROM handmade_project WHERE id = $2)
+			WHERE id = (SELECT tag FROM project WHERE id = $2)
 			RETURNING $columns
 			`,
 			tagText, projectID,

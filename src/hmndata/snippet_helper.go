@@ -48,10 +48,10 @@ func FetchSnippets(
 			`
 			SELECT DISTINCT snippet_id
 			FROM
-				snippet_tags
-				JOIN tags ON snippet_tags.tag_id = tags.id
+				snippet_tag
+				JOIN tag ON snippet_tag.tag_id = tag.id
 			WHERE
-				tags.id = ANY ($1)
+				tag.id = ANY ($1)
 			`,
 			q.Tags,
 		)
@@ -72,11 +72,11 @@ func FetchSnippets(
 		`
 		SELECT $columns
 		FROM
-			handmade_snippet AS snippet
-			LEFT JOIN auth_user AS owner ON snippet.owner_id = owner.id
-			LEFT JOIN handmade_asset AS owner_avatar ON owner_avatar.id = owner.avatar_asset_id
-			LEFT JOIN handmade_asset AS asset ON snippet.asset_id = asset.id
-			LEFT JOIN handmade_discordmessage AS discord_message ON snippet.discord_message_id = discord_message.id
+			snippet
+			LEFT JOIN hmn_user AS owner ON snippet.owner_id = owner.id
+			LEFT JOIN asset AS owner_avatar ON owner_avatar.id = owner.avatar_asset_id
+			LEFT JOIN asset ON snippet.asset_id = asset.id
+			LEFT JOIN discord_message ON snippet.discord_message_id = discord_message.id
 		WHERE
 			TRUE
 		`,
@@ -139,17 +139,17 @@ func FetchSnippets(
 
 	// Fetch tags
 	type snippetTagRow struct {
-		SnippetID int         `db:"snippet_tags.snippet_id"`
-		Tag       *models.Tag `db:"tags"`
+		SnippetID int         `db:"snippet_tag.snippet_id"`
+		Tag       *models.Tag `db:"tag"`
 	}
 	snippetTags, err := db.Query[snippetTagRow](ctx, tx,
 		`
 		SELECT $columns
 		FROM
-			snippet_tags
-			JOIN tags ON snippet_tags.tag_id = tags.id
+			snippet_tag
+			JOIN tag ON snippet_tag.tag_id = tag.id
 		WHERE
-			snippet_tags.snippet_id = ANY($1)
+			snippet_tag.snippet_id = ANY($1)
 		`,
 		snippetIDs,
 	)

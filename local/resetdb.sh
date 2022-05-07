@@ -19,5 +19,5 @@ pushd $BETA_PATH
 
     docker-compose exec postgres bash -c "psql -U postgres -c \"CREATE ROLE hmn CREATEDB LOGIN PASSWORD 'password';\""
 popd
-go run src/main.go seedfile local/backups/hmn_pg_dump_live_2021-11-14
-# go run src/main.go seedfile local/backups/hmn_pg_dump_live_2021-10-23
+go run src/main.go db seedfile local/backups/hmn_pg_dump_live_2021-11-14
+# go run src/main.go db seedfile local/backups/hmn_pg_dump_live_2021-10-23

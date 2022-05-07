@@ -25,7 +25,7 @@ func FetchTags(ctx context.Context, dbConn db.ConnOrTx, q TagQuery) ([]*models.T
 	qb.Add(
 		`
 		SELECT $columns
-		FROM tags
+		FROM tag
 		WHERE
 			TRUE
 		`,

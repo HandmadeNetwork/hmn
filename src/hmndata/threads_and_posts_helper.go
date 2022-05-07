@@ -71,21 +71,21 @@ func FetchThreads(
 		`
 		SELECT $columns
 		FROM
-			handmade_thread AS thread
-			JOIN handmade_project AS project ON thread.project_id = project.id
-			JOIN handmade_post AS first_post ON first_post.id = thread.first_id
-			JOIN handmade_post AS last_post ON last_post.id = thread.last_id
-			JOIN handmade_postversion AS first_version ON first_version.id = first_post.current_id
-			JOIN handmade_postversion AS last_version ON last_version.id = last_post.current_id
-			LEFT JOIN auth_user AS first_author ON first_author.id = first_post.author_id
-			LEFT JOIN handmade_asset AS first_author_avatar ON first_author_avatar.id = first_author.avatar_asset_id
-			LEFT JOIN auth_user AS last_author ON last_author.id = last_post.author_id
-			LEFT JOIN handmade_asset AS last_author_avatar ON last_author_avatar.id = last_author.avatar_asset_id
-			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
+			thread
+			JOIN project ON thread.project_id = project.id
+			JOIN post AS first_post ON first_post.id = thread.first_id
+			JOIN post AS last_post ON last_post.id = thread.last_id
+			JOIN post_version AS first_version ON first_version.id = first_post.current_id
+			JOIN post_version AS last_version ON last_version.id = last_post.current_id
+			LEFT JOIN hmn_user AS first_author ON first_author.id = first_post.author_id
+			LEFT JOIN asset AS first_author_avatar ON first_author_avatar.id = first_author.avatar_asset_id
+			LEFT JOIN hmn_user AS last_author ON last_author.id = last_post.author_id
+			LEFT JOIN asset AS last_author_avatar ON last_author_avatar.id = last_author.avatar_asset_id
+			LEFT JOIN thread_last_read_info AS tlri ON (
 				tlri.thread_id = thread.id
 				AND tlri.user_id = $?
 			)
-			LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
+			LEFT JOIN subforum_last_read_info AS slri ON (
 				slri.subforum_id = thread.subforum_id
 				AND slri.user_id = $?
 			)
@@ -219,11 +219,11 @@ func CountThreads(
 		`
 		SELECT COUNT(*)
 		FROM
-			handmade_thread AS thread
-			JOIN handmade_project AS project ON thread.project_id = project.id
-			JOIN handmade_post AS first_post ON first_post.id = thread.first_id
-			LEFT JOIN auth_user AS first_author ON first_author.id = first_post.author_id
-			LEFT JOIN handmade_asset AS first_author_avatar ON first_author_avatar.id = first_author.avatar_asset_id
+			thread
+			JOIN project ON thread.project_id = project.id
+			JOIN post AS first_post ON first_post.id = thread.first_id
+			LEFT JOIN hmn_user AS first_author ON first_author.id = first_post.author_id
+			LEFT JOIN asset AS first_author_avatar ON first_author_avatar.id = first_author.avatar_asset_id
 		WHERE
 			NOT thread.deleted
 			AND ( -- project has valid lifecycle
@@ -328,28 +328,28 @@ func FetchPosts(
 		`
 		SELECT $columns
 		FROM
-			handmade_post AS post
-			JOIN handmade_thread AS thread ON post.thread_id = thread.id
-			JOIN handmade_project AS project ON post.project_id = project.id
-			JOIN handmade_postversion AS ver ON ver.id = post.current_id
-			LEFT JOIN auth_user AS author ON author.id = post.author_id
-			LEFT JOIN handmade_asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
-			LEFT JOIN auth_user AS editor ON ver.editor_id = editor.id
-			LEFT JOIN handmade_asset AS editor_avatar ON editor_avatar.id = editor.avatar_asset_id
-			LEFT JOIN handmade_threadlastreadinfo AS tlri ON (
+			post
+			JOIN thread ON post.thread_id = thread.id
+			JOIN project ON post.project_id = project.id
+			JOIN post_version AS ver ON ver.id = post.current_id
+			LEFT JOIN hmn_user AS author ON author.id = post.author_id
+			LEFT JOIN asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
+			LEFT JOIN hmn_user AS editor ON ver.editor_id = editor.id
+			LEFT JOIN asset AS editor_avatar ON editor_avatar.id = editor.avatar_asset_id
+			LEFT JOIN thread_last_read_info AS tlri ON (
 				tlri.thread_id = thread.id
 				AND tlri.user_id = $?
 			)
-			LEFT JOIN handmade_subforumlastreadinfo AS slri ON (
+			LEFT JOIN subforum_last_read_info AS slri ON (
 				slri.subforum_id = thread.subforum_id
 				AND slri.user_id = $?
 			)
 			-- Unconditionally fetch reply info, but make sure to check it
 			-- later and possibly remove these fields if the permission
 			-- check fails.
-			LEFT JOIN handmade_post AS reply_post ON reply_post.id = post.reply_id
-			LEFT JOIN auth_user AS reply_author ON reply_post.author_id = reply_author.id
-			LEFT JOIN handmade_asset AS reply_author_avatar ON reply_author_avatar.id = reply_author.avatar_asset_id
+			LEFT JOIN post AS reply_post ON reply_post.id = post.reply_id
+			LEFT JOIN hmn_user AS reply_author ON reply_post.author_id = reply_author.id
+			LEFT JOIN asset AS reply_author_avatar ON reply_author_avatar.id = reply_author.avatar_asset_id
 		WHERE
 			NOT thread.deleted
 			AND NOT post.deleted
@@ -545,11 +545,11 @@ func CountPosts(
 		`
 		SELECT COUNT(*)
 		FROM
-			handmade_post AS post
-			JOIN handmade_thread AS thread ON post.thread_id = thread.id
-			JOIN handmade_project AS project ON post.project_id = project.id
-			LEFT JOIN auth_user AS author ON author.id = post.author_id
-			LEFT JOIN handmade_asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
+			post
+			JOIN thread ON post.thread_id = thread.id
+			JOIN project ON post.project_id = project.id
+			LEFT JOIN hmn_user AS author ON author.id = post.author_id
+			LEFT JOIN asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
 		WHERE
 			NOT thread.deleted
 			AND NOT post.deleted
@@ -608,7 +608,7 @@ func UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User
 		`
 		SELECT post.author_id
 		FROM
-			handmade_post AS post
+			post
 		WHERE
 			post.id = $1
 			AND NOT post.deleted
@@ -639,7 +639,7 @@ func CreateNewPost(
 	// Create post
 	err := tx.QueryRow(ctx,
 		`
-		INSERT INTO handmade_post (postdate, thread_id, thread_type, current_id, author_id, project_id, reply_id, preview)
+		INSERT INTO post (postdate, thread_id, thread_type, current_id, author_id, project_id, reply_id, preview)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
 		`,
@@ -680,7 +680,7 @@ func CreateNewPost(
 
 	_, err = tx.Exec(ctx,
 		`
-		UPDATE handmade_project
+		UPDATE project
 		SET `+updates+`
 		WHERE
 			id = $1
@@ -705,7 +705,7 @@ func DeletePost(
 		`
 		SELECT $columns
 		FROM
-			handmade_thread AS thread
+			thread
 		WHERE
 			thread.id = $1
 		`,
@@ -723,7 +723,7 @@ func DeletePost(
 		// Just delete the whole thread and all its posts.
 		_, err = tx.Exec(ctx,
 			`
-			UPDATE handmade_thread
+			UPDATE thread
 			SET deleted = TRUE
 			WHERE id = $1
 			`,
@@ -731,7 +731,7 @@ func DeletePost(
 		)
 		_, err = tx.Exec(ctx,
 			`
-			UPDATE handmade_post
+			UPDATE post
 			SET deleted = TRUE
 			WHERE thread_id = $1
 			`,
@@ -743,7 +743,7 @@ func DeletePost(
 
 	_, err = tx.Exec(ctx,
 		`
-		UPDATE handmade_post
+		UPDATE post
 		SET deleted = TRUE
 		WHERE
 			id = $1
@@ -789,7 +789,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 	// Create post version
 	err := tx.QueryRow(ctx,
 		`
-		INSERT INTO handmade_postversion (post_id, text_raw, text_parsed, ip, date, edit_reason, editor_id)
+		INSERT INTO post_version (post_id, text_raw, text_parsed, ip, date, edit_reason, editor_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
 		`,
@@ -808,7 +808,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 	// Update post with version id and preview
 	_, err = tx.Exec(ctx,
 		`
-		UPDATE handmade_post
+		UPDATE post
 		SET current_id = $1, preview = $2
 		WHERE id = $3
 		`,
@@ -824,7 +824,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 
 	_, err = tx.Exec(ctx,
 		`
-		DELETE FROM handmade_post_asset_usage
+		DELETE FROM post_asset_usage
 		WHERE post_id = $1
 		`,
 		postId,
@@ -842,7 +842,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 	assetIDs, err := db.QueryScalar[uuid.UUID](ctx, tx,
 		`
 		SELECT id
-		FROM handmade_asset
+		FROM asset
 		WHERE s3_key = ANY($1)
 		`,
 		keys,
@@ -857,7 +857,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 		values = append(values, []interface{}{postId, assetID})
 	}
 
-	_, err = tx.CopyFrom(ctx, pgx.Identifier{"handmade_post_asset_usage"}, []string{"post_id", "asset_id"}, pgx.CopyFromRows(values))
+	_, err = tx.CopyFrom(ctx, pgx.Identifier{"post_asset_usage"}, []string{"post_id", "asset_id"}, pgx.CopyFromRows(values))
 	if err != nil {
 		panic(oops.New(err, "failed to insert post asset usage"))
 	}
@@ -877,7 +877,7 @@ func FixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
 	posts, err := db.Query[models.Post](ctx, tx,
 		`
 		SELECT $columns
-		FROM handmade_post
+		FROM post
 		WHERE
 			thread_id = $1
 			AND NOT deleted
@@ -904,7 +904,7 @@ func FixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
 
 	_, err = tx.Exec(ctx,
 		`
-		UPDATE handmade_thread
+		UPDATE thread
 		SET first_id = $1, last_id = $2
 		WHERE id = $3
 		`,

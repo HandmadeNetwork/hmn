@@ -150,7 +150,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	if imageSaveResult.ImageFile != nil {
 		_, err = tx.Exec(c.Context(),
 			`
-			UPDATE handmade_podcast
+			UPDATE podcast
 			SET
 				title = $1,
 				description = $2,
@@ -168,7 +168,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	} else {
 		_, err = tx.Exec(c.Context(),
 			`
-			UPDATE handmade_podcast
+			UPDATE podcast
 			SET
 				title = $1,
 				description = $2
@@ -419,7 +419,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		c.Perf.StartBlock("SQL", "Updating podcast episode")
 		_, err := c.Conn.Exec(c.Context(),
 			`
-			UPDATE handmade_podcastepisode
+			UPDATE podcast_episode
 			SET
 				title = $1,
 				description = $2,
@@ -448,7 +448,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		c.Perf.StartBlock("SQL", "Creating new podcast episode")
 		_, err := c.Conn.Exec(c.Context(),
 			`
-			INSERT INTO handmade_podcastepisode
+			INSERT INTO podcast_episode
 				(guid, title, description, description_rendered, audio_filename, duration, pub_date, episode_number, podcast_id)
 			VALUES
 				($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -536,8 +536,8 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 		`
 		SELECT $columns
 		FROM
-			handmade_podcast AS podcast
-			LEFT JOIN handmade_imagefile AS imagefile ON imagefile.id = podcast.image_id
+			podcast
+			LEFT JOIN image_file AS imagefile ON imagefile.id = podcast.image_id
 		WHERE podcast.project_id = $1
 		`,
 		projectId,
@@ -561,7 +561,7 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 			episodes, err := db.Query[models.PodcastEpisode](c.Context(), c.Conn,
 				`
 				SELECT $columns
-				FROM handmade_podcastepisode AS episode
+				FROM podcast_episode AS episode
 				WHERE episode.podcast_id = $1
 				ORDER BY episode.season_number DESC, episode.episode_number DESC
 				`,
@@ -581,7 +581,7 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 			episode, err := db.QueryOne[models.PodcastEpisode](c.Context(), c.Conn,
 				`
 				SELECT $columns
-				FROM handmade_podcastepisode AS episode
+				FROM podcast_episode AS episode
 				WHERE episode.podcast_id = $1 AND episode.guid = $2
 				`,
 				podcast.ID,

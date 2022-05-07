@@ -223,7 +223,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		// Mark literally everything as read
 		_, err := tx.Exec(c.Context(),
 			`
-			UPDATE auth_user
+			UPDATE hmn_user
 			SET marked_all_read_at = NOW()
 			WHERE id = $1
 			`,
@@ -236,7 +236,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		// Delete thread unread info
 		_, err = tx.Exec(c.Context(),
 			`
-			DELETE FROM handmade_threadlastreadinfo
+			DELETE FROM thread_last_read_info
 			WHERE user_id = $1;
 			`,
 			c.CurrentUser.ID,
@@ -248,7 +248,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		// Delete subforum unread info
 		_, err = tx.Exec(c.Context(),
 			`
-			DELETE FROM handmade_subforumlastreadinfo
+			DELETE FROM subforum_last_read_info
 			WHERE user_id = $1;
 			`,
 			c.CurrentUser.ID,
@@ -260,9 +260,9 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		c.Perf.StartBlock("SQL", "Update SLRIs")
 		_, err = tx.Exec(c.Context(),
 			`
-		INSERT INTO handmade_subforumlastreadinfo (subforum_id, user_id, lastread)
+		INSERT INTO subforum_last_read_info (subforum_id, user_id, lastread)
 			SELECT id, $2, $3
-			FROM handmade_subforum
+			FROM subforum
 			WHERE id = ANY ($1)
 		ON CONFLICT (subforum_id, user_id) DO UPDATE
 			SET lastread = EXCLUDED.lastread
@@ -279,12 +279,12 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		c.Perf.StartBlock("SQL", "Delete TLRIs")
 		_, err = tx.Exec(c.Context(),
 			`
-		DELETE FROM handmade_threadlastreadinfo
+		DELETE FROM thread_last_read_info
 		WHERE
 			user_id = $2
 			AND thread_id IN (
 				SELECT id
-				FROM handmade_thread
+				FROM thread
 				WHERE
 					subforum_id = ANY ($1)
 			)
@@ -402,7 +402,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		c.Perf.StartBlock("SQL", "Update TLRI")
 		_, err = c.Conn.Exec(c.Context(),
 			`
-			INSERT INTO handmade_threadlastreadinfo (thread_id, user_id, lastread)
+			INSERT INTO thread_last_read_info (thread_id, user_id, lastread)
 			VALUES ($1, $2, $3)
 			ON CONFLICT (thread_id, user_id) DO UPDATE
 				SET lastread = EXCLUDED.lastread
@@ -523,7 +523,7 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 	var threadId int
 	err = tx.QueryRow(c.Context(),
 		`
-		INSERT INTO handmade_thread (title, sticky, type, project_id, subforum_id, first_id, last_id)
+		INSERT INTO thread (title, sticky, type, project_id, subforum_id, first_id, last_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
 		`,
@@ -710,7 +710,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 	if title != "" {
 		_, err := tx.Exec(c.Context(),
 			`
-			UPDATE handmade_thread SET title = $1 WHERE id = $2
+			UPDATE thread SET title = $1 WHERE id = $2
 			`,
 			title,
 			post.Thread.ID,
@@ -940,8 +940,8 @@ func addAuthorCountsToPost(ctx context.Context, conn db.ConnOrTx, p *templates.P
 		`
 		SELECT COUNT(*)
 		FROM
-			handmade_post AS post
-			JOIN handmade_project AS project ON post.project_id = project.id
+			post
+			JOIN project ON post.project_id = project.id
 		WHERE
 			post.author_id = $1
 			AND NOT post.deleted
@@ -960,8 +960,8 @@ func addAuthorCountsToPost(ctx context.Context, conn db.ConnOrTx, p *templates.P
 		`
 		SELECT COUNT(*)
 		FROM
-			handmade_project AS project
-			JOIN handmade_user_projects AS uproj ON uproj.project_id = project.id
+			project
+			JOIN user_project AS uproj ON uproj.project_id = project.id
 		WHERE
 			project.lifecycle = ANY ($1)
 			AND uproj.user_id = $2

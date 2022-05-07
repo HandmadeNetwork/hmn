@@ -45,7 +45,7 @@ func init() {
 			conn := db.NewConnPool(1, 1)
 			defer conn.Close()
 
-			row := conn.QueryRow(ctx, "SELECT id, username FROM auth_user WHERE lower(username) = lower($1)", username)
+			row := conn.QueryRow(ctx, "SELECT id, username FROM hmn_user WHERE lower(username) = lower($1)", username)
 			var id int
 			var canonicalUsername string
 			err := row.Scan(&id, &canonicalUsername)
@@ -86,7 +86,7 @@ func init() {
 			conn := db.NewConnPool(1, 1)
 			defer conn.Close()
 
-			res, err := conn.Exec(ctx, "UPDATE auth_user SET status = $1 WHERE LOWER(username) = LOWER($2);", models.UserStatusConfirmed, username)
+			res, err := conn.Exec(ctx, "UPDATE hmn_user SET status = $1 WHERE LOWER(username) = LOWER($2);", models.UserStatusConfirmed, username)
 			if err != nil {
 				panic(err)
 			}
@@ -141,7 +141,7 @@ func init() {
 			conn := db.NewConnPool(1, 1)
 			defer conn.Close()
 
-			res, err := conn.Exec(ctx, "UPDATE auth_user SET status = $1 WHERE LOWER(username) = LOWER($2);", status, username)
+			res, err := conn.Exec(ctx, "UPDATE hmn_user SET status = $1 WHERE LOWER(username) = LOWER($2);", status, username)
 			if err != nil {
 				panic(err)
 			}
@@ -210,7 +210,7 @@ func init() {
 			}
 			defer tx.Rollback(ctx)
 
-			projectId, err := db.QueryOneScalar[int](ctx, tx, `SELECT id FROM handmade_project WHERE slug = $1`, projectSlug)
+			projectId, err := db.QueryOneScalar[int](ctx, tx, `SELECT id FROM project WHERE slug = $1`, projectSlug)
 			if err != nil {
 				panic(err)
 			}
@@ -219,7 +219,7 @@ func init() {
 			if parentSlug == "" {
 				// Select the root subforum
 				id, err := db.QueryOneScalar[int](ctx, tx,
-					`SELECT id FROM handmade_subforum WHERE parent_id IS NULL AND project_id = $1`,
+					`SELECT id FROM subforum WHERE parent_id IS NULL AND project_id = $1`,
 					projectId,
 				)
 				if err != nil {
@@ -229,7 +229,7 @@ func init() {
 			} else {
 				// Select the parent
 				id, err := db.QueryOneScalar[int](ctx, tx,
-					`SELECT id FROM handmade_subforum WHERE slug = $1 AND project_id = $2`,
+					`SELECT id FROM subforum WHERE slug = $1 AND project_id = $2`,
 					parentSlug, projectId,
 				)
 				if err != nil {
@@ -240,7 +240,7 @@ func init() {
 
 			newId, err := db.QueryOneScalar[int](ctx, tx,
 				`
-				INSERT INTO handmade_subforum (name, slug, blurb, parent_id, project_id)
+				INSERT INTO subforum (name, slug, blurb, parent_id, project_id)
 				VALUES ($1, $2, $3, $4, $5)
 				RETURNING id
 				`,
@@ -289,13 +289,13 @@ func init() {
 			}
 			defer tx.Rollback(ctx)
 
-			projectId, err := db.QueryOneScalar[int](ctx, tx, `SELECT id FROM handmade_project WHERE slug = $1`, projectSlug)
+			projectId, err := db.QueryOneScalar[int](ctx, tx, `SELECT id FROM project WHERE slug = $1`, projectSlug)
 			if err != nil {
 				panic(err)
 			}
 
 			subforumId, err := db.QueryOneScalar[int](ctx, tx,
-				`SELECT id FROM handmade_subforum WHERE slug = $1 AND project_id = $2`,
+				`SELECT id FROM subforum WHERE slug = $1 AND project_id = $2`,
 				subforumSlug, projectId,
 			)
 			if err != nil {
@@ -314,7 +314,7 @@ func init() {
 
 			threadsTag, err := tx.Exec(ctx,
 				`
-				UPDATE handmade_thread
+				UPDATE thread
 				SET
 					project_id = $2,
 					subforum_id = $3,
@@ -330,7 +330,7 @@ func init() {
 
 			postsTag, err := tx.Exec(ctx,
 				`
-				UPDATE handmade_post
+				UPDATE post
 				SET
 					thread_type = 2
 				WHERE

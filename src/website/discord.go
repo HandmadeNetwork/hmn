@@ -61,7 +61,7 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 	// Add the user to our database
 	_, err = c.Conn.Exec(c.Context(),
 		`
-		INSERT INTO handmade_discorduser (username, discriminator, access_token, refresh_token, avatar, locale, userid, expiry, hmn_user_id)
+		INSERT INTO discord_user (username, discriminator, access_token, refresh_token, avatar, locale, userid, expiry, hmn_user_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		`,
 		user.Username,
@@ -81,7 +81,7 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 	if c.CurrentUser.Status == models.UserStatusConfirmed {
 		_, err = c.Conn.Exec(c.Context(),
 			`
-			UPDATE auth_user
+			UPDATE hmn_user
 			SET status = $1
 			WHERE id = $2
 			`,
@@ -107,7 +107,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 	discordUser, err := db.QueryOne[models.DiscordUser](c.Context(), tx,
 		`
 		SELECT $columns
-		FROM handmade_discorduser
+		FROM discord_user
 		WHERE hmn_user_id = $1
 		`,
 		c.CurrentUser.ID,
@@ -122,7 +122,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 
 	_, err = tx.Exec(c.Context(),
 		`
-		DELETE FROM handmade_discorduser
+		DELETE FROM discord_user
 		WHERE id = $1
 		`,
 		discordUser.ID,
@@ -146,7 +146,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 
 func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 	duser, err := db.QueryOne[models.DiscordUser](c.Context(), c.Conn,
-		`SELECT $columns FROM handmade_discorduser WHERE hmn_user_id = $1`,
+		`SELECT $columns FROM discord_user WHERE hmn_user_id = $1`,
 		c.CurrentUser.ID,
 	)
 	if errors.Is(err, db.NotFound) {
@@ -161,7 +161,7 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 		`
 		SELECT msg.id
 		FROM
-			handmade_discordmessage AS msg
+			discord_message AS msg
 		WHERE
 			msg.user_id = $1
 			AND msg.channel_id = $2

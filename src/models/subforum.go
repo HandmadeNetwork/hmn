@@ -47,7 +47,7 @@ func GetFullSubforumTree(ctx context.Context, conn *pgxpool.Pool) SubforumTree {
 	subforums, err := db.Query[Subforum](ctx, conn,
 		`
 		SELECT $columns
-		FROM handmade_subforum
+		FROM subforum
 		ORDER BY sort, id ASC
 		`,
 	)

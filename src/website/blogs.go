@@ -155,7 +155,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		c.Perf.StartBlock("SQL", "Update TLRI")
 		_, err := c.Conn.Exec(c.Context(),
 			`
-		INSERT INTO handmade_threadlastreadinfo (thread_id, user_id, lastread)
+		INSERT INTO thread_last_read_info (thread_id, user_id, lastread)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (thread_id, user_id) DO UPDATE
 			SET lastread = EXCLUDED.lastread
@@ -248,7 +248,7 @@ func BlogNewThreadSubmit(c *RequestContext) ResponseData {
 	var threadId int
 	err = tx.QueryRow(c.Context(),
 		`
-		INSERT INTO handmade_thread (title, type, project_id, first_id, last_id)
+		INSERT INTO thread (title, type, project_id, first_id, last_id)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
 		`,
@@ -360,7 +360,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 	if title != "" {
 		_, err := tx.Exec(c.Context(),
 			`
-			UPDATE handmade_thread SET title = $1 WHERE id = $2
+			UPDATE thread SET title = $1 WHERE id = $2
 			`,
 			title,
 			post.Thread.ID,
@@ -561,7 +561,7 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 		threadExists, err := db.QueryOneScalar[bool](c.Context(), c.Conn,
 			`
 			SELECT COUNT(*) > 0
-			FROM handmade_thread
+			FROM thread
 			WHERE
 				id = $1
 				AND project_id = $2
@@ -589,7 +589,7 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 		postExists, err := db.QueryOneScalar[bool](c.Context(), c.Conn,
 			`
 			SELECT COUNT(*) > 0
-			FROM handmade_post
+			FROM post
 			WHERE
 				id = $1
 				AND thread_id = $2

@@ -122,7 +122,7 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 	// TODO(db): Would be convient to use RETURNING here...
 	_, err = dbConn.Exec(ctx,
 		`
-		INSERT INTO handmade_asset (id, s3_key, filename, size, mime_type, sha1sum, width, height, uploader_id)
+		INSERT INTO asset (id, s3_key, filename, size, mime_type, sha1sum, width, height, uploader_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		`,
 		id,
@@ -143,7 +143,7 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 	asset, err := db.QueryOne[models.Asset](ctx, dbConn,
 		`
 		SELECT $columns
-		FROM handmade_asset
+		FROM asset
 		WHERE id = $1
 		`,
 		id,

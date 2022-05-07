@@ -30,7 +30,7 @@ echo "Running migrations..."
 systemctl stop hmn
 do_as hmn <<'SCRIPT'
 set -euo pipefail
-/home/hmn/bin/hmn migrate
+/home/hmn/bin/hmn db migrate
 SCRIPT
 systemctl start hmn
 

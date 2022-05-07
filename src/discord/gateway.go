@@ -408,7 +408,7 @@ func (bot *botInstance) doSender(ctx context.Context) {
 
 				msgs, err := db.Query[models.DiscordOutgoingMessage](ctx, tx, `
 					SELECT $columns
-					FROM discord_outgoingmessages
+					FROM discord_outgoing_message
 					ORDER BY id ASC
 				`)
 				if err != nil {
@@ -430,7 +430,7 @@ func (bot *botInstance) doSender(ctx context.Context) {
 
 					https://www.postgresql.org/docs/current/transaction-iso.html
 				*/
-				_, err = tx.Exec(ctx, `DELETE FROM discord_outgoingmessages`)
+				_, err = tx.Exec(ctx, `DELETE FROM discord_outgoing_message`)
 				if err != nil {
 					log.Error().Err(err).Msg("failed to delete outgoing messages")
 					return
@@ -644,7 +644,7 @@ func SendMessages(
 
 		_, err = tx.Exec(ctx,
 			`
-			INSERT INTO discord_outgoingmessages (channel_id, payload_json, expires_at)
+			INSERT INTO discord_outgoing_message (channel_id, payload_json, expires_at)
 			VALUES ($1, $2, $3)
 			`,
 			msg.ChannelID,

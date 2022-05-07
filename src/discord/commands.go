@@ -92,11 +92,11 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 
 	hmnUser, err := db.QueryOne[models.User](ctx, bot.dbConn,
 		`
-		SELECT $columns{auth_user}
+		SELECT $columns{hmn_user}
 		FROM
-			handmade_discorduser AS duser
-			JOIN auth_user ON duser.hmn_user_id = auth_user.id
-			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+			discord_user AS duser
+			JOIN hmn_user ON duser.hmn_user_id = hmn_user.id
+			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
 		WHERE
 			duser.userid = $1
 		`,

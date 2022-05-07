@@ -211,7 +211,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		`
 		SELECT $columns
 		FROM
-			handmade_links
+			link
 		WHERE
 			user_id = ANY($1)
 		ORDER BY ordering ASC
@@ -258,10 +258,10 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 
 	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 		`
-		SELECT $columns{auth_user}
-			FROM auth_user
-			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
-		WHERE auth_user.id = $1
+		SELECT $columns{hmn_user}
+			FROM hmn_user
+			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
+		WHERE hmn_user.id = $1
 		`,
 		userId,
 	)
@@ -277,7 +277,7 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 	if action == ApprovalQueueActionApprove {
 		_, err := c.Conn.Exec(c.Context(),
 			`
-			UPDATE auth_user
+			UPDATE hmn_user
 			SET status = $1
 			WHERE id = $2
 			`,
@@ -291,7 +291,7 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 	} else if action == ApprovalQueueActionSpammer {
 		_, err := c.Conn.Exec(c.Context(),
 			`
-			UPDATE auth_user
+			UPDATE hmn_user
 			SET status = $1
 			WHERE id = $2
 			`,
@@ -336,12 +336,12 @@ func fetchUnapprovedPosts(c *RequestContext) ([]*UnapprovedPost, error) {
 		`
 		SELECT $columns
 		FROM
-			handmade_post AS post
-			JOIN handmade_project AS project ON post.project_id = project.id
-			JOIN handmade_thread AS thread ON post.thread_id = thread.id
-			JOIN handmade_postversion AS ver ON ver.id = post.current_id
-			JOIN auth_user AS author ON author.id = post.author_id
-			LEFT JOIN handmade_asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
+			post
+			JOIN project ON post.project_id = project.id
+			JOIN thread ON post.thread_id = thread.id
+			JOIN post_version AS ver ON ver.id = post.current_id
+			JOIN hmn_user AS author ON author.id = post.author_id
+			LEFT JOIN asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
 		WHERE
 			NOT thread.deleted
 			AND NOT post.deleted
@@ -367,7 +367,7 @@ func fetchUnapprovedProjects(c *RequestContext) ([]UnapprovedProject, error) {
 		`
 		SELECT id
 		FROM
-			auth_user AS u
+			hmn_user AS u
 		WHERE
 			u.status = ANY($1)
 		`,
@@ -394,7 +394,7 @@ func fetchUnapprovedProjects(c *RequestContext) ([]UnapprovedProject, error) {
 		`
 		SELECT $columns
 		FROM
-			handmade_links AS link
+			link
 		WHERE
 			link.project_id = ANY($1)
 		ORDER BY link.ordering ASC
@@ -442,9 +442,9 @@ func deleteAllPostsForUser(ctx context.Context, conn *pgxpool.Pool, userId int) 
 		`
 		SELECT $columns
 		FROM
-			handmade_post as post
-			JOIN handmade_thread AS thread ON post.thread_id = thread.id
-			JOIN auth_user AS author ON author.id = post.author_id
+			post as post
+			JOIN thread ON post.thread_id = thread.id
+			JOIN hmn_user AS author ON author.id = post.author_id
 		WHERE author.id = $1
 		`,
 		userId,
@@ -475,8 +475,8 @@ func deleteAllProjectsForUser(ctx context.Context, conn *pgxpool.Pool, userId in
 		`
 		SELECT project.id
 		FROM
-			handmade_project AS project
-			JOIN handmade_user_projects AS up ON up.project_id = project.id
+			project
+			JOIN user_project AS up ON up.project_id = project.id
 		WHERE
 			up.user_id = $1
 		`,
@@ -489,7 +489,7 @@ func deleteAllProjectsForUser(ctx context.Context, conn *pgxpool.Pool, userId in
 	if len(projectIDsToDelete) > 0 {
 		_, err = tx.Exec(ctx,
 			`
-			DELETE FROM handmade_project WHERE id = ANY($1)
+			DELETE FROM project WHERE id = ANY($1)
 			`,
 			projectIDsToDelete,
 		)

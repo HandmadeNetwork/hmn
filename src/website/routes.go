@@ -550,10 +550,10 @@ func getCurrentUserAndSession(c *RequestContext, sessionId string) (*models.User
 
 	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 		`
-		SELECT $columns{auth_user}
+		SELECT $columns{hmn_user}
 		FROM
-			auth_user
-			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+			hmn_user
+			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
 		WHERE username = $1
 		`,
 		session.Username,

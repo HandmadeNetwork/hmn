@@ -45,7 +45,7 @@ func makeCSRFToken() string {
 var ErrNoSession = errors.New("no session found")
 
 func GetSession(ctx context.Context, conn *pgxpool.Pool, id string) (*models.Session, error) {
-	sess, err := db.QueryOne[models.Session](ctx, conn, "SELECT $columns FROM sessions WHERE id = $1", id)
+	sess, err := db.QueryOne[models.Session](ctx, conn, "SELECT $columns FROM session WHERE id = $1", id)
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			return nil, ErrNoSession
@@ -66,7 +66,7 @@ func CreateSession(ctx context.Context, conn *pgxpool.Pool, username string) (*m
 	}
 
 	_, err := conn.Exec(ctx,
-		"INSERT INTO sessions (id, username, expires_at, csrf_token) VALUES ($1, $2, $3, $4)",
+		"INSERT INTO session (id, username, expires_at, csrf_token) VALUES ($1, $2, $3, $4)",
 		session.ID, session.Username, session.ExpiresAt, session.CSRFToken,
 	)
 	if err != nil {
@@ -79,7 +79,7 @@ func CreateSession(ctx context.Context, conn *pgxpool.Pool, username string) (*m
 // Deletes a session by id. If no session with that id exists, no
 // error is returned.
 func DeleteSession(ctx context.Context, conn *pgxpool.Pool, id string) error {
-	_, err := conn.Exec(ctx, "DELETE FROM sessions WHERE id = $1", id)
+	_, err := conn.Exec(ctx, "DELETE FROM session WHERE id = $1", id)
 	if err != nil {
 		return oops.New(err, "failed to delete session")
 	}
@@ -90,7 +90,7 @@ func DeleteSession(ctx context.Context, conn *pgxpool.Pool, id string) error {
 func DeleteSessionForUser(ctx context.Context, conn *pgxpool.Pool, username string) error {
 	_, err := conn.Exec(ctx,
 		`
-		DELETE FROM sessions
+		DELETE FROM session
 		WHERE LOWER(username) = LOWER($1)
 		`,
 		username,
@@ -124,7 +124,7 @@ var DeleteSessionCookie = &http.Cookie{
 }
 
 func DeleteExpiredSessions(ctx context.Context, conn *pgxpool.Pool) (int64, error) {
-	tag, err := conn.Exec(ctx, "DELETE FROM sessions WHERE expires_at <= CURRENT_TIMESTAMP")
+	tag, err := conn.Exec(ctx, "DELETE FROM session WHERE expires_at <= CURRENT_TIMESTAMP")
 	if err != nil {
 		return 0, oops.New(err, "failed to delete expired sessions")
 	}

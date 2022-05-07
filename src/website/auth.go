@@ -77,10 +77,10 @@ func Login(c *RequestContext) ResponseData {
 
 	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 		`
-		SELECT $columns{auth_user}
+		SELECT $columns{hmn_user}
 		FROM
-			auth_user
-			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+			hmn_user
+			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
 		WHERE LOWER(username) = LOWER($1)
 		`,
 		username,
@@ -174,7 +174,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	_, err := db.QueryOneScalar[int](c.Context(), c.Conn,
 		`
 		SELECT id
-		FROM auth_user
+		FROM hmn_user
 		WHERE LOWER(username) = LOWER($1)
 		`,
 		username,
@@ -195,7 +195,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	_, err = db.QueryOneScalar[int](c.Context(), c.Conn,
 		`
 		SELECT id
-		FROM auth_user
+		FROM hmn_user
 		WHERE LOWER(email) = LOWER($1)
 		`,
 		emailAddress,
@@ -228,7 +228,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	var newUserId int
 	err = tx.QueryRow(c.Context(),
 		`
-		INSERT INTO auth_user (username, email, password, date_joined, name, registration_ip)
+		INSERT INTO hmn_user (username, email, password, date_joined, name, registration_ip)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 		`,
@@ -241,7 +241,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	ott := models.GenerateToken()
 	_, err = tx.Exec(c.Context(),
 		`
-		INSERT INTO handmade_onetimetoken (token_type, created, expires, token_content, owner_id)
+		INSERT INTO one_time_token (token_type, created, expires, token_content, owner_id)
 		VALUES($1, $2, $3, $4, $5)
 		`,
 		models.TokenTypeRegistration,
@@ -376,7 +376,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 
 	_, err = tx.Exec(c.Context(),
 		`
-		UPDATE auth_user
+		UPDATE hmn_user
 		SET status = $1
 		WHERE id = $2
 		`,
@@ -389,7 +389,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 
 	_, err = tx.Exec(c.Context(),
 		`
-		DELETE FROM handmade_onetimetoken WHERE id = $1
+		DELETE FROM one_time_token WHERE id = $1
 		`,
 		validationResult.OneTimeToken.ID,
 	)
@@ -453,14 +453,14 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 
 	c.Perf.StartBlock("SQL", "Fetching user")
 	type userQuery struct {
-		User models.User `db:"auth_user"`
+		User models.User `db:"hmn_user"`
 	}
 	user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 		`
-		SELECT $columns{auth_user}
+		SELECT $columns{hmn_user}
 		FROM
-			auth_user
-			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+			hmn_user
+			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
 		WHERE
 			LOWER(username) = LOWER($1)
 			AND LOWER(email) = LOWER($2)
@@ -480,7 +480,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 		resetToken, err := db.QueryOne[models.OneTimeToken](c.Context(), c.Conn,
 			`
 			SELECT $columns
-			FROM handmade_onetimetoken
+			FROM one_time_token
 			WHERE
 				token_type = $1
 				AND owner_id = $2
@@ -501,7 +501,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 				c.Perf.StartBlock("SQL", "Deleting expired token")
 				_, err = c.Conn.Exec(c.Context(),
 					`
-					DELETE FROM handmade_onetimetoken
+					DELETE FROM one_time_token
 					WHERE id = $1
 					`,
 					resetToken.ID,
@@ -518,7 +518,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 			c.Perf.StartBlock("SQL", "Creating new token")
 			newToken, err := db.QueryOne[models.OneTimeToken](c.Context(), c.Conn,
 				`
-				INSERT INTO handmade_onetimetoken (token_type, created, expires, token_content, owner_id)
+				INSERT INTO one_time_token (token_type, created, expires, token_content, owner_id)
 				VALUES ($1, $2, $3, $4, $5)
 				RETURNING $columns
 				`,
@@ -630,7 +630,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 
 	tag, err := tx.Exec(c.Context(),
 		`
-		UPDATE auth_user
+		UPDATE hmn_user
 		SET password = $1
 		WHERE id = $2
 		`,
@@ -644,7 +644,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 	if validationResult.User.Status == models.UserStatusInactive {
 		_, err = tx.Exec(c.Context(),
 			`
-			UPDATE auth_user
+			UPDATE hmn_user
 			SET status = $1
 			WHERE id = $2
 			`,
@@ -658,7 +658,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 
 	_, err = tx.Exec(c.Context(),
 		`
-		DELETE FROM handmade_onetimetoken
+		DELETE FROM one_time_token
 		WHERE id = $1
 		`,
 		validationResult.OneTimeToken.ID,
@@ -725,7 +725,7 @@ func loginUser(c *RequestContext, user *models.User, responseData *ResponseData)
 
 	_, err = tx.Exec(c.Context(),
 		`
-		UPDATE auth_user
+		UPDATE hmn_user
 		SET last_login = $1
 		WHERE id = $2
 		`,
@@ -773,17 +773,17 @@ func validateUsernameAndToken(c *RequestContext, username string, token string, 
 	c.Perf.StartBlock("SQL", "Check username and token")
 	defer c.Perf.EndBlock()
 	type userAndTokenQuery struct {
-		User         models.User          `db:"auth_user"`
+		User         models.User          `db:"hmn_user"`
 		OneTimeToken *models.OneTimeToken `db:"onetimetoken"`
 	}
 	data, err := db.QueryOne[userAndTokenQuery](c.Context(), c.Conn,
 		`
 		SELECT $columns
-		FROM auth_user
-		LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
-		LEFT JOIN handmade_onetimetoken AS onetimetoken ON onetimetoken.owner_id = auth_user.id
+		FROM hmn_user
+		LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
+		LEFT JOIN one_time_token AS onetimetoken ON onetimetoken.owner_id = hmn_user.id
 		WHERE
-			LOWER(auth_user.username) = LOWER($1)
+			LOWER(hmn_user.username) = LOWER($1)
 			AND onetimetoken.token_type = $2
 		`,
 		username,

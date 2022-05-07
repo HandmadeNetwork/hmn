@@ -191,10 +191,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		`
 		SELECT screenshot.file
 		FROM
-			handmade_imagefile AS screenshot
-			INNER JOIN handmade_project_screenshots ON screenshot.id = handmade_project_screenshots.imagefile_id
+			image_file AS screenshot
+			INNER JOIN project_screenshot ON screenshot.id = project_screenshot.imagefile_id
 		WHERE
-			handmade_project_screenshots.project_id = $1
+			project_screenshot.project_id = $1
 		`,
 		c.CurrentProject.ID,
 	)
@@ -208,7 +208,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		`
 		SELECT $columns
 		FROM
-			handmade_links as link
+			link as link
 		WHERE
 			link.project_id = $1
 		ORDER BY link.ordering ASC
@@ -235,10 +235,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		`
 		SELECT $columns
 		FROM
-			handmade_post AS post
-			INNER JOIN handmade_thread AS thread ON thread.id = post.thread_id
-			INNER JOIN auth_user AS author ON author.id = post.author_id
-			LEFT JOIN handmade_asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
+			post
+			INNER JOIN thread ON thread.id = post.thread_id
+			INNER JOIN hmn_user AS author ON author.id = post.author_id
+			LEFT JOIN asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
 		WHERE
 			post.project_id = $1
 		ORDER BY post.postdate DESC
@@ -439,7 +439,7 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 	var projectId int
 	err = tx.QueryRow(c.Context(),
 		`
-		INSERT INTO handmade_project
+		INSERT INTO project
 			(name, blurb, description, descparsed, lifecycle, date_created, all_last_updated)
 		VALUES
 			($1,   $2,    $3,          $4,         $5,        $6,           $6)
@@ -496,7 +496,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		`
 		SELECT $columns
 		FROM
-			handmade_links as link
+			link as link
 		WHERE
 			link.project_id = $1
 		ORDER BY link.ordering ASC
@@ -736,7 +736,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 
 	_, err := tx.Exec(ctx,
 		`
-		UPDATE handmade_project SET
+		UPDATE project SET
 			name = $2,
 			blurb = $3,
 			description = $4,
@@ -763,7 +763,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	if user.IsStaff {
 		_, err = tx.Exec(ctx,
 			`
-			UPDATE handmade_project SET
+			UPDATE project SET
 				slug = $2,
 				featured = $3,
 				personal = $4,
@@ -785,7 +785,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	if payload.LightLogo.Exists || payload.LightLogo.Remove {
 		_, err = tx.Exec(ctx,
 			`
-			UPDATE handmade_project
+			UPDATE project
 			SET
 				logolight_asset_id = $2
 			WHERE
@@ -802,7 +802,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	if payload.DarkLogo.Exists || payload.DarkLogo.Remove {
 		_, err = tx.Exec(ctx,
 			`
-			UPDATE handmade_project
+			UPDATE project
 			SET
 				logodark_asset_id = $2
 			WHERE
@@ -818,10 +818,10 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 
 	owners, err := db.Query[models.User](ctx, tx,
 		`
-		SELECT $columns{auth_user}
+		SELECT $columns{hmn_user}
 		FROM
-			auth_user
-			LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+			hmn_user
+			LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
 		WHERE LOWER(username) = ANY ($1)
 		`,
 		payload.OwnerUsernames,
@@ -832,7 +832,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 
 	_, err = tx.Exec(ctx,
 		`
-		DELETE FROM handmade_user_projects
+		DELETE FROM user_project
 		WHERE project_id = $1
 		`,
 		payload.ProjectID,
@@ -844,7 +844,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	for _, owner := range owners {
 		_, err = tx.Exec(ctx,
 			`
-			INSERT INTO handmade_user_projects
+			INSERT INTO user_project
 				(user_id, project_id)
 			VALUES
 				($1,      $2)
@@ -858,14 +858,14 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	}
 
 	twitchLoginsPreChange, preErr := hmndata.FetchTwitchLoginsForUserOrProject(ctx, tx, nil, &payload.ProjectID)
-	_, err = tx.Exec(ctx, `DELETE FROM handmade_links WHERE project_id = $1`, payload.ProjectID)
+	_, err = tx.Exec(ctx, `DELETE FROM link WHERE project_id = $1`, payload.ProjectID)
 	if err != nil {
 		return oops.New(err, "Failed to delete project links")
 	}
 	for i, link := range payload.Links {
 		_, err = tx.Exec(ctx,
 			`
-			INSERT INTO handmade_links (name, url, ordering, project_id)
+			INSERT INTO link (name, url, ordering, project_id)
 			VALUES ($1, $2, $3, $4)
 			`,
 			link.Name,

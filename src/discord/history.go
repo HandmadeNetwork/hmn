@@ -77,9 +77,9 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 		`
 		SELECT $columns{msg}
 		FROM
-			handmade_discordmessage AS msg
-			JOIN handmade_discorduser AS duser ON msg.user_id = duser.userid -- only fetch messages for linked discord users
-			LEFT JOIN handmade_discordmessagecontent AS c ON c.message_id = msg.id
+			discord_message AS msg
+			JOIN discord_user AS duser ON msg.user_id = duser.userid -- only fetch messages for linked discord users
+			LEFT JOIN discord_message_content AS c ON c.message_id = msg.id
 		WHERE
 			c.last_content IS NULL
 			AND msg.guild_id = $1

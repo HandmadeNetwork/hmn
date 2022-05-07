@@ -12,7 +12,7 @@ Arguments can be provided using placeholders like $1, $2, etc. All arguments wil
 	projectIDs, err := db.Query[int](ctx, conn,
 		`
 		SELECT id
-		FROM handmade_project
+		FROM project
 		WHERE
 			slug = ANY($1)
 			AND hidden = $2
@@ -25,7 +25,7 @@ Arguments can be provided using placeholders like $1, $2, etc. All arguments wil
 
 When querying individual fields, you can simply select the field like so:
 
-	ids, err := db.Query[int](ctx, conn, `SELECT id FROM handmade_project`)
+	ids, err := db.Query[int](ctx, conn, `SELECT id FROM project`)
 
 To query multiple columns at once, you may use a struct type with `db:"column_name"` tags, and the special $columns placeholder:
 
@@ -48,8 +48,8 @@ Sometimes a table name prefix is required on each column to disambiguate between
 	orphanedProjects, err := db.Query[Project](ctx, conn, `
 		SELECT $columns{projects}
 		FROM
-			handmade_project AS projects
-			LEFT JOIN handmade_user_projects AS uproj
+			project AS projects
+			LEFT JOIN user_project AS uproj
 		WHERE
 			uproj.user_id IS NULL
 	`)

@@ -180,7 +180,7 @@ func HashPassword(password string) HashedPassword {
 var ErrUserDoesNotExist = errors.New("user does not exist")
 
 func UpdatePassword(ctx context.Context, conn db.ConnOrTx, username string, hp HashedPassword) error {
-	tag, err := conn.Exec(ctx, "UPDATE auth_user SET password = $1 WHERE username = $2", hp.String(), username)
+	tag, err := conn.Exec(ctx, "UPDATE hmn_user SET password = $1 WHERE username = $2", hp.String(), username)
 	if err != nil {
 		return oops.New(err, "failed to update password")
 	} else if tag.RowsAffected() < 1 {
@@ -193,10 +193,10 @@ func UpdatePassword(ctx context.Context, conn db.ConnOrTx, username string, hp H
 func DeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) (int64, error) {
 	tag, err := conn.Exec(ctx,
 		`
-		DELETE FROM auth_user
+		DELETE FROM hmn_user
 		WHERE
 			status = $1 AND
-			(SELECT COUNT(*) as ct FROM handmade_onetimetoken AS ott WHERE ott.owner_id = auth_user.id AND ott.expires < $2 AND ott.token_type = $3) > 0;
+			(SELECT COUNT(*) as ct FROM one_time_token AS ott WHERE ott.owner_id = hmn_user.id AND ott.expires < $2 AND ott.token_type = $3) > 0;
 		`,
 		models.UserStatusInactive,
 		time.Now(),
@@ -213,7 +213,7 @@ func DeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) (int64, error)
 func DeleteExpiredPasswordResets(ctx context.Context, conn *pgxpool.Pool) (int64, error) {
 	tag, err := conn.Exec(ctx,
 		`
-		DELETE FROM handmade_onetimetoken
+		DELETE FROM one_time_token
 		WHERE
 			token_type = $1
 			AND expires < $2

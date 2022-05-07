@@ -377,8 +377,8 @@ ${BLUE_BOLD}Download and restore a database backup${RESET}
 
     su hmn
     cd ~
-    hmn seedfile <your backup file>
-    hmn migrate
+    hmn db seedfile <your backup file>
+    hmn db migrate
 
 ${BLUE_BOLD}Restore static files${RESET}
 

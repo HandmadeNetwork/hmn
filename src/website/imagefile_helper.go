@@ -91,7 +91,7 @@ func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, 
 		sha1sum := hasher.Sum(nil)
 		imageFile, err := db.QueryOne[models.ImageFile](c.Context(), dbConn,
 			`
-			INSERT INTO handmade_imagefile (file, size, sha1sum, protected, width, height)
+			INSERT INTO image_file (file, size, sha1sum, protected, width, height)
 			VALUES ($1, $2, $3, $4, $5, $6)
 			RETURNING $columns
 			`,

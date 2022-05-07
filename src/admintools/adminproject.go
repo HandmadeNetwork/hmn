@@ -57,7 +57,7 @@ func addCreateProjectCommand(projectCommand *cobra.Command) {
 
 			newProjectID, err := db.QueryOneScalar[int](ctx, tx,
 				`
-				INSERT INTO handmade_project (
+				INSERT INTO project (
 					slug,
 					name,
 					blurb,
@@ -121,7 +121,7 @@ func addCreateProjectCommand(projectCommand *cobra.Command) {
 			for _, userID := range userIDs {
 				_, err := tx.Exec(ctx,
 					`
-					INSERT INTO handmade_user_projects (user_id, project_id)
+					INSERT INTO user_project (user_id, project_id)
 					VALUES ($1, $2)
 					`,
 					userID,

@@ -168,7 +168,7 @@ func InternMessage(
 	_, err := db.QueryOne[models.DiscordMessage](ctx, dbConn,
 		`
 		SELECT $columns
-		FROM handmade_discordmessage
+		FROM discord_message
 		WHERE id = $1
 		`,
 		msg.ID,
@@ -190,7 +190,7 @@ func InternMessage(
 
 		_, err = dbConn.Exec(ctx,
 			`
-			INSERT INTO handmade_discordmessage (id, channel_id, guild_id, url, user_id, sent_at, snippet_created)
+			INSERT INTO discord_message (id, channel_id, guild_id, url, user_id, sent_at, snippet_created)
 			VALUES ($1, $2, $3, $4, $5, $6, $7)
 			`,
 			msg.ID,
@@ -223,11 +223,11 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 		`
 		SELECT $columns
 		FROM
-			handmade_discordmessage AS message
-			LEFT JOIN handmade_discordmessagecontent AS content ON content.message_id = message.id
-			LEFT JOIN handmade_discorduser AS duser ON duser.userid = message.user_id
-			LEFT JOIN auth_user AS hmnuser ON hmnuser.id = duser.hmn_user_id
-			LEFT JOIN handmade_asset AS hmnuser_avatar ON hmnuser_avatar.id = hmnuser.avatar_asset_id
+			discord_message AS message
+			LEFT JOIN discord_message_content AS content ON content.message_id = message.id
+			LEFT JOIN discord_user AS duser ON duser.userid = message.user_id
+			LEFT JOIN hmn_user AS hmnuser ON hmnuser.id = duser.hmn_user_id
+			LEFT JOIN asset AS hmnuser_avatar ON hmnuser_avatar.id = hmnuser.avatar_asset_id
 		WHERE message.id = $1
 		`,
 		msgId,
@@ -284,7 +284,7 @@ func DeleteInternedMessage(ctx context.Context, dbConn db.ConnOrTx, interned *In
 	snippet, err := db.QueryOne[models.Snippet](ctx, dbConn,
 		`
 		SELECT $columns
-		FROM handmade_snippet
+		FROM snippet
 		WHERE discord_message_id = $1
 		`,
 		interned.Message.ID,
@@ -294,13 +294,13 @@ func DeleteInternedMessage(ctx context.Context, dbConn db.ConnOrTx, interned *In
 	}
 
 	// NOTE(asaf): Also deletes the following through a db cascade:
-	//			   * handmade_discordmessageattachment
-	//			   * handmade_discordmessagecontent
-	//			   * handmade_discordmessageembed
+	//			   * discord_message_attachment
+	//			   * discord_message_content
+	//			   * discord_message_embed
 	//             DOES NOT DELETE ASSETS FOR CONTENT/EMBEDS
 	_, err = dbConn.Exec(ctx,
 		`
-		DELETE FROM handmade_discordmessage
+		DELETE FROM discord_message
 		WHERE id = $1
 		`,
 		interned.Message.ID,
@@ -312,7 +312,7 @@ func DeleteInternedMessage(ctx context.Context, dbConn db.ConnOrTx, interned *In
 			// NOTE(asaf): Does not delete asset!
 			_, err = dbConn.Exec(ctx,
 				`
-				DELETE FROM handmade_snippet
+				DELETE FROM snippet
 				WHERE id = $1
 				`,
 				snippet.ID,
@@ -347,7 +347,7 @@ func SaveMessageContents(
 		if msg.OriginalHasFields("content") {
 			_, err := dbConn.Exec(ctx,
 				`
-				INSERT INTO handmade_discordmessagecontent (message_id, discord_id, last_content)
+				INSERT INTO discord_message_content (message_id, discord_id, last_content)
 				VALUES ($1, $2, $3)
 				ON CONFLICT (message_id) DO UPDATE SET
 					discord_id = EXCLUDED.discord_id,
@@ -365,9 +365,9 @@ func SaveMessageContents(
 				`
 				SELECT $columns
 				FROM
-					handmade_discordmessagecontent
+					discord_message_content
 				WHERE
-					handmade_discordmessagecontent.message_id = $1
+					discord_message_content.message_id = $1
 				`,
 				interned.Message.ID,
 			)
@@ -392,7 +392,7 @@ func SaveMessageContents(
 			numSavedEmbeds, err := db.QueryOneScalar[int](ctx, dbConn,
 				`
 				SELECT COUNT(*)
-				FROM handmade_discordmessageembed
+				FROM discord_message_embed
 				WHERE message_id = $1
 				`,
 				msg.ID,
@@ -412,7 +412,7 @@ func SaveMessageContents(
 				// Embeds were removed from the message
 				_, err := dbConn.Exec(ctx,
 					`
-				DELETE FROM handmade_discordmessageembed
+				DELETE FROM discord_message_embed
 				WHERE message_id = $1
 				`,
 					msg.ID,
@@ -469,7 +469,7 @@ func saveAttachment(
 	existing, err := db.QueryOne[models.DiscordMessageAttachment](ctx, tx,
 		`
 		SELECT $columns
-		FROM handmade_discordmessageattachment
+		FROM discord_message_attachment
 		WHERE id = $1
 		`,
 		attachment.ID,
@@ -517,7 +517,7 @@ func saveAttachment(
 	// TODO(db): RETURNING plz thanks
 	_, err = tx.Exec(ctx,
 		`
-		INSERT INTO handmade_discordmessageattachment (id, asset_id, message_id)
+		INSERT INTO discord_message_attachment (id, asset_id, message_id)
 		VALUES ($1, $2, $3)
 		`,
 		attachment.ID,
@@ -531,7 +531,7 @@ func saveAttachment(
 	discordAttachment, err := db.QueryOne[models.DiscordMessageAttachment](ctx, tx,
 		`
 		SELECT $columns
-		FROM handmade_discordmessageattachment
+		FROM discord_message_attachment
 		WHERE id = $1
 		`,
 		attachment.ID,
@@ -615,7 +615,7 @@ func saveEmbed(
 	var savedEmbedId int
 	err = tx.QueryRow(ctx,
 		`
-		INSERT INTO handmade_discordmessageembed (title, description, url, message_id, image_id, video_id)
+		INSERT INTO discord_message_embed (title, description, url, message_id, image_id, video_id)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
 		`,
@@ -633,7 +633,7 @@ func saveEmbed(
 	discordEmbed, err := db.QueryOne[models.DiscordMessageEmbed](ctx, tx,
 		`
 		SELECT $columns
-		FROM handmade_discordmessageembed
+		FROM discord_message_embed
 		WHERE id = $1
 		`,
 		savedEmbedId,
@@ -649,7 +649,7 @@ func FetchSnippetForMessage(ctx context.Context, dbConn db.ConnOrTx, msgID strin
 	snippet, err := db.QueryOne[models.Snippet](ctx, dbConn,
 		`
 		SELECT $columns
-		FROM handmade_snippet
+		FROM snippet
 		WHERE discord_message_id = $1
 		`,
 		msgID,
@@ -712,7 +712,7 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 
 			_, err := tx.Exec(ctx,
 				`
-				UPDATE handmade_snippet
+				UPDATE snippet
 				SET
 					description = $1,
 					_description_html = $2
@@ -741,7 +741,7 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 
 				_, err = tx.Exec(ctx,
 					`
-					INSERT INTO handmade_snippet (url, "when", description, _description_html, asset_id, discord_message_id, owner_id)
+					INSERT INTO snippet (url, "when", description, _description_html, asset_id, discord_message_id, owner_id)
 					VALUES ($1, $2, $3, $4, $5, $6, $7)
 					`,
 					url,
@@ -763,7 +763,7 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 
 				_, err = tx.Exec(ctx,
 					`
-					UPDATE handmade_discordmessage
+					UPDATE discord_message
 					SET snippet_created = TRUE
 					WHERE id = $1
 					`,
@@ -801,10 +801,10 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 
 		userTags, err := db.Query[models.Tag](ctx, tx,
 			`
-			SELECT $columns{tags}
+			SELECT $columns{tag}
 			FROM
 				tags
-				JOIN handmade_project AS project ON project.tag = tags.id
+				JOIN project ON project.tag = tag.id
 			WHERE
 				project.id = ANY ($1)
 			`,
@@ -825,7 +825,7 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 
 		_, err = tx.Exec(ctx,
 			`
-			DELETE FROM snippet_tags
+			DELETE FROM snippet_tag
 			WHERE
 				snippet_id = $1
 				AND tag_id = ANY ($2)
@@ -840,7 +840,7 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 		for _, tagID := range desiredTags {
 			_, err = tx.Exec(ctx,
 				`
-				INSERT INTO snippet_tags (snippet_id, tag_id)
+				INSERT INTO snippet_tag (snippet_id, tag_id)
 				VALUES ($1, $2)
 				ON CONFLICT DO NOTHING
 				`,
@@ -883,7 +883,7 @@ func getSnippetAssetOrUrl(ctx context.Context, tx db.ConnOrTx, msg *models.Disco
 	attachments, err := db.Query[models.DiscordMessageAttachment](ctx, tx,
 		`
 		SELECT $columns
-		FROM handmade_discordmessageattachment
+		FROM discord_message_attachment
 		WHERE message_id = $1
 		`,
 		msg.ID,
@@ -899,7 +899,7 @@ func getSnippetAssetOrUrl(ctx context.Context, tx db.ConnOrTx, msg *models.Disco
 	embeds, err := db.Query[models.DiscordMessageEmbed](ctx, tx,
 		`
 		SELECT $columns
-		FROM handmade_discordmessageembed
+		FROM discord_message_embed
 		WHERE message_id = $1
 		`,
 		msg.ID,

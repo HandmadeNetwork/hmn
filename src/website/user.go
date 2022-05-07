@@ -55,12 +55,12 @@ func UserProfile(c *RequestContext) ResponseData {
 		c.Perf.StartBlock("SQL", "Fetch user")
 		user, err := db.QueryOne[models.User](c.Context(), c.Conn,
 			`
-			SELECT $columns{auth_user}
+			SELECT $columns{hmn_user}
 			FROM
-				auth_user
-				LEFT JOIN handmade_asset AS auth_user_avatar ON auth_user_avatar.id = auth_user.avatar_asset_id
+				hmn_user
+				LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
 			WHERE
-				LOWER(auth_user.username) = $1
+				LOWER(hmn_user.username) = $1
 			`,
 			username,
 		)
@@ -88,7 +88,7 @@ func UserProfile(c *RequestContext) ResponseData {
 		`
 		SELECT $columns
 		FROM
-			handmade_links as link
+			link as link
 		WHERE
 			link.user_id = $1
 		ORDER BY link.ordering ASC
@@ -228,7 +228,7 @@ func UserSettings(c *RequestContext) ResponseData {
 	links, err := db.Query[models.Link](c.Context(), c.Conn,
 		`
 		SELECT $columns
-		FROM handmade_links
+		FROM link
 		WHERE user_id = $1
 		ORDER BY ordering
 		`,
@@ -245,7 +245,7 @@ func UserSettings(c *RequestContext) ResponseData {
 	duser, err := db.QueryOne[models.DiscordUser](c.Context(), c.Conn,
 		`
 		SELECT $columns
-		FROM handmade_discorduser
+		FROM discord_user
 		WHERE hmn_user_id = $1
 		`,
 		c.CurrentUser.ID,
@@ -262,8 +262,8 @@ func UserSettings(c *RequestContext) ResponseData {
 			`
 			SELECT COUNT(*)
 			FROM
-				handmade_discordmessage AS msg
-				LEFT JOIN handmade_discordmessagecontent AS c ON c.message_id = msg.id
+				discord_message AS msg
+				LEFT JOIN discord_message_content AS c ON c.message_id = msg.id
 			WHERE
 				msg.user_id = $1
 				AND msg.channel_id = $2
@@ -342,7 +342,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 
 	_, err = tx.Exec(c.Context(),
 		`
-		UPDATE auth_user
+		UPDATE hmn_user
 		SET
 			name = $2,
 			email = $3,
@@ -375,14 +375,14 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	twitchLoginsPreChange, preErr := hmndata.FetchTwitchLoginsForUserOrProject(c.Context(), tx, &c.CurrentUser.ID, nil)
 	linksText := form.Get("links")
 	links := ParseLinks(linksText)
-	_, err = tx.Exec(c.Context(), `DELETE FROM handmade_links WHERE user_id = $1`, c.CurrentUser.ID)
+	_, err = tx.Exec(c.Context(), `DELETE FROM link WHERE user_id = $1`, c.CurrentUser.ID)
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to delete old links")
 	} else {
 		for i, link := range links {
 			_, err := tx.Exec(c.Context(),
 				`
-				INSERT INTO handmade_links (name, url, ordering, user_id)
+				INSERT INTO link (name, url, ordering, user_id)
 				VALUES ($1, $2, $3, $4)
 				`,
 				link.Name,
@@ -435,7 +435,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	if newAvatar.Exists || newAvatar.Remove {
 		_, err := tx.Exec(c.Context(),
 			`
-			UPDATE auth_user
+			UPDATE hmn_user
 			SET
 				avatar_asset_id = $2
 			WHERE
@@ -486,7 +486,7 @@ func UserProfileAdminSetStatus(c *RequestContext) ResponseData {
 
 	_, err = c.Conn.Exec(c.Context(),
 		`
-		UPDATE auth_user
+		UPDATE hmn_user
 		SET status = $1
 		WHERE id = $2
 		`,

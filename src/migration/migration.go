@@ -24,6 +24,11 @@ import (
 var listMigrations bool
 
 func init() {
+	dbCommand := &cobra.Command{
+		Use:   "db",
+		Short: "Database-related commands",
+	}
+
 	migrateCommand := &cobra.Command{
 		Use:   "migrate [target migration id]",
 		Short: "Run database migrations",
@@ -78,9 +83,10 @@ func init() {
 		},
 	}
 
-	website.WebsiteCommand.AddCommand(migrateCommand)
-	website.WebsiteCommand.AddCommand(makeMigrationCommand)
-	website.WebsiteCommand.AddCommand(seedFromFileCommand)
+	website.WebsiteCommand.AddCommand(dbCommand)
+	dbCommand.AddCommand(migrateCommand)
+	dbCommand.AddCommand(makeMigrationCommand)
+	dbCommand.AddCommand(seedFromFileCommand)
 }
 
 func getSortedMigrationVersions() []types.MigrationVersion {
