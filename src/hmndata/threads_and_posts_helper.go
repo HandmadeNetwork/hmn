@@ -628,7 +628,7 @@ func UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User
 
 func CreateNewPost(
 	ctx context.Context,
-	tx pgx.Tx,
+	conn db.ConnOrTx,
 	projectId int,
 	threadId int, threadType models.ThreadType,
 	userId int,
@@ -637,7 +637,7 @@ func CreateNewPost(
 	ipString string,
 ) (postId, versionId int) {
 	// Create post
-	err := tx.QueryRow(ctx,
+	err := conn.QueryRow(ctx,
 		`
 		INSERT INTO post (postdate, thread_id, thread_type, current_id, author_id, project_id, reply_id, preview)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -657,10 +657,10 @@ func CreateNewPost(
 	}
 
 	// Create and associate version
-	versionId = CreatePostVersion(ctx, tx, postId, unparsedContent, ipString, "", nil)
+	versionId = CreatePostVersion(ctx, conn, postId, unparsedContent, ipString, "", nil)
 
 	// Fix up thread
-	err = FixThreadPostIds(ctx, tx, threadId)
+	err = FixThreadPostIds(ctx, conn, threadId)
 	if err != nil {
 		panic(oops.New(err, "failed to fix up thread post IDs"))
 	}
@@ -678,7 +678,7 @@ func CreateNewPost(
 	}
 	updates := strings.Join(updateEntries, ", ")
 
-	_, err = tx.Exec(ctx,
+	_, err = conn.Exec(ctx,
 		`
 		UPDATE project
 		SET `+updates+`
@@ -768,7 +768,7 @@ func DeletePost(
 
 const maxPostContentLength = 200000
 
-func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedContent string, ipString string, editReason string, editorId *int) (versionId int) {
+func CreatePostVersion(ctx context.Context, conn db.ConnOrTx, postId int, unparsedContent string, ipString string, editReason string, editorId *int) (versionId int) {
 	if len(unparsedContent) > maxPostContentLength {
 		logging.ExtractLogger(ctx).Warn().
 			Str("preview", unparsedContent[:400]).
@@ -787,7 +787,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 	}
 
 	// Create post version
-	err := tx.QueryRow(ctx,
+	err := conn.QueryRow(ctx,
 		`
 		INSERT INTO post_version (post_id, text_raw, text_parsed, ip, date, edit_reason, editor_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -806,7 +806,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 	}
 
 	// Update post with version id and preview
-	_, err = tx.Exec(ctx,
+	_, err = conn.Exec(ctx,
 		`
 		UPDATE post
 		SET current_id = $1, preview = $2
@@ -822,7 +822,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 
 	// Update asset usage
 
-	_, err = tx.Exec(ctx,
+	_, err = conn.Exec(ctx,
 		`
 		DELETE FROM post_asset_usage
 		WHERE post_id = $1
@@ -839,7 +839,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 		keys = append(keys, key)
 	}
 
-	assetIDs, err := db.QueryScalar[uuid.UUID](ctx, tx,
+	assetIDs, err := db.QueryScalar[uuid.UUID](ctx, conn,
 		`
 		SELECT id
 		FROM asset
@@ -857,7 +857,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 		values = append(values, []interface{}{postId, assetID})
 	}
 
-	_, err = tx.CopyFrom(ctx, pgx.Identifier{"post_asset_usage"}, []string{"post_id", "asset_id"}, pgx.CopyFromRows(values))
+	_, err = conn.CopyFrom(ctx, pgx.Identifier{"post_asset_usage"}, []string{"post_id", "asset_id"}, pgx.CopyFromRows(values))
 	if err != nil {
 		panic(oops.New(err, "failed to insert post asset usage"))
 	}
@@ -873,8 +873,8 @@ Ensures that the first_id and last_id on the thread are still good.
 Returns errThreadEmpty if the thread contains no visible posts any more.
 You should probably mark the thread as deleted in this case.
 */
-func FixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
-	posts, err := db.Query[models.Post](ctx, tx,
+func FixThreadPostIds(ctx context.Context, conn db.ConnOrTx, threadId int) error {
+	posts, err := db.Query[models.Post](ctx, conn,
 		`
 		SELECT $columns
 		FROM post
@@ -902,7 +902,7 @@ func FixThreadPostIds(ctx context.Context, tx pgx.Tx, threadId int) error {
 		return errThreadEmpty
 	}
 
-	_, err = tx.Exec(ctx,
+	_, err = conn.Exec(ctx,
 		`
 		UPDATE thread
 		SET first_id = $1, last_id = $2

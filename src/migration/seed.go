@@ -10,7 +10,9 @@ import (
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
 	lorem "github.com/HandmadeNetwork/golorem"
 	"github.com/jackc/pgx/v4"
@@ -117,9 +119,26 @@ func SampleSeed() {
 	charlie := seedUser(ctx, conn, models.User{Username: "charlie", Name: "Charlie"})
 
 	fmt.Println("Creating a spammer...")
-	seedUser(ctx, conn, models.User{Username: "spam", Name: "Hot singletons in your local area", Status: models.UserStatusConfirmed})
+	spammer := seedUser(ctx, conn, models.User{
+		Username: "spam",
+		Status:   models.UserStatusConfirmed,
+		Name:     "Hot singletons in your local area",
+		Bio:      "Howdy, everybody I go by Jarva seesharpe from Bangalore. In this way, assuming you need to partake in a shared global instance with me then, at that poi",
+	})
 
-	_ = []*models.User{alice, bob, charlie}
+	users := []*models.User{alice, bob, charlie, spammer}
+
+	fmt.Println("Creating some threads...")
+	for i := 0; i < 5; i++ {
+		thread := seedThread(ctx, conn, models.Thread{})
+		populateThread(ctx, conn, thread, users, rand.Intn(5)+1)
+	}
+
+	// spam-only thread
+	{
+		thread := seedThread(ctx, conn, models.Thread{})
+		populateThread(ctx, conn, thread, []*models.User{spammer}, 1)
+	}
 
 	// admin := CreateAdminUser("admin", "12345678")
 	// user := CreateUser("regular_user", "12345678")
@@ -176,6 +195,59 @@ func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.
 	}
 
 	return user
+}
+
+func seedThread(ctx context.Context, conn db.ConnOrTx, input models.Thread) *models.Thread {
+	input.Type = utils.OrDefault(input.Type, models.ThreadTypeForumPost)
+
+	var defaultSubforum *int
+	if input.Type == models.ThreadTypeForumPost {
+		id := 2
+		defaultSubforum = &id
+	}
+
+	thread, err := db.QueryOne[models.Thread](ctx, conn,
+		`
+		INSERT INTO thread (
+			title,
+			type, sticky,
+			project_id, subforum_id,
+			first_id, last_id
+		)
+		VALUES (
+			$1,
+			$2, $3,
+			$4, $5,
+			$6, $7
+		)
+		RETURNING $columns
+		`,
+		utils.OrDefault(input.Title, lorem.Sentence(3, 8)),
+		utils.OrDefault(input.Type, models.ThreadTypeForumPost), false,
+		utils.OrDefault(input.ProjectID, models.HMNProjectID), utils.OrDefault(input.SubforumID, defaultSubforum),
+		-1, -1,
+	)
+	if err != nil {
+		panic(oops.New(err, "failed to create thread"))
+	}
+
+	return thread
+}
+
+func populateThread(ctx context.Context, conn db.ConnOrTx, thread *models.Thread, users []*models.User, numPosts int) {
+	var lastPostId int
+	for i := 0; i < numPosts; i++ {
+		user := users[i%len(users)]
+
+		var replyId *int
+		if lastPostId != 0 {
+			if rand.Intn(10) < 3 {
+				replyId = &lastPostId
+			}
+		}
+
+		hmndata.CreateNewPost(ctx, conn, thread.ProjectID, thread.ID, thread.Type, user.ID, replyId, lorem.Paragraph(1, 10), "192.168.2.1")
+	}
 }
 
 func randomName() string {

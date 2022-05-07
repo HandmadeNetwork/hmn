@@ -33,6 +33,7 @@ type ConnOrTx interface {
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+	CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
 
 	// Both raw database connections and transactions in pgx can begin/commit
 	// transactions. For database connections it does the obvious thing; for
