@@ -62,7 +62,7 @@ func BareMinimumSeed() *models.Project {
 	defer tx.Rollback(ctx)
 
 	fmt.Println("Creating HMN project...")
-	hmn := seedProject(ctx, tx, seedHMN)
+	hmn := seedProject(ctx, tx, seedHMN, nil)
 
 	utils.Must0(tx.Commit(ctx))
 
@@ -101,11 +101,21 @@ func SampleSeed() {
 	users := []*models.User{alice, bob, charlie, spammer}
 
 	fmt.Println("Creating starter projects...")
-	hero := seedProject(ctx, tx, seedHandmadeHero)
-	fourcoder := seedProject(ctx, tx, seed4coder)
-	for i := 0; i < 3; i++ {
+	hero := seedProject(ctx, tx, seedHandmadeHero, []*models.User{admin})
+	fourcoder := seedProject(ctx, tx, seed4coder, []*models.User{bob})
+	for i := 0; i < 5; i++ {
 		name := fmt.Sprintf("%s %s", lorem.Word(1, 10), lorem.Word(1, 10))
 		slug := strings.ReplaceAll(strings.ToLower(name), " ", "-")
+
+		possibleOwners := []*models.User{alice, bob, charlie}
+		var owners []*models.User
+		for ownerIdx, owner := range possibleOwners {
+			mask := (i % ((1 << len(possibleOwners)) - 1)) + 1
+			if (1<<ownerIdx)&mask != 0 {
+				owners = append(owners, owner)
+			}
+		}
+
 		seedProject(ctx, tx, models.Project{
 			Slug:        slug,
 			Name:        name,
@@ -113,8 +123,17 @@ func SampleSeed() {
 			Description: lorem.Paragraph(3, 5),
 
 			Personal: true,
-		})
+		}, owners)
 	}
+	// spam project!
+	seedProject(ctx, tx, models.Project{
+		Slug:        "spam",
+		Name:        "Cheap abstraction enhancers",
+		Blurb:       "Get higher than ever before...up the ladder of abstraction.",
+		Description: "Tired of boring details like the actual problem assigned to you? The sky's the limit with these abstraction enhancers, guaranteed to sweep away all those pesky details so you can focus on what matters: \"architecture\".",
+
+		Personal: true,
+	}, []*models.User{spammer})
 
 	fmt.Println("Creating some forum threads...")
 	for i := 0; i < 5; i++ {
@@ -246,7 +265,7 @@ func populateThread(ctx context.Context, tx pgx.Tx, thread *models.Thread, users
 
 var latestProjectId int
 
-func seedProject(ctx context.Context, tx pgx.Tx, input models.Project) *models.Project {
+func seedProject(ctx context.Context, tx pgx.Tx, input models.Project, owners []*models.User) *models.Project {
 	project := db.MustQueryOne[models.Project](ctx, tx,
 		`
 		INSERT INTO project (
@@ -302,6 +321,14 @@ func seedProject(ctx context.Context, tx pgx.Tx, input models.Project) *models.P
 		forum.ID, project.ID,
 	))
 	project.ForumID = &forum.ID
+
+	// Add project owners
+	for _, owner := range owners {
+		utils.Must1(tx.Exec(ctx,
+			`INSERT INTO user_project (user_id, project_id) VALUES ($1, $2)`,
+			owner.ID, project.ID,
+		))
+	}
 
 	return project
 }

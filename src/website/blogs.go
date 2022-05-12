@@ -77,7 +77,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 	canCreate := false
 	if c.CurrentProject.HasBlog() && c.CurrentUser != nil {
 		isProjectOwner := false
-		owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, c.CurrentUser, c.CurrentProject.ID)
+		owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project owners"))
 		}

@@ -150,7 +150,7 @@ func FetchProjects(
 	for i, p := range projectRows {
 		projectIds[i] = p.Project.ID
 	}
-	projectOwners, err := FetchMultipleProjectsOwners(ctx, tx, currentUser, projectIds)
+	projectOwners, err := FetchMultipleProjectsOwners(ctx, tx, projectIds)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +316,6 @@ type ProjectOwners struct {
 func FetchMultipleProjectsOwners(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
-	currentUser *models.User,
 	projectIds []int,
 ) ([]ProjectOwners, error) {
 	perf := perf.ExtractPerf(ctx)
@@ -359,8 +358,9 @@ func FetchMultipleProjectsOwners(
 			userIds = append(userIds, userProject.UserID)
 		}
 	}
-	users, err := FetchUsers(ctx, tx, currentUser, UsersQuery{
-		UserIDs: userIds,
+	users, err := FetchUsers(ctx, tx, nil, UsersQuery{
+		UserIDs:   userIds,
+		AnyStatus: true,
 	})
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch users for projects")
@@ -408,14 +408,13 @@ func FetchMultipleProjectsOwners(
 func FetchProjectOwners(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
-	currentUser *models.User,
 	projectId int,
 ) ([]*models.User, error) {
 	perf := perf.ExtractPerf(ctx)
 	perf.StartBlock("SQL", "Fetch owners for project")
 	defer perf.EndBlock()
 
-	projectOwners, err := FetchMultipleProjectsOwners(ctx, dbConn, currentUser, []int{projectId})
+	projectOwners, err := FetchMultipleProjectsOwners(ctx, dbConn, []int{projectId})
 	if err != nil {
 		return nil, err
 	}

@@ -181,7 +181,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	// There are no further permission checks to do, because permissions are
 	// checked whatever way we fetch the project.
 
-	owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, c.CurrentUser, c.CurrentProject.ID)
+	owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
