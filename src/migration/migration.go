@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -319,27 +320,81 @@ func ResetDB() {
 	fmt.Println("Resetting database...")
 
 	ctx := context.Background()
-	// NOTE(asaf): We connect to db "template1", because we have to connect to something other than our own db in order to drop it.
-	template1DSN := fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s",
-		config.Config.Postgres.User,
-		config.Config.Postgres.Password,
-		config.Config.Postgres.Hostname,
-		config.Config.Postgres.Port,
-		"template1", // NOTE(asaf): template1 must always exist in postgres, as it's the db that gets cloned when you create new DBs
-	)
-	// NOTE(asaf): We have to use the low-level API of pgconn, because the pgx Exec always wraps the query in a transaction.
-	lowLevelConn, err := pgconn.Connect(ctx, template1DSN)
+
+	// Create the HMN database user
+	{
+		type pgCredentials struct {
+			User     string
+			Password string
+		}
+		credentials := []pgCredentials{
+			{config.Config.Postgres.User, config.Config.Postgres.Password}, // Existing HMN user
+			{getSystemUsername(), ""},                                      // Postgres.app on Mac
+		}
+
+		var workingCred pgCredentials
+		var createUserConn *pgconn.PgConn
+		var connErrors []error
+		for _, cred := range credentials {
+			// NOTE(asaf): We have to use the low-level API of pgconn, because the pgx Exec always wraps the query in a transaction.
+			var err error
+			createUserConn, err = connectLowLevel(ctx, cred.User, cred.Password)
+			if err == nil {
+				workingCred = cred
+				break
+			} else {
+				connErrors = append(connErrors, err)
+			}
+		}
+		if createUserConn == nil {
+			fmt.Println("Failed to connect to the db to reset it.")
+			fmt.Println("The following errors occurred for each set of credentials:")
+			for _, err := range connErrors {
+				fmt.Printf("- %v\n", err)
+			}
+			fmt.Println()
+			fmt.Println("If this is a local development environment, please let us know what platform you are")
+			fmt.Println("using and how you installed Postgres. We can make sure your default Postgres username")
+			fmt.Println("and password are added to our list to avoid this problem in the future.")
+			fmt.Println()
+			fmt.Println("If on the other hand this is a real deployment, please manually create the user:")
+			fmt.Println()
+			fmt.Println("    CREATE USER <username> WITH ENCRYPTED PASSWORD '<password>';")
+			fmt.Println()
+			fmt.Println("and add the username and password to your config.")
+			os.Exit(1)
+		}
+		defer createUserConn.Close(ctx)
+
+		// Create the HMN user
+		{
+			userExists := workingCred.User == config.Config.Postgres.User && workingCred.Password == config.Config.Postgres.Password
+			if !userExists {
+				result := createUserConn.ExecParams(ctx, fmt.Sprintf(`
+					CREATE USER %s WITH
+						ENCRYPTED PASSWORD '%s'
+						CREATEDB
+				`, config.Config.Postgres.User, config.Config.Postgres.Password), nil, nil, nil, nil)
+				_, err := result.Close()
+				if err != nil {
+					panic(fmt.Errorf("failed to create HMN user: %w", err))
+				}
+			}
+		}
+	}
+
+	// Connect as the HMN user
+	conn, err := connectLowLevel(ctx, config.Config.Postgres.User, config.Config.Postgres.Password)
 	if err != nil {
 		panic(fmt.Errorf("failed to connect to db: %w", err))
 	}
-	defer lowLevelConn.Close(ctx)
 
 	// Disconnect all other users
 	{
-		result := lowLevelConn.ExecParams(ctx, fmt.Sprintf(`
+		result := conn.ExecParams(ctx, fmt.Sprintf(`
 			SELECT pg_terminate_backend(pid)
 			FROM pg_stat_activity
-			WHERE datname = '%s' AND pid <> pg_backend_pid()
+			WHERE datname IN ('%s', 'template1') AND pid <> pg_backend_pid()
 		`, config.Config.Postgres.DbName), nil, nil, nil, nil)
 		_, err := result.Close()
 		if err != nil {
@@ -349,8 +404,8 @@ func ResetDB() {
 
 	// Drop the database
 	{
-		result := lowLevelConn.ExecParams(ctx, fmt.Sprintf("DROP DATABASE %s", config.Config.Postgres.DbName), nil, nil, nil, nil)
-		_, err = result.Close()
+		result := conn.ExecParams(ctx, fmt.Sprintf("DROP DATABASE %s", config.Config.Postgres.DbName), nil, nil, nil, nil)
+		_, err := result.Close()
 		pgErr, isPgError := err.(*pgconn.PgError)
 		if err != nil {
 			if !(isPgError && pgErr.SQLState() == "3D000") { // NOTE(asaf): 3D000 means "Database does not exist"
@@ -361,10 +416,32 @@ func ResetDB() {
 
 	// Create the database again
 	{
-		result := lowLevelConn.ExecParams(ctx, fmt.Sprintf("CREATE DATABASE %s", config.Config.Postgres.DbName), nil, nil, nil, nil)
-		_, err = result.Close()
+		result := conn.ExecParams(ctx, fmt.Sprintf("CREATE DATABASE %s", config.Config.Postgres.DbName), nil, nil, nil, nil)
+		_, err := result.Close()
 		if err != nil {
 			panic(fmt.Errorf("failed to create db: %w", err))
 		}
 	}
+
+	fmt.Println("Database reset successfully.")
+}
+
+func connectLowLevel(ctx context.Context, username, password string) (*pgconn.PgConn, error) {
+	// NOTE(asaf): We connect to db "template1", because we have to connect to something other than our own db in order to drop it.
+	template1DSN := fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s",
+		username,
+		password,
+		config.Config.Postgres.Hostname,
+		config.Config.Postgres.Port,
+		"template1", // NOTE(asaf): template1 must always exist in postgres, as it's the db that gets cloned when you create new DBs
+	)
+	return pgconn.Connect(ctx, template1DSN)
+}
+
+func getSystemUsername() string {
+	u, err := user.Current()
+	if err != nil {
+		return ""
+	}
+	return u.Username
 }
