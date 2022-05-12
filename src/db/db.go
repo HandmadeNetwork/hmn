@@ -125,6 +125,22 @@ func Query[T any](
 }
 
 /*
+Identical to Query, but panics if there was an error.
+*/
+func MustQuery[T any](
+	ctx context.Context,
+	conn ConnOrTx,
+	query string,
+	args ...any,
+) []*T {
+	result, err := Query[T](ctx, conn, query, args...)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
+
+/*
 Identical to Query, but returns only the first result row. If there are no
 rows in the result set, returns NotFound.
 */
@@ -146,6 +162,22 @@ func QueryOne[T any](
 	}
 
 	return result, nil
+}
+
+/*
+Identical to QueryOne, but panics if there was an error.
+*/
+func MustQueryOne[T any](
+	ctx context.Context,
+	conn ConnOrTx,
+	query string,
+	args ...any,
+) *T {
+	result, err := QueryOne[T](ctx, conn, query, args...)
+	if err != nil {
+		panic(err)
+	}
+	return result
 }
 
 /*
@@ -177,6 +209,22 @@ func QueryScalar[T any](
 }
 
 /*
+Identical to QueryScalar, but panics if there was an error.
+*/
+func MustQueryScalar[T any](
+	ctx context.Context,
+	conn ConnOrTx,
+	query string,
+	args ...any,
+) []T {
+	result, err := QueryScalar[T](ctx, conn, query, args...)
+	if err != nil {
+		panic(err)
+	}
+	return result
+}
+
+/*
 Identical to QueryScalar, but returns only the first result value. If there are
 no rows in the result set, returns NotFound.
 */
@@ -200,6 +248,22 @@ func QueryOneScalar[T any](
 	}
 
 	return *result, nil
+}
+
+/*
+Identical to QueryOneScalar, but panics if there was an error.
+*/
+func MustQueryOneScalar[T any](
+	ctx context.Context,
+	conn ConnOrTx,
+	query string,
+	args ...any,
+) T {
+	result, err := QueryOneScalar[T](ctx, conn, query, args...)
+	if err != nil {
+		panic(err)
+	}
+	return result
 }
 
 /*
@@ -247,6 +311,22 @@ func QueryIterator[T any](
 	}()
 
 	return it, nil
+}
+
+/*
+Identical to QueryIterator, but panics if there was an error.
+*/
+func MustQueryIterator[T any](
+	ctx context.Context,
+	conn ConnOrTx,
+	query string,
+	args ...any,
+) *Iterator[T] {
+	result, err := QueryIterator[T](ctx, conn, query, args...)
+	if err != nil {
+		panic(err)
+	}
+	return result
 }
 
 // TODO: QueryFunc?
