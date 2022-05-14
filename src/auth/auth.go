@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/jobs"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -234,10 +235,10 @@ func DeleteExpiredPasswordResets(ctx context.Context, conn *pgxpool.Pool) (int64
 	return tag.RowsAffected(), nil
 }
 
-func PeriodicallyDeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) <-chan struct{} {
-	done := make(chan struct{})
+func PeriodicallyDeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
+	job := jobs.New()
 	go func() {
-		defer close(done)
+		defer job.Done()
 
 		t := time.NewTicker(1 * time.Hour)
 		for {
@@ -265,5 +266,5 @@ func PeriodicallyDeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) <-
 			}
 		}
 	}()
-	return done
+	return job
 }

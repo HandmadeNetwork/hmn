@@ -53,8 +53,10 @@ type DigitalOceanConfig struct {
 	AssetsSpacesRegion   string
 	AssetsSpacesEndpoint string
 	AssetsSpacesBucket   string
-	AssetsPathPrefix     string
 	AssetsPublicUrlRoot  string
+
+	RunFakeServer bool
+	FakeAddr      string
 }
 
 type EmailConfig struct {

@@ -67,7 +67,7 @@ func SanitizeFilename(filename string) string {
 }
 
 func AssetKey(id, filename string) string {
-	return fmt.Sprintf("%s%s/%s", config.Config.DigitalOcean.AssetsPathPrefix, id, filename)
+	return fmt.Sprintf("%s/%s", id, filename)
 }
 
 type InvalidAssetError error

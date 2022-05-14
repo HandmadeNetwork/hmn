@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/jobs"
 	"github.com/rs/zerolog"
 )
 
@@ -109,20 +110,20 @@ type PerfStorage struct {
 
 type PerfCollector struct {
 	In          chan<- RequestPerf
-	Done        <-chan struct{}
+	Job         jobs.Job
 	RequestCopy chan<- (chan<- PerfStorage)
 }
 
 func RunPerfCollector(ctx context.Context) *PerfCollector {
 	in := make(chan RequestPerf)
-	done := make(chan struct{})
+	job := jobs.New()
 	requestCopy := make(chan (chan<- PerfStorage))
 
 	var storage PerfStorage
 	// TODO(asaf): Load history from file
 
 	go func() {
-		defer close(done)
+		defer job.Done()
 
 		for {
 			select {
@@ -139,7 +140,7 @@ func RunPerfCollector(ctx context.Context) *PerfCollector {
 
 	perfCollector := PerfCollector{
 		In:          in,
-		Done:        done,
+		Job:         job,
 		RequestCopy: requestCopy,
 	}
 	return &perfCollector

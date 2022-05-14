@@ -1,78 +1,101 @@
 package hmns3
 
 import (
-	_ "embed"
+	"context"
+	"errors"
 	"fmt"
-	"git.handmade.network/hmn/hmn/src/website"
-	"github.com/spf13/cobra"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/jobs"
+	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/utils"
+	"github.com/rs/zerolog"
 )
 
-func init() {
-	s3Command := &cobra.Command{
-		Use:   "hmns3 [storage folder]",
-		Short: "Run a local s3 server that stores in the filesystem",
-		Run: func(cmd *cobra.Command, args []string) {
-			targetFolder := "./tmp"
-			if len(args) > 0 {
-				targetFolder = args[0]
-			}
-			err := os.MkdirAll(targetFolder, fs.ModePerm)
-			if err != nil {
-				panic(err)
-			}
+const dir = "./tmp/s3"
 
-			handler := func(w http.ResponseWriter, r *http.Request) {
-				bucket, key := bucket_key(r)
-			
-				fmt.Println("\n\nIncoming request path:", r.URL.Path)
-				bodyBytes, err := io.ReadAll(r.Body)
-				fmt.Println("Bucket: ", bucket, " key: ", key, " method: ", r.Method, " len(body): ", len(bodyBytes))
-				if err != nil {
-					panic(err)
-				}
-				if r.Method == http.MethodPut {
-					w.Header().Set("Location", fmt.Sprintf("/%s", bucket))
-					err := os.MkdirAll(fmt.Sprintf("%s/%s", targetFolder, bucket), fs.ModePerm)
-					if err != nil {
-						panic(err)
-					}
-					if key != "" {
-						err = os.WriteFile(fmt.Sprintf("%s/%s/%s",targetFolder, bucket, key),   bodyBytes, fs.ModePerm)
-						if err != nil {
-							panic(err)
-						}
-					}
-				} else if r.Method == http.MethodGet {
-					fileBytes, err := os.ReadFile(fmt.Sprintf("%s/%s/%s",  targetFolder, bucket, key))
-					if err != nil {
-						panic(err)
-					}
-					w.Write(fileBytes)
-				} else {
-					panic("Unimplemented method!")
-				}
-			}
-
-			http.HandleFunc("/", handler)
-			log.Fatal(http.ListenAndServe(":80", nil))
-		},
-	}
-
-	website.WebsiteCommand.AddCommand(s3Command)
+type server struct {
+	log zerolog.Logger
 }
 
+func StartServer(ctx context.Context) jobs.Job {
+	if !config.Config.DigitalOcean.RunFakeServer {
+		return jobs.Noop()
+	}
 
-func bucket_key(r *http.Request) (string, string) {
+	utils.Must0(os.MkdirAll(dir, fs.ModePerm))
+
+	s := server{
+		log: logging.ExtractLogger(ctx).With().
+			Str("module", "S3 server").
+			Logger(),
+	}
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			s.getObject(w, r)
+		} else if r.Method == http.MethodPut {
+			s.putObject(w, r)
+		} else {
+			panic("Unimplemented method!")
+		}
+	})
+
+	job := jobs.New()
+	srv := http.Server{
+		Addr: config.Config.DigitalOcean.FakeAddr,
+	}
+
+	s.log.Info().Msg("Starting local S3 server")
+	go func() {
+		defer job.Done()
+		err := srv.ListenAndServe()
+		if err != nil {
+			if errors.Is(err, http.ErrServerClosed) {
+				// This is normal and fine
+			} else {
+				panic(err)
+			}
+		}
+	}()
+
+	go func() {
+		<-ctx.Done()
+		s.log.Info().Msg("Shutting down local S3 server")
+		srv.Shutdown(context.Background())
+	}()
+
+	return job
+}
+
+func (s *server) getObject(w http.ResponseWriter, r *http.Request) {
+	bucket, key := bucketKey(r)
+
+	file := utils.Must1(os.Open(filepath.Join(dir, bucket, key)))
+	io.Copy(w, file)
+}
+
+func (s *server) putObject(w http.ResponseWriter, r *http.Request) {
+	bucket, key := bucketKey(r)
+
+	w.Header().Set("Location", fmt.Sprintf("/%s", bucket))
+	utils.Must0(os.MkdirAll(filepath.Join(dir, bucket), fs.ModePerm))
+	if key != "" {
+		file := utils.Must1(os.Create(filepath.Join(dir, bucket, key)))
+		io.Copy(file, r.Body)
+	}
+}
+
+func bucketKey(r *http.Request) (string, string) {
 	slashIdx := strings.IndexByte(r.URL.Path[1:], '/')
 	if slashIdx == -1 {
 		return r.URL.Path[1:], ""
 	} else {
-		return r.URL.Path[1 : 1+slashIdx], strings.Replace(r.URL.Path[2+slashIdx:], "/", "~", -1)
+		return r.URL.Path[1 : 1+slashIdx], strings.ReplaceAll(r.URL.Path[2+slashIdx:], "/", "~")
 	}
 }

@@ -13,6 +13,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/jobs"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -22,22 +23,20 @@ import (
 	"github.com/jpillora/backoff"
 )
 
-func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{} {
+func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 	log := logging.ExtractLogger(ctx).With().Str("module", "discord").Logger()
 	ctx = logging.AttachLoggerToContext(&log, ctx)
 
 	if config.Config.Discord.BotToken == "" {
 		log.Warn().Msg("No Discord bot token was provided, so the Discord bot cannot run.")
-		done := make(chan struct{}, 1)
-		done <- struct{}{}
-		return done
+		return jobs.Noop()
 	}
 
-	done := make(chan struct{})
+	job := jobs.New()
 	go func() {
 		defer func() {
 			log.Debug().Msg("shut down Discord bot")
-			done <- struct{}{}
+			job.Done()
 		}()
 
 		boff := backoff.Backoff{
@@ -88,7 +87,7 @@ func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{} {
 			}()
 		}
 	}()
-	return done
+	return job
 }
 
 var outgoingMessagesReady = make(chan struct{}, 1)

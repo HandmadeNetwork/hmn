@@ -803,7 +803,7 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 			`
 			SELECT $columns{tag}
 			FROM
-				tags
+				tag
 				JOIN project ON project.tag = tag.id
 			WHERE
 				project.id = ANY ($1)

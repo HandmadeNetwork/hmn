@@ -10,6 +10,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/discord"
 	"git.handmade.network/hmn/hmn/src/hmndata"
+	"git.handmade.network/hmn/hmn/src/jobs"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -25,25 +26,23 @@ type twitchNotification struct {
 var twitchNotificationChannel chan twitchNotification
 var linksChangedChannel chan struct{}
 
-func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) <-chan struct{} {
+func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 	log := logging.ExtractLogger(ctx).With().Str("twitch goroutine", "stream monitor").Logger()
 	ctx = logging.AttachLoggerToContext(&log, ctx)
 
 	if config.Config.Twitch.ClientID == "" {
 		log.Warn().Msg("No twitch config provided.")
-		done := make(chan struct{}, 1)
-		done <- struct{}{}
-		return done
+		return jobs.Noop()
 	}
 
 	twitchNotificationChannel = make(chan twitchNotification, 100)
 	linksChangedChannel = make(chan struct{}, 10)
-	done := make(chan struct{})
+	job := jobs.New()
 
 	go func() {
 		defer func() {
 			log.Info().Msg("Shutting down twitch monitor")
-			done <- struct{}{}
+			job.Done()
 		}()
 		log.Info().Msg("Running twitch monitor...")
 
@@ -114,7 +113,7 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) <-cha
 		}
 	}()
 
-	return done
+	return job
 }
 
 type twitchNotificationType int

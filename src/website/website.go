@@ -14,6 +14,8 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/discord"
+	"git.handmade.network/hmn/hmn/src/hmns3"
+	"git.handmade.network/hmn/hmn/src/jobs"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -41,13 +43,14 @@ var WebsiteCommand = &cobra.Command{
 			Handler: NewWebsiteRoutes(longRequestContext, conn),
 		}
 
-		backgroundJobsDone := zipJobs(
+		backgroundJobsDone := jobs.Zip(
 			auth.PeriodicallyDeleteExpiredSessions(backgroundJobContext, conn),
 			auth.PeriodicallyDeleteInactiveUsers(backgroundJobContext, conn),
-			perfCollector.Done,
+			perfCollector.Job,
 			discord.RunDiscordBot(backgroundJobContext, conn),
 			discord.RunHistoryWatcher(backgroundJobContext, conn),
 			twitch.MonitorTwitchSubscriptions(backgroundJobContext, conn),
+			hmns3.StartServer(backgroundJobContext),
 		)
 
 		signals := make(chan os.Signal, 1)
@@ -81,17 +84,6 @@ var WebsiteCommand = &cobra.Command{
 			logging.Error().Err(serverErr).Msg("Server shut down unexpectedly")
 		}
 
-		<-backgroundJobsDone
+		<-backgroundJobsDone.C
 	},
-}
-
-func zipJobs(cs ...<-chan struct{}) <-chan struct{} {
-	out := make(chan struct{})
-	go func() {
-		for _, c := range cs {
-			<-c
-		}
-		close(out)
-	}()
-	return out
 }
