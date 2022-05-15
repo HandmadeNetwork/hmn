@@ -348,18 +348,21 @@ func ResetDB() {
 		}
 		if createUserConn == nil {
 			fmt.Println("Failed to connect to the db to reset it.")
-			fmt.Println("The following errors occurred for each set of credentials:")
+			fmt.Println("The following errors occurred for each attempted set of credentials:")
 			for _, err := range connErrors {
 				fmt.Printf("- %v\n", err)
 			}
 			fmt.Println()
-			fmt.Println("If this is a local development environment, please let us know what platform you are")
-			fmt.Println("using and how you installed Postgres. We can make sure your default Postgres username")
-			fmt.Println("and password are added to our list to avoid this problem in the future.")
+			fmt.Println("If this is a local development environment, please let us know what platform you")
+			fmt.Println("are using and how you installed Postgres. We want to try and streamline the setup")
+			fmt.Println("process for you.")
 			fmt.Println()
-			fmt.Println("If on the other hand this is a real deployment, please manually create the user:")
+			fmt.Println("If on the other hand this is a real deployment, please go into psql and manually")
+			fmt.Println("create the user:")
 			fmt.Println()
-			fmt.Println("    CREATE USER <username> WITH ENCRYPTED PASSWORD '<password>';")
+			fmt.Println("    CREATE USER <username> WITH")
+			fmt.Println("        ENCRYPTED PASSWORD '<password>'")
+			fmt.Println("        CREATEDB;")
 			fmt.Println()
 			fmt.Println("and add the username and password to your config.")
 			os.Exit(1)
