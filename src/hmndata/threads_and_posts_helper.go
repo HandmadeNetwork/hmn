@@ -141,8 +141,10 @@ func FetchThreads(
 
 	type resultRow struct {
 		ThreadAndStuff
-		ThreadLastReadTime *time.Time `db:"tlri.lastread"`
-		ForumLastReadTime  *time.Time `db:"slri.lastread"`
+		FirstPostAuthorAvatar *models.Asset `db:"first_author_avatar"`
+		LastPostAuthorAvatar  *models.Asset `db:"last_author_avatar"`
+		ThreadLastReadTime    *time.Time    `db:"tlri.lastread"`
+		ForumLastReadTime     *time.Time    `db:"slri.lastread"`
 	}
 
 	rows, err := db.Query[resultRow](ctx, dbConn, qb.String(), qb.Args()...)
@@ -152,6 +154,13 @@ func FetchThreads(
 
 	result := make([]ThreadAndStuff, len(rows))
 	for i, row := range rows {
+		if row.FirstPostAuthor != nil {
+			row.FirstPostAuthor.AvatarAsset = row.FirstPostAuthorAvatar
+		}
+		if row.LastPostAuthor != nil {
+			row.LastPostAuthor.AvatarAsset = row.LastPostAuthorAvatar
+		}
+
 		hasRead := false
 		if currentUser != nil && currentUser.MarkedAllReadAt.After(row.LastPost.PostDate) {
 			hasRead = true
@@ -320,8 +329,11 @@ func FetchPosts(
 
 	type resultRow struct {
 		PostAndStuff
-		ThreadLastReadTime *time.Time `db:"tlri.lastread"`
-		ForumLastReadTime  *time.Time `db:"slri.lastread"`
+		AuthorAvatar       *models.Asset `db:"author_avatar"`
+		EditorAvatar       *models.Asset `db:"editor_avatar"`
+		ReplyAuthorAvatar  *models.Asset `db:"reply_author_avatar"`
+		ThreadLastReadTime *time.Time    `db:"tlri.lastread"`
+		ForumLastReadTime  *time.Time    `db:"slri.lastread"`
 	}
 
 	qb.Add(
@@ -410,6 +422,16 @@ func FetchPosts(
 
 	result := make([]PostAndStuff, len(rows))
 	for i, row := range rows {
+		if row.Author != nil {
+			row.Author.AvatarAsset = row.AuthorAvatar
+		}
+		if row.Editor != nil {
+			row.Editor.AvatarAsset = row.EditorAvatar
+		}
+		if row.ReplyAuthor != nil {
+			row.ReplyAuthor.AvatarAsset = row.ReplyAuthorAvatar
+		}
+
 		hasRead := false
 		if currentUser != nil && currentUser.MarkedAllReadAt.After(row.Post.PostDate) {
 			hasRead = true

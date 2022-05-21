@@ -227,7 +227,6 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 			LEFT JOIN discord_message_content AS content ON content.message_id = message.id
 			LEFT JOIN discord_user AS duser ON duser.userid = message.user_id
 			LEFT JOIN hmn_user AS hmnuser ON hmnuser.id = duser.hmn_user_id
-			LEFT JOIN asset AS hmnuser_avatar ON hmnuser_avatar.id = hmnuser.avatar_asset_id
 		WHERE message.id = $1
 		`,
 		msgId,
