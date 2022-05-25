@@ -106,8 +106,8 @@ func renderTemplate(name string, data interface{}) (string, error) {
 }
 
 func sendMail(toAddress, toName, subject, contentHtml string) error {
-	if config.Config.Email.OverrideRecipientEmail != "" {
-		toAddress = config.Config.Email.OverrideRecipientEmail
+	if config.Config.Email.ForceToAddress != "" {
+		toAddress = config.Config.Email.ForceToAddress
 	}
 	contents := prepMailContents(
 		makeHeaderAddress(toAddress, toName),

@@ -60,12 +60,12 @@ type DigitalOceanConfig struct {
 }
 
 type EmailConfig struct {
-	ServerAddress          string
-	ServerPort             int
-	FromAddress            string
-	FromAddressPassword    string
-	FromName               string
-	OverrideRecipientEmail string
+	ServerAddress       string
+	ServerPort          int
+	FromAddress         string
+	FromAddressPassword string
+	FromName            string
+	ForceToAddress      string
 }
 
 type DiscordConfig struct {
