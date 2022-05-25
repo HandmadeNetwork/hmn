@@ -12,7 +12,7 @@ You will need the following software installed:
 
 - Go 1.18 or higher: https://go.dev/
 
-    You can download Go directly from the website, or install it through major package managers.
+    You can download Go directly from the website, or install it through major package managers. If you already have Go installed, but are unsure of the version, you can check by running `go version`.
 
 - Postgres: https://www.postgresql.org/
 
