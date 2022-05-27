@@ -387,7 +387,7 @@ func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx) error {
 		SELECT $columns
 		FROM
 			twitch_stream
-		ORDER BY started_at DESC
+		ORDER BY started_at ASC
 		`,
 	)
 	if err != nil {

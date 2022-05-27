@@ -88,7 +88,7 @@ func UpdateStreamers(ctx context.Context, dbConn db.ConnOrTx, streamers []hmndat
 	} else {
 		var builder strings.Builder
 		for _, s := range streamers {
-			builder.WriteString(fmt.Sprintf(":green_circle: **%s** is live: <https://twitch.tv/%s>\n> _%s_\nStarted <t:%d:R>\n\n", s.Username, s.Username, s.Title, s.StartTime.Unix()))
+			builder.WriteString(fmt.Sprintf(":red_circle: **%s** is live: <https://twitch.tv/%s>\n> _%s_\nStarted <t:%d:R>\n\n", s.Username, s.Username, s.Title, s.StartTime.Unix()))
 		}
 		messageContent = builder.String()
 	}
