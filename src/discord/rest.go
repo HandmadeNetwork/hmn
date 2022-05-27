@@ -184,8 +184,26 @@ func GetGuildMember(ctx context.Context, guildID, userID string) (*GuildMember, 
 	return &msg, nil
 }
 
+type MentionType string
+
+const (
+	MentionTypeUsers    MentionType = "users"
+	MentionTypeRoles                = "roles"
+	MentionTypeEveryone             = "everyone"
+)
+
+type MessageAllowedMentions struct {
+	Parse []MentionType `json:"parse"`
+}
+
+const (
+	FlagSuppressEmbeds int = 1 << 2
+)
+
 type CreateMessageRequest struct {
-	Content string `json:"content"`
+	Content         string                  `json:"content"`
+	Flags           int                     `json:"flags,omitempty"`
+	AllowedMentions *MessageAllowedMentions `json:"allowed_mentions,omitempty"`
 }
 
 func CreateMessage(ctx context.Context, channelID string, payloadJSON string, files ...FileUpload) (*Message, error) {
@@ -196,6 +214,44 @@ func CreateMessage(ctx context.Context, channelID string, payloadJSON string, fi
 	path := fmt.Sprintf("/channels/%s/messages", channelID)
 	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
 		req := makeRequest(ctx, http.MethodPost, path, body)
+		req.Header.Add("Content-Type", contentType)
+		return req
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode >= 400 {
+		logErrorResponse(ctx, name, res, "")
+		return nil, oops.New(nil, "received error from Discord")
+	}
+
+	// Maybe in the future we could more nicely handle errors like "bad channel",
+	// but honestly what are the odds that we mess that up...
+
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var msg Message
+	err = json.Unmarshal(bodyBytes, &msg)
+	if err != nil {
+		return nil, oops.New(err, "failed to unmarshal Discord message")
+	}
+
+	return &msg, nil
+}
+
+func EditMessage(ctx context.Context, channelID string, messageID string, payloadJSON string, files ...FileUpload) (*Message, error) {
+	const name = "Edit Message"
+
+	contentType, body := makeNewMessageBody(payloadJSON, files)
+
+	path := fmt.Sprintf("/channels/%s/messages/%s", channelID, messageID)
+	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+		req := makeRequest(ctx, http.MethodPatch, path, body)
 		req.Header.Add("Content-Type", contentType)
 		return req
 	})
