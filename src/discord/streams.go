@@ -9,6 +9,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmndata"
+	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
 )
 
@@ -114,7 +115,8 @@ func UpdateStreamers(ctx context.Context, dbConn db.ConnOrTx, streamers []hmndat
 		if livestreamMessage != nil {
 			err = DeleteMessage(ctx, config.Config.Discord.StreamsChannelID, livestreamMessage.MessageID)
 			if err != nil {
-				return oops.New(err, "failed to delete existing discord message from streams channel")
+				log := logging.ExtractLogger(ctx)
+				log.Error().Err(err).Msg("failed to delete existing discord message from streams channel")
 			}
 		}
 
