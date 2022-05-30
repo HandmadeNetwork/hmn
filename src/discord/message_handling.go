@@ -448,7 +448,7 @@ func downloadDiscordResource(ctx context.Context, url string) ([]byte, string, e
 
 	content, err := io.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		return nil, "", err
 	}
 
 	return content, res.Header.Get("Content-Type"), nil
