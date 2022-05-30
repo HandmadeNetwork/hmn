@@ -70,8 +70,8 @@ fi
 
 # Install Go
 if [ $checkpoint -lt 40 ]; then
-    wget https://golang.org/dl/go1.17.linux-amd64.tar.gz
-    tar -C /usr/local -xzf go1.17.linux-amd64.tar.gz
+	wget https://go.dev/dl/go1.18.2.linux-amd64.tar.gz
+    tar -C /usr/local -xzf go1.18.2.linux-amd64.tar.gz
     
     export PATH=$PATH:/usr/local/go/bin:/root/go/bin
     echo 'export PATH=$PATH:/usr/local/go/bin:/root/go/bin' >> ~/.bashrc
