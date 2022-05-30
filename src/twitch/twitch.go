@@ -3,7 +3,6 @@ package twitch
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
@@ -327,7 +326,7 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 	}
 	p.StartBlock("SQL", "Remove untracked streamers")
 	_, err = tx.Exec(ctx,
-		`DELETE FROM twitch_streams WHERE twitch_id != ANY($1)`,
+		`DELETE FROM twitch_stream WHERE twitch_id != ANY($1)`,
 		allIDs,
 	)
 	if err != nil {
@@ -362,7 +361,7 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 	p.StartBlock("SQL", "Update stream statuses in db")
 	for _, status := range statuses {
 		log.Debug().Interface("Status", status).Msg("Got streamer")
-		_, err = updateStreamStatusInDB(ctx, tx, &status)
+		err = updateStreamStatusInDB(ctx, tx, &status)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to update twitch stream status")
 		}
@@ -374,19 +373,41 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 	}
 	stats.NumStreamsChecked += len(usersToUpdate)
 	log.Info().Interface("Stats", stats).Msg("Twitch sync done")
+
+	log.Debug().Msg("Notifying discord")
+	err = notifyDiscordOfLiveStream(ctx, dbConn)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to notify discord")
+	}
 }
 
-func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx, twitchLogin string, title string) error {
-	var err error
-	if config.Config.Discord.StreamsChannelID != "" {
-		err = discord.SendMessages(ctx, dbConn, discord.MessageToSend{
-			ChannelID: config.Config.Discord.StreamsChannelID,
-			Req: discord.CreateMessageRequest{
-				Content: fmt.Sprintf("%s is live: https://twitch.tv/%s\n> %s", twitchLogin, twitchLogin, title),
-			},
+func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx) error {
+	streams, err := db.Query[models.TwitchStream](ctx, dbConn,
+		`
+		SELECT $columns
+		FROM
+			twitch_stream
+		ORDER BY started_at ASC
+		`,
+	)
+	if err != nil {
+		return oops.New(err, "failed to fetch livestreams from db")
+	}
+
+	var streamDetails []hmndata.StreamDetails
+	for _, s := range streams {
+		streamDetails = append(streamDetails, hmndata.StreamDetails{
+			Username:  s.Login,
+			StartTime: s.StartedAt,
+			Title:     s.Title,
 		})
 	}
-	return err
+
+	err = discord.UpdateStreamers(ctx, dbConn, streamDetails)
+	if err != nil {
+		return oops.New(err, "failed to update discord with livestream info")
+	}
+	return nil
 }
 
 func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notification *twitchNotification) {
@@ -421,41 +442,25 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 	}
 
 	log.Debug().Interface("Status", status).Msg("Updating status")
-	inserted, err := updateStreamStatusInDB(ctx, dbConn, &status)
+	err = updateStreamStatusInDB(ctx, dbConn, &status)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to update twitch stream status")
 	}
-	if inserted {
-		log.Debug().Msg("Notifying discord")
-		err = notifyDiscordOfLiveStream(ctx, dbConn, status.TwitchLogin, status.Title)
-		if err != nil {
-			log.Error().Err(err).Msg("failed to notify discord")
-		}
+
+	log.Debug().Msg("Notifying discord")
+	err = notifyDiscordOfLiveStream(ctx, dbConn)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to notify discord")
 	}
 }
 
-func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *streamStatus) (bool, error) {
+func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *streamStatus) error {
 	log := logging.ExtractLogger(ctx)
-	inserted := false
 	if isStatusRelevant(status) {
 		log.Debug().Msg("Status relevant")
-		_, err := db.QueryOne[models.TwitchStream](ctx, conn,
+		_, err := conn.Exec(ctx,
 			`
-			SELECT $columns
-			FROM twitch_streams
-			WHERE twitch_id = $1
-			`,
-			status.TwitchID,
-		)
-		if err == db.NotFound {
-			log.Debug().Msg("Inserting new stream")
-			inserted = true
-		} else if err != nil {
-			return false, oops.New(err, "failed to query existing stream")
-		}
-		_, err = conn.Exec(ctx,
-			`
-			INSERT INTO twitch_streams (twitch_id, twitch_login, title, started_at)
+			INSERT INTO twitch_stream (twitch_id, twitch_login, title, started_at)
 				VALUES ($1, $2, $3, $4)
 			ON CONFLICT (twitch_id) DO UPDATE SET
 				title = EXCLUDED.title,
@@ -467,21 +472,21 @@ func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *strea
 			status.StartedAt,
 		)
 		if err != nil {
-			return false, oops.New(err, "failed to insert twitch streamer into db")
+			return oops.New(err, "failed to insert twitch streamer into db")
 		}
 	} else {
 		log.Debug().Msg("Stream not relevant")
 		_, err := conn.Exec(ctx,
 			`
-			DELETE FROM twitch_streams WHERE twitch_id = $1
+			DELETE FROM twitch_stream WHERE twitch_id = $1
 			`,
 			status.TwitchID,
 		)
 		if err != nil {
-			return false, oops.New(err, "failed to remove twitch streamer from db")
+			return oops.New(err, "failed to remove twitch streamer from db")
 		}
 	}
-	return inserted, nil
+	return nil
 }
 
 var RelevantCategories = []string{
