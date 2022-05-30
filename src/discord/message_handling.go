@@ -448,6 +448,7 @@ func downloadDiscordResource(ctx context.Context, url string) ([]byte, string, e
 
 	content, err := io.ReadAll(res.Body)
 	if err != nil {
+		logging.ExtractLogger(ctx).Error().Str("Url", url).Msg("failed to download resource")
 		return nil, "", err
 	}
 
