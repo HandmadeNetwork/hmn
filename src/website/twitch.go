@@ -74,7 +74,7 @@ func TwitchDebugPage(c *RequestContext) ResponseData {
 		`
 		SELECT $columns
 		FROM
-			twitch_streams
+			twitch_stream
 		ORDER BY started_at DESC
 		`,
 	)
