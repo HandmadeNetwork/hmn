@@ -99,13 +99,13 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 					var timer *time.Timer
 					t := time.AfterFunc(3*time.Minute, func() {
 						expiredTimers <- timer
-						processEventSubNotification(ctx, dbConn, &notification)
+						processEventSubNotification(ctx, dbConn, &notification, true)
 					})
 					timer = t
 					timers = append(timers, t)
 					// NOTE(asaf): We also run this immediately. Since we get the category in the notification
 					//             we could show the stream as online if it's the right category.
-					processEventSubNotification(ctx, dbConn, &notification)
+					processEventSubNotification(ctx, dbConn, &notification, false)
 				}
 			}
 		}
@@ -417,7 +417,7 @@ func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx) error {
 	return nil
 }
 
-func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notification *twitchNotification) {
+func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notification *twitchNotification, delayed bool) {
 	log := logging.ExtractLogger(ctx)
 	log.Debug().Interface("Notification", notification).Msg("Processing twitch notification")
 	if notification.Type == notificationTypeNone {
@@ -444,7 +444,7 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 		}
 		for _, streamer := range allStreamers {
 			if streamer.TwitchLogin == result[0].TwitchLogin {
-				if result[0].Live == notification.Status.Live {
+				if delayed || (result[0].Live == notification.Status.Live) {
 					status = result[0]
 				} else {
 					status = notification.Status

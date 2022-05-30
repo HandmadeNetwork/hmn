@@ -134,6 +134,8 @@ func getStreamStatus(ctx context.Context, twitchIDs []string) ([]streamStatus, e
 		if err != nil {
 			return nil, oops.New(err, "failed to read response body while processing stream statuses")
 		}
+		log := logging.ExtractLogger(ctx)
+		log.Debug().Str("getStreamStatus response", string(body)).Msg("Got getStreamStatus response")
 
 		var streamResponse twitchResponse
 		err = json.Unmarshal(body, &streamResponse)
