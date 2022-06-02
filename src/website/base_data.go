@@ -56,7 +56,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		Session: templateSession,
 		Notices: notices,
 
-		ReportIssueMailto: "team@handmade.network",
+		ReportIssueEmail: "team@handmade.network",
 
 		OpenGraphItems: buildDefaultOpenGraphItems(&project, c.CurrentProjectLogoUrl, title),
 
