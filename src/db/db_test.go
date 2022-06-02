@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -168,4 +169,101 @@ func TestQueryBuilder(t *testing.T) {
 			qb.Add("HELLO $? $? $?", 1, 2, 3, 4)
 		})
 	})
+}
+
+func TestSetValueFromDB(t *testing.T) {
+	t.Run("ints", func(t *testing.T) {
+		t.Run("int to int", func(t *testing.T) {
+			var dest int
+			var value int = 3
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Equal(t, 3, dest)
+		})
+		t.Run("int32 to int", func(t *testing.T) {
+			var dest int
+			var value int32 = 3
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Equal(t, 3, dest)
+		})
+		t.Run("int to *int", func(t *testing.T) {
+			var dest *int
+			var value int = 3
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Equal(t, 3, *dest)
+		})
+		t.Run("int32 to *int", func(t *testing.T) {
+			var dest *int
+			var value int32 = 3
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Equal(t, 3, *dest)
+		})
+		t.Run("pointer nil to *int", func(t *testing.T) {
+			var dest *int
+			var value *int = nil
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Nil(t, dest)
+		})
+		t.Run("interface nil to *int", func(t *testing.T) {
+			var dest *int
+			var value interface{} = nil
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Nil(t, dest)
+		})
+	})
+
+	t.Run("strings", func(t *testing.T) {
+		type myString string
+		t.Run("string to string", func(t *testing.T) {
+			var dest string
+			var value string = "handmade"
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Equal(t, "handmade", dest)
+		})
+		t.Run("custom string to string", func(t *testing.T) {
+			var dest string
+			var value myString = "handmade"
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Equal(t, "handmade", dest)
+		})
+		t.Run("string to *string", func(t *testing.T) {
+			var dest *string
+			var value string = "handmade"
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Equal(t, "handmade", *dest)
+		})
+		t.Run("custom string to *int", func(t *testing.T) {
+			var dest *string
+			var value myString = "handmade"
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Equal(t, "handmade", *dest)
+		})
+		t.Run("pointer nil to *string", func(t *testing.T) {
+			var dest *string
+			var value *string = nil
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Nil(t, dest)
+		})
+		t.Run("interface nil to *string", func(t *testing.T) {
+			var dest *string
+			var value interface{} = nil
+
+			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
+			assert.Nil(t, dest)
+		})
+	})
+}
+
+func reflectPtr[T any](dest *T) reflect.Value {
+	return reflect.NewAt(reflect.TypeOf(*dest), unsafe.Pointer(dest)).Elem()
 }

@@ -585,10 +585,28 @@ func (it *Iterator[T]) Next() (*T, bool) {
 	}
 }
 
+// Takes a value from a database query (reflected) and assigns it to the
+// destination. If the destination is a pointer, and the value is non-nil, it
+// will initialize the destination before assigning.
 func setValueFromDB(dest reflect.Value, value reflect.Value) {
+	if dest.Kind() == reflect.Pointer {
+		valueIsNilPointer := value.Kind() == reflect.Ptr && value.IsNil()
+		if !value.IsValid() || valueIsNilPointer {
+			dest.Set(reflect.Zero(dest.Type())) // nil to nil, the end
+			return
+		} else {
+			// initialize dest
+			dest.Set(reflect.New(dest.Type().Elem()))
+			dest = dest.Elem()
+		}
+	}
+
 	switch dest.Kind() {
 	case reflect.Int:
 		dest.SetInt(value.Int())
+	case reflect.String:
+		dest.SetString(value.String())
+	// TODO(ben): More kinds? All the kinds? It kind of feels like we should be able to assign to any destination whose underlying type is a primitive.
 	default:
 		dest.Set(value)
 	}
