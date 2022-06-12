@@ -50,6 +50,7 @@ type User struct {
 
 	// Non-db fields, to be filled in by fetch helpers
 	AvatarAsset *Asset
+	DiscordUser *DiscordUser
 }
 
 func (u *User) BestName() string {

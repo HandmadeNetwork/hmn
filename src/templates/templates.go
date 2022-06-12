@@ -10,6 +10,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/Masterminds/sprig"
 	"github.com/google/uuid"
 	"github.com/teacat/noire"
@@ -26,10 +27,13 @@ const (
 var templateFs embed.FS
 var Templates map[string]*template.Template
 
+//go:embed src/fishbowls
+var FishbowlFS embed.FS
+
 func Init() {
 	Templates = make(map[string]*template.Template)
 
-	files, _ := templateFs.ReadDir("src")
+	files := utils.Must1(templateFs.ReadDir("src"))
 	for _, f := range files {
 		if hasSuffix(f.Name(), ".html") {
 			t := template.New(f.Name())

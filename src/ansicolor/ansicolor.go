@@ -36,14 +36,6 @@ var BgWhite = "\033[47m"
 
 func init() {
 	if runtime.GOOS == "windows" {
-		Reset = ""
-		Red = ""
-		Green = ""
-		Yellow = ""
-		Blue = ""
-		Purple = ""
-		Cyan = ""
-		Gray = ""
-		White = ""
+		Reset = BgBlack + Reset
 	}
 }

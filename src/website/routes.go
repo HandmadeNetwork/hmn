@@ -222,6 +222,10 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 	hmnOnly.GET(hmnurl.RegexPodcastEpisode, PodcastEpisode)
 	hmnOnly.GET(hmnurl.RegexPodcastRSS, PodcastRSS)
 
+	hmnOnly.GET(hmnurl.RegexFishbowlIndex, FishbowlIndex)
+	hmnOnly.GET(hmnurl.RegexFishbowl, Fishbowl)
+	hmnOnly.GET(hmnurl.RegexFishbowlFiles, FishbowlFiles)
+
 	hmnOnly.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
 
 	hmnOnly.GET(hmnurl.RegexLibraryAny, LibraryNotPortedYet)

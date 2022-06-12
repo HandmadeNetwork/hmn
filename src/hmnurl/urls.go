@@ -366,6 +366,26 @@ func BuildPodcastEpisodeFile(filename string) string {
 }
 
 /*
+ * Fishbowls
+ */
+
+var RegexFishbowlIndex = regexp.MustCompile(`^/fishbowl$`)
+
+func BuildFishbowlIndex() string {
+	defer CatchPanic()
+	return Url("/fishbowl", nil)
+}
+
+var RegexFishbowl = regexp.MustCompile(`^/fishbowl/(?P<slug>[^/]+)/?$`)
+
+func BuildFishbowl(slug string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/fishbowl/%s/", slug), nil)
+}
+
+var RegexFishbowlFiles = regexp.MustCompile(`^/fishbowl/(?P<slug>[^/]+)(?P<path>/.+)$`)
+
+/*
 * Forums
  */
 

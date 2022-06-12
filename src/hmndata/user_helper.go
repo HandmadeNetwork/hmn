@@ -12,8 +12,9 @@ import (
 
 type UsersQuery struct {
 	// Ignored when using FetchUser
-	UserIDs   []int    // if empty, all users
-	Usernames []string // if empty, all users
+	UserIDs        []int    // if empty, all users
+	Usernames      []string // if empty, all users
+	DiscordUserIDs []string // if empty, no Discord filtering
 
 	// Flags to modify behavior
 	AnyStatus bool // Bypasses shadowban system
@@ -44,8 +45,9 @@ func FetchUsers(
 	}
 
 	type userRow struct {
-		User        models.User   `db:"hmn_user"`
-		AvatarAsset *models.Asset `db:"avatar"`
+		User        models.User         `db:"hmn_user"`
+		AvatarAsset *models.Asset       `db:"avatar"`
+		DiscordUser *models.DiscordUser `db:"discord_user"`
 	}
 
 	var qb db.QueryBuilder
@@ -54,6 +56,7 @@ func FetchUsers(
 		FROM
 			hmn_user
 			LEFT JOIN asset AS avatar ON avatar.id = hmn_user.avatar_asset_id
+			LEFT JOIN discord_user ON discord_user.hmn_user_id = hmn_user.id
 		WHERE
 			TRUE
 	`)
@@ -62,6 +65,9 @@ func FetchUsers(
 	}
 	if len(q.Usernames) > 0 {
 		qb.Add(`AND LOWER(hmn_user.username) = ANY($?)`, q.Usernames)
+	}
+	if len(q.DiscordUserIDs) > 0 {
+		qb.Add(`AND discord_user.userid = ANY($?)`, q.DiscordUserIDs)
 	}
 	if !q.AnyStatus {
 		if currentUser == nil {
@@ -89,6 +95,7 @@ func FetchUsers(
 	for i, row := range userRows {
 		user := row.User
 		user.AvatarAsset = row.AvatarAsset
+		user.DiscordUser = row.DiscordUser
 		result[i] = &user
 	}
 

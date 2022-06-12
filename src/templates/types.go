@@ -49,6 +49,7 @@ type Header struct {
 	HMNHomepageUrl  string
 	ProjectIndexUrl string
 	PodcastUrl      string
+	FishbowlUrl     string
 	ForumsUrl       string
 	LibraryUrl      string
 
@@ -337,7 +338,6 @@ type ImageSelectorData struct {
 
 type Breadcrumb struct {
 	Name, Url string
-	Current   bool
 }
 
 type Pagination struct {

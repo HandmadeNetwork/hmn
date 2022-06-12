@@ -172,6 +172,15 @@ func TestPodcastRSS(t *testing.T) {
 	AssertRegexMatch(t, BuildPodcastRSS(), RegexPodcastRSS, nil)
 }
 
+func TestFishbowlIndex(t *testing.T) {
+	AssertRegexMatch(t, BuildFishbowlIndex(), RegexFishbowlIndex, nil)
+}
+
+func TestFishbowl(t *testing.T) {
+	AssertRegexMatch(t, BuildFishbowl("oop"), RegexFishbowl, map[string]string{"slug": "oop"})
+	AssertRegexNoMatch(t, BuildFishbowl("oop")+"/otherfiles/whatever", RegexFishbowl)
+}
+
 func TestForum(t *testing.T) {
 	AssertRegexMatch(t, hmn.BuildForum(nil, 1), RegexForum, nil)
 	AssertRegexMatch(t, hmn.BuildForum([]string{"wip"}, 2), RegexForum, map[string]string{"subforums": "wip", "page": "2"})

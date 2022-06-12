@@ -1,0 +1,89 @@
+{{ template "base.html" . }}
+
+{{ define "extrahead" }}
+<link rel="stylesheet" href="{{ static (eq .Theme "dark" | ternary "fishbowl-dark.css" "fishbowl-light.css") }}">
+
+<script>
+    function scrollToMessage(event, id) {
+        var element = document.getElementById('chatlog__message-container-' + id);
+        if (!element)
+            return;
+
+        event.preventDefault();
+        element.classList.add('chatlog__message-container--highlighted');
+
+        window.scrollTo({
+            top: element.getBoundingClientRect().top - document.body.getBoundingClientRect().top - (window.innerHeight / 2),
+            behavior: 'smooth'
+        });
+
+        window.setTimeout(function() {
+            element.classList.remove('chatlog__message-container--highlighted');
+        }, 2000);
+    }
+
+    function showSpoiler(event, element) {
+        if (!element)
+            return;
+
+        if (element.classList.contains('chatlog__attachment--hidden')) {
+            event.preventDefault();
+            element.classList.remove('chatlog__attachment--hidden');
+        }
+
+        if (element.classList.contains('chatlog__markdown-spoiler--hidden')) {
+            event.preventDefault();
+            element.classList.remove('chatlog__markdown-spoiler--hidden');
+        }
+    }
+</script>
+
+<style>
+    .fishbowl-banner {
+        background-color: {{ eq .Theme "dark" | ternary "#254464" "#a0c8f2" }};
+        position: relative;
+        overflow: hidden;
+        padding-top: 30px;
+    }
+
+    .fishbowl-banner::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        pointer-events: none;
+        background-image: url({{ static "waterline.svg" }});
+        background-size: 734px 30px;
+        background-repeat: repeat-x;
+        {{ if eq .Theme "dark" }}
+            filter: hue-rotate(210deg) saturate(0.3) brightness(1.1);
+        {{ else }}
+            filter: hue-rotate(210deg) saturate(0.15) brightness(2.9);
+        {{ end }}
+    }
+
+    .fishbowl-banner a {
+        color: {{ eq .Theme "dark" | ternary "#9ad0ff" "#1f4f99" }};
+    }
+
+    .fishbowl .chatlog__author a {
+        color: inherit;
+    }
+</style>
+{{ end }}
+
+{{ define "content" }}
+<div class="ph3 ph0-ns">
+    <h2>{{ .Info.Title }}</h2>
+    <p>{{ .Info.Description }}</p>
+
+    <div class="fishbowl-banner br3 mb3">
+        <div class="pa3">
+            This is a <b>fishbowl</b>: a panel conversation held on the Handmade Network Discord where a select few participants discuss a topic with depth and nuance. We host them every two months, so if you want to catch the next one, <a href="https://discord.gg/hmn" target="_blank">join the Discord!</a>
+        </div>
+    </div>
+
+    <div class="fishbowl br3">
+        {{- .Contents -}}
+    </div>
+</div>
+{{ end }}
