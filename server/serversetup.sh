@@ -264,6 +264,9 @@ if [ $checkpoint -lt 100 ]; then
     cp /home/hmn/hmn/server/root.Makefile /root/Makefile
 
     systemctl daemon-reload
+    systemctl enable caddy
+    systemctl enable hmn
+    systemctl enable cinera
     
     savecheckpoint 100
 fi
