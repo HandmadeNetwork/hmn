@@ -88,6 +88,7 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "How to design flexible software",
 		Description: "We previously held a fishbowl about how to design to avoid configuration. But when you can't avoid configuration, how do you do it well? And if we want our software to be flexible, what other options do we have besides configuration? What other ways are there to make software flexible?",
 		Month:       time.December, Year: 2021,
+		ContentsPath: "flexible-software/flexible-software.html",
 	},
 	{
 		Slug:        "oop",
