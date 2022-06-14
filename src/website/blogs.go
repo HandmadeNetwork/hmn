@@ -48,7 +48,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 	numPages := utils.NumPages(numThreads, postsPerPage)
 	page, ok := ParsePageNumber(c, "page", numPages)
 	if !ok {
-		c.Redirect(c.UrlContext.BuildBlog(page), http.StatusSeeOther)
+		return c.Redirect(c.UrlContext.BuildBlog(page), http.StatusSeeOther)
 	}
 
 	threads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{

@@ -67,7 +67,7 @@ func GetFullSubforumTree(ctx context.Context, conn *pgxpool.Pool) SubforumTree {
 	}
 
 	for _, cat := range subforums {
-		// NOTE(asaf): Doing this in a separate loop over rowsSlice to ensure that Children are in db order.
+		// NOTE(asaf): Doing this in a separate loop over subforums to ensure that Children are in db order.
 		node := sfTreeMap[cat.ID]
 		if node.Parent != nil {
 			node.Parent.Children = append(node.Parent.Children, node)

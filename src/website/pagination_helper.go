@@ -19,6 +19,7 @@ func ParsePageNumber(
 	paramName string,
 	numPages int,
 ) (page int, ok bool) {
+	page = 1
 	if pageString, hasPage := c.PathParams[paramName]; hasPage && pageString != "" {
 		if pageParsed, err := strconv.Atoi(pageString); err == nil {
 			page = pageParsed

@@ -103,7 +103,7 @@ func Forum(c *RequestContext) ResponseData {
 	numPages := utils.NumPages(numThreads, threadsPerPage)
 	page, ok := ParsePageNumber(c, "page", numPages)
 	if !ok {
-		c.Redirect(c.UrlContext.BuildForum(currentSubforumSlugs, page), http.StatusSeeOther)
+		return c.Redirect(c.UrlContext.BuildForum(currentSubforumSlugs, page), http.StatusSeeOther)
 	}
 	howManyThreadsToSkip := (page - 1) * threadsPerPage
 
@@ -332,8 +332,6 @@ func ForumThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID)
-
 	threads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
 		ThreadIDs:  []int{cd.ThreadID},
@@ -346,6 +344,12 @@ func ForumThread(c *RequestContext) ResponseData {
 	}
 	threadResult := threads[0]
 	thread := threadResult.Thread
+	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(*thread.SubforumID)
+
+	if *thread.SubforumID != cd.SubforumID {
+		correctThreadUrl := c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, 1)
+		return c.Redirect(correctThreadUrl, http.StatusSeeOther)
+	}
 
 	numPosts, err := hmndata.CountPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
@@ -466,11 +470,11 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 	page := (postIdx / threadPostsPerPage) + 1
 
 	return c.Redirect(c.UrlContext.BuildForumThreadWithPostHash(
-		cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID),
-		cd.ThreadID,
+		cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID),
+		post.Thread.ID,
 		post.Thread.Title,
 		page,
-		cd.PostID,
+		post.Post.ID,
 	), http.StatusSeeOther)
 }
 
@@ -567,9 +571,14 @@ func ForumPostReply(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post for reply"))
 	}
 
+	if *post.Thread.SubforumID != cd.SubforumID {
+		correctUrl := c.UrlContext.BuildForumPostReply(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID)
+		return c.Redirect(correctUrl, http.StatusSeeOther)
+	}
+
 	baseData := getBaseData(
 		c,
-		fmt.Sprintf("Replying to post | %s", cd.SubforumTree[cd.SubforumID].Name),
+		fmt.Sprintf("Replying to post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name),
 		ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread),
 	)
 
@@ -577,7 +586,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
 
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, &replyPost)
-	editData.SubmitUrl = c.UrlContext.BuildForumPostReply(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
+	editData.SubmitUrl = c.UrlContext.BuildForumPostReply(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID)
 	editData.SubmitLabel = "Submit Reply"
 
 	var res ResponseData
@@ -616,18 +625,18 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 
 	// Replies to the OP should not be considered replies
 	var replyPostId *int
-	if cd.PostID != post.Thread.FirstID {
-		replyPostId = &cd.PostID
+	if post.Post.ID != post.Thread.FirstID {
+		replyPostId = &post.Post.ID
 	}
 
-	newPostId, _ := hmndata.CreateNewPost(c.Context(), tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeForumPost, c.CurrentUser.ID, replyPostId, unparsed, c.Req.Host)
+	newPostId, _ := hmndata.CreateNewPost(c.Context(), tx, c.CurrentProject.ID, post.Thread.ID, models.ThreadTypeForumPost, c.CurrentUser.ID, replyPostId, unparsed, c.Req.Host)
 
 	err = tx.Commit(c.Context())
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to forum post"))
 	}
 
-	newPostUrl := c.UrlContext.BuildForumPost(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, newPostId)
+	newPostUrl := c.UrlContext.BuildForumPost(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, newPostId)
 	return c.Redirect(newPostUrl, http.StatusSeeOther)
 }
 
@@ -651,16 +660,21 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post for editing"))
 	}
 
+	if *post.Thread.SubforumID != cd.SubforumID {
+		correctUrl := c.UrlContext.BuildForumPostEdit(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID)
+		return c.Redirect(correctUrl, http.StatusSeeOther)
+	}
+
 	title := ""
 	if post.Thread.FirstID == post.Post.ID {
-		title = fmt.Sprintf("Editing \"%s\" | %s", post.Thread.Title, cd.SubforumTree[cd.SubforumID].Name)
+		title = fmt.Sprintf("Editing \"%s\" | %s", post.Thread.Title, cd.SubforumTree[*post.Thread.SubforumID].Name)
 	} else {
-		title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[cd.SubforumID].Name)
+		title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name)
 	}
 	baseData := getBaseData(c, title, ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread))
 
 	editData := getEditorDataForEdit(c.UrlContext, c.CurrentUser, baseData, post)
-	editData.SubmitUrl = c.UrlContext.BuildForumPostEdit(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
+	editData.SubmitUrl = c.UrlContext.BuildForumPostEdit(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID)
 	editData.SubmitLabel = "Submit Edited Post"
 
 	var res ResponseData
@@ -705,7 +719,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 		return RejectRequest(c, "You must provide a body for your post.")
 	}
 
-	hmndata.CreatePostVersion(c.Context(), tx, cd.PostID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
+	hmndata.CreatePostVersion(c.Context(), tx, post.Post.ID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
 
 	if title != "" {
 		_, err := tx.Exec(c.Context(),
@@ -725,7 +739,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit forum post"))
 	}
 
-	postUrl := c.UrlContext.BuildForumPost(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID)
+	postUrl := c.UrlContext.BuildForumPost(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID)
 	return c.Redirect(postUrl, http.StatusSeeOther)
 }
 
@@ -749,9 +763,14 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch post for delete"))
 	}
 
+	if *post.Thread.SubforumID != cd.SubforumID {
+		correctUrl := c.UrlContext.BuildForumPostDelete(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID)
+		return c.Redirect(correctUrl, http.StatusSeeOther)
+	}
+
 	baseData := getBaseData(
 		c,
-		fmt.Sprintf("Deleting post in \"%s\" | %s", post.Thread.Title, cd.SubforumTree[cd.SubforumID].Name),
+		fmt.Sprintf("Deleting post in \"%s\" | %s", post.Thread.Title, cd.SubforumTree[*post.Thread.SubforumID].Name),
 		ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread),
 	)
 
@@ -767,7 +786,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("forum_post_delete.html", forumPostDeleteData{
 		BaseData:  baseData,
-		SubmitUrl: c.UrlContext.BuildForumPostDelete(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), cd.ThreadID, cd.PostID),
+		SubmitUrl: c.UrlContext.BuildForumPostDelete(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID),
 		Post:      templatePost,
 	}, c.Perf)
 	return res
