@@ -30,11 +30,12 @@ func BlogIndex(c *RequestContext) ResponseData {
 		Posts      []blogIndexEntry
 		Pagination templates.Pagination
 
+		ShowContent   bool
 		CanCreatePost bool
 		NewPostUrl    string
 	}
 
-	const postsPerPage = 5
+	const postsPerPage = 20
 
 	numThreads, err := hmndata.CountThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
@@ -105,6 +106,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 			NextUrl:     c.UrlContext.BuildBlog(utils.IntClamp(1, page+1, numPages)),
 		},
 
+		ShowContent:   len(entries) <= 5,
 		CanCreatePost: canCreate,
 		NewPostUrl:    c.UrlContext.BuildBlogNewThread(),
 	}, c.Perf)
