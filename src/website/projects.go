@@ -226,30 +226,11 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetching project timeline")
-	type postQuery struct {
-		Post   models.Post   `db:"post"`
-		Thread models.Thread `db:"thread"`
-		Author models.User   `db:"author"`
-	}
-	posts, err := db.Query[postQuery](c.Context(), c.Conn,
-		`
-		SELECT $columns
-		FROM
-			post
-			INNER JOIN thread ON thread.id = post.thread_id
-			INNER JOIN hmn_user AS author ON author.id = post.author_id
-			LEFT JOIN asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
-		WHERE
-			post.project_id = $1
-		ORDER BY post.postdate DESC
-		LIMIT $2
-		`,
-		c.CurrentProject.ID,
-		maxRecentActivity,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project posts"))
-	}
+	posts, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
+		ProjectIDs:     []int{c.CurrentProject.ID},
+		Limit:          maxRecentActivity,
+		SortDescending: true,
+	})
 	c.Perf.EndBlock()
 
 	var templateData ProjectHomepageData
@@ -326,7 +307,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			lineageBuilder,
 			&post.Post,
 			&post.Thread,
-			&post.Author,
+			post.Author,
 			c.Theme,
 		))
 	}
