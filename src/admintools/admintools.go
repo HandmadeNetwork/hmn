@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/website"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 	"github.com/spf13/cobra"
 )
@@ -98,6 +100,117 @@ func init() {
 		},
 	}
 	adminCommand.AddCommand(activateUserCommand)
+
+	createUserCommand := &cobra.Command{
+		Use:   "createuser [username]",
+		Short: "Creates a new user and sets their status to 'Email confirmed'",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 1 {
+				fmt.Printf("You must provide a username.\n\n")
+				cmd.Usage()
+				os.Exit(1)
+			}
+
+			username := args[0]
+			password := "password"
+
+			ctx := context.Background()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
+
+			userAlreadyExists := true
+			_, err := db.QueryOneScalar[int](ctx, conn,
+				`
+				SELECT id
+				FROM hmn_user
+				WHERE LOWER(username) = LOWER($1)
+				`,
+				username,
+			)
+			if err != nil {
+				if errors.Is(err, db.NotFound) {
+					userAlreadyExists = false
+				} else {
+					panic(err)
+				}
+			}
+
+			if userAlreadyExists {
+				fmt.Printf("%s already exists. Please pick a different username.\n\n", username)
+				os.Exit(1)
+			}
+
+			email := uuid.New().String() + "@example.com"
+			hashedPassword := auth.HashPassword(password)
+
+			var newUserId int
+			err = conn.QueryRow(ctx,
+				`
+				INSERT INTO hmn_user (username, email, password, date_joined, registration_ip, status)
+				VALUES ($1, $2, $3, $4, $5, $6)
+				RETURNING id
+				`,
+				username,
+				email,
+				hashedPassword.String(),
+				time.Now(),
+				net.ParseIP("127.0.0.1"),
+				models.UserStatusConfirmed,
+			).Scan(&newUserId)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Printf("New user added!\nID: %d\nUsername: %s\nPassword: %s\n", newUserId, username, password)
+			fmt.Printf("You can change the user's status with the 'userstatus' command as follows:\n")
+			fmt.Printf("userstatus %s approved\n", username)
+			fmt.Printf("Or set the user as admin with the following command:\n")
+			fmt.Printf("usersetadmin %s true\n", username)
+		},
+	}
+	adminCommand.AddCommand(createUserCommand)
+
+	userSetAdminCommand := &cobra.Command{
+		Use:   "usersetadmin [username] [true/false]",
+		Short: "Toggle the user's admin privileges",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 2 {
+				fmt.Printf("You must provide a username and 'true' or 'false'.\n\n")
+				cmd.Usage()
+				os.Exit(1)
+			}
+
+			username := args[0]
+			toggleStr := args[1]
+			makeAdmin := false
+			if toggleStr == "true" {
+				makeAdmin = true
+			}
+
+			ctx := context.Background()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
+
+			res, err := conn.Exec(ctx,
+				`
+				UPDATE hmn_user
+				SET is_staff = $1
+				WHERE LOWER(username) = LOWER($2)
+				`,
+				makeAdmin,
+				username,
+			)
+			if err != nil {
+				panic(err)
+			}
+			if res.RowsAffected() == 0 {
+				fmt.Printf("User not found.\n\n")
+			} else {
+				fmt.Printf("Successfully set %s's is_staff to %v\n\n", username, makeAdmin)
+			}
+		},
+	}
+	adminCommand.AddCommand(userSetAdminCommand)
 
 	userStatusCommand := &cobra.Command{
 		Use:   "userstatus [username] [status]",
