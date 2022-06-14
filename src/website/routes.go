@@ -156,6 +156,7 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 		AddCORSHeaders(c, &res)
 		return res
 	})
+	routes.GET(hmnurl.RegexFishbowlFiles, FishbowlFiles)
 
 	// NOTE(asaf): HMN-only routes:
 	hmnOnly.GET(hmnurl.RegexManifesto, Manifesto)
@@ -224,7 +225,6 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 
 	hmnOnly.GET(hmnurl.RegexFishbowlIndex, FishbowlIndex)
 	hmnOnly.GET(hmnurl.RegexFishbowl, Fishbowl)
-	hmnOnly.GET(hmnurl.RegexFishbowlFiles, FishbowlFiles)
 
 	hmnOnly.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
 
