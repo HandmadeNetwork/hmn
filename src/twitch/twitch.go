@@ -14,6 +14,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -45,12 +46,6 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 		}()
 		log.Info().Msg("Running twitch monitor...")
 
-		err := refreshAccessToken(ctx)
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to fetch refresh token on start")
-			return
-		}
-
 		monitorTicker := time.NewTicker(2 * time.Hour)
 		firstRunChannel := make(chan struct{}, 1)
 		firstRunChannel <- struct{}{}
@@ -58,53 +53,67 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 		timers := make([]*time.Timer, 0)
 		expiredTimers := make(chan *time.Timer, 10)
 		for {
-			select {
-			case <-ctx.Done():
-				for _, timer := range timers {
-					timer.Stop()
-				}
-				return
-			case expired := <-expiredTimers:
-				for idx, timer := range timers {
-					if timer == expired {
-						timers = append(timers[:idx], timers[idx+1:]...)
-						break
+			done, err := func() (done bool, retErr error) {
+				defer utils.RecoverPanicAsError(&retErr)
+				select {
+				case <-ctx.Done():
+					for _, timer := range timers {
+						timer.Stop()
 					}
-				}
-			case <-firstRunChannel:
-				syncWithTwitch(ctx, dbConn, true)
-			case <-monitorTicker.C:
-				syncWithTwitch(ctx, dbConn, true)
-			case <-linksChangedChannel:
-				// NOTE(asaf): Since we update links inside transactions for users/projects
-				//             we won't see the updated list of links until the transaction is committed.
-				//             Waiting 5 seconds is just a quick workaround for that. It's not
-				//             convenient to only trigger this after the transaction is committed.
-				var timer *time.Timer
-				t := time.AfterFunc(5*time.Second, func() {
-					expiredTimers <- timer
-					syncWithTwitch(ctx, dbConn, false)
-				})
-				timer = t
-				timers = append(timers, t)
-			case notification := <-twitchNotificationChannel:
-				if notification.Type == notificationTypeRevocation {
-					syncWithTwitch(ctx, dbConn, false)
-				} else {
-					// NOTE(asaf): The twitch API (getStreamStatus) lags behind the notification and
-					//             would return old data if we called it immediately, so we process
-					//             the notification to the extent we can, and later do a full update. We can get the
-					//             category from the notification, but not the tags (or the up-to-date title),
-					//             so we can't really skip this.
+					return true, nil
+				case expired := <-expiredTimers:
+					for idx, timer := range timers {
+						if timer == expired {
+							timers = append(timers[:idx], timers[idx+1:]...)
+							break
+						}
+					}
+				case <-firstRunChannel:
+					err := refreshAccessToken(ctx)
+					if err != nil {
+						log.Error().Err(err).Msg("Failed to fetch refresh token on start")
+						return true, nil
+					}
+					syncWithTwitch(ctx, dbConn, true)
+				case <-monitorTicker.C:
+					syncWithTwitch(ctx, dbConn, true)
+				case <-linksChangedChannel:
+					// NOTE(asaf): Since we update links inside transactions for users/projects
+					//             we won't see the updated list of links until the transaction is committed.
+					//             Waiting 5 seconds is just a quick workaround for that. It's not
+					//             convenient to only trigger this after the transaction is committed.
 					var timer *time.Timer
-					t := time.AfterFunc(3*time.Minute, func() {
+					t := time.AfterFunc(5*time.Second, func() {
 						expiredTimers <- timer
-						updateStreamStatus(ctx, dbConn, notification.Status.TwitchID, notification.Status.TwitchLogin)
+						syncWithTwitch(ctx, dbConn, false)
 					})
 					timer = t
 					timers = append(timers, t)
-					processEventSubNotification(ctx, dbConn, &notification)
+				case notification := <-twitchNotificationChannel:
+					if notification.Type == notificationTypeRevocation {
+						syncWithTwitch(ctx, dbConn, false)
+					} else {
+						// NOTE(asaf): The twitch API (getStreamStatus) lags behind the notification and
+						//             would return old data if we called it immediately, so we process
+						//             the notification to the extent we can, and later do a full update. We can get the
+						//             category from the notification, but not the tags (or the up-to-date title),
+						//             so we can't really skip this.
+						var timer *time.Timer
+						t := time.AfterFunc(3*time.Minute, func() {
+							expiredTimers <- timer
+							updateStreamStatus(ctx, dbConn, notification.Status.TwitchID, notification.Status.TwitchLogin)
+						})
+						timer = t
+						timers = append(timers, t)
+						processEventSubNotification(ctx, dbConn, &notification)
+					}
 				}
+				return false, nil
+			}()
+			if err != nil {
+				log.Error().Err(err).Msg("Panicked in MonitorTwitchSubscriptions")
+			} else if done {
+				return
 			}
 		}
 	}()

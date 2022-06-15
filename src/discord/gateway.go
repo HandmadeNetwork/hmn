@@ -51,7 +51,8 @@ func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 			default:
 			}
 
-			func() {
+			err := func() (retErr error) {
+				defer utils.RecoverPanicAsError(&retErr)
 				log.Info().Msg("Connecting to the Discord gateway")
 				bot := newBotInstance(dbConn)
 				err := bot.Run(ctx)
@@ -84,7 +85,11 @@ func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 				time.Sleep(delay)
 
 				boff.Reset()
+				return nil
 			}()
+			if err != nil {
+				log.Error().Err(err).Msg("Panicked in RunDiscordBot")
+			}
 		}
 	}()
 	return job

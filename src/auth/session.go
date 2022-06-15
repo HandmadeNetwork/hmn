@@ -15,6 +15,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -142,13 +143,20 @@ func PeriodicallyDeleteExpiredSessions(ctx context.Context, conn *pgxpool.Pool) 
 		for {
 			select {
 			case <-t.C:
-				n, err := DeleteExpiredSessions(ctx, conn)
-				if err == nil {
-					if n > 0 {
-						logging.Info().Int64("num deleted sessions", n).Msg("Deleted expired sessions")
+				err := func() (err error) {
+					defer utils.RecoverPanicAsError(&err)
+					n, err := DeleteExpiredSessions(ctx, conn)
+					if err == nil {
+						if n > 0 {
+							logging.Info().Int64("num deleted sessions", n).Msg("Deleted expired sessions")
+						}
+					} else {
+						logging.Error().Err(err).Msg("Failed to delete expired sessions")
 					}
-				} else {
-					logging.Error().Err(err).Msg("Failed to delete expired sessions")
+					return nil
+				}()
+				if err != nil {
+					logging.Error().Err(err).Msg("Panicked in PeriodicallyDeleteExpiredSessions")
 				}
 			case <-ctx.Done():
 				return

@@ -10,6 +10,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/jobs"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
@@ -52,16 +53,25 @@ func RunHistoryWatcher(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 		}
 
 		for {
-			select {
-			case <-ctx.Done():
+			done, err := func() (done bool, err error) {
+				defer utils.RecoverPanicAsError(&err)
+				select {
+				case <-ctx.Done():
+					return true, nil
+				case <-newUserTicker.C:
+					// Get content for messages when a user links their account (but do not create snippets)
+					fetchMissingContent(ctx, dbConn)
+				case <-backfillFirstRun:
+					runBackfill()
+				case <-backfillTicker.C:
+					runBackfill()
+				}
+				return false, nil
+			}()
+			if err != nil {
+				log.Error().Err(err).Msg("Panicked in RunHistoryWatcher")
+			} else if done {
 				return
-			case <-newUserTicker.C:
-				// Get content for messages when a user links their account (but do not create snippets)
-				fetchMissingContent(ctx, dbConn)
-			case <-backfillFirstRun:
-				runBackfill()
-			case <-backfillTicker.C:
-				runBackfill()
 			}
 		}
 	}()

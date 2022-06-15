@@ -18,6 +18,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/utils"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/crypto/argon2"
@@ -244,22 +245,29 @@ func PeriodicallyDeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) jo
 		for {
 			select {
 			case <-t.C:
-				n, err := DeleteInactiveUsers(ctx, conn)
-				if err == nil {
-					if n > 0 {
-						logging.Info().Int64("num deleted users", n).Msg("Deleted inactive users")
+				err := func() (err error) {
+					defer utils.RecoverPanicAsError(&err)
+					n, err := DeleteInactiveUsers(ctx, conn)
+					if err == nil {
+						if n > 0 {
+							logging.Info().Int64("num deleted users", n).Msg("Deleted inactive users")
+						}
+					} else {
+						logging.Error().Err(err).Msg("Failed to delete inactive users")
 					}
-				} else {
-					logging.Error().Err(err).Msg("Failed to delete inactive users")
-				}
 
-				n, err = DeleteExpiredPasswordResets(ctx, conn)
-				if err == nil {
-					if n > 0 {
-						logging.Info().Int64("num deleted password resets", n).Msg("Deleted expired password resets")
+					n, err = DeleteExpiredPasswordResets(ctx, conn)
+					if err == nil {
+						if n > 0 {
+							logging.Info().Int64("num deleted password resets", n).Msg("Deleted expired password resets")
+						}
+					} else {
+						logging.Error().Err(err).Msg("Failed to delete expired password resets")
 					}
-				} else {
-					logging.Error().Err(err).Msg("Failed to delete expired password resets")
+					return nil
+				}()
+				if err != nil {
+					logging.Error().Err(err).Msg("Panicked in PeriodicallyDeleteInactiveUsers")
 				}
 			case <-ctx.Done():
 				return
