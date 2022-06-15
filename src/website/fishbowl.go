@@ -82,6 +82,7 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "How software development is taught",
 		Description: "The Handmade Network exists because we are unhappy with the software status quo. To a large extent, this is because of how software development is taught. What are the good parts of software education today, what are the flaws, and how might we change things to improve the state of software?",
 		Month:       time.June, Year: 2021,
+		ContentsPath: "teaching-software/teaching-software.html",
 	},
 	{
 		Slug:        "flexible-software",
