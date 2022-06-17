@@ -62,6 +62,10 @@ func Int64Max(a, b int64) int64 {
 	return b
 }
 
+func DurationRoundUp(d time.Duration, interval time.Duration) time.Duration {
+	return (d + interval - 1).Truncate(interval)
+}
+
 func NumPages(numThings, thingsPerPage int) int {
 	return IntMax(int(math.Ceil(float64(numThings)/float64(thingsPerPage))), 1)
 }

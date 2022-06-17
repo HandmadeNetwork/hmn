@@ -56,6 +56,8 @@ func BuildJamIndex() string {
 	return Url("/jam", nil)
 }
 
+var RegexJamIndex2021 = regexp.MustCompile("^/jam/2021")
+
 // QUESTION(ben): Can we change these routes?
 
 var RegexLoginAction = regexp.MustCompile("^/login$")
