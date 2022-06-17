@@ -8,15 +8,46 @@ import (
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-func JamIndex(c *RequestContext) ResponseData {
+func JamIndex2022(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	jamStartTime := time.Date(2022, 8, 15, 0, 0, 0, 0, time.UTC)
+	jamEndTime := time.Date(2022, 8, 22, 0, 0, 0, 0, time.UTC)
+	daysUntilStart := daysUntil(jamStartTime)
+	daysUntilEnd := daysUntil(jamEndTime)
+
+	baseData := getBaseDataAutocrumb(c, "Wheel Reinvention Jam 2022")
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:site_name", Value: "Handmade.Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam/opengraph.png", true)}, // TODO: New OG assets
+		{Property: "og:description", Value: "A one-week jam to bring a fresh perspective to old ideas. August 15 - 21 on Handmade Network."},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
+	}
+
+	type JamPageData struct {
+		templates.BaseData
+		DaysUntilStart, DaysUntilEnd int
+	}
+
+	res.MustWriteTemplate("wheeljam_2022_index.html", JamPageData{
+		BaseData:       baseData,
+		DaysUntilStart: daysUntilStart,
+		DaysUntilEnd:   daysUntilEnd,
+	}, c.Perf)
+	return res
+}
+
+func JamIndex2021(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jamStartTime := time.Date(2021, 9, 27, 0, 0, 0, 0, time.UTC)
-	daysUntil := jamStartTime.YearDay() - time.Now().UTC().YearDay()
-	if daysUntil < 0 {
-		daysUntil = 0
+	daysUntilJam := daysUntil(jamStartTime)
+	if daysUntilJam < 0 {
+		daysUntilJam = 0
 	}
 
 	tagId := -1
@@ -63,10 +94,18 @@ func JamIndex(c *RequestContext) ResponseData {
 		ShowcaseItemsJSON string
 	}
 
-	res.MustWriteTemplate("wheeljam_index.html", JamPageData{
+	res.MustWriteTemplate("wheeljam_2021_index.html", JamPageData{
 		BaseData:          baseData,
-		DaysUntil:         daysUntil,
+		DaysUntil:         daysUntilJam,
 		ShowcaseItemsJSON: showcaseJson,
 	}, c.Perf)
 	return res
+}
+
+func daysUntil(t time.Time) int {
+	d := t.Sub(time.Now())
+	if d < 0 {
+		d = 0
+	}
+	return int(utils.DurationRoundUp(d, 24*time.Hour) / (24 * time.Hour))
 }

@@ -166,7 +166,8 @@ func NewWebsiteRoutes(longRequestContext context.Context, conn *pgxpool.Pool) ht
 	hmnOnly.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
 	hmnOnly.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
 	hmnOnly.GET(hmnurl.RegexWhenIsIt, WhenIsIt)
-	hmnOnly.GET(hmnurl.RegexJamIndex, JamIndex)
+	hmnOnly.GET(hmnurl.RegexJamIndex, JamIndex2022)
+	hmnOnly.GET(hmnurl.RegexJamIndex2021, JamIndex2021)
 
 	hmnOnly.GET(hmnurl.RegexOldHome, Index)
 
