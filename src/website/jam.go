@@ -24,8 +24,8 @@ func JamIndex2022(c *RequestContext) ResponseData {
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade.Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam/opengraph.png", true)}, // TODO: New OG assets
-		{Property: "og:description", Value: "A one-week jam to bring a fresh perspective to old ideas. August 15 - 21 on Handmade Network."},
+		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2022/opengraph.png", true)},
+		{Property: "og:description", Value: "A one-week jam to change the status quo. August 15 - 21 on Handmade Network."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
 	}
 
@@ -91,7 +91,7 @@ func JamIndex2021(c *RequestContext) ResponseData {
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade.Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam/opengraph.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2021/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to bring a fresh perspective to old ideas. September 27 - October 3 on Handmade Network."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
 	}

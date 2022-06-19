@@ -76,6 +76,7 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "The relationship of simplicity and performance",
 		Description: "In the community, we talk a lot about performance. We also talk a lot about having simple code—and the two feel somewhat intertwined. What relationship is there between simplicity and performance? Are there better ways to reason about \"simplicity\" with this in mind?",
 		Month:       time.May, Year: 2021,
+		ContentsPath: "simplicity-performance/simplicity-performance.html",
 	},
 	{
 		Slug:        "teaching-software",
