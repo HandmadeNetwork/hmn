@@ -20,7 +20,7 @@
 		{{ if .Editing }}
 			<h1>Edit {{ .ProjectSettings.Name }}</h1>
 		{{ else }}
-			<h1>Create a new project</h1>
+			<h1>Create a new {{ if .ProjectSettings.JamParticipation }}jam {{ end }}project</h1>
 		{{ end }}
 		<form id="project_form" class="tabbed edit-form" method="POST" enctype="multipart/form-data">
 			{{ csrftoken .Session }}
@@ -81,6 +81,20 @@
 						<div class="c--dim f7" id="tag-discord-info">If you have linked your Discord account, any #project-showcase messages with the tag "&amp;<span id="tag-preview"></span>" will automatically be associated with this project.</div>
 					</div>
 				</div>
+				{{ if .ProjectSettings.JamParticipation }}
+					<div class="edit-form-row">
+						<div class="pt-input-ns">Jam Participation</div>
+					</div>
+					{{ range .ProjectSettings.JamParticipation }}
+						<div class="edit-form-row">
+							<div>{{ .JamName }}:</div>
+							<div>
+								<input id="jam_{{ .JamSlug }}" type="checkbox" name="jam_participation" value="{{ .JamSlug }}" {{ if .Participating }}checked{{ end }} />
+								<label for="jam_{{ .JamSlug }}">Participating</label>
+							</div>
+						</div>
+					{{ end }}
+				{{ end }}
 				{{ if and .Editing .User.IsStaff }}
 					<div class="edit-form-row">
 						<div class="pt-input-ns">Admin settings</div>

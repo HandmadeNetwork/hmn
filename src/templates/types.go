@@ -138,13 +138,14 @@ type Project struct {
 }
 
 type ProjectSettings struct {
-	Name      string
-	Slug      string
-	Hidden    bool
-	Featured  bool
-	Personal  bool
-	Lifecycle string
-	Tag       string
+	Name             string
+	Slug             string
+	Hidden           bool
+	Featured         bool
+	Personal         bool
+	Lifecycle        string
+	Tag              string
+	JamParticipation []ProjectJamParticipation
 
 	Blurb       string
 	Description string
@@ -153,6 +154,12 @@ type ProjectSettings struct {
 
 	LightLogo string
 	DarkLogo  string
+}
+
+type ProjectJamParticipation struct {
+	JamName       string
+	JamSlug       string
+	Participating bool
 }
 
 type User struct {

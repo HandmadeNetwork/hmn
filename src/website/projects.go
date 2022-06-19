@@ -378,6 +378,21 @@ func ProjectNew(c *RequestContext) ResponseData {
 	var project templates.ProjectSettings
 	project.Owners = append(project.Owners, templates.UserToTemplate(c.CurrentUser, c.Theme))
 	project.Personal = true
+
+	var currentJam *hmndata.Jam
+	if c.Req.URL.Query().Has("jam") {
+		currentJam = hmndata.CurrentJam()
+		if currentJam != nil {
+			project.JamParticipation = []templates.ProjectJamParticipation{
+				templates.ProjectJamParticipation{
+					JamName:       currentJam.Name,
+					JamSlug:       currentJam.Slug,
+					Participating: true,
+				},
+			}
+		}
+	}
+
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
 		BaseData:        getBaseDataAutocrumb(c, "New Project"),
@@ -489,6 +504,13 @@ func ProjectEdit(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
+	c.Perf.StartBlock("SQL", "Fetching project jams")
+	projectJams, err := hmndata.FetchJamsForProject(c.Context(), c.Conn, c.CurrentUser, p.Project.ID)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jams for project"))
+	}
+	c.Perf.EndBlock()
+
 	lightLogoUrl := templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, "light")
 	darkLogoUrl := templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, "dark")
 
@@ -501,6 +523,15 @@ func ProjectEdit(c *RequestContext) ResponseData {
 	)
 
 	projectSettings.LinksText = LinksToText(projectLinks)
+
+	projectSettings.JamParticipation = make([]templates.ProjectJamParticipation, 0, len(projectJams))
+	for _, jam := range projectJams {
+		projectSettings.JamParticipation = append(projectSettings.JamParticipation, templates.ProjectJamParticipation{
+			JamName:       jam.JamName,
+			JamSlug:       jam.JamSlug,
+			Participating: jam.Participating,
+		})
+	}
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
@@ -553,18 +584,19 @@ func ProjectEditSubmit(c *RequestContext) ResponseData {
 }
 
 type ProjectPayload struct {
-	ProjectID         int
-	Name              string
-	Blurb             string
-	Links             []ParsedLink
-	Description       string
-	ParsedDescription string
-	Lifecycle         models.ProjectLifecycle
-	Hidden            bool
-	OwnerUsernames    []string
-	LightLogo         FormImage
-	DarkLogo          FormImage
-	Tag               string
+	ProjectID             int
+	Name                  string
+	Blurb                 string
+	Links                 []ParsedLink
+	Description           string
+	ParsedDescription     string
+	Lifecycle             models.ProjectLifecycle
+	Hidden                bool
+	OwnerUsernames        []string
+	LightLogo             FormImage
+	DarkLogo              FormImage
+	Tag                   string
+	JamParticipationSlugs []string
 
 	Slug     string
 	Featured bool
@@ -647,21 +679,24 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		return res
 	}
 
+	jamParticipationSlugs := c.Req.Form["jam_participation"]
+
 	res.Payload = ProjectPayload{
-		Name:              projectName,
-		Blurb:             shortDesc,
-		Links:             links,
-		Description:       description,
-		ParsedDescription: parsedDescription,
-		Lifecycle:         lifecycle,
-		Hidden:            hidden,
-		OwnerUsernames:    owners,
-		LightLogo:         lightLogo,
-		DarkLogo:          darkLogo,
-		Tag:               tag,
-		Slug:              slug,
-		Personal:          !official,
-		Featured:          featured,
+		Name:                  projectName,
+		Blurb:                 shortDesc,
+		Links:                 links,
+		Description:           description,
+		ParsedDescription:     parsedDescription,
+		Lifecycle:             lifecycle,
+		Hidden:                hidden,
+		OwnerUsernames:        owners,
+		LightLogo:             lightLogo,
+		DarkLogo:              darkLogo,
+		Tag:                   tag,
+		JamParticipationSlugs: jamParticipationSlugs,
+		Slug:                  slug,
+		Personal:              !official,
+		Featured:              featured,
 	}
 
 	return res
@@ -859,6 +894,70 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	twitchLoginsPostChange, postErr := hmndata.FetchTwitchLoginsForUserOrProject(ctx, tx, nil, &payload.ProjectID)
 	if preErr == nil && postErr == nil {
 		twitch.UserOrProjectLinksUpdated(twitchLoginsPreChange, twitchLoginsPostChange)
+	}
+
+	// NOTE(asaf): Regular users can only edit the jam participation status of the current jam or
+	//             jams the project was previously a part of.
+	var possibleJamSlugs []string
+	if user.IsStaff {
+		possibleJamSlugs = make([]string, 0, len(hmndata.AllJams))
+		for _, jam := range hmndata.AllJams {
+			possibleJamSlugs = append(possibleJamSlugs, jam.Slug)
+		}
+	} else {
+		possibleJamSlugs, err = db.QueryScalar[string](ctx, tx,
+			`
+			SELECT jam_slug
+			FROM jam_project
+			WHERE project_id = $1
+			`,
+			payload.ProjectID,
+		)
+		if err != nil {
+			return oops.New(err, "Failed to fetch jam participation for project")
+		}
+		currentJam := hmndata.CurrentJam()
+		if currentJam != nil {
+			possibleJamSlugs = append(possibleJamSlugs, currentJam.Slug)
+		}
+	}
+
+	_, err = tx.Exec(ctx,
+		`
+		UPDATE jam_project
+		SET participating = FALSE
+		WHERE project_id = $1
+		`,
+		payload.ProjectID,
+	)
+	if err != nil {
+		return oops.New(err, "Failed to remove jam participation for project")
+	}
+
+	for _, jamSlug := range payload.JamParticipationSlugs {
+		found := false
+		for _, possibleSlug := range possibleJamSlugs {
+			if possibleSlug == jamSlug {
+				found = true
+				break
+			}
+		}
+		if found {
+			_, err = tx.Exec(ctx,
+				`
+				INSERT INTO jam_project (project_id, jam_slug, participating)
+				VALUES ($1, $2, $3)
+				ON CONFLICT (project_id, jam_slug) DO UPDATE SET
+					participating = EXCLUDED.participating
+				`,
+				payload.ProjectID,
+				jamSlug,
+				true,
+			)
+			if err != nil {
+				return oops.New(err, "Failed to insert/update jam participation for project")
+			}
+		}
 	}
 
 	return nil

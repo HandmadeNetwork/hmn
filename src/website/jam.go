@@ -14,12 +14,13 @@ import (
 func JamIndex2022(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	jamStartTime := time.Date(2022, 8, 15, 0, 0, 0, 0, time.UTC)
-	jamEndTime := time.Date(2022, 8, 22, 0, 0, 0, 0, time.UTC)
-	daysUntilStart := daysUntil(jamStartTime)
-	daysUntilEnd := daysUntil(jamEndTime)
+	// If logged in, fetch jam project
+	// Link to project page if found, otherwise link to project creation page with ?jam=1
 
-	baseData := getBaseDataAutocrumb(c, "Wheel Reinvention Jam 2022")
+	daysUntilStart := daysUntil(hmndata.WRJ2022.StartTime)
+	daysUntilEnd := daysUntil(hmndata.WRJ2022.EndTime)
+
+	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2022.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade.Network"},
 		{Property: "og:type", Value: "website"},
@@ -41,11 +42,18 @@ func JamIndex2022(c *RequestContext) ResponseData {
 	return res
 }
 
+func JamFeed2022(c *RequestContext) ResponseData {
+	// List newly-created jam projects
+	// list snippets from jam projects
+	// list forum posts from jam project threads
+	// timeline everything
+	return FourOhFour(c)
+}
+
 func JamIndex2021(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	jamStartTime := time.Date(2021, 9, 27, 0, 0, 0, 0, time.UTC)
-	daysUntilJam := daysUntil(jamStartTime)
+	daysUntilJam := daysUntil(hmndata.WRJ2021.StartTime)
 	if daysUntilJam < 0 {
 		daysUntilJam = 0
 	}
@@ -79,7 +87,7 @@ func JamIndex2021(c *RequestContext) ResponseData {
 	showcaseJson := templates.TimelineItemsToJSON(showcaseItems)
 	c.Perf.EndBlock()
 
-	baseData := getBaseDataAutocrumb(c, "Wheel Reinvention Jam")
+	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2021.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade.Network"},
 		{Property: "og:type", Value: "website"},

@@ -56,7 +56,26 @@ func BuildJamIndex() string {
 	return Url("/jam", nil)
 }
 
-var RegexJamIndex2021 = regexp.MustCompile("^/jam/2021")
+var RegexJamIndex2021 = regexp.MustCompile("^/jam/2021$")
+
+func BuildJamIndex2021() string {
+	defer CatchPanic()
+	return Url("/jam/2021", nil)
+}
+
+var RegexJamIndex2022 = regexp.MustCompile("^/jam/2022$")
+
+func BuildJamIndex2022() string {
+	defer CatchPanic()
+	return Url("/jam/2022", nil)
+}
+
+var RegexJamFeed2022 = regexp.MustCompile("^/jam/2022/feed$")
+
+func BuildJamFeed2022() string {
+	defer CatchPanic()
+	return Url("/jam/2022/feed", nil)
+}
 
 // QUESTION(ben): Can we change these routes?
 
