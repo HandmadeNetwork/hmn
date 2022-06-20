@@ -70,6 +70,7 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "How to design to avoid configuration",
 		Description: `Configuration sucks. How can we avoid it, while still making software that supports a wide range of behaviors? What is the essence of "configuration", and how can we identify it? How can we identify what is "bad config", and design our software to avoid it?`,
 		Month:       time.March, Year: 2021,
+		ContentsPath: "config/config.html",
 	},
 	{
 		Slug:        "simplicity-performance",
