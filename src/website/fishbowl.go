@@ -64,6 +64,7 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "Code skimmability as the root cause for bad code structure decisions", // real snappy, this one
 		Description: `Programmers tend to care a lot about "readability". This usually means having small classes, small functions, small files. This code might be "readable" at a glance, but this doesn't really help you understand the program—it's just "skimmable". How can we think about "readability" in a more productive way?`,
 		Month:       time.January, Year: 2021,
+		ContentsPath: "skimming/skimming.html",
 	},
 	{
 		Slug:        "config",
