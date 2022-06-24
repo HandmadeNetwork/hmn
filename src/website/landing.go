@@ -34,13 +34,13 @@ type LandingTemplateData struct {
 
 func Index(c *RequestContext) ResponseData {
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
 	var timelineItems []templates.TimelineItem
 
-	numPosts, err := hmndata.CountPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
+	numPosts, err := hmndata.CountPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ThreadTypes: feedThreadTypes,
 	})
 	if err != nil {
@@ -65,7 +65,7 @@ func Index(c *RequestContext) ResponseData {
 	}
 
 	// This is essentially an alternate for feed page 1.
-	posts, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
+	posts, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ThreadTypes:    feedThreadTypes,
 		Limit:          feedPostsPerPage,
 		SortDescending: true,
@@ -84,7 +84,7 @@ func Index(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Get news")
-	newsThreads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+	newsThreads, err := hmndata.FetchThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{models.HMNProjectID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 		Limit:       1,
@@ -106,7 +106,7 @@ func Index(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		Limit: 40,
 	})
 	if err != nil {

@@ -16,7 +16,7 @@ type ShowcaseData struct {
 }
 
 func Showcase(c *RequestContext) ResponseData {
-	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{})
+	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
 	}

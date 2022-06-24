@@ -33,14 +33,13 @@ var WebsiteCommand = &cobra.Command{
 		logging.Info().Msg("Hello, HMN!")
 
 		backgroundJobContext, cancelBackgroundJobs := context.WithCancel(context.Background())
-		longRequestContext, cancelLongRequests := context.WithCancel(context.Background())
 
 		conn := db.NewConnPool()
 		perfCollector := perf.RunPerfCollector(backgroundJobContext)
 
 		server := http.Server{
 			Addr:    config.Config.Addr,
-			Handler: NewWebsiteRoutes(longRequestContext, conn),
+			Handler: NewWebsiteRoutes(conn),
 		}
 
 		backgroundJobsDone := jobs.Zip(
@@ -59,8 +58,6 @@ var WebsiteCommand = &cobra.Command{
 			<-signals
 			logging.Info().Msg("Shutting down the website")
 			go func() {
-				logging.Info().Msg("cancelling long requests")
-				cancelLongRequests()
 				timeout, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				defer cancel()
 				logging.Info().Msg("shutting down web server")

@@ -35,31 +35,31 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 			// This occurs when the user cancels. Just go back to the profile page.
 			return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)
 		} else {
-			return RejectRequest(c, "Failed to authenticate with Discord.")
+			return c.RejectRequest("Failed to authenticate with Discord.")
 		}
 	}
 
 	// Do the actual token exchange
 	code := query.Get("code")
-	res, err := discord.ExchangeOAuthCode(c.Context(), code, hmnurl.BuildDiscordOAuthCallback())
+	res, err := discord.ExchangeOAuthCode(c, code, hmnurl.BuildDiscordOAuthCallback())
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to exchange Discord authorization code"))
 	}
 	expiry := time.Now().Add(time.Duration(res.ExpiresIn) * time.Second)
 
-	user, err := discord.GetCurrentUserAsOAuth(c.Context(), res.AccessToken)
+	user, err := discord.GetCurrentUserAsOAuth(c, res.AccessToken)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch Discord user info"))
 	}
 
 	// Add the role on Discord
-	err = discord.AddGuildMemberRole(c.Context(), user.ID, config.Config.Discord.MemberRoleID)
+	err = discord.AddGuildMemberRole(c, user.ID, config.Config.Discord.MemberRoleID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to add member role"))
 	}
 
 	// Add the user to our database
-	_, err = c.Conn.Exec(c.Context(),
+	_, err = c.Conn.Exec(c,
 		`
 		INSERT INTO discord_user (username, discriminator, access_token, refresh_token, avatar, locale, userid, expiry, hmn_user_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -79,7 +79,7 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 	}
 
 	if c.CurrentUser.Status == models.UserStatusConfirmed {
-		_, err = c.Conn.Exec(c.Context(),
+		_, err = c.Conn.Exec(c,
 			`
 			UPDATE hmn_user
 			SET status = $1
@@ -98,13 +98,13 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 }
 
 func DiscordUnlink(c *RequestContext) ResponseData {
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
-	discordUser, err := db.QueryOne[models.DiscordUser](c.Context(), tx,
+	discordUser, err := db.QueryOne[models.DiscordUser](c, tx,
 		`
 		SELECT $columns
 		FROM discord_user
@@ -120,7 +120,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 		}
 	}
 
-	_, err = tx.Exec(c.Context(),
+	_, err = tx.Exec(c,
 		`
 		DELETE FROM discord_user
 		WHERE id = $1
@@ -131,12 +131,12 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete Discord user"))
 	}
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit Discord user delete"))
 	}
 
-	err = discord.RemoveGuildMemberRole(c.Context(), discordUser.UserID, config.Config.Discord.MemberRoleID)
+	err = discord.RemoveGuildMemberRole(c, discordUser.UserID, config.Config.Discord.MemberRoleID)
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to remove member role on unlink")
 	}
@@ -145,7 +145,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 }
 
 func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
-	duser, err := db.QueryOne[models.DiscordUser](c.Context(), c.Conn,
+	duser, err := db.QueryOne[models.DiscordUser](c, c.Conn,
 		`SELECT $columns FROM discord_user WHERE hmn_user_id = $1`,
 		c.CurrentUser.ID,
 	)
@@ -157,7 +157,7 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get discord user"))
 	}
 
-	msgIDs, err := db.QueryScalar[string](c.Context(), c.Conn,
+	msgIDs, err := db.QueryScalar[string](c, c.Conn,
 		`
 		SELECT msg.id
 		FROM
@@ -174,12 +174,12 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 	}
 
 	for _, msgID := range msgIDs {
-		interned, err := discord.FetchInternedMessage(c.Context(), c.Conn, msgID)
+		interned, err := discord.FetchInternedMessage(c, c.Conn, msgID)
 		if err != nil && !errors.Is(err, db.NotFound) {
 			return c.ErrorResponse(http.StatusInternalServerError, err)
 		} else if err == nil {
 			// NOTE(asaf): Creating snippet even if the checkbox is off because the user asked us to.
-			err = discord.HandleSnippetForInternedMessage(c.Context(), c.Conn, interned, true)
+			err = discord.HandleSnippetForInternedMessage(c, c.Conn, interned, true)
 			if err != nil {
 				return c.ErrorResponse(http.StatusInternalServerError, err)
 			}

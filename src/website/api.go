@@ -19,7 +19,7 @@ func APICheckUsername(c *RequestContext) ResponseData {
 		requestedUsername := usernameArgs[0]
 		found = true
 		c.Perf.StartBlock("SQL", "Fetch user")
-		user, err := db.QueryOne[models.User](c.Context(), c.Conn,
+		user, err := db.QueryOne[models.User](c, c.Conn,
 			`
 			SELECT $columns
 			FROM
@@ -45,7 +45,7 @@ func APICheckUsername(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.Header().Set("Content-Type", "application/json")
-	AddCORSHeaders(c, &res)
+	addCORSHeaders(c, &res)
 	if found {
 		res.Write([]byte(fmt.Sprintf(`{ "found": true, "canonical": "%s" }`, canonicalUsername)))
 	} else {

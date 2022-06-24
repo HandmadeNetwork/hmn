@@ -70,7 +70,7 @@ func TwitchEventSubCallback(c *RequestContext) ResponseData {
 }
 
 func TwitchDebugPage(c *RequestContext) ResponseData {
-	streams, err := db.Query[models.TwitchStream](c.Context(), c.Conn,
+	streams, err := db.Query[models.TwitchStream](c, c.Conn,
 		`
 		SELECT $columns
 		FROM

@@ -26,10 +26,51 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
+	"github.com/teacat/noire"
 )
 
 const maxPersonalProjects = 5
 const maxProjectOwners = 5
+
+func ProjectCSS(c *RequestContext) ResponseData {
+	color := c.URL().Query().Get("color")
+	if color == "" {
+		return c.ErrorResponse(http.StatusBadRequest, NewSafeError(nil, "You must provide a 'color' parameter.\n"))
+	}
+
+	baseData := getBaseData(c, "", nil)
+
+	bgColor := noire.NewHex(color)
+	h, s, l := bgColor.HSL()
+	if baseData.Theme == "dark" {
+		l = 15
+	} else {
+		l = 95
+	}
+	if s > 20 {
+		s = 20
+	}
+	bgColor = noire.NewHSL(h, s, l)
+
+	templateData := struct {
+		templates.BaseData
+		Color       string
+		PostBgColor string
+	}{
+		BaseData:    baseData,
+		Color:       color,
+		PostBgColor: bgColor.HTML(),
+	}
+
+	var res ResponseData
+	res.Header().Add("Content-Type", "text/css")
+	err := res.WriteTemplate("project.css", templateData, c.Perf)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to generate project CSS"))
+	}
+
+	return res
+}
 
 type ProjectTemplateData struct {
 	templates.BaseData
@@ -48,7 +89,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	const maxCarouselProjects = 10
 	const maxPersonalProjects = 10
 
-	officialProjects, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+	officialProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 		Types: hmndata.OfficialProjects,
 	})
 	if err != nil {
@@ -123,7 +164,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	// Fetch and highlight a random selection of personal projects
 	var personalProjects []templates.Project
 	{
-		projects, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 			Types: hmndata.PersonalProjects,
 		})
 		if err != nil {
@@ -181,13 +222,13 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	// There are no further permission checks to do, because permissions are
 	// checked whatever way we fetch the project.
 
-	owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
+	owners, err := hmndata.FetchProjectOwners(c, c.Conn, c.CurrentProject.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	c.Perf.StartBlock("SQL", "Fetching screenshots")
-	screenshotFilenames, err := db.QueryScalar[string](c.Context(), c.Conn,
+	screenshotFilenames, err := db.QueryScalar[string](c, c.Conn,
 		`
 		SELECT screenshot.file
 		FROM
@@ -204,7 +245,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetching project links")
-	projectLinks, err := db.Query[models.Link](c.Context(), c.Conn,
+	projectLinks, err := db.Query[models.Link](c, c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -221,12 +262,12 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetching project timeline")
-	posts, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
+	posts, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ProjectIDs:     []int{c.CurrentProject.ID},
 		Limit:          maxRecentActivity,
 		SortDescending: true,
@@ -241,7 +282,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		Value:    c.CurrentProject.Blurb,
 	})
 
-	p, err := hmndata.FetchProject(c.Context(), c.Conn, c.CurrentUser, c.CurrentProject.ID, hmndata.ProjectsQuery{
+	p, err := hmndata.FetchProject(c, c.Conn, c.CurrentUser, c.CurrentProject.ID, hmndata.ProjectsQuery{
 		Lifecycles:    models.AllProjectLifecycles,
 		IncludeHidden: true,
 	})
@@ -317,7 +358,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		tagId = *c.CurrentProject.TagID
 	}
 
-	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		Tags: []int{tagId},
 	})
 	if err != nil {
@@ -364,7 +405,7 @@ type ProjectEditData struct {
 }
 
 func ProjectNew(c *RequestContext) ResponseData {
-	numProjects, err := hmndata.CountProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+	numProjects, err := hmndata.CountProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 		OwnerIDs: []int{c.CurrentUser.ID},
 		Types:    hmndata.PersonalProjects,
 	})
@@ -372,7 +413,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check number of personal projects"))
 	}
 	if numProjects >= maxPersonalProjects {
-		return RejectRequest(c, fmt.Sprintf("You have already reached the maximum of %d personal projects.", maxPersonalProjects))
+		return c.RejectRequest(fmt.Sprintf("You have already reached the maximum of %d personal projects.", maxPersonalProjects))
 	}
 
 	var project templates.ProjectSettings
@@ -397,16 +438,16 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, formResult.Error)
 	}
 	if len(formResult.RejectionReason) != 0 {
-		return RejectRequest(c, formResult.RejectionReason)
+		return c.RejectRequest(formResult.RejectionReason)
 	}
 
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to start db transaction"))
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
-	numProjects, err := hmndata.CountProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+	numProjects, err := hmndata.CountProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 		OwnerIDs: []int{c.CurrentUser.ID},
 		Types:    hmndata.PersonalProjects,
 	})
@@ -414,11 +455,11 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check number of personal projects"))
 	}
 	if numProjects >= maxPersonalProjects {
-		return RejectRequest(c, fmt.Sprintf("You have already reached the maximum of %d personal projects.", maxPersonalProjects))
+		return c.RejectRequest(fmt.Sprintf("You have already reached the maximum of %d personal projects.", maxPersonalProjects))
 	}
 
 	var projectId int
-	err = tx.QueryRow(c.Context(),
+	err = tx.QueryRow(c,
 		`
 		INSERT INTO project
 			(name, blurb, description, descparsed, lifecycle, date_created, all_last_updated)
@@ -439,12 +480,12 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 
 	formResult.Payload.ProjectID = projectId
 
-	err = updateProject(c.Context(), tx, c.CurrentUser, &formResult.Payload)
+	err = updateProject(c, tx, c.CurrentUser, &formResult.Payload)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	tx.Commit(c.Context())
+	tx.Commit(c)
 
 	urlContext := &hmnurl.UrlContext{
 		PersonalProject: true,
@@ -461,7 +502,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 	}
 
 	p, err := hmndata.FetchProject(
-		c.Context(), c.Conn,
+		c, c.Conn,
 		c.CurrentUser, c.CurrentProject.ID,
 		hmndata.ProjectsQuery{
 			Lifecycles:    models.AllProjectLifecycles,
@@ -473,7 +514,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Fetching project links")
-	projectLinks, err := db.Query[models.Link](c.Context(), c.Conn,
+	projectLinks, err := db.Query[models.Link](c, c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -524,23 +565,23 @@ func ProjectEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, formResult.Error)
 	}
 	if len(formResult.RejectionReason) != 0 {
-		return RejectRequest(c, formResult.RejectionReason)
+		return c.RejectRequest(formResult.RejectionReason)
 	}
 
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to start db transaction"))
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
 	formResult.Payload.ProjectID = c.CurrentProject.ID
 
-	err = updateProject(c.Context(), tx, c.CurrentUser, &formResult.Payload)
+	err = updateProject(c, tx, c.CurrentUser, &formResult.Payload)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	tx.Commit(c.Context())
+	tx.Commit(c)
 
 	urlContext := &hmnurl.UrlContext{
 		PersonalProject: formResult.Payload.Personal,

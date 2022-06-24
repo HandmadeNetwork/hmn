@@ -84,6 +84,8 @@ func UrlWithFragment(path string, query []Q, fragment string) string {
 	return HMNProjectContext.UrlWithFragment(path, query, fragment)
 }
 
+// Takes a project URL and rewrites it using the current URL context. This can be used
+// to convert a personal project URL to official and vice versa.
 func (c *UrlContext) RewriteProjectUrl(u *url.URL) string {
 	// we need to strip anything matching the personal project regex to get the base path
 	match := RegexPersonalProject.FindString(u.Path)

@@ -69,7 +69,7 @@ func AdminAtomFeed(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
@@ -134,7 +134,7 @@ type unapprovedUserData struct {
 
 func AdminApprovalQueue(c *RequestContext) ResponseData {
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
@@ -207,7 +207,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		userIds = append(userIds, u.User.ID)
 	}
 
-	userLinks, err := db.Query[models.Link](c.Context(), c.Conn,
+	userLinks, err := db.Query[models.Link](c, c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -253,13 +253,13 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 	userIdStr := c.Req.Form.Get("user_id")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		return RejectRequest(c, "User id can't be parsed")
+		return c.RejectRequest("User id can't be parsed")
 	}
 
-	user, err := hmndata.FetchUser(c.Context(), c.Conn, c.CurrentUser, userId, hmndata.UsersQuery{})
+	user, err := hmndata.FetchUser(c, c.Conn, c.CurrentUser, userId, hmndata.UsersQuery{})
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
-			return RejectRequest(c, "User not found")
+			return c.RejectRequest("User not found")
 		} else {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
 		}
@@ -267,7 +267,7 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 
 	whatHappened := ""
 	if action == ApprovalQueueActionApprove {
-		_, err := c.Conn.Exec(c.Context(),
+		_, err := c.Conn.Exec(c,
 			`
 			UPDATE hmn_user
 			SET status = $1
@@ -281,7 +281,7 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 		}
 		whatHappened = fmt.Sprintf("%s approved successfully", user.Username)
 	} else if action == ApprovalQueueActionSpammer {
-		_, err := c.Conn.Exec(c.Context(),
+		_, err := c.Conn.Exec(c,
 			`
 			UPDATE hmn_user
 			SET status = $1
@@ -293,15 +293,15 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to set user to banned"))
 		}
-		err = auth.DeleteSessionForUser(c.Context(), c.Conn, user.Username)
+		err = auth.DeleteSessionForUser(c, c.Conn, user.Username)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to log out user"))
 		}
-		err = deleteAllPostsForUser(c.Context(), c.Conn, user.ID)
+		err = deleteAllPostsForUser(c, c.Conn, user.ID)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete spammer's posts"))
 		}
-		err = deleteAllProjectsForUser(c.Context(), c.Conn, user.ID)
+		err = deleteAllProjectsForUser(c, c.Conn, user.ID)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete spammer's projects"))
 		}
@@ -324,7 +324,7 @@ type UnapprovedPost struct {
 }
 
 func fetchUnapprovedPosts(c *RequestContext) ([]*UnapprovedPost, error) {
-	posts, err := db.Query[UnapprovedPost](c.Context(), c.Conn,
+	posts, err := db.Query[UnapprovedPost](c, c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -355,7 +355,7 @@ type UnapprovedProject struct {
 }
 
 func fetchUnapprovedProjects(c *RequestContext) ([]UnapprovedProject, error) {
-	ownerIDs, err := db.QueryScalar[int](c.Context(), c.Conn,
+	ownerIDs, err := db.QueryScalar[int](c, c.Conn,
 		`
 		SELECT id
 		FROM
@@ -369,7 +369,7 @@ func fetchUnapprovedProjects(c *RequestContext) ([]UnapprovedProject, error) {
 		return nil, oops.New(err, "failed to fetch unapproved users")
 	}
 
-	projects, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+	projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 		OwnerIDs:      ownerIDs,
 		IncludeHidden: true,
 	})
@@ -382,7 +382,7 @@ func fetchUnapprovedProjects(c *RequestContext) ([]UnapprovedProject, error) {
 		projectIDs = append(projectIDs, p.Project.ID)
 	}
 
-	projectLinks, err := db.Query[models.Link](c.Context(), c.Conn,
+	projectLinks, err := db.Query[models.Link](c, c.Conn,
 		`
 		SELECT $columns
 		FROM

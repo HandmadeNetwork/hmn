@@ -91,7 +91,7 @@ func Forum(c *RequestContext) ResponseData {
 
 	currentSubforumSlugs := cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID)
 
-	numThreads, err := hmndata.CountThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+	numThreads, err := hmndata.CountThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 		SubforumIDs: []int{cd.SubforumID},
@@ -107,7 +107,7 @@ func Forum(c *RequestContext) ResponseData {
 	}
 	howManyThreadsToSkip := (page - 1) * threadsPerPage
 
-	mainThreads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+	mainThreads, err := hmndata.FetchThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 		SubforumIDs: []int{cd.SubforumID},
@@ -141,7 +141,7 @@ func Forum(c *RequestContext) ResponseData {
 		subforumNodes := cd.SubforumTree[cd.SubforumID].Children
 
 		for _, sfNode := range subforumNodes {
-			numThreads, err := hmndata.CountThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+			numThreads, err := hmndata.CountThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 				ProjectIDs:  []int{c.CurrentProject.ID},
 				ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 				SubforumIDs: []int{sfNode.ID},
@@ -150,7 +150,7 @@ func Forum(c *RequestContext) ResponseData {
 				panic(oops.New(err, "failed to get count of threads"))
 			}
 
-			subforumThreads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+			subforumThreads, err := hmndata.FetchThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 				ProjectIDs:  []int{c.CurrentProject.ID},
 				ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 				SubforumIDs: []int{sfNode.ID},
@@ -203,7 +203,7 @@ func Forum(c *RequestContext) ResponseData {
 
 func ForumMarkRead(c *RequestContext) ResponseData {
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
@@ -212,16 +212,16 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
 	sfIds := []int{sfId}
 	if sfId == 0 {
 		// Mark literally everything as read
-		_, err := tx.Exec(c.Context(),
+		_, err := tx.Exec(c,
 			`
 			UPDATE hmn_user
 			SET marked_all_read_at = NOW()
@@ -234,7 +234,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		}
 
 		// Delete thread unread info
-		_, err = tx.Exec(c.Context(),
+		_, err = tx.Exec(c,
 			`
 			DELETE FROM thread_last_read_info
 			WHERE user_id = $1;
@@ -246,7 +246,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		}
 
 		// Delete subforum unread info
-		_, err = tx.Exec(c.Context(),
+		_, err = tx.Exec(c,
 			`
 			DELETE FROM subforum_last_read_info
 			WHERE user_id = $1;
@@ -258,7 +258,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		}
 	} else {
 		c.Perf.StartBlock("SQL", "Update SLRIs")
-		_, err = tx.Exec(c.Context(),
+		_, err = tx.Exec(c,
 			`
 		INSERT INTO subforum_last_read_info (subforum_id, user_id, lastread)
 			SELECT id, $2, $3
@@ -277,7 +277,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		}
 
 		c.Perf.StartBlock("SQL", "Delete TLRIs")
-		_, err = tx.Exec(c.Context(),
+		_, err = tx.Exec(c,
 			`
 		DELETE FROM thread_last_read_info
 		WHERE
@@ -298,7 +298,7 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 		}
 	}
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit SLRI/TLRI updates"))
 	}
@@ -332,7 +332,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	threads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+	threads, err := hmndata.FetchThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
 		ThreadIDs:  []int{cd.ThreadID},
 	})
@@ -351,7 +351,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		return c.Redirect(correctThreadUrl, http.StatusSeeOther)
 	}
 
-	numPosts, err := hmndata.CountPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
+	numPosts, err := hmndata.CountPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 		ThreadIDs:   []int{cd.ThreadID},
@@ -374,7 +374,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		PreviousUrl: c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, utils.IntClamp(1, page-1, numPages)),
 	}
 
-	postsAndStuff, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
+	postsAndStuff, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
 		ThreadIDs:  []int{thread.ID},
 		Limit:      threadPostsPerPage,
@@ -396,7 +396,7 @@ func ForumThread(c *RequestContext) ResponseData {
 			post.ReplyPost = &reply
 		}
 
-		addAuthorCountsToPost(c.Context(), c.Conn, &post)
+		addAuthorCountsToPost(c, c.Conn, &post)
 
 		posts = append(posts, post)
 	}
@@ -404,7 +404,7 @@ func ForumThread(c *RequestContext) ResponseData {
 	// Update thread last read info
 	if c.CurrentUser != nil {
 		c.Perf.StartBlock("SQL", "Update TLRI")
-		_, err = c.Conn.Exec(c.Context(),
+		_, err = c.Conn.Exec(c,
 			`
 			INSERT INTO thread_last_read_info (thread_id, user_id, lastread)
 			VALUES ($1, $2, $3)
@@ -445,7 +445,7 @@ func ForumPostRedirect(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	posts, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
+	posts, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 		ThreadIDs:   []int{cd.ThreadID},
@@ -495,11 +495,11 @@ func ForumNewThread(c *RequestContext) ResponseData {
 }
 
 func ForumNewThreadSubmit(c *RequestContext) ResponseData {
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
 	cd, ok := getCommonForumData(c)
 	if !ok {
@@ -517,15 +517,15 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 		sticky = true
 	}
 	if title == "" {
-		return RejectRequest(c, "You must provide a title for your post.")
+		return c.RejectRequest("You must provide a title for your post.")
 	}
 	if unparsed == "" {
-		return RejectRequest(c, "You must provide a body for your post.")
+		return c.RejectRequest("You must provide a body for your post.")
 	}
 
 	// Create thread
 	var threadId int
-	err = tx.QueryRow(c.Context(),
+	err = tx.QueryRow(c,
 		`
 		INSERT INTO thread (title, sticky, type, project_id, subforum_id, first_id, last_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -544,9 +544,9 @@ func ForumNewThreadSubmit(c *RequestContext) ResponseData {
 	}
 
 	// Create everything else
-	hmndata.CreateNewPost(c.Context(), tx, c.CurrentProject.ID, threadId, models.ThreadTypeForumPost, c.CurrentUser.ID, nil, unparsed, c.Req.Host)
+	hmndata.CreateNewPost(c, tx, c.CurrentProject.ID, threadId, models.ThreadTypeForumPost, c.CurrentUser.ID, nil, unparsed, c.Req.Host)
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new forum thread"))
 	}
@@ -561,7 +561,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 	})
@@ -600,11 +600,11 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
 	err = c.Req.ParseForm()
 	if err != nil {
@@ -612,10 +612,10 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 	}
 	unparsed := c.Req.Form.Get("body")
 	if unparsed == "" {
-		return RejectRequest(c, "Your reply cannot be empty.")
+		return c.RejectRequest("Your reply cannot be empty.")
 	}
 
-	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 	})
@@ -629,9 +629,9 @@ func ForumPostReplySubmit(c *RequestContext) ResponseData {
 		replyPostId = &post.Post.ID
 	}
 
-	newPostId, _ := hmndata.CreateNewPost(c.Context(), tx, c.CurrentProject.ID, post.Thread.ID, models.ThreadTypeForumPost, c.CurrentUser.ID, replyPostId, unparsed, c.Req.Host)
+	newPostId, _ := hmndata.CreateNewPost(c, tx, c.CurrentProject.ID, post.Thread.ID, models.ThreadTypeForumPost, c.CurrentUser.ID, replyPostId, unparsed, c.Req.Host)
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to forum post"))
 	}
@@ -646,11 +646,11 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c, c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 	})
@@ -688,17 +688,17 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c, c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
-	post, err := hmndata.FetchThreadPost(c.Context(), tx, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+	post, err := hmndata.FetchThreadPost(c, tx, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 	})
@@ -713,16 +713,16 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 	unparsed := c.Req.Form.Get("body")
 	editReason := c.Req.Form.Get("editreason")
 	if title != "" && post.Thread.FirstID != post.Post.ID {
-		return RejectRequest(c, "You can only edit the title by editing the first post.")
+		return c.RejectRequest("You can only edit the title by editing the first post.")
 	}
 	if unparsed == "" {
-		return RejectRequest(c, "You must provide a body for your post.")
+		return c.RejectRequest("You must provide a body for your post.")
 	}
 
-	hmndata.CreatePostVersion(c.Context(), tx, post.Post.ID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
+	hmndata.CreatePostVersion(c, tx, post.Post.ID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
 
 	if title != "" {
-		_, err := tx.Exec(c.Context(),
+		_, err := tx.Exec(c,
 			`
 			UPDATE thread SET title = $1 WHERE id = $2
 			`,
@@ -734,7 +734,7 @@ func ForumPostEditSubmit(c *RequestContext) ResponseData {
 		}
 	}
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit forum post"))
 	}
@@ -749,11 +749,11 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c, c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeForumPost},
 	})
@@ -798,19 +798,19 @@ func ForumPostDeleteSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c, c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
-	threadDeleted := hmndata.DeletePost(c.Context(), tx, cd.ThreadID, cd.PostID)
+	threadDeleted := hmndata.DeletePost(c, tx, cd.ThreadID, cd.PostID)
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete post"))
 	}
@@ -831,7 +831,7 @@ func WikiArticleRedirect(c *RequestContext) ResponseData {
 		panic(err)
 	}
 
-	thread, err := hmndata.FetchThread(c.Context(), c.Conn, c.CurrentUser, threadId, hmndata.ThreadsQuery{
+	thread, err := hmndata.FetchThread(c, c.Conn, c.CurrentUser, threadId, hmndata.ThreadsQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
 		// This is the rare query where we want all thread types!
 	})
@@ -842,7 +842,7 @@ func WikiArticleRedirect(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
@@ -874,7 +874,7 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 	defer c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 

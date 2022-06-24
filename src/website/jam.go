@@ -51,7 +51,7 @@ func JamIndex2021(c *RequestContext) ResponseData {
 	}
 
 	tagId := -1
-	jamTag, err := hmndata.FetchTag(c.Context(), c.Conn, hmndata.TagQuery{
+	jamTag, err := hmndata.FetchTag(c, c.Conn, hmndata.TagQuery{
 		Text: []string{"wheeljam"},
 	})
 	if err == nil {
@@ -60,7 +60,7 @@ func JamIndex2021(c *RequestContext) ResponseData {
 		c.Logger.Warn().Err(err).Msg("failed to fetch jam tag; will fetch all snippets as a result")
 	}
 
-	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		Tags: []int{tagId},
 	})
 	if err != nil {

@@ -85,7 +85,7 @@ func AssetUpload(c *RequestContext) ResponseData {
 		}
 	}
 
-	asset, err := assets.Create(c.Context(), c.Conn, assets.CreateInput{
+	asset, err := assets.Create(c, c.Conn, assets.CreateInput{
 		Content:     data,
 		Filename:    originalFilename,
 		ContentType: mimeType,

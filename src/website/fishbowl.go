@@ -206,7 +206,7 @@ func Fishbowl(c *RequestContext) ResponseData {
 func FishbowlFiles(c *RequestContext) ResponseData {
 	var res ResponseData
 	fishbowlHTTPFS.ServeHTTP(&res, c.Req)
-	AddCORSHeaders(c, &res)
+	addCORSHeaders(c, &res)
 	return res
 }
 
@@ -224,7 +224,7 @@ func linkifyDiscordContent(c *RequestContext, dbConn db.ConnOrTx, content string
 		discordUserIds = append(discordUserIds, id)
 	}
 
-	hmnUsers, err := hmndata.FetchUsers(c.Context(), dbConn, c.CurrentUser, hmndata.UsersQuery{
+	hmnUsers, err := hmndata.FetchUsers(c, dbConn, c.CurrentUser, hmndata.UsersQuery{
 		DiscordUserIDs: discordUserIds,
 	})
 	if err != nil {

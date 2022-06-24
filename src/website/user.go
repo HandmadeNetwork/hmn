@@ -52,7 +52,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	if c.CurrentUser != nil && strings.ToLower(c.CurrentUser.Username) == username {
 		profileUser = c.CurrentUser
 	} else {
-		user, err := hmndata.FetchUserByUsername(c.Context(), c.Conn, c.CurrentUser, username, hmndata.UsersQuery{})
+		user, err := hmndata.FetchUserByUsername(c, c.Conn, c.CurrentUser, username, hmndata.UsersQuery{})
 		if err != nil {
 			if errors.Is(err, db.NotFound) {
 				return FourOhFour(c)
@@ -72,7 +72,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Fetch user links")
-	userLinks, err := db.Query[models.Link](c.Context(), c.Conn,
+	userLinks, err := db.Query[models.Link](c, c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -92,7 +92,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	projectsAndStuff, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+	projectsAndStuff, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 		OwnerIDs:      []int{profileUser.ID},
 		Lifecycles:    models.AllProjectLifecycles,
 		IncludeHidden: true,
@@ -111,13 +111,13 @@ func UserProfile(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	c.Perf.StartBlock("SQL", "Fetch posts")
-	posts, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
+	posts, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		UserIDs:        []int{profileUser.ID},
 		SortDescending: true,
 	})
 	c.Perf.EndBlock()
 
-	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		OwnerIDs: []int{profileUser.ID},
 	})
 	if err != nil {
@@ -125,7 +125,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
@@ -213,7 +213,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		DiscordShowcaseBacklogUrl string
 	}
 
-	links, err := db.Query[models.Link](c.Context(), c.Conn,
+	links, err := db.Query[models.Link](c, c.Conn,
 		`
 		SELECT $columns
 		FROM link
@@ -230,7 +230,7 @@ func UserSettings(c *RequestContext) ResponseData {
 
 	var tduser *templates.DiscordUser
 	var numUnsavedMessages int
-	duser, err := db.QueryOne[models.DiscordUser](c.Context(), c.Conn,
+	duser, err := db.QueryOne[models.DiscordUser](c, c.Conn,
 		`
 		SELECT $columns
 		FROM discord_user
@@ -246,7 +246,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		tmp := templates.DiscordUserToTemplate(duser)
 		tduser = &tmp
 
-		numUnsavedMessages, err = db.QueryOneScalar[int](c.Context(), c.Conn,
+		numUnsavedMessages, err = db.QueryOneScalar[int](c, c.Conn,
 			`
 			SELECT COUNT(*)
 			FROM
@@ -299,11 +299,11 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to parse form"))
 	}
 
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
 	form, err := c.GetFormValues()
 	if err != nil {
@@ -315,7 +315,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 
 	email := form.Get("email")
 	if !hmnemail.IsEmail(email) {
-		return RejectRequest(c, "Your email was not valid.")
+		return c.RejectRequest("Your email was not valid.")
 	}
 
 	showEmail := form.Get("showemail") != ""
@@ -328,7 +328,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	discordShowcaseAuto := form.Get("discord-showcase-auto") != ""
 	discordDeleteSnippetOnMessageDelete := form.Get("discord-snippet-keep") == ""
 
-	_, err = tx.Exec(c.Context(),
+	_, err = tx.Exec(c,
 		`
 		UPDATE hmn_user
 		SET
@@ -360,15 +360,15 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	}
 
 	// Process links
-	twitchLoginsPreChange, preErr := hmndata.FetchTwitchLoginsForUserOrProject(c.Context(), tx, &c.CurrentUser.ID, nil)
+	twitchLoginsPreChange, preErr := hmndata.FetchTwitchLoginsForUserOrProject(c, tx, &c.CurrentUser.ID, nil)
 	linksText := form.Get("links")
 	links := ParseLinks(linksText)
-	_, err = tx.Exec(c.Context(), `DELETE FROM link WHERE user_id = $1`, c.CurrentUser.ID)
+	_, err = tx.Exec(c, `DELETE FROM link WHERE user_id = $1`, c.CurrentUser.ID)
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to delete old links")
 	} else {
 		for i, link := range links {
-			_, err := tx.Exec(c.Context(),
+			_, err := tx.Exec(c,
 				`
 				INSERT INTO link (name, url, ordering, user_id)
 				VALUES ($1, $2, $3, $4)
@@ -384,7 +384,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 			}
 		}
 	}
-	twitchLoginsPostChange, postErr := hmndata.FetchTwitchLoginsForUserOrProject(c.Context(), tx, &c.CurrentUser.ID, nil)
+	twitchLoginsPostChange, postErr := hmndata.FetchTwitchLoginsForUserOrProject(c, tx, &c.CurrentUser.ID, nil)
 	if preErr == nil && postErr == nil {
 		twitch.UserOrProjectLinksUpdated(twitchLoginsPreChange, twitchLoginsPostChange)
 	}
@@ -407,7 +407,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	}
 	var avatarUUID *uuid.UUID
 	if newAvatar.Exists {
-		avatarAsset, err := assets.Create(c.Context(), tx, assets.CreateInput{
+		avatarAsset, err := assets.Create(c, tx, assets.CreateInput{
 			Content:     newAvatar.Content,
 			Filename:    newAvatar.Filename,
 			ContentType: newAvatar.Mime,
@@ -421,7 +421,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 		avatarUUID = &avatarAsset.ID
 	}
 	if newAvatar.Exists || newAvatar.Remove {
-		_, err := tx.Exec(c.Context(),
+		_, err := tx.Exec(c,
 			`
 			UPDATE hmn_user
 			SET
@@ -437,7 +437,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 		}
 	}
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save user settings"))
 	}
@@ -454,7 +454,7 @@ func UserProfileAdminSetStatus(c *RequestContext) ResponseData {
 	userIdStr := c.Req.Form.Get("user_id")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		return RejectRequest(c, "No user id provided")
+		return c.RejectRequest("No user id provided")
 	}
 
 	status := c.Req.Form.Get("status")
@@ -469,10 +469,10 @@ func UserProfileAdminSetStatus(c *RequestContext) ResponseData {
 	case "banned":
 		desiredStatus = models.UserStatusBanned
 	default:
-		return RejectRequest(c, "No legal user status provided")
+		return c.RejectRequest("No legal user status provided")
 	}
 
-	_, err = c.Conn.Exec(c.Context(),
+	_, err = c.Conn.Exec(c,
 		`
 		UPDATE hmn_user
 		SET status = $1
@@ -485,7 +485,7 @@ func UserProfileAdminSetStatus(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user status"))
 	}
 	if desiredStatus == models.UserStatusBanned {
-		err = auth.DeleteSessionForUser(c.Context(), c.Conn, c.Req.Form.Get("username"))
+		err = auth.DeleteSessionForUser(c, c.Conn, c.Req.Form.Get("username"))
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to log out user"))
 		}
@@ -500,10 +500,10 @@ func UserProfileAdminNuke(c *RequestContext) ResponseData {
 	userIdStr := c.Req.Form.Get("user_id")
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
-		return RejectRequest(c, "No user id provided")
+		return c.RejectRequest("No user id provided")
 	}
 
-	err = deleteAllPostsForUser(c.Context(), c.Conn, userId)
+	err = deleteAllPostsForUser(c, c.Conn, userId)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete user posts"))
 	}
@@ -514,7 +514,7 @@ func UserProfileAdminNuke(c *RequestContext) ResponseData {
 
 func updatePassword(c *RequestContext, tx pgx.Tx, old, new, confirm string) *ResponseData {
 	if new != confirm {
-		res := RejectRequest(c, "Your password and password confirmation did not match.")
+		res := c.RejectRequest("Your password and password confirmation did not match.")
 		return &res
 	}
 
@@ -531,12 +531,12 @@ func updatePassword(c *RequestContext, tx pgx.Tx, old, new, confirm string) *Res
 	}
 
 	if !ok {
-		res := RejectRequest(c, "The old password you provided was not correct.")
+		res := c.RejectRequest("The old password you provided was not correct.")
 		return &res
 	}
 
 	newHashedPassword := auth.HashPassword(new)
-	err = auth.UpdatePassword(c.Context(), tx, c.CurrentUser.Username, newHashedPassword)
+	err = auth.UpdatePassword(c, tx, c.CurrentUser.Username, newHashedPassword)
 	if err != nil {
 		res := c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update password"))
 		return &res
