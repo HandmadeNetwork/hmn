@@ -58,6 +58,7 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "Approaches to parallel programming",
 		Description: `A discussion of many aspects of parallelism and concurrency in programming, and the pros and cons of different programming methodologies.`,
 		Month:       time.November, Year: 2020,
+		ContentsPath: "parallel-programming/parallel-programming.html",
 	},
 	{
 		Slug:        "skimming",
