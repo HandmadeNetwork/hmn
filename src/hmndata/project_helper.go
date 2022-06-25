@@ -29,6 +29,7 @@ type ProjectsQuery struct {
 	ProjectIDs []int    // if empty, all projects
 	Slugs      []string // if empty, all projects
 	OwnerIDs   []int    // if empty, all projects
+	JamSlugs   []string // if empty, all projects
 
 	// Ignored when using CountProjects
 	Limit, Offset int // if empty, no pagination
@@ -101,6 +102,14 @@ func FetchProjects(
 		)
 	}
 
+	if len(q.JamSlugs) > 0 {
+		qb.Add(
+			`
+			JOIN jam_project ON jam_project.project_id = project.id
+			`,
+		)
+	}
+
 	// Filters (permissions are checked after the query, in Go)
 	qb.Add(`
 		WHERE
@@ -129,6 +138,9 @@ func FetchProjects(
 	}
 	if len(q.Slugs) > 0 {
 		qb.Add(`AND (project.slug != '' AND project.slug = ANY ($?))`, q.Slugs)
+	}
+	if len(q.JamSlugs) > 0 {
+		qb.Add(`AND (jam_project.jam_slug = ANY ($?) AND jam_project.participating = TRUE)`, q.JamSlugs)
 	}
 
 	// Output

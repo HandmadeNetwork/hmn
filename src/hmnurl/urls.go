@@ -320,6 +320,12 @@ func BuildProjectNew() string {
 	return Url("/p/new", nil)
 }
 
+func BuildProjectNewJam() string {
+	defer CatchPanic()
+
+	return Url("/p/new", []Q{Q{Name: "jam", Value: "1"}})
+}
+
 var RegexPersonalProject = regexp.MustCompile("^/p/(?P<projectid>[0-9]+)(/(?P<projectslug>[a-zA-Z0-9-]+))?")
 
 func BuildPersonalProject(id int, slug string) string {
