@@ -52,6 +52,7 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "Lessons from the Lisp Jam",
 		Description: `In the summer of 2020 we held a Lisp jam, where many community members made exploratory Lisp-inspired projects. We held this fishbowl as a recap, as a time for the participants to share what they learned and explore how those lessons relate to our day-to-day programming.`,
 		Month:       time.August, Year: 2020,
+		ContentsPath: "lisp-jam/lisp-jam.html",
 	},
 	{
 		Slug:        "parallel-programming",
