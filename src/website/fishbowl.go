@@ -46,6 +46,7 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "Compile-time introspection and metaprogramming",
 		Description: `Thanks to new languages like Zig and Jai, compile-time execution and metaprogramming are a popular topic of discussion in the community. This fishbowl explores metaprogramming in more detail, and discusses to what extent it is actually necessary, or just a waste of time.`,
 		Month:       time.June, Year: 2020,
+		ContentsPath: "metaprogramming/metaprogramming.html",
 	},
 	{
 		Slug:        "lisp-jam",
