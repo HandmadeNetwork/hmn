@@ -40,6 +40,7 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "The future of operating systems in an Internet world",
 		Description: `Despite the web's technical problems, it dominates software development today, largely due to its cross-platform support and ease of distribution. At the same time, our discussions about the future of programming tend to involve new "operating systems", but those discussions rarely take the Internet into account. What could future operating systems look like in a world defined by the Internet?`,
 		Month:       time.May, Year: 2020,
+		ContentsPath: "internet-os/internet-os.html",
 	},
 	{
 		Slug:        "metaprogramming",
