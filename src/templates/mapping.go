@@ -297,6 +297,8 @@ func LinkToTemplate(link *models.Link) Link {
 	return tlink
 }
 
+var controlCharRegex = regexp.MustCompile(`\p{Cc}`)
+
 func TimelineItemsToJSON(items []TimelineItem) string {
 	// NOTE(asaf): As of 2021-06-22: This only serializes the data necessary for snippet showcase.
 	builder := strings.Builder{}
@@ -314,11 +316,13 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 
 		builder.WriteString(`"description":"`)
 		jsonString := string(item.Description)
+		jsonString = strings.ToValidUTF8(jsonString, "")
 		jsonString = strings.ReplaceAll(jsonString, `\`, `\\`)
 		jsonString = strings.ReplaceAll(jsonString, `"`, `\"`)
 		jsonString = strings.ReplaceAll(jsonString, "\n", "\\n")
 		jsonString = strings.ReplaceAll(jsonString, "\r", "\\r")
 		jsonString = strings.ReplaceAll(jsonString, "\t", "\\t")
+		jsonString = controlCharRegex.ReplaceAllString(jsonString, "")
 		builder.WriteString(jsonString)
 		builder.WriteString(`",`)
 
