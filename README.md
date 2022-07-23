@@ -32,7 +32,7 @@ You will need the following software installed:
 
     Depending on your installation of Postgres, you may need to modify the hostname and port in the Postgres section of the config.
 
-- **Set up the database.** Run `go run src/main.go db seed` to initialize the database and fill it with sample data.
+- **Set up the database.** Run `go run . db seed` to initialize the database and fill it with sample data.
 
 - **Update your hosts file.** The website uses subdomains for official projects, so the site cannot simply be run off `localhost`. Add the following
 line to your hosts file:
@@ -50,12 +50,12 @@ line to your hosts file:
 Running the site is easy:
 
 ```
-go run src/main.go
+go run .
 ```
 
 You should now be able to visit http://handmade.local:9001 to see the website!
 
-There are also several other commands built into the website executable. You can see documentation for each of them by running `go run src/main.go help` or adding the `-h` flag to any command.
+There are also several other commands built into the website executable. You can see documentation for each of them by running `go run . help` or adding the `-h` flag to any command.
 
 ## Running tests
 
