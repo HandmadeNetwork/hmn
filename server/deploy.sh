@@ -23,7 +23,7 @@ set -euo pipefail
 cd /home/hmn/hmn
 git fetch --all
 git reset --hard origin/$branch
-go build -o /home/hmn/bin/hmn src/main.go
+go build -o /home/hmn/bin/hmn .
 SCRIPT
 
 echo "Running migrations..."
