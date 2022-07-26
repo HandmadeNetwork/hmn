@@ -49,3 +49,9 @@ func ProjectSubmissionGuidelines(c *RequestContext) ResponseData {
 	res.MustWriteTemplate("project_submission_guidelines.html", getBaseDataAutocrumb(c, "Project Submission Guidelines"), c.Perf)
 	return res
 }
+
+func Conferences(c *RequestContext) ResponseData {
+	var res ResponseData
+	res.MustWriteTemplate("conferences.html", getBaseDataAutocrumb(c, "Conferences"), c.Perf)
+	return res
+}

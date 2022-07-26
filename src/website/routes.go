@@ -52,6 +52,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexContactPage, ContactPage)
 	hmnOnly.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
 	hmnOnly.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
+	hmnOnly.GET(hmnurl.RegexConferences, Conferences)
 	hmnOnly.GET(hmnurl.RegexWhenIsIt, WhenIsIt)
 	hmnOnly.GET(hmnurl.RegexJamIndex, JamIndex2022)
 	hmnOnly.GET(hmnurl.RegexJamIndex2021, JamIndex2021)
