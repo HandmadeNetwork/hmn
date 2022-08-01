@@ -105,6 +105,13 @@ var fishbowls = [...]fishbowlInfo{
 		Month:       time.May, Year: 2022,
 		ContentsPath: "oop/OOP.html",
 	},
+	{
+		Slug:        "code-reuse",
+		Title:       "Responsible code reuse",
+		Description: "TODO (Ben)",
+		Month:       time.July, Year: 2022,
+		ContentsPath: "code-reuse/code-reuse.html",
+	},
 }
 
 func FishbowlIndex(c *RequestContext) ResponseData {
