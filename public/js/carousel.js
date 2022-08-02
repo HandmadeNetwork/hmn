@@ -1,4 +1,7 @@
-function initCarousel(container, durationMS = 0) {
+function initCarousel(container, options = {}) {
+    const durationMS = options.durationMS ?? 0;
+    const onChange = options.onChange ?? (() => {});
+
     const numCarouselItems = container.querySelectorAll('.carousel-item').length;
     const buttonContainer = container.querySelector('.carousel-buttons');
 
@@ -25,6 +28,8 @@ function initCarousel(container, durationMS = 0) {
         buttons[i].classList.add('active');
 
         current = i;
+
+        onChange(current);
     }
 
     function activateNext() {
