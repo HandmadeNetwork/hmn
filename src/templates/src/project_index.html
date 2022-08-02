@@ -1,9 +1,13 @@
 {{ template "base.html" . }}
 
+{{ define "extrahead" }}
+	<script src="{{ static "js/carousel.js" }}"></script>
+{{ end }}
+
 {{ define "content" }}
 	<div>
 		{{ with .CarouselProjects }}
-			<div class="carousel-container mw-100 mv2 mv3-ns margin-center dn db-ns">
+			<div class="carousel-container project-carousel mw-100 mv2 mv3-ns margin-center dn db-ns">
 				<div class="carousel pa3 h5 overflow-hidden bg--dim br2-ns">
 					{{ range $index, $project := . }}
 						<div class="carousel-item flex pa3 w-100 h-100 bg--dim items-center {{ if eq $index 0 }}active{{ end }}">
@@ -24,14 +28,7 @@
 						</div>
 					{{ end }}
 				</div>
-				<div class="flex justify-center pv2">
-					{{ range $index, $project := . }}
-						<div
-							class="carousel-button br-pill w1 h1 mh2 {{ if eq $index 0 }}active{{ end }}"
-							onclick="carouselButtonClick({{ $index }})"
-						></div>
-					{{ end }}
-				</div>
+				<div class="carousel-buttons pv2"></div>
 			</div>
 		{{ end }}
 		<div class="flex flex-column flex-row-l mv3 items-start">
@@ -74,38 +71,6 @@
 	</div>
 
 	<script>
-		const numCarouselItems = {{ len .CarouselProjects }};
-
-		function activateCarousel(i) {
-			const items = document.querySelectorAll('.carousel-item');
-			items.forEach(item => item.classList.remove('active'));
-			items[i].classList.add('active');
-
-			const smallItems = document.querySelectorAll('.carousel-item-small');
-			if (smallItems.length > 0) {
-				smallItems.forEach(item => item.classList.remove('active'));
-				smallItems[i].classList.add('active');
-			}
-
-			const buttons = document.querySelectorAll('.carousel-button');
-			buttons.forEach(button => button.classList.remove('active'));
-			buttons[i].classList.add('active');
-		}
-
-		let carouselTimerCurrent = 0;
-		const carouselTimer = setInterval(() => {
-			if (numCarouselItems === 0) {
-				return;
-			}
-
-			const next = (carouselTimerCurrent + 1) % numCarouselItems;
-			activateCarousel(next);
-			carouselTimerCurrent = next;
-		}, 10000);
-
-		function carouselButtonClick(i) {
-			activateCarousel(i);
-			clearInterval(carouselTimer);
-		}
+		initCarousel(document.querySelector('.project-carousel'), 10000);
 	</script>
 {{ end }}
