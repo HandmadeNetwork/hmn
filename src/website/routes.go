@@ -186,14 +186,15 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 				fmt.Sprintf("blog%s", c.PathParams["remainder"]), nil,
 			), http.StatusMovedPermanently)
 		})
+
+		rb.POST(hmnurl.RegexAssetUpload, AssetUpload)
 	}
 	officialProjectRoutes := anyProject.WithMiddleware(officialProjectMiddleware)
 	personalProjectRoutes := hmnOnly.Group(hmnurl.RegexPersonalProject, personalProjectMiddleware)
 	attachProjectRoutes(&officialProjectRoutes)
 	attachProjectRoutes(&personalProjectRoutes)
 
-	anyProject.POST(hmnurl.RegexAssetUpload, AssetUpload)
-
+	// TODO(ben): Uh, should these all be pulled into the project route group above...?
 	anyProject.GET(hmnurl.RegexEpisodeList, EpisodeList)
 	anyProject.GET(hmnurl.RegexEpisode, Episode)
 	anyProject.GET(hmnurl.RegexCineraIndex, CineraIndex)

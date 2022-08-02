@@ -1,28 +1,31 @@
-/* Requires base64.js
+// Requires base64.js
 
-Usage: setupMarkdownUpload(eSubmit, eFileInput, eUploadBar, eText, doMarkdown, maxFileSize, uploadUrl)
-eSubmit is the element of the button to submit/save the markdown changes. It
-	will be disabled and tell users files are uploading while uploading is
-	happening.
-eFileInput is the <input type="file">
-eUploadBar usually looks like
-	<div class="upload_bar flex-grow-1">
-		<div class="instructions">
-			Upload files by dragging & dropping, pasting, or <label class="pointer link" for="file_input">selecting</label> them.
-		</div>
-		<div class="progress flex">
-			<div class="progress_text mr3"></div>
-			<div class="progress_bar flex-grow-1 flex-shrink-1 pa1"><div class=""></div></div>
-		</div>
-	</div>
-eText is the text field that can be dropped into and is editing the markdown.
-doMarkdown is the function returned by initLiveMarkdown.
-maxFileSize
-uploadUrl
-*/
-
-function setupMarkdownUpload(eSubmit, eFileInput, eUploadBar, eText, doMarkdown, maxFileSize, uploadUrl) {
-	const submitText = eSubmit.value;
+/**
+ * Sets up file / image uploading for Markdown content.
+ *
+ * @param eSubmits A list of elements of buttons to submit/save the page you're on. They
+ *                 will be disabled and tell users files are uploading while uploading is
+ *                 happening.
+ * @param eFileInput The `<input type="file">`
+ * @param eUploadBar Usually looks like
+ *                   ```
+ *                   <div class="upload_bar flex-grow-1">
+ *                     <div class="instructions">
+ *                       Upload files by dragging & dropping, pasting, or <label class="pointer link" for="file_input">selecting</label> them.
+ *                     </div>
+ *                     <div class="progress flex">
+ *                       <div class="progress_text mr3"></div>
+ *                       <div class="progress_bar flex-grow-1 flex-shrink-1 pa1"><div class=""></div></div>
+ *                     </div>
+ *                   </div>
+ *                   ```
+ * @param eText The text field that can be dropped into and is editing the markdown.
+ * @param doMarkdown The function returned by `initLiveMarkdown`.
+ * @param maxFileSize The max allowed file size in bytes.
+ * @param uploadUrl The URL to POST assets to (unique per project to avoid CORS issues).
+ */
+function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown, maxFileSize, uploadUrl) {
+	const submitTexts = Array.from(eSubmits).map(e => e.value);
 	const uploadProgress = eUploadBar.querySelector('.progress');
 	const uploadProgressText = eUploadBar.querySelector('.progress_text');
 	const uploadProgressBar = eUploadBar.querySelector('.progress_bar');
@@ -207,8 +210,10 @@ function setupMarkdownUpload(eSubmit, eFileInput, eUploadBar, eText, doMarkdown,
 				uploadProgressText.textContent = `Uploading files ${currentBatchDone+1}/${currentBatchSize}`;
 				eUploadBar.classList.add("uploading");
 				uploadProgressBarFill.style.width = "0%";
-				eSubmit.disabled = true;
-				eSubmit.value = "Uploading files...";
+				for (const e of eSubmits) {
+					e.disabled = true;
+					e.value = "Uploading files...";
+				}
 
 				try {
 					let utf8Filename = strToUTF8Arr(next.file.name);
@@ -228,8 +233,10 @@ function setupMarkdownUpload(eSubmit, eFileInput, eUploadBar, eText, doMarkdown,
 					uploadNext();
 				}
 			} else {
-				eSubmit.disabled = false;
-				eSubmit.value = submitText;
+				for (const [i, e] of eSubmits.entries()) {
+					e.disabled = false;
+					e.value = submitTexts[i];
+				}
 				eUploadBar.classList.remove("uploading");
 				currentBatchSize = 0;
 				currentBatchDone = 0;
