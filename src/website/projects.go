@@ -402,6 +402,9 @@ type ProjectEditData struct {
 
 	APICheckUsernameUrl string
 	LogoMaxFileSize     int
+
+	MaxFileSize int
+	UploadUrl   string
 }
 
 func ProjectNew(c *RequestContext) ResponseData {
@@ -428,6 +431,9 @@ func ProjectNew(c *RequestContext) ResponseData {
 
 		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
 		LogoMaxFileSize:     ProjectLogoMaxFileSize,
+
+		MaxFileSize: AssetMaxSize(c.CurrentUser),
+		UploadUrl:   c.UrlContext.BuildAssetUpload(),
 	}, c.Perf)
 	return res
 }
@@ -552,6 +558,9 @@ func ProjectEdit(c *RequestContext) ResponseData {
 
 		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
 		LogoMaxFileSize:     ProjectLogoMaxFileSize,
+
+		MaxFileSize: AssetMaxSize(c.CurrentUser),
+		UploadUrl:   c.UrlContext.BuildAssetUpload(),
 	}, c.Perf)
 	return res
 }

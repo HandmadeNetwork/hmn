@@ -5,12 +5,18 @@
 	<script src="{{ static "js/tabs.js" }}"></script>
 	<script src="{{ static "js/image_selector.js" }}"></script>
 	<script src="{{ static "js/templates.js" }}"></script>
+	<script src="{{ static "js/base64.js" }}"></script>
+	<script src="{{ static "js/markdown_upload.js" }}"></script>
 	
 	<style>
 		#desc-preview:empty::after {
 			content: 'A preview of your description will appear here.';
 			color: var(--dimmer-color);
 			font-style: italic;
+		}
+
+		#description.drop {
+			box-shadow: inset 0px 0px 5px yellow;
 		}
 	</style>
 {{ end }}
@@ -156,6 +162,17 @@
 						<textarea id="description" class="w-100 h5 minh-5 mono lh-copy" name="description">
 							{{- .ProjectSettings.Description -}}
 						</textarea>
+						<div class="flex justify-end items-center mt2">
+							<div class="upload_bar flex-grow-1">
+								<div class="instructions">
+									Upload files by dragging & dropping, pasting, or <label class="pointer link" for="file_input">selecting</label> them.
+								</div>
+								<div class="progress flex">
+									<div class="progress_text mr3"></div>
+									<div class="progress_bar flex-grow-1 flex-shrink-1 pa1"><div class=""></div></div>
+								</div>
+							</div>
+						</div>
 						<div class="b mt3 mb2">Preview:</div>
 						<div id="desc-preview" class="w-100"></div>
 					</div>
@@ -196,6 +213,7 @@
 				</div>
 			</div>
 		</form>
+		<input type="file" multiple name="file_input" id="file_input" class="dn" />{{/* NOTE(mark): copied NOTE(asaf): Placing this outside the form to avoid submitting it to the server by accident */}}
 	</div>
 	<script>
 	let csrf = JSON.parse({{ csrftokenjs .Session }});
@@ -366,6 +384,19 @@
 		logoMaxFileSize,
 		document.querySelector(".dark_logo")
 	);
-	
+
+	//////////////////
+	// Asset upload //
+	//////////////////
+	setupMarkdownUpload(
+		document.querySelector("#project_form [data-name=Description] input[type=submit]"),
+		document.querySelector('#file_input'),
+		document.querySelector('.upload_bar'),
+		description,
+		doMarkdown,
+		{{ .MaxFileSize }},
+		{{ .UploadUrl }}
+	);
+
 	</script>
 {{ end }}
