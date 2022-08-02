@@ -106,9 +106,9 @@ var fishbowls = [...]fishbowlInfo{
 		ContentsPath: "oop/OOP.html",
 	},
 	{
-		Slug:        "code-reuse",
-		Title:       "Responsible code reuse",
-		Description: "TODO (Ben)",
+		Slug:        "libraries",
+		Title:       "When do libraries go sour?",
+		Description: "The Handmade community is often opposed to using libraries. But let's get more specific about why that can be, and whether that's reasonable. What do we look for in a library? When do libraries go sour? How do we evaluate libraries before using them? How can the libraries we make avoid these problems?",
 		Month:       time.July, Year: 2022,
 		ContentsPath: "code-reuse/code-reuse.html",
 	},
