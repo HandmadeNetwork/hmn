@@ -110,7 +110,7 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "When do libraries go sour?",
 		Description: "The Handmade community is often opposed to using libraries. But let's get more specific about why that can be, and whether that's reasonable. What do we look for in a library? When do libraries go sour? How do we evaluate libraries before using them? How can the libraries we make avoid these problems?",
 		Month:       time.July, Year: 2022,
-		ContentsPath: "code-reuse/code-reuse.html",
+		ContentsPath: "libraries/libraries.html",
 	},
 }
 
