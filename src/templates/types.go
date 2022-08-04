@@ -52,6 +52,7 @@ type Header struct {
 	FishbowlUrl     string
 	ForumsUrl       string
 	LibraryUrl      string
+	ConferencesUrl  string
 
 	Project *ProjectHeader
 }

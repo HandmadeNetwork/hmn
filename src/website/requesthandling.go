@@ -13,6 +13,7 @@ import (
 	"path"
 	"regexp"
 	"strings"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
@@ -43,14 +44,21 @@ func (r *Route) String() string {
 }
 
 type RouteBuilder struct {
-	Router     *Router
-	Prefixes   []*regexp.Regexp
-	Middleware Middleware
+	Router      *Router
+	Prefixes    []*regexp.Regexp
+	Middlewares []Middleware
 }
 
 type Handler func(c *RequestContext) ResponseData
-
 type Middleware func(h Handler) Handler
+
+func applyMiddlewares(h Handler, ms []Middleware) Handler {
+	result := h
+	for i := len(ms) - 1; i >= 0; i-- {
+		result = ms[i](result)
+	}
+	return result
+}
 
 func (rb *RouteBuilder) Handle(methods []string, regex *regexp.Regexp, h Handler) {
 	// Ensure that this regex matches the start of the string
@@ -59,7 +67,7 @@ func (rb *RouteBuilder) Handle(methods []string, regex *regexp.Regexp, h Handler
 		panic("All routing regexes must begin with '^'")
 	}
 
-	h = rb.Middleware(h)
+	h = applyMiddlewares(h, rb.Middlewares)
 	for _, method := range methods {
 		rb.Router.Routes = append(rb.Router.Routes, Route{
 			Method:  method,
@@ -81,10 +89,19 @@ func (rb *RouteBuilder) POST(regex *regexp.Regexp, h Handler) {
 	rb.Handle([]string{http.MethodPost}, regex, h)
 }
 
-func (rb *RouteBuilder) Group(regex *regexp.Regexp, addRoutes func(rb *RouteBuilder)) {
+func (rb *RouteBuilder) WithMiddleware(ms ...Middleware) RouteBuilder {
+	newRb := *rb
+	newRb.Middlewares = append(rb.Middlewares, ms...)
+
+	return newRb
+}
+
+func (rb *RouteBuilder) Group(regex *regexp.Regexp, ms ...Middleware) RouteBuilder {
 	newRb := *rb
 	newRb.Prefixes = append(newRb.Prefixes, regex)
-	addRoutes(&newRb)
+	newRb.Middlewares = append(rb.Middlewares, ms...)
+
+	return newRb
 }
 
 func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -138,6 +155,8 @@ nextroute:
 			Req:        req,
 			Res:        rw,
 			PathParams: params,
+
+			ctx: req.Context(),
 		}
 		c.PathParams = params
 
@@ -174,12 +193,32 @@ type RequestContext struct {
 	ctx context.Context
 }
 
-func (c *RequestContext) Context() context.Context {
-	if c.ctx == nil {
-		c.ctx = c.Req.Context()
-	}
-	return c.ctx
+// Our RequestContext is a context.Context
+
+var _ context.Context = &RequestContext{}
+
+func (c *RequestContext) Deadline() (time.Time, bool) {
+	return c.ctx.Deadline()
 }
+
+func (c *RequestContext) Done() <-chan struct{} {
+	return c.ctx.Done()
+}
+
+func (c *RequestContext) Err() error {
+	return c.ctx.Err()
+}
+
+func (c *RequestContext) Value(key any) any {
+	switch key {
+	case perf.PerfContextKey:
+		return c.Perf
+	default:
+		return c.ctx.Value(key)
+	}
+}
+
+// Plus it does many other things specific to us
 
 func (c *RequestContext) URL() *url.URL {
 	return c.Req.URL
@@ -325,7 +364,7 @@ func (c *RequestContext) Redirect(dest string, code int) ResponseData {
 func (c *RequestContext) ErrorResponse(status int, errs ...error) ResponseData {
 	defer func() {
 		if r := recover(); r != nil {
-			LogContextErrors(c, errs...)
+			logContextErrors(c, errs...)
 			panic(r)
 		}
 	}()
@@ -335,6 +374,23 @@ func (c *RequestContext) ErrorResponse(status int, errs ...error) ResponseData {
 		Errors:     errs,
 	}
 	res.MustWriteTemplate("error.html", getBaseData(c, "", nil), c.Perf)
+	return res
+}
+
+func (c *RequestContext) RejectRequest(reason string) ResponseData {
+	type RejectData struct {
+		templates.BaseData
+		RejectReason string
+	}
+
+	var res ResponseData
+	err := res.WriteTemplate("reject.html", RejectData{
+		BaseData:     getBaseData(c, "Rejected", nil),
+		RejectReason: reason,
+	}, c.Perf)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to render reject template"))
+	}
 	return res
 }
 

@@ -75,6 +75,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			FishbowlUrl:     hmnurl.BuildFishbowlIndex(),
 			ForumsUrl:       hmnurl.HMNProjectContext.BuildForum(nil, 1),
 			LibraryUrl:      hmnurl.BuildLibrary(),
+			ConferencesUrl:   hmnurl.BuildConferences(),
 		},
 		Footer: templates.Footer{
 			HomepageUrl:                hmnurl.BuildHomepage(),

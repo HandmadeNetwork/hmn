@@ -163,16 +163,8 @@ func SampleSeed() {
 		}
 	}
 
-	// admin := CreateAdminUser("admin", "12345678")
-	// user := CreateUser("regular_user", "12345678")
-	// hmnProject := CreateProject("hmn", "Handmade Network")
-	// Create category
-	// Create thread
-	// Create accepted user project
-	// Create pending user project
-	// Create showcase items
-	// Create codelanguages
-	// Create library and library resources
+	// Finally, set sequence numbers to things that won't conflict
+	utils.Must1(tx.Exec(ctx, "SELECT setval('project_id_seq', 100, true);"))
 
 	utils.Must0(tx.Commit(ctx))
 }

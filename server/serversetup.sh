@@ -289,7 +289,7 @@ if [ $checkpoint -lt 110 ]; then
 
         cd /home/hmn/hmn
         echo "Building the site for the first time. This may take a while..."
-        go build -v -o /home/hmn/bin/hmn src/main.go
+        go build -v -o /home/hmn/bin/hmn .
 SCRIPT
 
     echo 'PATH=$PATH:/home/hmn/bin' >> ~/.bashrc

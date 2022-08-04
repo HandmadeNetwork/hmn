@@ -33,7 +33,7 @@ var feedThreadTypes = []models.ThreadType{
 }
 
 func Feed(c *RequestContext) ResponseData {
-	numPosts, err := hmndata.CountPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
+	numPosts, err := hmndata.CountPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ThreadTypes: feedThreadTypes,
 	})
 	if err != nil {
@@ -156,7 +156,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 			if hasAll {
 				itemsPerFeed = 100000
 			}
-			projectsAndStuff, err := hmndata.FetchProjects(c.Context(), c.Conn, nil, hmndata.ProjectsQuery{
+			projectsAndStuff, err := hmndata.FetchProjects(c, c.Conn, nil, hmndata.ProjectsQuery{
 				Limit:   itemsPerFeed,
 				Types:   hmndata.OfficialProjects,
 				OrderBy: "date_approved DESC",
@@ -188,7 +188,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 			feedData.AtomFeedUrl = hmnurl.BuildAtomFeedForShowcase()
 			feedData.FeedUrl = hmnurl.BuildShowcase()
 
-			snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+			snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 				Limit: itemsPerFeed,
 			})
 			if err != nil {
@@ -215,7 +215,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 }
 
 func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostListItem, error) {
-	postsAndStuff, err := hmndata.FetchPosts(c.Context(), c.Conn, c.CurrentUser, hmndata.PostsQuery{
+	postsAndStuff, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ThreadTypes:    feedThreadTypes,
 		Limit:          limit,
 		Offset:         offset,
@@ -225,7 +225,7 @@ func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostLi
 		return nil, err
 	}
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c.Context(), c.Conn)
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 

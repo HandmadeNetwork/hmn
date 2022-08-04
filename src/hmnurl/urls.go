@@ -192,6 +192,13 @@ func BuildProjectSubmissionGuidelines() string {
 	return Url("/project-guidelines", nil)
 }
 
+var RegexConferences = regexp.MustCompile("^/conferences$")
+
+func BuildConferences() string {
+	defer CatchPanic()
+	return Url("/conferences", nil)
+}
+
 /*
 * User
  */

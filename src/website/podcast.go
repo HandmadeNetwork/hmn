@@ -126,29 +126,29 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 
 	title := c.Req.Form.Get("title")
 	if len(strings.TrimSpace(title)) == 0 {
-		return RejectRequest(c, "Podcast title is empty")
+		return c.RejectRequest("Podcast title is empty")
 	}
 	description := c.Req.Form.Get("description")
 	if len(strings.TrimSpace(description)) == 0 {
-		return RejectRequest(c, "Podcast description is empty")
+		return c.RejectRequest("Podcast description is empty")
 	}
 
 	c.Perf.StartBlock("SQL", "Updating podcast")
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to start db transaction"))
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
 	imageSaveResult := SaveImageFile(c, tx, "podcast_image", maxFileSize, fmt.Sprintf("podcast/%s/logo%d", c.CurrentProject.Slug, time.Now().UTC().Unix()))
 	if imageSaveResult.ValidationError != "" {
-		return RejectRequest(c, imageSaveResult.ValidationError)
+		return c.RejectRequest(imageSaveResult.ValidationError)
 	} else if imageSaveResult.FatalError != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(imageSaveResult.FatalError, "Failed to save podcast image"))
 	}
 
 	if imageSaveResult.ImageFile != nil {
-		_, err = tx.Exec(c.Context(),
+		_, err = tx.Exec(c,
 			`
 			UPDATE podcast
 			SET
@@ -166,7 +166,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update podcast"))
 		}
 	} else {
-		_, err = tx.Exec(c.Context(),
+		_, err = tx.Exec(c,
 			`
 			UPDATE podcast
 			SET
@@ -179,7 +179,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 			podcastResult.Podcast.ID,
 		)
 	}
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	c.Perf.EndBlock()
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to commit db transaction"))
@@ -357,16 +357,16 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	c.Req.ParseForm()
 	title := c.Req.Form.Get("title")
 	if len(strings.TrimSpace(title)) == 0 {
-		return RejectRequest(c, "Episode title is empty")
+		return c.RejectRequest("Episode title is empty")
 	}
 	description := c.Req.Form.Get("description")
 	if len(strings.TrimSpace(description)) == 0 {
-		return RejectRequest(c, "Episode description is empty")
+		return c.RejectRequest("Episode description is empty")
 	}
 	episodeNumberStr := c.Req.Form.Get("episode_number")
 	episodeNumber, err := strconv.Atoi(episodeNumberStr)
 	if err != nil {
-		return RejectRequest(c, "Episode number can't be parsed")
+		return c.RejectRequest("Episode number can't be parsed")
 	}
 	episodeFile := c.Req.Form.Get("episode_file")
 	found = false
@@ -378,7 +378,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	}
 
 	if !found {
-		return RejectRequest(c, "Requested episode file not found")
+		return c.RejectRequest("Requested episode file not found")
 	}
 
 	c.Perf.StartBlock("MP3", "Parsing mp3 file for duration")
@@ -417,7 +417,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	if isEdit {
 		guidStr = podcastResult.Episodes[0].GUID.String()
 		c.Perf.StartBlock("SQL", "Updating podcast episode")
-		_, err := c.Conn.Exec(c.Context(),
+		_, err := c.Conn.Exec(c,
 			`
 			UPDATE podcast_episode
 			SET
@@ -446,7 +446,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		guid := uuid.New()
 		guidStr = guid.String()
 		c.Perf.StartBlock("SQL", "Creating new podcast episode")
-		_, err := c.Conn.Exec(c.Context(),
+		_, err := c.Conn.Exec(c,
 			`
 			INSERT INTO podcast_episode
 				(guid, title, description, description_rendered, audio_filename, duration, pub_date, episode_number, podcast_id)
@@ -532,7 +532,7 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 		Podcast       models.Podcast `db:"podcast"`
 		ImageFilename string         `db:"imagefile.file"`
 	}
-	podcastQueryResult, err := db.QueryOne[podcastQuery](c.Context(), c.Conn,
+	podcastQueryResult, err := db.QueryOne[podcastQuery](c, c.Conn,
 		`
 		SELECT $columns
 		FROM
@@ -558,7 +558,7 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 	if fetchEpisodes {
 		if episodeGUID == "" {
 			c.Perf.StartBlock("SQL", "Fetch podcast episodes")
-			episodes, err := db.Query[models.PodcastEpisode](c.Context(), c.Conn,
+			episodes, err := db.Query[models.PodcastEpisode](c, c.Conn,
 				`
 				SELECT $columns
 				FROM podcast_episode AS episode
@@ -578,7 +578,7 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 				return result, err
 			}
 			c.Perf.StartBlock("SQL", "Fetch podcast episode")
-			episode, err := db.QueryOne[models.PodcastEpisode](c.Context(), c.Conn,
+			episode, err := db.QueryOne[models.PodcastEpisode](c, c.Conn,
 				`
 				SELECT $columns
 				FROM podcast_episode AS episode

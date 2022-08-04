@@ -42,7 +42,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 	submittedProjectUrl := ""
 	if daysUntilStart <= 0 && daysUntilEnd > 0 {
 		if c.CurrentUser != nil {
-			projects, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 				OwnerIDs: []int{c.CurrentUser.ID},
 				JamSlugs: []string{hmndata.WRJ2022.Slug},
 				Limit:    1,
@@ -56,7 +56,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 			}
 		}
 
-		jamProjects, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 			JamSlugs: []string{hmndata.WRJ2022.Slug},
 		})
 		if err != nil {
@@ -70,7 +70,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 			}
 		}
 
-		snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+		snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 			Tags:  jamProjectTags,
 			Limit: 12,
 		})
@@ -100,7 +100,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 }
 
 func JamFeed2022(c *RequestContext) ResponseData {
-	jamProjects, err := hmndata.FetchProjects(c.Context(), c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 		JamSlugs: []string{hmndata.WRJ2022.Slug},
 	})
 	if err != nil {
@@ -114,7 +114,7 @@ func JamFeed2022(c *RequestContext) ResponseData {
 		}
 	}
 
-	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		Tags: jamProjectTags,
 	})
 	if err != nil {
@@ -169,7 +169,7 @@ func JamIndex2021(c *RequestContext) ResponseData {
 	}
 
 	tagId := -1
-	jamTag, err := hmndata.FetchTag(c.Context(), c.Conn, hmndata.TagQuery{
+	jamTag, err := hmndata.FetchTag(c, c.Conn, hmndata.TagQuery{
 		Text: []string{"wheeljam"},
 	})
 	if err == nil {
@@ -178,7 +178,7 @@ func JamIndex2021(c *RequestContext) ResponseData {
 		c.Logger.Warn().Err(err).Msg("failed to fetch jam tag; will fetch all snippets as a result")
 	}
 
-	snippets, err := hmndata.FetchSnippets(c.Context(), c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		Tags: []int{tagId},
 	})
 	if err != nil {

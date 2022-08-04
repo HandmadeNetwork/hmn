@@ -15,7 +15,7 @@ deploy: ## Manually build and deploy a branch of the website.
 	/home/hmn/hmn/server/deploy.sh
 
 build: ## Rebuild the website binary
-	sudo -u hmn --preserve-env=PATH bash -c "cd ~/hmn && go build -o /home/hmn/bin/hmn src/main.go"
+	sudo -u hmn --preserve-env=PATH bash -c "cd ~/hmn && go build -o /home/hmn/bin/hmn ."
 
 edit-config: ## Edit the website config
 	vim /home/hmn/hmn/src/config/config.go

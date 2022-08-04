@@ -30,7 +30,7 @@ func Snippet(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	s, err := hmndata.FetchSnippet(c.Context(), c.Conn, c.CurrentUser, snippetId, hmndata.SnippetQuery{})
+	s, err := hmndata.FetchSnippet(c, c.Conn, c.CurrentUser, snippetId, hmndata.SnippetQuery{})
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			return FourOhFour(c)

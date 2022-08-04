@@ -40,36 +40,42 @@ var fishbowls = [...]fishbowlInfo{
 		Title:       "The future of operating systems in an Internet world",
 		Description: `Despite the web's technical problems, it dominates software development today, largely due to its cross-platform support and ease of distribution. At the same time, our discussions about the future of programming tend to involve new "operating systems", but those discussions rarely take the Internet into account. What could future operating systems look like in a world defined by the Internet?`,
 		Month:       time.May, Year: 2020,
+		ContentsPath: "internet-os/internet-os.html",
 	},
 	{
 		Slug:        "metaprogramming",
 		Title:       "Compile-time introspection and metaprogramming",
 		Description: `Thanks to new languages like Zig and Jai, compile-time execution and metaprogramming are a popular topic of discussion in the community. This fishbowl explores metaprogramming in more detail, and discusses to what extent it is actually necessary, or just a waste of time.`,
 		Month:       time.June, Year: 2020,
+		ContentsPath: "metaprogramming/metaprogramming.html",
 	},
 	{
 		Slug:        "lisp-jam",
 		Title:       "Lessons from the Lisp Jam",
 		Description: `In the summer of 2020 we held a Lisp jam, where many community members made exploratory Lisp-inspired projects. We held this fishbowl as a recap, as a time for the participants to share what they learned and explore how those lessons relate to our day-to-day programming.`,
 		Month:       time.August, Year: 2020,
+		ContentsPath: "lisp-jam/lisp-jam.html",
 	},
 	{
 		Slug:        "parallel-programming",
 		Title:       "Approaches to parallel programming",
 		Description: `A discussion of many aspects of parallelism and concurrency in programming, and the pros and cons of different programming methodologies.`,
 		Month:       time.November, Year: 2020,
+		ContentsPath: "parallel-programming/parallel-programming.html",
 	},
 	{
 		Slug:        "skimming",
 		Title:       "Code skimmability as the root cause for bad code structure decisions", // real snappy, this one
 		Description: `Programmers tend to care a lot about "readability". This usually means having small classes, small functions, small files. This code might be "readable" at a glance, but this doesn't really help you understand the program—it's just "skimmable". How can we think about "readability" in a more productive way?`,
 		Month:       time.January, Year: 2021,
+		ContentsPath: "skimming/skimming.html",
 	},
 	{
 		Slug:        "config",
 		Title:       "How to design to avoid configuration",
 		Description: `Configuration sucks. How can we avoid it, while still making software that supports a wide range of behaviors? What is the essence of "configuration", and how can we identify it? How can we identify what is "bad config", and design our software to avoid it?`,
 		Month:       time.March, Year: 2021,
+		ContentsPath: "config/config.html",
 	},
 	{
 		Slug:        "simplicity-performance",
@@ -98,6 +104,13 @@ var fishbowls = [...]fishbowlInfo{
 		Description: "Is object-oriented programming bad? Is it good? What even is it, anyway? This fishbowl explores OOP more carefully—what is the essence of it, what are the good parts, why did it take over the world, and why do we criticize it so much?",
 		Month:       time.May, Year: 2022,
 		ContentsPath: "oop/OOP.html",
+	},
+	{
+		Slug:        "libraries",
+		Title:       "When do libraries go sour?",
+		Description: "The Handmade community is often opposed to using libraries. But let's get more specific about why that can be, and whether that's reasonable. What do we look for in a library? When do libraries go sour? How do we evaluate libraries before using them? How can the libraries we make avoid these problems?",
+		Month:       time.July, Year: 2022,
+		ContentsPath: "libraries/libraries.html",
 	},
 }
 
@@ -203,7 +216,7 @@ func Fishbowl(c *RequestContext) ResponseData {
 func FishbowlFiles(c *RequestContext) ResponseData {
 	var res ResponseData
 	fishbowlHTTPFS.ServeHTTP(&res, c.Req)
-	AddCORSHeaders(c, &res)
+	addCORSHeaders(c, &res)
 	return res
 }
 
@@ -221,7 +234,7 @@ func linkifyDiscordContent(c *RequestContext, dbConn db.ConnOrTx, content string
 		discordUserIds = append(discordUserIds, id)
 	}
 
-	hmnUsers, err := hmndata.FetchUsers(c.Context(), dbConn, c.CurrentUser, hmndata.UsersQuery{
+	hmnUsers, err := hmndata.FetchUsers(c, dbConn, c.CurrentUser, hmndata.UsersQuery{
 		DiscordUserIDs: discordUserIds,
 	})
 	if err != nil {

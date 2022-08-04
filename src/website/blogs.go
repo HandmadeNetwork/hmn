@@ -37,7 +37,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 
 	const postsPerPage = 20
 
-	numThreads, err := hmndata.CountThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+	numThreads, err := hmndata.CountThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -51,7 +51,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		return c.Redirect(c.UrlContext.BuildBlog(page), http.StatusSeeOther)
 	}
 
-	threads, err := hmndata.FetchThreads(c.Context(), c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+	threads, err := hmndata.FetchThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:     []int{c.CurrentProject.ID},
 		ThreadTypes:    []models.ThreadType{models.ThreadTypeProjectBlogPost},
 		Limit:          postsPerPage,
@@ -78,7 +78,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 	canCreate := false
 	if c.CurrentProject.HasBlog() && c.CurrentUser != nil {
 		isProjectOwner := false
-		owners, err := hmndata.FetchProjectOwners(c.Context(), c.Conn, c.CurrentProject.ID)
+		owners, err := hmndata.FetchProjectOwners(c, c.Conn, c.CurrentProject.ID)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project owners"))
 		}
@@ -128,7 +128,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	thread, posts, err := hmndata.FetchThreadPosts(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, hmndata.PostsQuery{
+	thread, posts, err := hmndata.FetchThreadPosts(c, c.Conn, c.CurrentUser, cd.ThreadID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -155,7 +155,7 @@ func BlogThread(c *RequestContext) ResponseData {
 	// Update thread last read info
 	if c.CurrentUser != nil {
 		c.Perf.StartBlock("SQL", "Update TLRI")
-		_, err := c.Conn.Exec(c.Context(),
+		_, err := c.Conn.Exec(c,
 			`
 		INSERT INTO thread_last_read_info (thread_id, user_id, lastread)
 		VALUES ($1, $2, $3)
@@ -196,7 +196,7 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	thread, err := hmndata.FetchThread(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, hmndata.ThreadsQuery{
+	thread, err := hmndata.FetchThread(c, c.Conn, c.CurrentUser, cd.ThreadID, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -227,11 +227,11 @@ func BlogNewThread(c *RequestContext) ResponseData {
 }
 
 func BlogNewThreadSubmit(c *RequestContext) ResponseData {
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
 	err = c.Req.ParseForm()
 	if err != nil {
@@ -240,15 +240,15 @@ func BlogNewThreadSubmit(c *RequestContext) ResponseData {
 	title := c.Req.Form.Get("title")
 	unparsed := c.Req.Form.Get("body")
 	if title == "" {
-		return RejectRequest(c, "You must provide a title for your post.")
+		return c.RejectRequest("You must provide a title for your post.")
 	}
 	if unparsed == "" {
-		return RejectRequest(c, "You must provide a body for your post.")
+		return c.RejectRequest("You must provide a body for your post.")
 	}
 
 	// Create thread
 	var threadId int
-	err = tx.QueryRow(c.Context(),
+	err = tx.QueryRow(c,
 		`
 		INSERT INTO thread (title, type, project_id, first_id, last_id)
 		VALUES ($1, $2, $3, $4, $5)
@@ -265,9 +265,9 @@ func BlogNewThreadSubmit(c *RequestContext) ResponseData {
 	}
 
 	// Create everything else
-	hmndata.CreateNewPost(c.Context(), tx, c.CurrentProject.ID, threadId, models.ThreadTypeProjectBlogPost, c.CurrentUser.ID, nil, unparsed, c.Req.Host)
+	hmndata.CreateNewPost(c, tx, c.CurrentProject.ID, threadId, models.ThreadTypeProjectBlogPost, c.CurrentUser.ID, nil, unparsed, c.Req.Host)
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new blog post"))
 	}
@@ -282,11 +282,11 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c, c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -326,17 +326,17 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c, c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
-	post, err := hmndata.FetchThreadPost(c.Context(), tx, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+	post, err := hmndata.FetchThreadPost(c, tx, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -351,16 +351,16 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 	unparsed := c.Req.Form.Get("body")
 	editReason := c.Req.Form.Get("editreason")
 	if title != "" && post.Thread.FirstID != post.Post.ID {
-		return RejectRequest(c, "You can only edit the title by editing the first post.")
+		return c.RejectRequest("You can only edit the title by editing the first post.")
 	}
 	if unparsed == "" {
-		return RejectRequest(c, "You must provide a post body.")
+		return c.RejectRequest("You must provide a post body.")
 	}
 
-	hmndata.CreatePostVersion(c.Context(), tx, post.Post.ID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
+	hmndata.CreatePostVersion(c, tx, post.Post.ID, unparsed, c.Req.Host, editReason, &c.CurrentUser.ID)
 
 	if title != "" {
-		_, err := tx.Exec(c.Context(),
+		_, err := tx.Exec(c,
 			`
 			UPDATE thread SET title = $1 WHERE id = $2
 			`,
@@ -372,7 +372,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 		}
 	}
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit blog post"))
 	}
@@ -387,7 +387,7 @@ func BlogPostReply(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -421,11 +421,11 @@ func BlogPostReplySubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
 	err = c.Req.ParseForm()
 	if err != nil {
@@ -433,12 +433,12 @@ func BlogPostReplySubmit(c *RequestContext) ResponseData {
 	}
 	unparsed := c.Req.Form.Get("body")
 	if unparsed == "" {
-		return RejectRequest(c, "Your reply cannot be empty.")
+		return c.RejectRequest("Your reply cannot be empty.")
 	}
 
-	newPostId, _ := hmndata.CreateNewPost(c.Context(), tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeProjectBlogPost, c.CurrentUser.ID, &cd.PostID, unparsed, c.Req.Host)
+	newPostId, _ := hmndata.CreateNewPost(c, tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeProjectBlogPost, c.CurrentUser.ID, &cd.PostID, unparsed, c.Req.Host)
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reply to blog post"))
 	}
@@ -453,11 +453,11 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c, c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	post, err := hmndata.FetchThreadPost(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
 		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 	})
@@ -503,19 +503,19 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if !hmndata.UserCanEditPost(c.Context(), c.Conn, *c.CurrentUser, cd.PostID) {
+	if !hmndata.UserCanEditPost(c, c.Conn, *c.CurrentUser, cd.PostID) {
 		return FourOhFour(c)
 	}
 
-	tx, err := c.Conn.Begin(c.Context())
+	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		panic(err)
 	}
-	defer tx.Rollback(c.Context())
+	defer tx.Rollback(c)
 
-	threadDeleted := hmndata.DeletePost(c.Context(), tx, cd.ThreadID, cd.PostID)
+	threadDeleted := hmndata.DeletePost(c, tx, cd.ThreadID, cd.PostID)
 
-	err = tx.Commit(c.Context())
+	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete post"))
 	}
@@ -523,7 +523,7 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 	if threadDeleted {
 		return c.Redirect(c.UrlContext.BuildHomepage(), http.StatusSeeOther)
 	} else {
-		thread, err := hmndata.FetchThread(c.Context(), c.Conn, c.CurrentUser, cd.ThreadID, hmndata.ThreadsQuery{
+		thread, err := hmndata.FetchThread(c, c.Conn, c.CurrentUser, cd.ThreadID, hmndata.ThreadsQuery{
 			ProjectIDs:  []int{c.CurrentProject.ID},
 			ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
 		})
@@ -560,7 +560,7 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 		res.ThreadID = threadId
 
 		c.Perf.StartBlock("SQL", "Verify that the thread exists")
-		threadExists, err := db.QueryOneScalar[bool](c.Context(), c.Conn,
+		threadExists, err := db.QueryOneScalar[bool](c, c.Conn,
 			`
 			SELECT COUNT(*) > 0
 			FROM thread
@@ -588,7 +588,7 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 		res.PostID = postId
 
 		c.Perf.StartBlock("SQL", "Verify that the post exists")
-		postExists, err := db.QueryOneScalar[bool](c.Context(), c.Conn,
+		postExists, err := db.QueryOneScalar[bool](c, c.Conn,
 			`
 			SELECT COUNT(*) > 0
 			FROM post

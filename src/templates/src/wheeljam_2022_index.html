@@ -190,6 +190,30 @@
             background-color: rgba(0, 0, 0, 0.2);
             border-color: rgba(255, 255, 255, 0.5);
         }
+        
+        .carousel-thinger {
+            position: absolute;
+            top: 0;
+            width: 6rem;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.1); /* bg-white-10 */
+            border-radius: 0.5rem; /* br3 */
+            cursor: pointer;
+        }
+
+        .carousel-thinger.prev {
+            left: -7rem;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            background: linear-gradient(to left, rgba(255, 255, 255, 0.1), transparent);
+        }
+
+        .carousel-thinger.next {
+            right: -7rem;
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.1), transparent);
+        }
 
         @media screen and (min-width: 30em) {
             /* not small styles */
@@ -234,6 +258,8 @@
             }
         }
     </style>
+
+    <script src="{{ static "js/carousel.js" }}"></script>
 </head>
 
 <body>
@@ -253,14 +279,14 @@
                 {{ if gt .DaysUntilStart 0 }}
                     <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns" target="_blank" href="https://github.com/HandmadeNetwork/wishlist/discussions">Choose a project</a>
                 {{ else }}
-					{{ if gt .DaysUntilEnd 0 }}
-						{{ if .SubmittedProjectUrl }}
-							<a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns" target="_blank" href="{{ .SubmittedProjectUrl }}">Share your progress</a>
-						{{ else }}
-							<a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns" target="_blank" href="https://github.com/HandmadeNetwork/wishlist/discussions">Choose a project</a>
-							<a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" target="_blank" href="{{ .ProjectSubmissionUrl }}">Create a jam project</a>
-						{{ end }}
-					{{ end }}
+                    {{ if gt .DaysUntilEnd 0 }}
+                        {{ if .SubmittedProjectUrl }}
+                            <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns" target="_blank" href="{{ .SubmittedProjectUrl }}">Share your progress</a>
+                        {{ else }}
+                            <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns" target="_blank" href="https://github.com/HandmadeNetwork/wishlist/discussions">Choose a project</a>
+                            <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" target="_blank" href="{{ .ProjectSubmissionUrl }}">Create a jam project</a>
+                        {{ end }}
+                    {{ end }}
                 {{ end }}
                 <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" target="_blank" href="https://discord.gg/hmn">Join the Discord</a>
             </div>
@@ -281,29 +307,86 @@
             </p>
         </div>
 
-		{{ if .ShowcaseJson }}
-			<div id="showcase-outer-container" class="bg-black-20 pt4 pb3 pb4-ns">
-				<div class="section mw8 margin-center ph3 ph4-l">
-					{{ if gt .DaysUntilEnd 0 }}
-						<h2>Recent activity</h2>
-						<p>
-							These screenshots and videos were shared in #jam-showcase on our <a href="https://discord.gg/hmn" target="_blank">Discord</a>. Join us!
-						</p>
-					{{ else }}
-						<h2>Showcase</h2>
-						<p>
-							Post-jam text
-						</p>
-					{{ end }}
-					<div id="showcase-container" class="mw8 center-layout mh2 mh0-ns"></div>
-					<div class="actions flex justify-center">
-						<a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" target="_blank" href="{{ .ShowcaseFeedUrl }}">See more</a>
-					</div>
-				</div>
-			</div>
-		{{ end }}
+        {{ if .ShowcaseJson }}
+            <div id="showcase-outer-container" class="bg-black-20 pt4 pb3 pb4-ns">
+                <div class="section mw8 margin-center ph3 ph4-l">
+                    {{ if gt .DaysUntilEnd 0 }}
+                        <h2>Recent activity</h2>
+                        <p>
+                            These screenshots and videos were shared in #jam-showcase on our <a href="https://discord.gg/hmn" target="_blank">Discord</a>. Join us!
+                        </p>
+                    {{ else }}
+                        <h2>Showcase</h2>
+                        <p>
+                            Post-jam text
+                        </p>
+                    {{ end }}
+                    <div id="showcase-container" class="mw8 center-layout mh2 mh0-ns"></div>
+                    <div class="actions flex justify-center">
+                        <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" target="_blank" href="{{ .ShowcaseFeedUrl }}">See more</a>
+                    </div>
+                </div>
+            </div>
+        {{ end }}
 
-        <div class="bg-black-20 pt4 pb3 pb4-ns">
+        <div class="section bg-black-20 pv4 overflow-hidden">
+            <div class="mw8 margin-center ph3 ph4-l">
+                <h2>Last year's entries</h2>
+                <p>
+                    We had many incredible entries last year. Here are a few of our favorites:
+                </p>
+
+                <div class="carousel-container">
+                    <div class="carousel bg-white-10 br3 pa3 pa4-ns">
+                        <div class="carousel-item active">
+                            <img class="br2" src="{{ static "wheeljam2022/scroll.png" }}">
+                            <h3>Scroll</h3>
+                            <p>
+                                Scroll is an experimental new typesetting format and editor. The document structure is inherently non-textual; in fact, even words within paragraphs are individual nodes that can easily be selected and moved as a whole. It's a great proof-of-concept of what "word processors" could be—and it even has a PDF export.
+                            </p>
+                            <a class="b db" href="https://handmade.network/forums/jam/t/8116-jam_submition_-_scroll%252C_a_experiment_in_a_non_text_typesetting_file_format">Full Submission ➜</a>
+                            <a class="b db" href="https://youtu.be/1RjU5XJqysc?t=1083" target="_blank">Recap Interview ➜</a>
+                        </div>
+                        <div class="carousel-item">
+                            <img class="br2" src="{{ static "wheeljam2022/nearmanager.gif" }}">
+                            <h3>Near</h3>
+                            <p>
+                                Near (or Near Manager) is an experimental file viewer that breaks away from a plain hierarchy. By allowing you to flatten folder hierarchies, create custom groups, and reorder your files, Near allows you to tame any complex file structure and view it in a way that works for you.
+                            </p>
+                            <a class="b db" href="https://handmade.network/forums/jam/t/8120-jam_submission_-_near%252C_a_file_explorer_with_interesting_ideas">Full Submission ➜</a>
+                            <a class="b db" href="https://youtu.be/1RjU5XJqysc?t=435" target="_blank">Recap Interview ➜</a>
+                        </div>
+                        <div class="carousel-item">
+                            <img class="br2" src="{{ static "wheeljam2022/visaviz.png" }}">
+                            <h3>Twitter Thread Graph Explorer</h3>
+                            <p>
+                                This project extended an existing personal project with a unique way of exploring Twitter threads. When the author found existing layout algorithms insufficient, he decided to roll his own. The project submission is an insightful look at why you sometimes need to do things yourself.
+                            </p>
+                            <p>
+                                This project was featured as a demo at Handmade Seattle 2021.
+                            </p>
+                            <a class="b db" href="https://handmade.network/forums/jam/t/8137-jam_submission_-_twitter_thread_graph_explorer">Full Submission ➜</a>
+                            <a class="b db" href="https://youtu.be/1RjU5XJqysc?t=7519" target="_blank">Recap Interview ➜</a>
+                            <a class="b db" href="https://media.handmade-seattle.com/visa-viz/" target="_blank">Handmade Seattle Demo ➜</a>
+                        </div>
+                        <div class="carousel-item">
+                            <img class="br2" src="{{ static "wheeljam2022/databaseexplorer.png" }}">
+                            <h3>Database Explorer</h3>
+                            <p>
+                                This project explores a new way of querying SQL databases, by throwing away SQL in favor of a visual node graph. It allows you to incrementally build queries, seeing the data at every point along the way, and to reuse smaller queries in a way SQL cannot.
+                            </p>
+                            <a class="b db" href="https://handmade.network/forums/jam/t/8127-jam_submission__database_explorer">Full Submission ➜</a>
+                            <a class="b db" href="https://youtu.be/1RjU5XJqysc?t=6390" target="_blank">Recap Interview ➜</a>
+                        </div>
+                        <div class="carousel-thinger next"></div>
+                        <div class="carousel-thinger prev"></div>
+                    </div>
+                    <div class="carousel-buttons mt2 pv2"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt4 pb3 pb4-ns">
             <div class="section mw8 margin-center ph3 ph4-l">
                 <h2>Details / Rules</h2>
                 <p>
@@ -345,31 +428,34 @@
                             <li>If at all possible, please provide a way for people to either build or download your program.</li>
                         </ul>
                     </li>
+                    <li>There are no explicit winners, but we will be selecting a few of our favorite projects to highlight in a recap stream following the jam.</li>
                 </ul>
             </div>
         </div>
         
-        <div class="flex-ns flex-row-ns mw8 margin-center ph3 ph4-l mv4">
-            <div class="section flex-fair mb4 mb0-ns">
-                <h2>Make it by hand.</h2>
-                <p>
-                    The Handmade ethos and Handmade community are software development superpowers. Don't be afraid to question your foundations and rebuild what needs rebuilding. The community is here to help you take on those challenges and do what others might consider impossible.
-                </p>
-                <p>
-                    Of course, this is a jam, so focus on what matters to your project. There are many excellent libraries in the community that can save you time and help you focus on your core ideas. Don't be afraid to use them. But don't be afraid to do your own thing if they're holding you back.
-                </p>
-            </div>
-            <div class="section flex-fair ml4-m ml5-l">
-                <h2>Don't just rebuild. Reinvent.</h2>
-                <p>
-                    This is a chance to build something <em>truly new</em>. Learn from previous work, but don't settle for “the same, but better”. It would be a huge shame to spend a week building nothing more than a clone of the same broken software we use today.
-                </p>
-                <p>
-                    This is where working with a team can really help. Bounce ideas off each other, do some research, and brainstorm before the jam starts. The software you end up building might be pretty different from your original ideas.
-                </p>
-                <p>
-                    In the end, this is a jam. Get weird and try something different.
-                </p>
+        <div class="bg-black-20 pt4 pb3 pb4-ns">
+            <div class="flex-ns flex-row-ns mw8 margin-center ph3 ph4-l">
+                <div class="section flex-fair mb4 mb0-ns">
+                    <h2>Make it by hand.</h2>
+                    <p>
+                        The Handmade ethos and Handmade community are software development superpowers. Don't be afraid to question your foundations and rebuild what needs rebuilding. The community is here to help you take on those challenges and do what others might consider impossible.
+                    </p>
+                    <p>
+                        Of course, this is a jam, so focus on what matters to your project. There are many excellent libraries in the community that can save you time and help you focus on your core ideas. Don't be afraid to use them. But don't be afraid to do your own thing if they're holding you back.
+                    </p>
+                </div>
+                <div class="section flex-fair ml4-m ml5-l">
+                    <h2>Don't just rebuild. Reinvent.</h2>
+                    <p>
+                        This is a chance to build something <em>truly new</em>. Learn from previous work, but don't settle for “the same, but better”. It would be a huge shame to spend a week building nothing more than a clone of the same broken software we use today.
+                    </p>
+                    <p>
+                        This is where working with a team can really help. Bounce ideas off each other, do some research, and brainstorm before the jam starts. The software you end up building might be pretty different from your original ideas.
+                    </p>
+                    <p>
+                        In the end, this is a jam. Get weird and try something different.
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -377,6 +463,7 @@
             {{ template "footer.html" . }}
         </div>
     </div>
+
     {{ template "showcase_templates.html" }}
     <!-- Copy-pasted and mangled from showcase.html  -->
     <script>
@@ -437,7 +524,7 @@
 
             let rowItemEls = [];
             let rowWidth = 0;
-			let numRows = 0;
+            let numRows = 0;
 
             for (const itemEl of itemElements) {
                 const index = parseInt(itemEl.getAttribute('data-index'), 10);
@@ -450,10 +537,10 @@
 
                 if (rowWidth > width) {
                     addRow(rowItemEls, rowWidth, showcaseContainer);
-					numRows += 1;
-					if (numRows == 3) {
-						return;
-					}
+                    numRows += 1;
+                    if (numRows == 3) {
+                        return;
+                    }
 
                     rowItemEls = [];
                     rowWidth = 0;
@@ -479,6 +566,27 @@
         window.addEventListener('resize', () => {
             layout();
         });
+    </script>
+    
+    <script>
+        const carouselContainer = document.querySelector('.carousel-container');
+
+        const { next, prev } = initCarousel(carouselContainer, {
+            onChange() {
+                if (carouselContainer.getBoundingClientRect().top < 0) {
+                    carouselContainer.scrollIntoView({ behavior: 'smooth' });
+                }
+            },
+        });
+
+        document.querySelector('.carousel-thinger.next')
+            .addEventListener('click', () => {
+                next();
+            });
+        document.querySelector('.carousel-thinger.prev')
+            .addEventListener('click', () => {
+                prev();
+            });
     </script>
 </body>
 
