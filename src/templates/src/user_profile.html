@@ -26,6 +26,7 @@
 		}
 		
 	</style>
+	<script src="{{ static "js/templates.js" }}"></script>
 {{ end }}
 
 {{ define "content" }}
@@ -143,19 +144,15 @@
 				{{ end }}
 			</div>
 		{{ end }}
-		{{ if eq 1 0 }}
-			<div class="content-block ph3 ph0-ns">
-				<h2>Add Snippets</h2>
-				<div class="note">
-					Show us what you're working on.<br />
-					You can upload videos, images, and audio clips.<br />
-					Your snippets may appear on the <a href="{{ .ShowcaseUrl }}">showcase page</a>.
-				</div>
-			</div>
-		{{ end }}
-		{{ if gt (len .TimelineItems) 0 }}
+		{{ if or .OwnProfile (gt (len .TimelineItems) 0) }}
 			<div class="mv3 content-block timeline-container ph3 ph0-ns">
-				<h2>Recent Activity</h2>
+				<div class="flex flex-row items-center">
+					<h2>Recent Activity</h2>
+					<div class="flex-grow-1"></div>
+					{{ if .OwnProfile }}
+						<a href="javascript:;" class="create_snippet_link button">Add Snippet</a>
+					{{ end }}
+				</div>
 				<div class="timeline-filters mb2">
 				</div>
 				<div class="timeline">
@@ -167,6 +164,36 @@
 		{{ end }}
 	</div>
 </div>
+
+{{ if .User }}
+	{{ template "snippet_edit.html" . }}
+	<script>
+		const userName  = "{{ .User.Name }}";
+		const userAvatar = "{{ .User.AvatarUrl }}";
+		const userUrl = "{{ .User.ProfileUrl }}";
+
+
+		{{ if .OwnProfile }}
+			document.querySelector(".create_snippet_link")?.addEventListener("click", function() {
+				let snippetEdit = makeSnippetEdit(userName, userAvatar, userUrl, new Date(), "", null, [], null, null);
+				document.querySelector(".timeline").insertBefore(snippetEdit.root, document.querySelector(".timeline").children[0]);
+				document.querySelector(".create_snippet_link")?.remove();
+			});
+		{{ end }}
+
+		document.querySelector(".timeline").addEventListener("click", function(ev) {
+			if (ev.target.classList.contains("edit")) {
+				let parent = ev.target.parentElement;
+				while (parent && !parent.classList.contains("timeline-item")) {
+					parent = parent.parentElement;
+				}
+				if (parent && parent.classList.contains("timeline-item")) {
+					editTimelineSnippet(parent);
+				}
+			}
+		});
+	</script>
+{{ end }}
 <script>
 	const filterTitles = [];
 	for (const item of document.querySelectorAll('.timeline-item')) {

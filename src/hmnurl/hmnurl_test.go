@@ -120,6 +120,10 @@ func TestSnippet(t *testing.T) {
 	AssertRegexMatch(t, BuildSnippet(15), RegexSnippet, map[string]string{"snippetid": "15"})
 }
 
+func TestSnippetSubmit(t *testing.T) {
+	AssertRegexMatch(t, BuildSnippetSubmit(), RegexSnippetSubmit, nil)
+}
+
 func TestFeed(t *testing.T) {
 	AssertRegexMatch(t, BuildFeed(), RegexFeed, nil)
 	assert.Equal(t, BuildFeed(), BuildFeedWithPage(1))

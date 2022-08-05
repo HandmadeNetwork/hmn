@@ -783,9 +783,6 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 		// Match only tags for projects in which the current user is a collaborator.
 		messageTags := getDiscordTags(existingSnippet.Description)
 
-		var desiredTags []int
-		var allTags []int
-
 		// Fetch projects so we know what tags the user can apply to their snippet.
 		projects, err := hmndata.FetchProjects(ctx, tx, interned.HMNUser, hmndata.ProjectsQuery{
 			OwnerIDs: []int{interned.HMNUser.ID},
@@ -794,61 +791,40 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 			return oops.New(err, "failed to look up user projects")
 		}
 
-		projectIDs := make([]int, len(projects))
-		for i, p := range projects {
-			projectIDs[i] = p.Project.ID
-		}
-
-		userTags, err := db.Query[models.Tag](ctx, tx,
-			`
-			SELECT $columns{tag}
-			FROM
-				tag
-				JOIN project ON project.tag = tag.id
-			WHERE
-				project.id = ANY ($1)
-			`,
-			projectIDs,
-		)
-		if err != nil {
-			return oops.New(err, "failed to fetch tags for user projects")
-		}
-
-		for _, tag := range userTags {
-			allTags = append(allTags, tag.ID)
-			for _, messageTag := range messageTags {
-				if strings.EqualFold(tag.Text, messageTag) {
-					desiredTags = append(desiredTags, tag.ID)
-				}
-			}
-		}
-
 		_, err = tx.Exec(ctx,
 			`
-			DELETE FROM snippet_tag
+			DELETE FROM snippet_project
 			WHERE
 				snippet_id = $1
-				AND tag_id = ANY ($2)
+				AND kind = $2
 			`,
 			existingSnippet.ID,
-			allTags,
+			models.SnippetProjectKindDiscord,
 		)
 		if err != nil {
-			return oops.New(err, "failed to clear tags from snippet")
+			return oops.New(err, "failed to clear project association for snippet")
 		}
 
-		for _, tagID := range desiredTags {
-			_, err = tx.Exec(ctx,
-				`
-				INSERT INTO snippet_tag (snippet_id, tag_id)
-				VALUES ($1, $2)
-				ON CONFLICT DO NOTHING
-				`,
-				existingSnippet.ID,
-				tagID,
-			)
-			if err != nil {
-				return oops.New(err, "failed to associate snippet with tag")
+		for _, p := range projects {
+			if p.Tag != nil {
+				for _, messageTag := range messageTags {
+					if strings.EqualFold(p.Tag.Text, messageTag) {
+						_, err = tx.Exec(ctx,
+							`
+							INSERT INTO snippet_project (project_id, snippet_id, kind)
+							VALUES ($1, $2, $3)
+							ON CONFLICT DO NOTHING
+							`,
+							p.Project.ID,
+							existingSnippet.ID,
+							models.SnippetProjectKindDiscord,
+						)
+						if err != nil {
+							return oops.New(err, "failed to associate snippet with project")
+						}
+						break
+					}
+				}
 			}
 		}
 	}
@@ -876,6 +852,7 @@ func getDiscordTags(content string) []string {
 
 // NOTE(ben): This is maybe redundant with the regexes we use for markdown. But
 // do we actually want to reuse those, or should we keep them separate?
+// TODO(asaf): Centralize this
 var RESnippetableUrl = regexp.MustCompile(`^https?://(youtu\.be|(www\.)?youtube\.com/watch)`)
 
 func getSnippetAssetOrUrl(ctx context.Context, tx db.ConnOrTx, msg *models.DiscordMessage) (*uuid.UUID, *string, error) {

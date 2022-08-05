@@ -78,6 +78,7 @@ func ProjectToTemplate(
 	url string,
 ) Project {
 	return Project{
+		ID:                p.ID,
 		Name:              p.Name,
 		Subdomain:         p.Subdomain(),
 		Color1:            p.Color1,
@@ -297,8 +298,6 @@ func LinkToTemplate(link *models.Link) Link {
 	return tlink
 }
 
-var controlCharRegex = regexp.MustCompile(`\p{Cc}`)
-
 func TimelineItemsToJSON(items []TimelineItem) string {
 	// NOTE(asaf): As of 2021-06-22: This only serializes the data necessary for snippet showcase.
 	builder := strings.Builder{}
@@ -378,24 +377,55 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 		builder.WriteString(item.DiscordMessageUrl)
 		builder.WriteString(`",`)
 
-		builder.WriteString(`"tags":[`)
-		for i, tag := range item.Tags {
-			builder.WriteString(`{`)
+		builder.WriteString(`"projects":[`)
+		for j, proj := range item.Projects {
+			if j > 0 {
+				builder.WriteRune(',')
+			}
+			builder.WriteRune('{')
 
-			builder.WriteString(`"text":"`)
-			builder.WriteString(tag.Text)
+			builder.WriteString(`"name":"`)
+			builder.WriteString(proj.Name)
+			builder.WriteString(`",`)
+
+			builder.WriteString(`"logo":"`)
+			builder.WriteString(proj.Logo)
 			builder.WriteString(`",`)
 
 			builder.WriteString(`"url":"`)
-			builder.WriteString(tag.Url)
+			builder.WriteString(proj.Url)
 			builder.WriteString(`"`)
 
-			builder.WriteString(`}`)
-			if i < len(item.Tags)-1 {
-				builder.WriteString(`,`)
-			}
+			builder.WriteRune('}')
 		}
 		builder.WriteString(`]`)
+
+		builder.WriteRune('}')
+	}
+	builder.WriteRune(']')
+	return builder.String()
+}
+
+func SnippetEditProjectsToJSON(projects []Project) string {
+	builder := strings.Builder{}
+	builder.WriteRune('[')
+	for i, proj := range projects {
+		if i > 0 {
+			builder.WriteRune(',')
+		}
+		builder.WriteRune('{')
+
+		builder.WriteString(`"id":`)
+		builder.WriteString(strconv.FormatInt(int64(proj.ID), 10))
+		builder.WriteRune(',')
+
+		builder.WriteString(`"name":"`)
+		builder.WriteString(proj.Name)
+		builder.WriteString(`",`)
+
+		builder.WriteString(`"logo":"`)
+		builder.WriteString(proj.Logo)
+		builder.WriteRune('"')
 
 		builder.WriteRune('}')
 	}

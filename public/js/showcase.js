@@ -8,7 +8,7 @@ const TimelineMediaTypes = {
 
 const showcaseItemTemplate = makeTemplateCloner("showcase_item");
 const modalTemplate = makeTemplateCloner("timeline_modal");
-const tagTemplate = makeTemplateCloner("timeline_item_tag");
+const projectLinkTemplate = makeTemplateCloner("project_link");
 
 function showcaseTimestamp(rawDate) {
     const date = new Date(rawDate*1000);
@@ -97,14 +97,16 @@ function makeShowcaseItem(timelineItem) {
             modalEl.date.textContent = timestamp;
             modalEl.date.setAttribute("href", timelineItem.snippet_url);
 
-            if (timelineItem.tags.length === 0) {
-                modalEl.tags.remove();
+            if (timelineItem.projects.length === 0) {
+                modalEl.projects.remove();
             } else {
-                for (const tag of timelineItem.tags) {
-                    const tagItem = tagTemplate();
-                    tagItem.tag.innerText = tag.text;
+                for (const proj of timelineItem.projects) {
+                    const projectLink = projectLinkTemplate();
+                    projectLink.root.href = proj.url;
+					projectLink.logo.src = proj.logo;
+					projectLink.name.textContent = proj.name;
 
-                    modalEl.tags.appendChild(tagItem.root);
+                    modalEl.projects.appendChild(projectLink.root);
                 }
             }
 

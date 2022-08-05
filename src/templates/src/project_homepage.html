@@ -4,6 +4,7 @@
 	{{ range .Screenshots }}
 		<link rel="preload" href="{{ . }}" as="image">
 	{{ end }}
+	<script src="{{ static "js/templates.js" }}"></script>
 {{ end }}
 
 {{ define "content" }}
@@ -74,11 +75,17 @@
 				{{ .Project.Blurb }}
 			{{ end }}
 		</div>
-		{{ with .RecentActivity }}
+		{{ if or .Header.Project.CanEdit (gt (len .RecentActivity) 0) }}
 			<div class="content-block timeline-container ph3 ph0-ns mv4">
-				<h2>Recent Activity</h2>
+				<div class="flex flex-row items-center mb2">
+					<h2>Recent Activity</h2>
+					<div class="flex-grow-1"></div>
+					{{ if .Header.Project.CanEdit }}
+						<a href="javascript:;" class="create_snippet_link button">Add Snippet</a>
+					{{ end }}
+				</div>
 				<div class="timeline">
-					{{ range . }}
+					{{ range .RecentActivity }}
 						{{ template "timeline_item.html" . }}
 					{{ end }}
 				</div>
@@ -86,6 +93,35 @@
 		{{ end }}
 	</div>
 </div>
+{{ if .User }}
+	{{ template "snippet_edit.html" . }}
+	{{ if .Header.Project.CanEdit }}
+		<script>
+			const userName  = "{{ .User.Name }}";
+			const userAvatar = "{{ .User.AvatarUrl }}";
+			const userUrl = "{{ .User.ProfileUrl }}";
+			const currentProjectId = {{ .Project.ID }};
+
+			document.querySelector(".create_snippet_link")?.addEventListener("click", function() {
+				let snippetEdit = makeSnippetEdit(userName, userAvatar, userUrl, new Date(), "", null, [currentProjectId], null, null);
+				document.querySelector(".timeline").insertBefore(snippetEdit.root, document.querySelector(".timeline").children[0]);
+				document.querySelector(".create_snippet_link")?.remove();
+			});
+
+			document.querySelector(".timeline").addEventListener("click", function(ev) {
+				if (ev.target.classList.contains("edit")) {
+					let parent = ev.target.parentElement;
+					while (parent && !parent.classList.contains("timeline-item")) {
+						parent = parent.parentElement;
+					}
+					if (parent && parent.classList.contains("timeline-item")) {
+						editTimelineSnippet(parent);
+					}
+				}
+			});
+		</script>
+	{{ end }}
+{{ end }}
 <script>
 	const numCarouselItems = {{ len .Screenshots }};
 

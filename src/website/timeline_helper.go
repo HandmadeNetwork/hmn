@@ -5,8 +5,10 @@ import (
 	"html/template"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -64,11 +66,13 @@ func SnippetToTimelineItem(
 	snippet *models.Snippet,
 	asset *models.Asset,
 	discordMessage *models.DiscordMessage,
-	tags []*models.Tag,
+	projects []*hmndata.ProjectAndStuff,
 	owner *models.User,
 	currentTheme string,
+	editable bool,
 ) templates.TimelineItem {
 	item := templates.TimelineItem{
+		ID:          strconv.Itoa(snippet.ID),
 		Date:        snippet.When,
 		FilterTitle: "Snippets",
 		Url:         hmnurl.BuildSnippet(snippet.ID),
@@ -77,9 +81,11 @@ func SnippetToTimelineItem(
 		OwnerName:      owner.BestName(),
 		OwnerUrl:       hmnurl.BuildUserProfile(owner.Username),
 
-		Description: template.HTML(snippet.DescriptionHtml),
+		Description:    template.HTML(snippet.DescriptionHtml),
+		RawDescription: snippet.Description,
 
 		CanShowcase: true,
+		Editable:    editable,
 	}
 
 	if asset != nil {
@@ -111,11 +117,11 @@ func SnippetToTimelineItem(
 		item.DiscordMessageUrl = discordMessage.Url
 	}
 
-	sort.Slice(tags, func(i, j int) bool {
-		return tags[i].Text < tags[j].Text
+	sort.Slice(projects, func(i, j int) bool {
+		return projects[i].Project.Name < projects[j].Project.Name
 	})
-	for _, tag := range tags {
-		item.Tags = append(item.Tags, templates.TagToTemplate(tag))
+	for _, proj := range projects {
+		item.Projects = append(item.Projects, templates.ProjectAndStuffToTemplate(proj, hmndata.UrlContextForProject(&proj.Project).BuildHomepage(), currentTheme))
 	}
 
 	return item

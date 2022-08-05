@@ -12,6 +12,7 @@ import (
 type SnippetQuery struct {
 	IDs               []int
 	OwnerIDs          []int
+	ProjectIDs        []int
 	Tags              []int
 	DiscordMessageIDs []string
 
@@ -24,6 +25,7 @@ type SnippetAndStuff struct {
 	Asset          *models.Asset          `db:"asset"`
 	DiscordMessage *models.DiscordMessage `db:"discord_message"`
 	Tags           []*models.Tag
+	Projects       []*ProjectAndStuff
 }
 
 func FetchSnippets(
@@ -42,6 +44,7 @@ func FetchSnippets(
 	}
 	defer tx.Rollback(ctx)
 
+	var tagSnippetIDs []int
 	if len(q.Tags) > 0 {
 		// Get snippet IDs with this tag, then use that in the main query
 		snippetIDs, err := db.QueryScalar[int](ctx, tx,
@@ -64,7 +67,32 @@ func FetchSnippets(
 			return nil, nil
 		}
 
-		q.IDs = snippetIDs
+		tagSnippetIDs = snippetIDs
+	}
+
+	var projectSnippetIDs []int
+	if len(q.ProjectIDs) > 0 {
+		// Get snippet IDs for these projects, then use that in the main query
+		snippetIDs, err := db.QueryScalar[int](ctx, tx,
+			`
+			SELECT DISTINCT snippet_id
+			FROM
+				snippet_project
+			WHERE
+				project_id = ANY ($1)
+			`,
+			q.ProjectIDs,
+		)
+		if err != nil {
+			return nil, oops.New(err, "failed to get snippet IDs for tag")
+		}
+
+		// special early-out: no snippets found for these projects at all
+		if len(snippetIDs) == 0 {
+			return nil, nil
+		}
+
+		projectSnippetIDs = snippetIDs
 	}
 
 	var qb db.QueryBuilder
@@ -74,7 +102,7 @@ func FetchSnippets(
 		FROM
 			snippet
 			LEFT JOIN hmn_user AS owner ON snippet.owner_id = owner.id
-			LEFT JOIN asset AS owner_avatar ON owner_avatar.id = owner.avatar_asset_id
+			LEFT JOIN asset AS avatar ON avatar.id = owner.avatar_asset_id
 			LEFT JOIN asset ON snippet.asset_id = asset.id
 			LEFT JOIN discord_message ON snippet.discord_message_id = discord_message.id
 		WHERE
@@ -83,6 +111,12 @@ func FetchSnippets(
 	)
 	if len(q.IDs) > 0 {
 		qb.Add(`AND snippet.id = ANY ($?)`, q.IDs)
+	}
+	if len(tagSnippetIDs) > 0 {
+		qb.Add(`AND snippet.id = ANY ($?)`, tagSnippetIDs)
+	}
+	if len(projectSnippetIDs) > 0 {
+		qb.Add(`AND snippet.id = ANY ($?)`, projectSnippetIDs)
 	}
 	if len(q.OwnerIDs) > 0 {
 		qb.Add(`AND snippet.owner_id = ANY ($?)`, q.OwnerIDs)
@@ -115,6 +149,7 @@ func FetchSnippets(
 	type resultRow struct {
 		Snippet        models.Snippet         `db:"snippet"`
 		Owner          *models.User           `db:"owner"`
+		AvatarAsset    *models.Asset          `db:"avatar"`
 		Asset          *models.Asset          `db:"asset"`
 		DiscordMessage *models.DiscordMessage `db:"discord_message"`
 	}
@@ -127,6 +162,9 @@ func FetchSnippets(
 	result := make([]SnippetAndStuff, len(results)) // allocate extra space because why not
 	snippetIDs := make([]int, len(results))
 	for i, row := range results {
+		if results[i].Owner != nil {
+			results[i].Owner.AvatarAsset = results[i].AvatarAsset
+		}
 		result[i] = SnippetAndStuff{
 			Snippet:        row.Snippet,
 			Owner:          row.Owner,
@@ -165,6 +203,42 @@ func FetchSnippets(
 	for _, snippetTag := range snippetTags {
 		item := resultBySnippetId[snippetTag.SnippetID]
 		item.Tags = append(item.Tags, snippetTag.Tag)
+	}
+
+	// Fetch projects
+	type snippetProjectRow struct {
+		SnippetID int `db:"snippet_id"`
+		ProjectID int `db:"project_id"`
+	}
+	snippetProjects, err := db.Query[snippetProjectRow](ctx, tx,
+		`
+		SELECT $columns
+		FROM snippet_project
+		WHERE snippet_id = ANY($1)
+		`,
+		snippetIDs,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch project ids for snippets")
+	}
+	var projectIds []int
+	for _, sp := range snippetProjects {
+		projectIds = append(projectIds, sp.ProjectID)
+	}
+	projects, err := FetchProjects(ctx, tx, currentUser, ProjectsQuery{ProjectIDs: projectIds})
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch projects for snippets")
+	}
+	projectMap := make(map[int]*ProjectAndStuff)
+	for i := range projects {
+		projectMap[projects[i].Project.ID] = &projects[i]
+	}
+	for _, sp := range snippetProjects {
+		snip, hasResult := resultBySnippetId[sp.SnippetID]
+		proj, hasProj := projectMap[sp.ProjectID]
+		if hasResult && hasProj {
+			snip.Projects = append(snip.Projects, proj)
+		}
 	}
 
 	err = tx.Commit(ctx)

@@ -210,6 +210,7 @@ type ProjectHomepageData struct {
 	ProjectLinks   []templates.Link
 	Licenses       []templates.Link
 	RecentActivity []templates.TimelineItem
+	SnippetEdit    templates.SnippetEdit
 }
 
 func ProjectHomepage(c *RequestContext) ResponseData {
@@ -353,13 +354,8 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		))
 	}
 
-	tagId := -1
-	if c.CurrentProject.TagID != nil {
-		tagId = *c.CurrentProject.TagID
-	}
-
 	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
-		Tags: []int{tagId},
+		ProjectIDs: []int{c.CurrentProject.ID},
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project snippets"))
@@ -369,9 +365,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			&s.Snippet,
 			s.Asset,
 			s.DiscordMessage,
-			s.Tags,
+			s.Projects,
 			s.Owner,
 			c.Theme,
+			(c.CurrentUser != nil && (s.Owner.ID == c.CurrentUser.ID || c.CurrentUser.IsStaff)),
 		)
 		item.SmallInfo = true
 		templateData.RecentActivity = append(templateData.RecentActivity, item)
@@ -382,6 +379,25 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return templateData.RecentActivity[j].Date.Before(templateData.RecentActivity[i].Date)
 	})
 	c.Perf.EndBlock()
+
+	if c.CurrentUser != nil {
+		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
+		}
+		templateProjects := make([]templates.Project, 0, len(userProjects))
+		for _, p := range userProjects {
+			templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
+			templateProjects = append(templateProjects, templateProject)
+		}
+		templateData.SnippetEdit = templates.SnippetEdit{
+			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
+			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
+			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
+		}
+	}
 
 	var res ResponseData
 	err = res.WriteTemplate("project_homepage.html", templateData, c.Perf)

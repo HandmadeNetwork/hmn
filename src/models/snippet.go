@@ -6,6 +6,13 @@ import (
 	"github.com/google/uuid"
 )
 
+type SnippetProjectAssociationKind int
+
+const (
+	SnippetProjectKindDiscord SnippetProjectAssociationKind = iota + 1
+	SnippetProjectKindWebsite
+)
+
 type Snippet struct {
 	ID      int `db:"id"`
 	OwnerID int `db:"owner_id"`

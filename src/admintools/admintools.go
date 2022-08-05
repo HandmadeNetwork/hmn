@@ -466,5 +466,48 @@ func init() {
 	moveThreadsToSubforumCommand.MarkFlagRequired("subforum_slug")
 	adminCommand.AddCommand(moveThreadsToSubforumCommand)
 
+	fixupSnippetAssociation := &cobra.Command{
+		Use:   "fixupsnippets",
+		Short: "Associates tagged snippets with the right projects",
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx := context.Background()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
+
+			type snippetProject struct {
+				SnippetID int `db:"snippet_tag.snippet_id"`
+				ProjectID int `db:"project.id"`
+			}
+			res, err := db.Query[snippetProject](ctx, conn,
+				`
+				SELECT $columns
+				FROM snippet_tag
+				JOIN project ON project.tag = snippet_tag.tag_id
+				`,
+			)
+			if err != nil {
+				panic(err)
+			}
+			for _, sp := range res {
+				_, err = conn.Exec(ctx,
+					`
+					INSERT INTO snippet_project (snippet_id, project_id, kind)
+					VALUES ($1, $2, $3)
+					ON CONFLICT DO NOTHING;
+					`,
+					sp.SnippetID,
+					sp.ProjectID,
+					models.SnippetProjectKindDiscord,
+				)
+				if err != nil {
+					panic(err)
+				}
+			}
+
+			fmt.Printf("Done!\n")
+		},
+	}
+	adminCommand.AddCommand(fixupSnippetAssociation)
+
 	addProjectCommands(adminCommand)
 }

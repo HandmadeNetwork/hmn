@@ -1,4 +1,4 @@
-<div class="timeline-item flex flex-column pa3 mb2 br3" {{ with .FilterTitle }}data-filter-title="{{ . }}"{{ end }}>
+<div class="timeline-item flex flex-column pa3 mb2 br3" data-id="{{ .ID }}" {{ with .FilterTitle }}data-filter-title="{{ . }}"{{ end }}>
 	{{/* top bar - avatar, info, date */}}
 	<div class="flex items-center">
 		{{ if .OwnerAvatarUrl }}
@@ -28,12 +28,16 @@
 		{{ if .SmallInfo }}
 			<a href="{{ .Url }}">{{ timehtml (relativedate .Date) .Date }}</a>
 		{{ end }}
+		{{ if .Editable }}
+			<a href="javascript:;" class="edit ml2">&#9998;</a>
+			<div class="dn rawdesc">{{ .RawDescription }}</div>
+		{{ end }}
 	</div>
 
 	{{/* content */}}
 
 	{{ if .Description }}
-		<div class="mt3 overflow-hidden relative {{ if .TruncateDescription }}mh-5{{ end }}">
+		<div class="mt3 overflow-hidden relative pre-line {{ if .TruncateDescription }}mh-5{{ end }}">
 			<div class="post-content">{{ .Description }}</div>
 			{{ if .TruncateDescription }}
 				<div class="excerpt-fade absolute w-100 h4 bottom-0 z-999"></div>
@@ -64,12 +68,13 @@
 		</div>
 	{{ end }}
 
-	{{ with .Tags }}
-		<div class="mt3 flex">
-			{{ range $i, $tag := . }}
-				<div class="bg-theme-dimmer ph2 pv1 br2 {{ if gt $i 0 }}ml2{{ end }}">
-					{{ $tag.Text }}
-				</div>
+	{{ with .Projects }}
+		<div class="mt3 flex gap2 projects">
+			{{ range $i, $proj := . }}
+				<a data-projid="{{ $proj.ID }}" href="{{ $proj.Url }}" class="flex flex-row items-center bg-theme-dimmer ph2 pv1 br2">
+					<img src="{{ $proj.Logo }}" class="db mr1 br1 h1-5" />
+					<div>{{ $proj.Name }}</div>
+				</a>
 			{{ end }}
 		</div>
 	{{ end }}

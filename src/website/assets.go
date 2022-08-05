@@ -26,7 +26,7 @@ const assetMaxSize = 10 * 1024 * 1024
 const assetMaxSizeAdmin = 10 * 1024 * 1024 * 1024
 
 func AssetMaxSize(user *models.User) int {
-	if user.IsStaff {
+	if user != nil && user.IsStaff {
 		return assetMaxSizeAdmin
 	} else {
 		return assetMaxSize

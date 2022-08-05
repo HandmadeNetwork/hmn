@@ -114,7 +114,7 @@ func Index(c *RequestContext) ResponseData {
 	}
 	showcaseItems := make([]templates.TimelineItem, 0, len(snippets))
 	for _, s := range snippets {
-		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Tags, s.Owner, c.Theme)
+		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
 		if timelineItem.CanShowcase {
 			showcaseItems = append(showcaseItems, timelineItem)
 		}

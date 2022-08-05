@@ -4,6 +4,7 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"regexp"
 	"strings"
 	"time"
 
@@ -82,6 +83,8 @@ func names(ts []*template.Template) []string {
 
 //go:embed svg/*
 var SVGs embed.FS
+
+var controlCharRegex = regexp.MustCompile(`\p{Cc}`)
 
 var HMNTemplateFuncs = template.FuncMap{
 	"add": func(a int, b ...int) int {
@@ -219,6 +222,9 @@ var HMNTemplateFuncs = template.FuncMap{
 			precision = 2
 		}
 		return fmt.Sprintf("%.*f%s", precision, num, scales[scale])
+	},
+	"cleancontrolchars": func(str template.HTML) template.HTML {
+		return template.HTML(controlCharRegex.ReplaceAllString(string(str), ""))
 	},
 
 	// NOTE(asaf): Template specific functions:

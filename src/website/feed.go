@@ -195,7 +195,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
 			}
 			for _, s := range snippets {
-				timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Tags, s.Owner, c.Theme)
+				timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
 				feedData.Snippets = append(feedData.Snippets, timelineItem)
 			}
 			c.Perf.EndBlock()

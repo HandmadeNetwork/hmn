@@ -115,6 +115,7 @@ type Post struct {
 }
 
 type Project struct {
+	ID                int
 	Name              string
 	Subdomain         string
 	Color1            string
@@ -161,6 +162,12 @@ type ProjectJamParticipation struct {
 	JamName       string
 	JamSlug       string
 	Participating bool
+}
+
+type SnippetEdit struct {
+	AvailableProjectsJSON string
+	SubmitUrl             string
+	AssetMaxSize          int
 }
 
 type User struct {
@@ -287,6 +294,7 @@ type ThreadListItem struct {
 }
 
 type TimelineItem struct {
+	ID                string
 	Date              time.Time
 	Title             string
 	TypeTitle         string
@@ -299,8 +307,9 @@ type TimelineItem struct {
 	OwnerName      string
 	OwnerUrl       string
 
-	Tags        []Tag
-	Description template.HTML
+	Projects       []Project
+	Description    template.HTML
+	RawDescription string
 
 	PreviewMedia TimelineItemMedia
 	EmbedMedia   []TimelineItemMedia
@@ -309,6 +318,7 @@ type TimelineItem struct {
 	AllowTitleWrap      bool
 	TruncateDescription bool
 	CanShowcase         bool // whether this snippet can be shown in a showcase gallery
+	Editable            bool
 }
 
 type TimelineItemMediaType int

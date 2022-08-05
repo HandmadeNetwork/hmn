@@ -37,6 +37,8 @@ type UserProfileTemplateData struct {
 
 	AdminSetStatusUrl string
 	AdminNukeUrl      string
+
+	SnippetEdit templates.SnippetEdit
 }
 
 func UserProfile(c *RequestContext) ResponseData {
@@ -148,9 +150,10 @@ func UserProfile(c *RequestContext) ResponseData {
 			&s.Snippet,
 			s.Asset,
 			s.DiscordMessage,
-			s.Tags,
+			s.Projects,
 			profileUser,
 			c.Theme,
+			(c.CurrentUser != nil && (profileUser.ID == c.CurrentUser.ID || c.CurrentUser.IsStaff)),
 		)
 		item.SmallInfo = true
 		timelineItems = append(timelineItems, item)
@@ -168,6 +171,15 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	baseData := getBaseDataAutocrumb(c, templateUser.Name)
 
+	snippetEdit := templates.SnippetEdit{}
+	if c.CurrentUser != nil {
+		snippetEdit = templates.SnippetEdit{
+			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
+			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
+			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
+		}
+	}
+
 	var res ResponseData
 	res.MustWriteTemplate("user_profile.html", UserProfileTemplateData{
 		BaseData:            baseData,
@@ -183,6 +195,8 @@ func UserProfile(c *RequestContext) ResponseData {
 
 		AdminSetStatusUrl: hmnurl.BuildAdminSetUserStatus(),
 		AdminNukeUrl:      hmnurl.BuildAdminNukeUser(),
+
+		SnippetEdit: snippetEdit,
 	}, c.Perf)
 	return res
 }

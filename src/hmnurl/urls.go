@@ -262,6 +262,13 @@ func BuildSnippet(snippetId int) string {
 	return Url("/snippet/"+strconv.Itoa(snippetId), nil)
 }
 
+var RegexSnippetSubmit = regexp.MustCompile(`^/snippet$`)
+
+func BuildSnippetSubmit() string {
+	defer CatchPanic()
+	return Url("/snippet", nil)
+}
+
 /*
 * Feed
  */

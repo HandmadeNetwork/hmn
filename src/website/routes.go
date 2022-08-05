@@ -196,7 +196,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	attachProjectRoutes(&officialProjectRoutes)
 	attachProjectRoutes(&personalProjectRoutes)
 
-	// TODO(ben): Uh, should these all be pulled into the project route group above...?
+	anyProject.POST(hmnurl.RegexSnippetSubmit, needsAuth(csrfMiddleware(SnippetEditSubmit)))
+
 	anyProject.GET(hmnurl.RegexEpisodeList, EpisodeList)
 	anyProject.GET(hmnurl.RegexEpisode, Episode)
 	anyProject.GET(hmnurl.RegexCineraIndex, CineraIndex)

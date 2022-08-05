@@ -1,42 +1,27 @@
 {{ template "base.html" . }}
 
+{{ define "extrahead" }}
+	<script src="{{ static "js/templates.js" }}"></script>
+{{ end }}
+
 {{ define "content" }}
 <div class="content-block">
-    <div class="flex flex-column pa3 mb2 br3">
-        <div class="mb2 flex items-center">
-            <img class="avatar-icon lite mr2" src="{{ .Snippet.OwnerAvatarUrl }}"/>
-			<a class="user" href="{{ .Snippet.OwnerUrl }}">{{ .Snippet.OwnerName }}</a>
-			<a class="tr" style="flex: 1 1 auto;" href="{{ .Snippet.Url }}">{{ timehtml (relativedate .Snippet.Date) .Snippet.Date }}</a>
-        </div>
-        <div class="pre overflow-auto mb2">{{ .Snippet.Description }}</div>
-        <div>
-            {{ range .Snippet.EmbedMedia }}
-                {{ if eq .Type mediaimage }}
-                    <img src="{{ .AssetUrl }}">
-                {{ else if eq .Type mediavideo }}
-                    <video src="{{ .AssetUrl }}" preload="metadata" controls>
-                {{ else if eq .Type mediaaudio }}
-                    <audio src="{{ .AssetUrl }}" controls>
-                {{ else if eq .Type mediaembed }}
-                    <div class="mb3 aspect-ratio aspect-ratio--16x9">
-                        {{ .EmbedHTML }}
-                    </div>
-				{{ else }}
-					<div class="project-card br2 pv1 ph2">
-						<a href="{{ .AssetUrl }}" target="_blank">{{ .Filename }} ({{ filesize .FileSize }})</a>
-					</div>
-                {{ end }}
-            {{ end }}
-        </div>
-        {{ with .Snippet.Tags }}
-            <div class="mt3 flex">
-                {{ range $i, $tag := . }}
-                    <div class="bg-theme-dimmer ph2 pv1 br2 {{ if gt $i 0 }}ml2{{ end }}">
-                        {{ $tag.Text }}
-                    </div>
-                {{ end }}
-            </div>
-        {{ end }}
-    </div>
+	{{ template "timeline_item.html" .Snippet }}
 </div>
+{{ if .CanEditSnippet }}
+	{{ template "snippet_edit.html" . }}
+	<script>
+		document.querySelector(".timeline-item .edit").addEventListener("click", function(ev) {
+			if (ev.target.classList.contains("edit")) {
+				let parent = ev.target.parentElement;
+				while (parent && !parent.classList.contains("timeline-item")) {
+					parent = parent.parentElement;
+				}
+				if (parent && parent.classList.contains("timeline-item")) {
+					editTimelineSnippet(parent);
+				}
+			}
+		});
+	</script>
+{{ end }}
 {{ end }}
