@@ -14,9 +14,6 @@ import (
 func JamIndex2022(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	// If logged in, fetch jam project
-	// Link to project page if found, otherwise link to project creation page with ?jam=1
-
 	daysUntilStart := daysUntil(hmndata.WRJ2022.StartTime)
 	daysUntilEnd := daysUntil(hmndata.WRJ2022.EndTime)
 
@@ -64,16 +61,14 @@ func JamIndex2022(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
 		}
 
-		jamProjectTags := make([]int, 0, len(jamProjects))
+		projectIds := make([]int, 0, len(jamProjects))
 		for _, jp := range jamProjects {
-			if jp.Tag != nil {
-				jamProjectTags = append(jamProjectTags, jp.Tag.ID)
-			}
+			projectIds = append(projectIds, jp.Project.ID)
 		}
 
 		snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
-			Tags:  jamProjectTags,
-			Limit: 12,
+			ProjectIDs: projectIds,
+			Limit:      12,
 		})
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
