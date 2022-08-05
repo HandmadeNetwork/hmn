@@ -39,7 +39,11 @@ func Init() {
 			t := template.New(f.Name())
 			t = t.Funcs(sprig.FuncMap())
 			t = t.Funcs(HMNTemplateFuncs)
-			t, err := t.ParseFS(templateFs, "src/layouts/*.html", "src/include/*.html", "src/"+f.Name())
+			t, err := t.ParseFS(templateFs,
+				"src/layouts/*",
+				"src/include/*",
+				"src/"+f.Name(),
+			)
 			if err != nil {
 				logging.Fatal().Str("filename", f.Name()).Err(err).Msg("failed to parse template")
 			}

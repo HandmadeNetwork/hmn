@@ -28,7 +28,7 @@ var WRJ2021 = Jam{
 var WRJ2022 = Jam{
 	Name:      "Wheel Reinvention Jam 2022",
 	Slug:      "WRJ2022",
-	StartTime: time.Date(2022, 8, 15, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+	StartTime: time.Date(2022, 8, 3, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 	EndTime:   time.Date(2022, 8, 22, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 }
 

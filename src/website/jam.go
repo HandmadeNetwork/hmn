@@ -141,9 +141,14 @@ func JamFeed2022(c *RequestContext) ResponseData {
 
 	type JamFeedData struct {
 		templates.BaseData
+		DaysUntilStart, DaysUntilEnd int
+
 		JamProjects   []templates.Project
 		TimelineItems []templates.TimelineItem
 	}
+
+	daysUntilStart := daysUntil(hmndata.WRJ2022.StartTime)
+	daysUntilEnd := daysUntil(hmndata.WRJ2022.EndTime)
 
 	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2022.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
@@ -156,9 +161,11 @@ func JamFeed2022(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("wheeljam_2022_feed.html", JamFeedData{
-		BaseData:      baseData,
-		JamProjects:   pageProjects,
-		TimelineItems: timelineItems,
+		BaseData:       baseData,
+		DaysUntilStart: daysUntilStart,
+		DaysUntilEnd:   daysUntilEnd,
+		JamProjects:    pageProjects,
+		TimelineItems:  timelineItems,
 	}, c.Perf)
 	return res
 }
