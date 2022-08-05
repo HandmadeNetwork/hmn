@@ -80,7 +80,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 		}
 		showcaseItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
-			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Tags, s.Owner, c.Theme)
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
 			if timelineItem.CanShowcase {
 				showcaseItems = append(showcaseItems, timelineItem)
 			}
@@ -110,15 +110,13 @@ func JamFeed2022(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
 	}
 
-	jamProjectTags := make([]int, 0, len(jamProjects))
+	projectIds := make([]int, 0, len(jamProjects))
 	for _, jp := range jamProjects {
-		if jp.Tag != nil {
-			jamProjectTags = append(jamProjectTags, jp.Tag.ID)
-		}
+		projectIds = append(projectIds, jp.Project.ID)
 	}
 
 	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
-		Tags: jamProjectTags,
+		ProjectIDs: projectIds,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
@@ -127,9 +125,8 @@ func JamFeed2022(c *RequestContext) ResponseData {
 	timelineItems := make([]templates.TimelineItem, 0, len(snippets))
 
 	for _, s := range snippets {
-		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Tags, s.Owner, c.Theme)
+		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
 		timelineItem.SmallInfo = true
-		timelineItem.Tags = nil
 		timelineItems = append(timelineItems, timelineItem)
 	}
 
