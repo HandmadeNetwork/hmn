@@ -128,6 +128,8 @@ func JamFeed2022(c *RequestContext) ResponseData {
 
 	for _, s := range snippets {
 		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Tags, s.Owner, c.Theme)
+		timelineItem.SmallInfo = true
+		timelineItem.Tags = nil
 		timelineItems = append(timelineItems, timelineItem)
 	}
 
