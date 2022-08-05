@@ -32,6 +32,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 	type JamPageData struct {
 		templates.BaseData
 		DaysUntilStart, DaysUntilEnd int
+		StartTimeUnix, EndTimeUnix   int64
 		SubmittedProjectUrl          string
 		ProjectSubmissionUrl         string
 		ShowcaseFeedUrl              string
@@ -91,6 +92,8 @@ func JamIndex2022(c *RequestContext) ResponseData {
 		BaseData:             baseData,
 		DaysUntilStart:       daysUntilStart,
 		DaysUntilEnd:         daysUntilEnd,
+		StartTimeUnix:        hmndata.WRJ2022.StartTime.Unix(),
+		EndTimeUnix:          hmndata.WRJ2022.EndTime.Unix(),
 		ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
 		SubmittedProjectUrl:  submittedProjectUrl,
 		ShowcaseFeedUrl:      hmnurl.BuildJamFeed2022(),

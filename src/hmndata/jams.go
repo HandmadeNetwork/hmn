@@ -8,6 +8,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 type Jam struct {
@@ -27,8 +28,8 @@ var WRJ2021 = Jam{
 var WRJ2022 = Jam{
 	Name:      "Wheel Reinvention Jam 2022",
 	Slug:      "WRJ2022",
-	StartTime: time.Date(2022, 8, 15, 0, 0, 0, 0, time.UTC),
-	EndTime:   time.Date(2022, 8, 22, 0, 0, 0, 0, time.UTC),
+	StartTime: time.Date(2022, 8, 15, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+	EndTime:   time.Date(2022, 8, 22, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 }
 
 var AllJams = []Jam{WRJ2021, WRJ2022}

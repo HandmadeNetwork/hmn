@@ -6,7 +6,7 @@ function initCarousel(container, options = {}) {
     const buttonContainer = container.querySelector('.carousel-buttons');
 
     let current = 0;
-    function activateCarousel(i) {
+    function activateCarousel(i, silent = false) {
         const items = document.querySelectorAll('.carousel-item');
         for (const item of items) {
             item.classList.remove('active');
@@ -29,7 +29,9 @@ function initCarousel(container, options = {}) {
 
         current = i;
 
-        onChange(current);
+        if (!silent) {
+            onChange(current);
+        }
     }
 
     function activateNext() {
@@ -67,7 +69,7 @@ function initCarousel(container, options = {}) {
         buttonContainer.appendChild(button);
     }
 
-    activateCarousel(0);
+    activateCarousel(0, true);
 
     return {
         next: activateNext,

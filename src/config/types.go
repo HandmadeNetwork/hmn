@@ -75,12 +75,11 @@ type DiscordConfig struct {
 	OAuthClientID     string
 	OAuthClientSecret string
 
-	GuildID              string
-	MemberRoleID         string
-	ShowcaseChannelID    string
-	LibraryChannelID     string
-	StreamsChannelID     string
-	JamShowcaseChannelID string
+	GuildID           string
+	MemberRoleID      string
+	ShowcaseChannelID string
+	LibraryChannelID  string
+	StreamsChannelID  string
 }
 
 type TwitchConfig struct {
