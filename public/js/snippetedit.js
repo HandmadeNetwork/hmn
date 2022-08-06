@@ -55,6 +55,21 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 	}
 	updateProjectSelector();
 
+	if (originalSnippetEl) {
+		snippetEdit.cancelLink.addEventListener("click", function() {
+			cancel();
+		});
+	} else {
+		snippetEdit.cancelLink.remove();
+	}
+
+	function cancel() {
+		if (originalSnippetEl) {
+			snippetEdit.root.parentElement.insertBefore(originalSnippetEl, snippetEdit.root);
+		}
+		snippetEdit.root.remove();
+	}
+
 	function addProject(proj) {
 		let projEl = snippetEditProjectTemplate();
 		projEl.projectId.value = proj.id;
@@ -328,8 +343,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 		if (originalSnippetEl && (!attachmentChanged && originalText == snippetEdit.text.value.trim() && !projectsChanged)) {
 			// NOTE(asaf): We're in edit mode and nothing changed, so no need to submit to the server.
 			ev.preventDefault();
-			snippetEdit.root.parentElement.insertBefore(originalSnippetEl, snippetEdit.root);
-			snippetEdit.root.remove();
+			cancel();
 		}
 	});
 	
