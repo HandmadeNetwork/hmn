@@ -16,7 +16,7 @@ function readableByteSize(numBytes) {
 	return new Intl.NumberFormat([], { maximumFractionDigits: (scale > 0 ? 2 : 0) }).format(numBytes) + scales[scale];
 }
 
-function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmentElement, projectIds, snippetId, originalSnippetEl) {
+function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmentElement, projectIds, stickyProjectId, snippetId, originalSnippetEl) {
 	let snippetEdit = snippetEditTemplate();
 	let projectSelector = null;
 	let originalAttachment = null;
@@ -60,10 +60,14 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 		projEl.projectId.value = proj.id;
 		projEl.projectLogo.src = proj.logo;
 		projEl.projectName.textContent = proj.name;
-		projEl.removeButton.addEventListener("click", function(ev) {
-			projEl.root.remove();
-			updateProjectSelector();
-		});
+		if (proj.id == stickyProjectId) {
+			projEl.removeButton.remove();
+		} else {
+			projEl.removeButton.addEventListener("click", function(ev) {
+				projEl.root.remove();
+				updateProjectSelector();
+			});
+		}
 		snippetEdit.projectList.appendChild(projEl.root);
 	}
 
@@ -338,7 +342,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 	return snippetEdit;
 }
 
-function editTimelineSnippet(timelineItemEl) {
+function editTimelineSnippet(timelineItemEl, stickyProjectId) {
 	let ownerName = timelineItemEl.querySelector(".user")?.textContent;
 	let ownerUrl = timelineItemEl.querySelector(".user")?.href;
 	let ownerAvatar = timelineItemEl.querySelector(".avatar-icon")?.src;
@@ -353,7 +357,7 @@ function editTimelineSnippet(timelineItemEl) {
 			projectIds.push(projid);
 		}
 	}
-	let snippetEdit = makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, creationDate, rawDesc, attachment, projectIds, timelineItemEl.getAttribute("data-id"), timelineItemEl);
+	let snippetEdit = makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, creationDate, rawDesc, attachment, projectIds, stickyProjectId, timelineItemEl.getAttribute("data-id"), timelineItemEl);
 	timelineItemEl.parentElement.insertBefore(snippetEdit.root, timelineItemEl);
 	timelineItemEl.remove();
 }
