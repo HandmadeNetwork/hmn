@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"html/template"
 	"net/http"
 	"sort"
 	"strconv"
@@ -128,8 +129,8 @@ type unapprovedUserData struct {
 	User              templates.User
 	Date              time.Time
 	UserLinks         []templates.Link
-	Posts             []postWithTitle
 	ProjectsWithLinks []projectWithLinks
+	Timeline          []templates.TimelineItem
 }
 
 func AdminApprovalQueue(c *RequestContext) ResponseData {
@@ -137,6 +138,25 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
+
+	potentialUsers, err := db.QueryScalar[int](c, c.Conn,
+		`
+		SELECT id
+		FROM hmn_user
+		WHERE hmn_user.status = $1
+		`,
+		models.UserStatusConfirmed,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch unapproved users"))
+	}
+
+	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+		OwnerIDs: potentialUsers,
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch unapproved snippets"))
+	}
 
 	posts, err := fetchUnapprovedPosts(c)
 	if err != nil {
@@ -150,6 +170,28 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 
 	unapprovedUsers := make([]*unapprovedUserData, 0)
 	userIDToDataIdx := make(map[int]int)
+
+	for _, s := range snippets {
+		var userData *unapprovedUserData
+		if idx, ok := userIDToDataIdx[s.Owner.ID]; ok {
+			userData = unapprovedUsers[idx]
+		} else {
+			userData = &unapprovedUserData{
+				User:      templates.UserToTemplate(s.Owner, c.Theme),
+				UserLinks: make([]templates.Link, 0, 10),
+			}
+			unapprovedUsers = append(unapprovedUsers, userData)
+			userIDToDataIdx[s.Owner.ID] = len(unapprovedUsers) - 1
+		}
+
+		if s.Snippet.When.After(userData.Date) {
+			userData.Date = s.Snippet.When
+		}
+		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+		timelineItem.OwnerAvatarUrl = ""
+		timelineItem.SmallInfo = true
+		userData.Timeline = append(userData.Timeline, timelineItem)
+	}
 
 	for _, p := range posts {
 		var userData *unapprovedUserData
@@ -167,13 +209,11 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		if p.Post.PostDate.After(userData.Date) {
 			userData.Date = p.Post.PostDate
 		}
-		post := templates.PostToTemplate(&p.Post, &p.Author, c.Theme)
-		post.AddContentVersion(p.CurrentVersion, &p.Author) // NOTE(asaf): Don't care about editors here
-		post.Url = UrlForGenericPost(hmndata.UrlContextForProject(&p.Project), &p.Thread, &p.Post, lineageBuilder)
-		userData.Posts = append(userData.Posts, postWithTitle{
-			Post:  post,
-			Title: p.Thread.Title,
-		})
+		timelineItem := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, &p.Author, c.Theme)
+		timelineItem.OwnerAvatarUrl = ""
+		timelineItem.SmallInfo = true
+		timelineItem.Description = template.HTML(p.CurrentVersion.TextParsed)
+		userData.Timeline = append(userData.Timeline, timelineItem)
 	}
 
 	for _, p := range projects {
