@@ -66,18 +66,20 @@ func JamIndex2022(c *RequestContext) ResponseData {
 			projectIds = append(projectIds, jp.Project.ID)
 		}
 
-		snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
-			ProjectIDs: projectIds,
-			Limit:      12,
-		})
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
-		}
-		showcaseItems = make([]templates.TimelineItem, 0, len(snippets))
-		for _, s := range snippets {
-			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
-			if timelineItem.CanShowcase {
-				showcaseItems = append(showcaseItems, timelineItem)
+		if len(projectIds) > 0 {
+			snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+				ProjectIDs: projectIds,
+				Limit:      12,
+			})
+			if err != nil {
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
+			}
+			showcaseItems = make([]templates.TimelineItem, 0, len(snippets))
+			for _, s := range snippets {
+				timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+				if timelineItem.CanShowcase {
+					showcaseItems = append(showcaseItems, timelineItem)
+				}
 			}
 		}
 	}
@@ -110,23 +112,22 @@ func JamFeed2022(c *RequestContext) ResponseData {
 		projectIds = append(projectIds, jp.Project.ID)
 	}
 
-	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
-		ProjectIDs: projectIds,
-	})
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
+	var timelineItems []templates.TimelineItem
+	if len(projectIds) > 0 {
+		snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+			ProjectIDs: projectIds,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
+		}
+
+		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
+		for _, s := range snippets {
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem.SmallInfo = true
+			timelineItems = append(timelineItems, timelineItem)
+		}
 	}
-
-	timelineItems := make([]templates.TimelineItem, 0, len(snippets))
-
-	for _, s := range snippets {
-		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
-		timelineItem.SmallInfo = true
-		timelineItems = append(timelineItems, timelineItem)
-	}
-
-	// TODO(asaf): add forum posts from jam project threads to timeline
-	// TODO(asaf): Sort timeline items
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
