@@ -226,6 +226,9 @@ var HMNTemplateFuncs = template.FuncMap{
 	"cleancontrolchars": func(str template.HTML) template.HTML {
 		return template.HTML(controlCharRegex.ReplaceAllString(string(str), ""))
 	},
+	"trim": func(str template.HTML) template.HTML {
+		return template.HTML(strings.TrimSpace(string(str)))
+	},
 
 	// NOTE(asaf): Template specific functions:
 	"projectcarddata": func(project Project, classes string) ProjectCardData {
