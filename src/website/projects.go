@@ -698,7 +698,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		return res
 	}
 	links := ParseLinks(c.Req.Form.Get("links"))
-	description := c.Req.Form.Get("description")
+	description := c.Req.Form.Get("full_description")
 	parsedDescription := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
 
 	lifecycleStr := c.Req.Form.Get("lifecycle")
