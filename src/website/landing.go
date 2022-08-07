@@ -29,7 +29,8 @@ type LandingTemplateData struct {
 	AtomFeedUrl    string
 	MarkAllReadUrl string
 
-	JamUrl string
+	JamUrl                             string
+	JamDaysUntilStart, JamDaysUntilEnd int
 }
 
 func Index(c *RequestContext) ResponseData {
@@ -149,7 +150,9 @@ func Index(c *RequestContext) ResponseData {
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
 		MarkAllReadUrl: hmnurl.HMNProjectContext.BuildForumMarkRead(0),
 
-		JamUrl: hmnurl.BuildJamIndex(),
+		JamUrl:            hmnurl.BuildJamIndex(),
+		JamDaysUntilStart: daysUntil(hmndata.WRJ2022.StartTime),
+		JamDaysUntilEnd:   daysUntil(hmndata.WRJ2022.EndTime),
 	}, c.Perf)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render landing page template"))

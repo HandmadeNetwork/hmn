@@ -3,6 +3,21 @@
 {{ define "content" }}
     {{ $discordInviteURL := "https://discord.gg/zFt8Rf59?event=1004511448107602031" }}
 
+    <style>
+        .projects {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        @media screen and (min-width: 30em) {
+            /* not small styles */
+
+            .projects {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+
     <div id="top-container" class="flex flex-column items-center ph3">
         <img id="logo" src="{{ static "wheeljam2022/logo.svg" }}">
         <h1 id="title">Wheel Reinvention Jam</h1>
@@ -22,14 +37,14 @@
         <div class="actions flex justify-center">
             {{ if gt .DaysUntilStart 0 }}
                 <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns" target="_blank" href="https://github.com/HandmadeNetwork/wishlist/discussions">Find a project</a>
-            {{ else }}
-                {{ if gt .DaysUntilEnd 0 }}
-                    {{ if .SubmittedProjectUrl }}
-                        <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns" target="_blank" href="{{ .SubmittedProjectUrl }}">Share your progress</a>
-                    {{ else }}
-                        <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" target="_blank" href="{{ .ProjectSubmissionUrl }}">Create your project</a>
-                    {{ end }}
+            {{ else if gt .DaysUntilEnd 0 }}
+                {{ if .SubmittedProjectUrl }}
+                    <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns" target="_blank" href="{{ .SubmittedProjectUrl }}">Share your progress</a>
+                {{ else }}
+                    <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" target="_blank" href="{{ .ProjectSubmissionUrl }}">Create your project</a>
                 {{ end }}
+            {{ else }}
+                <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" href="{{ .ShowcaseFeedUrl }}">See the results</a>
             {{ end }}
             <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" target="_blank" href="{{ $discordInviteURL }}">Join the Discord</a>
         </div>
@@ -50,13 +65,27 @@
         </p>
     </div>
 
-    {{ if not (eq .ShowcaseJson "[]") }}
+    {{ if eq .DaysUntilEnd 0 }}
+        <div class="section bg-black-20 pv4 overflow-hidden">
+            <div class="mw8 margin-center ph3 ph4-l">
+                <h2>Submitted projects</h2>
+                <div class="mt3 projects g3 back-to-normal">
+                    {{ range .JamProjects }}
+                        {{ template "project_card.html" projectcarddata . "" }}
+                    {{ end }}
+                </div>
+                <div class="actions flex justify-center">
+                    <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" href="{{ .ShowcaseFeedUrl }}">See all updates</a>
+                </div>
+            </div>
+        </div>
+    {{ else if and (eq .DaysUntilStart 0) (not (eq .ShowcaseJson "[]")) }}
         <div id="showcase-outer-container" class="bg-black-20 pt4 pb3 pb4-ns">
             <div class="section mw8 margin-center ph3 ph4-l">
                 {{ if gt .DaysUntilEnd 0 }}
                     <h2>Recent updates</h2>
                     <p>
-                        These screenshots and videos were shared by jam participants in <b>#project-showcase</b> on our <a href="{{ $discordInviteURL }}" target="_blank">Discord</a>. Join us and share what you're working on!
+                        These screenshots and videos were shared by jam participants in <b>#project-showcase</b> on our <a href="{{ $discordInviteURL }}" target="_blank">Discord</a>. Join us and share what you're working on! <a class="b" href="{{ .ShowcaseFeedUrl }}">See all ➜</a>
                     </p>
                 {{ else }}
                     <h2>Community showcase</h2>
@@ -66,10 +95,114 @@
                 {{ end }}
                 <div id="showcase-container" class="mw8 center-layout mh2 mh0-ns"></div>
                 <div class="actions flex justify-center">
-                    <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" target="_blank" href="{{ .ShowcaseFeedUrl }}">See more</a>
+                    <a class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3" target="_blank" href="{{ .ShowcaseFeedUrl }}">See all</a>
                 </div>
             </div>
         </div>
+
+        {{ template "showcase_templates.html" }}
+        <!-- Copy-pasted and mangled from showcase.html  -->
+        <script>
+            const ROW_HEIGHT = 300;
+            const ITEM_SPACING = 4;
+
+            const showcaseItems = JSON.parse("{{ .ShowcaseJson }}");
+            const addThumbnailFuncs = new Array(showcaseItems.length);
+
+            const showcaseOuterContainer = document.querySelector('#showcase-outer-container');
+            let showcaseContainer = document.querySelector('#showcase-container');
+
+            // showcaseOuterContainer.classList.toggle('dn', showcaseItems.length === 0);
+
+            const itemElements = []; // array of arrays
+            for (let i = 0; i < showcaseItems.length; i++) {
+                const item = showcaseItems[i];
+
+                const [itemEl, addThumbnail] = makeShowcaseItem(item);
+                itemEl.container.setAttribute('data-index', i);
+                itemEl.container.setAttribute('data-date', item.date);
+
+                addThumbnailFuncs[i] = addThumbnail;
+                
+                itemElements.push(itemEl.container);
+            }
+
+            function layout() {
+                const width = showcaseContainer.getBoundingClientRect().width;
+                showcaseContainer = emptyElement(showcaseContainer);
+                
+                function addRow(itemEls, rowWidth, container) {
+                    const totalSpacing = ITEM_SPACING * (itemEls.length - 1);
+                    const scaleFactor = (width / Math.max(rowWidth, width));
+
+                    const row = document.createElement('div');
+                    row.classList.add('flex');
+                    row.classList.toggle('justify-between', rowWidth >= width);
+                    row.style.marginBottom = `${ITEM_SPACING}px`;
+                    
+                    for (const itemEl of itemEls) {
+                        const index = parseInt(itemEl.getAttribute('data-index'), 10);
+                        const item = showcaseItems[index];
+
+                        const aspect = item.width / item.height;
+                        const baseWidth = (aspect * ROW_HEIGHT) * scaleFactor;
+                        const actualWidth = baseWidth - (totalSpacing / itemEls.length);
+
+                        itemEl.style.width = `${actualWidth}px`;
+                        itemEl.style.height = `${scaleFactor * ROW_HEIGHT}px`;
+                        itemEl.style.marginRight = `${ITEM_SPACING}px`;
+
+                        row.appendChild(itemEl);
+                    }
+
+                    container.appendChild(row);
+                }
+
+                let rowItemEls = [];
+                let rowWidth = 0;
+                let numRows = 0;
+
+                for (const itemEl of itemElements) {
+                    const index = parseInt(itemEl.getAttribute('data-index'), 10);
+                    const item = showcaseItems[index];
+                    
+                    const aspect = item.width / item.height;
+                    rowWidth += aspect * ROW_HEIGHT;
+
+                    rowItemEls.push(itemEl);
+
+                    if (rowWidth > width) {
+                        addRow(rowItemEls, rowWidth, showcaseContainer);
+                        numRows += 1;
+                        if (numRows == 3) {
+                            return;
+                        }
+
+                        rowItemEls = [];
+                        rowWidth = 0;
+                    }
+                }
+
+                addRow(rowItemEls, rowWidth, showcaseContainer);
+            }
+
+            function loadImages() {
+                const items = showcaseContainer.querySelectorAll('.showcase-item');
+                for (const item of items) {
+                    const i = parseInt(item.getAttribute('data-index'), 10);
+                    addThumbnailFuncs[i]();
+                }
+            }
+
+            layout();
+            layout(); // scrollbars are fun!!
+
+            loadImages();
+
+            window.addEventListener('resize', () => {
+                layout();
+            });
+        </script>
     {{ else }}
         <div class="section bg-black-20 pv4 overflow-hidden">
             <div class="mw8 margin-center ph3 ph4-l">
@@ -229,110 +362,6 @@
             </div>
         </div>
     </div>
-
-    {{ template "showcase_templates.html" }}
-    <!-- Copy-pasted and mangled from showcase.html  -->
-    <script>
-        const ROW_HEIGHT = 300;
-        const ITEM_SPACING = 4;
-
-        const showcaseItems = JSON.parse("{{ .ShowcaseJson }}");
-        const addThumbnailFuncs = new Array(showcaseItems.length);
-
-        const showcaseOuterContainer = document.querySelector('#showcase-outer-container');
-        let showcaseContainer = document.querySelector('#showcase-container');
-
-        // showcaseOuterContainer.classList.toggle('dn', showcaseItems.length === 0);
-
-        const itemElements = []; // array of arrays
-        for (let i = 0; i < showcaseItems.length; i++) {
-            const item = showcaseItems[i];
-
-            const [itemEl, addThumbnail] = makeShowcaseItem(item);
-            itemEl.container.setAttribute('data-index', i);
-            itemEl.container.setAttribute('data-date', item.date);
-
-            addThumbnailFuncs[i] = addThumbnail;
-            
-            itemElements.push(itemEl.container);
-        }
-
-        function layout() {
-            const width = showcaseContainer.getBoundingClientRect().width;
-            showcaseContainer = emptyElement(showcaseContainer);
-            
-            function addRow(itemEls, rowWidth, container) {
-                const totalSpacing = ITEM_SPACING * (itemEls.length - 1);
-                const scaleFactor = (width / Math.max(rowWidth, width));
-
-                const row = document.createElement('div');
-                row.classList.add('flex');
-                row.classList.toggle('justify-between', rowWidth >= width);
-                row.style.marginBottom = `${ITEM_SPACING}px`;
-                
-                for (const itemEl of itemEls) {
-                    const index = parseInt(itemEl.getAttribute('data-index'), 10);
-                    const item = showcaseItems[index];
-
-                    const aspect = item.width / item.height;
-                    const baseWidth = (aspect * ROW_HEIGHT) * scaleFactor;
-                    const actualWidth = baseWidth - (totalSpacing / itemEls.length);
-
-                    itemEl.style.width = `${actualWidth}px`;
-                    itemEl.style.height = `${scaleFactor * ROW_HEIGHT}px`;
-                    itemEl.style.marginRight = `${ITEM_SPACING}px`;
-
-                    row.appendChild(itemEl);
-                }
-
-                container.appendChild(row);
-            }
-
-            let rowItemEls = [];
-            let rowWidth = 0;
-            let numRows = 0;
-
-            for (const itemEl of itemElements) {
-                const index = parseInt(itemEl.getAttribute('data-index'), 10);
-                const item = showcaseItems[index];
-                
-                const aspect = item.width / item.height;
-                rowWidth += aspect * ROW_HEIGHT;
-
-                rowItemEls.push(itemEl);
-
-                if (rowWidth > width) {
-                    addRow(rowItemEls, rowWidth, showcaseContainer);
-                    numRows += 1;
-                    if (numRows == 3) {
-                        return;
-                    }
-
-                    rowItemEls = [];
-                    rowWidth = 0;
-                }
-            }
-
-            addRow(rowItemEls, rowWidth, showcaseContainer);
-        }
-
-        function loadImages() {
-            const items = showcaseContainer.querySelectorAll('.showcase-item');
-            for (const item of items) {
-                const i = parseInt(item.getAttribute('data-index'), 10);
-                addThumbnailFuncs[i]();
-            }
-        }
-
-        layout();
-        layout(); // scrollbars are fun!!
-
-        loadImages();
-
-        window.addEventListener('resize', () => {
-            layout();
-        });
-    </script>
     
     <script>
         const carouselContainer = document.querySelector('.carousel-container');
