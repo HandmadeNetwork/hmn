@@ -204,15 +204,15 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 		if (el) {
 			snippetEdit.uploadBox.style.display = "none";
 			snippetEdit.previewBox.style.display = "block";
-			snippetEdit.uploadResetLink.style.display = "none";
+			snippetEdit.uploadResetBox.style.display = "none";
 			snippetEdit.previewContent = emptyElement(snippetEdit.previewContent);
 			snippetEdit.previewContent.appendChild(el);
 			snippetEdit.resetLink.style.display = (!originalAttachment || el == originalAttachment) ? "none" : "inline-block";
 		} else {
-			snippetEdit.uploadBox.style.display = "flex";
+			snippetEdit.uploadBox.style.display = "block";
 			snippetEdit.previewBox.style.display = "none";
 			if (originalAttachment) {
-				snippetEdit.uploadResetLink.style.display = "block";
+				snippetEdit.uploadResetBox.style.display = "block";
 			}
 		}
 	}
@@ -222,7 +222,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 		if (snippetEdit.file.files.length > 0 && snippetEdit.file.files[0].size > maxFilesize) {
 			// NOTE(asaf): Writing this out in bytes to make the limit exactly clear to the user.
 			let readableSize = new Intl.NumberFormat([], { useGrouping: "always" }).format(maxFilesize);
-			snippetEdit.errors.textContent = "File is too big! Max filesize is " + readableSize + " bytes";
+			snippetEdit.errors.textContent = "File is too big! Max filesize is " + readableSize + " bytes.";
 			sizeGood = false;
 		} else {
 			snippetEdit.errors.textContent = "";
@@ -279,7 +279,10 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 
 	snippetEdit.root.addEventListener("dragenter", function(ev) {
 		enterCounter++;
-		if (ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files.length > 0) {
+		let droppable = Array.from(ev.dataTransfer.items).some(
+			item => item.kind.toLowerCase() === "file"
+		);
+		if (droppable) {
 			snippetEdit.root.classList.add("drop");
 		}
 	});
@@ -348,6 +351,11 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 	});
 	
 	snippetEdit.deleteButton.addEventListener("click", function(ev) {
+		if (!window.confirm("Are you sure you want to delete this snippet?")) {
+			ev.preventDefault();
+			return;
+		}
+
 		snippetEdit.file.value = "";
 	});
 
