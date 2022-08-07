@@ -4,6 +4,7 @@ import (
 	"bytes"
 
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting"
@@ -42,6 +43,7 @@ var DiscordMarkdown = makeGoldmark(
 		Previews: false,
 		Embeds:   false,
 	})...),
+	goldmark.WithRendererOptions(html.WithHardWraps()),
 )
 
 func ParseMarkdown(source string, md goldmark.Markdown) string {
