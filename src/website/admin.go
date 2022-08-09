@@ -345,6 +345,10 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete spammer's projects"))
 		}
+		err = deleteAllSnippetsForUser(c, c.Conn, user.ID)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete spammer's snippets"))
+		}
 		whatHappened = fmt.Sprintf("%s banned successfully", user.Username)
 	} else {
 		whatHappened = fmt.Sprintf("Unrecognized action: %s", action)
@@ -535,5 +539,19 @@ func deleteAllProjectsForUser(ctx context.Context, conn *pgxpool.Pool, userId in
 		return oops.New(err, "failed to commit transaction")
 	}
 
+	return nil
+}
+
+func deleteAllSnippetsForUser(ctx context.Context, conn *pgxpool.Pool, userId int) error {
+	_, err := conn.Exec(ctx,
+		`
+		DELETE FROM snippet
+		WHERE owner_id = $1
+		`,
+		userId,
+	)
+	if err != nil {
+		return oops.New(err, "failed to delete snippets for user")
+	}
 	return nil
 }

@@ -471,7 +471,7 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 		}
 	}
 
-	if user != nil {
+	if user != nil && user.Status != models.UserStatusBanned {
 		c.Perf.StartBlock("SQL", "Fetching existing token")
 		resetToken, err := db.QueryOne[models.OneTimeToken](c, c.Conn,
 			`
@@ -679,6 +679,10 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 }
 
 func tryLogin(c *RequestContext, user *models.User, password string) (bool, error) {
+	if user.Status == models.UserStatusBanned {
+		return false, nil
+	}
+
 	c.Perf.StartBlock("AUTH", "Checking password")
 	defer c.Perf.EndBlock()
 	hashed, err := auth.ParsePasswordString(user.Password)
