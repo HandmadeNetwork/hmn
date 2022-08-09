@@ -110,7 +110,11 @@ function makeShowcaseItem(timelineItem) {
                 }
             }
 
-            modalEl.discord_link.href = timelineItem.discord_message_url;
+			if (timelineItem.discord_message_url != "") {
+				modalEl.discord_link.href = timelineItem.discord_message_url;
+			} else {
+				modalEl.discord_link.remove();
+			}
 
             function close() {
                 modalEl.overlay.remove();
