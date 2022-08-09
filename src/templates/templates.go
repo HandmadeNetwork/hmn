@@ -246,8 +246,9 @@ var HMNTemplateFuncs = template.FuncMap{
 		}
 	},
 
-	"mediaimage": func() TimelineItemMediaType { return TimelineItemMediaTypeImage },
-	"mediavideo": func() TimelineItemMediaType { return TimelineItemMediaTypeVideo },
-	"mediaaudio": func() TimelineItemMediaType { return TimelineItemMediaTypeAudio },
-	"mediaembed": func() TimelineItemMediaType { return TimelineItemMediaTypeEmbed },
+	"mediaimage":   func() TimelineItemMediaType { return TimelineItemMediaTypeImage },
+	"mediavideo":   func() TimelineItemMediaType { return TimelineItemMediaTypeVideo },
+	"mediaaudio":   func() TimelineItemMediaType { return TimelineItemMediaTypeAudio },
+	"mediaembed":   func() TimelineItemMediaType { return TimelineItemMediaTypeEmbed },
+	"mediaunknown": func() TimelineItemMediaType { return TimelineItemMediaTypeUnknown },
 }
