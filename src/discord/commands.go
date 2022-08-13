@@ -17,6 +17,8 @@ import (
 const SlashCommandProfile = "profile"
 const ProfileOptionUser = "user"
 
+const SlashCommandWishlist = "wishlist"
+
 // User command names
 const UserCommandProfile = "HMN Profile"
 
@@ -46,6 +48,12 @@ func (bot *botInstance) createApplicationCommands(ctx context.Context) {
 		Type: ApplicationCommandTypeUser,
 		Name: UserCommandProfile,
 	}))
+
+	doOrWarn(CreateGuildApplicationCommand(ctx, CreateGuildApplicationCommandRequest{
+		Type:        ApplicationCommandTypeChatInput,
+		Name:        SlashCommandWishlist,
+		Description: "Check out the Handmade Network wishlist",
+	}))
 }
 
 func (bot *botInstance) doInteraction(ctx context.Context, i *Interaction) {
@@ -68,6 +76,17 @@ func (bot *botInstance) doInteraction(ctx context.Context, i *Interaction) {
 		bot.handleProfileCommand(ctx, i, userID)
 	case UserCommandProfile:
 		bot.handleProfileCommand(ctx, i, i.Data.TargetID)
+	case SlashCommandWishlist:
+		err := CreateInteractionResponse(ctx, i.ID, i.Token, InteractionResponse{
+			Type: InteractionCallbackTypeChannelMessageWithSource,
+			Data: &InteractionCallbackData{
+				Content: "Check out the Handmade Network wishlist at https://github.com/HandmadeNetwork/wishlist/discussions/",
+				Flags:   FlagEphemeral,
+			},
+		})
+		if err != nil {
+			logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to send wishlist response")
+		}
 	default:
 		logging.ExtractLogger(ctx).Warn().Str("name", i.Data.Name).Msg("didn't recognize Discord interaction name")
 	}
