@@ -105,9 +105,13 @@ func BuildLogoutAction(redir string) string {
 
 var RegexRegister = regexp.MustCompile("^/register$")
 
-func BuildRegister() string {
+func BuildRegister(destination string) string {
 	defer CatchPanic()
-	return Url("/register", nil)
+	var query []Q
+	if destination != "" {
+		query = append(query, Q{"destination", destination})
+	}
+	return Url("/register", query)
 }
 
 var RegexRegistrationSuccess = regexp.MustCompile("^/registered_successfully$")
@@ -341,7 +345,7 @@ func BuildProjectNew() string {
 func BuildProjectNewJam() string {
 	defer CatchPanic()
 
-	return Url("/p/new", []Q{Q{Name: "jam", Value: "1"}})
+	return Url("/p/new", []Q{{Name: "jam", Value: "1"}})
 }
 
 var RegexPersonalProject = regexp.MustCompile("^/p/(?P<projectid>[0-9]+)(/(?P<projectslug>[a-zA-Z0-9-]+))?")

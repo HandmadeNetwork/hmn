@@ -33,11 +33,13 @@ func LoginPage(c *RequestContext) ResponseData {
 		return c.RejectRequest("You are already logged in.")
 	}
 
+	redirect := c.Req.URL.Query().Get("redirect")
+
 	var res ResponseData
 	res.MustWriteTemplate("auth_login.html", LoginPageData{
 		BaseData:          getBaseData(c, "Log in", nil),
-		RedirectUrl:       c.Req.URL.Query().Get("redirect"),
-		RegisterUrl:       hmnurl.BuildRegister(),
+		RedirectUrl:       redirect,
+		RegisterUrl:       hmnurl.BuildRegister(redirect),
 		ForgotPasswordUrl: hmnurl.BuildRequestPasswordReset(),
 	}, c.Perf)
 	return res
@@ -384,9 +386,10 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		// NOTE(asaf): We can report that the password is incorrect, because an attacker wouldn't have a valid token to begin with.
 		baseData.AddImmediateNotice("failure", "Incorrect password. Please try again.")
 		res.MustWriteTemplate("auth_email_validation.html", EmailValidationData{
-			BaseData: baseData,
-			Token:    token,
-			Username: username,
+			BaseData:       baseData,
+			Token:          token,
+			Username:       username,
+			DestinationURL: destination,
 		}, c.Perf)
 		return res
 	}
