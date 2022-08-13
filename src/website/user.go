@@ -405,10 +405,9 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 
 	// Update password
 	oldPassword := form.Get("old_password")
-	newPassword := form.Get("new_password1")
-	newPasswordConfirmation := form.Get("new_password2")
+	newPassword := form.Get("new_password")
 	if oldPassword != "" && newPassword != "" {
-		errorRes := updatePassword(c, tx, oldPassword, newPassword, newPasswordConfirmation)
+		errorRes := updatePassword(c, tx, oldPassword, newPassword)
 		if errorRes != nil {
 			return *errorRes
 		}
@@ -526,12 +525,7 @@ func UserProfileAdminNuke(c *RequestContext) ResponseData {
 	return res
 }
 
-func updatePassword(c *RequestContext, tx pgx.Tx, old, new, confirm string) *ResponseData {
-	if new != confirm {
-		res := c.RejectRequest("Your password and password confirmation did not match.")
-		return &res
-	}
-
+func updatePassword(c *RequestContext, tx pgx.Tx, old, new string) *ResponseData {
 	oldHashedPassword, err := auth.ParsePasswordString(c.CurrentUser.Password)
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to parse user's password string")

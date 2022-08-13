@@ -119,9 +119,13 @@ func BuildRegistrationSuccess() string {
 
 var RegexEmailConfirmation = regexp.MustCompile("^/email_confirmation/(?P<username>[^/]+)/(?P<token>[^/]+)$")
 
-func BuildEmailConfirmation(username, token string) string {
+func BuildEmailConfirmation(username, token string, destination string) string {
 	defer CatchPanic()
-	return Url(fmt.Sprintf("/email_confirmation/%s/%s", url.PathEscape(username), token), nil)
+	var query []Q
+	if destination != "" {
+		query = append(query, Q{"destination", destination})
+	}
+	return Url(fmt.Sprintf("/email_confirmation/%s/%s", url.PathEscape(username), token), query)
 }
 
 var RegexRequestPasswordReset = regexp.MustCompile("^/password_reset$")

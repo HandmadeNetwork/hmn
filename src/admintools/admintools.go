@@ -286,7 +286,7 @@ func init() {
 			var err error
 			switch emailType {
 			case "registration":
-				err = email.SendRegistrationEmail(toAddress, toName, "test_user", "test_token", p)
+				err = email.SendRegistrationEmail(toAddress, toName, "test_user", "test_token", "", p)
 			case "passwordreset":
 				err = email.SendPasswordReset(toAddress, toName, "test_user", "test_token", time.Now().Add(time.Hour*24), p)
 			default:

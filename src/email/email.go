@@ -26,14 +26,21 @@ type RegistrationEmailData struct {
 	CompleteRegistrationUrl string
 }
 
-func SendRegistrationEmail(toAddress string, toName string, username string, completionToken string, perf *perf.RequestPerf) error {
+func SendRegistrationEmail(
+	toAddress string,
+	toName string,
+	username string,
+	completionToken string,
+	destination string,
+	perf *perf.RequestPerf,
+) error {
 	perf.StartBlock("EMAIL", "Registration email")
 
 	perf.StartBlock("EMAIL", "Rendering template")
 	contents, err := renderTemplate("email_registration.html", RegistrationEmailData{
 		Name:                    toName,
 		HomepageUrl:             hmnurl.BuildHomepage(),
-		CompleteRegistrationUrl: hmnurl.BuildEmailConfirmation(username, completionToken),
+		CompleteRegistrationUrl: hmnurl.BuildEmailConfirmation(username, completionToken, destination),
 	})
 	if err != nil {
 		return err

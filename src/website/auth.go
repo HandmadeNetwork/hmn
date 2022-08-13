@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/auth"
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
@@ -23,6 +24,7 @@ var UsernameRegex = regexp.MustCompile(`^[0-9a-zA-Z][\w-]{2,29}$`)
 type LoginPageData struct {
 	templates.BaseData
 	RedirectUrl       string
+	RegisterUrl       string
 	ForgotPasswordUrl string
 }
 
@@ -33,8 +35,9 @@ func LoginPage(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("auth_login.html", LoginPageData{
-		BaseData:          getBaseDataAutocrumb(c, "Log in"),
+		BaseData:          getBaseData(c, "Log in", nil),
 		RedirectUrl:       c.Req.URL.Query().Get("redirect"),
+		RegisterUrl:       hmnurl.BuildRegister(),
 		ForgotPasswordUrl: hmnurl.BuildRequestPasswordReset(),
 	}, c.Perf)
 	return res
@@ -47,12 +50,14 @@ func Login(c *RequestContext) ResponseData {
 	}
 
 	redirect := form.Get("redirect")
-	if redirect == "" {
-		redirect = "/"
+
+	destination := hmnurl.BuildHomepage()
+	if redirect != "" && urlIsLocal(redirect) {
+		destination = redirect
 	}
 
 	if c.CurrentUser != nil {
-		res := c.Redirect(redirect, http.StatusSeeOther)
+		res := c.Redirect(destination, http.StatusSeeOther)
 		res.AddFutureNotice("warn", fmt.Sprintf("You are already logged in as %s.", c.CurrentUser.Username))
 		return res
 	}
@@ -65,7 +70,7 @@ func Login(c *RequestContext) ResponseData {
 
 	showLoginWithFailure := func(c *RequestContext, redirect string) ResponseData {
 		var res ResponseData
-		baseData := getBaseDataAutocrumb(c, "Log in")
+		baseData := getBaseData(c, "Log in", nil)
 		baseData.AddImmediateNotice("failure", "Incorrect username or password")
 		res.MustWriteTemplate("auth_login.html", LoginPageData{
 			BaseData:          baseData,
@@ -105,7 +110,7 @@ func Login(c *RequestContext) ResponseData {
 		return c.RejectRequest("You must validate your email address before logging in. You should've received an email shortly after registration. If you did not receive the email, please contact the staff.")
 	}
 
-	res := c.Redirect(redirect, http.StatusSeeOther)
+	res := c.Redirect(destination, http.StatusSeeOther)
 	err = loginUser(c, user, &res)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
@@ -114,12 +119,14 @@ func Login(c *RequestContext) ResponseData {
 }
 
 func Logout(c *RequestContext) ResponseData {
-	redir := c.Req.URL.Query().Get("redirect")
-	if redir == "" {
-		redir = "/"
+	redirect := c.Req.URL.Query().Get("redirect")
+
+	destination := hmnurl.BuildHomepage()
+	if redirect != "" && urlIsLocal(redirect) {
+		destination = redirect
 	}
 
-	res := c.Redirect(redir, http.StatusSeeOther)
+	res := c.Redirect(destination, http.StatusSeeOther)
 	logoutUser(c, &res)
 	return res
 }
@@ -128,9 +135,21 @@ func RegisterNewUser(c *RequestContext) ResponseData {
 	if c.CurrentUser != nil {
 		c.Redirect(hmnurl.BuildUserSettings(c.CurrentUser.Username), http.StatusSeeOther)
 	}
+
 	// TODO(asaf): Do something to prevent bot registration
+
+	type RegisterPageData struct {
+		templates.BaseData
+		DestinationURL string
+	}
+
+	tmpl := RegisterPageData{
+		BaseData:       getBaseData(c, "Register", nil),
+		DestinationURL: c.Req.URL.Query().Get("destination"),
+	}
+
 	var res ResponseData
-	res.MustWriteTemplate("auth_register.html", getBaseDataAutocrumb(c, "Register"), c.Perf)
+	res.MustWriteTemplate("auth_register.html", tmpl, c.Perf)
 	return res
 }
 
@@ -144,7 +163,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	displayName := strings.TrimSpace(c.Req.Form.Get("displayname"))
 	emailAddress := strings.TrimSpace(c.Req.Form.Get("email"))
 	password := c.Req.Form.Get("password")
-	password2 := c.Req.Form.Get("password2")
+	destination := strings.TrimSpace(c.Req.Form.Get("destination"))
 	if !UsernameRegex.Match([]byte(username)) {
 		return c.RejectRequest("Invalid username")
 	}
@@ -153,9 +172,6 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	}
 	if len(password) < 8 {
 		return c.RejectRequest("Password too short")
-	}
-	if password != password2 {
-		return c.RejectRequest("Password confirmation doesn't match password")
 	}
 
 	c.Perf.StartBlock("SQL", "Check blacklist")
@@ -257,7 +273,14 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	if mailName == "" {
 		mailName = username
 	}
-	err = email.SendRegistrationEmail(emailAddress, mailName, username, ott, c.Perf)
+	err = email.SendRegistrationEmail(
+		emailAddress,
+		mailName,
+		username,
+		ott,
+		destination,
+		c.Perf,
+	)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send registration email"))
 	}
@@ -283,7 +306,7 @@ func RegisterNewUserSuccess(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("auth_register_success.html", RegisterNewUserSuccessData{
-		BaseData:     getBaseDataAutocrumb(c, "Register"),
+		BaseData:     getBaseData(c, "Register", nil),
 		ContactUsUrl: hmnurl.BuildContactPage(),
 	}, c.Perf)
 	return res
@@ -291,8 +314,9 @@ func RegisterNewUserSuccess(c *RequestContext) ResponseData {
 
 type EmailValidationData struct {
 	templates.BaseData
-	Token    string
-	Username string
+	Token          string
+	Username       string
+	DestinationURL string
 }
 
 func EmailConfirmation(c *RequestContext) ResponseData {
@@ -329,9 +353,10 @@ func EmailConfirmation(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("auth_email_validation.html", EmailValidationData{
-		BaseData: getBaseDataAutocrumb(c, "Register"),
-		Token:    token,
-		Username: username,
+		BaseData:       getBaseData(c, "Register", nil),
+		Token:          token,
+		Username:       username,
+		DestinationURL: c.Req.URL.Query().Get("destination"),
 	}, c.Perf)
 	return res
 }
@@ -342,6 +367,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 	token := c.Req.Form.Get("token")
 	username := c.Req.Form.Get("username")
 	password := c.Req.Form.Get("password")
+	destination := c.Req.Form.Get("destination")
 
 	validationResult := validateUsernameAndToken(c, username, token, models.TokenTypeRegistration)
 	if !validationResult.Match {
@@ -354,7 +380,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	} else if !success {
 		var res ResponseData
-		baseData := getBaseDataAutocrumb(c, "Register")
+		baseData := getBaseData(c, "Register", nil)
 		// NOTE(asaf): We can report that the password is incorrect, because an attacker wouldn't have a valid token to begin with.
 		baseData.AddImmediateNotice("failure", "Incorrect password. Please try again.")
 		res.MustWriteTemplate("auth_email_validation.html", EmailValidationData{
@@ -401,7 +427,12 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	res := c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
+	redirect := hmnurl.BuildHomepage()
+	if destination != "" && urlIsLocal(destination) {
+		redirect = destination
+	}
+
+	res := c.Redirect(redirect, http.StatusSeeOther)
 	res.AddFutureNotice("success", "You've completed your registration successfully!")
 	err = loginUser(c, validationResult.User, &res)
 	if err != nil {
@@ -432,7 +463,7 @@ func RequestPasswordReset(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
 	}
 	var res ResponseData
-	res.MustWriteTemplate("auth_password_reset.html", getBaseDataAutocrumb(c, "Password Reset"), c.Perf)
+	res.MustWriteTemplate("auth_password_reset.html", getBaseData(c, "Password Reset", nil), c.Perf)
 	return res
 }
 
@@ -550,7 +581,7 @@ func PasswordResetSent(c *RequestContext) ResponseData {
 	}
 	var res ResponseData
 	res.MustWriteTemplate("auth_password_reset_sent.html", PasswordResetSentData{
-		BaseData:     getBaseDataAutocrumb(c, "Password Reset"),
+		BaseData:     getBaseData(c, "Password Reset", nil),
 		ContactUsUrl: hmnurl.BuildContactPage(),
 	}, c.Perf)
 	return res
@@ -584,7 +615,7 @@ func DoPasswordReset(c *RequestContext) ResponseData {
 	}
 
 	res.MustWriteTemplate("auth_do_password_reset.html", DoPasswordResetData{
-		BaseData: getBaseDataAutocrumb(c, "Password Reset"),
+		BaseData: getBaseData(c, "Password Reset", nil),
 		Username: username,
 		Token:    token,
 	}, c.Perf)
@@ -597,7 +628,6 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 	token := c.Req.Form.Get("token")
 	username := c.Req.Form.Get("username")
 	password := c.Req.Form.Get("password")
-	password2 := c.Req.Form.Get("password2")
 
 	validationResult := validateUsernameAndToken(c, username, token, models.TokenTypePasswordReset)
 	if !validationResult.Match {
@@ -610,9 +640,6 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 
 	if len(password) < 8 {
 		return c.RejectRequest("Password too short")
-	}
-	if password != password2 {
-		return c.RejectRequest("Password confirmation doesn't match password")
 	}
 
 	hashed := auth.HashPassword(password)
@@ -805,4 +832,8 @@ func validateUsernameAndToken(c *RequestContext, username string, token string, 
 	}
 
 	return result
+}
+
+func urlIsLocal(url string) bool {
+	return strings.HasPrefix(url, config.Config.BaseUrl)
 }
