@@ -19,6 +19,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/twitch"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4"
 )
@@ -319,6 +320,15 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c)
 
+	hasDiscordUser := utils.Must1(db.QueryOneScalar[bool](c, tx,
+		`
+		SELECT COUNT(*) <> 0
+		FROM discord_user
+		WHERE hmn_user_id = $1
+		`,
+		c.CurrentUser.ID,
+	))
+
 	form, err := c.GetFormValues()
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to parse form on user update")
@@ -342,23 +352,19 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	discordShowcaseAuto := form.Get("discord-showcase-auto") != ""
 	discordDeleteSnippetOnMessageDelete := form.Get("discord-snippet-keep") == ""
 
-	_, err = tx.Exec(c,
+	var qb db.QueryBuilder
+	qb.Add(
 		`
 		UPDATE hmn_user
 		SET
-			name = $2,
-			email = $3,
-			showemail = $4,
-			darktheme = $5,
-			blurb = $6,
-			signature = $7,
-			bio = $8,
-			discord_save_showcase = $9,
-			discord_delete_snippet_on_message_delete = $10
-		WHERE
-			id = $1
+			name = $?,
+			email = $?,
+			showemail = $?,
+			darktheme = $?,
+			blurb = $?,
+			signature = $?,
+			bio = $?
 		`,
-		c.CurrentUser.ID,
 		name,
 		email,
 		showEmail,
@@ -366,9 +372,21 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 		blurb,
 		signature,
 		bio,
-		discordShowcaseAuto,
-		discordDeleteSnippetOnMessageDelete,
 	)
+	if hasDiscordUser {
+		qb.Add(
+			`
+			,
+			discord_save_showcase = $?,
+			discord_delete_snippet_on_message_delete = $?
+			`,
+			discordShowcaseAuto,
+			discordDeleteSnippetOnMessageDelete,
+		)
+	}
+	qb.Add(`WHERE id = $?`, c.CurrentUser.ID)
+
+	_, err = tx.Exec(c, qb.String(), qb.Args()...)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user"))
 	}
