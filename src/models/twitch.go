@@ -13,3 +13,20 @@ type TwitchStream struct {
 	Title     string    `db:"title"`
 	StartedAt time.Time `db:"started_at"`
 }
+
+type TwitchLogType int
+
+const (
+	TwitchLogTypeOther TwitchLogType = iota + 1
+	TwitchLogTypeHook
+	TwitchLogTypeREST
+)
+
+type TwitchLog struct {
+	ID       int           `db:"id"`
+	LoggedAt time.Time     `db:"logged_at"`
+	Login    string        `db:"twitch_login"`
+	Type     TwitchLogType `db:"type"`
+	Message  string        `db:"message"`
+	Payload  string        `db:"payload"`
+}

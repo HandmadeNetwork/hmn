@@ -11,8 +11,10 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/twitch"
 )
 
@@ -58,7 +60,7 @@ func TwitchEventSubCallback(c *RequestContext) ResponseData {
 		res.Write([]byte(data.Challenge))
 		return res
 	} else {
-		err := twitch.QueueTwitchNotification(messageType, body)
+		err := twitch.QueueTwitchNotification(c, c.Conn, messageType, body)
 		if err != nil {
 			c.Logger.Error().Err(err).Msg("Failed to process twitch callback")
 			// NOTE(asaf): Returning 200 either way here
@@ -69,25 +71,91 @@ func TwitchEventSubCallback(c *RequestContext) ResponseData {
 	}
 }
 
+type TwitchDebugData struct {
+	templates.BaseData
+	DataJson string
+}
+
 func TwitchDebugPage(c *RequestContext) ResponseData {
-	streams, err := db.Query[models.TwitchStream](c, c.Conn,
+	type dataUser struct {
+		Login string `json:"login"`
+		Live  bool   `json:"live"`
+	}
+	type dataLog struct {
+		ID       int    `json:"id"`
+		LoggedAt int64  `json:"loggedAt"`
+		Type     string `json:"type"`
+		Login    string `json:"login"`
+		Message  string `json:"message"`
+		Payload  string `json:"payload"`
+	}
+	type dataJson struct {
+		Users []dataUser `json:"users"`
+		Logs  []dataLog  `json:"logs"`
+	}
+	streamers, err := hmndata.FetchTwitchStreamers(c, c.Conn)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch twitch streamers"))
+	}
+	live, err := db.Query[models.TwitchStream](c, c.Conn,
 		`
 		SELECT $columns
 		FROM
 			twitch_stream
-		ORDER BY started_at DESC
 		`,
 	)
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch twitch streams"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch live twitch streamers"))
+	}
+	logs, err := db.Query[models.TwitchLog](c, c.Conn,
+		`
+		SELECT $columns
+		FROM twitch_log
+		ORDER BY logged_at DESC, id DESC
+		`,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch twitch logs"))
 	}
 
-	html := ""
-	for _, s := range streams {
-		html += fmt.Sprintf(`<a href="https://twitch.tv/%s">%s</a>%s<br />`, s.Login, s.Login, s.Title)
+	var data dataJson
+	for _, u := range streamers {
+		var user dataUser
+		user.Login = u.TwitchLogin
+		user.Live = false
+		for _, l := range live {
+			if l.Login == u.TwitchLogin {
+				user.Live = true
+				break
+			}
+		}
+		data.Users = append(data.Users, user)
+	}
+	messageTypes := []string{
+		"",
+		"Other",
+		"Hook",
+		"REST",
+	}
+	data.Logs = make([]dataLog, 0, 0)
+	for _, l := range logs {
+		var log dataLog
+		log.ID = l.ID
+		log.LoggedAt = l.LoggedAt.UnixMilli()
+		log.Login = l.Login
+		log.Type = messageTypes[l.Type]
+		log.Message = l.Message
+		log.Payload = l.Payload
+		data.Logs = append(data.Logs, log)
+	}
+	jsonStr, err := json.Marshal(data)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to stringify twitch logs"))
 	}
 	var res ResponseData
-	res.StatusCode = 200
-	res.Write([]byte(html))
+	res.MustWriteTemplate("twitch_debug.html", TwitchDebugData{
+		BaseData: getBaseDataAutocrumb(c, "Twitch Debug"),
+		DataJson: string(jsonStr),
+	}, c.Perf)
 	return res
 }

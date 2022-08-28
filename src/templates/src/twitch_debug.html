@@ -1,0 +1,163 @@
+{{ template "base.html" . }}
+
+{{ define "extrahead" }}
+<style>
+	.twitchdebug a {
+		display: block;
+		border: 1px solid grey;
+		padding: 3px;
+	}
+
+	.twitchdebug > * {
+		margin-right: 5px;
+	}
+
+	.twitchdebug .selected {
+		background: rgba(128, 255, 128, 0.2);
+	}
+
+	.twitchdebug a.live:after {
+		content: '(LIVE)';
+	}
+
+	.twitchloglist .logline {
+		cursor: pointer;
+	}
+	.twitchuserlist {
+		flex-basis: 10%;
+	}
+	table {
+		flex-basis: 40%;
+	}
+	.twitchdetails {
+		flex-basis: 50%;
+	}
+	td {
+		border: 1px solid grey;
+		padding: 3px;
+	}
+
+</style>
+{{ end }}
+
+{{ define "content" }}
+	<div class="twitchdebug flex flex-row items-start">
+		<div class="twitchuserlist flex-grow-0">
+			<a href="javascript:;" data-login="all">All</a>
+			<a href="javascript:;" data-login="none">No login</a>
+		</div>
+		<table class="flex-grow-1" cellpadding="0" cellspacing="0">
+			<thead>
+				<td>Time</td>
+				<td>Type</td>
+				<td>Login</td>
+				<td>Message</td>
+			</thead>
+			<tbody class="twitchloglist">
+			</tbody>
+		</table>
+		<div class="twitchdetails flex-grow-1">
+		</div>
+	</div>
+
+<script>
+	let userlist = document.querySelector(".twitchuserlist");
+	let loglist = document.querySelector(".twitchloglist");
+	let details = document.querySelector(".twitchdetails");
+
+	const fmt = new Intl.DateTimeFormat([], {
+		hour12: false,
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+		hour: "2-digit",
+		minute: "2-digit",
+		second: "2-digit"
+	});
+
+	const data = JSON.parse("{{ .DataJson }}");
+
+	for (let i = 0; i < data.users.length; ++i) {
+		let u = data.users[i];
+		let el = document.createElement("A");
+		el.href = "javascript:;"
+		el.textContent = u.login;
+		el.setAttribute("data-login", u.login);
+		el.classList.toggle("live", u.live);
+		userlist.appendChild(el);
+	}
+
+	function showLogs(login) {
+		loglist.innerHTML = "";
+		details.innerHTML = "";
+		let userEls = userlist.querySelectorAll("A");
+		for (let i = 0; i < userEls.length; ++i) {
+			let el = userEls[i];
+			el.classList.toggle("selected", el.getAttribute("data-login") == login);
+		}
+
+		for (let i = 0; i < data.logs.length; ++i) {
+			let log = data.logs[i];
+			if (login == "all" || log.login == login || (login == "none" && log.login == "")) {
+				let el = document.createElement("tr");
+				el.classList.add("logline");
+				el.setAttribute("data-logid", log.id);
+				let timeEl = document.createElement("td");
+				timeEl.textContent = fmt.format(new Date(log.loggedAt));
+				el.appendChild(timeEl);
+				let typeEl = document.createElement("td");
+				typeEl.textContent = log.type;
+				el.appendChild(typeEl);
+				let loginEl = document.createElement("td");
+				loginEl.textContent = log.login;
+				el.appendChild(loginEl);
+				let messageEl = document.createElement("td");
+				messageEl.textContent = log.message;
+				el.appendChild(messageEl);
+				loglist.appendChild(el);
+			}
+		}
+	}
+
+	function showDetails(logId) {
+		details.innerHTML = "";
+		for (let i = 0; i < data.logs.length; ++i) {
+			let log = data.logs[i];
+			if (log.id == logId) {
+				details.textContent = log.payload;
+				break;
+			}
+		}
+
+		let logEls = loglist.querySelectorAll("tr");
+		for (let i = 0; i < logEls.length; ++i) {
+			logEls[i].classList.toggle("selected", parseInt(logEls[i].getAttribute("data-logid"), 10) == logId);
+		}
+	}
+
+	userlist.addEventListener("click", function(ev) {
+		let el = ev.target;
+		while (el && el.tagName != "A") {
+			el = el.parentElement;
+		}
+		if (el && el.tagName == "A") {
+			let login = el.getAttribute("data-login");
+			showLogs(login);
+		}
+	});
+
+	loglist.addEventListener("click", function(ev) {
+		let el = ev.target;
+		while (el && el.tagName != "TR") {
+			el = el.parentElement;
+		}
+		if (el && el.tagName == "TR") {
+			let logId = el.getAttribute("data-logid");
+			showDetails(logId);
+		}
+	});
+
+	showLogs("all");
+
+</script>
+{{ end }}

@@ -3,6 +3,7 @@ package twitch
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
@@ -76,6 +77,7 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 					}
 					syncWithTwitch(ctx, dbConn, true)
 				case <-monitorTicker.C:
+					twitchLogClear(ctx, dbConn)
 					syncWithTwitch(ctx, dbConn, true)
 				case <-linksChangedChannel:
 					// NOTE(asaf): Since we update links inside transactions for users/projects
@@ -132,7 +134,7 @@ const (
 	notificationTypeRevocation = 4
 )
 
-func QueueTwitchNotification(messageType string, body []byte) error {
+func QueueTwitchNotification(ctx context.Context, conn db.ConnOrTx, messageType string, body []byte) error {
 	var notification twitchNotification
 	if messageType == "notification" {
 		type notificationJson struct {
@@ -152,6 +154,8 @@ func QueueTwitchNotification(messageType string, body []byte) error {
 			return oops.New(err, "failed to parse notification body")
 		}
 
+		twitchLog(ctx, conn, models.TwitchLogTypeHook, incoming.Event.BroadcasterUserLogin, "Got hook: "+incoming.Subscription.Type, string(body))
+
 		notification.Status.TwitchID = incoming.Event.BroadcasterUserID
 		notification.Status.TwitchLogin = incoming.Event.BroadcasterUserLogin
 		notification.Status.Title = incoming.Event.Title
@@ -170,6 +174,7 @@ func QueueTwitchNotification(messageType string, body []byte) error {
 			return oops.New(nil, "unknown subscription type received")
 		}
 	} else if messageType == "revocation" {
+		twitchLog(ctx, conn, models.TwitchLogTypeHook, "", "Got hook: Revocation", string(body))
 		notification.Type = notificationTypeRevocation
 	}
 
@@ -371,10 +376,12 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 		log.Error().Err(err).Msg("failed to fetch stream statuses")
 		return
 	}
+	twitchLog(ctx, tx, models.TwitchLogTypeOther, "", "Batch resync", fmt.Sprintf("%#v", statuses))
 	p.EndBlock()
 	p.StartBlock("SQL", "Update stream statuses in db")
 	for _, status := range statuses {
 		log.Debug().Interface("Status", status).Msg("Got streamer")
+		twitchLog(ctx, tx, models.TwitchLogTypeREST, status.TwitchLogin, "Resync", fmt.Sprintf("%#v", status))
 		err = updateStreamStatusInDB(ctx, tx, &status)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to update twitch stream status")
@@ -456,6 +463,7 @@ func updateStreamStatus(ctx context.Context, dbConn db.ConnOrTx, twitchID string
 		log.Error().Str("TwitchID", twitchID).Err(err).Msg("failed to fetch stream status")
 		return
 	}
+	twitchLog(ctx, dbConn, models.TwitchLogTypeREST, twitchLogin, "Fetched status", fmt.Sprintf("%#v", result))
 	if len(result) > 0 {
 		log.Debug().Interface("Got status", result[0]).Msg("Got streamer status from twitch")
 		status = result[0]
@@ -497,6 +505,7 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 		return
 	}
 
+	twitchLog(ctx, dbConn, models.TwitchLogTypeHook, notification.Status.TwitchLogin, "Processing hook", fmt.Sprintf("%#v", notification))
 	if notification.Type == notificationTypeOnline || notification.Type == notificationTypeOffline {
 		log.Debug().Interface("Status", notification.Status).Msg("Updating status")
 		err = updateStreamStatusInDB(ctx, dbConn, &notification.Status)
@@ -533,6 +542,7 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *streamStatus) error {
 	log := logging.ExtractLogger(ctx)
 	if isStatusRelevant(status) {
+		twitchLog(ctx, conn, models.TwitchLogTypeOther, status.TwitchLogin, "Marking online", fmt.Sprintf("%#v", status))
 		log.Debug().Msg("Status relevant")
 		_, err := conn.Exec(ctx,
 			`
@@ -552,6 +562,7 @@ func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *strea
 		}
 	} else {
 		log.Debug().Msg("Stream not relevant")
+		twitchLog(ctx, conn, models.TwitchLogTypeOther, status.TwitchLogin, "Marking offline", fmt.Sprintf("%#v", status))
 		_, err := conn.Exec(ctx,
 			`
 			DELETE FROM twitch_stream WHERE twitch_id = $1
@@ -591,4 +602,36 @@ func isStatusRelevant(status *streamStatus) bool {
 		}
 	}
 	return false
+}
+
+func twitchLog(ctx context.Context, conn db.ConnOrTx, logType models.TwitchLogType, login string, message string, payload string) {
+	_, err := conn.Exec(ctx,
+		`
+		INSERT INTO twitch_log (logged_at, twitch_login, type, message, payload)
+		VALUES ($1, $2, $3, $4, $5)
+		`,
+		time.Now(),
+		login,
+		logType,
+		message,
+		payload,
+	)
+	if err != nil {
+		log := logging.ExtractLogger(ctx).With().Str("twitch goroutine", "twitch logger").Logger()
+		log.Error().Err(err).Msg("Failed to log twitch event")
+	}
+}
+
+func twitchLogClear(ctx context.Context, conn db.ConnOrTx) {
+	_, err := conn.Exec(ctx,
+		`
+		DELETE FROM twitch_log
+		WHERE timestamp <= $1
+		`,
+		time.Now().Add(-(time.Hour * 24 * 4)),
+	)
+	if err != nil {
+		log := logging.ExtractLogger(ctx).With().Str("twitch goroutine", "twitch logger").Logger()
+		log.Error().Err(err).Msg("Failed to clear old twitch logs")
+	}
 }
