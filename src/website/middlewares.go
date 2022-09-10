@@ -75,6 +75,16 @@ func adminsOnly(h Handler) Handler {
 	}
 }
 
+func educationBetaTestersOnly(h Handler) Handler {
+	return func(c *RequestContext) ResponseData {
+		if c.CurrentUser == nil || !c.CurrentUser.CanSeeUnpublishedEducationContent() {
+			return FourOhFour(c)
+		}
+
+		return h(c)
+	}
+}
+
 func educationAuthorsOnly(h Handler) Handler {
 	return func(c *RequestContext) ResponseData {
 		if c.CurrentUser == nil || !c.CurrentUser.CanAuthorEducation() {

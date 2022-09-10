@@ -117,21 +117,25 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexFishbowlIndex, FishbowlIndex)
 	hmnOnly.GET(hmnurl.RegexFishbowl, Fishbowl)
 
-	hmnOnly.GET(hmnurl.RegexEducationIndex, EducationIndex)
-	hmnOnly.GET(hmnurl.RegexEducationGlossary, EducationGlossary)
-	hmnOnly.GET(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNew))
-	hmnOnly.POST(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNewSubmit))
-	hmnOnly.GET(hmnurl.RegexEducationArticle, EducationArticle) // Article stuff must be last so `/glossary` and others do not match as an article slug
-	hmnOnly.GET(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEdit))
-	hmnOnly.POST(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEditSubmit))
-	hmnOnly.GET(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(EducationArticleDelete))
-	hmnOnly.POST(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(csrfMiddleware(EducationArticleDeleteSubmit)))
+	educationPrerelease := hmnOnly.WithMiddleware(educationBetaTestersOnly)
+	{
+		educationPrerelease.GET(hmnurl.RegexEducationIndex, EducationIndex)
+		educationPrerelease.GET(hmnurl.RegexEducationGlossary, EducationGlossary)
+		educationPrerelease.GET(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNew))
+		educationPrerelease.POST(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNewSubmit))
+		educationPrerelease.GET(hmnurl.RegexEducationArticle, EducationArticle) // Article stuff must be last so `/glossary` and others do not match as an article slug
+		educationPrerelease.GET(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEdit))
+		educationPrerelease.POST(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEditSubmit))
+		educationPrerelease.GET(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(EducationArticleDelete))
+		educationPrerelease.POST(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(csrfMiddleware(EducationArticleDeleteSubmit)))
+	}
 
 	hmnOnly.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
 
-	hmnOnly.GET(hmnurl.RegexLibraryAny, func(c *RequestContext) ResponseData {
-		return c.Redirect(hmnurl.BuildEducationIndex(), http.StatusFound)
-	})
+	hmnOnly.GET(hmnurl.RegexLibraryAny, LibraryNotPortedYet)
+	// hmnOnly.GET(hmnurl.RegexLibraryAny, func(c *RequestContext) ResponseData {
+	// 	return c.Redirect(hmnurl.BuildEducationIndex(), http.StatusFound)
+	// })
 
 	// Project routes can appear either at the root (e.g. hero.handmade.network/edit)
 	// or on a personal project path (e.g. handmade.network/p/123/hero/edit). So, we
