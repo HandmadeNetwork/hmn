@@ -43,27 +43,30 @@ type editorData struct {
 
 	// The following are filled out automatically by the
 	// getEditorDataFor* functions.
-	Title               string
-	CanEditTitle        bool
+	PostTitle           string
+	CanEditPostTitle    bool
 	IsEditing           bool
 	EditInitialContents string
 	PostReplyingTo      *templates.Post
+	ShowEduOptions      bool
+	PreviewClass        string
 
+	ParserName  string
 	MaxFileSize int
 	UploadUrl   string
 }
 
 func getEditorDataForNew(urlContext *hmnurl.UrlContext, currentUser *models.User, baseData templates.BaseData, replyPost *templates.Post) editorData {
 	result := editorData{
-		BaseData:       baseData,
-		CanEditTitle:   replyPost == nil,
-		PostReplyingTo: replyPost,
-		MaxFileSize:    AssetMaxSize(currentUser),
-		UploadUrl:      urlContext.BuildAssetUpload(),
+		BaseData:         baseData,
+		CanEditPostTitle: replyPost == nil,
+		PostReplyingTo:   replyPost,
+		MaxFileSize:      AssetMaxSize(currentUser),
+		UploadUrl:        urlContext.BuildAssetUpload(),
 	}
 
 	if replyPost != nil {
-		result.Title = "Replying to post"
+		result.PostTitle = "Replying to post"
 	}
 
 	return result
@@ -72,8 +75,8 @@ func getEditorDataForNew(urlContext *hmnurl.UrlContext, currentUser *models.User
 func getEditorDataForEdit(urlContext *hmnurl.UrlContext, currentUser *models.User, baseData templates.BaseData, p hmndata.PostAndStuff) editorData {
 	return editorData{
 		BaseData:            baseData,
-		Title:               p.Thread.Title,
-		CanEditTitle:        p.Thread.FirstID == p.Post.ID,
+		PostTitle:           p.Thread.Title,
+		CanEditPostTitle:    p.Thread.FirstID == p.Post.ID,
 		IsEditing:           true,
 		EditInitialContents: p.CurrentVersion.TextRaw,
 		MaxFileSize:         AssetMaxSize(currentUser),

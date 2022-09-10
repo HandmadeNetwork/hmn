@@ -22,7 +22,7 @@ func OrDefault[T comparable](v T, def T) T {
 
 // Takes an (error) return and panics if there is an error.
 // Helps avoid `if err != nil` in scripts. Use sparingly in real code.
-func Must0(err error) {
+func Must(err error) {
 	if err != nil {
 		panic(err)
 	}

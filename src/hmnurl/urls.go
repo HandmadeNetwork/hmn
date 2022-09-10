@@ -435,6 +435,53 @@ func BuildFishbowl(slug string) string {
 var RegexFishbowlFiles = regexp.MustCompile(`^/fishbowl/(?P<slug>[^/]+)(?P<path>/.+)$`)
 
 /*
+ * Education
+ */
+
+var RegexEducationIndex = regexp.MustCompile(`^/education$`)
+
+func BuildEducationIndex() string {
+	defer CatchPanic()
+	return Url("/education", nil)
+}
+
+var RegexEducationGlossary = regexp.MustCompile(`^/education/glossary(/(?P<slug>[^/]+))?$`)
+
+func BuildEducationGlossary(termSlug string) string {
+	defer CatchPanic()
+
+	if termSlug == "" {
+		return Url("/education/glossary", nil)
+	} else {
+		return Url(fmt.Sprintf("/education/glossary/%s", termSlug), nil)
+	}
+}
+
+var RegexEducationArticle = regexp.MustCompile(`^/education/(?P<slug>[^/]+)$`)
+
+func BuildEducationArticle(slug string) string {
+	return Url(fmt.Sprintf("/education/%s", slug), nil)
+}
+
+var RegexEducationArticleNew = regexp.MustCompile(`^/education/new$`)
+
+func BuildEducationArticleNew() string {
+	return Url("/education/new", nil)
+}
+
+var RegexEducationArticleEdit = regexp.MustCompile(`^/education/(?P<slug>[^/]+)/edit$`)
+
+func BuildEducationArticleEdit(slug string) string {
+	return Url(fmt.Sprintf("/education/%s/edit", slug), nil)
+}
+
+var RegexEducationArticleDelete = regexp.MustCompile(`^/education/(?P<slug>[^/]+)/delete$`)
+
+func BuildEducationArticleDelete(slug string) string {
+	return Url(fmt.Sprintf("/education/%s/delete", slug), nil)
+}
+
+/*
 * Forums
  */
 
@@ -651,46 +698,7 @@ func (c *UrlContext) BuildBlogPostReply(threadId int, postId int) string {
 * Library
  */
 
-// Any library route. Remove after we port the library.
 var RegexLibraryAny = regexp.MustCompile(`^/library`)
-
-var RegexLibrary = regexp.MustCompile(`^/library$`)
-
-func BuildLibrary() string {
-	defer CatchPanic()
-	return Url("/library", nil)
-}
-
-var RegexLibraryAll = regexp.MustCompile(`^/library/all$`)
-
-func BuildLibraryAll() string {
-	defer CatchPanic()
-	return Url("/library/all", nil)
-}
-
-var RegexLibraryTopic = regexp.MustCompile(`^/library/topic/(?P<topicid>\d+)$`)
-
-func BuildLibraryTopic(topicId int) string {
-	defer CatchPanic()
-	if topicId < 1 {
-		panic(oops.New(nil, "Invalid library topic ID (%d), must be >= 1", topicId))
-	}
-
-	var builder strings.Builder
-	builder.WriteString("/library/topic/")
-	builder.WriteString(strconv.Itoa(topicId))
-
-	return Url(builder.String(), nil)
-}
-
-var RegexLibraryResource = regexp.MustCompile(`^/library/resource/(?P<resourceid>\d+)$`)
-
-func BuildLibraryResource(resourceId int) string {
-	defer CatchPanic()
-	builder := buildLibraryResourcePath(resourceId)
-
-	return Url(builder.String(), nil)
-}
 
 /*
 * Episode Guide
@@ -829,7 +837,7 @@ func BuildPublic(filepath string, cachebust bool) string {
 	}
 	var query []Q
 	if cachebust {
-		query = []Q{{"v", cacheBust}}
+		query = []Q{{"v", cacheBustVersion}}
 	}
 	return Url(builder.String(), query)
 }

@@ -29,7 +29,7 @@ func StartServer(ctx context.Context) jobs.Job {
 		return jobs.Noop()
 	}
 
-	utils.Must0(os.MkdirAll(dir, fs.ModePerm))
+	utils.Must(os.MkdirAll(dir, fs.ModePerm))
 
 	s := server{
 		log: logging.ExtractLogger(ctx).With().
@@ -84,7 +84,7 @@ func (s *server) putObject(w http.ResponseWriter, r *http.Request) {
 	bucket, key := bucketKey(r)
 
 	w.Header().Set("Location", fmt.Sprintf("/%s", bucket))
-	utils.Must0(os.MkdirAll(filepath.Join(dir, bucket), fs.ModePerm))
+	utils.Must(os.MkdirAll(filepath.Join(dir, bucket), fs.ModePerm))
 	if key != "" {
 		file := utils.Must1(os.Create(filepath.Join(dir, bucket, key)))
 		io.Copy(file, r.Body)

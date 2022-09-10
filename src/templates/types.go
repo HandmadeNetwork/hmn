@@ -51,8 +51,8 @@ type Header struct {
 	PodcastUrl      string
 	FishbowlUrl     string
 	ForumsUrl       string
-	LibraryUrl      string
 	ConferencesUrl  string
+	EducationUrl    string
 
 	Project *ProjectHeader
 }
@@ -189,9 +189,11 @@ type User struct {
 	ShowEmail bool
 	Timezone  string
 
-	CanEditLibrary                      bool
 	DiscordSaveShowcase                 bool
 	DiscordDeleteSnippetOnMessageDelete bool
+
+	IsEduTester bool
+	IsEduAuthor bool
 }
 
 type Link struct {
@@ -384,4 +386,18 @@ type DiscordUser struct {
 type Tag struct {
 	Text string
 	Url  string
+}
+
+type EduArticle struct {
+	Title       string
+	Slug        string
+	Description string
+	Published   bool
+	Type        string
+
+	Url       string
+	EditUrl   string
+	DeleteUrl string
+
+	Content template.HTML
 }

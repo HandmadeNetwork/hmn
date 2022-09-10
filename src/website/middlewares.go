@@ -56,7 +56,7 @@ func trackRequestPerf(h Handler) Handler {
 }
 
 func needsAuth(h Handler) Handler {
-	return func(c *RequestContext) (res ResponseData) {
+	return func(c *RequestContext) ResponseData {
 		if c.CurrentUser == nil {
 			return c.Redirect(hmnurl.BuildLoginPage(c.FullUrl()), http.StatusSeeOther)
 		}
@@ -66,8 +66,18 @@ func needsAuth(h Handler) Handler {
 }
 
 func adminsOnly(h Handler) Handler {
-	return func(c *RequestContext) (res ResponseData) {
+	return func(c *RequestContext) ResponseData {
 		if c.CurrentUser == nil || !c.CurrentUser.IsStaff {
+			return FourOhFour(c)
+		}
+
+		return h(c)
+	}
+}
+
+func educationAuthorsOnly(h Handler) Handler {
+	return func(c *RequestContext) ResponseData {
+		if c.CurrentUser == nil || !c.CurrentUser.CanAuthorEducation() {
 			return FourOhFour(c)
 		}
 

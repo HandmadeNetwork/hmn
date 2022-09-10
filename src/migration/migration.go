@@ -52,6 +52,14 @@ func init() {
 	}
 	migrateCommand.Flags().BoolVar(&listMigrations, "list", false, "List available migrations")
 
+	rollbackCommand := &cobra.Command{
+		Use:   "rollback",
+		Short: "Roll back the most recent completed migration",
+		Run: func(cmd *cobra.Command, args []string) {
+			Rollback()
+		},
+	}
+
 	makeMigrationCommand := &cobra.Command{
 		Use:   "makemigration <name> <description>...",
 		Short: "Create a new database migration file",
@@ -95,6 +103,7 @@ func init() {
 
 	website.WebsiteCommand.AddCommand(dbCommand)
 	dbCommand.AddCommand(migrateCommand)
+	dbCommand.AddCommand(rollbackCommand)
 	dbCommand.AddCommand(makeMigrationCommand)
 	dbCommand.AddCommand(seedCommand)
 	dbCommand.AddCommand(seedFromFileCommand)
@@ -126,7 +135,7 @@ func getCurrentVersion(ctx context.Context, conn *pgx.Conn) (types.MigrationVers
 
 func tryGetCurrentVersion(ctx context.Context) types.MigrationVersion {
 	defer func() {
-		recover()
+		recover() // NOTE(ben): wat
 	}()
 
 	conn := db.NewConn()
@@ -267,8 +276,8 @@ func Migrate(targetVersion types.MigrationVersion) {
 			}
 			defer tx.Rollback(ctx)
 
-			fmt.Printf("Rolling back migration %v\n", version)
 			migration := migrations.All[version]
+			fmt.Printf("Rolling back migration %v (%s)\n", migration.Version(), migration.Name())
 			err = migration.Down(ctx, tx)
 			if err != nil {
 				fmt.Printf("MIGRATION FAILED for migration %v.\n", version)
@@ -289,6 +298,39 @@ func Migrate(targetVersion types.MigrationVersion) {
 	} else {
 		fmt.Println("Already migrated; nothing to do.")
 	}
+}
+
+func Rollback() {
+	ctx := context.Background()
+
+	conn := db.NewConnWithConfig(config.PostgresConfig{
+		LogLevel: pgx.LogLevelWarn,
+	})
+	defer conn.Close(ctx)
+
+	currentVersion := tryGetCurrentVersion(ctx)
+	if currentVersion.IsZero() {
+		fmt.Println("You have never run migrations; nothing to do.")
+		return
+	}
+
+	var target types.MigrationVersion
+	versions := getSortedMigrationVersions()
+	for i := 1; i < len(versions); i++ {
+		if versions[i].Equal(currentVersion) {
+			target = versions[i-1]
+		}
+	}
+
+	// NOTE(ben): It occurs to me that we don't have a way to roll back the initial migration, ever.
+	// Not that we would ever want to....?
+
+	if target.IsZero() {
+		fmt.Println("You are already at the earliest migration; nothing to do.")
+		return
+	}
+
+	Migrate(target)
 }
 
 //go:embed migrationTemplate.txt
@@ -323,14 +365,13 @@ func ResetDB() {
 
 	// Create the HMN database user
 	{
-		type pgCredentials struct {
-			User     string
-			Password string
-		}
-		credentials := []pgCredentials{
-			{config.Config.Postgres.User, config.Config.Postgres.Password}, // Existing HMN user
-			{getSystemUsername(), ""},                                      // Postgres.app on Mac
-		}
+		credentials := append(
+			[]pgCredentials{
+				{config.Config.Postgres.User, config.Config.Postgres.Password, false}, // Existing HMN user
+				{getSystemUsername(), "", true},                                       // Postgres.app on Mac
+			},
+			guessCredentials()...,
+		)
 
 		var workingCred pgCredentials
 		var createUserConn *pgconn.PgConn
@@ -341,6 +382,9 @@ func ResetDB() {
 			createUserConn, err = connectLowLevel(ctx, cred.User, cred.Password)
 			if err == nil {
 				workingCred = cred
+				if cred.SafeToPrint {
+					fmt.Printf("Connected by guessing username \"%s\" and password \"%s\".\n", cred.User, cred.Password)
+				}
 				break
 			} else {
 				connErrors = append(connErrors, err)
@@ -447,4 +491,23 @@ func getSystemUsername() string {
 		return ""
 	}
 	return u.Username
+}
+
+type pgCredentials struct {
+	User        string
+	Password    string
+	SafeToPrint bool
+}
+
+var commonRootUsernames = []string{getSystemUsername(), "postgres", "root"}
+var commonRootPasswords = []string{"", "password", "postgres"}
+
+func guessCredentials() []pgCredentials {
+	var result []pgCredentials
+	for _, username := range commonRootUsernames {
+		for _, password := range commonRootPasswords {
+			result = append(result, pgCredentials{username, password, true})
+		}
+	}
+	return result
 }

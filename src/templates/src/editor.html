@@ -19,15 +19,15 @@
 
 {{ define "content" }}
 <div class="content-block ph3 ph0-ns">
-    {{ if not .CanEditTitle }}
-        <h2>{{ .Title }}</h2>
+    {{ if not .CanEditPostTitle }}
+        <h2>{{ .PostTitle }}</h2>
     {{ end }}
     <div class="flex flex-column flex-row-ns">
         <form id="form" action="{{ .SubmitUrl }}" method="post" class="flex-fair-ns overflow-hidden">
             {{ csrftoken .Session }}
 
-            {{ if .CanEditTitle }}
-                <input id="title" class="b w-100 mb1" name="title" type="text" placeholder="Post title..." value="{{ .Title }}" />
+            {{ if .CanEditPostTitle }}
+                <input id="title" class="b w-100 mb1" name="title" type="text" placeholder="Post title..." value="{{ .PostTitle }}" />
             {{ end }}
             {{/* TODO: Reintroduce the toolbar in a way that makes sense for Markdown */}}
             {{/*
@@ -79,8 +79,36 @@
                     {{ template "forum_post_standalone.html" . }}
                 </div>
             {{ end }}
+
+            {{ if .ShowEduOptions }}
+                {{/* Hope you have a .Article field! */}}
+                <div class="bg--dim br3 pa3 mt3">
+                    <h4>Education Options</h4>
+                    <div class="mb2">
+                        <label for="slug">Slug:</label>
+                        <input name="slug" maxlength="255" type="text" id="slug" required value="{{ .Article.Slug }}" />
+                    </div>
+                    <div class="mb2">
+                        <label for="type">Type:</label>
+                        <select name="type" id="type">
+                            <option value="article"  {{ if eq .Article.Type "article"  }}selected{{ end }}>Article</option>
+                            <option value="glossary" {{ if eq .Article.Type "glossary" }}selected{{ end }}>Glossary Term</option>
+                        </select>
+                    </div>
+                    <div class="mb2">
+                        <label for="description">Description:</label>
+                        <div>
+                            <textarea name="description" id="slug" required>{{ .Article.Description }}</textarea>
+                        </div>
+                    </div>
+                    <div class="mb2">
+                        <label for="published">Published:</label>
+                        <input name="published" id="published" type="checkbox" {{ if .Article.Published }}checked{{ end }}>
+                    </div>
+                </div>
+            {{ end }}
         </form>
-        <div id="preview-container" class="post post-preview mathjax flex-fair-ns overflow-auto mv3 mv0-ns ml3-ns pa3 br3 bg--dim">
+        <div id="preview-container" class="post post-preview mathjax flex-fair-ns overflow-auto mv3 mv0-ns ml3-ns pa3 br3 bg--dim {{ .PreviewClass }}">
             <div id="preview" class="post-content"></div>
         </div>
         <input type="file" multiple name="file_input" id="file_input" class="dn" />{{/* NOTE(asaf): Placing this outside the form to avoid submitting it to the server by accident */}}

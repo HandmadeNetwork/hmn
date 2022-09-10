@@ -75,7 +75,7 @@ func TestLogoutAction(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
-	AssertRegexMatch(t, BuildRegister(), RegexRegister, nil)
+	AssertRegexMatch(t, BuildRegister(""), RegexRegister, nil)
 }
 
 func TestRegistrationSuccess(t *testing.T) {
@@ -83,7 +83,7 @@ func TestRegistrationSuccess(t *testing.T) {
 }
 
 func TestEmailConfirmation(t *testing.T) {
-	AssertRegexMatch(t, BuildEmailConfirmation("mruser", "test_token"), RegexEmailConfirmation, map[string]string{"username": "mruser", "token": "test_token"})
+	AssertRegexMatch(t, BuildEmailConfirmation("mruser", "test_token", ""), RegexEmailConfirmation, map[string]string{"username": "mruser", "token": "test_token"})
 }
 
 func TestPasswordReset(t *testing.T) {
@@ -185,6 +185,32 @@ func TestFishbowl(t *testing.T) {
 	AssertRegexNoMatch(t, BuildFishbowl("oop")+"/otherfiles/whatever", RegexFishbowl)
 }
 
+func TestEducationIndex(t *testing.T) {
+	AssertRegexMatch(t, BuildEducationIndex(), RegexEducationIndex, nil)
+	AssertRegexNoMatch(t, BuildEducationArticle("foo"), RegexEducationIndex)
+}
+
+func TestEducationGlossary(t *testing.T) {
+	AssertRegexMatch(t, BuildEducationGlossary(""), RegexEducationGlossary, map[string]string{"slug": ""})
+	AssertRegexMatch(t, BuildEducationGlossary("foo"), RegexEducationGlossary, map[string]string{"slug": "foo"})
+}
+
+func TestEducationArticle(t *testing.T) {
+	AssertRegexMatch(t, BuildEducationArticle("foo"), RegexEducationArticle, map[string]string{"slug": "foo"})
+}
+
+func TestEducationArticleNew(t *testing.T) {
+	AssertRegexMatch(t, BuildEducationArticleNew(), RegexEducationArticleNew, nil)
+}
+
+func TestEducationArticleEdit(t *testing.T) {
+	AssertRegexMatch(t, BuildEducationArticleEdit("foo"), RegexEducationArticleEdit, map[string]string{"slug": "foo"})
+}
+
+func TestEducationArticleDelete(t *testing.T) {
+	AssertRegexMatch(t, BuildEducationArticleDelete("foo"), RegexEducationArticleDelete, map[string]string{"slug": "foo"})
+}
+
 func TestForum(t *testing.T) {
 	AssertRegexMatch(t, hmn.BuildForum(nil, 1), RegexForum, nil)
 	AssertRegexMatch(t, hmn.BuildForum([]string{"wip"}, 2), RegexForum, map[string]string{"subforums": "wip", "page": "2"})
@@ -282,22 +308,6 @@ func TestBlogPostReply(t *testing.T) {
 	AssertSubdomain(t, hero.BuildBlogPostReply(1, 2), "hero")
 }
 
-func TestLibrary(t *testing.T) {
-	AssertRegexMatch(t, BuildLibrary(), RegexLibrary, nil)
-}
-
-func TestLibraryAll(t *testing.T) {
-	AssertRegexMatch(t, BuildLibraryAll(), RegexLibraryAll, nil)
-}
-
-func TestLibraryTopic(t *testing.T) {
-	AssertRegexMatch(t, BuildLibraryTopic(1), RegexLibraryTopic, map[string]string{"topicid": "1"})
-}
-
-func TestLibraryResource(t *testing.T) {
-	AssertRegexMatch(t, BuildLibraryResource(1), RegexLibraryResource, map[string]string{"resourceid": "1"})
-}
-
 func TestEpisodeGuide(t *testing.T) {
 	AssertRegexMatch(t, hero.BuildEpisodeList(""), RegexEpisodeList, map[string]string{"topic": ""})
 	AssertRegexMatch(t, hero.BuildEpisodeList("code"), RegexEpisodeList, map[string]string{"topic": "code"})
@@ -358,6 +368,26 @@ func TestS3Asset(t *testing.T) {
 func TestJamIndex(t *testing.T) {
 	AssertRegexMatch(t, BuildJamIndex(), RegexJamIndex, nil)
 	AssertSubdomain(t, BuildJamIndex(), "")
+}
+
+func TestJamIndex2021(t *testing.T) {
+	AssertRegexMatch(t, BuildJamIndex2021(), RegexJamIndex2021, nil)
+	AssertSubdomain(t, BuildJamIndex2021(), "")
+}
+
+func TestJamIndex2022(t *testing.T) {
+	AssertRegexMatch(t, BuildJamIndex2022(), RegexJamIndex2022, nil)
+	AssertSubdomain(t, BuildJamIndex2022(), "")
+}
+
+func TestJamFeed2022(t *testing.T) {
+	AssertRegexMatch(t, BuildJamFeed2022(), RegexJamFeed2022, nil)
+	AssertSubdomain(t, BuildJamFeed2022(), "")
+}
+
+func TestProjectNewJam(t *testing.T) {
+	AssertRegexMatch(t, BuildProjectNewJam(), RegexProjectNew, nil)
+	AssertSubdomain(t, BuildProjectNewJam(), "")
 }
 
 func TestDiscordOAuthCallback(t *testing.T) {

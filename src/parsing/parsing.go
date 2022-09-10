@@ -46,6 +46,24 @@ var DiscordMarkdown = makeGoldmark(
 	goldmark.WithRendererOptions(html.WithHardWraps()),
 )
 
+// Used for rendering real-time previews of post content.
+var EducationPreviewMarkdown = makeGoldmark(
+	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
+		Previews:  true,
+		Embeds:    true,
+		Education: true,
+	})...),
+)
+
+// Used for generating the final HTML for a post.
+var EducationRealMarkdown = makeGoldmark(
+	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
+		Previews:  false,
+		Embeds:    true,
+		Education: true,
+	})...),
+)
+
 func ParseMarkdown(source string, md goldmark.Markdown) string {
 	var buf bytes.Buffer
 	if err := md.Convert([]byte(source), &buf); err != nil {
@@ -56,8 +74,9 @@ func ParseMarkdown(source string, md goldmark.Markdown) string {
 }
 
 type MarkdownOptions struct {
-	Previews bool
-	Embeds   bool
+	Previews  bool
+	Embeds    bool
+	Education bool
 }
 
 func makeGoldmark(opts ...goldmark.Option) goldmark.Markdown {
@@ -115,6 +134,9 @@ func makeGoldmarkExtensions(opts MarkdownOptions) []goldmark.Extender {
 		MathjaxExtension{},
 		BBCodeExtension{
 			Preview: opts.Previews,
+		},
+		ggcodeExtension{
+			Opts: opts,
 		},
 	)
 

@@ -211,9 +211,11 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 		DarkTheme: u.DarkTheme,
 		Timezone:  u.Timezone,
 
-		CanEditLibrary:                      u.CanEditLibrary,
 		DiscordSaveShowcase:                 u.DiscordSaveShowcase,
 		DiscordDeleteSnippetOnMessageDelete: u.DiscordDeleteSnippetOnMessageDelete,
+
+		IsEduTester: u.CanSeeUnpublishedEducationContent(),
+		IsEduAuthor: u.CanAuthorEducation(),
 	}
 }
 
@@ -491,6 +493,33 @@ func TagToTemplate(t *models.Tag) Tag {
 		Text: t.Text,
 		// TODO: Url
 	}
+}
+
+func EducationArticleToTemplate(a *models.EduArticle) EduArticle {
+	res := EduArticle{
+		Title:       a.Title,
+		Slug:        a.Slug,
+		Description: a.Description,
+		Published:   a.Published,
+
+		Url:       hmnurl.BuildEducationArticle(a.Slug),
+		EditUrl:   hmnurl.BuildEducationArticleEdit(a.Slug),
+		DeleteUrl: hmnurl.BuildEducationArticleDelete(a.Slug),
+
+		Content: "NO CONTENT HERE FOLKS YOU DID A BUG",
+	}
+	switch a.Type {
+	case models.EduArticleTypeArticle:
+		res.Type = "article"
+	case models.EduArticleTypeGlossary:
+		res.Type = "glossary"
+	}
+
+	if a.CurrentVersion != nil {
+		res.Content = template.HTML(a.CurrentVersion.ContentHTML)
+	}
+
+	return res
 }
 
 func maybeString(s *string) string {

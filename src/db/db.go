@@ -158,7 +158,11 @@ func QueryOne[T any](
 
 	result, hasRow := rows.Next()
 	if !hasRow {
-		return nil, NotFound
+		if readErr := rows.Err(); readErr != nil {
+			return nil, readErr
+		} else {
+			return nil, NotFound
+		}
 	}
 
 	return result, nil
@@ -244,7 +248,11 @@ func QueryOneScalar[T any](
 	result, hasRow := rows.Next()
 	if !hasRow {
 		var zero T
-		return zero, NotFound
+		if readErr := rows.Err(); readErr != nil {
+			return zero, readErr
+		} else {
+			return zero, NotFound
+		}
 	}
 
 	return *result, nil
@@ -583,6 +591,10 @@ func (it *Iterator[T]) Next() (*T, bool) {
 
 		return result.Interface().(*T), true
 	}
+}
+
+func (it *Iterator[T]) Err() error {
+	return it.rows.Err()
 }
 
 // Takes a value from a database query (reflected) and assigns it to the

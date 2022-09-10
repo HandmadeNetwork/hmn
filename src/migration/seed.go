@@ -64,7 +64,7 @@ func BareMinimumSeed() *models.Project {
 	fmt.Println("Creating HMN project...")
 	hmn := seedProject(ctx, tx, seedHMN, nil)
 
-	utils.Must0(tx.Commit(ctx))
+	utils.Must(tx.Commit(ctx))
 
 	return hmn
 }
@@ -166,7 +166,7 @@ func SampleSeed() {
 	// Finally, set sequence numbers to things that won't conflict
 	utils.Must1(tx.Exec(ctx, "SELECT setval('project_id_seq', 100, true);"))
 
-	utils.Must0(tx.Commit(ctx))
+	utils.Must(tx.Commit(ctx))
 }
 
 func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.User {
@@ -178,7 +178,7 @@ func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.
 			status,
 			name, bio, blurb, signature,
 			darktheme,
-			showemail, edit_library,
+			showemail,
 			date_joined, registration_ip, avatar_asset_id
 		)
 		VALUES (
@@ -187,7 +187,7 @@ func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.
 			$5,
 			$6, $7, $8, $9,
 			TRUE,
-			$10, FALSE,
+			$10,
 			'2017-01-01T00:00:00Z', '192.168.2.1', null
 		)
 		RETURNING $columns
@@ -198,7 +198,7 @@ func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.
 		utils.OrDefault(input.Name, randomName()), utils.OrDefault(input.Bio, lorem.Paragraph(0, 2)), utils.OrDefault(input.Blurb, lorem.Sentence(0, 14)), utils.OrDefault(input.Signature, lorem.Sentence(0, 16)),
 		input.ShowEmail,
 	)
-	utils.Must0(auth.SetPassword(ctx, conn, input.Username, "password"))
+	utils.Must(auth.SetPassword(ctx, conn, input.Username, "password"))
 
 	return user
 }

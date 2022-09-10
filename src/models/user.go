@@ -13,9 +13,9 @@ type UserStatus int
 
 const (
 	UserStatusInactive  UserStatus = 1 // Default for new users
-	UserStatusConfirmed            = 2 // Confirmed email address
-	UserStatusApproved             = 3 // Approved by an admin and allowed to publicly post
-	UserStatusBanned               = 4 // BALEETED
+	UserStatusConfirmed UserStatus = 2 // Confirmed email address
+	UserStatusApproved  UserStatus = 3 // Approved by an admin and allowed to publicly post
+	UserStatusBanned    UserStatus = 4 // BALEETED
 )
 
 type User struct {
@@ -28,8 +28,9 @@ type User struct {
 	DateJoined time.Time  `db:"date_joined"`
 	LastLogin  *time.Time `db:"last_login"`
 
-	IsStaff bool       `db:"is_staff"`
-	Status  UserStatus `db:"status"`
+	IsStaff       bool       `db:"is_staff"`
+	Status        UserStatus `db:"status"`
+	EducationRole EduRole    `db:"education_role"`
 
 	Name          string     `db:"name"`
 	Bio           string     `db:"bio"`
@@ -40,8 +41,7 @@ type User struct {
 	DarkTheme bool   `db:"darktheme"`
 	Timezone  string `db:"timezone"`
 
-	ShowEmail      bool `db:"showemail"`
-	CanEditLibrary bool `db:"edit_library"`
+	ShowEmail bool `db:"showemail"`
 
 	DiscordSaveShowcase                 bool `db:"discord_save_showcase"`
 	DiscordDeleteSnippetOnMessageDelete bool `db:"discord_delete_snippet_on_message_delete"`
@@ -62,4 +62,12 @@ func (u *User) BestName() string {
 
 func (u *User) IsActive() bool {
 	return u.Status == UserStatusConfirmed
+}
+
+func (u *User) CanSeeUnpublishedEducationContent() bool {
+	return u.IsStaff || u.EducationRole == EduRoleBeta || u.EducationRole == EduRoleAuthor
+}
+
+func (u *User) CanAuthorEducation() bool {
+	return u.IsStaff || u.EducationRole == EduRoleAuthor
 }

@@ -1,4 +1,4 @@
-// +build js
+//go:build js
 
 package main
 
@@ -11,6 +11,9 @@ import (
 func main() {
 	js.Global().Set("parseMarkdown", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		return parsing.ParseMarkdown(args[0].String(), parsing.ForumPreviewMarkdown)
+	}))
+	js.Global().Set("parseMarkdownEdu", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		return parsing.ParseMarkdown(args[0].String(), parsing.EducationPreviewMarkdown)
 	}))
 
 	var done chan bool

@@ -28,12 +28,14 @@ func TestLogContextErrors(t *testing.T) {
 	router := &Router{}
 	routes := RouteBuilder{
 		Router: router,
-		Middleware: func(h Handler) Handler {
-			return func(c *RequestContext) (res ResponseData) {
-				c.Logger = &logger
-				defer logContextErrorsMiddleware(c, &res)
-				return h(c)
-			}
+		Middlewares: []Middleware{
+			func(h Handler) Handler {
+				return func(c *RequestContext) (res ResponseData) {
+					c.Logger = &logger
+					defer logContextErrorsMiddleware(h)
+					return h(c)
+				}
+			},
 		},
 	}
 

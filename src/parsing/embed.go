@@ -96,14 +96,6 @@ func (s embedParser) previewOrLegitEmbed(name string, legitHtml string) string {
 	return legitHtml
 }
 
-func extract(re *regexp.Regexp, src []byte, subexpName string) []byte {
-	m := re.FindSubmatch(src)
-	if m == nil {
-		return nil
-	}
-	return m[re.SubexpIndex(subexpName)]
-}
-
 func makeYoutubeEmbed(vid string, preview bool) string {
 	if preview {
 		return `

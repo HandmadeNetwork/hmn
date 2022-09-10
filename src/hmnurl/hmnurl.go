@@ -28,13 +28,13 @@ func QFromURL(u *url.URL) []Q {
 }
 
 var baseUrlParsed url.URL
-var cacheBust string
+var cacheBustVersion string
 var S3BaseUrl string
 var isTest bool
 
 func init() {
 	SetGlobalBaseUrl(config.Config.BaseUrl)
-	SetCacheBust(fmt.Sprint(time.Now().Unix()))
+	SetCacheBustVersion(fmt.Sprint(time.Now().Unix()))
 	SetS3BaseUrl(config.Config.DigitalOcean.AssetsPublicUrlRoot)
 }
 
@@ -50,8 +50,8 @@ func SetGlobalBaseUrl(fullBaseUrl string) {
 	baseUrlParsed = *parsed
 }
 
-func SetCacheBust(newCacheBust string) {
-	cacheBust = newCacheBust
+func SetCacheBustVersion(newCacheBustVersion string) {
+	cacheBustVersion = newCacheBustVersion
 }
 
 func SetS3BaseUrl(base string) {
