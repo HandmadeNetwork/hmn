@@ -36,8 +36,8 @@ type UserProfileTemplateData struct {
 	CanAddProject bool
 	NewProjectUrl string
 
-	AdminSetStatusUrl string
-	AdminNukeUrl      string
+	AdminSetOptionsUrl string
+	AdminNukeUrl       string
 
 	SnippetEdit templates.SnippetEdit
 }
@@ -194,8 +194,8 @@ func UserProfile(c *RequestContext) ResponseData {
 		CanAddProject: numPersonalProjects < maxPersonalProjects,
 		NewProjectUrl: hmnurl.BuildProjectNew(),
 
-		AdminSetStatusUrl: hmnurl.BuildAdminSetUserStatus(),
-		AdminNukeUrl:      hmnurl.BuildAdminNukeUser(),
+		AdminSetOptionsUrl: hmnurl.BuildAdminSetUserOptions(),
+		AdminNukeUrl:       hmnurl.BuildAdminNukeUser(),
 
 		SnippetEdit: snippetEdit,
 	}, c.Perf)
@@ -479,7 +479,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	return res
 }
 
-func UserProfileAdminSetStatus(c *RequestContext) ResponseData {
+func UserProfileAdminSetOptions(c *RequestContext) ResponseData {
 	c.Req.ParseForm()
 
 	userIdStr := c.Req.Form.Get("user_id")
@@ -503,17 +503,31 @@ func UserProfileAdminSetStatus(c *RequestContext) ResponseData {
 		return c.RejectRequest("No legal user status provided")
 	}
 
+	eduRole := c.Req.Form.Get("edu_role")
+	var desiredEduRole models.EduRole
+	switch eduRole {
+	case "none":
+		desiredEduRole = models.EduRoleNone
+	case "beta":
+		desiredEduRole = models.EduRoleBeta
+	case "author":
+		desiredEduRole = models.EduRoleAuthor
+	default:
+		return c.RejectRequest("the education role is bad and you should feel bad")
+	}
+
 	_, err = c.Conn.Exec(c,
 		`
 		UPDATE hmn_user
-		SET status = $1
-		WHERE id = $2
+		SET status = $2, education_role = $3
+		WHERE id = $1
 		`,
-		desiredStatus,
 		userId,
+		desiredStatus,
+		desiredEduRole,
 	)
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user status"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user admin settings"))
 	}
 	if desiredStatus == models.UserStatusBanned {
 		err = auth.DeleteSessionForUser(c, c.Conn, c.Req.Form.Get("username"))
@@ -522,7 +536,7 @@ func UserProfileAdminSetStatus(c *RequestContext) ResponseData {
 		}
 	}
 	res := c.Redirect(hmnurl.BuildUserProfile(c.Req.Form.Get("username")), http.StatusSeeOther)
-	res.AddFutureNotice("success", "Successfully set status")
+	res.AddFutureNotice("success", "Successfully set admin options")
 	return res
 }
 

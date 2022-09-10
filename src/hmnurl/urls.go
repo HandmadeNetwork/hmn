@@ -245,11 +245,11 @@ func BuildAdminApprovalQueue() string {
 	return Url("/admin/approvals", nil)
 }
 
-var RegexAdminSetUserStatus = regexp.MustCompile(`^/admin/setuserstatus$`)
+var RegexAdminSetUserOptions = regexp.MustCompile(`^/admin/setuseroptions$`)
 
-func BuildAdminSetUserStatus() string {
+func BuildAdminSetUserOptions() string {
 	defer CatchPanic()
-	return Url("/admin/setuserstatus", nil)
+	return Url("/admin/setuseroptions", nil)
 }
 
 var RegexAdminNukeUser = regexp.MustCompile(`^/admin/nukeuser$`)

@@ -73,22 +73,33 @@
 					</div>
 					<div class="relative w-100">
 						<div class="bg--card cover absolute w-100 h-100 br2"></div>
-						<div class="mt3">
-							<div>User status:</div>
-							<form id="admin_set_status_form" method="POST" action="{{ .AdminSetStatusUrl }}">
-								{{ csrftoken .Session }}
-								<input type="hidden" name="user_id" value="{{ .ProfileUser.ID }}" />
-								<input type="hidden" name="username" value="{{ .ProfileUser.Username }}" />
+						<form id="admin_set_options_form" method="POST" action="{{ .AdminSetOptionsUrl }}">
+							{{ csrftoken .Session }}
+							<input type="hidden" name="user_id" value="{{ .ProfileUser.ID }}" />
+							<input type="hidden" name="username" value="{{ .ProfileUser.Username }}" />
+							<div class="mt3">
+								<div>User status:</div>
 								<select name="status">
 									<option value="inactive" {{ if eq .ProfileUser.Status 1 }}selected{{ end }}>Brand new</option>
 									<option value="confirmed" {{ if eq .ProfileUser.Status 2 }}selected{{ end }}>Email confirmed</option>
 									<option value="approved" {{ if eq .ProfileUser.Status 3 }}selected{{ end }}>Admin approved</option>
 									<option value="banned" {{ if eq .ProfileUser.Status 4 }}selected{{ end }}>Banned</option>
 								</select>
-								<input type="submit" value="Set" />
+								
 								<div class="c--dim f7">Only sets status. Doesn't delete anything.</div>
-							</form>
-						</div>
+							</div>
+							<div class="mt3">
+								<div>Education role:</div>
+								<select name="edu_role">
+									<option value="none" {{ if not .ProfileUser.IsEduTester }}selected{{ end }}>None</option>
+									<option value="beta" {{ if and .ProfileUser.IsEduTester (not .ProfileUser.IsEduAuthor) }}selected{{ end }}>Beta Tester</option>
+									<option value="author" {{ if .ProfileUser.IsEduAuthor }}selected{{ end }}>Author</option>
+								</select>
+							</div>
+							<div class="mt3">
+								<input type="submit" value="Save" />
+							</div>
+						</form>
 						<div class="mt3">
 							<div>Danger zone:</div>
 							<form id="admin_nuke_form" method="POST" action="{{ .AdminNukeUrl }}">
@@ -110,7 +121,7 @@
 							panelEl.style.display = "none";
 						});
 
-						document.querySelector("#admin_set_status_form").addEventListener("submit", function(ev) {
+						document.querySelector("#admin_set_options_form").addEventListener("submit", function(ev) {
 							if (!adminUnlocked) {
 								ev.preventDefault();
 							}
