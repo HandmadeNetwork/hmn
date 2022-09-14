@@ -51,9 +51,7 @@ type editorData struct {
 	ShowEduOptions      bool
 	PreviewClass        string
 
-	ParserName  string
-	MaxFileSize int
-	UploadUrl   string
+	TextEditor templates.TextEditor
 }
 
 func getEditorDataForNew(urlContext *hmnurl.UrlContext, currentUser *models.User, baseData templates.BaseData, replyPost *templates.Post) editorData {
@@ -61,8 +59,10 @@ func getEditorDataForNew(urlContext *hmnurl.UrlContext, currentUser *models.User
 		BaseData:         baseData,
 		CanEditPostTitle: replyPost == nil,
 		PostReplyingTo:   replyPost,
-		MaxFileSize:      AssetMaxSize(currentUser),
-		UploadUrl:        urlContext.BuildAssetUpload(),
+		TextEditor: templates.TextEditor{
+			MaxFileSize: AssetMaxSize(currentUser),
+			UploadUrl:   urlContext.BuildAssetUpload(),
+		},
 	}
 
 	if replyPost != nil {
@@ -79,8 +79,10 @@ func getEditorDataForEdit(urlContext *hmnurl.UrlContext, currentUser *models.Use
 		CanEditPostTitle:    p.Thread.FirstID == p.Post.ID,
 		IsEditing:           true,
 		EditInitialContents: p.CurrentVersion.TextRaw,
-		MaxFileSize:         AssetMaxSize(currentUser),
-		UploadUrl:           urlContext.BuildAssetUpload(),
+		TextEditor: templates.TextEditor{
+			MaxFileSize: AssetMaxSize(currentUser),
+			UploadUrl:   urlContext.BuildAssetUpload(),
+		},
 	}
 }
 

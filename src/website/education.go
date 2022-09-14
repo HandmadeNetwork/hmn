@@ -317,12 +317,14 @@ func getEditorDataForEduArticle(
 		SubmitLabel: "Submit",
 
 		CanEditPostTitle: true,
-		MaxFileSize:      AssetMaxSize(currentUser),
-		UploadUrl:        urlContext.BuildAssetUpload(),
 		ShowEduOptions:   true,
 		PreviewClass:     "edu-article",
 
-		ParserName: "parseMarkdownEdu",
+		TextEditor: templates.TextEditor{
+			ParserName:  "parseMarkdownEdu",
+			MaxFileSize: AssetMaxSize(currentUser),
+			UploadUrl:   urlContext.BuildAssetUpload(),
+		},
 	}
 
 	if article != nil {

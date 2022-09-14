@@ -389,6 +389,12 @@ type Tag struct {
 	Url  string
 }
 
+type TextEditor struct {
+	ParserName  string
+	MaxFileSize int
+	UploadUrl   string
+}
+
 type EduArticle struct {
 	Title       string
 	Slug        string
