@@ -5,6 +5,38 @@
         .hide-notes .note {
             display: none;
         }
+
+        .toc {
+            position: relative;
+            overflow: hidden;
+            transition: all 40ms ease-in-out;
+        }
+
+        .toc::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            border-left: 0 solid var(--link-color);
+            transition: all 40ms ease-in-out;
+        }
+
+        .toc.active {
+            background-color: var(--dim-background);
+        }
+
+        .toc.active::after {
+            border-left-width: 0.25rem;
+        }
+
+        .toc-1 {}
+        .toc-2 { margin-left: 1rem; }
+        .toc-3 { margin-left: 2rem; }
+        .toc-4 { margin-left: 3rem; }
+        .toc-5 { margin-left: 4rem; }
+        .toc-6 { margin-left: 5rem; }
     </style>
 {{ end }}
 
@@ -22,12 +54,50 @@
         <div class="edu-article flex-grow-1 post-content">
             {{ .Article.Content }}
         </div>
-        <div class="ml3 flex-shrink-0 w5">
-            I'm a sidebar!
+        <div class="sidebar ml3 flex-shrink-0 w-30">
+            <div class="toc-container flex flex-column">
+                {{ range .TOC }}
+                    <a href="#{{ .ID }}" class="db ph2 pv1 br2 toc toc-{{ .Level }}">{{ .Text }}</a>
+                {{ end }}
+            </div>
         </div>
     </div>
 
     <script>
+        const sidebar = document.querySelector('.sidebar');
+        const tocContainer = document.querySelector('.toc-container');
+        const tocEntries = Array.from(document.querySelectorAll('.toc')).map(tocLink => ({
+            link: tocLink,
+            heading: document.querySelector(tocLink.getAttribute('href')),
+        }));
+
+        // TOC
+        const FUDGE = 100;
+        const TOC_TOP_SPACING = 20;
+        document.addEventListener('scroll', () => {
+            // Stickiness
+            const stick = window.pageYOffset > sidebar.offsetTop-TOC_TOP_SPACING;
+            tocContainer.style.position = stick ? 'fixed' : 'static';
+            tocContainer.style.top = `${TOC_TOP_SPACING}px`;
+
+            // Active items
+            let activeEntry = null;
+            for (const toc of tocEntries) {
+                if (window.pageYOffset >= toc.heading.offsetTop-FUDGE) {
+                    activeEntry = toc;
+                } else {
+                    break;
+                }
+            }
+            for (const toc of tocEntries) {
+                toc.link.classList.remove('active');
+            }
+            if (activeEntry) {
+                activeEntry.link.classList.add('active');
+            }
+        });
+
+        // Notes
         function toggleNotes() {
             document.querySelector('.edu-article').classList.toggle('hide-notes',
                 document.querySelector('#hide-notes').checked,

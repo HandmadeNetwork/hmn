@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
@@ -66,6 +68,7 @@ func EducationArticle(c *RequestContext) ResponseData {
 	type articleData struct {
 		templates.BaseData
 		Article   templates.EduArticle
+		TOC       []TOCEntry
 		EditUrl   string
 		DeleteUrl string
 	}
@@ -95,6 +98,11 @@ func EducationArticle(c *RequestContext) ResponseData {
 	if c.CurrentUser == nil || !c.CurrentUser.CanAuthorEducation() {
 		tmpl.Article.Content = template.HTML(reEduEditorsNote.ReplaceAllLiteralString(string(tmpl.Article.Content), ""))
 	}
+
+	// Generate TOC and stuff I dunno
+	html, tocEntries := generateTOC(string(tmpl.Article.Content))
+	tmpl.Article.Content = template.HTML(html)
+	tmpl.TOC = tocEntries
 
 	var res ResponseData
 	res.MustWriteTemplate("education_article.html", tmpl, c.Perf)
@@ -425,4 +433,32 @@ func eduArticleURL(a *models.EduArticle) string {
 	default:
 		panic("unknown education article type")
 	}
+}
+
+var reHeading = regexp.MustCompile(`<h([1-6])>(.*?)</h[1-6]>`)
+var reNotSimple = regexp.MustCompile(`[^a-zA-Z0-9-_]+`)
+
+type TOCEntry struct {
+	Text  string
+	ID    string
+	Level int
+}
+
+func generateTOC(html string) (string, []TOCEntry) {
+	var entries []TOCEntry
+	replacinated := reHeading.ReplaceAllStringFunc(html, func(s string) string {
+		m := reHeading.FindStringSubmatch(s)
+		level := m[1]
+		content := m[2]
+		id := strings.ToLower(reNotSimple.ReplaceAllLiteralString(content, "-"))
+
+		entries = append(entries, TOCEntry{
+			Text:  content,
+			ID:    id,
+			Level: utils.Must1(strconv.Atoi(level)),
+		})
+
+		return fmt.Sprintf(`<h%s id="%s">%s</h%s>`, level, id, content, level)
+	})
+	return replacinated, entries
 }

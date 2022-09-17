@@ -16,6 +16,6 @@ func main() {
 		return parsing.ParseMarkdown(args[0].String(), parsing.EducationPreviewMarkdown)
 	}))
 
-	var done chan bool
+	var done chan struct{}
 	<-done // block forever
 }

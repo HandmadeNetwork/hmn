@@ -14,6 +14,7 @@ import (
 
 // Used for rendering real-time previews of post content.
 var ForumPreviewMarkdown = makeGoldmark(
+	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
 		Previews: true,
 		Embeds:   true,
@@ -22,6 +23,7 @@ var ForumPreviewMarkdown = makeGoldmark(
 
 // Used for generating the final HTML for a post.
 var ForumRealMarkdown = makeGoldmark(
+	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
 		Previews: false,
 		Embeds:   true,
@@ -30,6 +32,7 @@ var ForumRealMarkdown = makeGoldmark(
 
 // Used for generating plain-text previews of posts.
 var PlaintextMarkdown = makeGoldmark(
+	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
 		Previews: false,
 		Embeds:   true,
@@ -39,6 +42,7 @@ var PlaintextMarkdown = makeGoldmark(
 
 // Used for processing Discord messages
 var DiscordMarkdown = makeGoldmark(
+	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
 		Previews: false,
 		Embeds:   false,
@@ -48,20 +52,24 @@ var DiscordMarkdown = makeGoldmark(
 
 // Used for rendering real-time previews of post content.
 var EducationPreviewMarkdown = makeGoldmark(
+	true,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
 		Previews:  true,
 		Embeds:    true,
 		Education: true,
 	})...),
+	goldmark.WithRendererOptions(html.WithUnsafe()),
 )
 
 // Used for generating the final HTML for a post.
 var EducationRealMarkdown = makeGoldmark(
+	true,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
 		Previews:  false,
 		Embeds:    true,
 		Education: true,
 	})...),
+	goldmark.WithRendererOptions(html.WithUnsafe()),
 )
 
 func ParseMarkdown(source string, md goldmark.Markdown) string {
@@ -79,8 +87,9 @@ type MarkdownOptions struct {
 	Education bool
 }
 
-func makeGoldmark(opts ...goldmark.Option) goldmark.Markdown {
+func makeGoldmark(rawHTML bool, opts ...goldmark.Option) goldmark.Markdown {
 	// We need to re-create Goldmark's default parsers to disable HTML parsing.
+	// Or enable it again. yay
 
 	// See parser.DefaultBlockParsers
 	blockParsers := []util.PrioritizedValue{
@@ -101,8 +110,13 @@ func makeGoldmark(opts ...goldmark.Option) goldmark.Markdown {
 		util.Prioritized(parser.NewCodeSpanParser(), 100),
 		util.Prioritized(parser.NewLinkParser(), 200),
 		util.Prioritized(parser.NewAutoLinkParser(), 300),
-		//util.Prioritized(parser.NewRawHTMLParser(), 400),
+		// util.Prioritized(parser.NewRawHTMLParser(), 400),
 		util.Prioritized(parser.NewEmphasisParser(), 500),
+	}
+
+	if rawHTML {
+		blockParsers = append(blockParsers, util.Prioritized(parser.NewHTMLBlockParser(), 900))
+		inlineParsers = append(inlineParsers, util.Prioritized(parser.NewRawHTMLParser(), 400))
 	}
 
 	opts = append(opts, goldmark.WithParser(parser.NewParser(
