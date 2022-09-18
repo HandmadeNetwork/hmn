@@ -124,7 +124,7 @@ func sendMail(toAddress, toName, subject, contentHtml string) error {
 	)
 	return smtp.SendMail(
 		fmt.Sprintf("%s:%d", config.Config.Email.ServerAddress, config.Config.Email.ServerPort),
-		smtp.PlainAuth("", config.Config.Email.FromAddress, config.Config.Email.FromAddressPassword, config.Config.Email.ServerAddress),
+		smtp.PlainAuth("", config.Config.Email.MailerUsername, config.Config.Email.MailerPassword, config.Config.Email.ServerAddress),
 		config.Config.Email.FromAddress,
 		[]string{toAddress},
 		contents,
