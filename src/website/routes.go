@@ -123,6 +123,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 		educationPrerelease.GET(hmnurl.RegexEducationGlossary, EducationGlossary)
 		educationPrerelease.GET(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNew))
 		educationPrerelease.POST(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNewSubmit))
+		educationPrerelease.GET(hmnurl.RegexEducationRerender, educationAuthorsOnly(EducationRerender))
 		educationPrerelease.GET(hmnurl.RegexEducationArticle, EducationArticle) // Article stuff must be last so `/glossary` and others do not match as an article slug
 		educationPrerelease.GET(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEdit))
 		educationPrerelease.POST(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEditSubmit))

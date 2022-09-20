@@ -60,7 +60,7 @@ var ggcodeTags = map[string]ggcodeTag{
 		Renderer: func(c ggcodeRendererContext, n *ggcodeNode, entering bool) error {
 			if entering {
 				c.W.WriteString(`<div class="edu-resource">`)
-				c.W.WriteString(fmt.Sprintf(`  <a href="%s" target="_blank"><h2>%s</h2></a>`, n.Args["url"], utils.OrDefault(n.Args["name"], "[missing `name`]")))
+				c.W.WriteString(fmt.Sprintf(`  <a class="resource-title" href="%s" target="_blank">%s</a>`, n.Args["url"], utils.OrDefault(n.Args["name"], "[missing `name`]")))
 			} else {
 				c.W.WriteString("</div>")
 			}
@@ -212,17 +212,14 @@ type ggcodeDelimiterParser struct {
 }
 
 func (p ggcodeDelimiterParser) IsDelimiter(b byte) bool {
-	fmt.Println("delmit", string(b))
 	return b == '(' || b == ')'
 }
 
 func (p ggcodeDelimiterParser) CanOpenCloser(opener, closer *parser.Delimiter) bool {
-	fmt.Println("oopen")
 	return opener.Char == '(' && closer.Char == ')'
 }
 
 func (p ggcodeDelimiterParser) OnMatch(consumes int) gast.Node {
-	fmt.Println("out!")
 	return p.Node
 }
 

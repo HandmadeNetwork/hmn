@@ -25,6 +25,7 @@ func EducationIndex(c *RequestContext) ResponseData {
 		templates.BaseData
 		Articles      []templates.EduArticle
 		NewArticleUrl string
+		RerenderUrl   string
 	}
 
 	articles, err := fetchEduArticles(c, c.Conn, models.EduArticleTypeArticle, c.CurrentUser)
@@ -41,6 +42,7 @@ func EducationIndex(c *RequestContext) ResponseData {
 		BaseData:      getBaseData(c, "Handmade Education", nil),
 		Articles:      tmplArticles,
 		NewArticleUrl: hmnurl.BuildEducationArticleNew(),
+		RerenderUrl:   hmnurl.BuildEducationRerender(),
 	}
 
 	var res ResponseData
@@ -229,6 +231,26 @@ func EducationArticleDeleteSubmit(c *RequestContext) ResponseData {
 
 	res := c.Redirect(hmnurl.BuildEducationIndex(), http.StatusSeeOther)
 	res.AddFutureNotice("success", "Article deleted.")
+	return res
+}
+
+func EducationRerender(c *RequestContext) ResponseData {
+	everything := utils.Must1(fetchEduArticles(c, c.Conn, 0, c.CurrentUser))
+	for _, thing := range everything {
+		newHTML := parsing.ParseMarkdown(thing.CurrentVersion.ContentRaw, parsing.EducationRealMarkdown)
+		utils.Must1(c.Conn.Exec(c,
+			`
+			UPDATE education_article_version
+			SET content_html = $2
+			WHERE id = $1
+			`,
+			thing.CurrentVersionID,
+			newHTML,
+		))
+	}
+
+	res := c.Redirect(hmnurl.BuildEducationIndex(), http.StatusSeeOther)
+	res.AddFutureNotice("success", "Rerendered all education content.")
 	return res
 }
 

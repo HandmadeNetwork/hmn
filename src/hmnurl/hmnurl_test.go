@@ -211,6 +211,10 @@ func TestEducationArticleDelete(t *testing.T) {
 	AssertRegexMatch(t, BuildEducationArticleDelete("foo"), RegexEducationArticleDelete, map[string]string{"slug": "foo"})
 }
 
+func TestEducationRerender(t *testing.T) {
+	AssertRegexMatch(t, BuildEducationRerender(), RegexEducationRerender, nil)
+}
+
 func TestForum(t *testing.T) {
 	AssertRegexMatch(t, hmn.BuildForum(nil, 1), RegexForum, nil)
 	AssertRegexMatch(t, hmn.BuildForum([]string{"wip"}, 2), RegexForum, map[string]string{"subforums": "wip", "page": "2"})

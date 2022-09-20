@@ -481,6 +481,12 @@ func BuildEducationArticleDelete(slug string) string {
 	return Url(fmt.Sprintf("/education/%s/delete", slug), nil)
 }
 
+var RegexEducationRerender = regexp.MustCompile(`^/education/rerender$`)
+
+func BuildEducationRerender() string {
+	return Url("/education/rerender", nil)
+}
+
 /*
 * Forums
  */
