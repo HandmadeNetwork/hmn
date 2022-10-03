@@ -114,8 +114,8 @@ var fishbowls = [...]fishbowlInfo{
 	},
 	{
 		Slug:        "entrepreneurship",
-		Title:       "TBD",
-		Description: "TBD",
+		Title:       "Entrepreneurship and the Handmade ethos",
+		Description: "What does it look like to turn a Handmade project into a sustainable business? How can the Handmade ethos set our software apart from its competitors? And how might we sustain the development of important software, if we're not sure how to sell it?",
 		Month:       time.October, Year: 2022,
 		ContentsPath: "entrepreneurship/entrepreneurship.html",
 	},
