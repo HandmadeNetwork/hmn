@@ -112,6 +112,13 @@ var fishbowls = [...]fishbowlInfo{
 		Month:       time.July, Year: 2022,
 		ContentsPath: "libraries/libraries.html",
 	},
+	{
+		Slug:        "entrepreneurship",
+		Title:       "TBD",
+		Description: "TBD",
+		Month:       time.October, Year: 2022,
+		ContentsPath: "entrepreneurship/entrepreneurship.html",
+	},
 }
 
 func FishbowlIndex(c *RequestContext) ResponseData {
