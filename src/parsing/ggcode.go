@@ -78,6 +78,27 @@ var ggcodeTags = map[string]ggcodeTag{
 			return nil
 		},
 	},
+	"figure": {
+		Filter: ggcodeFilterEdu,
+		Renderer: func(c ggcodeRendererContext, n *ggcodeNode, entering bool) error {
+			if entering {
+				c.W.WriteString(`<figure>`)
+				var srcAttr, altAttr string
+				if src := n.Args["src"]; src != "" {
+					srcAttr = fmt.Sprintf(` src="%s"`, src)
+				}
+				if alt := n.Args["alt"]; alt != "" {
+					altAttr = fmt.Sprintf(` alt="%s"`, alt)
+				}
+				c.W.WriteString(fmt.Sprintf(`<img%s%s>`, srcAttr, altAttr))
+				c.W.WriteString(`<figcaption>`)
+			} else {
+				c.W.WriteString(`</figcaption>`)
+				c.W.WriteString(`</figure>`)
+			}
+			return nil
+		},
+	},
 }
 
 // ----------------------
