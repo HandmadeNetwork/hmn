@@ -167,7 +167,7 @@ func PostStreamHistory(ctx context.Context, history *models.TwitchStreamHistory)
 	}
 	duration := history.EndedAt.Sub(history.StartedAt).Truncate(time.Minute).String()
 	messageContent := fmt.Sprintf(
-		"**%s** was live: https://twitch.tv/%s\n> _%s_\n At <t:%d:F> For %s%s",
+		"**%s** was live: https://twitch.tv/%s\n> _%s_\nAt <t:%d:F> For %s%s",
 		history.TwitchLogin,
 		history.TwitchLogin,
 		history.Title,
@@ -175,6 +175,9 @@ func PostStreamHistory(ctx context.Context, history *models.TwitchStreamHistory)
 		approximated,
 		duration,
 	)
+	if history.VODUrl != "" {
+		messageContent += fmt.Sprintf("\nVOD: %s", history.VODUrl)
+	}
 	msgJson, err := json.Marshal(CreateMessageRequest{
 		Content:         messageContent,
 		Flags:           FlagSuppressEmbeds,

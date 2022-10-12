@@ -618,6 +618,12 @@ func setValueFromDB(dest reflect.Value, value reflect.Value) {
 		dest.SetInt(value.Int())
 	case reflect.String:
 		dest.SetString(value.String())
+	case reflect.Slice:
+		switch v := value.Interface().(type) {
+		case pgtype.Value:
+			v.AssignTo(dest.Interface())
+		default:
+		}
 	// TODO(ben): More kinds? All the kinds? It kind of feels like we should be able to assign to any destination whose underlying type is a primitive.
 	default:
 		dest.Set(value)

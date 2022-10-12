@@ -174,7 +174,7 @@ type archivedVideo struct {
 func getArchivedVideosForUser(ctx context.Context, twitchID string, numVODs int) ([]archivedVideo, error) {
 	query := url.Values{}
 	query.Add("user_id", twitchID)
-	query.Add("type", "archived")
+	query.Add("type", "archive")
 	query.Add("first", strconv.Itoa(numVODs))
 
 	return getArchivedVideosByQuery(ctx, query)
@@ -471,7 +471,7 @@ func doRequest(ctx context.Context, waitOnRateLimit bool, req *http.Request) (*h
 			if err != nil {
 				return nil, oops.New(err, "failed to read response body")
 			}
-			logging.ExtractLogger(ctx).Warn().Interface("Headers", res.Header).Int("Status code", res.StatusCode).Str("Body", string(body[:])).Msg("Unexpected status code from twitch")
+			logging.ExtractLogger(ctx).Error().Interface("Headers", res.Header).Int("Status code", res.StatusCode).Str("Body", string(body[:])).Msg("Unexpected status code from twitch")
 			res.Body.Close()
 			return res, oops.New(nil, "got an unexpected status code from twitch")
 		}

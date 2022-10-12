@@ -35,6 +35,7 @@ func (m NewTwitchTracking) Up(ctx context.Context, tx pgx.Tx) error {
 			twitch_login VARCHAR(255) NOT NULL,
 			started_at TIMESTAMP WITH TIME ZONE NOT NULL,
 			ended_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT 'epoch',
+			end_approximated BOOLEAN NOT NULL DEFAULT FALSE,
 			title VARCHAR(255) NOT NULL DEFAULT '',
 			category_id VARCHAR(255) NOT NULL DEFAULT '',
 			tags VARCHAR(255) ARRAY NOT NULL DEFAULT '{}',
@@ -72,7 +73,7 @@ func (m NewTwitchTracking) Down(ctx context.Context, tx pgx.Tx) error {
 		DROP TABLE twitch_stream_history;
 		DROP TABLE twitch_latest_status;
 
-		CREATE TABLE twitch_streams (
+		CREATE TABLE twitch_stream (
 			twitch_id VARCHAR(255) NOT NULL,
 			twitch_login VARCHAR(255) NOT NULL,
 			title VARCHAR(255) NOT NULL,
