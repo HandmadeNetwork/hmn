@@ -19,6 +19,45 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 )
 
+// NOTE(asaf): The twitch api madness:
+//
+//               | stream.online | stream.offline | channel.update[3] | REST[1][2]
+// id[4]         |    YES        |     NO         |     NO            |    YES
+// twitch_id     |    YES        |     YES        |     YES           |    YES
+// twitch_login  |    YES        |     YES        |     YES           |    YES
+// is_live       |    YES        |   IMPLICIT     |     NO            |    YES
+// started_at    |    YES        |     NO         |     NO            |    YES
+// title         |    NO         |     NO         |     YES           |    YES
+// cat_id        |    NO         |     NO         |     YES           |    YES
+// tags          |    NO         |     NO         |     NO            |    YES
+//
+// [1] REST returns nothing when user is not live
+// [2] Information received from REST is ~3 minutes old.
+// [3] channel.update also fires when the user changes their twitch channel settings when they're not live (i.e. as soon as they update it in twitch settings)
+// [4] ID of the current livestream
+
+type streamStatus struct {
+	StreamID    string
+	TwitchID    string
+	TwitchLogin string
+	Live        bool
+	Title       string
+	StartedAt   time.Time
+	CategoryID  string
+	Tags        []string
+}
+
+type twitchNotificationType int
+
+const (
+	notificationTypeNone          twitchNotificationType = 0
+	notificationTypeOnline                               = 1
+	notificationTypeOffline                              = 2
+	notificationTypeChannelUpdate                        = 3
+
+	notificationTypeRevocation = 4
+)
+
 type twitchNotification struct {
 	Status streamStatus
 	Type   twitchNotificationType
@@ -75,10 +114,10 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 						log.Error().Err(err).Msg("Failed to fetch refresh token on start")
 						return true, nil
 					}
-					syncWithTwitch(ctx, dbConn, true)
+					syncWithTwitch(ctx, dbConn, true, true)
 				case <-monitorTicker.C:
 					twitchLogClear(ctx, dbConn)
-					syncWithTwitch(ctx, dbConn, true)
+					syncWithTwitch(ctx, dbConn, true, true)
 				case <-linksChangedChannel:
 					// NOTE(asaf): Since we update links inside transactions for users/projects
 					//             we won't see the updated list of links until the transaction is committed.
@@ -87,13 +126,13 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 					var timer *time.Timer
 					t := time.AfterFunc(5*time.Second, func() {
 						expiredTimers <- timer
-						syncWithTwitch(ctx, dbConn, false)
+						syncWithTwitch(ctx, dbConn, false, false)
 					})
 					timer = t
 					timers = append(timers, t)
 				case notification := <-twitchNotificationChannel:
 					if notification.Type == notificationTypeRevocation {
-						syncWithTwitch(ctx, dbConn, false)
+						syncWithTwitch(ctx, dbConn, false, false)
 					} else {
 						// NOTE(asaf): The twitch API (getStreamStatus) lags behind the notification and
 						//             would return old data if we called it immediately, so we process
@@ -123,17 +162,6 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 	return job
 }
 
-type twitchNotificationType int
-
-const (
-	notificationTypeNone          twitchNotificationType = 0
-	notificationTypeOnline                               = 1
-	notificationTypeOffline                              = 2
-	notificationTypeChannelUpdate                        = 3
-
-	notificationTypeRevocation = 4
-)
-
 func QueueTwitchNotification(ctx context.Context, conn db.ConnOrTx, messageType string, body []byte) error {
 	var notification twitchNotification
 	if messageType == "notification" {
@@ -142,6 +170,7 @@ func QueueTwitchNotification(ctx context.Context, conn db.ConnOrTx, messageType 
 				Type string `json:"type"`
 			} `json:"subscription"`
 			Event struct {
+				StreamID             string `json:"id"`
 				BroadcasterUserID    string `json:"broadcaster_user_id"`
 				BroadcasterUserLogin string `json:"broadcaster_user_login"`
 				Title                string `json:"title"`
@@ -159,12 +188,13 @@ func QueueTwitchNotification(ctx context.Context, conn db.ConnOrTx, messageType 
 		notification.Status.TwitchID = incoming.Event.BroadcasterUserID
 		notification.Status.TwitchLogin = incoming.Event.BroadcasterUserLogin
 		notification.Status.Title = incoming.Event.Title
-		notification.Status.Category = incoming.Event.CategoryID
+		notification.Status.CategoryID = incoming.Event.CategoryID
 		notification.Status.StartedAt = time.Now()
 		switch incoming.Subscription.Type {
 		case "stream.online":
 			notification.Type = notificationTypeOnline
 			notification.Status.Live = true
+			notification.Status.StreamID = incoming.Event.StreamID
 		case "stream.offline":
 			notification.Type = notificationTypeOffline
 		case "channel.update":
@@ -206,7 +236,7 @@ func UserOrProjectLinksUpdated(twitchLoginsPreChange, twitchLoginsPostChange []s
 	}
 }
 
-func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
+func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool, updateVODs bool) {
 	log := logging.ExtractLogger(ctx)
 	log.Info().Msg("Running twitch sync")
 	p := perf.MakeNewRequestPerf("Background job", "", "syncWithTwitch")
@@ -263,12 +293,6 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 		return
 	}
 	p.EndBlock()
-
-	const (
-		EventSubNone    = 0 // No event of this type found
-		EventSubRefresh = 1 // Event found, but bad status. Need to unsubscribe and resubscribe.
-		EventSubGood    = 2 // All is well.
-	)
 
 	type isSubbedByType map[string]bool
 
@@ -345,7 +369,7 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 	}
 	p.StartBlock("SQL", "Remove untracked streamers")
 	_, err = tx.Exec(ctx,
-		`DELETE FROM twitch_stream WHERE twitch_id != ANY($1)`,
+		`DELETE FROM twitch_latest_status WHERE twitch_id != ANY($1)`,
 		allIDs,
 	)
 	if err != nil {
@@ -379,10 +403,29 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 	twitchLog(ctx, tx, models.TwitchLogTypeOther, "", "Batch resync", fmt.Sprintf("%#v", statuses))
 	p.EndBlock()
 	p.StartBlock("SQL", "Update stream statuses in db")
-	for _, status := range statuses {
-		log.Debug().Interface("Status", status).Msg("Got streamer")
+	for _, twitchId := range usersToUpdate {
+		var status *streamStatus
+		for idx, st := range statuses {
+			if st.TwitchID == twitchId {
+				status = &statuses[idx]
+				break
+			}
+		}
+		if status == nil {
+			twitchLogin := ""
+			for _, streamer := range validStreamers {
+				if streamer.TwitchID == twitchId {
+					twitchLogin = streamer.TwitchLogin
+					break
+				}
+			}
+			status = &streamStatus{
+				TwitchID:    twitchId,
+				TwitchLogin: twitchLogin,
+			}
+		}
 		twitchLog(ctx, tx, models.TwitchLogTypeREST, status.TwitchLogin, "Resync", fmt.Sprintf("%#v", status))
-		err = updateStreamStatusInDB(ctx, tx, &status)
+		err = gotRESTUpdate(ctx, tx, status)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to update twitch stream status")
 		}
@@ -395,6 +438,17 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 	stats.NumStreamsChecked += len(usersToUpdate)
 	log.Info().Interface("Stats", stats).Msg("Twitch sync done")
 
+	if updateVODs {
+		err = findMissingVODs(ctx, dbConn)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to find missing twitch vods")
+		}
+		err = verifyHistoryVODs(ctx, dbConn)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to verify twitch vods")
+		}
+	}
+
 	log.Debug().Msg("Notifying discord")
 	err = notifyDiscordOfLiveStream(ctx, dbConn)
 	if err != nil {
@@ -403,11 +457,56 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool) {
 }
 
 func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx) error {
-	streams, err := db.Query[models.TwitchStream](ctx, dbConn,
+	history, err := db.Query[models.TwitchStreamHistory](ctx, dbConn,
+		`
+		SELECT $columns
+		FROM twitch_stream_history
+		WHERE discord_needs_update = TRUE
+		ORDER BY started_at ASC
+		`,
+	)
+	if err != nil {
+		return oops.New(err, "failed to fetch twitch history")
+	}
+
+	updatedHistories := make([]*models.TwitchStreamHistory, 0)
+	for _, h := range history {
+		relevant := isStreamRelevant(h.CategoryID, h.Tags)
+		if relevant && !h.EndedAt.IsZero() {
+			msgId, err := discord.PostStreamHistory(ctx, h)
+			if err != nil {
+				return oops.New(err, "failed to post twitch history to discord")
+			}
+			h.DiscordNeedsUpdate = false
+			h.DiscordMessageID = msgId
+			updatedHistories = append(updatedHistories, h)
+		}
+	}
+
+	for _, h := range updatedHistories {
+		_, err = dbConn.Exec(ctx,
+			`
+			UPDATE twitch_stream_history
+			SET
+				discord_needs_update = $2,
+				discord_message_id = $3,
+			WHERE stream_id = $1
+			`,
+			h.StreamID,
+			h.DiscordNeedsUpdate,
+			h.DiscordMessageID,
+		)
+		if err != nil {
+			return oops.New(err, "failed to update twitch history after posting to discord")
+		}
+	}
+
+	streams, err := db.Query[models.TwitchLatestStatus](ctx, dbConn,
 		`
 		SELECT $columns
 		FROM
-			twitch_stream
+			twitch_latest_status
+		WHERE live = TRUE
 		ORDER BY started_at ASC
 		`,
 	)
@@ -417,11 +516,13 @@ func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx) error {
 
 	var streamDetails []hmndata.StreamDetails
 	for _, s := range streams {
-		streamDetails = append(streamDetails, hmndata.StreamDetails{
-			Username:  s.Login,
-			StartTime: s.StartedAt,
-			Title:     s.Title,
-		})
+		if isStreamRelevant(s.CategoryID, s.Tags) {
+			streamDetails = append(streamDetails, hmndata.StreamDetails{
+				Username:  s.TwitchLogin,
+				StartTime: s.StartedAt,
+				Title:     s.Title,
+			})
+		}
 	}
 
 	err = discord.UpdateStreamers(ctx, dbConn, streamDetails)
@@ -454,8 +555,9 @@ func updateStreamStatus(ctx context.Context, dbConn db.ConnOrTx, twitchID string
 	}
 
 	status := streamStatus{
-		TwitchID: twitchID,
-		Live:     false,
+		TwitchID:    twitchID,
+		TwitchLogin: twitchLogin,
+		Live:        false,
 	}
 
 	result, err := getStreamStatus(ctx, []string{twitchID})
@@ -468,7 +570,7 @@ func updateStreamStatus(ctx context.Context, dbConn db.ConnOrTx, twitchID string
 		log.Debug().Interface("Got status", result[0]).Msg("Got streamer status from twitch")
 		status = result[0]
 	}
-	err = updateStreamStatusInDB(ctx, dbConn, &status)
+	err = gotRESTUpdate(ctx, dbConn, &status)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to update twitch stream status")
 		return
@@ -506,29 +608,21 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 	}
 
 	twitchLog(ctx, dbConn, models.TwitchLogTypeHook, notification.Status.TwitchLogin, "Processing hook", fmt.Sprintf("%#v", notification))
-	if notification.Type == notificationTypeOnline || notification.Type == notificationTypeOffline {
-		log.Debug().Interface("Status", notification.Status).Msg("Updating status")
-		err = updateStreamStatusInDB(ctx, dbConn, &notification.Status)
+	switch notification.Type {
+	case notificationTypeOnline:
+		err := gotStreamOnline(ctx, dbConn, &notification.Status)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to update twitch stream status")
-			return
 		}
-	} else if notification.Type == notificationTypeChannelUpdate {
-		// NOTE(asaf): Channel updates can happen wether or not the streamer is live.
-		//             So we just update the title if the user is live in our db, and we rely on the
-		//             3-minute delayed status update to verify live status and category/tag requirements.
-		_, err = dbConn.Exec(ctx,
-			`
-			UPDATE twitch_stream
-			SET title = $1
-			WHERE twitch_id = $2
-			`,
-			notification.Status.Title,
-			notification.Status.TwitchID,
-		)
+	case notificationTypeOffline:
+		err := gotStreamOffline(ctx, dbConn, &notification.Status)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to update twitch stream status")
-			return
+		}
+	case notificationTypeChannelUpdate:
+		err := gotChannelUpdate(ctx, dbConn, &notification.Status)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to update twitch stream status")
 		}
 	}
 
@@ -539,40 +633,472 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 	}
 }
 
-func updateStreamStatusInDB(ctx context.Context, conn db.ConnOrTx, status *streamStatus) error {
-	log := logging.ExtractLogger(ctx)
-	if isStatusRelevant(status) {
-		twitchLog(ctx, conn, models.TwitchLogTypeOther, status.TwitchLogin, "Marking online", fmt.Sprintf("%#v", status))
-		log.Debug().Msg("Status relevant")
-		_, err := conn.Exec(ctx,
-			`
-			INSERT INTO twitch_stream (twitch_id, twitch_login, title, started_at)
-				VALUES ($1, $2, $3, $4)
-			ON CONFLICT (twitch_id) DO UPDATE SET
-				title = EXCLUDED.title,
-				started_at = EXCLUDED.started_at
-			`,
-			status.TwitchID,
-			status.TwitchLogin,
-			status.Title,
-			status.StartedAt,
-		)
-		if err != nil {
-			return oops.New(err, "failed to insert twitch streamer into db")
-		}
-	} else {
-		log.Debug().Msg("Stream not relevant")
-		twitchLog(ctx, conn, models.TwitchLogTypeOther, status.TwitchLogin, "Marking offline", fmt.Sprintf("%#v", status))
-		_, err := conn.Exec(ctx,
-			`
-			DELETE FROM twitch_stream WHERE twitch_id = $1
-			`,
-			status.TwitchID,
-		)
-		if err != nil {
-			return oops.New(err, "failed to remove twitch streamer from db")
+func gotStreamOnline(ctx context.Context, conn db.ConnOrTx, status *streamStatus) error {
+	latest, err := fetchLatestStreamStatus(ctx, conn, status.TwitchID, status.TwitchLogin)
+	if err != nil {
+		return err
+	}
+	latest.Live = true
+	latest.StreamID = status.StreamID
+	latest.StartedAt = status.StartedAt
+	latest.LastHookLiveUpdate = time.Now()
+	err = saveLatestStreamStatus(ctx, conn, latest)
+	if err != nil {
+		return err
+	}
+	err = updateStreamHistory(ctx, conn, latest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func gotStreamOffline(ctx context.Context, conn db.ConnOrTx, status *streamStatus) error {
+	latest, err := fetchLatestStreamStatus(ctx, conn, status.TwitchID, status.TwitchLogin)
+	if err != nil {
+		return err
+	}
+	latest.Live = false
+	latest.LastHookLiveUpdate = time.Now()
+	err = saveLatestStreamStatus(ctx, conn, latest)
+	if err != nil {
+		return err
+	}
+	err = updateStreamHistory(ctx, conn, latest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func gotChannelUpdate(ctx context.Context, conn db.ConnOrTx, status *streamStatus) error {
+	latest, err := fetchLatestStreamStatus(ctx, conn, status.TwitchID, status.TwitchLogin)
+	if err != nil {
+		return err
+	}
+	if !latest.Live {
+		// NOTE(asaf): If the stream is live, this channel update applies
+		//             to the current livestream. Otherwise, this will
+		//             only apply to the next stream, so we clear out
+		//             the stream info.
+		latest.StreamID = ""
+		latest.StartedAt = time.Time{}
+	}
+	latest.Title = status.Title
+	if latest.CategoryID != status.CategoryID {
+		latest.CategoryID = status.CategoryID
+		latest.Tags = []string{} // NOTE(asaf): We don't get tags here, but we can't assume they didn't change because some tags are automatic based on category
+	}
+	latest.LastHookChannelUpdate = time.Now()
+	err = saveLatestStreamStatus(ctx, conn, latest)
+	if err != nil {
+		return err
+	}
+	err = updateStreamHistory(ctx, conn, latest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func gotRESTUpdate(ctx context.Context, conn db.ConnOrTx, status *streamStatus) error {
+	latest, err := fetchLatestStreamStatus(ctx, conn, status.TwitchID, status.TwitchLogin)
+	if err != nil {
+		return err
+	}
+	if latest.LastHookLiveUpdate.Add(3 * time.Minute).Before(time.Now()) {
+		latest.Live = status.Live
+		if status.Live {
+			// NOTE(asaf): We don't get this information if the user isn't live
+			latest.StartedAt = status.StartedAt
+			latest.StreamID = status.StreamID
 		}
 	}
+	if latest.LastHookChannelUpdate.Add(3 * time.Minute).Before(time.Now()) {
+		if status.Live {
+			// NOTE(asaf): We don't get this information if the user isn't live
+			latest.Title = status.Title
+			latest.CategoryID = status.CategoryID
+			latest.Tags = status.Tags
+		}
+	}
+	latest.LastRESTUpdate = time.Now()
+	err = saveLatestStreamStatus(ctx, conn, latest)
+	if err != nil {
+		return err
+	}
+	err = updateStreamHistory(ctx, conn, latest)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func fetchLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, twitchID string, twitchLogin string) (*models.TwitchLatestStatus, error) {
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return nil, oops.New(err, "failed to begin transaction for stream status fetch")
+	}
+	defer tx.Rollback(ctx)
+
+	result, err := db.QueryOne[models.TwitchLatestStatus](ctx, conn,
+		`
+		SELECT $columns
+		FROM twitch_latest_status
+		WHERE twitch_id = $1
+		`,
+		twitchID,
+	)
+	if err == db.NotFound {
+		_, err = conn.Exec(ctx,
+			`
+			INSERT INTO twitch_latest_status (twitch_id, twitch_login)
+			VALUES ($1, $2)
+			`,
+			twitchID,
+			twitchLogin,
+		)
+		if err != nil {
+			return nil, err
+		}
+		result = &models.TwitchLatestStatus{
+			TwitchID:    twitchID,
+			TwitchLogin: twitchLogin,
+		}
+	} else if err != nil {
+		return nil, oops.New(err, "failed to fetch existing twitch status")
+	}
+
+	if result.TwitchLogin != twitchLogin {
+		_, err = conn.Exec(ctx,
+			`
+			UPDATE twitch_latest_status
+			SET twitch_login = $2
+			WHERE twitch_id = $1
+			`,
+			twitchID,
+			twitchLogin,
+		)
+		if err != nil {
+			return nil, oops.New(err, "failed to update twitch login")
+		}
+		result.TwitchLogin = twitchLogin
+	}
+	err = tx.Commit(ctx)
+	if err != nil {
+		return nil, oops.New(err, "failed to commit transaction")
+	}
+	return result, nil
+}
+
+func saveLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, latest *models.TwitchLatestStatus) error {
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return oops.New(err, "failed to start transaction for stream status update")
+	}
+	defer tx.Rollback(ctx)
+
+	// NOTE(asaf): Ensure that we have a record for it in the db
+	_, err = fetchLatestStreamStatus(ctx, conn, latest.TwitchID, latest.TwitchLogin)
+	if err != nil {
+		return err
+	}
+
+	_, err = conn.Exec(ctx,
+		`
+		UPDATE twitch_latest_status
+		SET
+			live = $2,
+			started_at = $3,
+			title = $4,
+			category_id = $5,
+			tags = $6,
+			last_hook_live_update = $7,
+			last_hook_channel_update = $8,
+			last_rest_update = $9
+		WHERE
+			twitch_id = $1
+		`,
+		latest.TwitchID,
+		latest.Live,
+		latest.StartedAt,
+		latest.Title,
+		latest.CategoryID,
+		latest.Tags,
+		latest.LastHookLiveUpdate,
+		latest.LastHookChannelUpdate,
+		latest.LastRESTUpdate,
+	)
+	if err != nil {
+		return oops.New(err, "failed to update twitch latest status")
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return oops.New(err, "failed to commit transaction")
+	}
+	return nil
+}
+
+func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models.TwitchLatestStatus) error {
+	if status.StreamID == "" {
+		return nil
+	}
+	tx, err := dbConn.Begin(ctx)
+	if err != nil {
+		return oops.New(err, "failed to begin transaction for stream history update")
+	}
+	defer tx.Rollback(ctx)
+	history, err := db.QueryOne[models.TwitchStreamHistory](ctx, tx,
+		`
+		SELECT $columns
+		FROM twitch_stream_history
+		WHERE stream_id = $1
+		`,
+		status.StreamID,
+	)
+
+	if err == db.NotFound {
+		history = &models.TwitchStreamHistory{}
+		history.StreamID = status.StreamID
+		history.TwitchID = status.TwitchID
+		history.TwitchLogin = status.TwitchLogin
+		history.StartedAt = status.StartedAt
+		history.DiscordNeedsUpdate = true
+	} else if err != nil {
+		return oops.New(err, "failed to fetch existing stream history")
+	}
+
+	if !status.Live && history.EndedAt.IsZero() {
+		history.EndedAt = time.Now()
+		history.EndApproximated = true
+		history.DiscordNeedsUpdate = true
+	}
+
+	history.Title = status.Title
+	history.CategoryID = status.CategoryID
+	history.Tags = status.Tags
+
+	_, err = tx.Exec(ctx,
+		`
+		INSERT INTO
+		twitch_stream_history (stream_id, twitch_id, twitch_login, started_at, ended_at, title, category_id, tags)
+		VALUES                ($1,        $2,        $3,           $4,         $5,       $6,    $7,          $8)
+		ON CONFLICT (stream_id) DO UPDATE SET
+			ended_at = EXCLUDED.ended_at,
+			title = EXCLUDED.title,
+			category_id = EXCLUDED.category_id,
+			tags = EXCLUDED.tags
+		`,
+		history.StreamID,
+		history.TwitchID,
+		history.TwitchLogin,
+		history.StartedAt,
+		history.EndedAt,
+		history.Title,
+		history.CategoryID,
+		history.Tags,
+	)
+	if err != nil {
+		return oops.New(err, "failed to insert/update twitch history")
+	}
+	err = tx.Commit(ctx)
+	if err != nil {
+		return oops.New(err, "failed to commit transaction")
+	}
+
+	if !history.EndedAt.IsZero() {
+		err = findHistoryVOD(ctx, dbConn, history)
+		if err != nil {
+			return oops.New(err, "failed to look up twitch vod")
+		}
+	}
+	return nil
+}
+
+func findHistoryVOD(ctx context.Context, dbConn db.ConnOrTx, history *models.TwitchStreamHistory) error {
+	if history.StreamID == "" || history.VODID != "" || history.VODGone {
+		return nil
+	}
+
+	vods, err := getArchivedVideosForUser(ctx, history.TwitchID, 10)
+	if err != nil {
+		return oops.New(err, "failed to fetch vods for streamer")
+	}
+
+	var vod *archivedVideo
+	for idx, v := range vods {
+		if v.StreamID == history.StreamID {
+			vod = &vods[idx]
+		}
+	}
+	if vod != nil {
+		history.VODID = vod.ID
+		history.VODUrl = vod.VODUrl
+		history.VODThumbnail = vod.VODThumbnail
+		history.LastVerifiedVOD = time.Now()
+		history.VODGone = false
+
+		if vod.Duration.Minutes() > 0 {
+			history.EndedAt = history.StartedAt.Add(vod.Duration)
+			history.EndApproximated = false
+		}
+
+		_, err = dbConn.Exec(ctx,
+			`
+			UPDATE twitch_stream_history
+			SET
+				vod_id = $2,
+				vod_url = $3,
+				vod_thumbnail = $4,
+				last_verified_vod = $5,
+				vod_gone = $6,
+				ended_at = $7,
+				end_approximated = $8
+			WHERE stream_id = $1
+			`,
+			history.StreamID,
+			history.VODID,
+			history.VODUrl,
+			history.VODThumbnail,
+			history.LastVerifiedVOD,
+			history.VODGone,
+			history.EndedAt,
+			history.EndApproximated,
+		)
+		if err != nil {
+			return oops.New(err, "failed to update stream history with VOD")
+		}
+	} else {
+		if history.StartedAt.Add(14 * 24 * time.Hour).Before(time.Now()) {
+			history.VODGone = true
+			_, err = dbConn.Exec(ctx, `
+				UPDATE twitch_stream_history
+				SET
+					vod_gone = $2,
+				WHERE stream_id = $1
+				`,
+				history.StreamID,
+				history.VODGone,
+			)
+			if err != nil {
+				return oops.New(err, "failed to update stream history")
+			}
+		}
+	}
+	return nil
+}
+
+func findMissingVODs(ctx context.Context, dbConn db.ConnOrTx) error {
+	histories, err := db.Query[models.TwitchStreamHistory](ctx, dbConn,
+		`
+		SELECT $columns
+		FROM twitch_stream_history
+		WHERE
+			vod_gone = FALSE AND
+			vod_url = '' AND
+			ended_at != $1
+		`,
+		time.Time{},
+	)
+	if err != nil {
+		return oops.New(err, "failed to fetch stream history for vod updates")
+	}
+
+	for _, history := range histories {
+		err = findHistoryVOD(ctx, dbConn, history)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func verifyHistoryVODs(ctx context.Context, dbConn db.ConnOrTx) error {
+	histories, err := db.Query[models.TwitchStreamHistory](ctx, dbConn,
+		`
+		SELECT $columns
+		FROM twitch_stream_history
+		WHERE
+			vod_gone = FALSE AND
+			vod_id != '' AND 
+			last_verified_vod < $1
+		ORDER BY last_verified_vod ASC
+		LIMIT 100
+		`,
+		time.Now().Add(-24*time.Hour),
+	)
+
+	if err != nil {
+		return oops.New(err, "failed to fetch stream history for vod verification")
+	}
+
+	videoIDs := make([]string, 0, len(histories))
+	for _, h := range histories {
+		videoIDs = append(videoIDs, h.VODID)
+	}
+
+	VODs, err := getArchivedVideos(ctx, videoIDs)
+	if err != nil {
+		return oops.New(err, "failed to fetch vods from twitch")
+	}
+
+	vodGone := make([]string, 0, len(histories))
+	vodFound := make([]string, 0, len(histories))
+	for _, h := range histories {
+		found := false
+		for _, vod := range VODs {
+			if h.VODID == vod.ID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			vodGone = append(vodGone, h.VODID)
+		} else {
+			vodFound = append(vodFound, h.VODID)
+		}
+	}
+
+	if len(vodGone) > 0 {
+		_, err = dbConn.Exec(ctx,
+			`
+			UPDATE twitch_stream_history
+			SET
+				discord_needs_update = TRUE,
+				vod_id = '',
+				vod_url = '',
+				vod_thumbnail = '',
+				last_verified_vod = $2,
+				vod_gone = TRUE
+			WHERE
+				vod_id = ANY($1)
+			`,
+			vodGone,
+			time.Now(),
+		)
+		if err != nil {
+			return oops.New(err, "failed to update twitch history")
+		}
+	}
+
+	if len(vodFound) > 0 {
+		_, err = dbConn.Exec(ctx,
+			`
+			UPDATE twitch_stream_history
+			SET
+				last_verified_vod = $2,
+			WHERE
+				vod_id = ANY($1)
+			`,
+			vodFound,
+			time.Now(),
+		)
+		if err != nil {
+			return oops.New(err, "failed to update twitch history")
+		}
+	}
+
 	return nil
 }
 
@@ -585,19 +1111,17 @@ var RelevantTags = []string{
 	"6f86127d-6051-4a38-94bb-f7b475dde109", // Software Development
 }
 
-func isStatusRelevant(status *streamStatus) bool {
-	if status.Live {
-		for _, cat := range RelevantCategories {
-			if status.Category == cat {
-				return true
-			}
+func isStreamRelevant(catID string, tags []string) bool {
+	for _, cat := range RelevantCategories {
+		if cat == catID {
+			return true
 		}
+	}
 
-		for _, tag := range RelevantTags {
-			for _, streamTag := range status.Tags {
-				if tag == streamTag {
-					return true
-				}
+	for _, tag := range RelevantTags {
+		for _, streamTag := range tags {
+			if tag == streamTag {
+				return true
 			}
 		}
 	}

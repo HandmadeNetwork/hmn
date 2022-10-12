@@ -97,11 +97,13 @@ func TwitchDebugPage(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch twitch streamers"))
 	}
-	live, err := db.Query[models.TwitchStream](c, c.Conn,
+	live, err := db.Query[models.TwitchLatestStatus](c, c.Conn,
 		`
 		SELECT $columns
 		FROM
-			twitch_stream
+			twitch_latest_status
+		WHERE
+			live = TRUE
 		`,
 	)
 	if err != nil {
@@ -124,7 +126,7 @@ func TwitchDebugPage(c *RequestContext) ResponseData {
 		user.Login = u.TwitchLogin
 		user.Live = false
 		for _, l := range live {
-			if l.Login == u.TwitchLogin {
+			if l.TwitchLogin == u.TwitchLogin {
 				user.Live = true
 				break
 			}

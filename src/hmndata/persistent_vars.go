@@ -84,3 +84,17 @@ func StorePersistentVar[T any](
 
 	return nil
 }
+
+func RemovePersistentVar(ctx context.Context, dbConn db.ConnOrTx, name PersistentVarName) error {
+	_, err := dbConn.Exec(ctx,
+		`
+		DELETE FROM persistent_var
+		WHERE name = $1
+		`,
+		name,
+	)
+	if err != nil {
+		return oops.New(err, "failed to delete var")
+	}
+	return nil
+}

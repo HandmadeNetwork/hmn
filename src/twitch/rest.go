@@ -28,7 +28,8 @@ var MaxRetries = errors.New("hit max retries")
 var httpClient = &http.Client{}
 
 // NOTE(asaf): Access token is not thread-safe right now.
-//             All twitch requests are made through the goroutine in MonitorTwitchSubscriptions.
+//
+//	All twitch requests are made through the goroutine in MonitorTwitchSubscriptions.
 var activeAccessToken string
 var rateLimitReset time.Time
 
@@ -87,16 +88,6 @@ func getTwitchUsersByLogin(ctx context.Context, logins []string) ([]twitchUser, 
 	return result, nil
 }
 
-type streamStatus struct {
-	TwitchID    string
-	TwitchLogin string
-	Live        bool
-	Title       string
-	StartedAt   time.Time
-	Category    string
-	Tags        []string
-}
-
 func getStreamStatus(ctx context.Context, twitchIDs []string) ([]streamStatus, error) {
 	result := make([]streamStatus, 0, len(twitchIDs))
 	numChunks := len(twitchIDs)/100 + 1
@@ -116,6 +107,7 @@ func getStreamStatus(ctx context.Context, twitchIDs []string) ([]streamStatus, e
 		}
 
 		type twitchStatus struct {
+			StreamID    string   `json:"id"`
 			TwitchID    string   `json:"user_id"`
 			TwitchLogin string   `json:"user_login"`
 			GameID      string   `json:"game_id"`
@@ -150,18 +142,124 @@ func getStreamStatus(ctx context.Context, twitchIDs []string) ([]streamStatus, e
 				started = time.Now()
 			}
 			status := streamStatus{
+				StreamID:    d.StreamID,
 				TwitchID:    d.TwitchID,
 				TwitchLogin: d.TwitchLogin,
 				Live:        d.Type == "live",
 				Title:       d.Title,
 				StartedAt:   started,
-				Category:    d.GameID,
+				CategoryID:  d.GameID,
 				Tags:        d.Tags,
 			}
 			result = append(result, status)
 		}
 	}
 
+	return result, nil
+}
+
+type archivedVideo struct {
+	ID           string
+	StreamID     string
+	TwitchID     string
+	TwitchLogin  string
+	Title        string
+	Description  string
+	CreatedAt    time.Time
+	Duration     time.Duration
+	VODUrl       string
+	VODThumbnail string
+}
+
+func getArchivedVideosForUser(ctx context.Context, twitchID string, numVODs int) ([]archivedVideo, error) {
+	query := url.Values{}
+	query.Add("user_id", twitchID)
+	query.Add("type", "archived")
+	query.Add("first", strconv.Itoa(numVODs))
+
+	return getArchivedVideosByQuery(ctx, query)
+}
+
+func getArchivedVideos(ctx context.Context, videoIDs []string) ([]archivedVideo, error) {
+	query := url.Values{}
+	for _, vid := range videoIDs {
+		query.Add("id", vid)
+	}
+	return getArchivedVideosByQuery(ctx, query)
+}
+
+func getArchivedVideosByQuery(ctx context.Context, query url.Values) ([]archivedVideo, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", buildUrl("/videos", query.Encode()), nil)
+	if err != nil {
+		return nil, oops.New(err, "failed to create request")
+	}
+	res, err := doRequest(ctx, true, req)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch archived videos for user")
+	}
+
+	type twitchVideo struct {
+		ID           string `json:"id"`
+		StreamID     string `json:"stream_id"`
+		UserID       string `json:"user_id"`
+		UserLogin    string `json:"user_login"`
+		UserName     string `json:"user_name"`
+		Title        string `json:"title"`
+		Description  string `json:"description"`
+		CreatedAt    string `json:"created_at"`
+		PublishedAt  string `json:"published_at"`
+		Url          string `json:"url"`
+		ThumbnailUrl string `json:"thumbnail_url"`
+		Viewable     string `json:"viewable"`
+		ViewCount    int    `json:"view_count"`
+		Language     string `json:"language"`
+		Type         string `json:"type"`
+		Duration     string `json:"duration"`
+	}
+
+	type twitchResponse struct {
+		Data []twitchVideo `json:"data"`
+	}
+	body, err := io.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		return nil, oops.New(err, "failed to read response body while processing archived videos")
+	}
+	log := logging.ExtractLogger(ctx)
+	log.Debug().Str("getArchivedVideosForUser response", string(body)).Msg("Got getArchivedVideosForUser response")
+
+	var resp twitchResponse
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return nil, oops.New(err, "failed to parse twitch response while processing archived videos")
+	}
+
+	var result []archivedVideo
+
+	for _, v := range resp.Data {
+		createdAt, err := time.Parse(time.RFC3339, v.CreatedAt)
+		if err != nil {
+			logging.ExtractLogger(ctx).Warn().Str("Time string", v.CreatedAt).Msg("Failed to parse twitch timestamp")
+			createdAt = time.Time{}
+		}
+		duration, err := time.ParseDuration(v.Duration)
+		if err != nil {
+			duration = 0
+		}
+		archived := archivedVideo{
+			ID:           v.ID,
+			StreamID:     v.StreamID,
+			TwitchID:     v.UserID,
+			TwitchLogin:  v.UserLogin,
+			Title:        v.Title,
+			Description:  v.Description,
+			CreatedAt:    createdAt,
+			Duration:     duration,
+			VODUrl:       v.Url,
+			VODThumbnail: v.ThumbnailUrl,
+		}
+		result = append(result, archived)
+	}
 	return result, nil
 }
 
