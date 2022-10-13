@@ -1005,10 +1005,25 @@ func findHistoryVOD(ctx context.Context, dbConn db.ConnOrTx, history *models.Twi
 				UPDATE twitch_stream_history
 				SET
 					vod_gone = $2,
+					last_verified_vod = $3
 				WHERE stream_id = $1
 				`,
 				history.StreamID,
 				history.VODGone,
+				time.Now(),
+			)
+			if err != nil {
+				return oops.New(err, "failed to update stream history")
+			}
+		} else {
+			_, err = dbConn.Exec(ctx, `
+				UPDATE twitch_stream_history
+				SET
+					last_verified_vod = $2
+				WHERE stream_id = $1
+				`,
+				history.StreamID,
+				time.Now(),
 			)
 			if err != nil {
 				return oops.New(err, "failed to update stream history")
@@ -1025,19 +1040,20 @@ func findMissingVODs(ctx context.Context, dbConn db.ConnOrTx) error {
 		FROM twitch_stream_history
 		WHERE
 			vod_gone = FALSE AND
-			vod_id = ''
+			ended_at = $1
+		ORDER BY last_verified_vod ASC
+		LIMIT 100
 		`,
+		time.Time{},
 	)
 	if err != nil {
 		return oops.New(err, "failed to fetch stream history for vod updates")
 	}
 
 	for _, history := range histories {
-		if history.EndedAt.IsZero() {
-			err = findHistoryVOD(ctx, dbConn, history)
-			if err != nil {
-				return err
-			}
+		err = findHistoryVOD(ctx, dbConn, history)
+		if err != nil {
+			return err
 		}
 	}
 	return nil
