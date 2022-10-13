@@ -774,7 +774,7 @@ func fetchLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, twitchID str
 		result = &models.TwitchLatestStatus{
 			TwitchID:    twitchID,
 			TwitchLogin: twitchLogin,
-			Tags:        []string{},
+			Tags:        make([]string, 0),
 		}
 	} else if err != nil {
 		return nil, oops.New(err, "failed to fetch existing twitch status")
@@ -874,6 +874,7 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 
 	if err == db.NotFound {
 		history = &models.TwitchStreamHistory{}
+		history.Tags = make([]string, 0)
 		history.StreamID = status.StreamID
 		history.TwitchID = status.TwitchID
 		history.TwitchLogin = status.TwitchLogin
