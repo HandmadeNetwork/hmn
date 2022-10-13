@@ -165,7 +165,7 @@ func PostStreamHistory(ctx context.Context, history *models.TwitchStreamHistory)
 	if history.EndApproximated {
 		approximated = "about "
 	}
-	duration := history.EndedAt.Sub(history.StartedAt).Truncate(time.Minute).String()
+	duration := history.EndedAt.Sub(history.StartedAt).Truncate(time.Second).String()
 	messageContent := fmt.Sprintf(
 		":o: **%s** was live: https://twitch.tv/%s\n> _%s_\nOn <t:%d:F> for %s%s",
 		history.TwitchLogin,
