@@ -373,7 +373,7 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool, u
 	}
 	p.StartBlock("SQL", "Remove untracked streamers")
 	_, err = tx.Exec(ctx,
-		`DELETE FROM twitch_latest_status WHERE twitch_id != ANY($1)`,
+		`DELETE FROM twitch_latest_status WHERE NOT (twitch_id = ANY($1))`,
 		allIDs,
 	)
 	if err != nil {
@@ -751,7 +751,7 @@ func fetchLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, twitchID str
 	}
 	defer tx.Rollback(ctx)
 
-	result, err := db.QueryOne[models.TwitchLatestStatus](ctx, conn,
+	result, err := db.QueryOne[models.TwitchLatestStatus](ctx, tx,
 		`
 		SELECT $columns
 		FROM twitch_latest_status
@@ -760,8 +760,8 @@ func fetchLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, twitchID str
 		twitchID,
 	)
 	if err == db.NotFound {
-		twitchLog(ctx, conn, models.TwitchLogTypeOther, twitchLogin, "Creating new streamer", fmt.Sprintf("twitchID: %s", twitchID))
-		_, err = conn.Exec(ctx,
+		twitchLog(ctx, tx, models.TwitchLogTypeOther, twitchLogin, "Creating new streamer", fmt.Sprintf("twitchID: %s", twitchID))
+		_, err = tx.Exec(ctx,
 			`
 			INSERT INTO twitch_latest_status (twitch_id, twitch_login)
 			VALUES ($1, $2)
@@ -781,7 +781,7 @@ func fetchLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, twitchID str
 	}
 
 	if result.TwitchLogin != twitchLogin {
-		_, err = conn.Exec(ctx,
+		_, err = tx.Exec(ctx,
 			`
 			UPDATE twitch_latest_status
 			SET twitch_login = $2
@@ -810,7 +810,7 @@ func saveLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, latest *model
 	defer tx.Rollback(ctx)
 
 	// NOTE(asaf): Ensure that we have a record for it in the db
-	_, err = fetchLatestStreamStatus(ctx, conn, latest.TwitchID, latest.TwitchLogin)
+	_, err = fetchLatestStreamStatus(ctx, tx, latest.TwitchID, latest.TwitchLogin)
 	if err != nil {
 		return err
 	}
@@ -819,7 +819,7 @@ func saveLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, latest *model
 		latest.Tags = make([]string, 0)
 	}
 
-	_, err = conn.Exec(ctx,
+	_, err = tx.Exec(ctx,
 		`
 		UPDATE twitch_latest_status
 		SET
@@ -1140,7 +1140,7 @@ func verifyHistoryVODs(ctx context.Context, dbConn db.ConnOrTx) error {
 				`
 			UPDATE twitch_stream_history
 			SET
-				last_verified_vod = $2,
+				last_verified_vod = $2
 			WHERE
 				vod_id = ANY($1)
 			`,
@@ -1204,7 +1204,7 @@ func twitchLogClear(ctx context.Context, conn db.ConnOrTx) {
 	_, err := conn.Exec(ctx,
 		`
 		DELETE FROM twitch_log
-		WHERE timestamp <= $1
+		WHERE logged_at <= $1
 		`,
 		time.Now().Add(-(time.Hour * 24 * 4)),
 	)
