@@ -774,7 +774,6 @@ func fetchLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, twitchID str
 		result = &models.TwitchLatestStatus{
 			TwitchID:    twitchID,
 			TwitchLogin: twitchLogin,
-			Tags:        make([]string, 0),
 		}
 	} else if err != nil {
 		return nil, oops.New(err, "failed to fetch existing twitch status")
@@ -813,6 +812,10 @@ func saveLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, latest *model
 	_, err = fetchLatestStreamStatus(ctx, conn, latest.TwitchID, latest.TwitchLogin)
 	if err != nil {
 		return err
+	}
+
+	if latest.Tags == nil {
+		latest.Tags = make([]string, 0)
 	}
 
 	_, err = conn.Exec(ctx,
@@ -874,7 +877,6 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 
 	if err == db.NotFound {
 		history = &models.TwitchStreamHistory{}
-		history.Tags = make([]string, 0)
 		history.StreamID = status.StreamID
 		history.TwitchID = status.TwitchID
 		history.TwitchLogin = status.TwitchLogin
@@ -893,6 +895,10 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 	history.Title = status.Title
 	history.CategoryID = status.CategoryID
 	history.Tags = status.Tags
+
+	if history.Tags == nil {
+		history.Tags = make([]string, 0)
+	}
 
 	_, err = tx.Exec(ctx,
 		`
