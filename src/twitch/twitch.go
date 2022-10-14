@@ -760,6 +760,7 @@ func fetchLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, twitchID str
 		twitchID,
 	)
 	if err == db.NotFound {
+		twitchLog(ctx, conn, models.TwitchLogTypeOther, twitchLogin, "Creating new streamer", fmt.Sprintf("twitchID: %s", twitchID))
 		_, err = conn.Exec(ctx,
 			`
 			INSERT INTO twitch_latest_status (twitch_id, twitch_login)
