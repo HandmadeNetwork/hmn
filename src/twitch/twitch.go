@@ -877,6 +877,7 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 	)
 
 	if err == db.NotFound {
+		twitchLog(ctx, dbConn, models.TwitchLogTypeOther, status.TwitchLogin, "updateStreamHistory", fmt.Sprintf("Creating new history\nstatus: %#v", status))
 		history = &models.TwitchStreamHistory{}
 		history.StreamID = status.StreamID
 		history.TwitchID = status.TwitchID
@@ -888,6 +889,7 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 	}
 
 	if !status.Live && history.EndedAt.IsZero() {
+		twitchLog(ctx, dbConn, models.TwitchLogTypeOther, status.TwitchLogin, "updateStreamHistory", fmt.Sprintf("Setting end time\nstatus: %#v", status))
 		history.EndedAt = time.Now()
 		history.EndApproximated = true
 		history.DiscordNeedsUpdate = true
@@ -904,22 +906,26 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 	_, err = tx.Exec(ctx,
 		`
 		INSERT INTO
-		twitch_stream_history (stream_id, twitch_id, twitch_login, started_at, ended_at, title, category_id, tags)
-		VALUES                ($1,        $2,        $3,           $4,         $5,       $6,    $7,          $8)
+		twitch_stream_history (stream_id, twitch_id, twitch_login, started_at, ended_at, end_approximated, title, category_id, tags, discord_needs_update)
+		VALUES                ($1,        $2,        $3,           $4,         $5,       $6,               $7,    $8,          $9,   $10)
 		ON CONFLICT (stream_id) DO UPDATE SET
 			ended_at = EXCLUDED.ended_at,
+			end_approximated = EXCLUDED.end_approximated,
 			title = EXCLUDED.title,
 			category_id = EXCLUDED.category_id,
-			tags = EXCLUDED.tags
+			tags = EXCLUDED.tags,
+			discord_needs_update = EXCLUDED.discord_needs_update
 		`,
 		history.StreamID,
 		history.TwitchID,
 		history.TwitchLogin,
 		history.StartedAt,
 		history.EndedAt,
+		history.EndApproximated,
 		history.Title,
 		history.CategoryID,
 		history.Tags,
+		history.DiscordNeedsUpdate,
 	)
 	if err != nil {
 		return oops.New(err, "failed to insert/update twitch history")
@@ -930,6 +936,7 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 	}
 
 	if !history.EndedAt.IsZero() {
+		twitchLog(ctx, dbConn, models.TwitchLogTypeOther, status.TwitchLogin, "updateStreamHistory", fmt.Sprintf("Checking VOD\nhistory: %#v", history))
 		err = findHistoryVOD(ctx, dbConn, history)
 		if err != nil {
 			return oops.New(err, "failed to look up twitch vod")
@@ -940,6 +947,7 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 
 func findHistoryVOD(ctx context.Context, dbConn db.ConnOrTx, history *models.TwitchStreamHistory) error {
 	if history.StreamID == "" || (history.VODID != "" && !history.EndedAt.IsZero()) || history.VODGone {
+		twitchLog(ctx, dbConn, models.TwitchLogTypeOther, history.TwitchLogin, "findHistoryVOD", fmt.Sprintf("Skipping VOD check\nhistory: %#v", history))
 		return nil
 	}
 
