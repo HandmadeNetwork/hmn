@@ -11,25 +11,37 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
+type Event struct {
+	StartTime, EndTime time.Time
+}
+
 type Jam struct {
-	Name      string
-	Slug      string
-	StartTime time.Time
-	EndTime   time.Time
+	Event
+	Name string
+	Slug string
 }
 
 var WRJ2021 = Jam{
-	Name:      "Wheel Reinvention Jam 2021",
-	Slug:      "WRJ2021",
-	StartTime: time.Date(2021, 9, 27, 0, 0, 0, 0, time.UTC),
-	EndTime:   time.Date(2021, 10, 4, 0, 0, 0, 0, time.UTC),
+	Event: Event{
+		StartTime: time.Date(2021, 9, 27, 0, 0, 0, 0, time.UTC),
+		EndTime:   time.Date(2021, 10, 4, 0, 0, 0, 0, time.UTC),
+	},
+	Name: "Wheel Reinvention Jam 2021",
+	Slug: "WRJ2021",
 }
 
 var WRJ2022 = Jam{
-	Name:      "Wheel Reinvention Jam 2022",
-	Slug:      "WRJ2022",
-	StartTime: time.Date(2022, 8, 15, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
-	EndTime:   time.Date(2022, 8, 22, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+	Event: Event{
+		StartTime: time.Date(2022, 8, 15, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+		EndTime:   time.Date(2022, 8, 22, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+	},
+	Name: "Wheel Reinvention Jam 2022",
+	Slug: "WRJ2022",
+}
+
+var HMS2022 = Event{
+	StartTime: time.Date(2022, 11, 16, 0, 0, 0, 0, time.UTC),
+	EndTime:   time.Date(2022, 11, 18, 0, 0, 0, 0, time.UTC),
 }
 
 var AllJams = []Jam{WRJ2021, WRJ2022}

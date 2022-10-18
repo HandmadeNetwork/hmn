@@ -31,6 +31,8 @@ type LandingTemplateData struct {
 
 	JamUrl                             string
 	JamDaysUntilStart, JamDaysUntilEnd int
+
+	HMSDaysUntilStart, HMSDaysUntilEnd int
 }
 
 func Index(c *RequestContext) ResponseData {
@@ -153,6 +155,9 @@ func Index(c *RequestContext) ResponseData {
 		JamUrl:            hmnurl.BuildJamIndex(),
 		JamDaysUntilStart: daysUntil(hmndata.WRJ2022.StartTime),
 		JamDaysUntilEnd:   daysUntil(hmndata.WRJ2022.EndTime),
+
+		HMSDaysUntilStart: daysUntil(hmndata.HMS2022.StartTime),
+		HMSDaysUntilEnd:   daysUntil(hmndata.HMS2022.EndTime),
 	}, c.Perf)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render landing page template"))
