@@ -22,6 +22,7 @@ type TwitchStreamHistory struct {
 	TwitchLogin        string    `db:"twitch_login"`
 	StartedAt          time.Time `db:"started_at"`
 	EndedAt            time.Time `db:"ended_at"`
+	StreamEnded        bool      `db:"stream_ended"`
 	EndApproximated    bool      `db:"end_approximated"`
 	Title              string    `db:"title"`
 	CategoryID         string    `db:"category_id"`

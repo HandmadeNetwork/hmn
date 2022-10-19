@@ -169,6 +169,8 @@ type archivedVideo struct {
 	Duration     time.Duration
 	VODUrl       string
 	VODThumbnail string
+	RawDuration  string
+	RawCreatedAt string
 }
 
 func getArchivedVideosForUser(ctx context.Context, twitchID string, numVODs int) ([]archivedVideo, error) {
@@ -257,6 +259,8 @@ func getArchivedVideosByQuery(ctx context.Context, query url.Values) ([]archived
 			Duration:     duration,
 			VODUrl:       v.Url,
 			VODThumbnail: v.ThumbnailUrl,
+			RawDuration:  v.Duration,
+			RawCreatedAt: v.CreatedAt,
 		}
 		result = append(result, archived)
 	}

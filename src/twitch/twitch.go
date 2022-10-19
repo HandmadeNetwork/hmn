@@ -478,15 +478,15 @@ func notifyDiscordOfLiveStream(ctx context.Context, dbConn db.ConnOrTx) error {
 	updatedHistories := make([]*models.TwitchStreamHistory, 0)
 	for _, h := range history {
 		relevant := isStreamRelevant(h.CategoryID, h.Tags)
-		if relevant && !h.EndedAt.IsZero() {
+		if relevant && h.StreamEnded {
 			msgId, err := discord.PostStreamHistory(ctx, h)
 			if err != nil {
 				return oops.New(err, "failed to post twitch history to discord")
 			}
-			h.DiscordNeedsUpdate = false
 			h.DiscordMessageID = msgId
-			updatedHistories = append(updatedHistories, h)
 		}
+		h.DiscordNeedsUpdate = false
+		updatedHistories = append(updatedHistories, h)
 	}
 
 	for _, h := range updatedHistories {
@@ -645,6 +645,17 @@ func gotStreamOnline(ctx context.Context, conn db.ConnOrTx, status *streamStatus
 		return err
 	}
 	twitchLog(ctx, conn, models.TwitchLogTypeOther, status.TwitchLogin, "GotStreamOnline", fmt.Sprintf("latest: %#v\nstatus: %#v", latest, status))
+
+	if latest.Live && latest.StreamID != status.StreamID {
+		// NOTE(asaf): Update history for previous stream
+		twitchLog(ctx, conn, models.TwitchLogTypeOther, status.TwitchLogin, "GotStreamOnline", fmt.Sprintf("Wrapping up previous stream"))
+		latest.Live = false
+		err = updateStreamHistory(ctx, conn, latest)
+		if err != nil {
+			return err
+		}
+	}
+
 	latest.Live = true
 	latest.StreamID = status.StreamID
 	latest.StartedAt = status.StartedAt
@@ -717,12 +728,21 @@ func gotRESTUpdate(ctx context.Context, conn db.ConnOrTx, status *streamStatus) 
 	}
 	twitchLog(ctx, conn, models.TwitchLogTypeOther, status.TwitchLogin, "GotRestUpdate", fmt.Sprintf("latest: %#v\nstatus: %#v", latest, status))
 	if latest.LastHookLiveUpdate.Add(3 * time.Minute).Before(time.Now()) {
-		latest.Live = status.Live
 		if status.Live {
+			if latest.Live && status.StreamID != latest.StreamID {
+				twitchLog(ctx, conn, models.TwitchLogTypeOther, status.TwitchLogin, "GotRestUpdate", fmt.Sprintf("Wrapping up previous stream"))
+				latest.Live = false
+				err = updateStreamHistory(ctx, conn, latest)
+				if err != nil {
+					return err
+				}
+			}
+
 			// NOTE(asaf): We don't get this information if the user isn't live
 			latest.StartedAt = status.StartedAt
 			latest.StreamID = status.StreamID
 		}
+		latest.Live = status.Live
 	}
 	if latest.LastHookChannelUpdate.Add(3 * time.Minute).Before(time.Now()) {
 		if status.Live {
@@ -781,6 +801,8 @@ func fetchLatestStreamStatus(ctx context.Context, conn db.ConnOrTx, twitchID str
 	}
 
 	if result.TwitchLogin != twitchLogin {
+		// NOTE(asaf): If someone changed their twitch login we should
+		//             still reuse their db record by twitch_id.
 		_, err = tx.Exec(ctx,
 			`
 			UPDATE twitch_latest_status
@@ -888,9 +910,10 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 		return oops.New(err, "failed to fetch existing stream history")
 	}
 
-	if !status.Live && history.EndedAt.IsZero() {
+	if !status.Live && !history.StreamEnded {
 		twitchLog(ctx, dbConn, models.TwitchLogTypeOther, status.TwitchLogin, "updateStreamHistory", fmt.Sprintf("Setting end time\nstatus: %#v", status))
 		history.EndedAt = time.Now()
+		history.StreamEnded = true
 		history.EndApproximated = true
 		history.DiscordNeedsUpdate = true
 	}
@@ -906,9 +929,10 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 	_, err = tx.Exec(ctx,
 		`
 		INSERT INTO
-		twitch_stream_history (stream_id, twitch_id, twitch_login, started_at, ended_at, end_approximated, title, category_id, tags, discord_needs_update)
-		VALUES                ($1,        $2,        $3,           $4,         $5,       $6,               $7,    $8,          $9,   $10)
+		twitch_stream_history (stream_id, twitch_id, twitch_login, started_at, stream_ended, ended_at, end_approximated, title, category_id, tags, discord_needs_update)
+		VALUES                ($1,        $2,        $3,           $4,         $5,    $6,       $7,               $8,    $9,          $10,  $11)
 		ON CONFLICT (stream_id) DO UPDATE SET
+			stream_ended = EXCLUDED.stream_ended,
 			ended_at = EXCLUDED.ended_at,
 			end_approximated = EXCLUDED.end_approximated,
 			title = EXCLUDED.title,
@@ -920,6 +944,7 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 		history.TwitchID,
 		history.TwitchLogin,
 		history.StartedAt,
+		history.StreamEnded,
 		history.EndedAt,
 		history.EndApproximated,
 		history.Title,
@@ -935,30 +960,18 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 		return oops.New(err, "failed to commit transaction")
 	}
 
-	if !history.EndedAt.IsZero() {
-		twitchLog(ctx, dbConn, models.TwitchLogTypeOther, status.TwitchLogin, "updateStreamHistory", fmt.Sprintf("Checking VOD\nhistory: %#v", history))
-		err = findHistoryVOD(ctx, dbConn, history)
-		if err != nil {
-			return oops.New(err, "failed to look up twitch vod")
-		}
+	twitchLog(ctx, dbConn, models.TwitchLogTypeOther, status.TwitchLogin, "updateStreamHistory", fmt.Sprintf("Checking VOD\nhistory: %#v", history))
+	err = findHistoryVOD(ctx, dbConn, history)
+	if err != nil {
+		return oops.New(err, "failed to look up twitch vod")
 	}
 	return nil
 }
 
 func findHistoryVOD(ctx context.Context, dbConn db.ConnOrTx, history *models.TwitchStreamHistory) error {
-	if history.StreamID == "" || (history.VODID != "" && !history.EndedAt.IsZero()) || history.VODGone {
+	if history.StreamID == "" || history.VODGone {
 		twitchLog(ctx, dbConn, models.TwitchLogTypeOther, history.TwitchLogin, "findHistoryVOD", fmt.Sprintf("Skipping VOD check\nhistory: %#v", history))
 		return nil
-	}
-
-	latest, err := fetchLatestStreamStatus(ctx, dbConn, history.TwitchID, history.TwitchLogin)
-	if err != nil {
-		return oops.New(err, "failed to fetch latest status")
-	}
-
-	stillLive := false
-	if latest.StreamID == history.StreamID && latest.Live {
-		stillLive = true
 	}
 
 	vods, err := getArchivedVideosForUser(ctx, history.TwitchID, 10)
@@ -979,11 +992,11 @@ func findHistoryVOD(ctx context.Context, dbConn db.ConnOrTx, history *models.Twi
 		history.VODThumbnail = vod.VODThumbnail
 		history.LastVerifiedVOD = time.Now()
 		history.VODGone = false
+		history.DiscordNeedsUpdate = true
 
-		if !stillLive && vod.Duration.Minutes() > 0 {
+		if history.StreamEnded && vod.Duration.Minutes() > 0 {
 			history.EndedAt = history.StartedAt.Add(vod.Duration)
 			history.EndApproximated = false
-			history.DiscordNeedsUpdate = true
 		}
 
 		_, err = dbConn.Exec(ctx,
@@ -1055,11 +1068,11 @@ func findMissingVODs(ctx context.Context, dbConn db.ConnOrTx) error {
 		FROM twitch_stream_history
 		WHERE
 			vod_gone = FALSE AND
-			ended_at = $1
+			stream_ended = TRUE AND
+			(end_approximated = TRUE OR vod_id = '')
 		ORDER BY last_verified_vod ASC
 		LIMIT 100
 		`,
-		time.Time{},
 	)
 	if err != nil {
 		return oops.New(err, "failed to fetch stream history for vod updates")
