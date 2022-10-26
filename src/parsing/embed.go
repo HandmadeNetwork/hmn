@@ -5,7 +5,6 @@ import (
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
-	gast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
@@ -22,6 +21,26 @@ var (
 	// TODO: Desmos
 	// TODO: Tweets
 )
+
+// Returns the HTML used to embed the given url, or false if the media cannot be embedded.
+//
+// The provided string need only start with the URL; if there is trailing content after the URL, it
+// will be ignored.
+func htmlForURLEmbed(url string, preview bool) (string, []byte, bool) {
+	if match := extract(REYoutubeLong, []byte(url), "vid"); match != nil {
+		return makeYoutubeEmbed(string(match), preview), match, true
+	} else if match := extract(REYoutubeShort, []byte(url), "vid"); match != nil {
+		return makeYoutubeEmbed(string(match), preview), match, true
+	} else if match := extract(REVimeo, []byte(url), "vid"); match != nil {
+		return previewOrLegitEmbed("Vimeo", `
+			<div class="aspect-ratio aspect-ratio--16x9">
+				<iframe class="aspect-ratio--object" src="https://player.vimeo.com/video/`+string(match)+`" frameborder="0" allow="fullscreen; picture-in-picture" allowfullscreen></iframe>
+			</div>
+		`, preview), match, true
+	}
+
+	return "", nil, false
+}
 
 // ----------------------
 // Parser and delimiters
@@ -40,30 +59,13 @@ func (s embedParser) Trigger() []byte {
 func (s embedParser) Open(parent ast.Node, reader text.Reader, pc parser.Context) (ast.Node, parser.State) {
 	restOfLine, _ := reader.PeekLine()
 
-	html := ""
-	var match []byte
-	if ytLongMatch := extract(REYoutubeLong, restOfLine, "vid"); ytLongMatch != nil {
-		match = ytLongMatch
-		html = makeYoutubeEmbed(string(ytLongMatch), s.Preview)
-	} else if ytShortMatch := extract(REYoutubeShort, restOfLine, "vid"); ytShortMatch != nil {
-		match = ytShortMatch
-		html = makeYoutubeEmbed(string(ytShortMatch), s.Preview)
-	} else if vimeoMatch := extract(REVimeo, restOfLine, "vid"); vimeoMatch != nil {
-		match = vimeoMatch
-		html = s.previewOrLegitEmbed("Vimeo", `
-<div class="mw6">
-	<div class="aspect-ratio aspect-ratio--16x9">
-		<iframe class="aspect-ratio--object" src="https://player.vimeo.com/video/`+string(vimeoMatch)+`" frameborder="0" allow="fullscreen; picture-in-picture" allowfullscreen></iframe>
-	</div>
-</div>`)
-	}
-
-	if html == "" {
+	if html, match, ok := htmlForURLEmbed(string(restOfLine), s.Preview); ok {
+		html = `<div class="mw6">` + html + `</div>`
+		reader.Advance(len(match))
+		return NewEmbed(html), parser.NoChildren
+	} else {
 		return nil, parser.NoChildren
 	}
-
-	reader.Advance(len(match))
-	return NewEmbed(html), parser.NoChildren
 }
 
 func (s embedParser) Continue(node ast.Node, reader text.Reader, pc parser.Context) parser.State {
@@ -80,37 +82,29 @@ func (s embedParser) CanAcceptIndentedLine() bool {
 	return false
 }
 
-func (s embedParser) previewOrLegitEmbed(name string, legitHtml string) string {
-	if s.Preview {
+func previewOrLegitEmbed(name, legitHTML string, preview bool) string {
+	if preview {
 		return `
-<div class="mw6">
-	<div class="aspect-ratio aspect-ratio--16x9">
-		<div class="aspect-ratio--object ba b--dimmest bg-light-gray i black flex items-center justify-center">
-			` + name + ` embed
-		</div>
-	</div>
-</div>
-`
+			<div class="aspect-ratio aspect-ratio--16x9">
+				<div class="aspect-ratio--object ba b--dimmest bg-light-gray i black flex items-center justify-center">
+					` + name + ` embed
+				</div>
+			</div>
+		`
+	} else {
+		return legitHTML
 	}
-
-	return legitHtml
 }
 
 func makeYoutubeEmbed(vid string, preview bool) string {
 	if preview {
-		return `
-<div class="mw6">
-	<img src="https://img.youtube.com/vi/` + vid + `/hqdefault.jpg">
-</div>
-`
+		return `<img src="https://img.youtube.com/vi/` + vid + `/hqdefault.jpg">`
 	} else {
 		return `
-<div class="mw6">
-	<div class="aspect-ratio aspect-ratio--16x9">
-		<iframe class="aspect-ratio--object" src="https://www.youtube-nocookie.com/embed/` + vid + `" frameborder="0" allowfullscreen></iframe>
-	</div>
-</div>
-`
+			<div class="aspect-ratio aspect-ratio--16x9">
+				<iframe class="aspect-ratio--object" src="https://www.youtube-nocookie.com/embed/` + vid + `" frameborder="0" allowfullscreen></iframe>
+			</div>
+		`
 	}
 }
 
@@ -119,21 +113,21 @@ func makeYoutubeEmbed(vid string, preview bool) string {
 // ----------------------
 
 type EmbedNode struct {
-	gast.BaseBlock
+	ast.BaseBlock
 	HTML string
 }
 
 func (n *EmbedNode) Dump(source []byte, level int) {
-	gast.DumpHelper(n, source, level, nil, nil)
+	ast.DumpHelper(n, source, level, nil, nil)
 }
 
-var KindEmbed = gast.NewNodeKind("Embed")
+var KindEmbed = ast.NewNodeKind("Embed")
 
-func (n *EmbedNode) Kind() gast.NodeKind {
+func (n *EmbedNode) Kind() ast.NodeKind {
 	return KindEmbed
 }
 
-func NewEmbed(HTML string) gast.Node {
+func NewEmbed(HTML string) ast.Node {
 	return &EmbedNode{
 		HTML: HTML,
 	}
@@ -161,11 +155,11 @@ func (r *EmbedHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegistere
 	reg.Register(KindEmbed, r.renderEmbed)
 }
 
-func (r *EmbedHTMLRenderer) renderEmbed(w util.BufWriter, source []byte, n gast.Node, entering bool) (gast.WalkStatus, error) {
+func (r *EmbedHTMLRenderer) renderEmbed(w util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if entering {
 		w.WriteString(n.(*EmbedNode).HTML)
 	}
-	return gast.WalkSkipChildren, nil
+	return ast.WalkSkipChildren, nil
 }
 
 // ----------------------

@@ -6,10 +6,8 @@ import (
 	"regexp"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
-	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
-	gast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/renderer/html"
@@ -43,7 +41,7 @@ var ggcodeTags = map[string]ggcodeTag{
 		Filter: ggcodeFilterEdu,
 		Renderer: func(c ggcodeRendererContext, n *ggcodeNode, entering bool) error {
 			if entering {
-				term, _ := n.Args["term"]
+				term := n.Args["term"]
 				c.W.WriteString(fmt.Sprintf(
 					`<a href="%s" class="glossary-term" data-term="%s">`,
 					hmnurl.BuildEducationGlossary(term),
@@ -51,18 +49,6 @@ var ggcodeTags = map[string]ggcodeTag{
 				))
 			} else {
 				c.W.WriteString("</a>")
-			}
-			return nil
-		},
-	},
-	"resource": {
-		Filter: ggcodeFilterEdu,
-		Renderer: func(c ggcodeRendererContext, n *ggcodeNode, entering bool) error {
-			if entering {
-				c.W.WriteString(`<div class="edu-resource">`)
-				c.W.WriteString(fmt.Sprintf(`  <a class="resource-title" href="%s" target="_blank">%s</a>`, n.Args["url"], utils.OrDefault(n.Args["name"], "[missing `name`]")))
-			} else {
-				c.W.WriteString("</div>")
 			}
 			return nil
 		},
@@ -83,14 +69,22 @@ var ggcodeTags = map[string]ggcodeTag{
 		Renderer: func(c ggcodeRendererContext, n *ggcodeNode, entering bool) error {
 			if entering {
 				c.W.WriteString(`<figure>`)
-				var srcAttr, altAttr string
-				if src := n.Args["src"]; src != "" {
-					srcAttr = fmt.Sprintf(` src="%s"`, src)
+
+				src := n.Args["src"]
+				alt := n.Args["alt"]
+				if embedHTML, _, canEmbed := htmlForURLEmbed(src, c.Opts.Previews); canEmbed {
+					c.W.WriteString(embedHTML)
+				} else {
+					var srcAttr, altAttr string
+					if src != "" {
+						srcAttr = fmt.Sprintf(` src="%s"`, src)
+					}
+					if alt != "" {
+						altAttr = fmt.Sprintf(` alt="%s"`, alt)
+					}
+					c.W.WriteString(fmt.Sprintf(`<img%s%s>`, srcAttr, altAttr))
 				}
-				if alt := n.Args["alt"]; alt != "" {
-					altAttr = fmt.Sprintf(` alt="%s"`, alt)
-				}
-				c.W.WriteString(fmt.Sprintf(`<img%s%s>`, srcAttr, altAttr))
+
 				c.W.WriteString(`<figcaption>`)
 			} else {
 				c.W.WriteString(`</figcaption>`)
@@ -195,7 +189,7 @@ func (s ggcodeInlineParser) Trigger() []byte {
 	return []byte("!()")
 }
 
-func (s ggcodeInlineParser) Parse(parent gast.Node, block text.Reader, pc parser.Context) gast.Node {
+func (s ggcodeInlineParser) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
 	restOfLine, segment := block.PeekLine() // Gets the rest of the line (starting at the current parser cursor index), and the segment representing the indices in the source text.
 	if match := extractMap(reGGCodeInline, restOfLine); match != nil {
 		name := string(match["name"])
@@ -240,7 +234,7 @@ func (p ggcodeDelimiterParser) CanOpenCloser(opener, closer *parser.Delimiter) b
 	return opener.Char == '(' && closer.Char == ')'
 }
 
-func (p ggcodeDelimiterParser) OnMatch(consumes int) gast.Node {
+func (p ggcodeDelimiterParser) OnMatch(consumes int) ast.Node {
 	return p.Node
 }
 
@@ -249,7 +243,7 @@ func (p ggcodeDelimiterParser) OnMatch(consumes int) gast.Node {
 // ----------------------
 
 type ggcodeNode struct {
-	gast.BaseBlock
+	ast.BaseBlock
 	Name string
 	Args map[string]string
 }
@@ -257,12 +251,12 @@ type ggcodeNode struct {
 var _ ast.Node = &ggcodeNode{}
 
 func (n *ggcodeNode) Dump(source []byte, level int) {
-	gast.DumpHelper(n, source, level, n.Args, nil)
+	ast.DumpHelper(n, source, level, n.Args, nil)
 }
 
-var kindGGCode = gast.NewNodeKind("ggcode")
+var kindGGCode = ast.NewNodeKind("ggcode")
 
-func (n *ggcodeNode) Kind() gast.NodeKind {
+func (n *ggcodeNode) Kind() ast.NodeKind {
 	return kindGGCode
 }
 
@@ -290,7 +284,7 @@ func (r *ggcodeHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegister
 	reg.Register(kindGGCode, r.render)
 }
 
-func (r *ggcodeHTMLRenderer) render(w util.BufWriter, source []byte, n gast.Node, entering bool) (gast.WalkStatus, error) {
+func (r *ggcodeHTMLRenderer) render(w util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	node := n.(*ggcodeNode)
 	var renderer ggcodeRenderer = defaultGGCodeRenderer
 	if tag, ok := ggcodeTags[node.Name]; ok {
@@ -303,7 +297,7 @@ func (r *ggcodeHTMLRenderer) render(w util.BufWriter, source []byte, n gast.Node
 		Source: source,
 		Opts:   r.Opts,
 	}, node, entering)
-	return gast.WalkContinue, err
+	return ast.WalkContinue, err
 }
 
 func defaultGGCodeRenderer(c ggcodeRendererContext, n *ggcodeNode, entering bool) error {
