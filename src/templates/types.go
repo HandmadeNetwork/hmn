@@ -395,6 +395,12 @@ type TextEditor struct {
 	UploadUrl   string
 }
 
+type EduCourse struct {
+	Name     string
+	Slug     string
+	Articles []EduArticle
+}
+
 type EduArticle struct {
 	Title       string
 	Slug        string

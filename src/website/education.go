@@ -23,24 +23,68 @@ import (
 func EducationIndex(c *RequestContext) ResponseData {
 	type indexData struct {
 		templates.BaseData
-		Articles      []templates.EduArticle
+		Courses       []templates.EduCourse
 		NewArticleUrl string
 		RerenderUrl   string
 	}
 
-	articles, err := fetchEduArticles(c, c.Conn, models.EduArticleTypeArticle, c.CurrentUser)
-	if err != nil {
-		panic(err)
-	}
+	// TODO: Someday this can be dynamic again? Maybe? Or not? Who knows??
+	// articles, err := fetchEduArticles(c, c.Conn, models.EduArticleTypeArticle, c.CurrentUser)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	var tmplArticles []templates.EduArticle
-	for _, article := range articles {
-		tmplArticles = append(tmplArticles, templates.EducationArticleToTemplate(&article))
+	// var tmplArticles []templates.EduArticle
+	// for _, article := range articles {
+	// 	tmplArticles = append(tmplArticles, templates.EducationArticleToTemplate(&article))
+	// }
+
+	article := func(slug string) templates.EduArticle {
+		if article, err := fetchEduArticle(c, c.Conn, slug, models.EduArticleTypeArticle, c.CurrentUser); err == nil {
+			return templates.EducationArticleToTemplate(article)
+		} else if errors.Is(err, db.NotFound) {
+			return templates.EduArticle{
+				Title: "<UNKNOWN ARTICLE>",
+			}
+		} else {
+			panic(err)
+		}
 	}
 
 	tmpl := indexData{
-		BaseData:      getBaseData(c, "Handmade Education", nil),
-		Articles:      tmplArticles,
+		BaseData: getBaseData(c, "Handmade Education", nil),
+		Courses: []templates.EduCourse{
+			{
+				Name: "Compilers",
+				Slug: "compilers",
+				Articles: []templates.EduArticle{
+					article("compilers"),
+					{
+						Title:       "Baby's first language theory",
+						Description: "State machines, abstract datatypes, type theory...",
+					},
+				},
+			},
+			{
+				Name: "Networking",
+				Slug: "networking",
+				Articles: []templates.EduArticle{
+					article("networking"),
+					{
+						Title:       "Internet infrastructure",
+						Description: "How does the internet actually work? How does your ISP know where to send your data? What happens to the internet if physical communication breaks down?",
+					},
+				},
+			},
+			{
+				Name: "Time",
+				Slug: "time",
+				Articles: []templates.EduArticle{
+					article("time"),
+					article("ntp"),
+				},
+			},
+		},
 		NewArticleUrl: hmnurl.BuildEducationArticleNew(),
 		RerenderUrl:   hmnurl.BuildEducationRerender(),
 	}
