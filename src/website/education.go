@@ -69,7 +69,7 @@ func EducationIndex(c *RequestContext) ResponseData {
 				Name: "Networking",
 				Slug: "networking",
 				Articles: []templates.EduArticle{
-					article("networking"),
+					article("http"),
 					{
 						Title:       "Internet infrastructure",
 						Description: "How does the internet actually work? How does your ISP know where to send your data? What happens to the internet if physical communication breaks down?",
