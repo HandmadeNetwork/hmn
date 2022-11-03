@@ -108,8 +108,6 @@ func EducationGlossary(c *RequestContext) ResponseData {
 	return res
 }
 
-var reEduEditorsNote = regexp.MustCompile(`<span\s*class="note".*?>.*?</span>`)
-
 func EducationArticle(c *RequestContext) ResponseData {
 	type articleData struct {
 		templates.BaseData
@@ -140,13 +138,9 @@ func EducationArticle(c *RequestContext) ResponseData {
 		{Name: article.Title, Url: hmnurl.BuildEducationArticle(article.Slug)},
 	}
 
-	// Remove editor's notes
-	if c.CurrentUser == nil || !c.CurrentUser.CanAuthorEducation() {
-		tmpl.Article.Content = template.HTML(reEduEditorsNote.ReplaceAllLiteralString(string(tmpl.Article.Content), ""))
-	}
-
-	// Generate TOC and stuff I dunno
-	html, tocEntries := generateTOC(string(tmpl.Article.Content))
+	// Remove editor's notes, generate TOC, etc.
+	canSeeNotes := c.CurrentUser != nil && c.CurrentUser.CanAuthorEducation()
+	html, tocEntries := generateTOC(string(tmpl.Article.Content), canSeeNotes)
 	tmpl.Article.Content = template.HTML(html)
 	tmpl.TOC = tocEntries
 
@@ -503,6 +497,8 @@ func eduArticleURL(a *models.EduArticle) string {
 
 var reHeading = regexp.MustCompile(`<h([1-6])>(.*?)</h[1-6]>`)
 var reNotSimple = regexp.MustCompile(`[^a-zA-Z0-9-_]+`)
+var reEduEditorsNote = regexp.MustCompile(`(?s)<span\s*class="note".*?>.*?</span>`)
+var reEduEditorsNoteTmp = regexp.MustCompile(`<<<NOTE(\d+)>>>`)
 
 type TOCEntry struct {
 	Text  string
@@ -510,9 +506,20 @@ type TOCEntry struct {
 	Level int
 }
 
-func generateTOC(html string) (string, []TOCEntry) {
+func generateTOC(html string, canSeeNotes bool) (string, []TOCEntry) {
+	var notes []string
+	replacinated := reEduEditorsNote.ReplaceAllStringFunc(html, func(s string) string {
+		i := len(notes)
+		notes = append(notes, s)
+		if canSeeNotes {
+			return fmt.Sprintf("<<<NOTE%d>>>", i)
+		} else {
+			return ""
+		}
+	})
+
 	var entries []TOCEntry
-	replacinated := reHeading.ReplaceAllStringFunc(html, func(s string) string {
+	replacinated = reHeading.ReplaceAllStringFunc(replacinated, func(s string) string {
 		m := reHeading.FindStringSubmatch(s)
 		level := m[1]
 		content := m[2]
@@ -526,5 +533,12 @@ func generateTOC(html string) (string, []TOCEntry) {
 
 		return fmt.Sprintf(`<h%s id="%s">%s</h%s>`, level, id, content, level)
 	})
+
+	replacinated = reEduEditorsNoteTmp.ReplaceAllStringFunc(replacinated, func(s string) string {
+		m := reEduEditorsNoteTmp.FindStringSubmatch(s)
+		i, _ := strconv.Atoi(m[1])
+		return notes[i]
+	})
+
 	return replacinated, entries
 }
