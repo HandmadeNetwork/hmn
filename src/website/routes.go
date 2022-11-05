@@ -117,19 +117,16 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexFishbowlIndex, FishbowlIndex)
 	hmnOnly.GET(hmnurl.RegexFishbowl, Fishbowl)
 
-	educationPrerelease := hmnOnly.WithMiddleware(educationBetaTestersOnly)
-	{
-		educationPrerelease.GET(hmnurl.RegexEducationIndex, EducationIndex)
-		educationPrerelease.GET(hmnurl.RegexEducationGlossary, EducationGlossary)
-		educationPrerelease.GET(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNew))
-		educationPrerelease.POST(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNewSubmit))
-		educationPrerelease.GET(hmnurl.RegexEducationRerender, educationAuthorsOnly(EducationRerender))
-		educationPrerelease.GET(hmnurl.RegexEducationArticle, EducationArticle) // Article stuff must be last so `/glossary` and others do not match as an article slug
-		educationPrerelease.GET(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEdit))
-		educationPrerelease.POST(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEditSubmit))
-		educationPrerelease.GET(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(EducationArticleDelete))
-		educationPrerelease.POST(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(csrfMiddleware(EducationArticleDeleteSubmit)))
-	}
+	hmnOnly.GET(hmnurl.RegexEducationIndex, EducationIndex)
+	hmnOnly.GET(hmnurl.RegexEducationGlossary, EducationGlossary)
+	hmnOnly.GET(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNew))
+	hmnOnly.POST(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNewSubmit))
+	hmnOnly.GET(hmnurl.RegexEducationRerender, educationAuthorsOnly(EducationRerender))
+	hmnOnly.GET(hmnurl.RegexEducationArticle, EducationArticle) // Article stuff must be last so `/glossary` and others do not match as an article slug
+	hmnOnly.GET(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEdit))
+	hmnOnly.POST(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEditSubmit))
+	hmnOnly.GET(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(EducationArticleDelete))
+	hmnOnly.POST(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(csrfMiddleware(EducationArticleDeleteSubmit)))
 
 	hmnOnly.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
 

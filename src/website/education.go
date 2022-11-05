@@ -40,7 +40,10 @@ func EducationIndex(c *RequestContext) ResponseData {
 	// }
 
 	article := func(slug string) templates.EduArticle {
-		if article, err := fetchEduArticle(c, c.Conn, slug, models.EduArticleTypeArticle, c.CurrentUser); err == nil {
+		if article, err := fetchEduArticle(c, c.Conn, slug, c.CurrentUser, EduArticleQuery{
+			Types:              []models.EduArticleType{models.EduArticleTypeArticle},
+			IncludeUnpublished: true,
+		}); err == nil {
 			return templates.EducationArticleToTemplate(article)
 		} else if errors.Is(err, db.NotFound) {
 			return templates.EduArticle{
@@ -119,7 +122,9 @@ func EducationArticle(c *RequestContext) ResponseData {
 		DeleteUrl string
 	}
 
-	article, err := fetchEduArticle(c, c.Conn, c.PathParams["slug"], models.EduArticleTypeArticle, c.CurrentUser)
+	article, err := fetchEduArticle(c, c.Conn, c.PathParams["slug"], c.CurrentUser, EduArticleQuery{
+		Types: []models.EduArticleType{models.EduArticleTypeArticle},
+	})
 	if errors.Is(err, db.NotFound) {
 		return FourOhFour(c)
 	} else if err != nil {
@@ -215,7 +220,7 @@ func EducationArticleEdit(c *RequestContext) ResponseData {
 		Article templates.EduArticle
 	}
 
-	article, err := fetchEduArticle(c, c.Conn, c.PathParams["slug"], 0, c.CurrentUser)
+	article, err := fetchEduArticle(c, c.Conn, c.PathParams["slug"], c.CurrentUser, EduArticleQuery{})
 	if errors.Is(err, db.NotFound) {
 		return FourOhFour(c)
 	} else if err != nil {
@@ -239,7 +244,7 @@ func EducationArticleEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusBadRequest, err)
 	}
 
-	_, err = fetchEduArticle(c, c.Conn, c.PathParams["slug"], 0, c.CurrentUser)
+	_, err = fetchEduArticle(c, c.Conn, c.PathParams["slug"], c.CurrentUser, EduArticleQuery{})
 	if errors.Is(err, db.NotFound) {
 		return FourOhFour(c)
 	} else if err != nil {
@@ -255,7 +260,7 @@ func EducationArticleEditSubmit(c *RequestContext) ResponseData {
 }
 
 func EducationArticleDelete(c *RequestContext) ResponseData {
-	article, err := fetchEduArticle(c, c.Conn, c.PathParams["slug"], 0, c.CurrentUser)
+	article, err := fetchEduArticle(c, c.Conn, c.PathParams["slug"], c.CurrentUser, EduArticleQuery{})
 	if errors.Is(err, db.NotFound) {
 		return FourOhFour(c)
 	} else if err != nil {
@@ -291,7 +296,7 @@ func EducationArticleDeleteSubmit(c *RequestContext) ResponseData {
 }
 
 func EducationRerender(c *RequestContext) ResponseData {
-	everything := utils.Must1(fetchEduArticles(c, c.Conn, 0, c.CurrentUser))
+	everything := utils.Must1(fetchEduArticles(c, c.Conn, c.CurrentUser, EduArticleQuery{}))
 	for _, thing := range everything {
 		newHTML := parsing.ParseMarkdown(thing.CurrentVersion.ContentRaw, parsing.EducationRealMarkdown)
 		utils.Must1(c.Conn.Exec(c,
@@ -310,11 +315,16 @@ func EducationRerender(c *RequestContext) ResponseData {
 	return res
 }
 
+type EduArticleQuery struct {
+	Types              []models.EduArticleType
+	IncludeUnpublished bool // If true, unpublished articles will be fetched even if they would not otherwise be visible
+}
+
 func fetchEduArticles(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
-	t models.EduArticleType,
 	currentUser *models.User,
+	q EduArticleQuery,
 ) ([]models.EduArticle, error) {
 	type eduArticleResult struct {
 		Article        models.EduArticle        `db:"a"`
@@ -330,11 +340,11 @@ func fetchEduArticles(
 		WHERE
 			TRUE
 	`)
-	if t != 0 {
-		qb.Add(`AND a.type = $?`, t)
+	if len(q.Types) > 0 {
+		qb.Add(`AND a.type = ANY($?)`, q.Types)
 	}
-	if currentUser == nil || !currentUser.CanSeeUnpublishedEducationContent() {
-		qb.Add(`AND NOT a.published`)
+	if (currentUser == nil || !currentUser.CanSeeUnpublishedEducationContent()) && !q.IncludeUnpublished {
+		qb.Add(`AND a.published`)
 	}
 
 	articles, err := db.Query[eduArticleResult](ctx, dbConn, qb.String(), qb.Args()...)
@@ -356,8 +366,8 @@ func fetchEduArticle(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
 	slug string,
-	t models.EduArticleType,
 	currentUser *models.User,
+	q EduArticleQuery,
 ) (*models.EduArticle, error) {
 	type eduArticleResult struct {
 		Article        models.EduArticle        `db:"a"`
@@ -376,11 +386,11 @@ func fetchEduArticle(
 		`,
 		slug,
 	)
-	if t != 0 {
-		qb.Add(`AND a.type = $?`, t)
+	if len(q.Types) > 0 {
+		qb.Add(`AND a.type = ANY($?)`, q.Types)
 	}
-	if currentUser == nil || !currentUser.CanSeeUnpublishedEducationContent() {
-		qb.Add(`AND NOT a.published`)
+	if (currentUser == nil || !currentUser.CanSeeUnpublishedEducationContent()) && !q.IncludeUnpublished {
+		qb.Add(`AND a.published`)
 	}
 
 	res, err := db.QueryOne[eduArticleResult](ctx, dbConn, qb.String(), qb.Args()...)
