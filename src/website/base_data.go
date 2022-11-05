@@ -12,7 +12,8 @@ func getBaseDataAutocrumb(c *RequestContext, title string) templates.BaseData {
 }
 
 // NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
-//             If you pass nil, no breadcrumbs will be created.
+//
+//	If you pass nil, no breadcrumbs will be created.
 func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadcrumb) templates.BaseData {
 	var project models.Project
 	if c.CurrentProject != nil {
@@ -75,7 +76,6 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			FishbowlUrl:     hmnurl.BuildFishbowlIndex(),
 			ForumsUrl:       hmnurl.HMNProjectContext.BuildForum(nil, 1),
 			ConferencesUrl:  hmnurl.BuildConferences(),
-			LibraryUrl:      hmnurl.BuildLibrary(),
 			EducationUrl:    hmnurl.BuildEducationIndex(),
 		},
 		Footer: templates.Footer{

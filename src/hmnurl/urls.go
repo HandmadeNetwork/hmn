@@ -701,17 +701,10 @@ func (c *UrlContext) BuildBlogPostReply(threadId int, postId int) string {
 }
 
 /*
-* Library
+* Library (old)
  */
 
 var RegexLibraryAny = regexp.MustCompile(`^/library`)
-
-var RegexLibrary = regexp.MustCompile(`^/library$`)
-
-func BuildLibrary() string {
-	defer CatchPanic()
-	return Url("/library", nil)
-}
 
 /*
 * Episode Guide

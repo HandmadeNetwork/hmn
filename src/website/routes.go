@@ -130,10 +130,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 
 	hmnOnly.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
 
-	hmnOnly.GET(hmnurl.RegexLibraryAny, LibraryNotPortedYet)
-	// hmnOnly.GET(hmnurl.RegexLibraryAny, func(c *RequestContext) ResponseData {
-	// 	return c.Redirect(hmnurl.BuildEducationIndex(), http.StatusFound)
-	// })
+	hmnOnly.GET(hmnurl.RegexLibraryAny, func(c *RequestContext) ResponseData {
+		return c.Redirect(hmnurl.BuildEducationIndex(), http.StatusFound)
+	})
 
 	// Project routes can appear either at the root (e.g. hero.handmade.network/edit)
 	// or on a personal project path (e.g. handmade.network/p/123/hero/edit). So, we
