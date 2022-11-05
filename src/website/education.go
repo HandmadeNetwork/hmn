@@ -108,6 +108,8 @@ func EducationGlossary(c *RequestContext) ResponseData {
 	return res
 }
 
+var reImg = regexp.MustCompile(`<img .*src="([^"]+)"`)
+
 func EducationArticle(c *RequestContext) ResponseData {
 	type articleData struct {
 		templates.BaseData
@@ -133,6 +135,22 @@ func EducationArticle(c *RequestContext) ResponseData {
 	tmpl.OpenGraphItems = append(tmpl.OpenGraphItems,
 		templates.OpenGraphItem{Property: "og:description", Value: string(article.Description)},
 	)
+	match := reImg.FindStringSubmatch(string(tmpl.Article.Content))
+	imgSrc := ""
+	if match != nil {
+		imgSrc = match[1]
+	}
+	if imgSrc != "" {
+		for i, item := range tmpl.OpenGraphItems {
+			if item.Property == "og:image" {
+				tmpl.OpenGraphItems[i].Value = imgSrc
+			}
+		}
+		tmpl.OpenGraphItems = append(tmpl.OpenGraphItems,
+			templates.OpenGraphItem{Name: "twitter:card", Value: "summary_large_image"},
+		)
+	}
+
 	tmpl.Breadcrumbs = []templates.Breadcrumb{
 		{Name: "Education", Url: hmnurl.BuildEducationIndex()},
 		{Name: article.Title, Url: hmnurl.BuildEducationArticle(article.Slug)},
