@@ -118,7 +118,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexFishbowl, Fishbowl)
 
 	hmnOnly.GET(hmnurl.RegexEducationIndex, EducationIndex)
-	hmnOnly.GET(hmnurl.RegexEducationGlossary, EducationGlossary)
+	hmnOnly.GET(hmnurl.RegexEducationGlossary, educationAuthorsOnly(EducationGlossary)) // TODO: Remove this gate
 	hmnOnly.GET(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNew))
 	hmnOnly.POST(hmnurl.RegexEducationArticleNew, educationAuthorsOnly(EducationArticleNewSubmit))
 	hmnOnly.GET(hmnurl.RegexEducationRerender, educationAuthorsOnly(EducationRerender))

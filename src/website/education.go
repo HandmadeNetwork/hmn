@@ -91,6 +91,9 @@ func EducationIndex(c *RequestContext) ResponseData {
 		NewArticleUrl: hmnurl.BuildEducationArticleNew(),
 		RerenderUrl:   hmnurl.BuildEducationRerender(),
 	}
+	tmpl.OpenGraphItems = append(tmpl.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description", Value: "Learn the Handmade way with our curated articles on a variety of topics.",
+	})
 
 	var res ResponseData
 	res.MustWriteTemplate("education_index.html", tmpl, c.Perf)
