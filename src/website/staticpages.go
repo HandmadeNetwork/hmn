@@ -1,8 +1,15 @@
 package website
 
-import "git.handmade.network/hmn/hmn/src/templates"
+import (
+	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/templates"
+)
 
 func Manifesto(c *RequestContext) ResponseData {
+	type TemplateData struct {
+		templates.BaseData
+		AboutUrl string
+	}
 	baseData := getBaseDataAutocrumb(c, "Handmade Manifesto")
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
@@ -10,13 +17,38 @@ func Manifesto(c *RequestContext) ResponseData {
 	})
 
 	var res ResponseData
-	res.MustWriteTemplate("manifesto.html", baseData, c.Perf)
+	res.MustWriteTemplate("manifesto.html", TemplateData{
+		BaseData: baseData,
+		AboutUrl: hmnurl.BuildAbout(),
+	}, c.Perf)
 	return res
 }
 
 func About(c *RequestContext) ResponseData {
+	type TemplateData struct {
+		templates.BaseData
+		FoundationUrl    string
+		RolesUrl         string
+		EducationLeadUrl string
+		AdvocacyLeadUrl  string
+		DesignLeadUrl    string
+	}
+
 	var res ResponseData
-	res.MustWriteTemplate("about.html", getBaseDataAutocrumb(c, "About"), c.Perf)
+	res.MustWriteTemplate("about.html", TemplateData{
+		BaseData:         getBaseDataAutocrumb(c, "About"),
+		FoundationUrl:    hmnurl.BuildFoundation(),
+		RolesUrl:         hmnurl.BuildStaffRolesIndex(),
+		EducationLeadUrl: hmnurl.BuildStaffRole("education"),
+		AdvocacyLeadUrl:  hmnurl.BuildStaffRole("advocacy"),
+		DesignLeadUrl:    hmnurl.BuildStaffRole("design"),
+	}, c.Perf)
+	return res
+}
+
+func Foundation(c *RequestContext) ResponseData {
+	var res ResponseData
+	res.MustWriteTemplate("foundation.html", getBaseDataAutocrumb(c, "Foundation"), c.Perf)
 	return res
 }
 

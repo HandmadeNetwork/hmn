@@ -75,7 +75,7 @@ type Footer struct {
 	CodeOfConductUrl           string
 	CommunicationGuidelinesUrl string
 	ProjectIndexUrl            string
-	ForumsUrl                  string
+	RolesUrl                   string
 	ContactUrl                 string
 	SearchActionUrl            string
 }

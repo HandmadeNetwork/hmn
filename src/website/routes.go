@@ -48,6 +48,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	// NOTE(asaf): HMN-only routes:
 	hmnOnly.GET(hmnurl.RegexManifesto, Manifesto)
 	hmnOnly.GET(hmnurl.RegexAbout, About)
+	// hmnOnly.GET(hmnurl.RegexFoundation, Foundation)
 	hmnOnly.GET(hmnurl.RegexCommunicationGuidelines, CommunicationGuidelines)
 	hmnOnly.GET(hmnurl.RegexContactPage, ContactPage)
 	hmnOnly.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
@@ -58,6 +59,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexJamIndex2021, JamIndex2021)
 	hmnOnly.GET(hmnurl.RegexJamIndex2022, JamIndex2022)
 	hmnOnly.GET(hmnurl.RegexJamFeed2022, JamFeed2022)
+
+	hmnOnly.GET(hmnurl.RegexStaffRolesIndex, StaffRolesIndex)
+	hmnOnly.GET(hmnurl.RegexStaffRole, StaffRole)
 
 	hmnOnly.GET(hmnurl.RegexOldHome, Index)
 

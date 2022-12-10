@@ -172,6 +172,13 @@ func BuildAbout() string {
 	return Url("/about", nil)
 }
 
+var RegexFoundation = regexp.MustCompile("^/foundation$")
+
+func BuildFoundation() string {
+	defer CatchPanic()
+	return Url("/foundation", nil)
+}
+
 var RegexCommunicationGuidelines = regexp.MustCompile("^/communication-guidelines$")
 
 func BuildCommunicationGuidelines() string {
@@ -205,6 +212,24 @@ var RegexConferences = regexp.MustCompile("^/conferences$")
 func BuildConferences() string {
 	defer CatchPanic()
 	return Url("/conferences", nil)
+}
+
+/*
+* Volunteer/Staff Roles
+ */
+
+var RegexStaffRolesIndex = regexp.MustCompile(`^/roles$`)
+
+func BuildStaffRolesIndex() string {
+	defer CatchPanic()
+	return Url("/roles", nil)
+}
+
+var RegexStaffRole = regexp.MustCompile(`^/roles/(?P<slug>[^/]+)$`)
+
+func BuildStaffRole(slug string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/roles/%s", slug), nil)
 }
 
 /*
