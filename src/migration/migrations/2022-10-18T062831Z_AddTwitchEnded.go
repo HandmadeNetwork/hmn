@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/migration/types"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 func init() {

@@ -6,7 +6,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/migration/types"
 	"git.handmade.network/hmn/hmn/src/oops"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 func init() {

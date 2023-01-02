@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/rs/zerolog"
 )
 
@@ -37,7 +37,7 @@ type PostgresConfig struct {
 	Hostname string
 	Port     int
 	DbName   string
-	LogLevel pgx.LogLevel
+	LogLevel tracelog.LogLevel
 	MinConn  int32
 	MaxConn  int32
 }

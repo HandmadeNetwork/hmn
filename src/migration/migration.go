@@ -17,7 +17,8 @@ import (
 	"git.handmade.network/hmn/hmn/src/migration/types"
 	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/jackc/pgconn"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/spf13/cobra"
 )
 
@@ -171,7 +172,7 @@ func Migrate(targetVersion types.MigrationVersion) {
 	ctx := context.Background() // In the future, this could actually do something cool.
 
 	conn := db.NewConnWithConfig(config.PostgresConfig{
-		LogLevel: pgx.LogLevelWarn,
+		LogLevel: tracelog.LogLevelWarn,
 	})
 	defer conn.Close(ctx)
 
@@ -304,7 +305,7 @@ func Rollback() {
 	ctx := context.Background()
 
 	conn := db.NewConnWithConfig(config.PostgresConfig{
-		LogLevel: pgx.LogLevelWarn,
+		LogLevel: tracelog.LogLevelWarn,
 	})
 	defer conn.Close(ctx)
 

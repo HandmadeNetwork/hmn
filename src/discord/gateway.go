@@ -19,7 +19,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/gorilla/websocket"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jpillora/backoff"
 )
 
@@ -211,10 +211,10 @@ The connection process in short:
 - Gateway sends Ready, client is now connected to gateway
 
 Or, if we have an existing session:
-- Gateway sends Hello, asking the client to heartbeat on some interval
-- Client sends Resume and starts heartbeat process
-- Gateway sends all missed events followed by a RESUMED event, or an Invalid Session if the
-  session is ded
+  - Gateway sends Hello, asking the client to heartbeat on some interval
+  - Client sends Resume and starts heartbeat process
+  - Gateway sends all missed events followed by a RESUMED event, or an Invalid Session if the
+    session is ded
 
 Note that some events probably won't be received until the Guild Create message is received.
 

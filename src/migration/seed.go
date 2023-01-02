@@ -18,7 +18,8 @@ import (
 	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/utils"
 	lorem "github.com/HandmadeNetwork/golorem"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/tracelog"
 )
 
 // Applies a cloned db to the local db.
@@ -54,7 +55,7 @@ func BareMinimumSeed() *models.Project {
 
 	ctx := context.Background()
 	conn := db.NewConnWithConfig(config.PostgresConfig{
-		LogLevel: pgx.LogLevelWarn,
+		LogLevel: tracelog.LogLevelWarn,
 	})
 	defer conn.Close(ctx)
 
@@ -75,7 +76,7 @@ func SampleSeed() {
 
 	ctx := context.Background()
 	conn := db.NewConnWithConfig(config.PostgresConfig{
-		LogLevel: pgx.LogLevelWarn,
+		LogLevel: tracelog.LogLevelWarn,
 	})
 	defer conn.Close(ctx)
 

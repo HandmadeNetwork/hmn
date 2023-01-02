@@ -21,7 +21,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/twitch"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 type UserProfileTemplateData struct {

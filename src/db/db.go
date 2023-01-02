@@ -13,11 +13,12 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgtype"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/log/zerologadapter"
-	"github.com/jackc/pgx/v4/pgxpool"
+	zerologadapter "github.com/jackc/pgx-zerolog"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -55,8 +56,10 @@ func NewConnWithConfig(cfg config.PostgresConfig) *pgx.Conn {
 
 	pgcfg, err := pgx.ParseConfig(cfg.DSN())
 
-	pgcfg.Logger = zerologadapter.NewLogger(log.Logger)
-	pgcfg.LogLevel = cfg.LogLevel
+	pgcfg.Tracer = &tracelog.TraceLog{
+		zerologadapter.NewLogger(log.Logger),
+		cfg.LogLevel,
+	}
 
 	conn, err := pgx.ConnectConfig(context.Background(), pgcfg)
 	if err != nil {
@@ -79,10 +82,12 @@ func NewConnPoolWithConfig(cfg config.PostgresConfig) *pgxpool.Pool {
 
 	pgcfg.MinConns = cfg.MinConn
 	pgcfg.MaxConns = cfg.MaxConn
-	pgcfg.ConnConfig.Logger = zerologadapter.NewLogger(log.Logger)
-	pgcfg.ConnConfig.LogLevel = cfg.LogLevel
+	pgcfg.ConnConfig.Tracer = &tracelog.TraceLog{
+		zerologadapter.NewLogger(log.Logger),
+		cfg.LogLevel,
+	}
 
-	conn, err := pgxpool.ConnectConfig(context.Background(), pgcfg)
+	conn, err := pgxpool.NewWithConfig(context.Background(), pgcfg)
 	if err != nil {
 		panic(oops.New(err, "failed to create database connection pool"))
 	}
