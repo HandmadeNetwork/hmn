@@ -3,6 +3,7 @@ package twitch
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -1113,7 +1114,7 @@ func verifyHistoryVODs(ctx context.Context, dbConn db.ConnOrTx) error {
 
 	if len(videoIDs) > 0 {
 		VODs, err := getArchivedVideos(ctx, videoIDs)
-		if err != nil {
+		if err != nil && !errors.Is(err, twitchNotFound) {
 			return oops.New(err, "failed to fetch vods from twitch")
 		}
 
@@ -1181,9 +1182,17 @@ var RelevantCategories = []string{
 	"1469308723", // Software and Game Development
 }
 
+/*
+NOTE(asaf): Looks like twitch returns `tags` properly, but only one in `tag_ids`
+
+	var RelevantTags = []string{
+		"a59f1e4e-257b-4bd0-90c7-189c3efbf917", // Programming
+		"6f86127d-6051-4a38-94bb-f7b475dde109", // Software Development
+	}
+*/
 var RelevantTags = []string{
-	"a59f1e4e-257b-4bd0-90c7-189c3efbf917", // Programming
-	"6f86127d-6051-4a38-94bb-f7b475dde109", // Software Development
+	"Programming",          // Programming
+	"Software Development", // Software Development
 }
 
 func isStreamRelevant(catID string, tags []string) bool {

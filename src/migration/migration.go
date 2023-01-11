@@ -16,8 +16,8 @@ import (
 	"git.handmade.network/hmn/hmn/src/migration/migrations"
 	"git.handmade.network/hmn/hmn/src/migration/types"
 	"git.handmade.network/hmn/hmn/src/website"
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/spf13/cobra"
 )

@@ -13,10 +13,10 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
-	"github.com/jackc/pgtype"
 	zerologadapter "github.com/jackc/pgx-zerolog"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/rs/zerolog/log"
@@ -43,7 +43,7 @@ type ConnOrTx interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
-var connInfo = pgtype.NewConnInfo()
+var pgTypeMap = pgtype.NewMap()
 
 // Creates a new connection to the HMN database.
 // This connection is not safe for concurrent use.
@@ -482,7 +482,7 @@ primitive types and not structs, since the database only returns individual prim
 and it is our job to stitch them back together into structs later.
 */
 func typeIsQueryable(t reflect.Type) bool {
-	_, isRecognizedByPgtype := connInfo.DataTypeForValue(reflect.New(t).Elem().Interface()) // if pgtype recognizes it, we don't need to dig in further for more `db` tags
+	_, isRecognizedByPgtype := pgTypeMap.TypeForValue(reflect.New(t).Elem().Interface()) // if pgtype recognizes it, we don't need to dig in further for more `db` tags
 	// NOTE: boy it would be nice if we didn't have to do reflect.New here, considering that pgtype is just doing reflection on the value anyway
 
 	if isRecognizedByPgtype {
@@ -624,10 +624,13 @@ func setValueFromDB(dest reflect.Value, value reflect.Value) {
 	case reflect.String:
 		dest.SetString(value.String())
 	case reflect.Slice:
-		switch v := value.Interface().(type) {
-		case pgtype.Value:
-			v.AssignTo(dest.Interface())
-		default:
+		valLen := value.Len()
+		if valLen > 0 {
+			destTemp := reflect.MakeSlice(dest.Type(), 0, valLen)
+			for i := 0; i < valLen; i++ {
+				destTemp = reflect.Append(destTemp, value.Index(i).Elem())
+			}
+			dest.Set(destTemp)
 		}
 	// TODO(ben): More kinds? All the kinds? It kind of feels like we should be able to assign to any destination whose underlying type is a primitive.
 	default:

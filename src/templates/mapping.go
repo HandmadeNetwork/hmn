@@ -3,7 +3,7 @@ package templates
 import (
 	"fmt"
 	"html/template"
-	"net"
+	"net/netip"
 	"regexp"
 	"strconv"
 	"strings"
@@ -529,7 +529,7 @@ func maybeString(s *string) string {
 	return *s
 }
 
-func maybeIp(ip *net.IPNet) string {
+func maybeIp(ip *netip.Prefix) string {
 	if ip == nil {
 		return ""
 	}

@@ -7,8 +7,8 @@ import (
 	"html"
 	"html/template"
 	"io"
-	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"path"
 	"regexp"
@@ -254,7 +254,7 @@ func (c *RequestContext) FullUrl() string {
 // NOTE(asaf): Assumes port is present (it should be for RemoteAddr according to the docs)
 var ipRegex = regexp.MustCompile(`^(\[(?P<addrv6>[^\]]+)\]:\d+)|((?P<addrv4>[^:]+):\d+)$`)
 
-func (c *RequestContext) GetIP() *net.IPNet {
+func (c *RequestContext) GetIP() *netip.Prefix {
 	ipString := ""
 
 	if ipString == "" {
@@ -288,9 +288,9 @@ func (c *RequestContext) GetIP() *net.IPNet {
 	}
 
 	if ipString != "" {
-		_, res, err := net.ParseCIDR(fmt.Sprintf("%s/32", ipString))
+		res, err := netip.ParsePrefix(fmt.Sprintf("%s/32", ipString))
 		if err == nil {
-			return res
+			return &res
 		}
 	}
 

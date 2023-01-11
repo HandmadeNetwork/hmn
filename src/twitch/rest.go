@@ -115,7 +115,7 @@ func getStreamStatus(ctx context.Context, twitchIDs []string) ([]streamStatus, e
 			Title       string   `json:"title"`
 			StartedAt   string   `json:"started_at"`
 			Thumbnail   string   `json:"thumbnail_url"`
-			Tags        []string `json:"tag_ids"`
+			Tags        []string `json:"tags"`
 		}
 
 		type twitchResponse struct {
@@ -412,6 +412,8 @@ func unsubscribeFromEvent(ctx context.Context, eventID string) error {
 	return nil
 }
 
+var twitchNotFound = errors.New("Twitch API 404")
+
 func doRequest(ctx context.Context, waitOnRateLimit bool, req *http.Request) (*http.Response, error) {
 	serviceUnavailable := false
 	numRetries := 5
@@ -470,6 +472,8 @@ func doRequest(ctx context.Context, waitOnRateLimit bool, req *http.Request) (*h
 			if err != nil {
 				return nil, err
 			}
+		} else if res.StatusCode == 404 {
+			return nil, twitchNotFound
 		} else {
 			body, err := io.ReadAll(res.Body)
 			if err != nil {

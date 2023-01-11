@@ -1,7 +1,7 @@
 package models
 
 import (
-	"net"
+	"net/netip"
 	"time"
 )
 
@@ -30,8 +30,8 @@ type PostVersion struct {
 	TextRaw    string `db:"text_raw"`
 	TextParsed string `db:"text_parsed"`
 
-	IP         *net.IPNet `db:"ip"`
-	Date       time.Time  `db:"date"`
-	EditReason string     `db:"edit_reason"`
-	EditorID   *int       `db:"editor_id"`
+	IP         *netip.Prefix `db:"ip"`
+	Date       time.Time     `db:"date"`
+	EditReason string        `db:"edit_reason"`
+	EditorID   *int          `db:"editor_id"`
 }
