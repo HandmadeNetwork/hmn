@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -105,9 +106,14 @@ func (rb *RouteBuilder) Group(regex *regexp.Regexp, ms ...Middleware) RouteBuild
 }
 
 func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	method := req.Method
+	if method == http.MethodHead {
+		method = http.MethodGet // HEADs map to GETs for the purposes of routing
+	}
+
 nextroute:
 	for _, route := range r.Routes {
-		if route.Method != "" && req.Method != route.Method {
+		if route.Method != "" && method != route.Method {
 			continue
 		}
 
@@ -465,12 +471,36 @@ func doRequest(rw http.ResponseWriter, c *RequestContext, h Handler) {
 		}
 	}()
 
+	// Run the chosen handler
 	res := h(c)
 
 	if res.StatusCode == 0 {
 		res.StatusCode = http.StatusOK
 	}
 
+	// Set Content-Type and Content-Length if necessary. This behavior would in
+	// some cases be handled by http.ResponseWriter.Write, but we extract it so
+	// that HEAD requests always return both headers.
+
+	var preamble []byte // Any bytes we read to determine Content-Type
+	if res.Body != nil {
+		bodyLen := res.Body.Len()
+
+		if res.Header().Get("Content-Type") == "" {
+			preamble = res.Body.Next(512)
+			rw.Header().Set("Content-Type", http.DetectContentType(preamble))
+		}
+		if res.Header().Get("Content-Length") == "" {
+			rw.Header().Set("Content-Length", strconv.Itoa(bodyLen))
+		}
+	}
+
+	// Ensure we send no body for HEAD requests
+	if c.Req.Method == http.MethodHead {
+		res.Body = nil
+	}
+
+	// Send remaining response headers
 	for name, vals := range res.Header() {
 		for _, val := range vals {
 			rw.Header().Add(name, val)
@@ -478,7 +508,18 @@ func doRequest(rw http.ResponseWriter, c *RequestContext, h Handler) {
 	}
 	rw.WriteHeader(res.StatusCode)
 
+	// Send response body
 	if res.Body != nil {
-		io.Copy(rw, res.Body)
+		// Write preamble, if any
+		_, err := rw.Write(preamble)
+		if err != nil {
+			logging.Error().Err(err).Msg("Failed to write response preamble")
+		}
+
+		// Write remainder of body
+		_, err = io.Copy(rw, res.Body)
+		if err != nil {
+			logging.Error().Err(err).Msg("copied res.Body")
+		}
 	}
 }
