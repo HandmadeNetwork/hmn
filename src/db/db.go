@@ -45,6 +45,11 @@ type ConnOrTx interface {
 
 var pgTypeMap = pgtype.NewMap()
 
+func init() {
+	// NOTE(asaf): Need to initialize it here to avoid potential race conditions later
+	pgTypeMap.TypeForValue(nil)
+}
+
 // Creates a new connection to the HMN database.
 // This connection is not safe for concurrent use.
 func NewConn() *pgx.Conn {

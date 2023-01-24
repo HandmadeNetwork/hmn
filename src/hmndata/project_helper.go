@@ -152,7 +152,7 @@ func FetchProjects(
 	}
 
 	// Do the query
-	projectRows, err := db.Query[projectRow](ctx, dbConn, qb.String(), qb.Args()...)
+	projectRows, err := db.Query[projectRow](ctx, tx, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch projects")
 	}
