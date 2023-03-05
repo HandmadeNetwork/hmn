@@ -39,6 +39,15 @@ var WRJ2022 = Jam{
 	Slug: "WRJ2022",
 }
 
+var VJ2023 = Jam{
+	Event: Event{
+		StartTime: time.Date(2023, 4, 14, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+		EndTime:   time.Date(2023, 4, 16, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+	},
+	Name: "Visualization Jam 2023",
+	Slug: "VJ2023",
+}
+
 var HMS2022 = Event{
 	StartTime: time.Date(2022, 11, 16, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 	EndTime:   time.Date(2022, 11, 18, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
