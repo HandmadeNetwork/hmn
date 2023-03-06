@@ -22,7 +22,7 @@ func VisualizationIndex2023(c *RequestContext) ResponseData {
 		{Property: "og:site_name", Value: "Handmade.Network"},
 		{Property: "og:type", Value: "website"},
 		// TODO:
-		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2022/opengraph.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("visualjam2023/opengraph.png", true)},
 		{Property: "og:description", Value: "See things in a new way. April 14 - 16."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
 	}
