@@ -19,9 +19,9 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 
 	baseData := getBaseDataAutocrumb(c, hmndata.VJ2023.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
-		{Property: "og:site_name", Value: "Handmade.Network"},
+		{Property: "og:title", Value: "Visibility Jam"},
+		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		// TODO:
 		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2023/opengraph.png", true)},
 		{Property: "og:description", Value: "See things in a new way. April 14 - 16."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
@@ -117,7 +117,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 
 	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2022.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
-		{Property: "og:site_name", Value: "Handmade.Network"},
+		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2022/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to change the status quo. August 15 - 21 on Handmade Network."},
@@ -254,7 +254,7 @@ func JamFeed2022(c *RequestContext) ResponseData {
 
 	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2022.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
-		{Property: "og:site_name", Value: "Handmade.Network"},
+		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2022/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to change the status quo. August 15 - 21 on Handmade Network."},
@@ -311,7 +311,7 @@ func JamIndex2021(c *RequestContext) ResponseData {
 
 	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2021.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
-		{Property: "og:site_name", Value: "Handmade.Network"},
+		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2021/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to bring a fresh perspective to old ideas. September 27 - October 3 on Handmade Network."},

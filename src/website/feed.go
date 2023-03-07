@@ -117,13 +117,13 @@ func AtomFeed(c *RequestContext) ResponseData {
 	feedData := AtomFeedData{
 		HomepageUrl: hmnurl.BuildHomepage(),
 
-		CopyrightStatement: fmt.Sprintf("Copyright (C) 2014-%d Handmade.Network and its contributors", time.Now().Year()),
+		CopyrightStatement: fmt.Sprintf("Copyright (C) 2014-%d Handmade Network and its contributors", time.Now().Year()),
 		SiteVersion:        "2.0",
 	}
 
 	feedType, hasType := c.PathParams["feedtype"]
 	if !hasType || len(feedType) == 0 {
-		feedData.Title = "New Threads, Blog Posts, Replies and Comments | Site-wide | Handmade.Network"
+		feedData.Title = "New Threads, Blog Posts, Replies and Comments | Site-wide | Handmade Network"
 		feedData.Subtitle = feedData.Title
 		feedData.FeedType = FeedTypeAll
 		feedData.FeedID = FeedIDAll
@@ -144,7 +144,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 	} else {
 		switch strings.ToLower(feedType) {
 		case "projects":
-			feedData.Title = "New Projects | Site-wide | Handmade.Network"
+			feedData.Title = "New Projects | Site-wide | Handmade Network"
 			feedData.Subtitle = feedData.Title
 			feedData.FeedType = FeedTypeProjects
 			feedData.FeedID = FeedIDProjects
@@ -181,7 +181,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 			}
 			feedData.Updated = updated
 		case "showcase":
-			feedData.Title = "Showcase | Site-wide | Handmade.Network"
+			feedData.Title = "Showcase | Site-wide | Handmade Network"
 			feedData.Subtitle = feedData.Title
 			feedData.FeedType = FeedTypeShowcase
 			feedData.FeedID = FeedIDShowcase

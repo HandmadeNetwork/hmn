@@ -61,7 +61,7 @@ func Snippet(c *RequestContext) ResponseData {
 	snippet.SmallInfo = true
 
 	opengraph := []templates.OpenGraphItem{
-		{Property: "og:site_name", Value: "Handmade.Network"},
+		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "article"},
 		{Property: "og:url", Value: snippet.Url},
 		{Property: "og:title", Value: fmt.Sprintf("Snippet by %s", snippet.OwnerName)},
