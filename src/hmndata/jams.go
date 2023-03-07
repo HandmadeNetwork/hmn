@@ -41,10 +41,10 @@ var WRJ2022 = Jam{
 
 var VJ2023 = Jam{
 	Event: Event{
-		StartTime: time.Date(2023, 4, 14, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
-		EndTime:   time.Date(2023, 4, 16, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+		StartTime: time.Date(2023, 4, 14, 0, 0, 0, 0, time.UTC),
+		EndTime:   time.Date(2023, 4, 17, 0, 0, 0, 0, time.UTC),
 	},
-	Name: "Visualization Jam 2023",
+	Name: "Visibility Jam 2023",
 	Slug: "VJ2023",
 }
 

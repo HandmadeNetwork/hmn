@@ -70,11 +70,11 @@ func BuildJamIndex2022() string {
 	return Url("/jam/2022", nil)
 }
 
-var RegexVisualizationJamIndex2023 = regexp.MustCompile("^/visualization-jam/2023$")
+var RegexJamIndex2023_Visibility = regexp.MustCompile("^/jam/visibility-2023$")
 
-func BuildVisualizationJamIndex2023() string {
+func BuildJamIndex2023_Visibility() string {
 	defer CatchPanic()
-	return Url("/visualization-jam/2023", nil)
+	return Url("/jam/visibility-2023", nil)
 }
 
 var RegexJamFeed2022 = regexp.MustCompile("^/jam/2022/feed$")
