@@ -70,6 +70,13 @@ func BuildJamIndex2022() string {
 	return Url("/jam/2022", nil)
 }
 
+var RegexVisualizationJamIndex2023 = regexp.MustCompile("^/visualization-jam/2023$")
+
+func BuildVisualizationJamIndex2023() string {
+	defer CatchPanic()
+	return Url("/visualization-jam/2023", nil)
+}
+
 var RegexJamFeed2022 = regexp.MustCompile("^/jam/2022/feed$")
 
 func BuildJamFeed2022() string {

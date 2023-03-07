@@ -1,0 +1,447 @@
+{{ template "visualization_jam_2023_base.html" . }} {{ define "content" }} {{
+$discordInviteURL := "https://discord.gg/hmn" }}
+
+<style>
+  .projects {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  @media screen and (min-width: 30em) {
+    /* not small styles */
+
+    .projects {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>
+
+<div id="top-container" class="flex flex-column items-center ph3">
+  <img id="logo" src="{{ static "visualjam2023/logo.svg" }}">
+  <h1 id="title">Visualization Jam</h1>
+  <h2 id="dates">April 14 - 16, 2O23</h2>
+  <div id="tagline" class="center">
+    A jam to see things in a new way. {{ if gt .DaysUntilEnd 0 }} {{ if eq
+    .DaysUntilStart 0 }}
+    <b>Happening now.</b>
+    {{ else if eq .DaysUntilStart 1 }}
+    <b>Starting tomorrow.</b>
+    {{ else }}
+    <b>In {{ .DaysUntilStart }} days.</b>
+    {{ end }} {{ end }}
+  </div>
+  <div class="actions flex justify-center">
+    {{ if gt .DaysUntilStart 0 }}
+    <a
+      class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns"
+      target="_blank"
+      href="https://github.com/HandmadeNetwork/wishlist/discussions"
+      >Find a project</a
+    >
+    {{ else if gt .DaysUntilEnd 0 }} {{ if .SubmittedProjectUrl }}
+    <a
+      class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns"
+      target="_blank"
+      href="{{ .SubmittedProjectUrl }}"
+      >Share your progress</a
+    >
+    {{ else }}
+    <a
+      class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3"
+      target="_blank"
+      href="{{ .ProjectSubmissionUrl }}"
+      >Create your project</a
+    >
+    {{ end }} {{ else }}
+    <a
+      class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3"
+      href="{{ .ShowcaseFeedUrl }}"
+      >See the results</a
+    >
+    {{ end }}
+    <a
+      class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3"
+      target="_blank"
+      href="{{ $discordInviteURL }}"
+      >Join the Discord</a
+    >
+  </div>
+</div>
+
+<div class="section mw8 margin-center ph3 ph4-l mv4">
+  <h1>
+    TODO: Needs copy -- guessing we'll use some of the images that Ben has
+    marked as TODO TODO TODO in the copy doc.
+  </h1>
+</div>
+
+{{ if eq .DaysUntilEnd 0 }}
+<div class="section bg-black-20 pv4 overflow-hidden">
+  <div class="mw8 margin-center ph3 ph4-l">
+    <h2>Submitted projects</h2>
+    <div class="mt3 projects g3 back-to-normal">
+      {{ range .JamProjects }} {{ template "project_card.html" projectcarddata .
+      "" }} {{ end }}
+    </div>
+    <div class="actions flex justify-center">
+      <a
+        class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3"
+        href="{{ .ShowcaseFeedUrl }}"
+        >See all updates</a
+      >
+    </div>
+  </div>
+</div>
+{{ else if and (eq .DaysUntilStart 0) (not (eq .ShowcaseJson "[]")) }}
+<div id="showcase-outer-container" class="bg-black-20 pt4 pb3 pb4-ns">
+  <div class="section mw8 margin-center ph3 ph4-l">
+    {{ if gt .DaysUntilEnd 0 }}
+    <h2>Recent updates</h2>
+    <p>
+      These screenshots and videos were shared by jam participants in
+      <b>#project-showcase</b> on our
+      <a href="{{ $discordInviteURL }}" target="_blank">Discord</a>. Join us and
+      share what you're working on!
+      <a class="b" href="{{ .ShowcaseFeedUrl }}">See all ➜</a>
+    </p>
+    {{ else }}
+    <h2>Community showcase</h2>
+    <p>
+      These screenshots and videos were shared by jam participants in
+      <b>#project-showcase</b> on our
+      <a href="https://discord.gg/hmn" target="_blank">Discord</a> during the
+      jam. Join us and chat about your favorites!
+    </p>
+    {{ end }}
+    <div id="showcase-container" class="mw8 center-layout mh2 mh0-ns"></div>
+    <div class="actions flex justify-center">
+      <a
+        class="ba b--white br2 pv2 pv3-ns ph3 ph4-ns ml3"
+        target="_blank"
+        href="{{ .ShowcaseFeedUrl }}"
+        >See all</a
+      >
+    </div>
+  </div>
+</div>
+
+{{ template "showcase_templates.html" }}
+<!-- Copy-pasted and mangled from showcase.html  -->
+<script>
+  const ROW_HEIGHT = 300;
+  const ITEM_SPACING = 4;
+
+  const showcaseItems = JSON.parse("{{ .ShowcaseJson }}");
+  const addThumbnailFuncs = new Array(showcaseItems.length);
+
+  const showcaseOuterContainer = document.querySelector(
+    "#showcase-outer-container"
+  );
+  let showcaseContainer = document.querySelector("#showcase-container");
+
+  // showcaseOuterContainer.classList.toggle('dn', showcaseItems.length === 0);
+
+  const itemElements = []; // array of arrays
+  for (let i = 0; i < showcaseItems.length; i++) {
+    const item = showcaseItems[i];
+
+    const [itemEl, addThumbnail] = makeShowcaseItem(item);
+    itemEl.container.setAttribute("data-index", i);
+    itemEl.container.setAttribute("data-date", item.date);
+
+    addThumbnailFuncs[i] = addThumbnail;
+
+    itemElements.push(itemEl.container);
+  }
+
+  function layout() {
+    const width = showcaseContainer.getBoundingClientRect().width;
+    showcaseContainer = emptyElement(showcaseContainer);
+
+    function addRow(itemEls, rowWidth, container) {
+      const totalSpacing = ITEM_SPACING * (itemEls.length - 1);
+      const scaleFactor = width / Math.max(rowWidth, width);
+
+      const row = document.createElement("div");
+      row.classList.add("flex");
+      row.classList.toggle("justify-between", rowWidth >= width);
+      row.style.marginBottom = `${ITEM_SPACING}px`;
+
+      for (const itemEl of itemEls) {
+        const index = parseInt(itemEl.getAttribute("data-index"), 10);
+        const item = showcaseItems[index];
+
+        const aspect = item.width / item.height;
+        const baseWidth = aspect * ROW_HEIGHT * scaleFactor;
+        const actualWidth = baseWidth - totalSpacing / itemEls.length;
+
+        itemEl.style.width = `${actualWidth}px`;
+        itemEl.style.height = `${scaleFactor * ROW_HEIGHT}px`;
+        itemEl.style.marginRight = `${ITEM_SPACING}px`;
+
+        row.appendChild(itemEl);
+      }
+
+      container.appendChild(row);
+    }
+
+    let rowItemEls = [];
+    let rowWidth = 0;
+    let numRows = 0;
+
+    for (const itemEl of itemElements) {
+      const index = parseInt(itemEl.getAttribute("data-index"), 10);
+      const item = showcaseItems[index];
+
+      const aspect = item.width / item.height;
+      rowWidth += aspect * ROW_HEIGHT;
+
+      rowItemEls.push(itemEl);
+
+      if (rowWidth > width) {
+        addRow(rowItemEls, rowWidth, showcaseContainer);
+        numRows += 1;
+        if (numRows == 3) {
+          return;
+        }
+
+        rowItemEls = [];
+        rowWidth = 0;
+      }
+    }
+
+    addRow(rowItemEls, rowWidth, showcaseContainer);
+  }
+
+  function loadImages() {
+    const items = showcaseContainer.querySelectorAll(".showcase-item");
+    for (const item of items) {
+      const i = parseInt(item.getAttribute("data-index"), 10);
+      addThumbnailFuncs[i]();
+    }
+  }
+
+  layout();
+  layout(); // scrollbars are fun!!
+
+  loadImages();
+
+  window.addEventListener("resize", () => {
+    layout();
+  });
+</script>
+{{ end }}
+
+<div class="pt4 pb3 pb4-ns">
+  <div class="section mw8 margin-center ph3 ph4-l">
+    <h2>How to participate</h2>
+    <p>
+      The jam takes place from Friday, April 14 through Sunday, April 16. Here's
+      how you can participate:
+    </p>
+
+    <div class="{{ if gt .DaysUntilStart 0 }}emphasized{{ end }}">
+      <h3>Pick a project and form a team.</h3>
+      <p>
+        Pick something to visualize! Maybe it’s some weird data structure you
+        want to debug. Maybe it’s a map of your codebase. Maybe it’s your sleep
+        schedule. Whatever it is, make a Handmade Network project for it
+      </p>
+    </div>
+
+    <div
+      class="{{ if and (eq .DaysUntilStart 0) (gt .DaysUntilEnd 1) }}emphasized{{ end }}"
+    >
+      <h3>Jam.</h3>
+      <p>
+        {{ if and (eq .DaysUntilStart 0) (not .SubmittedProjectUrl) }}
+        <a href="{{ .ProjectSubmissionUrl }}" target="_blank"
+          ><b>Create a Handmade Network project</b></a
+        >
+        {{ else }} After the jam starts, create a Handmade Network project {{
+        end }} to track your work. Then, build your program! Share your work in
+        progress in #project-showcase on
+        <a href="{{ $discordInviteURL }}" target="_blank">Discord</a>, or
+        directly from your project page. Chat with other jammers in #jam too.
+      </p>
+    </div>
+
+    <div class="{{ if eq .DaysUntilEnd 1 }}emphasized{{ end }}">
+      <h3>Submit your work!</h3>
+      <p>
+        <b>Your Handmade Network project is your submission.</b> Fill out the
+        project description, making sure to explain the goals of the project and
+        how it improves on what came before. Also consider posting an update
+        with video of your program in action!
+      </p>
+      {{ if and (eq .DaysUntilStart 0) (gt .DaysUntilEnd 0) }}
+      <p>
+        Submissions close
+        <b><span class="countdown" data-deadline="{{ .EndTimeUnix }}"></span></b
+        >.
+      </p>
+      {{ else if eq .DaysUntilEnd 0 }}
+      <p>
+        <b>Submissions are now closed.</b>
+      </p>
+      {{ end }}
+    </div>
+  </div>
+</div>
+
+<div class="bg-black-20 pt4 pb3 pb4-ns">
+  <div class="section mw8 margin-center ph3 ph4-l">
+    <h2>Rules</h2>
+    <ul>
+      <li>
+        Any tech is allowed, but we encourage you to use only use what you
+        really need. If you want some lightweight templates to get you started,
+        check out our
+        <a
+          href="https://github.com/HandmadeNetwork/jam_templates"
+          target="_blank"
+          >app templates</a
+        >.
+      </li>
+      <li>
+        You may work solo or in a team. (But we encourage you to work with a
+        team!)
+      </li>
+      <li>Submit your work by the end of the day on April 16.</li>
+    </ul>
+    <p>
+      There are no explicit winners, but we will be selecting a few of our
+      favorite projects to highlight in a recap stream following the jam.
+    </p>
+
+    <h3>Submission rules</h3>
+    <p>
+      <b
+        >{{ with .SubmittedProjectUrl }}
+        <a href="{{ . }}" target="_blank">Your Handmade Network project</a>
+        {{ else }} Your Handmade Network project {{ end }} is your
+        submission.</b
+      >
+      We will be looking at the project's description and any extra updates you
+      share toward the end of the jam.
+    </p>
+    <ul>
+      <li>
+        Explain the project's goals and how it improves on what came before.
+        Also share some closing thoughts - did it turn out how you hoped? What
+        did you learn? If you continue the project, what will you do
+        differently?
+      </li>
+      <li>
+        <b
+          >Your description must contain multiple screenshots of your software
+          in action.</b
+        >
+        You should ideally also share a project update with a demo video. We
+        recommend Mārtiņš Možeiko's
+        <a href="https://wcap.handmade.network/" target="_blank">wcap</a> for
+        recording desktop video on Windows. On Mac, just press ⌘-Option-5 and
+        record a video, or use QuickTime.
+      </li>
+      <li>
+        If at all possible, please provide a way for people to either build or
+        download your program.
+      </li>
+    </ul>
+  </div>
+</div>
+
+<div class="pt4">
+  <div class="flex-ns flex-row-ns mw8 margin-center ph3 ph4-l">
+    <div class="section flex-fair mb4 mb0-ns">
+      <h2>Make it by hand.</h2>
+      <p>
+        The Handmade ethos and Handmade community are software development
+        superpowers. Don't be afraid to question your foundations and rebuild
+        what needs rebuilding. The community is here to help you take on those
+        challenges and do what others might consider impossible.
+      </p>
+      <p>
+        Of course, this is a jam, so focus on what matters to your project.
+        There are many excellent libraries in the community that can save you
+        time and help you focus on your core ideas. Don't be afraid to use them.
+        But don't be afraid to do your own thing if they're holding you back.
+      </p>
+    </div>
+    <div class="section flex-fair ml4-m ml5-l">
+      <h2>Don't just rebuild. Reinvent.</h2>
+      <p>
+        This is a chance to build something <em>truly new</em>. Learn from
+        previous work, but don't settle for “the same, but better”. It would be
+        a huge shame to spend a week building nothing more than a clone of the
+        same broken software we use today.
+      </p>
+      <p>
+        This is where working with a team can really help. Bounce ideas off each
+        other, do some research, and brainstorm before the jam starts. The
+        software you end up building might be pretty different from your
+        original ideas.
+      </p>
+      <p>In the end, this is a jam. Get weird and try something different.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const carouselContainer = document.querySelector(".carousel-container");
+  if (carouselContainer) {
+    const { next, prev } = initCarousel(carouselContainer, {
+      onChange() {
+        if (carouselContainer.getBoundingClientRect().top < 0) {
+          carouselContainer.scrollIntoView({ behavior: "smooth" });
+        }
+      },
+    });
+
+    document
+      .querySelector(".carousel-thinger.next")
+      .addEventListener("click", () => {
+        next();
+      });
+    document
+      .querySelector(".carousel-thinger.prev")
+      .addEventListener("click", () => {
+        prev();
+      });
+  }
+</script>
+
+<script>
+  for (const countdown of document.querySelectorAll(".countdown")) {
+    const deadline = countdown.getAttribute("data-deadline");
+    const deadlineDate = new Date(parseInt(deadline, 10) * 1000);
+
+    function updateCountdown() {
+      const remainingMs = deadlineDate.getTime() - new Date().getTime();
+      const remainingMinutes = remainingMs / 1000 / 60;
+      const remainingHours = remainingMinutes / 60;
+      const remainingDays = remainingHours / 24; // no daylight savings transitions during the jam mmkay
+
+      let str = "imminently";
+      if (remainingMinutes < 60) {
+        str = `in ${Math.ceil(remainingMinutes)} ${
+          remainingMinutes === 1 ? "minute" : "minutes"
+        }`;
+      } else if (remainingHours < 24) {
+        str = `in ${Math.ceil(remainingHours)} ${
+          remainingHours === 1 ? "hour" : "hours"
+        }`;
+      } else {
+        str = `in ${Math.ceil(remainingDays)} ${
+          remainingDays === 1 ? "day" : "days"
+        }`;
+      }
+
+      countdown.innerText = str;
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000 * 60);
+  }
+</script>
+{{ end }}

@@ -1,4 +1,5 @@
 <header id="site-header" class="mb3 bb bw1 b--theme-dark">
+    <a href="#content-start" class="sr-focusable" id="content-jump">Jump to Content</a>
     <div class="user-options flex justify-center justify-end-ns relative">
         {{ if .User }}
             {{ if .User.IsStaff }}
@@ -70,8 +71,10 @@
                         <a href="{{ .Header.ProjectIndexUrl }}">Projects</a>
                     </div>
                     <div class="root-item">
-                        <a>Media <div class="dib svgicon ml1">{{ svg "chevron-down-thick" }}</div></a>
-                        <div class="submenu b--theme-dark">
+                        <a aria-expanded="false" aria-controls="media-submenu" class="menu-dropdown-js" href="#">
+                          Media <div class="dib svgicon ml1">{{ svg "chevron-down-thick" }}</div>
+                        </a>
+                        <div class="submenu b--theme-dark" id="media-submenu">
                             <a href="{{ .Header.ConferencesUrl }}">Conferences</a>
                             <a href="{{ .Header.PodcastUrl }}">Podcast</a>
                             <a href="{{ .Header.FishbowlUrl }}">Fishbowls</a>
@@ -82,8 +85,10 @@
                         <a href="{{ .Header.ForumsUrl }}">Forums</a>
                     </div>
                     <div class="root-item">
-                        <a>Resources <div class="dib svgicon ml1">{{ svg "chevron-down-thick" }}</div></a>
-                        <div class="submenu b--theme-dark">
+                        <a aria-expanded="false" aria-controls="resource-submenu" class="menu-dropdown-js" href="#">
+                          Resources <div class="dib svgicon ml1">{{ svg "chevron-down-thick" }}</div>
+                        </a>
+                        <div class="submenu b--theme-dark" id="resource-submenu">
                             <a href="{{ .Header.EducationUrl }}">Education</a>
                         </div>
                     </div>
@@ -96,7 +101,7 @@
         </div>
     </div>
 </header>
-
+<div id="content-start"></div>
 <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function() {
         const header = document.querySelector('#site-header');
@@ -132,15 +137,37 @@
             }
         }
 
+        // dropdown accessiblity 
+        { 
+          const dropdowns = document.querySelectorAll('.menu-dropdown-js');
+          
+          for(let i = 0; i < dropdowns.length; i++) {
+                let dropdown = dropdowns[i];
+                dropdown.addEventListener('click', e => {
+                e.preventDefault();
+                for(let j = 0; j < dropdowns.length; j++){
+                  let each = dropdowns[j];
+                  if(each != dropdown){
+                    each.setAttribute("aria-expanded", false);
+                  }
+                }
+                // getAttribute returns a string so we have to do it this way
+                var toSetTo = dropdown.getAttribute("aria-expanded") == "false" ? "true" : "false"; 
+                dropdown.setAttribute("aria-expanded", toSetTo);
+                console.log(dropdown);
+            }); 
+          }
+        }
+
         // set up login form
         {
             const loginPopup = document.getElementById("login-popup");
             const loginLink = document.getElementById("login-link");
 
             if (loginPopup !== null) {
-                loginLink.removeAttribute("href");
 
-                loginLink.onclick = () => {
+                loginLink.onclick = (e) => { 
+                    e.preventDefault();
                     loginPopup.classList.toggle("open");
                 }
             }
