@@ -25,6 +25,8 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2023/opengraph.png", true)},
 		{Property: "og:description", Value: "See things in a new way. April 14 - 16."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2023/TwitterCard.png", true)},
 	}
 
 	type JamPageData struct {
