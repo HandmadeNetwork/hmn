@@ -41,8 +41,8 @@ var WRJ2022 = Jam{
 
 var VJ2023 = Jam{
 	Event: Event{
-		StartTime: time.Date(2023, 4, 5, 0, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(2023, 4, 17, 0, 0, 0, 0, time.UTC),
+		StartTime: time.Date(2023, 4, 4, 0, 0, 0, 0, time.UTC),
+		EndTime:   time.Date(2023, 4, 5, 0, 0, 0, 0, time.UTC),
 	},
 	Name: "Visibility Jam 2023",
 	Slug: "VJ2023",
