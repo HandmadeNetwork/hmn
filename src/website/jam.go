@@ -111,6 +111,76 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 	return res
 }
 
+func JamFeed2023_Visibility(c *RequestContext) ResponseData {
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		JamSlugs: []string{hmndata.VJ2023.Slug},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+	}
+
+	projectIds := make([]int, 0, len(jamProjects))
+	for _, jp := range jamProjects {
+		projectIds = append(projectIds, jp.Project.ID)
+	}
+
+	var timelineItems []templates.TimelineItem
+	if len(projectIds) > 0 {
+		snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+			ProjectIDs: projectIds,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
+		}
+
+		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
+		for _, s := range snippets {
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem.SmallInfo = true
+			timelineItems = append(timelineItems, timelineItem)
+		}
+	}
+
+	pageProjects := make([]templates.Project, 0, len(jamProjects))
+	for _, p := range jamProjects {
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
+	}
+
+	type JamFeedData struct {
+		templates.BaseData
+		DaysUntilStart, DaysUntilEnd int
+
+		JamProjects   []templates.Project
+		TimelineItems []templates.TimelineItem
+	}
+
+	daysUntilStart := daysUntil(hmndata.VJ2023.StartTime)
+	daysUntilEnd := daysUntil(hmndata.VJ2023.EndTime)
+
+	baseData := getBaseDataAutocrumb(c, hmndata.VJ2023.Name)
+
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:title", Value: "Visibility Jam"},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2023/opengraph.png", true)},
+		{Property: "og:description", Value: "See things in a new way. April 14 - 16."},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2023/TwitterCard.png", true)},
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("jam_2023_vj_feed.html", JamFeedData{
+		BaseData:       baseData,
+		DaysUntilStart: daysUntilStart,
+		DaysUntilEnd:   daysUntilEnd,
+		JamProjects:    pageProjects,
+		TimelineItems:  timelineItems,
+	}, c.Perf)
+	return res
+}
+
 func JamIndex2022(c *RequestContext) ResponseData {
 	var res ResponseData
 

@@ -60,6 +60,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexJamIndex2022, JamIndex2022)
 	hmnOnly.GET(hmnurl.RegexJamFeed2022, JamFeed2022)
 	hmnOnly.GET(hmnurl.RegexJamIndex2023_Visibility, JamIndex2023_Visibility)
+	hmnOnly.GET(hmnurl.RegexJamFeed2023_Visibility, JamFeed2023_Visibility)
 
 	hmnOnly.GET(hmnurl.RegexStaffRolesIndex, StaffRolesIndex)
 	hmnOnly.GET(hmnurl.RegexStaffRole, StaffRole)
