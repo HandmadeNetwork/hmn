@@ -63,7 +63,7 @@ var HMBoston2023 = Event{
 	EndTime:   time.Date(2023, 8, 4, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 }
 
-var AllJams = []Jam{WRJ2021, WRJ2022}
+var AllJams = []Jam{WRJ2021, WRJ2022, VJ2023}
 
 func CurrentJam() *Jam {
 	now := time.Now()
