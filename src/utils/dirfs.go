@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"io/fs"
 	"os"
 	"runtime"
@@ -18,19 +19,10 @@ import (
 // contains arbitrary content.
 //
 // The result implements fs.StatFS AND fs.ReadDirFS because god dammit why not.
+//
+// Implementation copy-pasted from Go 1.20.2.
 func DirFS(dir string) fs.FS {
 	return dirFS(dir)
-}
-
-func containsAny(s, chars string) bool {
-	for i := 0; i < len(s); i++ {
-		for j := 0; j < len(chars); j++ {
-			if s[i] == chars[j] {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 type dirFS string
@@ -39,34 +31,78 @@ var _ fs.StatFS = dirFS("")
 var _ fs.ReadDirFS = dirFS("")
 
 func (dir dirFS) Open(name string) (fs.File, error) {
-	if !fs.ValidPath(name) || runtime.GOOS == "windows" && containsAny(name, `\:`) {
-		return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrInvalid}
-	}
-	f, err := os.Open(string(dir) + "/" + name)
+	fullname, err := dir.join(name)
 	if err != nil {
-		return nil, err // nil fs.File
+		return nil, &os.PathError{Op: "stat", Path: name, Err: err}
+	}
+	f, err := os.Open(fullname)
+	if err != nil {
+		// DirFS takes a string appropriate for GOOS,
+		// while the name argument here is always slash separated.
+		// dir.join will have mixed the two; undo that for
+		// error reporting.
+		err.(*os.PathError).Path = name
+		return nil, err
 	}
 	return f, nil
 }
 
 func (dir dirFS) Stat(name string) (fs.FileInfo, error) {
-	if !fs.ValidPath(name) || runtime.GOOS == "windows" && containsAny(name, `\:`) {
-		return nil, &os.PathError{Op: "stat", Path: name, Err: os.ErrInvalid}
-	}
-	f, err := os.Stat(string(dir) + "/" + name)
+	fullname, err := dir.join(name)
 	if err != nil {
+		return nil, &os.PathError{Op: "stat", Path: name, Err: err}
+	}
+	f, err := os.Stat(fullname)
+	if err != nil {
+		// See comment in dirFS.Open.
+		err.(*os.PathError).Path = name
 		return nil, err
 	}
 	return f, nil
 }
 
 func (dir dirFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	if !fs.ValidPath(name) || runtime.GOOS == "windows" && containsAny(name, `\:`) {
-		return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrInvalid}
-	}
-	d, err := os.ReadDir(string(dir) + "/" + name)
+	fullname, err := dir.join(name)
 	if err != nil {
+		return nil, &os.PathError{Op: "stat", Path: name, Err: err}
+	}
+	d, err := os.ReadDir(fullname)
+	if err != nil {
+		// See comment in dirFS.Open.
+		err.(*os.PathError).Path = name
 		return nil, err
 	}
 	return d, nil
+}
+
+func fromFS(path string) (string, error) {
+	if runtime.GOOS == "plan9" {
+		if len(path) > 0 && path[0] == '#' {
+			return "", os.ErrInvalid
+		}
+	}
+	for i := range path {
+		if path[i] == 0 {
+			return "", os.ErrInvalid
+		}
+	}
+	return path, nil
+}
+
+// join returns the path for name in dir.
+func (dir dirFS) join(name string) (string, error) {
+	if dir == "" {
+		return "", errors.New("os: DirFS with empty root")
+	}
+	if !fs.ValidPath(name) {
+		return "", os.ErrInvalid
+	}
+	name, err := fromFS(name)
+	if err != nil {
+		return "", os.ErrInvalid
+	}
+	if os.IsPathSeparator(dir[len(dir)-1]) {
+		return string(dir) + name, nil
+	}
+	return string(dir) + string(os.PathSeparator) + name, nil
 }
