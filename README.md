@@ -10,9 +10,11 @@ We want the website to be a great example of Handmade software on the web. We en
 
 You will need the following software installed:
 
-- Go 1.18 or higher: https://go.dev/
+- Go 1.18 or 1.19: https://go.dev/
 
     You can download Go directly from the website, or install it through major package managers. If you already have Go installed, but are unsure of the version, you can check by running `go version`.
+
+    **PLEASE NOTE:** Go 1.20 currently does not work due to a bug in a third-party library. See [this issue](https://git.handmade.network/hmn/hmn/issues/59#issuecomment-1335).
 
 - Postgres: https://www.postgresql.org/
 
