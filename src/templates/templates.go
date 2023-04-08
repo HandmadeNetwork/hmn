@@ -4,13 +4,16 @@ import (
 	"embed"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"regexp"
 	"strings"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/auth"
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/Masterminds/sprig"
 	"github.com/google/uuid"
@@ -25,22 +28,22 @@ const (
 )
 
 //go:embed src
-var templateFs embed.FS
-var Templates map[string]*template.Template
+var embeddedTemplateFs embed.FS
+var embeddedTemplates map[string]*template.Template
 
 //go:embed src/fishbowls
 var FishbowlFS embed.FS
 
-func Init() {
-	Templates = make(map[string]*template.Template)
+func getTemplatesFromFS(templateFS fs.ReadDirFS) map[string]*template.Template {
+	templates := make(map[string]*template.Template)
 
-	files := utils.Must1(templateFs.ReadDir("src"))
+	files := utils.Must1(templateFS.ReadDir("src"))
 	for _, f := range files {
 		if hasSuffix(f.Name(), ".html") {
 			t := template.New(f.Name())
 			t = t.Funcs(sprig.FuncMap())
 			t = t.Funcs(HMNTemplateFuncs)
-			t, err := t.ParseFS(templateFs,
+			t, err := t.ParseFS(templateFS,
 				"src/layouts/*",
 				"src/include/*",
 				"src/"+f.Name(),
@@ -49,19 +52,40 @@ func Init() {
 				logging.Fatal().Str("filename", f.Name()).Err(err).Msg("failed to parse template")
 			}
 
-			Templates[f.Name()] = t
+			templates[f.Name()] = t
 		} else if hasSuffix(f.Name(), ".css", ".js", ".xml") {
 			t := template.New(f.Name())
 			t = t.Funcs(sprig.FuncMap())
 			t = t.Funcs(HMNTemplateFuncs)
-			t, err := t.ParseFS(templateFs, "src/"+f.Name())
+			t, err := t.ParseFS(templateFS, "src/"+f.Name())
 			if err != nil {
 				logging.Fatal().Str("filename", f.Name()).Err(err).Msg("failed to parse template")
 			}
 
-			Templates[f.Name()] = t
+			templates[f.Name()] = t
 		}
 	}
+
+	return templates
+}
+
+func Init() {
+	embeddedTemplates = getTemplatesFromFS(embeddedTemplateFs)
+}
+
+func GetTemplate(name string) *template.Template {
+	var templates map[string]*template.Template
+	if config.Config.DevConfig.LiveTemplates {
+		templates = getTemplatesFromFS(utils.DirFS("src/templates").(fs.ReadDirFS))
+	} else {
+		templates = embeddedTemplates
+	}
+
+	template, hasTemplate := templates[name]
+	if !hasTemplate {
+		panic(oops.New(nil, "Template not found: %s", name))
+	}
+	return template
 }
 
 func hasSuffix(s string, suffixes ...string) bool {

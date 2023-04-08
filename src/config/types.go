@@ -29,6 +29,7 @@ type HMNConfig struct {
 	Discord      DiscordConfig
 	Twitch       TwitchConfig
 	EpisodeGuide EpisodeGuide
+	DevConfig    DevConfig
 }
 
 type PostgresConfig struct {
@@ -99,6 +100,10 @@ type EpisodeGuide struct {
 type AdminConfig struct {
 	AtomUsername string
 	AtomPassword string
+}
+
+type DevConfig struct {
+	LiveTemplates bool // load templates live from the filesystem instead of embedding them
 }
 
 func init() {
