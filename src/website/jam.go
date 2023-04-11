@@ -104,7 +104,7 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 		EndTimeUnix:          hmndata.VJ2023.EndTime.Unix(),
 		ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
 		SubmittedProjectUrl:  submittedProjectUrl,
-		ShowcaseFeedUrl:      hmnurl.BuildJamFeed2022(),
+		ShowcaseFeedUrl:      hmnurl.BuildJamFeed2023_Visibility(),
 		ShowcaseJson:         showcaseJson,
 		JamProjects:          pageProjects,
 	}, c.Perf)
