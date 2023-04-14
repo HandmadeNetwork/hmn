@@ -150,6 +150,7 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 		templates.BaseData
 		DaysUntilStart, DaysUntilEnd int
 
+		JamUrl        string
 		JamProjects   []templates.Project
 		TimelineItems []templates.TimelineItem
 	}
@@ -175,6 +176,7 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 		BaseData:       baseData,
 		DaysUntilStart: daysUntilStart,
 		DaysUntilEnd:   daysUntilEnd,
+		JamUrl:         hmnurl.BuildJamIndex2023_Visibility(),
 		JamProjects:    pageProjects,
 		TimelineItems:  timelineItems,
 	}, c.Perf)
