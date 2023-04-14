@@ -78,6 +78,10 @@ func Index(c *RequestContext) ResponseData {
 		c.Logger.Warn().Err(err).Msg("failed to fetch latest posts")
 	}
 	for _, p := range posts {
+		if p.Project.IsHMN() {
+			continue // ignore news posts et. al.
+		}
+
 		item := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, p.Author, c.Theme)
 		if p.Thread.Type == models.ThreadTypeProjectBlogPost && p.Post.ID == p.Thread.FirstID {
 			// blog post
@@ -100,7 +104,6 @@ func Index(c *RequestContext) ResponseData {
 	if len(newsThreads) > 0 {
 		t := newsThreads[0]
 		item := PostToTimelineItem(hmndata.UrlContextForProject(&t.Project), lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor, c.Theme)
-		item.OwnerAvatarUrl = ""
 		item.Breadcrumbs = nil
 		item.TypeTitle = ""
 		item.AllowTitleWrap = true
