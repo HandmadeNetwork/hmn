@@ -49,6 +49,13 @@ func BuildWhenIsIt() string {
 	return Url("/whenisit", nil)
 }
 
+var RegexJamsIndex = regexp.MustCompile("^/jams$")
+
+func BuildJamsIndex() string {
+	defer CatchPanic()
+	return Url("/jams", nil)
+}
+
 var RegexJamIndex = regexp.MustCompile("^/jam$")
 
 func BuildJamIndex() string {

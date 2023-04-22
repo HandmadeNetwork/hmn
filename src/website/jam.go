@@ -12,6 +12,29 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
+func JamsIndex(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	type TemplateData struct {
+		templates.BaseData
+
+		LispJamUrl string
+		WRJ2021Url string
+		WRJ2022Url string
+		VJ2023Url  string
+	}
+
+	res.MustWriteTemplate("jams_index.html", TemplateData{
+		BaseData: getBaseDataAutocrumb(c, "Jams"),
+
+		LispJamUrl: hmnurl.BuildFishbowl("lisp-jam"),
+		WRJ2021Url: hmnurl.BuildJamIndex2021(),
+		WRJ2022Url: hmnurl.BuildJamIndex2022(),
+		VJ2023Url:  hmnurl.BuildJamIndex2023_Visibility(),
+	}, c.Perf)
+	return res
+}
+
 func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 	var res ResponseData
 
