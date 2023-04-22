@@ -219,6 +219,11 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 	}
 }
 
+var UnknownUser = User{
+	Name:      "Unknown User",
+	AvatarUrl: UserAvatarUrl(nil, ""),
+}
+
 // An online site/service for which we recognize the link
 type LinkService struct {
 	Name     string

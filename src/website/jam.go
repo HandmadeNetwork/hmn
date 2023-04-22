@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -38,6 +39,7 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 		ProjectSubmissionUrl string
 		ShowcaseFeedUrl      string
 		ShowcaseJson         string
+		RecapUrl             string
 
 		JamProjects []templates.Project
 	}
@@ -96,7 +98,7 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 
 	showcaseJson := templates.TimelineItemsToJSON(showcaseItems)
 
-	res.MustWriteTemplate("jam_2023_visibility.html", JamPageData{
+	res.MustWriteTemplate("jam_2023_vj_index.html", JamPageData{
 		BaseData:             baseData,
 		DaysUntilStart:       daysUntilStart,
 		DaysUntilEnd:         daysUntilEnd,
@@ -106,6 +108,7 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 		SubmittedProjectUrl:  submittedProjectUrl,
 		ShowcaseFeedUrl:      hmnurl.BuildJamFeed2023_Visibility(),
 		ShowcaseJson:         showcaseJson,
+		RecapUrl:             hmnurl.BuildJamRecap2023_Visibility(),
 		JamProjects:          pageProjects,
 	}, c.Perf)
 	return res
@@ -179,6 +182,50 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 		JamUrl:         hmnurl.BuildJamIndex2023_Visibility(),
 		JamProjects:    pageProjects,
 		TimelineItems:  timelineItems,
+	}, c.Perf)
+	return res
+}
+
+func JamRecap2023_Visibility(c *RequestContext) ResponseData {
+	type JamRecapData struct {
+		templates.BaseData
+
+		JamUrl   string
+		FeedUrl  string
+		Ben      templates.User
+		PostDate time.Time
+	}
+
+	var ben templates.User
+	benUser, err := hmndata.FetchUserByUsername(c, c.Conn, c.CurrentUser, "bvisness", hmndata.UsersQuery{})
+	if err == nil {
+		ben = templates.UserToTemplate(benUser, c.Theme)
+	} else if err == db.NotFound {
+		ben = templates.UnknownUser
+	} else {
+		panic("where ben ???")
+	}
+
+	baseData := getBaseDataAutocrumb(c, hmndata.VJ2023.Name)
+
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:title", Value: "Visibility Jam"},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2023/opengraph.png", true)},
+		// {Property: "og:description", Value: "See things in a new way. April 14 - 16."},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2023/TwitterCard.png", true)},
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("jam_2023_vj_recap.html", JamRecapData{
+		BaseData: baseData,
+		JamUrl:   hmnurl.BuildJamIndex2023_Visibility(),
+		FeedUrl:  hmnurl.BuildJamFeed2023_Visibility(),
+		Ben:      ben,
+		PostDate: time.Date(2023, 4, 22, 3, 9, 0, 0, time.UTC),
 	}, c.Perf)
 	return res
 }

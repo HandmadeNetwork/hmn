@@ -84,6 +84,13 @@ func BuildJamFeed2023_Visibility() string {
 	return Url("/jam/visibility-2023/feed", nil)
 }
 
+var RegexJamRecap2023_Visibility = regexp.MustCompile("^/jam/visibility-2023/recap$")
+
+func BuildJamRecap2023_Visibility() string {
+	defer CatchPanic()
+	return Url("/jam/visibility-2023/recap", nil)
+}
+
 var RegexJamFeed2022 = regexp.MustCompile("^/jam/2022/feed$")
 
 func BuildJamFeed2022() string {
