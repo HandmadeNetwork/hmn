@@ -931,7 +931,7 @@ func updateStreamHistory(ctx context.Context, dbConn db.ConnOrTx, status *models
 		`
 		INSERT INTO
 		twitch_stream_history (stream_id, twitch_id, twitch_login, started_at, stream_ended, ended_at, end_approximated, title, category_id, tags, discord_needs_update)
-		VALUES                ($1,        $2,        $3,           $4,         $5,    $6,       $7,               $8,    $9,          $10,  $11)
+		VALUES                ($1,        $2,        $3,           $4,         $5,           $6,       $7,               $8,    $9,          $10,  $11)
 		ON CONFLICT (stream_id) DO UPDATE SET
 			stream_ended = EXCLUDED.stream_ended,
 			ended_at = EXCLUDED.ended_at,

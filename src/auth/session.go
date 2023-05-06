@@ -24,7 +24,7 @@ const CSRFFieldName = "csrf_token"
 
 const sessionDuration = time.Hour * 24 * 14
 
-func makeSessionId() string {
+func MakeSessionId() string {
 	idBytes := make([]byte, 40)
 	_, err := io.ReadFull(rand.Reader, idBytes)
 	if err != nil {
@@ -47,7 +47,16 @@ func makeCSRFToken() string {
 var ErrNoSession = errors.New("no session found")
 
 func GetSession(ctx context.Context, conn *pgxpool.Pool, id string) (*models.Session, error) {
-	sess, err := db.QueryOne[models.Session](ctx, conn, "SELECT $columns FROM session WHERE id = $1", id)
+	sess, err := db.QueryOne[models.Session](ctx, conn,
+		`
+		SELECT $columns
+		FROM session
+		WHERE
+			id = $1
+			AND expires_at > CURRENT_TIMESTAMP
+		`,
+		id,
+	)
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			return nil, ErrNoSession
@@ -61,7 +70,7 @@ func GetSession(ctx context.Context, conn *pgxpool.Pool, id string) (*models.Ses
 
 func CreateSession(ctx context.Context, conn *pgxpool.Pool, username string) (*models.Session, error) {
 	session := models.Session{
-		ID:        makeSessionId(),
+		ID:        MakeSessionId(),
 		Username:  username,
 		ExpiresAt: time.Now().Add(sessionDuration),
 		CSRFToken: makeCSRFToken(),
@@ -134,7 +143,16 @@ func DeleteExpiredSessions(ctx context.Context, conn *pgxpool.Pool) (int64, erro
 	return tag.RowsAffected(), nil
 }
 
-func PeriodicallyDeleteExpiredSessions(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
+func DeleteExpiredPendingLogins(ctx context.Context, conn *pgxpool.Pool) (int64, error) {
+	tag, err := conn.Exec(ctx, "DELETE FROM pending_login WHERE expires_at <= CURRENT_TIMESTAMP")
+	if err != nil {
+		return 0, oops.New(err, "failed to delete expired pending logins")
+	}
+
+	return tag.RowsAffected(), nil
+}
+
+func PeriodicallyDeleteExpiredStuff(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 	job := jobs.New()
 	go func() {
 		defer job.Done()
@@ -145,6 +163,7 @@ func PeriodicallyDeleteExpiredSessions(ctx context.Context, conn *pgxpool.Pool) 
 			case <-t.C:
 				err := func() (err error) {
 					defer utils.RecoverPanicAsError(&err)
+
 					n, err := DeleteExpiredSessions(ctx, conn)
 					if err == nil {
 						if n > 0 {
@@ -153,10 +172,20 @@ func PeriodicallyDeleteExpiredSessions(ctx context.Context, conn *pgxpool.Pool) 
 					} else {
 						logging.Error().Err(err).Msg("Failed to delete expired sessions")
 					}
+
+					n, err = DeleteExpiredPendingLogins(ctx, conn)
+					if err == nil {
+						if n > 0 {
+							logging.Info().Int64("num deleted pending logins", n).Msg("Deleted expired pending logins")
+						}
+					} else {
+						logging.Error().Err(err).Msg("Failed to delete expired pending logins")
+					}
+
 					return nil
 				}()
 				if err != nil {
-					logging.Error().Err(err).Msg("Panicked in PeriodicallyDeleteExpiredSessions")
+					logging.Error().Err(err).Msg("Panicked in PeriodicallyDeleteExpiredStuff")
 				}
 			case <-ctx.Done():
 				return

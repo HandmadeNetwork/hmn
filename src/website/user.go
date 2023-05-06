@@ -213,10 +213,11 @@ func UserSettings(c *RequestContext) ResponseData {
 		AvatarMaxFileSize int
 		DefaultAvatarUrl  string
 
-		User      templates.User
-		Email     string // these fields are handled specially on templates.User
-		ShowEmail bool
-		LinksText string
+		User        templates.User
+		Email       string // these fields are handled specially on templates.User
+		ShowEmail   bool
+		LinksText   string
+		HasPassword bool
 
 		SubmitUrl  string
 		ContactUrl string
@@ -292,13 +293,14 @@ func UserSettings(c *RequestContext) ResponseData {
 		Email:             c.CurrentUser.Email,
 		ShowEmail:         c.CurrentUser.ShowEmail,
 		LinksText:         linksText,
+		HasPassword:       c.CurrentUser.Password != "",
 
 		SubmitUrl:  hmnurl.BuildUserSettings(""),
 		ContactUrl: hmnurl.BuildContactPage(),
 
 		DiscordUser:               tduser,
 		DiscordNumUnsavedMessages: numUnsavedMessages,
-		DiscordAuthorizeUrl:       discord.GetAuthorizeUrl(c.CurrentSession.CSRFToken),
+		DiscordAuthorizeUrl:       discord.GetAuthorizeUrl(c.CurrentSession.CSRFToken, false),
 		DiscordUnlinkUrl:          hmnurl.BuildDiscordUnlink(),
 		DiscordShowcaseBacklogUrl: hmnurl.BuildDiscordShowcaseBacklog(),
 	}, c.Perf)
@@ -424,7 +426,13 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	// Update password
 	oldPassword := form.Get("old_password")
 	newPassword := form.Get("new_password")
-	if oldPassword != "" && newPassword != "" {
+	var doChangePassword bool
+	if c.CurrentUser.Password == "" {
+		doChangePassword = newPassword != ""
+	} else {
+		doChangePassword = oldPassword != "" && newPassword != ""
+	}
+	if doChangePassword {
 		errorRes := updatePassword(c, tx, oldPassword, newPassword)
 		if errorRes != nil {
 			return *errorRes
@@ -558,25 +566,27 @@ func UserProfileAdminNuke(c *RequestContext) ResponseData {
 }
 
 func updatePassword(c *RequestContext, tx pgx.Tx, old, new string) *ResponseData {
-	oldHashedPassword, err := auth.ParsePasswordString(c.CurrentUser.Password)
-	if err != nil {
-		c.Logger.Warn().Err(err).Msg("failed to parse user's password string")
-		return nil
-	}
+	if c.CurrentUser.Password != "" {
+		oldHashedPassword, err := auth.ParsePasswordString(c.CurrentUser.Password)
+		if err != nil {
+			c.Logger.Warn().Err(err).Msg("failed to parse user's password string")
+			return nil
+		}
 
-	ok, err := auth.CheckPassword(old, oldHashedPassword)
-	if err != nil {
-		res := c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check user's password"))
-		return &res
-	}
+		ok, err := auth.CheckPassword(old, oldHashedPassword)
+		if err != nil {
+			res := c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check user's password"))
+			return &res
+		}
 
-	if !ok {
-		res := c.RejectRequest("The old password you provided was not correct.")
-		return &res
+		if !ok {
+			res := c.RejectRequest("The old password you provided was not correct.")
+			return &res
+		}
 	}
 
 	newHashedPassword := auth.HashPassword(new)
-	err = auth.UpdatePassword(c, tx, c.CurrentUser.Username, newHashedPassword)
+	err := auth.UpdatePassword(c, tx, c.CurrentUser.Username, newHashedPassword)
 	if err != nil {
 		res := c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update password"))
 		return &res

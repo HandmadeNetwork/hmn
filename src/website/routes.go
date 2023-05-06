@@ -75,6 +75,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.POST(hmnurl.RegexLoginAction, securityTimerMiddleware(time.Millisecond*100, Login))
 	hmnOnly.GET(hmnurl.RegexLogoutAction, Logout)
 	hmnOnly.GET(hmnurl.RegexLoginPage, LoginPage)
+	hmnOnly.GET(hmnurl.RegexLoginWithDiscord, LoginWithDiscord)
 
 	hmnOnly.GET(hmnurl.RegexRegister, RegisterNewUser)
 	hmnOnly.POST(hmnurl.RegexRegister, securityTimerMiddleware(email.ExpectedEmailSendDuration, RegisterNewUserSubmit))
@@ -104,7 +105,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexProjectNew, needsAuth(ProjectNew))
 	hmnOnly.POST(hmnurl.RegexProjectNew, needsAuth(csrfMiddleware(ProjectNewSubmit)))
 
-	hmnOnly.GET(hmnurl.RegexDiscordOAuthCallback, needsAuth(DiscordOAuthCallback))
+	hmnOnly.GET(hmnurl.RegexDiscordOAuthCallback, DiscordOAuthCallback)
 	hmnOnly.POST(hmnurl.RegexDiscordUnlink, needsAuth(csrfMiddleware(DiscordUnlink)))
 	hmnOnly.POST(hmnurl.RegexDiscordShowcaseBacklog, needsAuth(csrfMiddleware(DiscordShowcaseBacklog)))
 

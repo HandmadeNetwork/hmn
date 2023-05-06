@@ -346,6 +346,7 @@ type User struct {
 	Avatar        *string `json:"avatar"`
 	IsBot         bool    `json:"bot"`
 	Locale        string  `json:"locale"`
+	Email         string  `json:"email"`
 }
 
 func UserFromMap(m interface{}, k string) *User {
@@ -387,8 +388,9 @@ func GuildFromMap(m interface{}, k string) *Guild {
 
 // https://discord.com/developers/docs/resources/guild#guild-member-object
 type GuildMember struct {
-	User *User   `json:"user"`
-	Nick *string `json:"nick"`
+	User   *User   `json:"user"`
+	Nick   *string `json:"nick"`
+	Avatar *string `json:"avatar"`
 	// more fields not yet handled here
 }
 
@@ -409,8 +411,9 @@ func GuildMemberFromMap(m interface{}, k string) *GuildMember {
 	}
 
 	gm := &GuildMember{
-		User: UserFromMap(m, "user"),
-		Nick: maybeStringP(mmap, "nick"),
+		User:   UserFromMap(m, "user"),
+		Nick:   maybeStringP(mmap, "nick"),
+		Avatar: maybeStringP(mmap, "avatar"),
 	}
 
 	return gm

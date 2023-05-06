@@ -43,7 +43,7 @@ var WebsiteCommand = &cobra.Command{
 		}
 
 		backgroundJobsDone := jobs.Zip(
-			auth.PeriodicallyDeleteExpiredSessions(backgroundJobContext, conn),
+			auth.PeriodicallyDeleteExpiredStuff(backgroundJobContext, conn),
 			auth.PeriodicallyDeleteInactiveUsers(backgroundJobContext, conn),
 			perfCollector.Job,
 			discord.RunDiscordBot(backgroundJobContext, conn),

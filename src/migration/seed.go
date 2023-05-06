@@ -189,7 +189,7 @@ func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.
 			$6, $7, $8, $9,
 			TRUE,
 			$10,
-			'2017-01-01T00:00:00Z', '192.168.2.1', null
+			'2017-01-01T00:00:00Z', '192.168.2.1', NULL
 		)
 		RETURNING $columns
 		`,

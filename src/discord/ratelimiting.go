@@ -110,7 +110,7 @@ func createLimiter(headers rateLimitHeaders, routeName string) {
 
 	buckets.Store(routeName, headers.Bucket)
 	ilimiter, loaded := rateLimiters.LoadOrStore(headers.Bucket, &restRateLimiter{
-		requests: make(chan struct{}, 100), // presumably this is big enough to handle bursts
+		requests: make(chan struct{}, 200), // presumably this is big enough to handle bursts
 		refills:  make(chan rateLimiterRefill),
 	})
 	if !loaded {
@@ -124,7 +124,9 @@ func createLimiter(headers rateLimitHeaders, routeName string) {
 			select {
 			case limiter.requests <- struct{}{}:
 			default:
-				log.Warn().Msg("rate limiting channel was too small; you should increase the default capacity")
+				log.Warn().
+					Int("remaining", headers.Remaining).
+					Msg("rate limiting channel was too small; you should increase the default capacity")
 				break prefillloop
 			}
 		}
@@ -158,7 +160,9 @@ func createLimiter(headers rateLimitHeaders, routeName string) {
 					select {
 					case limiter.requests <- struct{}{}:
 					default:
-						log.Warn().Msg("rate limiting channel was too small; you should increase the default capacity")
+						log.Warn().
+							Int("maxRequests", refill.maxRequests).
+							Msg("rate limiting channel was too small; you should increase the default capacity")
 						break refillloop
 					}
 				}

@@ -431,7 +431,7 @@ var discordDownloadClient = &http.Client{
 
 type DiscordResourceBadStatusCode error
 
-func downloadDiscordResource(ctx context.Context, url string) ([]byte, string, error) {
+func DownloadDiscordResource(ctx context.Context, url string) ([]byte, string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, "", oops.New(err, "failed to make Discord download request")
@@ -491,7 +491,7 @@ func saveAttachment(
 		height = *attachment.Height
 	}
 
-	content, _, err := downloadDiscordResource(ctx, attachment.Url)
+	content, _, err := DownloadDiscordResource(ctx, attachment.Url)
 	if err != nil {
 		return nil, oops.New(err, "failed to download Discord attachment")
 	}
@@ -561,7 +561,7 @@ func saveEmbed(
 	}
 
 	maybeSaveImageish := func(i EmbedImageish, contentTypeCheck func(string) bool) (*uuid.UUID, error) {
-		content, contentType, err := downloadDiscordResource(ctx, *i.Url)
+		content, contentType, err := DownloadDiscordResource(ctx, *i.Url)
 		if err != nil {
 			var statusError DiscordResourceBadStatusCode
 			if errors.As(err, &statusError) {
@@ -838,7 +838,8 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 }
 
 // TODO(asaf): I believe this will also match https://example.com?hello=1&whatever=5
-//             Probably need to add word boundaries.
+//
+//	Probably need to add word boundaries.
 var REDiscordTag = regexp.MustCompile(`&([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*)`)
 
 func getDiscordTags(content string) []string {

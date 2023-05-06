@@ -71,3 +71,9 @@ func (u *User) CanSeeUnpublishedEducationContent() bool {
 func (u *User) CanAuthorEducation() bool {
 	return u.IsStaff || u.EducationRole == EduRoleAuthor
 }
+
+type PendingLogin struct {
+	ID             string    `db:"id"`
+	ExpiresAt      time.Time `db:"expires_at"`
+	DestinationUrl string    `db:"destination_url"`
+}

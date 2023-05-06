@@ -652,11 +652,17 @@ func EditOriginalInteractionResponse(ctx context.Context, interactionToken strin
 	return &msg, nil
 }
 
-func GetAuthorizeUrl(state string) string {
+func GetAuthorizeUrl(state string, includeEmail bool) string {
+	scope := "identify"
+	if includeEmail {
+		scope = "identify email"
+	}
+
 	params := make(url.Values)
 	params.Set("response_type", "code")
 	params.Set("client_id", config.Config.Discord.OAuthClientID)
-	params.Set("scope", "identify")
+	params.Set("scope", scope)
+	params.Set("prompt", "none") // immediately redirect back to HMN if already authorized
 	params.Set("state", state)
 	params.Set("redirect_uri", hmnurl.BuildDiscordOAuthCallback())
 	return fmt.Sprintf("%s?%s", buildUrl("/oauth2/authorize"), params.Encode())

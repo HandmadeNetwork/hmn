@@ -11,6 +11,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/discord"
 	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
@@ -23,9 +24,10 @@ var UsernameRegex = regexp.MustCompile(`^[0-9a-zA-Z][\w-]{2,29}$`)
 
 type LoginPageData struct {
 	templates.BaseData
-	RedirectUrl       string
-	RegisterUrl       string
-	ForgotPasswordUrl string
+	RedirectUrl         string
+	RegisterUrl         string
+	ForgotPasswordUrl   string
+	LoginWithDiscordUrl string
 }
 
 func LoginPage(c *RequestContext) ResponseData {
@@ -37,10 +39,11 @@ func LoginPage(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("auth_login.html", LoginPageData{
-		BaseData:          getBaseData(c, "Log in", nil),
-		RedirectUrl:       redirect,
-		RegisterUrl:       hmnurl.BuildRegister(redirect),
-		ForgotPasswordUrl: hmnurl.BuildRequestPasswordReset(),
+		BaseData:            getBaseData(c, "Log in", nil),
+		RedirectUrl:         redirect,
+		RegisterUrl:         hmnurl.BuildRegister(redirect),
+		ForgotPasswordUrl:   hmnurl.BuildRequestPasswordReset(),
+		LoginWithDiscordUrl: hmnurl.BuildLoginWithDiscord(redirect),
 	}, c.Perf)
 	return res
 }
@@ -118,6 +121,28 @@ func Login(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 	return res
+}
+
+func LoginWithDiscord(c *RequestContext) ResponseData {
+	destinationUrl := c.URL().Query().Get("redirect")
+	if c.CurrentUser != nil {
+		return c.Redirect(destinationUrl, http.StatusSeeOther)
+	}
+
+	pendingLogin, err := db.QueryOne[models.PendingLogin](c, c.Conn,
+		`
+		INSERT INTO pending_login (id, expires_at, destination_url)
+		VALUES ($1, $2, $3)
+		RETURNING $columns
+		`,
+		auth.MakeSessionId(), time.Now().Add(time.Minute*10), destinationUrl,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save pending login"))
+	}
+
+	discordAuthUrl := discord.GetAuthorizeUrl(pendingLogin.ID, true)
+	return c.Redirect(discordAuthUrl, http.StatusSeeOther)
 }
 
 func Logout(c *RequestContext) ResponseData {
@@ -460,7 +485,8 @@ func makeResponseForBadRegistrationTokenValidationResult(c *RequestContext, vali
 }
 
 // NOTE(asaf): PasswordReset refers specifically to "forgot your password" flow over email,
-//             not to changing your password through the user settings page.
+//
+//	not to changing your password through the user settings page.
 func RequestPasswordReset(c *RequestContext) ResponseData {
 	if c.CurrentUser != nil {
 		return c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
@@ -717,7 +743,11 @@ func tryLogin(c *RequestContext, user *models.User, password string) (bool, erro
 	defer c.Perf.EndBlock()
 	hashed, err := auth.ParsePasswordString(user.Password)
 	if err != nil {
-		return false, oops.New(err, "failed to parse password string")
+		if user.Password == "" {
+			return false, nil
+		} else {
+			return false, oops.New(err, "failed to parse password string")
+		}
 	}
 
 	passwordsMatch, err := auth.CheckPassword(password, hashed)
