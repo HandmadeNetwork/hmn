@@ -70,6 +70,10 @@ func TestLoginPage(t *testing.T) {
 	AssertRegexMatch(t, BuildLoginPage(""), RegexLoginPage, nil)
 }
 
+func TestLoginWithDiscord(t *testing.T) {
+	AssertRegexMatch(t, BuildLoginWithDiscord(""), RegexLoginWithDiscord, nil)
+}
+
 func TestLogoutAction(t *testing.T) {
 	AssertRegexMatch(t, BuildLogoutAction(""), RegexLogoutAction, nil)
 }
@@ -95,6 +99,9 @@ func TestPasswordReset(t *testing.T) {
 func TestStaticPages(t *testing.T) {
 	AssertRegexMatch(t, BuildManifesto(), RegexManifesto, nil)
 	AssertRegexMatch(t, BuildAbout(), RegexAbout, nil)
+	AssertRegexMatch(t, BuildFoundation(), RegexFoundation, nil)
+	AssertRegexMatch(t, BuildStaffRole("test"), RegexStaffRole, nil)
+	AssertRegexMatch(t, BuildStaffRolesIndex(), RegexStaffRolesIndex, nil)
 	AssertRegexMatch(t, BuildCommunicationGuidelines(), RegexCommunicationGuidelines, nil)
 	AssertRegexMatch(t, BuildContactPage(), RegexContactPage, nil)
 	AssertRegexMatch(t, BuildMonthlyUpdatePolicy(), RegexMonthlyUpdatePolicy, nil)
@@ -369,6 +376,10 @@ func TestS3Asset(t *testing.T) {
 	AssertRegexMatchFull(t, BuildS3Asset("hello"), RegexS3Asset, map[string]string{"key": "hello"})
 }
 
+func TestJamsIndex(t *testing.T) {
+	AssertRegexMatch(t, BuildJamsIndex(), RegexJamsIndex, nil)
+}
+
 func TestJamIndex(t *testing.T) {
 	AssertRegexMatch(t, BuildJamIndex(), RegexJamIndex, nil)
 	AssertSubdomain(t, BuildJamIndex(), "")
@@ -387,6 +398,21 @@ func TestJamIndex2022(t *testing.T) {
 func TestJamFeed2022(t *testing.T) {
 	AssertRegexMatch(t, BuildJamFeed2022(), RegexJamFeed2022, nil)
 	AssertSubdomain(t, BuildJamFeed2022(), "")
+}
+
+func TestJamIndex2023_Visibility(t *testing.T) {
+	AssertRegexMatch(t, BuildJamIndex2023_Visibility(), RegexJamIndex2023_Visibility, nil)
+	AssertSubdomain(t, BuildJamIndex2023_Visibility(), "")
+}
+
+func TestJamFeed2023_Visibility(t *testing.T) {
+	AssertRegexMatch(t, BuildJamFeed2023_Visibility(), RegexJamFeed2023_Visibility, nil)
+	AssertSubdomain(t, BuildJamFeed2023_Visibility(), "")
+}
+
+func TestJamRecap2023_Visibility(t *testing.T) {
+	AssertRegexMatch(t, BuildJamRecap2023_Visibility(), RegexJamRecap2023_Visibility, nil)
+	AssertSubdomain(t, BuildJamRecap2023_Visibility(), "")
 }
 
 func TestProjectNewJam(t *testing.T) {
