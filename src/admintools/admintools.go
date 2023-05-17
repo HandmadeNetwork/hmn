@@ -1,15 +1,20 @@
 package admintools
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
+	"os/exec"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/auth"
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/logging"
@@ -508,6 +513,75 @@ func init() {
 		},
 	}
 	adminCommand.AddCommand(fixupSnippetAssociation)
+
+	extractImage := &cobra.Command{
+		Use:   "extractimage [source] [dest]",
+		Short: "Tests ffmpeg for extracting image from video",
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx := context.Background()
+			if len(args) < 2 {
+				fmt.Printf("You must provide input and output files.\n")
+				cmd.Usage()
+				os.Exit(1)
+			}
+			inFile := args[0]
+			outFile := args[1]
+
+			inBytes, err := ioutil.ReadFile(inFile)
+			if err != nil {
+				fmt.Printf("Error while reading input: %v\n", err)
+				os.Exit(1)
+			}
+
+			fmt.Printf("%v\n", len(inBytes))
+			file, err := os.CreateTemp("", "hmnasset")
+			if err != nil {
+				fmt.Printf("%v", err)
+			}
+			defer os.Remove(file.Name())
+			_, err = file.Write(inBytes)
+			if err != nil {
+				fmt.Printf("%v", err)
+			}
+			err = file.Close()
+			if err != nil {
+				fmt.Printf("%v", err)
+			}
+
+			inputArg := fmt.Sprintf("-i %s -filter_complex [0]select=gte(n\\,1)[s0] -map [s0] -f image2 -vcodec png -vframes 1 pipe:1", file.Name())
+			ffmpegCmd := exec.CommandContext(ctx, config.Config.PreviewGeneration.FFMpegPath, strings.Split(inputArg, " ")...)
+			fmt.Printf("\n%s\n", ffmpegCmd.String())
+
+			var output bytes.Buffer
+			var errorOut bytes.Buffer
+			ffmpegCmd.Stdout = &output
+			ffmpegCmd.Stderr = &errorOut
+			err = ffmpegCmd.Run()
+			if err != nil {
+				fmt.Printf("%v", err)
+			}
+
+			if len(errorOut.Bytes()) > 0 {
+				fmt.Printf("FFMpeg error:\n%s\n", string(errorOut.Bytes()))
+			}
+
+			out, err := os.Create(outFile)
+			if err != nil {
+				fmt.Printf("Error opening output file: %v\n", err)
+				os.Exit(1)
+			}
+			_, err = out.Write(output.Bytes())
+			if err != nil {
+				fmt.Printf("Error writing output: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Printf("%v", len(output.Bytes()))
+			out.Close()
+
+			fmt.Printf("Done!\n")
+		},
+	}
+	adminCommand.AddCommand(extractImage)
 
 	addProjectCommands(adminCommand)
 }

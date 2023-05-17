@@ -298,6 +298,16 @@ SCRIPT
     savecheckpoint 110
 fi
 
+# Install ffmpeg and cpulimit
+if [ $checkpoint -lt 120 ]; then    
+    apt update
+    apt install -y \
+        ffmpeg \
+        cpulimit
+
+    savecheckpoint 120
+fi
+
 cat <<HELP
 Everything has been successfully installed!
 

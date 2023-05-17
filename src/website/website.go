@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
@@ -50,6 +51,7 @@ var WebsiteCommand = &cobra.Command{
 			discord.RunHistoryWatcher(backgroundJobContext, conn),
 			twitch.MonitorTwitchSubscriptions(backgroundJobContext, conn),
 			hmns3.StartServer(backgroundJobContext),
+			assets.BackgroundPreviewGeneration(backgroundJobContext, conn),
 		)
 
 		signals := make(chan os.Signal, 1)

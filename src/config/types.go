@@ -16,20 +16,21 @@ const (
 )
 
 type HMNConfig struct {
-	Env          Environment
-	Addr         string
-	PrivateAddr  string
-	BaseUrl      string
-	LogLevel     zerolog.Level
-	Postgres     PostgresConfig
-	Auth         AuthConfig
-	Admin        AdminConfig
-	Email        EmailConfig
-	DigitalOcean DigitalOceanConfig
-	Discord      DiscordConfig
-	Twitch       TwitchConfig
-	EpisodeGuide EpisodeGuide
-	DevConfig    DevConfig
+	Env               Environment
+	Addr              string
+	PrivateAddr       string
+	BaseUrl           string
+	LogLevel          zerolog.Level
+	Postgres          PostgresConfig
+	Auth              AuthConfig
+	Admin             AdminConfig
+	Email             EmailConfig
+	DigitalOcean      DigitalOceanConfig
+	Discord           DiscordConfig
+	Twitch            TwitchConfig
+	EpisodeGuide      EpisodeGuide
+	DevConfig         DevConfig
+	PreviewGeneration PreviewGenerationConfig
 }
 
 type PostgresConfig struct {
@@ -104,6 +105,11 @@ type AdminConfig struct {
 
 type DevConfig struct {
 	LiveTemplates bool // load templates live from the filesystem instead of embedding them
+}
+
+type PreviewGenerationConfig struct {
+	FFMpegPath   string
+	CPULimitPath string
 }
 
 func init() {
