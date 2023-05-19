@@ -135,8 +135,8 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 	if previewBytes, thumbWidth, thumbHeight, err := ExtractPreview(ctx, in.ContentType, in.Content); err != nil {
 		logging.Error().Err(err).Msg("Failed to generate preview for asset")
 	} else if len(previewBytes) > 0 {
-		keyStr := AssetKey(id.String(), fmt.Sprintf("%s_thumb.png", id.String()))
-		thumbnailType := "image/png"
+		keyStr := AssetKey(id.String(), fmt.Sprintf("%s_thumb.jpg", id.String()))
+		thumbnailType := "image/jpeg"
 		_, err = client.PutObject(ctx, &s3.PutObjectInput{
 			Bucket:      &config.Config.DigitalOcean.AssetsSpacesBucket,
 			Key:         &keyStr,
@@ -233,7 +233,7 @@ func ExtractPreview(ctx context.Context, mimeType string, inBytes []byte) ([]byt
 		return nil, 0, 0, oops.New(err, "Failed to close temp file for preview generation")
 	}
 
-	args := fmt.Sprintf("-i %s -filter_complex [0]select=gte(n\\,1)[s0] -map [s0] -f image2 -vcodec png -vframes 1 pipe:1", file.Name())
+	args := fmt.Sprintf("-i %s -filter_complex [0]select=gte(n\\,1)[s0] -map [s0] -c:v mjpeg -f mjpeg -vframes 1 pipe:1", file.Name())
 	if config.Config.PreviewGeneration.CPULimitPath != "" {
 		args = fmt.Sprintf("-l 10 -- %s %s", execPath, args)
 		execPath = config.Config.PreviewGeneration.CPULimitPath
@@ -254,6 +254,7 @@ func ExtractPreview(ctx context.Context, mimeType string, inBytes []byte) ([]byt
 	cfg, _, err := image.DecodeConfig(bytes.NewBuffer(imageBytes))
 	if err != nil {
 		log.Error().Err(err).Msg("failed to get width/height from video thumbnail")
+		return nil, 0, 0, oops.New(err, "FFMpeg failed for preview generation")
 	}
 
 	return imageBytes, cfg.Width, cfg.Height, nil
@@ -281,6 +282,7 @@ func BackgroundPreviewGeneration(ctx context.Context, conn *pgxpool.Pool) jobs.J
 				AND (
 					thumbnail_s3_key IS NULL
 					OR thumbnail_s3_key = ''
+					OR thumbnail_s3_key LIKE '%.png'
 					OR width = 0
 					OR height = 0
 				)
@@ -321,8 +323,8 @@ func BackgroundPreviewGeneration(ctx context.Context, conn *pgxpool.Pool) jobs.J
 				log.Error().Err(err).Msg("Failed to run extraction for preview generation")
 				continue
 			} else if len(thumbBytes) > 0 {
-				keyStr := AssetKey(asset.ID.String(), fmt.Sprintf("%s_thumb.png", asset.ID.String()))
-				thumbnailType := "image/png"
+				keyStr := AssetKey(asset.ID.String(), fmt.Sprintf("%s_thumb.jpg", asset.ID.String()))
+				thumbnailType := "image/jpeg"
 				_, err = client.PutObject(ctx, &s3.PutObjectInput{
 					Bucket:      &config.Config.DigitalOcean.AssetsSpacesBucket,
 					Key:         &keyStr,
