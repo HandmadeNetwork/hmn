@@ -52,19 +52,30 @@ function makeShowcaseItem(timelineItem) {
         break;
     case TimelineMediaTypes.VIDEO:
         addThumbnailFunc = () => {
-            const video = document.createElement('video');
-            video.src = timelineItem.asset_url; // TODO: Use image thumbnails
-            video.controls = false;
-            video.classList.add('h-100');
-            video.preload = 'metadata';
-            itemEl.thumbnail.appendChild(video);
+            let thumbEl;
+            if (timelineItem.thumbnail_url) {
+                thumbEl = document.createElement('img');
+                thumbEl.src = timelineItem.thumbnail_url;
+            } else {
+                thumbEl = document.createElement('video');
+                thumbEl.src = timelineItem.asset_url;
+                thumbEl.controls = false;
+                thumbEl.preload = 'metadata';
+            }
+            thumbEl.classList.add('h-100');
+            itemEl.thumbnail.appendChild(thumbEl);
         };
 
         createModalContentFunc = () => {
             const modalVideo = document.createElement('video');
             modalVideo.src = timelineItem.asset_url;
+            if (timelineItem.thumbnail_url) {
+                modalVideo.poster = timelineItem.thumbnail_url;
+                modalVideo.preload = 'none';
+            } else {
+                modalVideo.preload = 'metadata';
+            }
             modalVideo.controls = true;
-            modalVideo.preload = 'metadata';
             modalVideo.classList.add('mw-100', 'mh-60vh');
             return modalVideo;
         };

@@ -158,14 +158,18 @@ func imageMediaItem(asset *models.Asset) templates.TimelineItemMedia {
 
 func videoMediaItem(asset *models.Asset) templates.TimelineItemMedia {
 	assetUrl := hmnurl.BuildS3Asset(asset.S3Key)
+	var thumbnailUrl string
+	if asset.ThumbnailS3Key != "" {
+		thumbnailUrl = hmnurl.BuildS3Asset(asset.ThumbnailS3Key)
+	}
 
 	return templates.TimelineItemMedia{
-		Type:     templates.TimelineItemMediaTypeVideo,
-		AssetUrl: assetUrl,
-		// TODO: Use image thumbnails
-		MimeType: asset.MimeType,
-		Width:    asset.Width,
-		Height:   asset.Height,
+		Type:         templates.TimelineItemMediaTypeVideo,
+		AssetUrl:     assetUrl,
+		ThumbnailUrl: thumbnailUrl,
+		MimeType:     asset.MimeType,
+		Width:        asset.Width,
+		Height:       asset.Height,
 	}
 }
 

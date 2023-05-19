@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"image"
 	"io"
 	"net/http"
 	"os"
@@ -129,8 +130,9 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 
 	var thumbnailKey *string
 
-	previewBytes, err := ExtractPreview(ctx, in.ContentType, in.Content)
-	if err != nil {
+	width := in.Width
+	height := in.Height
+	if previewBytes, thumbWidth, thumbHeight, err := ExtractPreview(ctx, in.ContentType, in.Content); err != nil {
 		logging.Error().Err(err).Msg("Failed to generate preview for asset")
 	} else if len(previewBytes) > 0 {
 		keyStr := AssetKey(id.String(), fmt.Sprintf("%s_thumb.png", id.String()))
@@ -146,6 +148,11 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 			logging.Error().Err(err).Msg("Failed to upload thumbnail for video")
 		} else {
 			thumbnailKey = &keyStr
+		}
+
+		if width == 0 || height == 0 {
+			width = thumbWidth
+			height = thumbHeight
 		}
 	}
 
@@ -163,8 +170,8 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 		len(in.Content),
 		in.ContentType,
 		checksum,
-		in.Width,
-		in.Height,
+		width,
+		height,
 		in.UploaderID,
 	)
 	if err != nil {
@@ -187,31 +194,46 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 	return asset, nil
 }
 
-func ExtractPreview(ctx context.Context, mimeType string, inBytes []byte) ([]byte, error) {
-	if config.Config.PreviewGeneration.FFMpegPath == "" {
-		return nil, nil
+func getFFMpegPath() string {
+	path := config.Config.PreviewGeneration.FFMpegPath
+	if path != "" {
+		return path
+	}
+	var err error
+	path, err = exec.LookPath("ffmpeg")
+	if err == nil {
+		return path
+	}
+	return ""
+}
+
+func ExtractPreview(ctx context.Context, mimeType string, inBytes []byte) ([]byte, int, int, error) {
+	log := logging.ExtractLogger(ctx)
+
+	execPath := getFFMpegPath()
+	if execPath == "" {
+		return nil, 0, 0, nil
 	}
 
 	if !strings.HasPrefix(mimeType, "video") {
-		return nil, nil
+		return nil, 0, 0, nil
 	}
 
 	file, err := os.CreateTemp("", "hmnasset")
 	if err != nil {
-		return nil, oops.New(err, "Failed to create temp file for preview generation")
+		return nil, 0, 0, oops.New(err, "Failed to create temp file for preview generation")
 	}
 	defer os.Remove(file.Name())
 	_, err = file.Write(inBytes)
 	if err != nil {
-		return nil, oops.New(err, "Failed to write to temp file for preview generation")
+		return nil, 0, 0, oops.New(err, "Failed to write to temp file for preview generation")
 	}
 	err = file.Close()
 	if err != nil {
-		return nil, oops.New(err, "Failed to close temp file for preview generation")
+		return nil, 0, 0, oops.New(err, "Failed to close temp file for preview generation")
 	}
 
 	args := fmt.Sprintf("-i %s -filter_complex [0]select=gte(n\\,1)[s0] -map [s0] -f image2 -vcodec png -vframes 1 pipe:1", file.Name())
-	execPath := config.Config.PreviewGeneration.FFMpegPath
 	if config.Config.PreviewGeneration.CPULimitPath != "" {
 		args = fmt.Sprintf("-l 10 -- %s %s", execPath, args)
 		execPath = config.Config.PreviewGeneration.CPULimitPath
@@ -224,11 +246,17 @@ func ExtractPreview(ctx context.Context, mimeType string, inBytes []byte) ([]byt
 	ffmpegCmd.Stderr = &errorOut
 	err = ffmpegCmd.Run()
 	if err != nil {
-		logging.Error().Str("ffmpeg output", string(errorOut.Bytes())).Msg("FFMpeg returned error while generating preview thumbnail")
-		return nil, oops.New(err, "FFMpeg failed for preview generation")
+		log.Error().Str("ffmpeg output", errorOut.String()).Msg("FFMpeg returned error while generating preview thumbnail")
+		return nil, 0, 0, oops.New(err, "FFMpeg failed for preview generation")
 	}
 
-	return output.Bytes(), nil
+	imageBytes := output.Bytes()
+	cfg, _, err := image.DecodeConfig(bytes.NewBuffer(imageBytes))
+	if err != nil {
+		log.Error().Err(err).Msg("failed to get width/height from video thumbnail")
+	}
+
+	return imageBytes, cfg.Width, cfg.Height, nil
 }
 
 func BackgroundPreviewGeneration(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
@@ -238,11 +266,24 @@ func BackgroundPreviewGeneration(ctx context.Context, conn *pgxpool.Pool) jobs.J
 	go func() {
 		defer job.Done()
 		log.Debug().Msg("Starting preview gen job")
+
+		if getFFMpegPath() == "" {
+			log.Warn().Msg("Couldn't find ffmpeg! No thumbnails will be generated.")
+			return
+		}
+
 		assets, err := db.Query[models.Asset](ctx, conn,
 			`
 			SELECT $columns
 			FROM asset
-			WHERE mime_type LIKE 'video%' AND (thumbnail_s3_key IS NULL OR thumbnail_s3_key = '')
+			WHERE
+				mime_type LIKE 'video%'
+				AND (
+					thumbnail_s3_key IS NULL
+					OR thumbnail_s3_key = ''
+					OR width = 0
+					OR height = 0
+				)
 			`,
 		)
 		if err != nil {
@@ -258,7 +299,11 @@ func BackgroundPreviewGeneration(ctx context.Context, conn *pgxpool.Pool) jobs.J
 				return
 			default:
 			}
-			log.Debug().Str("AssetID", asset.ID.String()).Msg("Generating preview")
+
+			log := log.With().Str("AssetID", asset.ID.String()).Logger()
+			ctx := logging.AttachLoggerToContext(&log, ctx)
+
+			log.Debug().Msg("Generating preview")
 			assetUrl := hmnurl.BuildS3Asset(asset.S3Key)
 			resp, err := http.Get(assetUrl)
 			if err != nil || resp.StatusCode != 200 {
@@ -271,7 +316,7 @@ func BackgroundPreviewGeneration(ctx context.Context, conn *pgxpool.Pool) jobs.J
 				log.Error().Err(err).Msg("Failed to read asset body for preview generation")
 				continue
 			}
-			thumbBytes, err := ExtractPreview(ctx, asset.MimeType, body)
+			thumbBytes, width, height, err := ExtractPreview(ctx, asset.MimeType, body)
 			if err != nil {
 				log.Error().Err(err).Msg("Failed to run extraction for preview generation")
 				continue
@@ -293,17 +338,24 @@ func BackgroundPreviewGeneration(ctx context.Context, conn *pgxpool.Pool) jobs.J
 				_, err = conn.Exec(ctx,
 					`
 					UPDATE asset
-					SET thumbnail_s3_key = $1
-					WHERE asset.id = $2
+					SET
+						thumbnail_s3_key = $1,
+						width = $2,
+						height = $3
+					WHERE asset.id = $4
 					`,
 					keyStr,
+					width,
+					height,
 					asset.ID,
 				)
 				if err != nil {
 					log.Error().Err(err).Msg("Failed to update asset for preview generation")
 					continue
 				}
-				log.Debug().Str("AssetID", asset.ID.String()).Msg("Generated preview successfully!")
+				log.Debug().Msg("Generated preview successfully!")
+			} else {
+				log.Debug().Msg("No error, but no thumbnail was generated, skipping")
 			}
 		}
 		log.Debug().Msg("No more previews to generate")
