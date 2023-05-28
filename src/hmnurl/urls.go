@@ -105,6 +105,13 @@ func BuildJamFeed2022() string {
 	return Url("/jam/2022/feed", nil)
 }
 
+var RegexTimeMachine = regexp.MustCompile("^/time-machine$")
+
+func BuildTimeMachine() string {
+	defer CatchPanic()
+	return Url("/time-machine", nil)
+}
+
 // QUESTION(ben): Can we change these routes?
 
 var RegexLoginAction = regexp.MustCompile("^/login$")

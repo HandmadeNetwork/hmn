@@ -87,3 +87,9 @@ func Conferences(c *RequestContext) ResponseData {
 	res.MustWriteTemplate("conferences.html", getBaseDataAutocrumb(c, "Conferences"), c.Perf)
 	return res
 }
+
+func TimeMachine(c *RequestContext) ResponseData {
+	var res ResponseData
+	res.MustWriteTemplate("time-machine.html", getBaseDataAutocrumb(c, "Time Machine"), c.Perf)
+	return res
+}
