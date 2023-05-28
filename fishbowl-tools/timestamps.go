@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
+	"time"
 )
 
 func main() {
 	if len(os.Args) != 3 {
-		fmt.Println("Usage: go run timestamps.go [fishbowl].html [fishbowl]-timestamped.html")
+		fmt.Println("Usage: go run timestamps.go <fishbowl>.html <fishbowl>-timestamped.html")
 		os.Exit(1)
 	}
 
@@ -22,17 +24,19 @@ func main() {
 
 	html := string(htmlBytes)
 
-	regex, err := regexp.Compile(
-		"(<span class=\"chatlog__timestamp\">)(\\d+)-([A-Za-z]+)-(\\d+)( [^<]+</span>)",
+	regex := regexp.MustCompile(
+		`(<span class="?chatlog__timestamp"?><a href=[^>]+>)(\d+)/(\d+)/(\d+)( [^<]+</a></span>)`,
 	)
-	if err != nil {
-		panic(err)
-	}
 
-	htmlOut := regex.ReplaceAllString(
-		html,
-		"$1$3 $2, 20$4$5",
-	)
+	htmlOut := regex.ReplaceAllStringFunc(html, func(s string) string {
+		match := regex.FindStringSubmatch(s)
+		month, err := strconv.ParseInt(match[2], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		monthStr := time.Month(month).String()
+		return fmt.Sprintf("%s%s %s, %s%s", match[1], monthStr, match[3], match[4], match[5])
+	})
 
 	err = os.WriteFile(htmlOutPath, []byte(htmlOut), 0666)
 	if err != nil {

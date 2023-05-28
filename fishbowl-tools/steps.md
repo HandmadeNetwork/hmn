@@ -1,4 +1,4 @@
-- [ ]  Export with [DiscordChatExporter](https://github.com/Tyrrrz/DiscordChatExporter) CLI 2.34
+- [ ]  Export with [DiscordChatExporter](https://github.com/Tyrrrz/DiscordChatExporter) CLI 2.39.1
     
     ```
     DiscordChatExporter.Cli.exe export -c [thread-id] -t [token] -o [fishbowl].html --media
@@ -49,7 +49,7 @@
     go run twemoji.go [fishbowl]-dragged.html files [fishbowl]-twemojied.html
     ```
     
-- [ ]  Fix timestamps
+- [ ]  Fix timestamps, validate they look correct
     
     ```
     go run timestamps.go [fishbowl]-twemojied.html [fishbowl]-timestamped.html
@@ -59,7 +59,7 @@
 - [ ]  Create fishbowl folder under `hmn/src/templates/src/fishbowls/`
 - [ ]  Copy timestamped html and files, rename html
 - [ ]  Remove everything from html but chatlog
-- [ ]  Remove js, css and whitney from files
+- [ ]  Remove js, css and ggsans from files
 - [ ]  Add content path to `fishbowl.go`
 - [ ]  Test locally
 - [ ]  Submit a pull request
