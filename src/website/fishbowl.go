@@ -121,8 +121,8 @@ var fishbowls = [...]fishbowlInfo{
 	},
 	{
 		Slug:        "testing",
-		Title:       "TODO(Chief Creative Juices Officer)",
-		Description: "TODO(Chief Creative Juices Officer)",
+		Title:       "What even is testing?",
+		Description: "Everybody knows testing is important, but the software industry is overrun by terrible testing practices. Because of this, there has often been a negative sentiment against testing in the Handmade community. This fishbowl explores the kinds of testing the community has found most effective, the costs of testing, and the actual purpose behind testing techniques.",
 		Month:       time.May, Year: 2023,
 		ContentsPath: "testing/testing.html",
 	},
