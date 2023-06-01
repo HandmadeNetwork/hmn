@@ -105,11 +105,11 @@ func BuildJamFeed2022() string {
 	return Url("/jam/2022/feed", nil)
 }
 
-var RegexTimeMachine = regexp.MustCompile("^/time-machine$")
+var RegexTimeMachine = regexp.MustCompile("^/timemachine$")
 
 func BuildTimeMachine() string {
 	defer CatchPanic()
-	return Url("/time-machine", nil)
+	return Url("/timemachine", nil)
 }
 
 // QUESTION(ben): Can we change these routes?
