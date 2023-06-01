@@ -2,9 +2,12 @@ package templates
 
 import (
 	"embed"
+	"encoding/base64"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -105,8 +108,24 @@ func names(ts []*template.Template) []string {
 	return result
 }
 
-//go:embed svg/*
-var SVGs embed.FS
+//go:embed img/*
+var Imgs embed.FS
+
+func GetImg(filepath string) []byte {
+	var imgs fs.FS
+	if config.Config.DevConfig.LiveTemplates {
+		imgs = utils.DirFS("src/templates/img")
+	} else {
+		imgs = Imgs
+	}
+
+	img, err := imgs.Open(filepath)
+	if err != nil {
+		panic(err)
+	}
+
+	return utils.Must1(io.ReadAll(img))
+}
 
 var controlCharRegex = regexp.MustCompile(`\p{Cc}`)
 
@@ -200,7 +219,7 @@ var HMNTemplateFuncs = template.FuncMap{
 		}
 	},
 	"svg": func(name string) template.HTML {
-		contents, err := SVGs.ReadFile(fmt.Sprintf("svg/%s.svg", name))
+		contents, err := Imgs.ReadFile(fmt.Sprintf("img/%s.svg", name))
 		if err != nil {
 			panic("SVG not found: " + name)
 		}
@@ -217,6 +236,12 @@ var HMNTemplateFuncs = template.FuncMap{
 	},
 	"staticthemenobust": func(theme string, filepath string) string {
 		return hmnurl.BuildTheme(filepath, theme, false)
+	},
+	"dataimg": func(filepath string) template.URL {
+		contents := GetImg(filepath)
+		mime := http.DetectContentType(contents)
+		contentsBase64 := base64.StdEncoding.EncodeToString(contents)
+		return template.URL(fmt.Sprintf("data:%s;base64,%s", mime, contentsBase64))
 	},
 	"string2uuid": func(s string) string {
 		return uuid.NewSHA1(uuid.NameSpaceURL, []byte(s)).URN()
