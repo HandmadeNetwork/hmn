@@ -68,6 +68,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexJamRecap2023_Visibility, JamRecap2023_Visibility)
 
 	hmnOnly.GET(hmnurl.RegexTimeMachine, TimeMachine)
+	hmnOnly.GET(hmnurl.RegexTimeMachineForm, needsAuth(TimeMachineForm))
+	hmnOnly.GET(hmnurl.RegexTimeMachineFormDone, needsAuth(TimeMachineFormDone))
+	hmnOnly.POST(hmnurl.RegexTimeMachineForm, needsAuth(csrfMiddleware(TimeMachineFormSubmit)))
 
 	hmnOnly.GET(hmnurl.RegexStaffRolesIndex, StaffRolesIndex)
 	hmnOnly.GET(hmnurl.RegexStaffRole, StaffRole)

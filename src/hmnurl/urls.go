@@ -112,6 +112,20 @@ func BuildTimeMachine() string {
 	return Url("/timemachine", nil)
 }
 
+var RegexTimeMachineForm = regexp.MustCompile("^/timemachine/submit$")
+
+func BuildTimeMachineForm() string {
+	defer CatchPanic()
+	return Url("/timemachine/submit", nil)
+}
+
+var RegexTimeMachineFormDone = regexp.MustCompile("^/timemachine/thanks$")
+
+func BuildTimeMachineFormDone() string {
+	defer CatchPanic()
+	return Url("/timemachine/thanks", nil)
+}
+
 // QUESTION(ben): Can we change these routes?
 
 var RegexLoginAction = regexp.MustCompile("^/login$")
