@@ -55,6 +55,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
 	hmnOnly.GET(hmnurl.RegexConferences, Conferences)
 	hmnOnly.GET(hmnurl.RegexWhenIsIt, WhenIsIt)
+	hmnOnly.GET(hmnurl.RegexNewsletterSignup, func(c *RequestContext) ResponseData {
+		return c.Redirect("https://cdn.forms-content.sg-form.com/9c83182a-f04a-11ed-a42d-f6f307313b7c", http.StatusFound)
+	})
 
 	hmnOnly.GET(hmnurl.RegexJamsIndex, JamsIndex)
 	hmnOnly.GET(hmnurl.RegexJamIndex, func(c *RequestContext) ResponseData {
