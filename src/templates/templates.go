@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -111,15 +112,16 @@ func names(ts []*template.Template) []string {
 //go:embed img/*
 var Imgs embed.FS
 
-func GetImg(filepath string) []byte {
+func GetImg(file string) []byte {
 	var imgs fs.FS
 	if config.Config.DevConfig.LiveTemplates {
 		imgs = utils.DirFS("src/templates/img")
 	} else {
 		imgs = Imgs
+		file = filepath.Join("img/", file)
 	}
 
-	img, err := imgs.Open(filepath)
+	img, err := imgs.Open(file)
 	if err != nil {
 		panic(err)
 	}
