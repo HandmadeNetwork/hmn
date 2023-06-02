@@ -1,0 +1,106 @@
+{{ template "timemachine_base.html" . }}
+
+{{ define "frame title" }}
+  <div class="title">
+    {{ . }}
+    <img class="frame-close" src="{{ dataimg "timemachine/win95-close.gif" }}">
+  </div>
+{{ end }}
+
+{{ define "content" }}
+<div class="center-layout content mw7 ph3 flex flex-column g3">
+  <div class="frame mv3 mv4-ns mw6 margin-center">
+    {{ template "frame title" "Submit A Video" }}
+    <form class="post-content" action="" method="POST">
+      {{ csrftoken .Session }}
+      <div class="post-content pa3">
+        <div class="flex flex-column g3">
+          <div class="flex g3">
+            <div class="flex-shrink-0">
+              <img class="pixelated" src="{{ dataimg "timemachine/win95-media.png" }}">
+            </div>
+            <div class="flex flex-column flex-grow-1 g1">
+              <strong>Video URL</strong>
+              <input
+                class="win95-input"
+                type="url"
+                name="media_url"
+                required
+              >
+              <div class="f7 less-spacing">
+                <p>
+                  Take video of yourself using an old device. The video should:
+                </p>
+                <ul>
+                  <li>Show the entire device so viewers have necessary context</li>
+                  <li>Clearly show the contents of the device's screen</li>
+                  <li>Have minimal editing, no commentary, and clear sound</li>
+                </ul>
+                <p>
+                  Upload the video somewhere publicly accessible, then share the link here. We can download videos from file-sharing services or any video service supported by youtube-dl.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="flex g3">
+            <div class="flex-shrink-0">
+              <img class="pixelated" src="{{ dataimg "timemachine/win95-checklist.png" }}">
+            </div>
+            <div class="flex flex-column flex-grow-1 g1">
+              <strong>Device Info</strong>
+              <textarea class="win95-input h4" name="device_info" required></textarea>
+              <div class="f7 less-spacing">
+                <p>
+                  Include specific info about the device such as its model number, release year, CPU speed, amount of memory, etc.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="flex g3">
+            <div class="flex-shrink-0">
+              <img class="pixelated" src="{{ dataimg "timemachine/win95-scroll.png" }}">
+            </div>
+            <div class="flex flex-column flex-grow-1 g1">
+              <strong>Description</strong>
+              <textarea class="win95-input h4" name="description" required></textarea>
+              <div class="f7 less-spacing">
+                <p>
+                  What's the story behind this device? When did you get it? What did you use it for? Is it in good shape? Is there anything interesting or notable about it?
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mt3 flex justify-end g3">
+          <button class="win95-btn" type="submit" value="Submit"><u>S</u>ubmit</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  let form = document.querySelector("form");
+  let mediaUrl = document.querySelector("[name=media_url]");
+  let deviceInfo = document.querySelector("[name=device_info]");
+  let description = document.querySelector("[name=description]");
+  let submitBtn = document.querySelector("[type=submit]");
+
+  function saveData() {
+    localStorage.setItem("tm_media_url", mediaUrl.value);
+    localStorage.setItem("tm_device_info", deviceInfo.value);
+    localStorage.setItem("tm_description", description.value);
+  }
+  form.addEventListener("submit", function() {
+    saveData();
+    submitBtn.disabled = true;
+  });
+
+  document.addEventListener("visibilitychange", function() {
+    saveData();
+  });
+
+  mediaUrl.value = localStorage.getItem("tm_media_url") ?? "";
+  deviceInfo.value = localStorage.getItem("tm_device_info") ?? "";
+  description.value = localStorage.getItem("tm_description") ?? "";
+</script>
+{{ end }}

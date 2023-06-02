@@ -91,6 +91,41 @@ func SendPasswordReset(toAddress string, toName string, username string, resetTo
 	return nil
 }
 
+type TimeMachineEmailData struct {
+	ProfileUrl      string
+	Username        string
+	UserEmail       string
+	DiscordUsername string
+	MediaUrl        string
+	DeviceInfo      string
+	Description     string
+}
+
+func SendTimeMachineEmail(profileUrl, username, userEmail, discordUsername, mediaUrl, deviceInfo, description string, perf *perf.RequestPerf) error {
+	perf.StartBlock("EMAIL", "Time machine email")
+	defer perf.EndBlock()
+
+	contents, err := renderTemplate("email_time_machine.html", TimeMachineEmailData{
+		ProfileUrl:      profileUrl,
+		Username:        username,
+		UserEmail:       userEmail,
+		DiscordUsername: discordUsername,
+		MediaUrl:        mediaUrl,
+		DeviceInfo:      deviceInfo,
+		Description:     description,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = sendMail("team@handmade.network", "HMN Team", "[time machine] New submission", contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+
+	return nil
+}
+
 var EmailRegex = regexp.MustCompile(`^[^:\p{Cc} ]+@[^:\p{Cc} ]+\.[^:\p{Cc} ]+$`)
 
 func IsEmail(address string) bool {
