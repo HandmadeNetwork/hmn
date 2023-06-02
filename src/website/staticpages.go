@@ -87,21 +87,3 @@ func Conferences(c *RequestContext) ResponseData {
 	res.MustWriteTemplate("conferences.html", getBaseDataAutocrumb(c, "Conferences"), c.Perf)
 	return res
 }
-
-func TimeMachine(c *RequestContext) ResponseData {
-	baseData := getBaseDataAutocrumb(c, "Time Machine")
-	baseData.OpenGraphItems = []templates.OpenGraphItem{
-		{Property: "og:title", Value: "Time Machine"},
-		{Property: "og:site_name", Value: "Handmade Network"},
-		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("timemachine/opengraph.png", true)},
-		{Property: "og:description", Value: "This summer, dig out your old devices and see what they were actually like to use."},
-		{Property: "og:url", Value: hmnurl.BuildTimeMachine()},
-		{Name: "twitter:card", Value: "summary_large_image"},
-		{Name: "twitter:image", Value: hmnurl.BuildPublic("timemachine/twittercard.png", true)},
-	}
-
-	var res ResponseData
-	res.MustWriteTemplate("time-machine.html", baseData, c.Perf)
-	return res
-}
