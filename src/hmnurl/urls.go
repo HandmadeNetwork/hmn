@@ -119,6 +119,13 @@ func BuildTimeMachine() string {
 	return Url("/timemachine", nil)
 }
 
+var RegexTimeMachineSubmissions = regexp.MustCompile("^/timemachine/submissions$")
+
+func BuildTimeMachineSubmissions() string {
+	defer CatchPanic()
+	return Url("/timemachine/submissions", nil)
+}
+
 var RegexTimeMachineForm = regexp.MustCompile("^/timemachine/submit$")
 
 func BuildTimeMachineForm() string {

@@ -415,6 +415,31 @@ func TestJamRecap2023_Visibility(t *testing.T) {
 	AssertSubdomain(t, BuildJamRecap2023_Visibility(), "")
 }
 
+func TestTimeMachine(t *testing.T) {
+	AssertRegexMatch(t, BuildTimeMachine(), RegexTimeMachine, nil)
+	AssertSubdomain(t, BuildTimeMachine(), "")
+}
+
+func TestTimeMachineSubmissions(t *testing.T) {
+	AssertRegexMatch(t, BuildTimeMachineSubmissions(), RegexTimeMachineSubmissions, nil)
+	AssertSubdomain(t, BuildTimeMachineSubmissions(), "")
+}
+
+func TestTimeMachineForm(t *testing.T) {
+	AssertRegexMatch(t, BuildTimeMachineForm(), RegexTimeMachineForm, nil)
+	AssertSubdomain(t, BuildTimeMachineForm(), "")
+}
+
+func TestTimeMachineFormDone(t *testing.T) {
+	AssertRegexMatch(t, BuildTimeMachineFormDone(), RegexTimeMachineFormDone, nil)
+	AssertSubdomain(t, BuildTimeMachineFormDone(), "")
+}
+
+func TestNewsletterSignup(t *testing.T) {
+	AssertRegexMatch(t, BuildNewsletterSignup(), RegexNewsletterSignup, nil)
+	AssertSubdomain(t, BuildNewsletterSignup(), "")
+}
+
 func TestProjectNewJam(t *testing.T) {
 	AssertRegexMatch(t, BuildProjectNewJam(), RegexProjectNew, nil)
 	AssertSubdomain(t, BuildProjectNewJam(), "")

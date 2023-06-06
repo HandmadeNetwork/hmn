@@ -1,6 +1,7 @@
 package website
 
 import (
+	"html/template"
 	"net/http"
 	"strings"
 
@@ -11,7 +12,46 @@ import (
 )
 
 func TimeMachine(c *RequestContext) ResponseData {
-	baseData := getBaseDataAutocrumb(c, "Time Machine")
+	baseData := getBaseData(c, "Time Machine", nil)
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:title", Value: "Time Machine"},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("timemachine/opengraph.png", true)},
+		{Property: "og:description", Value: "This summer, dig out your old devices and see what they were actually like to use."},
+		{Property: "og:url", Value: hmnurl.BuildTimeMachine()},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("timemachine/twittercard.png", true)},
+	}
+
+	featured := tmSubmissions[0]
+	featured.Title = "Latest Submission"
+
+	type TemplateData struct {
+		templates.BaseData
+		SubmitUrl          string
+		SubmissionsUrl     string
+		NumSubmissions     int
+		FeaturedSubmission TimeMachineSubmission
+	}
+	tmpl := TemplateData{
+		BaseData:           baseData,
+		SubmitUrl:          hmnurl.BuildTimeMachineForm(),
+		SubmissionsUrl:     hmnurl.BuildTimeMachineSubmissions(),
+		NumSubmissions:     len(tmSubmissions),
+		FeaturedSubmission: featured,
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("timemachine.html", tmpl, c.Perf)
+	return res
+}
+
+func TimeMachineSubmissions(c *RequestContext) ResponseData {
+	baseData := getBaseData(c, "Time Machine - Submissions", []templates.Breadcrumb{
+		{"Time Machine", hmnurl.BuildTimeMachine()},
+		{"Submissions", hmnurl.BuildTimeMachineSubmissions()},
+	})
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Time Machine"},
 		{Property: "og:site_name", Value: "Handmade Network"},
@@ -25,15 +65,19 @@ func TimeMachine(c *RequestContext) ResponseData {
 
 	type TemplateData struct {
 		templates.BaseData
-		SubmitUrl string
+		MainUrl     string
+		SubmitUrl   string
+		Submissions []TimeMachineSubmission
 	}
 	tmpl := TemplateData{
-		BaseData:  baseData,
-		SubmitUrl: hmnurl.BuildTimeMachineForm(),
+		BaseData:    baseData,
+		MainUrl:     hmnurl.BuildTimeMachine(),
+		SubmitUrl:   hmnurl.BuildTimeMachineForm(),
+		Submissions: tmSubmissions,
 	}
 
 	var res ResponseData
-	res.MustWriteTemplate("timemachine.html", tmpl, c.Perf)
+	res.MustWriteTemplate("timemachine_submissions.html", tmpl, c.Perf)
 	return res
 }
 
@@ -93,4 +137,54 @@ func TimeMachineFormDone(c *RequestContext) ResponseData {
 		c.Perf,
 	)
 	return res
+}
+
+type TimeMachineSubmission struct {
+	Title       string
+	Url         string
+	Thumbnail   string
+	Details     []TimeMachineSubmissionDetail
+	Description template.HTML
+}
+
+type TimeMachineSubmissionDetail struct {
+	Name    string
+	Content template.HTML
+}
+
+var tmSubmissions = []TimeMachineSubmission{
+	{
+		Title:     "2009 iPod Touch",
+		Url:       "https://youtu.be/2eBFk1yV6mE",
+		Thumbnail: "timemachine/ipodtouch-dither.gif",
+		Details: []TimeMachineSubmissionDetail{
+			{"Device", "iPod Touch 3rd gen, model MC008LL"},
+			{"Submitted by", "Ben Visness"},
+			{"Release year", "2009"},
+			{"Processor", "600MHz Samsung S5L8922, single-core"},
+			{"Memory", "256MB LPDDR2 @ 200 MHz"},
+			{"Operating system", "iOS 5"},
+		},
+		Description: `
+			<p>
+				This is the iPod Touch I got when I was 13. It was my first major
+				tech purchase and an early device in the iOS lineup. When I
+				purchased this I think it was running iOS 3; at this point it has
+				iOS 5. I was pleased to see that the battery still holds a charge
+				quite well, and it consistently runs at about 30 to 60 frames per
+				second.
+			</p>
+			<p>
+				In the video you can see several built-in apps. Media playback
+				still works great, and scrubbing around in songs is instantaneous.
+				App switching works well. The calculator launches instantly (as
+				you would hope). I was shocked to see that the old Google Maps app
+				still works - apparently they have kept their old tile-based map
+				servers online. It even gave me public transit directions.
+			</p>
+			<p>
+				Overall, I would say this device feels only a hair slower than my
+				current iPhone.
+			</p>`,
+	},
 }
