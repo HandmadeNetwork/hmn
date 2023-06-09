@@ -126,6 +126,18 @@ func BuildTimeMachineSubmissions() string {
 	return Url("/timemachine/submissions", nil)
 }
 
+func BuildTimeMachineSubmission(id int) string {
+	defer CatchPanic()
+	return UrlWithFragment("/timemachine/submissions", nil, strconv.Itoa(id))
+}
+
+var RegexTimeMachineAtomFeed = regexp.MustCompile("^/timemachine/submissions/atom$")
+
+func BuildTimeMachineAtomFeed() string {
+	defer CatchPanic()
+	return Url("/timemachine/submissions/atom", nil)
+}
+
 var RegexTimeMachineForm = regexp.MustCompile("^/timemachine/submit$")
 
 func BuildTimeMachineForm() string {

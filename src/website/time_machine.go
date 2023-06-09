@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 	"strings"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
@@ -67,12 +68,14 @@ func TimeMachineSubmissions(c *RequestContext) ResponseData {
 		templates.BaseData
 		MainUrl     string
 		SubmitUrl   string
+		AtomFeedUrl string
 		Submissions []TimeMachineSubmission
 	}
 	tmpl := TemplateData{
 		BaseData:    baseData,
 		MainUrl:     hmnurl.BuildTimeMachine(),
 		SubmitUrl:   hmnurl.BuildTimeMachineForm(),
+		AtomFeedUrl: hmnurl.BuildTimeMachineAtomFeed(),
 		Submissions: tmSubmissions,
 	}
 
@@ -139,10 +142,39 @@ func TimeMachineFormDone(c *RequestContext) ResponseData {
 	return res
 }
 
+func TimeMachineAtomFeed(c *RequestContext) ResponseData {
+	type TemplateData struct {
+		Updated        time.Time
+		TimeMachineUrl string
+		SubmissionsUrl string
+		AtomFeedUrl    string
+		LogoUrl        string
+		Submissions    []TimeMachineSubmission
+	}
+	tmpl := TemplateData{
+		Updated:        tmSubmissions[0].Date,
+		TimeMachineUrl: hmnurl.BuildTimeMachine(),
+		SubmissionsUrl: hmnurl.BuildTimeMachineSubmissions(),
+		AtomFeedUrl:    hmnurl.BuildTimeMachineAtomFeed(),
+		LogoUrl:        hmnurl.BuildPublic("timemachine/twittercard.png", true),
+		Submissions:    tmSubmissions,
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate(
+		"timemachine_atom.xml",
+		tmpl,
+		c.Perf,
+	)
+	return res
+}
+
 type TimeMachineSubmission struct {
+	Date        time.Time
 	Title       string
 	Url         string
 	Thumbnail   string
+	Permalink   string // generated for feed
 	Details     []TimeMachineSubmissionDetail
 	Description template.HTML
 }
@@ -154,6 +186,7 @@ type TimeMachineSubmissionDetail struct {
 
 var tmSubmissions = []TimeMachineSubmission{
 	{
+		Date:      time.Date(2023, 6, 6, 0, 0, 0, 0, time.UTC),
 		Title:     "2009 iPod Touch",
 		Url:       "https://youtu.be/2eBFk1yV6mE",
 		Thumbnail: "timemachine/ipodtouch-dither.gif",
@@ -187,4 +220,10 @@ var tmSubmissions = []TimeMachineSubmission{
 				current iPhone.
 			</p>`,
 	},
+}
+
+func init() {
+	for i := range tmSubmissions {
+		tmSubmissions[i].Permalink = hmnurl.BuildTimeMachineSubmission(len(tmSubmissions) - i)
+	}
 }

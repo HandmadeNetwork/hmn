@@ -422,7 +422,13 @@ func TestTimeMachine(t *testing.T) {
 
 func TestTimeMachineSubmissions(t *testing.T) {
 	AssertRegexMatch(t, BuildTimeMachineSubmissions(), RegexTimeMachineSubmissions, nil)
+	AssertRegexMatch(t, BuildTimeMachineSubmission(123), RegexTimeMachineSubmissions, nil)
 	AssertSubdomain(t, BuildTimeMachineSubmissions(), "")
+}
+
+func TestTimeMachineAtomFeed(t *testing.T) {
+	AssertRegexMatch(t, BuildTimeMachineAtomFeed(), RegexTimeMachineAtomFeed, nil)
+	AssertSubdomain(t, BuildTimeMachineAtomFeed(), "")
 }
 
 func TestTimeMachineForm(t *testing.T) {

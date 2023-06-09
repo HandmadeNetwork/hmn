@@ -255,6 +255,9 @@ var HMNTemplateFuncs = template.FuncMap{
 	"noescape": func(str string) template.HTML {
 		return template.HTML(str)
 	},
+	"yesescape": func(html template.HTML) string {
+		return string(html)
+	},
 	"filesize": func(numBytes int) string {
 		scales := []string{
 			" bytes",
