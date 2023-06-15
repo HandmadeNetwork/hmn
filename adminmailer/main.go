@@ -46,7 +46,7 @@ func sendMail(toAddress, toName, subject, contentHtml string) error {
 	)
 	return smtp.SendMail(
 		fmt.Sprintf("%s:%d", ServerAddress, ServerPort),
-		smtp.PlainAuth("", FromAddress, FromAddressPassword, ServerAddress),
+		smtp.PlainAuth("", ServerUsername, ServerPassword, ServerAddress),
 		FromAddress,
 		[]string{toAddress},
 		contents,
