@@ -27,6 +27,7 @@ func TimeMachine(c *RequestContext) ResponseData {
 
 	featured := tmSubmissions[0]
 	featured.Title = "Latest Submission"
+	featured.AllSubmissionsUrl = hmnurl.BuildTimeMachineSubmissions()
 
 	type TemplateData struct {
 		templates.BaseData
@@ -173,10 +174,17 @@ type TimeMachineSubmission struct {
 	Date        time.Time
 	Title       string
 	Url         string
-	Thumbnail   string
+	Thumbnail   TimeMachineThumbnail
 	Permalink   string // generated for feed
 	Details     []TimeMachineSubmissionDetail
 	Description template.HTML
+
+	AllSubmissionsUrl string
+}
+
+type TimeMachineThumbnail struct {
+	Filepath      string
+	Width, Height float32
 }
 
 type TimeMachineSubmissionDetail struct {
@@ -186,10 +194,41 @@ type TimeMachineSubmissionDetail struct {
 
 var tmSubmissions = []TimeMachineSubmission{
 	{
-		Date:      time.Date(2023, 6, 6, 0, 0, 0, 0, time.UTC),
-		Title:     "2009 iPod Touch",
-		Url:       "https://youtu.be/2eBFk1yV6mE",
-		Thumbnail: "timemachine/ipodtouch-dither.gif",
+		Date:  time.Date(2023, 6, 16, 0, 0, 0, 0, time.UTC),
+		Title: "1992 Intel Professional Workstation",
+		Url:   "https://www.youtube.com/watch?v=0uaINJAktLA&t=142s",
+		Thumbnail: TimeMachineThumbnail{
+			Filepath: "timemachine/thumbnails/2023-06-16-thumb.png",
+			Width:    300,
+			Height:   169,
+		},
+		Details: []TimeMachineSubmissionDetail{
+			{"Device", "Intel Professional Workstation"},
+			{"Submitted by", `<a href="https://www.youtube.com/@NCommander" target="_blank">NCommander</a>`},
+			{"Release year", "~1992"},
+			{"Procesor", "33Mhz 486DX"},
+			{"Memory", "Originally 8MiB"},
+			{"Architecture", "EISA"},
+			{"Operating system", "Shipped with Windows 3.x, OS/2, NetWare, or SCO UNIX"},
+		},
+		Description: `
+			<p>
+				This machine was originally used as a workstation at Rutgers University, where it was connected to a NetWare network and used as a fax server at some point. It's hard drive was replaced from one of the stock Maxtor drives to a DEC harddrive that appears to have been pulled out of a VAX.
+			</p>
+			<p>
+				It then made its way to an observatory out on Long Island, and was then used to process radio telemetry data as well as light web surfing throughout the 90s before being retired. It was powered on in 2004 and 2005. I did a multipart series on this machine on YT starting here: <a href="https://www.youtube.com/watch?v=fK7QMAX0BmQ" target="_blank">https://www.youtube.com/watch?v=fK7QMAX0BmQ</a>
+			</p>
+		`,
+	},
+	{
+		Date:  time.Date(2023, 6, 6, 0, 0, 0, 0, time.UTC),
+		Title: "2009 iPod Touch",
+		Url:   "https://youtu.be/2eBFk1yV6mE",
+		Thumbnail: TimeMachineThumbnail{
+			Filepath: "timemachine/thumbnails/2023-06-06-thumb.gif",
+			Width:    298,
+			Height:   166,
+		},
 		Details: []TimeMachineSubmissionDetail{
 			{"Device", "iPod Touch 3rd gen, model MC008LL"},
 			{"Submitted by", "Ben Visness"},
