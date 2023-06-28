@@ -20,16 +20,21 @@
               <img class="pixelated" src="{{ dataimg "timemachine/win95-media.png" }}">
             </div>
             <div class="flex flex-column flex-grow-1 g1">
-              <strong>Video URL</strong>
-              <input
-                class="win95-input"
-                type="url"
-                name="media_url"
-                required
-              >
+              <strong>Video URLs</strong>
+              <div id="media-inputs" class="flex flex-column g1">
+                <input
+                  class="win95-input"
+                  type="url"
+                  name="media_url"
+                  required
+                >
+              </div>
+              <div class="f7">
+                <a href="javascript:anotherVideo()">+ Add video</a>
+              </div>
               <div class="f7 less-spacing">
                 <p>
-                  Take video of yourself using an old device. The video should:
+                  Take videos of yourself using an old device. The videos should:
                 </p>
                 <ul>
                   <li>Show the entire device</li>
@@ -37,9 +42,14 @@
                   <li>Have minimal editing and clear sound</li>
                 </ul>
                 <p>
-                  Upload the video somewhere publicly accessible, then share the link here. We can download videos from file-sharing services or any video service supported by youtube-dl. <a href="javascript:terms()">See licensing terms.</a>
+                  Upload the videos somewhere publicly accessible, then share the link here. We can download videos from file-sharing services or any video service supported by youtube-dl. <a href="javascript:terms()">See licensing terms.</a>
+                </p>
+                <p>
+                  If you have a comparable modern device, feel free to submit video of that as well!
                 </p>
                 <div id="terms" class="dn">
+                  <div></div> <!-- now the hr is not the :first-child -->
+                  <hr>
                   <p>By submitting this form, you are granting us permission to:</p>
                   <ul>
                     <li>Download copies of any submitted videos</li>
@@ -88,13 +98,17 @@
 </div>
 <script>
   let form = document.querySelector("form");
-  let mediaUrl = document.querySelector("[name=media_url]");
   let deviceInfo = document.querySelector("[name=device_info]");
   let description = document.querySelector("[name=description]");
   let submitBtn = document.querySelector("[type=submit]");
 
+  function mediaUrls() {
+    return document.querySelectorAll("[name=media_url]");
+  }
+
   function saveData() {
-    localStorage.setItem("tm_media_url", mediaUrl.value);
+    const urls = Array.from(mediaUrls()).map(i => i.value);
+    localStorage.setItem("tm_media_url", JSON.stringify(urls));
     localStorage.setItem("tm_device_info", deviceInfo.value);
     localStorage.setItem("tm_description", description.value);
   }
@@ -107,12 +121,34 @@
     saveData();
   });
 
-  mediaUrl.value = localStorage.getItem("tm_media_url") ?? "";
+  const urlsStr = localStorage.getItem("tm_media_url") ?? "";
+  let urls = [];
+  if (urlsStr[0] === "[") {
+    urls = JSON.parse(urlsStr);
+  } else if (urlsStr) {
+    urls = [urlsStr];
+  }
+
+  for (let i = 1; i < urls.length; i++) {
+    anotherVideo();
+  }
+  for (const [i, input] of mediaUrls().entries()) {
+    input.value = urls[i] ?? "";
+  }
+
   deviceInfo.value = localStorage.getItem("tm_device_info") ?? "";
   description.value = localStorage.getItem("tm_description") ?? "";
 
   function terms() {
     document.querySelector("#terms").classList.toggle("dn");
+  }
+
+  function anotherVideo() {
+    const input = document.createElement("input");
+    input.classList.add("win95-input");
+    input.type = "url";
+    input.name = "media_url";
+    document.querySelector("#media-inputs").appendChild(input);
   }
 </script>
 {{ end }}

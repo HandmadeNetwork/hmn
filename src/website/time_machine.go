@@ -98,9 +98,13 @@ func TimeMachineForm(c *RequestContext) ResponseData {
 func TimeMachineFormSubmit(c *RequestContext) ResponseData {
 	c.Req.ParseForm()
 
-	mediaUrl := strings.TrimSpace(c.Req.Form.Get("media_url"))
+	mediaUrls := c.Req.Form["media_url"]
 	deviceInfo := strings.TrimSpace(c.Req.Form.Get("device_info"))
 	description := strings.TrimSpace(c.Req.Form.Get("description"))
+
+	for i := range mediaUrls {
+		mediaUrls[i] = strings.TrimSpace(mediaUrls[i])
+	}
 
 	discordUsername := ""
 	if c.CurrentUser.DiscordUser != nil {
@@ -111,7 +115,7 @@ func TimeMachineFormSubmit(c *RequestContext) ResponseData {
 		c.CurrentUser.BestName(),
 		c.CurrentUser.Email,
 		discordUsername,
-		mediaUrl,
+		mediaUrls,
 		deviceInfo,
 		description,
 		c.Perf,

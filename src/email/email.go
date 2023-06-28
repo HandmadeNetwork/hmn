@@ -96,12 +96,12 @@ type TimeMachineEmailData struct {
 	Username        string
 	UserEmail       string
 	DiscordUsername string
-	MediaUrl        string
+	MediaUrls       []string
 	DeviceInfo      string
 	Description     string
 }
 
-func SendTimeMachineEmail(profileUrl, username, userEmail, discordUsername, mediaUrl, deviceInfo, description string, perf *perf.RequestPerf) error {
+func SendTimeMachineEmail(profileUrl, username, userEmail, discordUsername string, mediaUrls []string, deviceInfo, description string, perf *perf.RequestPerf) error {
 	perf.StartBlock("EMAIL", "Time machine email")
 	defer perf.EndBlock()
 
@@ -110,7 +110,7 @@ func SendTimeMachineEmail(profileUrl, username, userEmail, discordUsername, medi
 		Username:        username,
 		UserEmail:       userEmail,
 		DiscordUsername: discordUsername,
-		MediaUrl:        mediaUrl,
+		MediaUrls:       mediaUrls,
 		DeviceInfo:      deviceInfo,
 		Description:     description,
 	})
