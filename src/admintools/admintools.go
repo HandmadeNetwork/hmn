@@ -5,23 +5,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -582,6 +587,35 @@ func init() {
 		},
 	}
 	adminCommand.AddCommand(extractImage)
+
+	uploadAsset := &cobra.Command{
+		Use:   "uploadasset <file> <content type>",
+		Short: "Upload a file to our asset CDN",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 2 {
+				cmd.Usage()
+				os.Exit(1)
+			}
+			fname := args[0]
+			contentType := args[1]
+
+			ctx := context.Background()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
+
+			assetContents := utils.Must1(io.ReadAll(utils.Must1(os.Open(fname))))
+			assetFilename := filepath.Base(fname)
+
+			fmt.Printf("Uploading %s with content type %s...\n", assetFilename, contentType)
+			asset := utils.Must1(assets.Create(ctx, conn, assets.CreateInput{
+				Content:     assetContents,
+				Filename:    assetFilename,
+				ContentType: contentType,
+			}))
+			fmt.Printf("Uploaded and accessible at %s\n", hmnurl.BuildS3Asset(asset.S3Key))
+		},
+	}
+	adminCommand.AddCommand(uploadAsset)
 
 	addProjectCommands(adminCommand)
 }

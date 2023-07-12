@@ -182,6 +182,7 @@ type TimeMachineSubmission struct {
 	Permalink   string // generated for feed
 	Details     []TimeMachineSubmissionDetail
 	Description template.HTML
+	Horizontal  bool
 
 	AllSubmissionsUrl string
 }
@@ -196,7 +197,47 @@ type TimeMachineSubmissionDetail struct {
 	Content template.HTML
 }
 
+// You can re-encode videos for the website using some flavor of the following:
+//
+//     ffmpeg -i input.mp4 -c:v libx264 -profile:v high -preset:v slow -crf:v 24 -c:a aac -b:a 128k -movflags +faststart output.mp4
+//
+// For 1080p video, you can try 26 or 28 for the video quality and see if it
+// looks ok.
+//
+// Video can be scaled down using `-vf scale=-1:720`, where 720 is the desired
+// height of the resulting video. You should probably stick with quality 24 if
+// you do this.
+
 var tmSubmissions = []TimeMachineSubmission{
+	{
+		Date:  time.Date(2023, 7, 4, 0, 0, 0, 0, time.UTC),
+		Title: "2011 Philips Media Player",
+		Url:   "https://hmn-assets-2.ams3.cdn.digitaloceanspaces.com/a835cf47-9649-4738-bd58-252a6199863b/agus5.mp4",
+		Thumbnail: TimeMachineThumbnail{
+			Filepath: "timemachine/thumbnails/2023-07-04-thumb.png",
+			Width:    226,
+			Height:   398,
+		},
+		Details: []TimeMachineSubmissionDetail{
+			{"Device", "Philips SA3047/55"},
+			{"Submitted by", `<a href="https://handmade.network/m/AgusDev" target="_blank">Agustin</a>`},
+			{"Release year", "2011"},
+			{"Processor", "Unknown"},
+			{"Memory", "Unknown"},
+		},
+		Description: `
+			<p>
+				My mother used to use this a lot when going to study, to record the classes or just listen to music.
+			</p>
+			<p>
+				I remember also using this a bit as a child, when having something for listening to music while doing other stuff was new to me.
+			</p>
+			<p>
+				<b>Editor's note:</b> I couldn't find any info about the processor for this or the device's RAM. If anyone happens to know this info, <a href="mailto:ben@handmade.network">let me know</a>.
+			</p>
+		`,
+		Horizontal: true,
+	},
 	{
 		Date:  time.Date(2023, 6, 16, 0, 0, 0, 0, time.UTC),
 		Title: "1992 Intel Professional Workstation",
@@ -210,7 +251,7 @@ var tmSubmissions = []TimeMachineSubmission{
 			{"Device", "Intel Professional Workstation"},
 			{"Submitted by", `<a href="https://www.youtube.com/@NCommander" target="_blank">NCommander</a>`},
 			{"Release year", "~1992"},
-			{"Procesor", "33Mhz 486DX"},
+			{"Processor", "33Mhz 486DX"},
 			{"Memory", "Originally 8MiB"},
 			{"Architecture", "EISA"},
 			{"Operating system", "Shipped with Windows 3.x, OS/2, NetWare, or SCO UNIX"},
