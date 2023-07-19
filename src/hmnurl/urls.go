@@ -165,7 +165,11 @@ var RegexLoginPage = regexp.MustCompile("^/login$")
 
 func BuildLoginPage(redirectTo string) string {
 	defer CatchPanic()
-	return Url("/login", []Q{{Name: "redirect", Value: redirectTo}})
+	var q []Q
+	if redirectTo != "" {
+		q = append(q, Q{Name: "redirect", Value: redirectTo})
+	}
+	return Url("/login", q)
 }
 
 var RegexLoginWithDiscord = regexp.MustCompile("^/login-with-discord$")

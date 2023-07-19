@@ -232,26 +232,38 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		return c.RejectRequest(fmt.Sprintf("Username (%s) already exists.", username))
 	}
 
-	emailAlreadyExists := true
-	_, err = db.QueryOneScalar[int](c, c.Conn,
+	existingUser, err := db.QueryOne[models.User](c, c.Conn,
 		`
-		SELECT id
+		SELECT $columns
 		FROM hmn_user
 		WHERE LOWER(email) = LOWER($1)
 		`,
 		emailAddress,
 	)
-	if err != nil {
-		if errors.Is(err, db.NotFound) {
-			emailAlreadyExists = false
-		} else {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
-		}
+	if errors.Is(err, db.NotFound) {
+		// this is fine
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
 	}
 	c.Perf.EndBlock()
 
-	if emailAlreadyExists {
-		// NOTE(asaf): Silent rejection so we don't allow attackers to harvest emails.
+	if existingUser != nil {
+		// Render the page as if it was a successful new registration, but
+		// instead send an email to the duplicate email address containing
+		// their actual username. Spammers won't be able to harvest emails, but
+		// normal users will be able to find and access their old accounts.
+
+		err := email.SendExistingAccountEmail(
+			existingUser.Email,
+			existingUser.BestName(),
+			existingUser.Username,
+			destination,
+			c.Perf,
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send existing account email"))
+		}
+
 		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
 	}
 

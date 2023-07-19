@@ -48,7 +48,47 @@ func SendRegistrationEmail(
 	perf.EndBlock()
 
 	perf.StartBlock("EMAIL", "Sending email")
-	err = sendMail(toAddress, toName, "[handmade.network] Registration confirmation", contents)
+	err = sendMail(toAddress, toName, "[Handmade Network] Registration confirmation", contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+	perf.EndBlock()
+
+	perf.EndBlock()
+
+	return nil
+}
+
+type ExistingAccountEmailData struct {
+	Name        string
+	Username    string
+	HomepageUrl string
+	LoginUrl    string
+}
+
+func SendExistingAccountEmail(
+	toAddress string,
+	toName string,
+	username string,
+	destination string,
+	perf *perf.RequestPerf,
+) error {
+	perf.StartBlock("EMAIL", "Existing account email")
+
+	perf.StartBlock("EMAIL", "Rendering template")
+	contents, err := renderTemplate("email_account_existing.html", ExistingAccountEmailData{
+		Name:        toName,
+		Username:    username,
+		HomepageUrl: hmnurl.BuildHomepage(),
+		LoginUrl:    hmnurl.BuildLoginPage(destination),
+	})
+	if err != nil {
+		return err
+	}
+	perf.EndBlock()
+
+	perf.StartBlock("EMAIL", "Sending email")
+	err = sendMail(toAddress, toName, "[Handmade Network] You already have an account!", contents)
 	if err != nil {
 		return oops.New(err, "Failed to send email")
 	}
@@ -80,7 +120,7 @@ func SendPasswordReset(toAddress string, toName string, username string, resetTo
 	perf.EndBlock()
 
 	perf.StartBlock("EMAIL", "Sending email")
-	err = sendMail(toAddress, toName, "[handmade.network] Your password reset request", contents)
+	err = sendMail(toAddress, toName, "[Handmade Network] Your password reset request", contents)
 	if err != nil {
 		return oops.New(err, "Failed to send email")
 	}
@@ -118,7 +158,7 @@ func SendTimeMachineEmail(profileUrl, username, userEmail, discordUsername strin
 		return err
 	}
 
-	err = sendMail("team@handmade.network", "HMN Team", "[time machine] New submission", contents)
+	err = sendMail("team@handmade.network", "HMN Team", "[Time Machine] New submission", contents)
 	if err != nil {
 		return oops.New(err, "Failed to send email")
 	}
