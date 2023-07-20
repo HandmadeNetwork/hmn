@@ -210,6 +210,35 @@ type TimeMachineSubmissionDetail struct {
 
 var tmSubmissions = []TimeMachineSubmission{
 	{
+		Date:  time.Date(2023, 7, 19, 0, 0, 0, 0, time.UTC),
+		Title: "2012 LG Flip Phone",
+		Url:   "https://hmn-assets-2.ams3.cdn.digitaloceanspaces.com/f8e5843a-0be6-4ea5-a980-cc470f2f708e/agus_lg.mp4",
+		Thumbnail: TimeMachineThumbnail{
+			Filepath: "timemachine/thumbnails/2023-07-19-thumb.png",
+			Width:    225,
+			Height:   400,
+		},
+		Details: []TimeMachineSubmissionDetail{
+			{"Device", "LG-A133"},
+			{"Submitted by", `<a href="https://handmade.network/m/AgusDev" target="_blank">Agustin</a>`},
+			{"Release year", "2012"},
+			{"Processor", "Unknown"},
+			{"Memory", "Unknown"},
+		},
+		Description: `
+			<p>
+				One of the first phones I had as a kid, it was a gift from my brother.
+			</p>
+			<p>
+				I always loved how comfortable and light it is to use.
+			</p>
+			<p>
+				<b>Editor's note:</b> This thing runs Java? This thing runs some kind of <i>Assassin's Creed</i> game?? I want to know more about this, but unfortunately I can't find any info about the processor.
+			</p>
+		`,
+		Horizontal: true,
+	},
+	{
 		Date:  time.Date(2023, 7, 4, 0, 0, 0, 0, time.UTC),
 		Title: "2011 Philips Media Player",
 		Url:   "https://hmn-assets-2.ams3.cdn.digitaloceanspaces.com/a835cf47-9649-4738-bd58-252a6199863b/agus5.mp4",
