@@ -210,13 +210,46 @@ type TimeMachineSubmissionDetail struct {
 
 var tmSubmissions = []TimeMachineSubmission{
 	{
+		Date:  time.Date(2023, 7, 21, 0, 0, 0, 0, time.UTC),
+		Title: "2010 Lenovo Laptop - \"Leonard\"",
+		Url:   "https://www.youtube.com/watch?v=poV9ixJ4KqE",
+		Thumbnail: TimeMachineThumbnail{
+			Filepath: "timemachine/thumbnails/2023-07-21-thumb.png",
+			Width:    298,
+			Height:   166,
+		},
+		Details: []TimeMachineSubmissionDetail{
+			{"Device", "Lenovo G570"},
+			{"Nickname", "Leonard"},
+			{"Submitted by", `<a href="https://handmade.network/m/bvisness" target="_blank">Ben Visness</a>`},
+			{"Release year", "2010"},
+			{"Processor", "Intel Core i5-2450M @ 2.50GHz"},
+			{"Memory", "4GB DDR3"},
+			{"Storage", "HDD"},
+		},
+		Description: `
+			<p>
+				I have <em>very</em> fond memories of this computer. This was the computer I used for <i>FIRST</i> Robotics back in high school, and the computer we used to drive the robot at the world championships in 2013 and 2014.
+			</p>
+			<p>
+				That doesn't mean it's fast, of course. You can see that it is very sluggish to do many normal tasks, like typing into a Word document.
+			</p>
+			<p>
+				Still, exploring this computer brings back a lot of memories, and funny enough, allows me to show off a lot of different applications. I found old Blender models on here, an old platforming game in Unity that I barely remember, a video called "OBS Test.mp4" on the desktop, and even a definitely legal copy of Counter-Strike 1.6.
+			</p>
+			<p>
+				Naturally, because it's running Windows 7, I was unable to shut it down without running Windows Update. I had to forcibly kill it.
+			</p>
+		`,
+	},
+	{
 		Date:  time.Date(2023, 7, 19, 0, 0, 0, 0, time.UTC),
 		Title: "2012 LG Flip Phone",
 		Url:   "https://hmn-assets-2.ams3.cdn.digitaloceanspaces.com/f8e5843a-0be6-4ea5-a980-cc470f2f708e/agus_lg.mp4",
 		Thumbnail: TimeMachineThumbnail{
 			Filepath: "timemachine/thumbnails/2023-07-19-thumb.png",
 			Width:    225,
-			Height:   400,
+			Height:   398,
 		},
 		Details: []TimeMachineSubmissionDetail{
 			{"Device", "LG-A133"},
@@ -305,7 +338,7 @@ var tmSubmissions = []TimeMachineSubmission{
 		},
 		Details: []TimeMachineSubmissionDetail{
 			{"Device", "iPod Touch 3rd gen, model MC008LL"},
-			{"Submitted by", "Ben Visness"},
+			{"Submitted by", `<a href="https://handmade.network/m/bvisness" target="_blank">Ben Visness</a>`},
 			{"Release year", "2009"},
 			{"Processor", "600MHz Samsung S5L8922, single-core"},
 			{"Memory", "256MB LPDDR2 @ 200 MHz"},
