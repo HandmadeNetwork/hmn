@@ -202,9 +202,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Check blacklist")
-	// TODO(asaf): Check email against blacklist
-	blacklisted := false
-	if blacklisted {
+	if emailIsBlacklisted(emailAddress) {
 		// NOTE(asaf): Silent rejection so we don't allow attackers to harvest emails.
 		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
 	}
@@ -881,4 +879,14 @@ func validateUsernameAndToken(c *RequestContext, username string, token string, 
 
 func urlIsLocal(url string) bool {
 	return strings.HasPrefix(url, config.Config.BaseUrl)
+}
+
+func emailIsBlacklisted(email string) bool {
+	if strings.Count(email, ".") > 5 {
+		return true
+	}
+
+	// TODO(asaf): Actually check email against blacklist
+
+	return false
 }
