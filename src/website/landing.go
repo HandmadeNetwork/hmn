@@ -156,9 +156,9 @@ func Index(c *RequestContext) ResponseData {
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
 		MarkAllReadUrl: hmnurl.HMNProjectContext.BuildForumMarkRead(0),
 
-		JamUrl:            hmnurl.BuildJamIndex2023_Visibility(),
-		JamDaysUntilStart: daysUntil(hmndata.VJ2023.StartTime),
-		JamDaysUntilEnd:   daysUntil(hmndata.VJ2023.EndTime),
+		JamUrl:            hmnurl.BuildJamIndex2023(),
+		JamDaysUntilStart: daysUntil(hmndata.WRJ2023.StartTime),
+		JamDaysUntilEnd:   daysUntil(hmndata.WRJ2023.EndTime),
 
 		HMSDaysUntilStart: daysUntil(hmndata.HMS2023.StartTime),
 		HMSDaysUntilEnd:   daysUntil(hmndata.HMS2023.EndTime),

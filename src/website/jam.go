@@ -22,6 +22,7 @@ func JamsIndex(c *RequestContext) ResponseData {
 		WRJ2021Url string
 		WRJ2022Url string
 		VJ2023Url  string
+		WRJ2023Url string
 	}
 
 	res.MustWriteTemplate("jams_index.html", TemplateData{
@@ -31,6 +32,170 @@ func JamsIndex(c *RequestContext) ResponseData {
 		WRJ2021Url: hmnurl.BuildJamIndex2021(),
 		WRJ2022Url: hmnurl.BuildJamIndex2022(),
 		VJ2023Url:  hmnurl.BuildJamIndex2023_Visibility(),
+		WRJ2023Url: hmnurl.BuildJamIndex2023(),
+	}, c.Perf)
+	return res
+}
+
+func JamIndex2023(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	daysUntilStart := daysUntil(hmndata.WRJ2023.StartTime)
+	daysUntilEnd := daysUntil(hmndata.WRJ2023.EndTime)
+
+	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2023.Name)
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2023/opengraph.png", true)},
+		{Property: "og:description", Value: "A one-week jam to change the status quo. September 25 - October 1 on Handmade Network."},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex2023()},
+	}
+
+	type JamPageData struct {
+		templates.BaseData
+		DaysUntilStart, DaysUntilEnd int
+		StartTimeUnix, EndTimeUnix   int64
+
+		SubmittedProjectUrl  string
+		ProjectSubmissionUrl string
+		ShowcaseFeedUrl      string
+		ShowcaseJson         string
+
+		JamProjects []templates.Project
+	}
+
+	var showcaseItems []templates.TimelineItem
+	submittedProjectUrl := ""
+
+	if c.CurrentUser != nil {
+		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+			JamSlugs: []string{hmndata.WRJ2023.Slug},
+			Limit:    1,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+		}
+		if len(projects) > 0 {
+			urlContext := hmndata.UrlContextForProject(&projects[0].Project)
+			submittedProjectUrl = urlContext.BuildHomepage()
+		}
+	}
+
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		JamSlugs: []string{hmndata.WRJ2023.Slug},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+	}
+
+	pageProjects := make([]templates.Project, 0, len(jamProjects))
+	for _, p := range jamProjects {
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
+	}
+
+	projectIds := make([]int, 0, len(jamProjects))
+	for _, jp := range jamProjects {
+		projectIds = append(projectIds, jp.Project.ID)
+	}
+
+	if len(projectIds) > 0 {
+		snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+			ProjectIDs: projectIds,
+			Limit:      12,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
+		}
+		showcaseItems = make([]templates.TimelineItem, 0, len(snippets))
+		for _, s := range snippets {
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			if timelineItem.CanShowcase {
+				showcaseItems = append(showcaseItems, timelineItem)
+			}
+		}
+	}
+
+	showcaseJson := templates.TimelineItemsToJSON(showcaseItems)
+
+	res.MustWriteTemplate("jam_2023_wrj_index.html", JamPageData{
+		BaseData:             baseData,
+		DaysUntilStart:       daysUntilStart,
+		DaysUntilEnd:         daysUntilEnd,
+		StartTimeUnix:        hmndata.WRJ2023.StartTime.Unix(),
+		EndTimeUnix:          hmndata.WRJ2023.EndTime.Unix(),
+		ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
+		SubmittedProjectUrl:  submittedProjectUrl,
+		ShowcaseFeedUrl:      hmnurl.BuildJamFeed2023(),
+		ShowcaseJson:         showcaseJson,
+		JamProjects:          pageProjects,
+	}, c.Perf)
+	return res
+}
+
+func JamFeed2023(c *RequestContext) ResponseData {
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		JamSlugs: []string{hmndata.WRJ2023.Slug},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+	}
+
+	projectIds := make([]int, 0, len(jamProjects))
+	for _, jp := range jamProjects {
+		projectIds = append(projectIds, jp.Project.ID)
+	}
+
+	var timelineItems []templates.TimelineItem
+	if len(projectIds) > 0 {
+		snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+			ProjectIDs: projectIds,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
+		}
+
+		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
+		for _, s := range snippets {
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem.SmallInfo = true
+			timelineItems = append(timelineItems, timelineItem)
+		}
+	}
+
+	pageProjects := make([]templates.Project, 0, len(jamProjects))
+	for _, p := range jamProjects {
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
+	}
+
+	type JamFeedData struct {
+		templates.BaseData
+		DaysUntilStart, DaysUntilEnd int
+
+		JamProjects   []templates.Project
+		TimelineItems []templates.TimelineItem
+	}
+
+	daysUntilStart := daysUntil(hmndata.WRJ2023.StartTime)
+	daysUntilEnd := daysUntil(hmndata.WRJ2023.EndTime)
+
+	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2023.Name)
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2023/opengraph.png", true)},
+		{Property: "og:description", Value: "A one-week jam to change the status quo. September 25 - October 1 on Handmade Network."},
+		{Property: "og:url", Value: hmnurl.BuildJamFeed2023()},
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("jam_2023_wrj_feed.html", JamFeedData{
+		BaseData:       baseData,
+		DaysUntilStart: daysUntilStart,
+		DaysUntilEnd:   daysUntilEnd,
+		JamProjects:    pageProjects,
+		TimelineItems:  timelineItems,
 	}, c.Perf)
 	return res
 }
@@ -48,7 +213,7 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2023/opengraph.png", true)},
 		{Property: "og:description", Value: "See things in a new way. April 14 - 16."},
-		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex2023_Visibility()},
 		{Name: "twitter:card", Value: "summary_large_image"},
 		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2023/TwitterCard.png", true)},
 	}
@@ -192,7 +357,7 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2023/opengraph.png", true)},
 		{Property: "og:description", Value: "See things in a new way. April 14 - 16."},
-		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
+		{Property: "og:url", Value: hmnurl.BuildJamFeed2023_Visibility()},
 		{Name: "twitter:card", Value: "summary_large_image"},
 		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2023/TwitterCard.png", true)},
 	}
@@ -237,7 +402,7 @@ func JamRecap2023_Visibility(c *RequestContext) ResponseData {
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2023/opengraph.png", true)},
 		// {Property: "og:description", Value: "See things in a new way. April 14 - 16."},
-		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
+		{Property: "og:url", Value: hmnurl.BuildJamRecap2023_Visibility()},
 		{Name: "twitter:card", Value: "summary_large_image"},
 		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2023/TwitterCard.png", true)},
 	}
@@ -265,7 +430,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2022/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to change the status quo. August 15 - 21 on Handmade Network."},
-		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex2022()},
 	}
 
 	type JamPageData struct {
@@ -402,7 +567,7 @@ func JamFeed2022(c *RequestContext) ResponseData {
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2022/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to change the status quo. August 15 - 21 on Handmade Network."},
-		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
+		{Property: "og:url", Value: hmnurl.BuildJamFeed2022()},
 	}
 
 	var res ResponseData
@@ -459,7 +624,7 @@ func JamIndex2021(c *RequestContext) ResponseData {
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2021/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to bring a fresh perspective to old ideas. September 27 - October 3 on Handmade Network."},
-		{Property: "og:url", Value: hmnurl.BuildJamIndex()},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex2021()},
 	}
 
 	type JamPageData struct {

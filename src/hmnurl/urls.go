@@ -84,6 +84,27 @@ func BuildJamIndex2022() string {
 	return Url("/jam/2022", nil)
 }
 
+var RegexJamFeed2022 = regexp.MustCompile("^/jam/2022/feed$")
+
+func BuildJamFeed2022() string {
+	defer CatchPanic()
+	return Url("/jam/2022/feed", nil)
+}
+
+var RegexJamIndex2023 = regexp.MustCompile("^/jam/2023$")
+
+func BuildJamIndex2023() string {
+	defer CatchPanic()
+	return Url("/jam/2023", nil)
+}
+
+var RegexJamFeed2023 = regexp.MustCompile("^/jam/2023/feed$")
+
+func BuildJamFeed2023() string {
+	defer CatchPanic()
+	return Url("/jam/2023/feed", nil)
+}
+
 var RegexJamIndex2023_Visibility = regexp.MustCompile("^/jam/visibility-2023$")
 
 func BuildJamIndex2023_Visibility() string {
@@ -103,13 +124,6 @@ var RegexJamRecap2023_Visibility = regexp.MustCompile("^/jam/visibility-2023/rec
 func BuildJamRecap2023_Visibility() string {
 	defer CatchPanic()
 	return Url("/jam/visibility-2023/recap", nil)
-}
-
-var RegexJamFeed2022 = regexp.MustCompile("^/jam/2022/feed$")
-
-func BuildJamFeed2022() string {
-	defer CatchPanic()
-	return Url("/jam/2022/feed", nil)
 }
 
 var RegexTimeMachine = regexp.MustCompile("^/timemachine$")

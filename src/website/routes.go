@@ -61,7 +61,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 
 	hmnOnly.GET(hmnurl.RegexJamsIndex, JamsIndex)
 	hmnOnly.GET(hmnurl.RegexJamIndex, func(c *RequestContext) ResponseData {
-		return c.Redirect(hmnurl.BuildJamIndex2023_Visibility(), http.StatusFound)
+		return c.Redirect(hmnurl.BuildJamIndex2023(), http.StatusFound)
 	})
 	hmnOnly.GET(hmnurl.RegexJamIndex2021, JamIndex2021)
 	hmnOnly.GET(hmnurl.RegexJamIndex2022, JamIndex2022)
@@ -69,6 +69,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexJamIndex2023_Visibility, JamIndex2023_Visibility)
 	hmnOnly.GET(hmnurl.RegexJamFeed2023_Visibility, JamFeed2023_Visibility)
 	hmnOnly.GET(hmnurl.RegexJamRecap2023_Visibility, JamRecap2023_Visibility)
+	hmnOnly.GET(hmnurl.RegexJamIndex2023, JamIndex2023)
+	hmnOnly.GET(hmnurl.RegexJamFeed2023, JamFeed2023)
 
 	hmnOnly.GET(hmnurl.RegexTimeMachine, TimeMachine)
 	hmnOnly.GET(hmnurl.RegexTimeMachineSubmissions, TimeMachineSubmissions)
