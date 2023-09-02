@@ -48,7 +48,7 @@ func JamIndex2023(c *RequestContext) ResponseData {
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2023/opengraph.png", true)},
-		{Property: "og:description", Value: "A one-week jam to change the status quo. September 25 - October 1 on Handmade Network."},
+		{Property: "og:description", Value: "A one-week jam where we build software from scratch. September 25 - October 1 on Handmade Network."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex2023()},
 	}
 
