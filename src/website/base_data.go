@@ -72,7 +72,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			LoginWithDiscordUrl: hmnurl.BuildLoginWithDiscord(c.FullUrl()),
 
 			HMNHomepageUrl:  hmnurl.BuildHomepage(),
-			ProjectIndexUrl: hmnurl.BuildProjectIndex(1),
+			ProjectIndexUrl: hmnurl.BuildProjectIndex(1, ""),
 			PodcastUrl:      hmnurl.BuildPodcast(),
 			FishbowlUrl:     hmnurl.BuildFishbowlIndex(),
 			ForumsUrl:       hmnurl.HMNProjectContext.BuildForum(nil, 1),
@@ -85,7 +85,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			AboutUrl:                   hmnurl.BuildAbout(),
 			ManifestoUrl:               hmnurl.BuildManifesto(),
 			CommunicationGuidelinesUrl: hmnurl.BuildCommunicationGuidelines(),
-			ProjectIndexUrl:            hmnurl.BuildProjectIndex(1),
+			ProjectIndexUrl:            hmnurl.BuildProjectIndex(1, ""),
 			RolesUrl:                   hmnurl.BuildStaffRolesIndex(),
 			ContactUrl:                 hmnurl.BuildContactPage(),
 			SearchActionUrl:            "https://duckduckgo.com",

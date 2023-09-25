@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"math"
 	"math/rand"
 	"net/http"
 	"path"
@@ -29,7 +28,7 @@ import (
 	"github.com/teacat/noire"
 )
 
-const maxPersonalProjects = 5
+const maxPersonalProjects = 10
 const maxProjectOwners = 5
 
 func ProjectCSS(c *RequestContext) ResponseData {
@@ -75,41 +74,143 @@ func ProjectCSS(c *RequestContext) ResponseData {
 type ProjectTemplateData struct {
 	templates.BaseData
 
-	Pagination       templates.Pagination
-	CarouselProjects []templates.Project
-	Projects         []templates.Project
-	PersonalProjects []templates.Project
+	AllProjects bool
 
-	ProjectAtomFeedUrl string
-	WIPForumUrl        string
+	// Stuff for all projects
+	OfficialProjects     []templates.Project
+	OfficialProjectsLink string
+	PersonalProjects     []templates.Project
+	PersonalProjectsLink string
+	CurrentJamProjects   []templates.Project
+	CurrentJamLink       string
+	PreviousJamProjects  []templates.Project
+	PreviousJamLink      string
+
+	// Stuff for pages of projects only
+	Pagination   templates.Pagination
+	PageProjects []templates.Project
 }
 
 func ProjectIndex(c *RequestContext) ResponseData {
-	const projectsPerPage = 20
-	const maxCarouselProjects = 10
-	const maxPersonalProjects = 10
+	cat := c.PathParams["category"]
+	pageStr := c.PathParams["page"]
 
-	officialProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+	currentJam := hmndata.CurrentJam()
+	previousJam := hmndata.PreviousJam()
+
+	if cat == "" && pageStr == "" {
+		const projectsPerSection = 8
+
+		officialProjects, err := getShuffledOfficialProjects(c)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, err)
+		}
+
+		personalProjects, err := getPersonalProjects(c, "")
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, err)
+		}
+
+		var currentJamProjects []templates.Project
+		if currentJam != nil {
+			var err error
+			currentJamProjects, err = getPersonalProjects(c, currentJam.Slug)
+			if err != nil {
+				return c.ErrorResponse(http.StatusInternalServerError, err)
+			}
+		}
+
+		previousJamProjects, err := getPersonalProjects(c, previousJam.Slug)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, err)
+		}
+
+		baseData := getBaseDataAutocrumb(c, "Projects")
+		tmpl := ProjectTemplateData{
+			BaseData: baseData,
+
+			AllProjects: true,
+
+			OfficialProjects:     officialProjects[:utils.IntMin(len(officialProjects), projectsPerSection)],
+			OfficialProjectsLink: hmnurl.BuildProjectIndex(1, "official"),
+			PersonalProjects:     personalProjects[:utils.IntMin(len(personalProjects), projectsPerSection)],
+			PersonalProjectsLink: hmnurl.BuildProjectIndex(1, "personal"),
+			CurrentJamProjects:   currentJamProjects[:utils.IntMin(len(currentJamProjects), projectsPerSection)],
+			// CurrentJamLink set later
+			PreviousJamProjects: previousJamProjects[:utils.IntMin(len(previousJamProjects), projectsPerSection)],
+			PreviousJamLink:     hmnurl.BuildJamIndexAny(previousJam.UrlSlug),
+		}
+
+		if hmndata.CurrentJam() != nil {
+			tmpl.CurrentJamLink = hmnurl.BuildJamIndexAny(hmndata.CurrentJam().UrlSlug)
+		}
+
+		var res ResponseData
+		res.MustWriteTemplate("project_index.html", tmpl, c.Perf)
+		return res
+	} else {
+		const projectsPerPage = 20
+
+		var projects []templates.Project
+		var err error
+		switch cat {
+		case hmndata.WRJ2022.UrlSlug:
+			projects, err = getPersonalProjects(c, hmndata.WRJ2022.Slug)
+		case hmndata.VJ2023.Slug:
+			projects, err = getPersonalProjects(c, hmndata.VJ2023.Slug)
+		case hmndata.WRJ2023.Slug:
+			projects, err = getPersonalProjects(c, hmndata.WRJ2023.Slug)
+		case "personal":
+			projects, err = getPersonalProjects(c, "")
+		case "official":
+			projects, err = getShuffledOfficialProjects(c)
+		default:
+			return c.Redirect(hmnurl.BuildProjectIndex(1, ""), http.StatusSeeOther)
+		}
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, err)
+		}
+
+		page, numPages, ok := getPageInfo(pageStr, len(projects), projectsPerPage)
+		if !ok {
+			return c.Redirect(hmnurl.BuildProjectIndex(1, cat), http.StatusSeeOther)
+		}
+		pagination := templates.Pagination{
+			Current: page,
+			Total:   numPages,
+
+			FirstUrl:    hmnurl.BuildProjectIndex(1, cat),
+			LastUrl:     hmnurl.BuildProjectIndex(numPages, cat),
+			NextUrl:     hmnurl.BuildProjectIndex(utils.IntClamp(1, page+1, numPages), cat),
+			PreviousUrl: hmnurl.BuildProjectIndex(utils.IntClamp(1, page-1, numPages), cat),
+		}
+
+		firstProjectIndex := (page - 1) * projectsPerPage
+		endIndex := utils.IntMin(firstProjectIndex+projectsPerPage, len(projects))
+		pageProjects := projects[firstProjectIndex:endIndex]
+
+		baseData := getBaseData(c, "Projects", []templates.Breadcrumb{
+			{"Projects", hmnurl.BuildProjectIndex(1, "")},
+		})
+		var res ResponseData
+		res.MustWriteTemplate("project_index.html", ProjectTemplateData{
+			BaseData: baseData,
+
+			AllProjects: false,
+
+			Pagination:   pagination,
+			PageProjects: pageProjects,
+		}, c.Perf)
+		return res
+	}
+}
+
+func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error) {
+	official, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 		Types: hmndata.OfficialProjects,
 	})
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch projects"))
-	}
-
-	numPages := int(math.Ceil(float64(len(officialProjects)) / projectsPerPage))
-	page, numPages, ok := getPageInfo(c.PathParams["page"], len(officialProjects), feedPostsPerPage)
-	if !ok {
-		return c.Redirect(hmnurl.BuildProjectIndex(1), http.StatusSeeOther)
-	}
-
-	pagination := templates.Pagination{
-		Current: page,
-		Total:   numPages,
-
-		FirstUrl:    hmnurl.BuildProjectIndex(1),
-		LastUrl:     hmnurl.BuildProjectIndex(numPages),
-		NextUrl:     hmnurl.BuildProjectIndex(utils.IntClamp(1, page+1, numPages)),
-		PreviousUrl: hmnurl.BuildProjectIndex(utils.IntClamp(1, page-1, numPages)),
+		return nil, oops.New(err, "failed to fetch projects")
 	}
 
 	c.Perf.StartBlock("PROJECTS", "Grouping and sorting")
@@ -118,7 +219,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	var recentProjects []templates.Project
 	var restProjects []templates.Project
 	now := time.Now()
-	for _, p := range officialProjects {
+	for _, p := range official {
 		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
 
 		if p.Project.Slug == "hero" {
@@ -146,60 +247,58 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		featuredProjects = append([]templates.Project{*handmadeHero}, featuredProjects...)
 	}
 
-	orderedProjects := make([]templates.Project, 0, len(featuredProjects)+len(recentProjects)+len(restProjects))
-	orderedProjects = append(orderedProjects, featuredProjects...)
-	orderedProjects = append(orderedProjects, recentProjects...)
-	orderedProjects = append(orderedProjects, restProjects...)
+	officialProjects := make([]templates.Project, 0, len(featuredProjects)+len(recentProjects)+len(restProjects))
+	officialProjects = append(officialProjects, featuredProjects...)
+	officialProjects = append(officialProjects, recentProjects...)
+	officialProjects = append(officialProjects, restProjects...)
 
-	firstProjectIndex := (page - 1) * projectsPerPage
-	endIndex := utils.IntMin(firstProjectIndex+projectsPerPage, len(orderedProjects))
-	pageProjects := orderedProjects[firstProjectIndex:endIndex]
-
-	var carouselProjects []templates.Project
-	if page == 1 {
-		carouselProjects = featuredProjects[:utils.IntMin(len(featuredProjects), maxCarouselProjects)]
-	}
 	c.Perf.EndBlock()
 
-	// Fetch and highlight a random selection of personal projects
-	var personalProjects []templates.Project
-	{
-		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-			Types: hmndata.PersonalProjects,
-		})
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch personal projects"))
-		}
+	return officialProjects, nil
+}
 
-		sort.Slice(projects, func(i, j int) bool {
-			p1 := projects[i].Project
-			p2 := projects[j].Project
-			return p2.AllLastUpdated.Before(p1.AllLastUpdated) // sort backwards - recent first
-		})
-
-		for i, p := range projects {
-			if i >= maxPersonalProjects {
-				break
-			}
-			templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
-			personalProjects = append(personalProjects, templateProject)
-		}
+func getPersonalProjects(c *RequestContext, jamSlug string) ([]templates.Project, error) {
+	var slugs []string
+	if jamSlug != "" {
+		slugs = []string{jamSlug}
 	}
 
-	baseData := getBaseDataAutocrumb(c, "Projects")
-	var res ResponseData
-	res.MustWriteTemplate("project_index.html", ProjectTemplateData{
-		BaseData: baseData,
+	projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		Types:    hmndata.PersonalProjects,
+		JamSlugs: slugs,
+	})
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch personal projects")
+	}
 
-		Pagination:       pagination,
-		CarouselProjects: carouselProjects,
-		Projects:         pageProjects,
-		PersonalProjects: personalProjects,
+	sort.Slice(projects, func(i, j int) bool {
+		p1 := projects[i].Project
+		p2 := projects[j].Project
+		return p2.AllLastUpdated.Before(p1.AllLastUpdated) // sort backwards - recent first
+	})
 
-		ProjectAtomFeedUrl: hmnurl.BuildAtomFeedForProjects(),
-		WIPForumUrl:        hmnurl.HMNProjectContext.BuildForum([]string{"wip"}, 1),
-	}, c.Perf)
-	return res
+	var personalProjects []templates.Project
+	for _, p := range projects {
+		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
+		personalProjects = append(personalProjects, templateProject)
+	}
+
+	return personalProjects, nil
+}
+
+func jamLink(jamSlug string) string {
+	switch jamSlug {
+	case hmndata.WRJ2021.Slug:
+		return hmnurl.BuildJamIndex2021()
+	case hmndata.WRJ2022.Slug:
+		return hmnurl.BuildJamIndex2022()
+	case hmndata.WRJ2023.Slug:
+		return hmnurl.BuildJamIndex2023()
+	case hmndata.VJ2023.Slug:
+		return hmnurl.BuildJamIndex2023_Visibility()
+	default:
+		return ""
+	}
 }
 
 type ProjectHomepageData struct {

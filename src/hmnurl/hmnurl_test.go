@@ -142,9 +142,11 @@ func TestFeed(t *testing.T) {
 }
 
 func TestProjectIndex(t *testing.T) {
-	AssertRegexMatch(t, BuildProjectIndex(1), RegexProjectIndex, nil)
-	AssertRegexMatch(t, BuildProjectIndex(2), RegexProjectIndex, map[string]string{"page": "2"})
-	assert.Panics(t, func() { BuildProjectIndex(0) })
+	AssertRegexMatch(t, BuildProjectIndex(1, ""), RegexProjectIndex, nil)
+	AssertRegexMatch(t, BuildProjectIndex(2, ""), RegexProjectIndex, map[string]string{"page": "2"})
+	AssertRegexMatch(t, BuildProjectIndex(1, "test"), RegexProjectIndex, map[string]string{"category": "test"})
+	AssertRegexMatch(t, BuildProjectIndex(2, "test"), RegexProjectIndex, map[string]string{"page": "2", "category": "test"})
+	assert.Panics(t, func() { BuildProjectIndex(0, "") })
 }
 
 func TestProjectNew(t *testing.T) {
@@ -413,6 +415,16 @@ func TestJamFeed2023_Visibility(t *testing.T) {
 func TestJamRecap2023_Visibility(t *testing.T) {
 	AssertRegexMatch(t, BuildJamRecap2023_Visibility(), RegexJamRecap2023_Visibility, nil)
 	AssertSubdomain(t, BuildJamRecap2023_Visibility(), "")
+}
+
+func TestJamIndex2023(t *testing.T) {
+	AssertRegexMatch(t, BuildJamIndex2023(), RegexJamIndex2023, nil)
+	AssertSubdomain(t, BuildJamIndex2023(), "")
+}
+
+func TestJamFeed2023(t *testing.T) {
+	AssertRegexMatch(t, BuildJamFeed2023(), RegexJamFeed2023, nil)
+	AssertSubdomain(t, BuildJamFeed2023(), "")
 }
 
 func TestTimeMachine(t *testing.T) {

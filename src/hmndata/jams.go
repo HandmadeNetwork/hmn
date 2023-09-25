@@ -17,8 +17,9 @@ type Event struct {
 
 type Jam struct {
 	Event
-	Name string
-	Slug string
+	Name    string
+	Slug    string
+	UrlSlug string
 }
 
 var WRJ2021 = Jam{
@@ -26,8 +27,9 @@ var WRJ2021 = Jam{
 		StartTime: time.Date(2021, 9, 27, 0, 0, 0, 0, time.UTC),
 		EndTime:   time.Date(2021, 10, 4, 0, 0, 0, 0, time.UTC),
 	},
-	Name: "Wheel Reinvention Jam 2021",
-	Slug: "WRJ2021",
+	Name:    "Wheel Reinvention Jam 2021",
+	Slug:    "WRJ2021",
+	UrlSlug: "2021",
 }
 
 var WRJ2022 = Jam{
@@ -35,8 +37,9 @@ var WRJ2022 = Jam{
 		StartTime: time.Date(2022, 8, 15, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 		EndTime:   time.Date(2022, 8, 22, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 	},
-	Name: "Wheel Reinvention Jam 2022",
-	Slug: "WRJ2022",
+	Name:    "Wheel Reinvention Jam 2022",
+	Slug:    "WRJ2022",
+	UrlSlug: "2022",
 }
 
 var VJ2023 = Jam{
@@ -44,8 +47,9 @@ var VJ2023 = Jam{
 		StartTime: time.Date(2023, 4, 14, 0, 0, 0, 0, time.UTC),
 		EndTime:   time.Date(2023, 4, 17, 0, 0, 0, 0, time.UTC),
 	},
-	Name: "Visibility Jam 2023",
-	Slug: "VJ2023",
+	Name:    "Visibility Jam 2023",
+	Slug:    "VJ2023",
+	UrlSlug: "visibility-2023",
 }
 
 var WRJ2023 = Jam{
@@ -53,8 +57,9 @@ var WRJ2023 = Jam{
 		StartTime: time.Date(2023, 9, 25, 10, 0, 0, 0, utils.Must1(time.LoadLocation("Europe/London"))),
 		EndTime:   time.Date(2023, 10, 1, 20, 0, 0, 0, utils.Must1(time.LoadLocation("Europe/London"))),
 	},
-	Name: "Wheel Reinvention Jam 2023",
-	Slug: "WRJ2023",
+	Name:    "Wheel Reinvention Jam 2023",
+	Slug:    "WRJ2023",
+	UrlSlug: "2023",
 }
 
 var HMS2022 = Event{
@@ -82,6 +87,17 @@ func CurrentJam() *Jam {
 		}
 	}
 	return nil
+}
+
+func PreviousJam() *Jam {
+	now := time.Now()
+	var mostRecent *Jam
+	for i, jam := range AllJams {
+		if jam.EndTime.Before(now) {
+			mostRecent = &AllJams[i]
+		}
+	}
+	return mostRecent
 }
 
 func JamBySlug(slug string) Jam {

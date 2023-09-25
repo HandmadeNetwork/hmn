@@ -126,6 +126,11 @@ func BuildJamRecap2023_Visibility() string {
 	return Url("/jam/visibility-2023/recap", nil)
 }
 
+func BuildJamIndexAny(slug string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/jam/%s", slug), nil)
+}
+
 var RegexTimeMachine = regexp.MustCompile("^/timemachine$")
 
 func BuildTimeMachine() string {
@@ -445,17 +450,21 @@ func BuildAtomFeedForShowcase() string {
 * Projects
  */
 
-var RegexProjectIndex = regexp.MustCompile("^/projects(/(?P<page>.+)?)?$")
+var RegexProjectIndex = regexp.MustCompile(`^/projects(/(?P<category>[a-z][a-z0-9]+))?(/(?P<page>\d+))?$`)
 
-func BuildProjectIndex(page int) string {
+func BuildProjectIndex(page int, category string) string {
 	defer CatchPanic()
 	if page < 1 {
 		panic(oops.New(nil, "page must be >= 1"))
 	}
+	catpath := ""
+	if category != "" {
+		catpath = "/" + category
+	}
 	if page == 1 {
-		return Url("/projects", nil)
+		return Url(fmt.Sprintf("/projects%s", catpath), nil)
 	} else {
-		return Url(fmt.Sprintf("/projects/%d", page), nil)
+		return Url(fmt.Sprintf("/projects%s/%d", catpath, page), nil)
 	}
 }
 

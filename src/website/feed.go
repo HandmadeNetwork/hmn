@@ -149,7 +149,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 			feedData.FeedType = FeedTypeProjects
 			feedData.FeedID = FeedIDProjects
 			feedData.AtomFeedUrl = hmnurl.BuildAtomFeedForProjects()
-			feedData.FeedUrl = hmnurl.BuildProjectIndex(1)
+			feedData.FeedUrl = hmnurl.BuildProjectIndex(1, "")
 
 			c.Perf.StartBlock("SQL", "Fetching projects")
 			_, hasAll := c.Req.URL.Query()["all"]
