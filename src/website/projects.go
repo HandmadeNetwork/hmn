@@ -77,18 +77,27 @@ type ProjectTemplateData struct {
 	AllProjects bool
 
 	// Stuff for all projects
-	OfficialProjects     []templates.Project
-	OfficialProjectsLink string
-	PersonalProjects     []templates.Project
-	PersonalProjectsLink string
-	CurrentJamProjects   []templates.Project
-	CurrentJamLink       string
-	PreviousJamProjects  []templates.Project
-	PreviousJamLink      string
+	OfficialProjects        []templates.Project
+	OfficialProjectsLink    string
+	PersonalProjects        []templates.Project
+	PersonalProjectsLink    string
+	CurrentJamProjects      []templates.Project
+	CurrentJamProjectsLink  string
+	CurrentJamLink          string
+	CurrentJamSlug          string
+	PreviousJamProjects     []templates.Project
+	PreviousJamProjectsLink string
+	PreviousJamLink         string
+	PreviousJamSlug         string
 
 	// Stuff for pages of projects only
+	Category     string
 	Pagination   templates.Pagination
 	PageProjects []templates.Project
+	PageJamLink  string
+
+	// Stuff for both
+	CreateProjectLink string
 }
 
 func ProjectIndex(c *RequestContext) ResponseData {
@@ -135,14 +144,20 @@ func ProjectIndex(c *RequestContext) ResponseData {
 			OfficialProjectsLink: hmnurl.BuildProjectIndex(1, "official"),
 			PersonalProjects:     personalProjects[:utils.IntMin(len(personalProjects), projectsPerSection)],
 			PersonalProjectsLink: hmnurl.BuildProjectIndex(1, "personal"),
-			CurrentJamProjects:   currentJamProjects[:utils.IntMin(len(currentJamProjects), projectsPerSection)],
-			// CurrentJamLink set later
-			PreviousJamProjects: previousJamProjects[:utils.IntMin(len(previousJamProjects), projectsPerSection)],
-			PreviousJamLink:     hmnurl.BuildJamIndexAny(previousJam.UrlSlug),
+			// Current jam stuff set later
+			PreviousJamProjects:     previousJamProjects[:utils.IntMin(len(previousJamProjects), projectsPerSection)],
+			PreviousJamProjectsLink: hmnurl.BuildProjectIndex(1, previousJam.UrlSlug),
+			PreviousJamLink:         hmnurl.BuildJamIndexAny(previousJam.UrlSlug),
+			PreviousJamSlug:         previousJam.UrlSlug,
+
+			CreateProjectLink: hmnurl.BuildProjectNew(),
 		}
 
-		if hmndata.CurrentJam() != nil {
-			tmpl.CurrentJamLink = hmnurl.BuildJamIndexAny(hmndata.CurrentJam().UrlSlug)
+		if currentJam != nil {
+			tmpl.CurrentJamProjects = currentJamProjects[:utils.IntMin(len(currentJamProjects), projectsPerSection)]
+			tmpl.CurrentJamProjectsLink = hmnurl.BuildProjectIndex(1, currentJam.UrlSlug)
+			tmpl.CurrentJamLink = hmnurl.BuildJamIndexAny(currentJam.UrlSlug)
+			tmpl.CurrentJamSlug = currentJam.UrlSlug
 		}
 
 		var res ResponseData
@@ -151,19 +166,32 @@ func ProjectIndex(c *RequestContext) ResponseData {
 	} else {
 		const projectsPerPage = 20
 
+		var breadcrumb templates.Breadcrumb
+		breadcrumbUrl := hmnurl.BuildProjectIndex(1, cat)
+
 		var projects []templates.Project
+		var jamLink string
+
 		var err error
 		switch cat {
 		case hmndata.WRJ2022.UrlSlug:
 			projects, err = getPersonalProjects(c, hmndata.WRJ2022.Slug)
-		case hmndata.VJ2023.Slug:
+			breadcrumb = templates.Breadcrumb{Name: "Wheel Reinvention Jam 2022"}
+			jamLink = hmnurl.BuildJamIndex2022()
+		case hmndata.VJ2023.UrlSlug:
 			projects, err = getPersonalProjects(c, hmndata.VJ2023.Slug)
-		case hmndata.WRJ2023.Slug:
+			breadcrumb = templates.Breadcrumb{"2023 Visibility Jam", breadcrumbUrl}
+			jamLink = hmnurl.BuildJamIndex2023_Visibility()
+		case hmndata.WRJ2023.UrlSlug:
 			projects, err = getPersonalProjects(c, hmndata.WRJ2023.Slug)
+			breadcrumb = templates.Breadcrumb{"Wheel Reinvention Jam 2023", breadcrumbUrl}
+			jamLink = hmnurl.BuildJamIndex2023()
 		case "personal":
 			projects, err = getPersonalProjects(c, "")
+			breadcrumb = templates.Breadcrumb{"Personal Projects", breadcrumbUrl}
 		case "official":
 			projects, err = getShuffledOfficialProjects(c)
+			breadcrumb = templates.Breadcrumb{"Official Projects", breadcrumbUrl}
 		default:
 			return c.Redirect(hmnurl.BuildProjectIndex(1, ""), http.StatusSeeOther)
 		}
@@ -191,6 +219,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 
 		baseData := getBaseData(c, "Projects", []templates.Breadcrumb{
 			{"Projects", hmnurl.BuildProjectIndex(1, "")},
+			breadcrumb,
 		})
 		var res ResponseData
 		res.MustWriteTemplate("project_index.html", ProjectTemplateData{
@@ -198,8 +227,11 @@ func ProjectIndex(c *RequestContext) ResponseData {
 
 			AllProjects: false,
 
-			Pagination:   pagination,
-			PageProjects: pageProjects,
+			Category:          cat,
+			Pagination:        pagination,
+			PageProjects:      pageProjects,
+			CreateProjectLink: hmnurl.BuildProjectNew(),
+			PageJamLink:       jamLink,
 		}, c.Perf)
 		return res
 	}

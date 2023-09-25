@@ -450,7 +450,7 @@ func BuildAtomFeedForShowcase() string {
 * Projects
  */
 
-var RegexProjectIndex = regexp.MustCompile(`^/projects(/(?P<category>[a-z][a-z0-9]+))?(/(?P<page>\d+))?$`)
+var RegexProjectIndex = regexp.MustCompile(`^/projects(/(?P<category>[a-z0-9-]+)(/(?P<page>\d+))?)?$`)
 
 func BuildProjectIndex(page int, category string) string {
 	defer CatchPanic()

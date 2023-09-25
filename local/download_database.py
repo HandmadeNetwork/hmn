@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import boto3
 
 # You must already have configured your "AWS" (DigitalOcean) credentials via the AWS CLI.
