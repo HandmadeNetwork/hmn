@@ -131,7 +131,7 @@ func JamIndex2023(c *RequestContext) ResponseData {
 		FROM twitch_latest_status
 		WHERE twitch_login = $1
 		`,
-		"piratesoftware",
+		"handmadenetwork",
 	)
 	if err == nil {
 		if twitchStatus.Live {
