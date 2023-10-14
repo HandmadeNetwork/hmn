@@ -1,12 +1,16 @@
 package website
 
 import (
+	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
@@ -61,6 +65,7 @@ func JamIndex2023(c *RequestContext) ResponseData {
 		ProjectSubmissionUrl string
 		ShowcaseFeedUrl      string
 		ShowcaseJson         string
+		TwitchEmbedUrl       string
 
 		JamProjects []templates.Project
 	}
@@ -119,6 +124,24 @@ func JamIndex2023(c *RequestContext) ResponseData {
 
 	showcaseJson := templates.TimelineItemsToJSON(showcaseItems)
 
+	twitchEmbedUrl := ""
+	twitchStatus, err := db.QueryOne[models.TwitchLatestStatus](c, c.Conn,
+		`
+		SELECT $columns
+		FROM twitch_latest_status
+		WHERE twitch_login = $1
+		`,
+		"piratesoftware",
+	)
+	if err == nil {
+		if twitchStatus.Live {
+			hmnUrl, err := url.Parse(config.Config.BaseUrl)
+			if err == nil {
+				twitchEmbedUrl = fmt.Sprintf("https://player.twitch.tv/?channel=%s&parent=%s", twitchStatus.TwitchLogin, hmnUrl.Hostname())
+			}
+		}
+	}
+
 	res.MustWriteTemplate("jam_2023_wrj_index.html", JamPageData{
 		BaseData:             baseData,
 		DaysUntilStart:       daysUntilStart,
@@ -130,6 +153,7 @@ func JamIndex2023(c *RequestContext) ResponseData {
 		ShowcaseFeedUrl:      hmnurl.BuildJamFeed2023(),
 		ShowcaseJson:         showcaseJson,
 		JamProjects:          pageProjects,
+		TwitchEmbedUrl:       twitchEmbedUrl,
 	}, c.Perf)
 	return res
 }
