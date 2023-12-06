@@ -244,15 +244,32 @@ const (
 	MessageTypeGuildInviteReminder  MessageType = 22
 )
 
+type MessageFlags int
+
+const (
+	MessageFlagCrossposted MessageFlags = 1 << iota
+	MessageFlagIsCrosspost
+	MessageFlagSuppressEmbeds
+	MessageFlagSourceMessageDeleted
+	MessageFlagUrgent
+	MessageFlagHasThread
+	MessageFlagEphemeral
+	MessageFlagLoading
+	MessageFlagFailedToMentionSomeRolesInThread
+	MessageFlagSuppressNotifications
+	MessageFlagIsVoiceMessage
+)
+
 // https://discord.com/developers/docs/resources/channel#message-object
 type Message struct {
-	ID        string      `json:"id"`
-	ChannelID string      `json:"channel_id"`
-	GuildID   *string     `json:"guild_id"`
-	Content   string      `json:"content"`
-	Author    *User       `json:"author"` // note that this may not be an actual valid user (see the docs)
-	Timestamp string      `json:"timestamp"`
-	Type      MessageType `json:"type"`
+	ID        string       `json:"id"`
+	ChannelID string       `json:"channel_id"`
+	GuildID   *string      `json:"guild_id"`
+	Content   string       `json:"content"`
+	Author    *User        `json:"author"` // note that this may not be an actual valid user (see the docs)
+	Timestamp string       `json:"timestamp"`
+	Type      MessageType  `json:"type"`
+	Flags     MessageFlags `json:"flags"`
 
 	Attachments []Attachment `json:"attachments"`
 	Embeds      []Embed      `json:"embeds"`
@@ -317,6 +334,7 @@ func MessageFromMap(m interface{}, k string) *Message {
 		Author:    UserFromMap(m, "author"),
 		Timestamp: maybeString(mmap, "timestamp"),
 		Type:      MessageType(maybeInt(mmap, "type")),
+		Flags:     MessageFlags(maybeInt(mmap, "flags")),
 
 		originalMap: mmap,
 	}
@@ -1002,4 +1020,12 @@ func maybeBoolP(m map[string]interface{}, k string) *bool {
 	}
 	boolval := val.(bool)
 	return &boolval
+}
+
+func maybeArray(m map[string]any, k string) []any {
+	val, ok := m[k]
+	if !ok || val == nil {
+		return nil
+	}
+	return val.([]any)
 }

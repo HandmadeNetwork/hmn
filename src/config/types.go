@@ -28,6 +28,7 @@ type HMNConfig struct {
 	DigitalOcean      DigitalOceanConfig
 	Discord           DiscordConfig
 	Twitch            TwitchConfig
+	Matrix            MatrixConfig
 	EpisodeGuide      EpisodeGuide
 	DevConfig         DevConfig
 	PreviewGeneration PreviewGenerationConfig
@@ -91,6 +92,13 @@ type TwitchConfig struct {
 	EventSubSecret string // NOTE(asaf): Between 10-100 chars long. Anything will do.
 	BaseUrl        string
 	BaseIDUrl      string
+}
+
+type MatrixConfig struct {
+	Username            string
+	Password            string
+	BaseUrl             string
+	AnnouncementsRoomID string
 }
 
 type EpisodeGuide struct {
