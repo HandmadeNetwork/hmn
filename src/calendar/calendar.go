@@ -363,6 +363,10 @@ func newHMNCalendar() *ical.Calendar {
 	version.SetText("1.0")
 	cal.Props.Set(version)
 
+	name := ical.NewProp("X-WR-CALNAME")
+	name.SetText("Handmade Network")
+	cal.Props.Set(name)
+
 	return cal
 }
 
@@ -371,6 +375,7 @@ func emptyCalendarString() []byte {
 	empty := `BEGIN:VCALENDAR
 VERSION:1.0
 PRODID:Handmade Network
+X-WR-CALNAME:Handmade Network
 END:VCALENDAR
 	`
 
