@@ -178,11 +178,11 @@ func BuildCalendarIndex() string {
 	return Url("/calendar", nil)
 }
 
-var RegexCalendarICal = regexp.MustCompile("^/calendar.ical$")
+var RegexCalendarICal = regexp.MustCompile("^/Handmade Network.ical$")
 
 func BuildCalendarICal() string {
 	defer CatchPanic()
-	return Url("/calendar.ical", nil)
+	return Url("/Handmade Network.ical", nil)
 }
 
 // QUESTION(ben): Can we change these routes?
