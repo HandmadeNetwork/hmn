@@ -12,6 +12,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/auth"
+	"git.handmade.network/hmn/hmn/src/calendar"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/discord"
@@ -52,6 +53,7 @@ var WebsiteCommand = &cobra.Command{
 			twitch.MonitorTwitchSubscriptions(backgroundJobContext, conn),
 			hmns3.StartServer(backgroundJobContext),
 			assets.BackgroundPreviewGeneration(backgroundJobContext, conn),
+			calendar.MonitorCalendars(backgroundJobContext),
 		)
 
 		signals := make(chan os.Signal, 1)

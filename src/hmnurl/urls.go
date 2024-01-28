@@ -171,6 +171,20 @@ func BuildTimeMachineFormDone() string {
 	return Url("/timemachine/thanks", nil)
 }
 
+var RegexCalendarIndex = regexp.MustCompile("^/calendar$")
+
+func BuildCalendarIndex() string {
+	defer CatchPanic()
+	return Url("/calendar", nil)
+}
+
+var RegexCalendarICal = regexp.MustCompile("^/calendar.ical$")
+
+func BuildCalendarICal() string {
+	defer CatchPanic()
+	return Url("/calendar.ical", nil)
+}
+
 // QUESTION(ben): Can we change these routes?
 
 var RegexLoginAction = regexp.MustCompile("^/login$")

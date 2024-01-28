@@ -79,6 +79,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexTimeMachineFormDone, needsAuth(TimeMachineFormDone))
 	hmnOnly.POST(hmnurl.RegexTimeMachineForm, needsAuth(csrfMiddleware(TimeMachineFormSubmit)))
 
+	hmnOnly.GET(hmnurl.RegexCalendarIndex, CalendarIndex)
+	hmnOnly.GET(hmnurl.RegexCalendarICal, CalendarICal)
+
 	hmnOnly.GET(hmnurl.RegexStaffRolesIndex, StaffRolesIndex)
 	hmnOnly.GET(hmnurl.RegexStaffRole, StaffRole)
 

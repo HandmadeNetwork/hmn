@@ -252,6 +252,10 @@ var HMNTemplateFuncs = template.FuncMap{
 		iso := t.UTC().Format(time.RFC3339)
 		return template.HTML(fmt.Sprintf(`<time datetime="%s">%s</time>`, iso, formatted))
 	},
+	"timehtmlcontent": func(t time.Time) template.HTML {
+		iso := t.UTC().Format(time.RFC3339)
+		return template.HTML(fmt.Sprintf(`<time data-type="content" datetime="%s"></time>`, iso))
+	},
 	"noescape": func(str string) template.HTML {
 		return template.HTML(str)
 	},

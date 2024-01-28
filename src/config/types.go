@@ -32,6 +32,7 @@ type HMNConfig struct {
 	EpisodeGuide      EpisodeGuide
 	DevConfig         DevConfig
 	PreviewGeneration PreviewGenerationConfig
+	Calendars      []CalendarSource
 }
 
 type PostgresConfig struct {
@@ -99,6 +100,11 @@ type MatrixConfig struct {
 	Password            string
 	BaseUrl             string
 	AnnouncementsRoomID string
+}
+
+type CalendarSource struct {
+	Name string
+	Url string
 }
 
 type EpisodeGuide struct {

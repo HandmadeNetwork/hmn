@@ -1,0 +1,89 @@
+{{ template "base.html" . }}
+
+{{ define "content" }}
+<div class="ph3 ph0-ns">
+    <h2>Future events</h2>
+	<div class="cal_toggles mb2 flex flex-row g2">
+		{{ range .Calendars }}
+			<label class="db br3 pv1 ph2 pointer b--gray ba" for="{{ . }}">
+				<input id="{{ . }}" autocomplete="off" type="checkbox" value="{{ . }}" checked />
+				<span>{{ . }}</span>
+			</label>
+		{{ end }}
+	</div>
+	<div class="">
+		<a class="ical_link" href="{{ .BaseICalUrl }}">Copy iCal Url</a>
+	</div>
+	<div class="flex flex-column g2">
+		{{ range .Events }}
+			<div data-calname="{{ .CalName }}" class="cal_event timeline-item pa3 br3">
+				<div>{{ timehtmlcontent .StartTime }}</div>
+				<div>
+					<strong class="f4 c--theme">{{ .Name }}</strong>
+				</div>
+				{{ with .Desc }}
+					<div class="mb2">{{ . }}</div>
+				{{ end }}
+				{{ with .CalName }}
+					<div class="dib br2 ba b--gray ph1 f7">{{ . }}</div>
+				{{ end }}
+			</div>
+		{{ end }}
+	</div>
+</div>
+<script>
+	let events = document.querySelectorAll(".cal_event");
+	let toggles = document.querySelectorAll(".cal_toggles input");
+	let icalLink = document.querySelector(".ical_link");
+	let baseICalUrl = icalLink.href;
+
+	function refreshEvents() {
+		let cals = {};
+		for (let i = 0; i < toggles.length; ++i) {
+			cals[toggles[i].id] = toggles[i].checked;
+		}
+
+		for (let i = 0; i < events.length; ++i) {
+			let ev = events[i];
+			let calName = ev.getAttribute("data-calname");
+			if (cals[calName]) {
+				ev.style.display = "block";
+			} else {
+				ev.style.display = "none";
+			}
+		}
+
+		let icalFilter = [];
+		let hasAll = true;
+		for (let i = 0; i < toggles.length; ++i) {
+			if (toggles[i].checked) {
+				icalFilter.push(toggles[i].id);
+			} else {
+				hasAll = false;
+			}
+		}
+
+		if (hasAll) {
+			icalLink.href = baseICalUrl;
+		} else {
+			icalFilter.sort();
+			let url = new URL(baseICalUrl);
+			let params = new URLSearchParams();
+			for (let i = 0; i < icalFilter.length; ++i) {
+				params.append(icalFilter[i], "true");
+			}
+			url.search = params.toString();
+			icalLink.href = url.toString();
+		}
+	}
+
+	for (let i = 0; i < toggles.length; ++i) {
+		toggles[i].addEventListener("input", refreshEvents);
+	}
+
+	icalLink.addEventListener("click", function(ev) {
+		ev.preventDefault();
+		navigator.clipboard.writeText(icalLink.href);
+	});
+</script>
+{{ end }}

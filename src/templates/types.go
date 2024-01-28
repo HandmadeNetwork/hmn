@@ -55,6 +55,7 @@ type Header struct {
 	ConferencesUrl  string
 	JamsUrl         string
 	EducationUrl    string
+	CalendarUrl     string
 
 	Project *ProjectHeader
 }
@@ -414,4 +415,12 @@ type EduArticle struct {
 	DeleteUrl string
 
 	Content template.HTML
+}
+
+type CalendarEvent struct {
+	Name      string
+	Desc      string
+	StartTime time.Time
+	EndTime   time.Time
+	CalName   string
 }

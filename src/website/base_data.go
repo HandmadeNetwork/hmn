@@ -79,6 +79,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			ConferencesUrl:  hmnurl.BuildConferences(),
 			JamsUrl:         hmnurl.BuildJamsIndex(),
 			EducationUrl:    hmnurl.BuildEducationIndex(),
+			CalendarUrl:     hmnurl.BuildCalendarIndex(),
 		},
 		Footer: templates.Footer{
 			HomepageUrl:                hmnurl.BuildHomepage(),

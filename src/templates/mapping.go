@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"git.handmade.network/hmn/hmn/src/calendar"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -525,6 +526,16 @@ func EducationArticleToTemplate(a *models.EduArticle) EduArticle {
 	}
 
 	return res
+}
+
+func CalendarEventToTemplate(ev *calendar.CalendarEvent) CalendarEvent {
+	return CalendarEvent{
+		Name:      ev.Name,
+		Desc:      ev.Desc,
+		StartTime: ev.StartTime.UTC(),
+		EndTime:   ev.EndTime.UTC(),
+		CalName:   ev.CalName,
+	}
 }
 
 func maybeString(s *string) string {
