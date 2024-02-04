@@ -11,6 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.3.3
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.13.0
 	github.com/aws/smithy-go v1.7.0
+	github.com/emersion/go-ical v0.0.0-20220601085725-0864dccc089f
 	github.com/frustra/bbcode v0.0.0-20201127003707-6ef347fbe1c8
 	github.com/go-stack/stack v1.8.0
 	github.com/google/uuid v1.2.0
@@ -44,7 +45,6 @@ require (
 	github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
-	github.com/emersion/go-ical v0.0.0-20220601085725-0864dccc089f // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
