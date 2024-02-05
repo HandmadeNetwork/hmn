@@ -1,18 +1,6 @@
 package buildscss
 
-import (
-	"context"
-	"encoding/base64"
-	"fmt"
-	"os"
-	"path/filepath"
-
-	color "git.handmade.network/hmn/hmn/src/ansicolor"
-	"git.handmade.network/hmn/hmn/src/oops"
-	"git.handmade.network/hmn/hmn/src/website"
-	"github.com/spf13/cobra"
-	"github.com/wellington/go-libsass"
-)
+/*
 
 var compressed bool
 
@@ -93,3 +81,5 @@ func compile(inpath, outpath string, theme string, style int) error {
 
 	return compiler.Run()
 }
+
+*/

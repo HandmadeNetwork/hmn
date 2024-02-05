@@ -27,21 +27,13 @@ func Manifesto(c *RequestContext) ResponseData {
 func About(c *RequestContext) ResponseData {
 	type TemplateData struct {
 		templates.BaseData
-		FoundationUrl    string
-		RolesUrl         string
-		EducationLeadUrl string
-		AdvocacyLeadUrl  string
-		DesignLeadUrl    string
+		FoundationUrl string
 	}
 
 	var res ResponseData
 	res.MustWriteTemplate("about.html", TemplateData{
-		BaseData:         getBaseDataAutocrumb(c, "About"),
-		FoundationUrl:    hmnurl.BuildFoundation(),
-		RolesUrl:         hmnurl.BuildStaffRolesIndex(),
-		EducationLeadUrl: hmnurl.BuildStaffRole("education"),
-		AdvocacyLeadUrl:  hmnurl.BuildStaffRole("advocacy"),
-		DesignLeadUrl:    hmnurl.BuildStaffRole("design"),
+		BaseData:      getBaseDataAutocrumb(c, "About"),
+		FoundationUrl: hmnurl.BuildFoundation(),
 	}, c.Perf)
 	return res
 }

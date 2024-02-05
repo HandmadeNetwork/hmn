@@ -348,24 +348,6 @@ func BuildConferences() string {
 }
 
 /*
-* Volunteer/Staff Roles
- */
-
-var RegexStaffRolesIndex = regexp.MustCompile(`^/roles$`)
-
-func BuildStaffRolesIndex() string {
-	defer CatchPanic()
-	return Url("/roles", nil)
-}
-
-var RegexStaffRole = regexp.MustCompile(`^/roles/(?P<slug>[^/]+)$`)
-
-func BuildStaffRole(slug string) string {
-	defer CatchPanic()
-	return Url(fmt.Sprintf("/roles/%s", slug), nil)
-}
-
-/*
 * User
  */
 
@@ -648,6 +630,12 @@ var RegexEducationRerender = regexp.MustCompile(`^/education/rerender$`)
 func BuildEducationRerender() string {
 	return Url("/education/rerender", nil)
 }
+
+/*
+ * Style test
+ */
+
+var RegexStyleTest = regexp.MustCompile(`^/debug/styles$`)
 
 /*
 * Forums

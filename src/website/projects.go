@@ -25,7 +25,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/teacat/noire"
 )
 
 const maxPersonalProjects = 10
@@ -39,26 +38,12 @@ func ProjectCSS(c *RequestContext) ResponseData {
 
 	baseData := getBaseData(c, "", nil)
 
-	bgColor := noire.NewHex(color)
-	h, s, l := bgColor.HSL()
-	if baseData.Theme == "dark" {
-		l = 15
-	} else {
-		l = 95
-	}
-	if s > 20 {
-		s = 20
-	}
-	bgColor = noire.NewHSL(h, s, l)
-
 	templateData := struct {
 		templates.BaseData
-		Color       string
-		PostBgColor string
+		Color string
 	}{
-		BaseData:    baseData,
-		Color:       color,
-		PostBgColor: bgColor.HTML(),
+		BaseData: baseData,
+		Color:    color,
 	}
 
 	var res ResponseData

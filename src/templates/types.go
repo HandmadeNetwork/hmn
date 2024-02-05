@@ -80,7 +80,6 @@ type Footer struct {
 	CodeOfConductUrl           string
 	CommunicationGuidelinesUrl string
 	ProjectIndexUrl            string
-	RolesUrl                   string
 	ContactUrl                 string
 	SearchActionUrl            string
 }

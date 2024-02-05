@@ -83,9 +83,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexCalendarIndex, CalendarIndex)
 	hmnOnly.GET(hmnurl.RegexCalendarICal, CalendarICal)
 
-	hmnOnly.GET(hmnurl.RegexStaffRolesIndex, StaffRolesIndex)
-	hmnOnly.GET(hmnurl.RegexStaffRole, StaffRole)
-
 	hmnOnly.GET(hmnurl.RegexOldHome, Index)
 
 	hmnOnly.POST(hmnurl.RegexLoginAction, securityTimerMiddleware(time.Millisecond*100, Login))
@@ -156,6 +153,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.POST(hmnurl.RegexEducationArticleEdit, educationAuthorsOnly(EducationArticleEditSubmit))
 	hmnOnly.GET(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(EducationArticleDelete))
 	hmnOnly.POST(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(csrfMiddleware(EducationArticleDeleteSubmit)))
+
+	hmnOnly.GET(hmnurl.RegexStyleTest, StyleTest)
 
 	hmnOnly.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
 	hmnOnly.POST(hmnurl.RegexAPINewsletterSignup, APINewsletterSignup)

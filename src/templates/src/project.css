@@ -1,141 +1,39 @@
 {{ $c := hex2color .Color }}
 
-{{/* Theme "dim" colors tend more toward the background value (lighter or darker) */}}
-{{ $themeDim := eq .Theme "dark" | ternary (lightness 0.35 $c) (lightness 0.75 $c) | color2css }}
-{{ $themeDimmer := eq .Theme "dark" | ternary (lightness 0.3 $c) (lightness 0.8 $c) | color2css }}
-{{ $themeDimmest := eq .Theme "dark" | ternary (lightness 0.2 $c) (lightness 0.85 $c) | color2css }}
-
-{{/* Theme "dark" and "light" colors are always darker or lighter in value, regardless of theme. */}}
-{{ $themeDark := eq .Theme "dark" | ternary (lightness 0.30 $c) (lightness 0.35 $c) | color2css }}
-{{ $themeLight := eq .Theme "dark" | ternary (lightness 0.55 $c) (lightness 0.55 $c) | color2css }}
-
-{{ $linkColor := eq .Theme "dark" | ternary (lightness 0.55 $c) (lightness 0.35 $c) | color2css }}
-{{ $linkHoverColor := eq .Theme "dark" | ternary (lightness 0.65 $c) (lightness 0.45 $c) | color2css }}
-
 :root {
     --theme-color: {{ $c | color2css }};
-    --theme-color-dim: {{ $themeDim }};
-    --theme-color-dimmer: {{ $themeDimmer }};
-    --theme-color-dimmest: {{ $themeDimmest }};
 
-    --theme-color-dark: {{ $themeDark }};
-    --theme-color-light: {{ $themeLight }};
+    --theme-color-dim: {{ lightness 0.75 $c | color2css }};
+    --theme-color-dimmer: {{ lightness 0.8 $c | color2css }};
+    --theme-color-dimmest: {{ lightness 0.85 $c | color2css }};
 
-    --link-color: {{ $linkColor }};
-    --link-hover-color: {{ $linkHoverColor }};
+    --theme-color-dark: {{ lightness 0.35 $c | color2css }};
+    --theme-color-light: {{ lightness 0.55 $c | color2css }};
 
-    --input-lite-border: {{ $linkColor }};
+    --link-color: {{ lightness 0.35 $c | color2css }};
+    --link-hover-color: {{ lightness 0.45 $c | color2css }};
+
+    --background-even-background: {{ lightness 0.95 $c | color2css }};
+
+    --input-lite-border: var(--link-color);
 }
 
-.accent {
-    background-color: {{ $themeDim }};
-    background-color: var(--theme-dim);
-}
-.user-bar {
-    border-bottom-color: {{ $themeDim }};
-    border-bottom-color: var(--theme-dim);
-}
-header .content-title .subtitle {
-    border-top-color: {{ $themeDim }};
-    border-top-color: var(--theme-dim);
+@media (prefers-color-scheme: dark) {
+    :root {
+        --theme-color-dim: {{ lightness 0.35 $c | color2css }};
+        --theme-color-dimmer: {{ lightness 0.3 $c | color2css }};
+        --theme-color-dimmest: {{ lightness 0.2 $c | color2css }};
+    
+        --theme-color-dark: {{ lightness 0.30 $c | color2css }};
+        --theme-color-light: {{ lightness 0.55 $c | color2css }};
+    
+        --link-color: {{ lightness 0.55 $c | color2css }};
+        --link-hover-color: {{ lightness 0.65 $c | color2css }};
+
+        --background-even-background: {{ lightness 0.15 $c | color2css }};
+    }
 }
 
-a, .thread:before, button, .button, input[type=button] { 
-    color: {{ $linkColor }};
-    color: var(--link-color);
-}
-
-.submit, input[type=submit] {
-    color: white;
-}
-
-a.submit:hover, .submit:hover, input[type=submit]:hover {
-    color: white;
-}
-
-a:hover, button:hover, .button:hover, input[type=button]:hover { 
-    color: {{ $linkHoverColor }};
-    color: var(--link-hover-color);
-}
 .unread .avatar-icon {
-    border: 2px solid {{ $linkColor }};
     border: 2px solid var(--link-color);
-}
-
-.post-list-bg-odd:nth-of-type(odd) {
-    background-color: {{ .PostBgColor }};
-}
-
-.bg-theme {
-    background-color: {{ $c | color2css }};
-    background-color: var(--theme-color);
-}
-
-.bg-theme-dim {
-    background-color: {{ $themeDim }};
-    background-color: var(--theme-color-dim);
-}
-
-.bg-theme-dimmer {
-    background-color: {{ $themeDimmer }};
-    background-color: var(--theme-color-dimmer);
-}
-
-.bg-theme-dimmest {
-    background-color: {{ $themeDimmest }};
-    background-color: var(--theme-color-dimmest);
-}
-
-.bg-theme-dark {
-    background-color: {{ $themeDark }};
-    background-color: var(--theme-color-dark);
-}
-
-.bg-theme-light {
-    background-color: {{ $themeLight }};
-    background-color: var(--theme-color-light);
-}
-
-.b--theme {
-    border-color: {{ $c | color2css }};
-    border-color: var(--theme-color);
-}
-
-.b--theme-dim {
-    border-color: {{ $themeDim }};
-    border-color: var(--theme-color-dim);
-}
-
-.b--theme-dimmer {
-    border-color: {{ $themeDimmer }};
-    border-color: var(--theme-color-dimmer);
-}
-
-.b--theme-dimmest {
-    border-color: {{ $themeDimmest }};
-    border-color: var(--theme-color-dimmest);
-}
-
-.b--theme-dark {
-    border-color: {{ $themeDark }};
-    border-color: var(--theme-color-dark);
-}
-
-.b--theme-light {
-    border-color: {{ $themeLight }};
-    border-color: var(--theme-color-light);
-}
-
-:root {
-    --background-even-background: {{ .PostBgColor }};
-}
-
-/* Assets */
-
-.half.light {
-    background-image:url("{{ statictheme "light" "accent_top_a.svg" }}");
-}
-
-.half.dark {
-    background-image:url("{{ statictheme "dark" "accent_top_a.svg" }}");
 }

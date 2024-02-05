@@ -24,7 +24,6 @@ require (
 	github.com/stretchr/testify v1.8.1
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/teacat/noire v1.1.0
-	github.com/wellington/go-libsass v0.9.2
 	github.com/yuin/goldmark v1.4.13
 	github.com/yuin/goldmark-highlighting v0.0.0-20210516132338-9216f9c5aa01
 	golang.org/x/crypto v0.6.0
