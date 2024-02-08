@@ -27,6 +27,7 @@ func JamsIndex(c *RequestContext) ResponseData {
 		WRJ2022Url string
 		VJ2023Url  string
 		WRJ2023Url string
+		LJ2024Url  string
 	}
 
 	res.MustWriteTemplate("jams_index.html", TemplateData{
@@ -37,6 +38,140 @@ func JamsIndex(c *RequestContext) ResponseData {
 		WRJ2022Url: hmnurl.BuildJamIndex2022(),
 		VJ2023Url:  hmnurl.BuildJamIndex2023_Visibility(),
 		WRJ2023Url: hmnurl.BuildJamIndex2023(),
+		LJ2024Url:  hmnurl.BuildJamIndex2024_Learning(),
+	}, c.Perf)
+	return res
+}
+
+func JamIndex2024_Learning(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	daysUntilStart := daysUntil(hmndata.LJ2024.StartTime)
+	daysUntilEnd := daysUntil(hmndata.LJ2024.EndTime)
+
+	baseData := getBaseDataAutocrumb(c, hmndata.LJ2024.Name)
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("learningjam2024/opengraph.png", true)},
+		{Property: "og:description", Value: "Need desc"},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex2024_Learning()},
+	}
+
+	type JamPageData struct {
+		templates.BaseData
+		DaysUntilStart, DaysUntilEnd int
+		TwitchEmbedUrl               string
+		ProjectSubmissionUrl         string
+		SubmittedProjectUrl          string
+		JamFeedUrl                   string
+	}
+
+	twitchEmbedUrl := ""
+	twitchStatus, err := db.QueryOne[models.TwitchLatestStatus](c, c.Conn,
+		`
+		SELECT $columns
+		FROM twitch_latest_status
+		WHERE twitch_login = $1
+		`,
+		"handmadenetwork",
+	)
+	if err == nil {
+		if twitchStatus.Live {
+			hmnUrl, err := url.Parse(config.Config.BaseUrl)
+			if err == nil {
+				twitchEmbedUrl = fmt.Sprintf("https://player.twitch.tv/?channel=%s&parent=%s", twitchStatus.TwitchLogin, hmnUrl.Hostname())
+			}
+		}
+	}
+
+	submittedProjectUrl := ""
+
+	if c.CurrentUser != nil {
+		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+			JamSlugs: []string{hmndata.WRJ2023.Slug},
+			Limit:    1,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+		}
+		if len(projects) > 0 {
+			urlContext := hmndata.UrlContextForProject(&projects[0].Project)
+			submittedProjectUrl = urlContext.BuildHomepage()
+		}
+	}
+
+	res.MustWriteTemplate("jam_2024_lj_index.html", JamPageData{
+		BaseData:             baseData,
+		DaysUntilStart:       daysUntilStart,
+		DaysUntilEnd:         daysUntilEnd,
+		ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
+		SubmittedProjectUrl:  submittedProjectUrl,
+		JamFeedUrl:           hmnurl.BuildJamFeed2024_Learning(),
+		TwitchEmbedUrl:       twitchEmbedUrl,
+	}, c.Perf)
+	return res
+}
+
+func JamFeed2024_Learning(c *RequestContext) ResponseData {
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		JamSlugs: []string{hmndata.LJ2024.Slug},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+	}
+
+	projectIds := make([]int, 0, len(jamProjects))
+	for _, jp := range jamProjects {
+		projectIds = append(projectIds, jp.Project.ID)
+	}
+
+	var timelineItems []templates.TimelineItem
+	if len(projectIds) > 0 {
+		snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+			ProjectIDs: projectIds,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
+		}
+
+		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
+		for _, s := range snippets {
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem.SmallInfo = true
+			timelineItems = append(timelineItems, timelineItem)
+		}
+	}
+
+	type JamFeedData struct {
+		templates.BaseData
+		DaysUntilStart, DaysUntilEnd int
+
+		TimelineItems []templates.TimelineItem
+	}
+
+	daysUntilStart := daysUntil(hmndata.LJ2024.StartTime)
+	daysUntilEnd := daysUntil(hmndata.LJ2024.EndTime)
+
+	baseData := getBaseDataAutocrumb(c, hmndata.LJ2024.Name)
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("learningjam2024/opengraph.png", true)},
+		{Property: "og:description", Value: "Need desc"},
+		{Property: "og:url", Value: hmnurl.BuildJamFeed2024_Learning()},
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("jam_2024_lj_feed.html", JamFeedData{
+		BaseData:       baseData,
+		DaysUntilStart: daysUntilStart,
+		DaysUntilEnd:   daysUntilEnd,
+		TimelineItems:  timelineItems,
+		// ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
+		// SubmittedProjectUrl:  submittedProjectUrl,
+		// JamProjects:          pageProjects,
 	}, c.Perf)
 	return res
 }

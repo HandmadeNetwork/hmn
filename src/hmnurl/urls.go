@@ -126,6 +126,20 @@ func BuildJamRecap2023_Visibility() string {
 	return Url("/jam/visibility-2023/recap", nil)
 }
 
+var RegexJamIndex2024_Learning = regexp.MustCompile("^/jam/learning-2024$")
+
+func BuildJamIndex2024_Learning() string {
+	defer CatchPanic()
+	return Url("/jam/learning-2024", nil)
+}
+
+var RegexJamFeed2024_Learning = regexp.MustCompile("^/jam/learning-2024/feed$")
+
+func BuildJamFeed2024_Learning() string {
+	defer CatchPanic()
+	return Url("/jam/learning-2024/feed", nil)
+}
+
 func BuildJamIndexAny(slug string) string {
 	defer CatchPanic()
 	return Url(fmt.Sprintf("/jam/%s", slug), nil)

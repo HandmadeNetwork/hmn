@@ -1,0 +1,74 @@
+{{ template "jam_2024_learning_base.html" . }}
+{{ define "content-top" }}
+    <div class="flex flex-column items-center pa3 g3">
+		<img class="mw5" src="{{ static "visjam2023/logo.svg" }}">
+		<div class="f1 fw7">The Learning Jam</div>
+		<div class="flex flex-row g5 lh-solid">
+			<div>
+				<div class="fw7 f3">Learn</div>
+				<div class="fw3 f4">March 15-17, 2024</div>
+			</div>
+			<div>
+				<div class="fw7 f3">Teach</div>
+				<div class="fw3 f4">March 22-24, 2024</div>
+			</div>
+		</div>
+		<div class="mt3">
+			<a href="{{ .DiscordInviteUrl }}" class="db ph2 pv1 button-simple">Join the Discord</a>
+		</div>
+	</div>
+{{ end }}
+
+{{ define "content" }}
+<div class="flex flex-column g3 items-center pa3">
+	<div class="w6">
+		<h2 class="c--theme-gradient-light">Recent activity</h2>
+		<div class="flex flex-column g3">
+			{{ if .TimelineItems }}
+				{{ range .TimelineItems }}
+					<div class="flex flex-column g2 bg--rich-gray pa2">
+						<div class="flex flex-row g2">
+							{{ if .OwnerAvatarUrl }}
+								<a class="flex flex-shrink-0 br-100 square items-center justify-center overflow-hidden bg--gray" href="{{ .OwnerUrl }}">
+									<img class="w2" src="{{ .OwnerAvatarUrl }}" />
+								</a>
+							{{ end }}
+							<div class="flex flex-column">
+								<div class="fw6">{{ .OwnerName }}</div>
+								<div class="f7">{{ timehtml (relativedate .Date) .Date }}</div>
+							</div>
+						</div>
+						{{ if .Description }}
+							<div>{{ trim .Description }}</div>
+						{{ end }}
+						{{ range .EmbedMedia }}
+							<div class="flex flex-column {{ if eq .Type mediaembed }}wide-screen{{ end }} justify-stretch iframe-fill">
+								{{ if eq .Type mediaimage }}
+									<img src="{{ .AssetUrl }}">
+								{{ else if eq .Type mediavideo }}
+									{{ if .ThumbnailUrl }}
+										<video src="{{ .AssetUrl }}" poster="{{ .ThumbnailUrl }}" preload="none" controls>
+									{{ else }}
+										<video src="{{ .AssetUrl }}" preload="metadata" controls>
+									{{ end }}
+								{{ else if eq .Type mediaaudio }}
+									<audio src="{{ .AssetUrl }}" controls>
+								{{ else if eq .Type mediaembed }}
+									{{ .EmbedHTML }}
+								{{ else }}
+									<div class="">
+										<a href="{{ .AssetUrl }}" target="_blank">{{ .Filename }} ({{ filesize .FileSize }})</a>
+									</div>
+								{{ end }}
+							</div>
+						{{ end }}
+					</div>
+				{{ end }}
+			{{ else }}
+				Be the first!
+			{{ end }}
+		</div>
+	</div>
+</div>
+{{ end }}
+

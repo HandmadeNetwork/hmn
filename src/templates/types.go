@@ -20,6 +20,7 @@ type BaseData struct {
 	CurrentProjectUrl string
 	LoginPageUrl      string
 	ProjectCSSUrl     string
+	DiscordInviteUrl  string
 
 	Project Project
 	User    *User
