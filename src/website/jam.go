@@ -53,8 +53,8 @@ func JamIndex2024_Learning(c *RequestContext) ResponseData {
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("learningjam2024/opengraph.png", true)},
-		{Property: "og:description", Value: "Need desc"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("learningjam2024/2024LJOpenGraph.png", true)},
+		{Property: "og:description", Value: "A two-weekend jam where you dive deep into a topic, then teach it to the rest of the community."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex2024_Learning()},
 	}
 
