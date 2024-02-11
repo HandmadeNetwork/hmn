@@ -60,6 +60,7 @@ func JamIndex2024_Learning(c *RequestContext) ResponseData {
 
 	type JamPageData struct {
 		templates.BaseData
+		UserAvatarUrl                string
 		DaysUntilStart, DaysUntilEnd int
 		TwitchEmbedUrl               string
 		ProjectSubmissionUrl         string
@@ -85,9 +86,19 @@ func JamIndex2024_Learning(c *RequestContext) ResponseData {
 		}
 	}
 
-	submittedProjectUrl := ""
+	tmpl := JamPageData{
+		BaseData:             baseData,
+		UserAvatarUrl:        templates.UserAvatarDefaultUrl("dark"),
+		DaysUntilStart:       daysUntilStart,
+		DaysUntilEnd:         daysUntilEnd,
+		ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
+		SubmittedProjectUrl:  "",
+		JamFeedUrl:           hmnurl.BuildJamFeed2024_Learning(),
+		TwitchEmbedUrl:       twitchEmbedUrl,
+	}
 
 	if c.CurrentUser != nil {
+		tmpl.UserAvatarUrl = templates.UserAvatarUrl(c.CurrentUser, "dark")
 		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 			OwnerIDs: []int{c.CurrentUser.ID},
 			JamSlugs: []string{hmndata.WRJ2023.Slug},
@@ -98,19 +109,11 @@ func JamIndex2024_Learning(c *RequestContext) ResponseData {
 		}
 		if len(projects) > 0 {
 			urlContext := hmndata.UrlContextForProject(&projects[0].Project)
-			submittedProjectUrl = urlContext.BuildHomepage()
+			tmpl.SubmittedProjectUrl = urlContext.BuildHomepage()
 		}
 	}
 
-	res.MustWriteTemplate("jam_2024_lj_index.html", JamPageData{
-		BaseData:             baseData,
-		DaysUntilStart:       daysUntilStart,
-		DaysUntilEnd:         daysUntilEnd,
-		ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
-		SubmittedProjectUrl:  submittedProjectUrl,
-		JamFeedUrl:           hmnurl.BuildJamFeed2024_Learning(),
-		TwitchEmbedUrl:       twitchEmbedUrl,
-	}, c.Perf)
+	res.MustWriteTemplate("jam_2024_lj_index.html", tmpl, c.Perf)
 	return res
 }
 
