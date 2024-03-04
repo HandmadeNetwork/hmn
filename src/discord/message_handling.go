@@ -834,43 +834,42 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 		if shouldCreate {
 			// Get an asset ID or URL to make a snippet from
 			assetId, url, err := getSnippetAssetOrUrl(ctx, tx, &interned.Message)
-			if assetId != nil || url != nil {
-				contentMarkdown := interned.MessageContent.LastContent
-				contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
 
-				_, err = tx.Exec(ctx,
-					`
-					INSERT INTO snippet (url, "when", description, _description_html, asset_id, discord_message_id, owner_id)
-					VALUES ($1, $2, $3, $4, $5, $6, $7)
-					`,
-					url,
-					interned.Message.SentAt,
-					contentMarkdown,
-					contentHTML,
-					assetId,
-					interned.Message.ID,
-					interned.HMNUser.ID,
-				)
-				if err != nil {
-					return oops.New(err, "failed to create snippet from attachment")
-				}
+			contentMarkdown := interned.MessageContent.LastContent
+			contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
 
-				existingSnippet, err = FetchSnippetForMessage(ctx, tx, interned.Message.ID)
-				if err != nil {
-					return oops.New(err, "failed to fetch newly-created snippet")
-				}
+			_, err = tx.Exec(ctx,
+				`
+				INSERT INTO snippet (url, "when", description, _description_html, asset_id, discord_message_id, owner_id)
+				VALUES ($1, $2, $3, $4, $5, $6, $7)
+				`,
+				url,
+				interned.Message.SentAt,
+				contentMarkdown,
+				contentHTML,
+				assetId,
+				interned.Message.ID,
+				interned.HMNUser.ID,
+			)
+			if err != nil {
+				return oops.New(err, "failed to create snippet from attachment")
+			}
 
-				_, err = tx.Exec(ctx,
-					`
-					UPDATE discord_message
-					SET snippet_created = TRUE
-					WHERE id = $1
-					`,
-					interned.Message.ID,
-				)
-				if err != nil {
-					return oops.New(err, "failed to mark message as having snippet")
-				}
+			existingSnippet, err = FetchSnippetForMessage(ctx, tx, interned.Message.ID)
+			if err != nil {
+				return oops.New(err, "failed to fetch newly-created snippet")
+			}
+
+			_, err = tx.Exec(ctx,
+				`
+				UPDATE discord_message
+				SET snippet_created = TRUE
+				WHERE id = $1
+				`,
+				interned.Message.ID,
+			)
+			if err != nil {
+				return oops.New(err, "failed to mark message as having snippet")
 			}
 		}
 	}
