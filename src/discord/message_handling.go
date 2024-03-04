@@ -27,6 +27,11 @@ import (
 	"github.com/google/uuid"
 )
 
+var autostoreChannels = []string{
+	config.Config.Discord.ShowcaseChannelID,
+	// TODO(asaf): Add jam channel
+}
+
 func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, createSnippets bool) error {
 	deleted := false
 	var err error
@@ -65,17 +70,7 @@ func CleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 			return deleted, nil
 		}
 
-		hasGoodContent := true
-		if msg.OriginalHasFields("content") && !messageHasLinks(msg.Content) {
-			hasGoodContent = false
-		}
-
-		hasGoodAttachments := true
-		if msg.OriginalHasFields("attachments") && len(msg.Attachments) == 0 {
-			hasGoodAttachments = false
-		}
-
-		if !hasGoodContent && !hasGoodAttachments {
+		if !messageShouldBeStored(msg) {
 			err := DeleteMessage(ctx, msg.ChannelID, msg.ID)
 			if err != nil {
 				return deleted, oops.New(err, "failed to delete message")
@@ -91,7 +86,7 @@ func CleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 				err = SendMessages(ctx, dbConn, MessageToSend{
 					ChannelID: channel.ID,
 					Req: CreateMessageRequest{
-						Content: "Posts in #project-showcase are required to have either an image/video or a link. Discuss showcase content in #projects.",
+						Content: "Posts in #project-showcase are required to have either an image/video or a link, or start with `!til`. Discuss showcase content in #projects.",
 					},
 				})
 				if err != nil {
@@ -238,7 +233,7 @@ func ShareToMatrix(ctx context.Context, msg *Message) error {
 }
 
 func MaybeInternMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message) error {
-	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID {
+	if messageShouldBeStored(msg) {
 		err := InternMessage(ctx, dbConn, msg)
 		if errors.Is(err, errNotEnoughInfo) {
 			logging.ExtractLogger(ctx).Warn().
@@ -341,7 +336,7 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 // 1. Saves/updates content
 // 2. Saves/updates snippet
 // 3. Deletes content/snippet
-func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, deleted bool, createSnippet bool) error {
+func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, removeInternedMessage bool, createSnippet bool) error {
 	tx, err := dbConn.Begin(ctx)
 	if err != nil {
 		return oops.New(err, "failed to start transaction")
@@ -352,7 +347,11 @@ func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	if err != nil && !errors.Is(err, db.NotFound) {
 		return err
 	} else if err == nil {
-		if !deleted {
+		if !removeInternedMessage {
+			removeInternedMessage = !messageShouldBeStored(msg)
+		}
+
+		if !removeInternedMessage {
 			err = SaveMessageContents(ctx, tx, interned, msg)
 			if err != nil {
 				return err
@@ -785,7 +784,7 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 
 	if interned.MessageContent == nil {
 		// NOTE(asaf): Can't have a snippet without content
-		// NOTE(asaf): Messages that only have an attachment also have blank content
+		// NOTE(asaf): Messages that only have an attachment also have a content struct with an empty content string
 		// TODO(asaf): Do we need to delete existing snippets in this case??? Not entirely sure how to trigger this through discord
 		return nil
 	}
@@ -1009,6 +1008,39 @@ func messageHasLinks(content string) bool {
 		if err == nil {
 			return true
 		}
+	}
+
+	return false
+}
+
+func messageShouldBeStored(msg *Message) bool {
+	if msg == nil {
+		return false
+	}
+
+	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(msg.Content)), "!til") {
+		return true
+	}
+
+	autostore := false
+	for _, cid := range autostoreChannels {
+		if msg.ChannelID == cid {
+			autostore = true
+			break
+		}
+	}
+	if autostore {
+		hasGoodContent := true
+		if msg.OriginalHasFields("content") && !messageHasLinks(msg.Content) {
+			hasGoodContent = false
+		}
+
+		hasGoodAttachments := true
+		if msg.OriginalHasFields("attachments") && len(msg.Attachments) == 0 {
+			hasGoodAttachments = false
+		}
+
+		return hasGoodContent || hasGoodAttachments
 	}
 
 	return false
