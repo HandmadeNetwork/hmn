@@ -144,6 +144,7 @@ func JamFeed2024_Learning(c *RequestContext) ResponseData {
 		ProjectSubmissionUrl         string
 		SubmittedProjectUrl          string
 
+		Projects      []templates.Project
 		TimelineItems []templates.TimelineItem
 	}
 
@@ -194,6 +195,13 @@ func JamFeed2024_Learning(c *RequestContext) ResponseData {
 		}
 	}
 
+	projects := make([]templates.Project, 0, len(jamProjects))
+	for _, jp := range jamProjects {
+		urlContext := hmndata.UrlContextForProject(&jp.Project)
+		projectUrl := urlContext.BuildHomepage()
+		projects = append(projects, templates.ProjectAndStuffToTemplate(&jp, projectUrl, c.Theme))
+	}
+
 	tmpl := JamFeedData{
 		BaseData:             baseData,
 		UserAvatarUrl:        templates.UserAvatarDefaultUrl("dark"),
@@ -202,6 +210,7 @@ func JamFeed2024_Learning(c *RequestContext) ResponseData {
 		TwitchEmbedUrl:       twitchEmbedUrl,
 		ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
 		SubmittedProjectUrl:  "",
+		Projects:             projects,
 		TimelineItems:        timelineItems,
 	}
 

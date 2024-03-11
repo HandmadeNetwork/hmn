@@ -17,7 +17,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="flex g3 justify-center">
+		<div class="flex g3 justify-center link--white">
 			{{ if and (eq .DaysUntilStart 0) (gt .DaysUntilEnd 0) }}
 				{{ if .SubmittedProjectUrl }}
 					<a class="btn--jam" href="{{ .SubmittedProjectUrl }}">Share your progress</a>
@@ -34,25 +34,52 @@
 {{ define "content" }}
 <div class="mw7 margin-center flex flex-column">
 	<div class="ph3 pv4 bb b--rich-gray">
+		<h2 class="c--theme-gradient-light">Projects</h2>
+		<div class="flex flex-row flex-wrap g2">
+			{{ if .Projects }}
+				{{ range .Projects }}
+					<div class="flex-basis-40-ns flex-grow-1 flex-shrink-1 bg--rich-gray pa3 flex flex-column g1">
+						<div class="f3">
+							<a href="{{ .Url }}" class="fw6">{{ .Name }}</a>
+						</div>
+						<div class="flex-grow-1">{{ .Blurb }}</div>
+						<div class="f7">
+							by
+							{{ $owners := .Owners }}
+							{{ range $idx, $owner := .Owners }}
+								<a href="{{ $owner.ProfileUrl }}" class="fw6 link--white">{{ $owner.Name }}</a>{{ if not (lastidx $idx (len $owners)) }},{{ end }}
+							{{ end }}
+						</div>
+					</div>
+				{{ end }}
+				{{ if isodd (len .Projects) }}
+					<div class="flex-basis-40-ns flex-grow-1 flex-shrink-1"></div>
+				{{ end }}
+			{{ end }}
+		</div>
+	</div>
+	<div class="ph3 pv4 bb b--rich-gray">
 		<h2 class="c--theme-gradient-light">Recent activity</h2>
 		<div class="flex flex-column g2">
 			{{ if .TimelineItems }}
 				{{ range .TimelineItems }}
-					<div class="flex flex-column g2 bg--rich-gray pa3">
-						<div class="flex flex-row g2">
+					<div class="flex flex-column g3 bg--rich-gray pa3">
+						<div class="flex flex-row g3 items-start">
 							{{ if .OwnerAvatarUrl }}
 								<a class="flex flex-shrink-0 br-100 square items-center justify-center overflow-hidden bg--gray" href="{{ .OwnerUrl }}">
-									<img class="w2" src="{{ .OwnerAvatarUrl }}" />
+									<img class="w2-5" src="{{ .OwnerAvatarUrl }}" />
 								</a>
 							{{ end }}
 							<div class="flex flex-column">
-								<div class="fw6">{{ .OwnerName }}</div>
-								<div class="f7">{{ timehtml (relativedate .Date) .Date }}</div>
+								<div class="">
+									<a title="{{ (index .Projects 0).Blurb }}" href="{{ (index .Projects 0).Url }}" class="link--white fw6">{{ (index .Projects 0).Name }}</a>
+									by
+									<a href="{{ .OwnerUrl }}" class="link--white fw6">{{ .OwnerName }}</a>
+									<span class="f7 c--gray nowrap">{{ timehtml (relativedate .Date) .Date }}</span>
+								</div>
+								<div>{{ trim .Description }}</div>
 							</div>
 						</div>
-						{{ if .Description }}
-							<div>{{ trim .Description }}</div>
-						{{ end }}
 						{{ range .EmbedMedia }}
 							<div class="flex flex-column {{ if eq .Type mediaembed }}wide-screen{{ end }} justify-stretch iframe-fill">
 								{{ if eq .Type mediaimage }}
@@ -69,7 +96,7 @@
 									{{ .EmbedHTML }}
 								{{ else }}
 									<div class="">
-										<a href="{{ .AssetUrl }}" target="_blank">{{ .Filename }} ({{ filesize .FileSize }})</a>
+										<a href="{{ .AssetUrl }}" target="_blank">💾{{ .Filename }} ({{ filesize .FileSize }})</a>
 									</div>
 								{{ end }}
 							</div>
@@ -82,7 +109,7 @@
 		</div>
 	</div>
 	<div>
-		<div class="mv5 h3 fill-current">
+		<div class="mv5 h3 fill-current link--white">
 			<a href="{{ .Header.HMNHomepageUrl }}">{{ svg "hmn_circuit" }}</a>
 		</div>
 	</div>

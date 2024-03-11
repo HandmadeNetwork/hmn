@@ -287,6 +287,12 @@ var HMNTemplateFuncs = template.FuncMap{
 	"trim": func(str template.HTML) template.HTML {
 		return template.HTML(strings.TrimSpace(string(str)))
 	},
+	"lastidx": func(idx int, l int) bool {
+		return idx == l-1
+	},
+	"isodd": func(num int) bool {
+		return num%2 == 1
+	},
 
 	// NOTE(asaf): Template specific functions:
 	"projectcarddata": func(project Project, classes string) ProjectCardData {

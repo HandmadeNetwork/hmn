@@ -103,6 +103,9 @@ func ProjectToTemplate(
 func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff, url string, theme string) Project {
 	res := ProjectToTemplate(&p.Project, url)
 	res.Logo = ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, theme)
+	for _, o := range p.Owners {
+		res.Owners = append(res.Owners, UserToTemplate(o, theme))
+	}
 	return res
 }
 
