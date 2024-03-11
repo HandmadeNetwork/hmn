@@ -55,7 +55,7 @@ func JamIndex2024_Learning(c *RequestContext) ResponseData {
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: hmnurl.BuildPublic("learningjam2024/2024LJOpenGraph.png", true)},
-		{Property: "og:description", Value: "A two-weekend jam where you dive deep into a topic, then teach it to the rest of the community."},
+		{Property: "og:description", Value: "A two-weekend jam where you dive deep into a topic, then share it with the rest of the community."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex2024_Learning()},
 		{Name: "twitter:card", Value: "summary_large_image"},
 		{Name: "twitter:image", Value: hmnurl.BuildPublic("learningjam2024/2024LJTwitterCard.png", true)},
