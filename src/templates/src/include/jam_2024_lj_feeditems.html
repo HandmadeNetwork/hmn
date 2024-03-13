@@ -1,0 +1,41 @@
+{{ range . }}
+    <div class="flex flex-column g3 bg--rich-gray pa3">
+        <div class="flex flex-row g3 items-start">
+            {{ if .OwnerAvatarUrl }}
+                <a class="flex flex-shrink-0 br-100 square items-center justify-center overflow-hidden bg--gray" href="{{ .OwnerUrl }}">
+                    <img class="w2-5" src="{{ .OwnerAvatarUrl }}" />
+                </a>
+            {{ end }}
+            <div class="flex flex-column">
+                <div class="">
+                    <a title="{{ (index .Projects 0).Blurb }}" href="{{ (index .Projects 0).Url }}" class="link--white fw6">{{ (index .Projects 0).Name }}</a>
+                    by
+                    <a href="{{ .OwnerUrl }}" class="link--white fw6">{{ .OwnerName }}</a>
+                    <span class="f7 c--gray nowrap">{{ timehtml (relativedate .Date) .Date }}</span>
+                </div>
+                <div>{{ trim .Description }}</div>
+            </div>
+        </div>
+        {{ range .EmbedMedia }}
+            <div class="flex flex-column {{ if eq .Type mediaembed }}wide-screen{{ end }} justify-stretch iframe-fill">
+                {{ if eq .Type mediaimage }}
+                    <img src="{{ .AssetUrl }}">
+                {{ else if eq .Type mediavideo }}
+                    {{ if .ThumbnailUrl }}
+                        <video src="{{ .AssetUrl }}" poster="{{ .ThumbnailUrl }}" preload="none" controls>
+                    {{ else }}
+                        <video src="{{ .AssetUrl }}" preload="metadata" controls>
+                    {{ end }}
+                {{ else if eq .Type mediaaudio }}
+                    <audio src="{{ .AssetUrl }}" controls>
+                {{ else if eq .Type mediaembed }}
+                    {{ .EmbedHTML }}
+                {{ else }}
+                    <div class="">
+                        <a href="{{ .AssetUrl }}" target="_blank">💾{{ .Filename }} ({{ filesize .FileSize }})</a>
+                    </div>
+                {{ end }}
+            </div>
+        {{ end }}
+    </div>
+{{ end }}

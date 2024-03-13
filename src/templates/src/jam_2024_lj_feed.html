@@ -35,79 +35,16 @@
 <div class="mw7 margin-center flex flex-column">
 	<div class="ph3 pv4 bb b--rich-gray">
 		<h2 class="c--theme-gradient-light">Projects</h2>
-		<div class="flex flex-row flex-wrap g2">
-			{{ if .Projects }}
-				{{ range .Projects }}
-					<div class="flex-basis-40-ns flex-grow-1 flex-shrink-1 bg--rich-gray pa3 flex flex-column g1">
-						<div class="f3">
-							<a href="{{ .Url }}" class="fw6">{{ .Name }}</a>
-						</div>
-						<div class="flex-grow-1">{{ .Blurb }}</div>
-						<div class="f7">
-							by
-							{{ $owners := .Owners }}
-							{{ range $idx, $owner := .Owners }}
-								<a href="{{ $owner.ProfileUrl }}" class="fw6 link--white">{{ $owner.Name }}</a>{{ if not (lastidx $idx (len $owners)) }},{{ end }}
-							{{ end }}
-						</div>
-					</div>
-				{{ end }}
-				{{ if isodd (len .Projects) }}
-					<div class="flex-basis-40-ns flex-grow-1 flex-shrink-1"></div>
-				{{ end }}
-			{{ end }}
-		</div>
+		{{ template "jam_2024_lj_projects.html" .Projects }}
 	</div>
-	<div class="ph3 pv4 bb b--rich-gray">
-		<h2 class="c--theme-gradient-light">Recent activity</h2>
-		<div class="flex flex-column g2">
-			{{ if .TimelineItems }}
-				{{ range .TimelineItems }}
-					<div class="flex flex-column g3 bg--rich-gray pa3">
-						<div class="flex flex-row g3 items-start">
-							{{ if .OwnerAvatarUrl }}
-								<a class="flex flex-shrink-0 br-100 square items-center justify-center overflow-hidden bg--gray" href="{{ .OwnerUrl }}">
-									<img class="w2-5" src="{{ .OwnerAvatarUrl }}" />
-								</a>
-							{{ end }}
-							<div class="flex flex-column">
-								<div class="">
-									<a title="{{ (index .Projects 0).Blurb }}" href="{{ (index .Projects 0).Url }}" class="link--white fw6">{{ (index .Projects 0).Name }}</a>
-									by
-									<a href="{{ .OwnerUrl }}" class="link--white fw6">{{ .OwnerName }}</a>
-									<span class="f7 c--gray nowrap">{{ timehtml (relativedate .Date) .Date }}</span>
-								</div>
-								<div>{{ trim .Description }}</div>
-							</div>
-						</div>
-						{{ range .EmbedMedia }}
-							<div class="flex flex-column {{ if eq .Type mediaembed }}wide-screen{{ end }} justify-stretch iframe-fill">
-								{{ if eq .Type mediaimage }}
-									<img src="{{ .AssetUrl }}">
-								{{ else if eq .Type mediavideo }}
-									{{ if .ThumbnailUrl }}
-										<video src="{{ .AssetUrl }}" poster="{{ .ThumbnailUrl }}" preload="none" controls>
-									{{ else }}
-										<video src="{{ .AssetUrl }}" preload="metadata" controls>
-									{{ end }}
-								{{ else if eq .Type mediaaudio }}
-									<audio src="{{ .AssetUrl }}" controls>
-								{{ else if eq .Type mediaembed }}
-									{{ .EmbedHTML }}
-								{{ else }}
-									<div class="">
-										<a href="{{ .AssetUrl }}" target="_blank">💾{{ .Filename }} ({{ filesize .FileSize }})</a>
-									</div>
-								{{ end }}
-							</div>
-						{{ end }}
-					</div>
-				{{ end }}
-			{{ else }}
-				Be the first!
-			{{ end }}
+	{{ if .TimelineItems }}
+		<div class="ph3 pv4 bb b--rich-gray">
+			<h2 class="c--theme-gradient-light">Recent Updates</h2>
+			<div class="flex flex-column g2">
+				{{ template "jam_2024_lj_feeditems.html" .TimelineItems }}
+			</div>
 		</div>
-	</div>
+	{{ end }}
 	<div>
 		<div class="mv5 h3 fill-current link--white">
 			<a href="{{ .Header.HMNHomepageUrl }}">{{ svg "hmn_circuit" }}</a>

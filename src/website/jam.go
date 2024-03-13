@@ -66,38 +66,31 @@ func JamIndex2024_Learning(c *RequestContext) ResponseData {
 		UserAvatarUrl                string
 		DaysUntilStart, DaysUntilEnd int
 		TwitchEmbedUrl               string
-		ProjectSubmissionUrl         string
+		NewProjectUrl                string
 		SubmittedProjectUrl          string
 		JamFeedUrl                   string
+
+		Projects      JamProjectDataLJ2024
+		TimelineItems []templates.TimelineItem
 	}
 
-	twitchEmbedUrl := ""
-	twitchStatus, err := db.QueryOne[models.TwitchLatestStatus](c, c.Conn,
-		`
-		SELECT $columns
-		FROM twitch_latest_status
-		WHERE twitch_login = $1
-		`,
-		"handmadenetwork",
-	)
-	if err == nil {
-		if twitchStatus.Live {
-			hmnUrl, err := url.Parse(config.Config.BaseUrl)
-			if err == nil {
-				twitchEmbedUrl = fmt.Sprintf("https://player.twitch.tv/?channel=%s&parent=%s", twitchStatus.TwitchLogin, hmnUrl.Hostname())
-			}
-		}
+	feedData, err := getLJ2024FeedData(c, 5)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	tmpl := JamPageData{
-		BaseData:             baseData,
-		UserAvatarUrl:        templates.UserAvatarDefaultUrl("dark"),
-		DaysUntilStart:       daysUntilStart,
-		DaysUntilEnd:         daysUntilEnd,
-		ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
-		SubmittedProjectUrl:  "",
-		JamFeedUrl:           hmnurl.BuildJamFeed2024_Learning(),
-		TwitchEmbedUrl:       twitchEmbedUrl,
+		BaseData:            baseData,
+		UserAvatarUrl:       templates.UserAvatarDefaultUrl("dark"),
+		DaysUntilStart:      daysUntilStart,
+		DaysUntilEnd:        daysUntilEnd,
+		TwitchEmbedUrl:      getTwitchEmbedUrl(c),
+		NewProjectUrl:       hmnurl.BuildProjectNewJam(),
+		SubmittedProjectUrl: "",
+		JamFeedUrl:          hmnurl.BuildJamFeed2024_Learning(),
+
+		Projects:      feedData.Projects,
+		TimelineItems: feedData.TimelineItems,
 	}
 
 	if c.CurrentUser != nil {
@@ -140,66 +133,16 @@ func JamFeed2024_Learning(c *RequestContext) ResponseData {
 		templates.BaseData
 		UserAvatarUrl                string
 		DaysUntilStart, DaysUntilEnd int
-		TwitchEmbedUrl               string
 		ProjectSubmissionUrl         string
 		SubmittedProjectUrl          string
 
-		Projects      []templates.Project
+		Projects      JamProjectDataLJ2024
 		TimelineItems []templates.TimelineItem
 	}
 
-	twitchEmbedUrl := ""
-	twitchStatus, err := db.QueryOne[models.TwitchLatestStatus](c, c.Conn,
-		`
-		SELECT $columns
-		FROM twitch_latest_status
-		WHERE twitch_login = $1
-		`,
-		"handmadenetwork",
-	)
-	if err == nil {
-		if twitchStatus.Live {
-			hmnUrl, err := url.Parse(config.Config.BaseUrl)
-			if err == nil {
-				twitchEmbedUrl = fmt.Sprintf("https://player.twitch.tv/?channel=%s&parent=%s", twitchStatus.TwitchLogin, hmnUrl.Hostname())
-			}
-		}
-	}
-
-	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		JamSlugs: []string{hmndata.LJ2024.Slug},
-	})
+	feedData, err := getLJ2024FeedData(c, 0)
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
-	}
-
-	projectIds := make([]int, 0, len(jamProjects))
-	for _, jp := range jamProjects {
-		projectIds = append(projectIds, jp.Project.ID)
-	}
-
-	var timelineItems []templates.TimelineItem
-	if len(projectIds) > 0 {
-		snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
-			ProjectIDs: projectIds,
-		})
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for jam showcase"))
-		}
-
-		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
-		for _, s := range snippets {
-			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
-			timelineItem.SmallInfo = true
-			timelineItems = append(timelineItems, timelineItem)
-		}
-	}
-
-	projects := make([]templates.Project, 0, len(jamProjects))
-	for _, jp := range jamProjects {
-		urlContext := hmndata.UrlContextForProject(&jp.Project)
-		projectUrl := urlContext.BuildHomepage()
-		projects = append(projects, templates.ProjectAndStuffToTemplate(&jp, projectUrl, c.Theme))
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	tmpl := JamFeedData{
@@ -207,11 +150,10 @@ func JamFeed2024_Learning(c *RequestContext) ResponseData {
 		UserAvatarUrl:        templates.UserAvatarDefaultUrl("dark"),
 		DaysUntilStart:       daysUntilStart,
 		DaysUntilEnd:         daysUntilEnd,
-		TwitchEmbedUrl:       twitchEmbedUrl,
 		ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
 		SubmittedProjectUrl:  "",
-		Projects:             projects,
-		TimelineItems:        timelineItems,
+		Projects:             feedData.Projects,
+		TimelineItems:        feedData.TimelineItems,
 	}
 
 	if c.CurrentUser != nil {
@@ -233,6 +175,90 @@ func JamFeed2024_Learning(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("jam_2024_lj_feed.html", tmpl, c.Perf)
 	return res
+}
+
+type JamProjectDataLJ2024 struct {
+	Projects      []templates.Project
+	NewProjectUrl string
+}
+
+type JamFeedDataLJ2024 struct {
+	Projects      JamProjectDataLJ2024
+	TimelineItems []templates.TimelineItem
+
+	projects []hmndata.ProjectAndStuff
+}
+
+// 0 for no limit on timeline items.
+func getLJ2024FeedData(c *RequestContext, maxTimelineItems int) (JamFeedDataLJ2024, error) {
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		JamSlugs: []string{hmndata.LJ2024.Slug},
+	})
+	if err != nil {
+		return JamFeedDataLJ2024{}, oops.New(err, "failed to fetch jam projects for current user")
+	}
+
+	projects := make([]templates.Project, 0, len(jamProjects))
+	for _, jp := range jamProjects {
+		urlContext := hmndata.UrlContextForProject(&jp.Project)
+		projectUrl := urlContext.BuildHomepage()
+		projects = append(projects, templates.ProjectAndStuffToTemplate(&jp, projectUrl, c.Theme))
+	}
+
+	projectIds := make([]int, 0, len(jamProjects))
+	for _, jp := range jamProjects {
+		projectIds = append(projectIds, jp.Project.ID)
+	}
+
+	var timelineItems []templates.TimelineItem
+	if len(projectIds) > 0 {
+		snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+			ProjectIDs: projectIds,
+			Limit:      maxTimelineItems,
+		})
+		if err != nil {
+			return JamFeedDataLJ2024{}, oops.New(err, "failed to fetch snippets for jam showcase")
+		}
+
+		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
+		for _, s := range snippets {
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem.SmallInfo = true
+			timelineItems = append(timelineItems, timelineItem)
+		}
+	}
+
+	return JamFeedDataLJ2024{
+		Projects: JamProjectDataLJ2024{
+			Projects:      projects,
+			NewProjectUrl: hmnurl.BuildProjectNewJam(),
+		},
+		TimelineItems: timelineItems,
+
+		projects: jamProjects,
+	}, nil
+}
+
+func getTwitchEmbedUrl(c *RequestContext) string {
+	twitchEmbedUrl := ""
+	twitchStatus, err := db.QueryOne[models.TwitchLatestStatus](c, c.Conn,
+		`
+		SELECT $columns
+		FROM twitch_latest_status
+		WHERE twitch_login = $1
+		`,
+		"carlsagan42",
+	)
+	if err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to query Twitch status for the HMN account")
+	} else if twitchStatus.Live {
+		hmnUrl, err := url.Parse(config.Config.BaseUrl)
+		if err == nil {
+			twitchEmbedUrl = fmt.Sprintf("https://player.twitch.tv/?channel=%s&parent=%s", twitchStatus.TwitchLogin, hmnUrl.Hostname())
+		}
+	}
+
+	return twitchEmbedUrl
 }
 
 func JamIndex2023(c *RequestContext) ResponseData {

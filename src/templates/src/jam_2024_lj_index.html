@@ -23,7 +23,7 @@
 					{{ if .SubmittedProjectUrl }}
 						<a class="btn--jam" href="{{ .SubmittedProjectUrl }}">Share your progress</a>
 					{{ else }}
-						<a class="btn--jam" href="{{ .ProjectSubmissionUrl }}">Create your project</a>
+						<a class="btn--jam" href="{{ .NewProjectUrl }}">Create your project</a>
 					{{ end }}
 					<a class="btn--jam" href="{{ .JamFeedUrl }}">Recent activity</a>
 				{{ else }}
@@ -37,106 +37,62 @@
 {{ end }}
 
 {{ define "content" }}
-<style>
-	.lightbulb-icon {
-		--mask-url: url("{{ static "learningjam2024/lightbulb.svg" }}");
-	}
-	.books-icon {
-		--mask-url: url("{{ static "learningjam2024/books.svg" }}");
-	}
-	.presentation-icon {
-		--mask-url: url("{{ static "learningjam2024/presentation.svg" }}");
-	}
-</style>
 <div class="mw7 margin-center flex flex-column">
-	<div class="ph3 pv4 bb b--rich-gray">
-		<h2 class="dib c--theme-gradient-light">What is a Learning Jam?</h2>
-		<div class="post-content">
-			<p>
-				The <b class="c--theme-gradient-light">Learning Jam</b> is an opportunity for you to learn something new.
-			</p>
-			<p>
-				Unlike traditional game jams, and unlike our previous programming jams, the goal of the <b class="c--theme-gradient-light">Learning Jam</b> is <em>knowledge</em>. It's an opportunity to throw yourself at a topic and learn everything you can about it—and then, to turn around and share that knowledge with others.
-			</p>
-			<p>
-				The jam takes place over <b>two weekends</b>. On the first weekend, you'll learn as much as you can about your topic of choice. On the second, you'll share what you learned in whatever form you like—writeup, video, Minecraft mod, whatever.
-			</p>
-		</div>
-	</div>
-	<div class="ph3 pv4 bb b--rich-gray">
-		<h2 class="mb3 dib c--theme-gradient-light">How to participate</h2>
-		<div class="flex flex-column g2">
-			<div class="pa3 flex flex-column flex-row-ns g3 items-center bg--rich-gray">
-				<div class="flex-shrink-0 w4 flex justify-center items-center">
-					<div class="flex svg-mask lightbulb-icon bg--theme-gradient-light" style="width: 5.2rem">
-						<img class="invisible" src="{{ static "learningjam2024/lightbulb.svg" }}" />
-					</div>
-				</div>
-				<div class="post-content">
-					<h3 class="f4">Choose a topic.</h3>
-					<p>
-						Decide what you'll spend your weekend learning about. Maybe there's an area of programming you've been meaning to dig into, or maybe there's a specialization in your field that you've been curious about. Maybe you just need a reason to read papers for a weekend.
-					</p>
-					<p>
-						You're welcome to work in teams or work solo.
-					</p>
-				</div>
-			</div>
-			<div class="pa3 flex flex-column flex-row-ns g3 items-center bg--rich-gray">
-				<div class="flex-shrink-0 w4 flex justify-center items-center">
-					<div class="flex flex-shrink-0 svg-mask books-icon bg--theme-gradient-light" style="width: 3.6rem">
-						<img class="invisible" src="{{ static "learningjam2024/books.svg" }}" />
-					</div>
-				</div>
-				<div class="post-content">
-					<h3 class="f4">Mar 15-17: Learn!</h3>
-					<p>
-						Create a Handmade Network project to track your progress. Then go down the rabbit hole. Absorb as much information as you can in a weekend.
-					</p>
-					<p>
-						As you learn, we encourage you to share updates on Discord using the <b>!til</b> command. These updates will be published as part of your submission.
-					</p>
-				</div>
-			</div>
-			<div class="pa3 flex flex-column flex-row-ns g3 items-center bg--rich-gray">
-				<div class="flex-shrink-0 w4 flex justify-center items-center">
-					<div class="flex flex-shrink-0 svg-mask presentation-icon bg--theme-gradient-light" style="width: 5rem">
-						<img class="invisible" src="{{ static "learningjam2024/presentation.svg" }}" />
-					</div>
-				</div>
-				<div class="post-content">
-					<h3 class="f4">Mar 22-24: Share!</h3>
-					<p>
-						Share what you learned with the rest of the community. You can present the information in any form you like—whatever helps you communicate most effectively.
-					</p>
-					<p>
-						Your post doesn't have to be the authoritative resource on a subject. It doesn't even have to do much "teaching" at all. The point is just to share what you learned, what surprised you, what you found interesting, and where you want to go from here.
-					</p>
-					<p>
-						Your Handmade Network project is your final submission. Make sure the description gives adequate context, and either attach or link to your final presentation.
-					</p>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="ph3 pv4 bb b--rich-gray">
-		<h2 class="dib c--theme-gradient-light">Why?</h2>
-		<div class="post-content">
-			<p>
-				The Handmade Network's goal is to change the software industry by building back up from new foundations. But in order to do that, we need to understand those foundations.
-			</p>
-			<p>
-				Our other programming jams are great opportunities to try building new things. But what should those new things be? We want to give the community a chance to focus just on learning and research, to gather information and share it with others, to boost the entire community's knowledge on a topic.
-			</p>
-			<p>
-				We hope that the results of the <b class="c--theme-gradient-light">Learning Jam</b> inspire new ideas for the community to explore in the Visibility and Wheel Reinvention jams later in the year. There is so much bad software out in the world, and this is the first step toward reinventing it.
-			</p>
-		</div>
-	</div>
+	{{ if gt .DaysUntilStart 0 }}
+		{{ template "before-jam" . }}
+	{{ else if gt .DaysUntilEnd 0 }}
+		{{ template "during-jam" . }}
+	{{ else }}
+		{{ template "after-jam" . }}
+	{{ end }}
+
 	<div>
-		<div class="mv5 h3 fill-current">
+		<div class="mv5 h3 fill-current link--white">
 			<a href="{{ .Header.HMNHomepageUrl }}">{{ svg "hmn_circuit" }}</a>
 		</div>
 	</div>
 </div>
+{{ end }}
+
+{{ define "before-jam" }}
+	{{ template "jam_2024_lj_guidelines.html" . }}
+{{ end }}
+
+{{ define "during-jam" }}
+	{{ if .Projects.Projects }}
+		{{ template "jam_2024_lj_description.html" . }}
+		{{ if .TimelineItems }}
+			<div class="ph3 pv4 bb b--rich-gray">
+				<h2 class="c--theme-gradient-light">Recent Updates</h2>
+				<div class="flex flex-column g2">
+					{{ template "jam_2024_lj_feeditems.html" .TimelineItems }}
+				</div>
+			</div>
+		{{ end }}
+		<div class="ph3 pv4 bb b--rich-gray">
+			<h2 class="c--theme-gradient-light">Projects</h2>
+			{{ template "jam_2024_lj_projects.html" .Projects }}
+		</div>
+	{{ else }}
+		{{ template "jam_2024_lj_guidelines.html" . }}
+	{{ end }}
+{{ end }}
+
+{{ define "after-jam" }}
+	{{ template "jam_2024_lj_description.html" . }}
+	{{ with .TwitchEmbedUrl }}
+		<div class="ph3 pv4 bb b--rich-gray">
+			<h2 class="dib c--theme-gradient-light">Recap Show</h2>
+			<p>
+				Watch the livestream celebrating all the submissions:
+			</p>
+			<div class="mt3" style="aspect-ratio: 16 / 9;">
+				<iframe src="{{ . }}" allowfullscreen width="100%" height="100%" frameborder="0"></iframe>
+			</div>
+		</div>
+	{{ end }}
+	<div class="ph3 pv4 bb b--rich-gray">
+		<h2 class="c--theme-gradient-light">Projects</h2>
+		{{ template "jam_2024_lj_projects.html" .Projects }}
+	</div>
 {{ end }}
