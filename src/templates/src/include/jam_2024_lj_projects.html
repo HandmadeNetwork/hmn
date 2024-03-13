@@ -1,18 +1,29 @@
 {{ if .Projects }}
-    <div class="flex flex-row flex-wrap g2">
+    <div class="flex flex-row flex-wrap g2 link--white">
         {{ range .Projects }}
             <div class="flex-basis-40-ns flex-grow-1 flex-shrink-1 bg--rich-gray pa3 flex flex-column g1">
-                <div class="f3">
-                    <a href="{{ .Url }}" class="fw6">{{ .Name }}</a>
+                {{ if gt (len .Owners) 1 }}
+                    <div class="flex g2">
+                        {{ range .Owners }}
+                            <a href="{{ .ProfileUrl }}" class="flex">
+                                <img src="{{ .AvatarUrl }}" class="user-avatar w2">
+                            </a>
+                        {{ end }}
+                    </div>
+                {{ else }}
+                    {{ range .Owners }}
+                        <a href="{{ .ProfileUrl }}" class="fw6 link--white flex g2 items-center">
+                            <img src="{{ .AvatarUrl }}" class="user-avatar w2">
+                            <div>
+                                {{ .Name }}
+                            </div>
+                        </a>
+                    {{ end }}
+                {{ end }}
+                <div class="f3 mt2">
+                    <a href="{{ .Url }}" class="fw6 db">{{ .Name }}</a>
                 </div>
                 <div class="flex-grow-1">{{ .Blurb }}</div>
-                <div class="f7">
-                    by
-                    {{ $owners := .Owners }}
-                    {{ range $idx, $owner := .Owners }}
-                        <a href="{{ $owner.ProfileUrl }}" class="fw6 link--white">{{ $owner.Name }}</a>{{ if not (lastidx $idx (len $owners)) }},{{ end }}
-                    {{ end }}
-                </div>
             </div>
         {{ end }}
         {{ if isodd (len .Projects) }}

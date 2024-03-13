@@ -140,6 +140,13 @@ func BuildJamFeed2024_Learning() string {
 	return Url("/jam/learning-2024/feed", nil)
 }
 
+var RegexJamGuidelines2024_Learning = regexp.MustCompile("^/jam/learning-2024/guidelines$")
+
+func BuildJamGuidelines2024_Learning() string {
+	defer CatchPanic()
+	return Url("/jam/learning-2024/guidelines", nil)
+}
+
 func BuildJamIndexAny(slug string) string {
 	defer CatchPanic()
 	return Url(fmt.Sprintf("/jam/%s", slug), nil)

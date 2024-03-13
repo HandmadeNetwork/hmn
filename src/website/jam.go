@@ -46,32 +46,12 @@ func JamsIndex(c *RequestContext) ResponseData {
 func JamIndex2024_Learning(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	daysUntilStart := daysUntil(hmndata.LJ2024.StartTime)
-	daysUntilEnd := daysUntil(hmndata.LJ2024.EndTime)
-
 	baseData := getBaseDataAutocrumb(c, hmndata.LJ2024.Name)
-	baseData.OpenGraphItems = []templates.OpenGraphItem{
-		{Property: "og:title", Value: "Learning Jam"},
-		{Property: "og:site_name", Value: "Handmade Network"},
-		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("learningjam2024/2024LJOpenGraph.png", true)},
-		{Property: "og:description", Value: "A two-weekend jam where you dive deep into a topic, then share it with the rest of the community."},
-		{Property: "og:url", Value: hmnurl.BuildJamIndex2024_Learning()},
-		{Name: "twitter:card", Value: "summary_large_image"},
-		{Name: "twitter:image", Value: hmnurl.BuildPublic("learningjam2024/2024LJTwitterCard.png", true)},
-	}
+	baseData.OpenGraphItems = opengraphLJ2024
 
-	type JamPageData struct {
-		templates.BaseData
-		UserAvatarUrl                string
-		DaysUntilStart, DaysUntilEnd int
-		TwitchEmbedUrl               string
-		NewProjectUrl                string
-		SubmittedProjectUrl          string
-		JamFeedUrl                   string
-
-		Projects      JamProjectDataLJ2024
-		TimelineItems []templates.TimelineItem
+	jamBaseData, err := getLJ2024BaseData(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	feedData, err := getLJ2024FeedData(c, 5)
@@ -79,34 +59,22 @@ func JamIndex2024_Learning(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
+	type JamPageData struct {
+		templates.BaseData
+		JamBaseDataLJ2024
+		TwitchEmbedUrl string
+
+		Projects      JamProjectDataLJ2024
+		TimelineItems []templates.TimelineItem
+	}
+
 	tmpl := JamPageData{
-		BaseData:            baseData,
-		UserAvatarUrl:       templates.UserAvatarDefaultUrl("dark"),
-		DaysUntilStart:      daysUntilStart,
-		DaysUntilEnd:        daysUntilEnd,
-		TwitchEmbedUrl:      getTwitchEmbedUrl(c),
-		NewProjectUrl:       hmnurl.BuildProjectNewJam(),
-		SubmittedProjectUrl: "",
-		JamFeedUrl:          hmnurl.BuildJamFeed2024_Learning(),
+		BaseData:          baseData,
+		JamBaseDataLJ2024: jamBaseData,
+		TwitchEmbedUrl:    getTwitchEmbedUrl(c),
 
 		Projects:      feedData.Projects,
 		TimelineItems: feedData.TimelineItems,
-	}
-
-	if c.CurrentUser != nil {
-		tmpl.UserAvatarUrl = templates.UserAvatarUrl(c.CurrentUser, "dark")
-		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-			OwnerIDs: []int{c.CurrentUser.ID},
-			JamSlugs: []string{hmndata.LJ2024.Slug},
-			Limit:    1,
-		})
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
-		}
-		if len(projects) > 0 {
-			urlContext := hmndata.UrlContextForProject(&projects[0].Project)
-			tmpl.SubmittedProjectUrl = urlContext.BuildHomepage()
-		}
 	}
 
 	res.MustWriteTemplate("jam_2024_lj_index.html", tmpl, c.Perf)
@@ -114,30 +82,12 @@ func JamIndex2024_Learning(c *RequestContext) ResponseData {
 }
 
 func JamFeed2024_Learning(c *RequestContext) ResponseData {
-	daysUntilStart := daysUntil(hmndata.LJ2024.StartTime)
-	daysUntilEnd := daysUntil(hmndata.LJ2024.EndTime)
-
 	baseData := getBaseDataAutocrumb(c, hmndata.LJ2024.Name)
-	baseData.OpenGraphItems = []templates.OpenGraphItem{
-		{Property: "og:title", Value: "Learning Jam"},
-		{Property: "og:site_name", Value: "Handmade Network"},
-		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("learningjam2024/2024LJOpenGraph.png", true)},
-		{Property: "og:description", Value: "A two-weekend jam where you dive deep into a topic, then teach it to the rest of the community."},
-		{Property: "og:url", Value: hmnurl.BuildJamFeed2024_Learning()},
-		{Name: "twitter:card", Value: "summary_large_image"},
-		{Name: "twitter:image", Value: hmnurl.BuildPublic("learningjam2024/2024LJTwitterCard.png", true)},
-	}
+	baseData.OpenGraphItems = opengraphLJ2024
 
-	type JamFeedData struct {
-		templates.BaseData
-		UserAvatarUrl                string
-		DaysUntilStart, DaysUntilEnd int
-		ProjectSubmissionUrl         string
-		SubmittedProjectUrl          string
-
-		Projects      JamProjectDataLJ2024
-		TimelineItems []templates.TimelineItem
+	jamBaseData, err := getLJ2024BaseData(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
 	feedData, err := getLJ2024FeedData(c, 0)
@@ -145,36 +95,70 @@ func JamFeed2024_Learning(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	tmpl := JamFeedData{
-		BaseData:             baseData,
-		UserAvatarUrl:        templates.UserAvatarDefaultUrl("dark"),
-		DaysUntilStart:       daysUntilStart,
-		DaysUntilEnd:         daysUntilEnd,
-		ProjectSubmissionUrl: hmnurl.BuildProjectNewJam(),
-		SubmittedProjectUrl:  "",
-		Projects:             feedData.Projects,
-		TimelineItems:        feedData.TimelineItems,
+	type JamFeedData struct {
+		templates.BaseData
+		JamBaseDataLJ2024
+
+		Projects      JamProjectDataLJ2024
+		TimelineItems []templates.TimelineItem
 	}
 
-	if c.CurrentUser != nil {
-		tmpl.UserAvatarUrl = templates.UserAvatarUrl(c.CurrentUser, "dark")
-		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-			OwnerIDs: []int{c.CurrentUser.ID},
-			JamSlugs: []string{hmndata.LJ2024.Slug},
-			Limit:    1,
-		})
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
-		}
-		if len(projects) > 0 {
-			urlContext := hmndata.UrlContextForProject(&projects[0].Project)
-			tmpl.SubmittedProjectUrl = urlContext.BuildHomepage()
-		}
+	tmpl := JamFeedData{
+		BaseData:          baseData,
+		JamBaseDataLJ2024: jamBaseData,
+
+		Projects:      feedData.Projects,
+		TimelineItems: feedData.TimelineItems,
 	}
 
 	var res ResponseData
 	res.MustWriteTemplate("jam_2024_lj_feed.html", tmpl, c.Perf)
 	return res
+}
+
+func JamGuidelines2024_Learning(c *RequestContext) ResponseData {
+	baseData := getBaseDataAutocrumb(c, hmndata.LJ2024.Name)
+	baseData.OpenGraphItems = opengraphLJ2024
+
+	jamBaseData, err := getLJ2024BaseData(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	type JamGuidelinesData struct {
+		templates.BaseData
+		JamBaseDataLJ2024
+	}
+
+	tmpl := JamGuidelinesData{
+		BaseData:          baseData,
+		JamBaseDataLJ2024: jamBaseData,
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("jam_2024_lj_guidelines_index.html", tmpl, c.Perf)
+	return res
+}
+
+var opengraphLJ2024 = []templates.OpenGraphItem{
+	{Property: "og:title", Value: "Learning Jam"},
+	{Property: "og:site_name", Value: "Handmade Network"},
+	{Property: "og:type", Value: "website"},
+	{Property: "og:image", Value: hmnurl.BuildPublic("learningjam2024/2024LJOpenGraph.png", true)},
+	{Property: "og:description", Value: "A two-weekend jam where you dive deep into a topic, then share it with the rest of the community."},
+	{Property: "og:url", Value: hmnurl.BuildJamIndex2024_Learning()},
+	{Name: "twitter:card", Value: "summary_large_image"},
+	{Name: "twitter:image", Value: hmnurl.BuildPublic("learningjam2024/2024LJTwitterCard.png", true)},
+}
+
+type JamBaseDataLJ2024 struct {
+	UserAvatarUrl                string
+	DaysUntilStart, DaysUntilEnd int
+	JamUrl                       string
+	JamFeedUrl                   string
+	NewProjectUrl                string
+	SubmittedProjectUrl          string
+	GuidelinesUrl                string
 }
 
 type JamProjectDataLJ2024 struct {
@@ -187,6 +171,39 @@ type JamFeedDataLJ2024 struct {
 	TimelineItems []templates.TimelineItem
 
 	projects []hmndata.ProjectAndStuff
+}
+
+func getLJ2024BaseData(c *RequestContext) (JamBaseDataLJ2024, error) {
+	daysUntilStart := daysUntil(hmndata.LJ2024.StartTime)
+	daysUntilEnd := daysUntil(hmndata.LJ2024.EndTime)
+
+	tmpl := JamBaseDataLJ2024{
+		UserAvatarUrl:  templates.UserAvatarDefaultUrl("dark"),
+		DaysUntilStart: daysUntilStart,
+		DaysUntilEnd:   daysUntilEnd,
+		JamUrl:         hmnurl.BuildJamIndex2024_Learning(),
+		JamFeedUrl:     hmnurl.BuildJamFeed2024_Learning(),
+		NewProjectUrl:  hmnurl.BuildProjectNewJam(),
+		GuidelinesUrl:  hmnurl.BuildJamGuidelines2024_Learning(),
+	}
+
+	if c.CurrentUser != nil {
+		tmpl.UserAvatarUrl = templates.UserAvatarUrl(c.CurrentUser, "dark")
+		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+			JamSlugs: []string{hmndata.LJ2024.Slug},
+			Limit:    1,
+		})
+		if err != nil {
+			return JamBaseDataLJ2024{}, oops.New(err, "failed to fetch jam projects for current user")
+		}
+		if len(projects) > 0 {
+			urlContext := hmndata.UrlContextForProject(&projects[0].Project)
+			tmpl.SubmittedProjectUrl = urlContext.BuildHomepage()
+		}
+	}
+
+	return tmpl, nil
 }
 
 // 0 for no limit on timeline items.
@@ -247,7 +264,7 @@ func getTwitchEmbedUrl(c *RequestContext) string {
 		FROM twitch_latest_status
 		WHERE twitch_login = $1
 		`,
-		"carlsagan42",
+		"handmadenetwork",
 	)
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to query Twitch status for the HMN account")

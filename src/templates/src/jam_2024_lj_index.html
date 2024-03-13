@@ -1,39 +1,11 @@
 {{ template "jam_2024_learning_base.html" . }}
 
 {{ define "content-top" }}
-<div class="mw7 margin-center">
-    <div class="flex flex-column pv4 tc">
-		<img class="jam-logo margin-center" src="{{ static "learningjam2024/logo.svg" }}">
-		<div class="margin-center mt3 mt4-ns mb4">
-			<div class="jam-title mb3">Learning Jam</div>
-			<div class="flex flex-column flex-row-ns justify-between lh-solid g3 g0-ns">
-				<div>
-					<div class="fw7 f3 mb1">Learn</div>
-					<div class="fw3 f4">March 15-17, 2024</div>
-				</div>
-				<div>
-					<div class="fw7 f3 mb1">Share</div>
-					<div class="fw3 f4">March 22-24, 2024</div>
-				</div>
-			</div>
-		</div>
-		<div class="flex g3 justify-center link--white">
-			{{ if eq .DaysUntilStart 0 }}
-				{{ if gt .DaysUntilEnd 0 }}
-					{{ if .SubmittedProjectUrl }}
-						<a class="btn--jam" href="{{ .SubmittedProjectUrl }}">Share your progress</a>
-					{{ else }}
-						<a class="btn--jam" href="{{ .NewProjectUrl }}">Create your project</a>
-					{{ end }}
-					<a class="btn--jam" href="{{ .JamFeedUrl }}">Recent activity</a>
-				{{ else }}
-					<a class="btn--jam" href="{{ .JamFeedUrl }}">See the results</a>
-				{{ end }}
-			{{ end }}
-			<a href="{{ .DiscordInviteUrl }}" class="btn--jam">Join the Discord</a>
-		</div>
-	</div>
-</div>
+	{{ if or (gt .DaysUntilStart 0) (eq .DaysUntilEnd 0) }}
+		{{ template "jam_2024_lj_bannerbig.html" . }}
+	{{ else }}
+		{{ template "jam_2024_lj_bannersmall.html" . }}
+	{{ end }}
 {{ end }}
 
 {{ define "content" }}
@@ -63,14 +35,20 @@
 		{{ template "jam_2024_lj_description.html" . }}
 		{{ if .TimelineItems }}
 			<div class="ph3 pv4 bb b--rich-gray">
-				<h2 class="c--theme-gradient-light">Recent Updates</h2>
-				<div class="flex flex-column g2">
+				<h2 class="c--theme-gradient-light">Recent updates</h2>
+				<p>
+					See what community members are learning about their topics. You can share your own updates via your <a href="{{ or .SubmittedProjectUrl .NewProjectUrl }}">project page</a> or using the <b>!til</b> command on Discord.
+				</p>
+				<div class="flex flex-column g2 mt3">
 					{{ template "jam_2024_lj_feeditems.html" .TimelineItems }}
+					<a href="{{ .JamFeedUrl }}" class="link--white tc pa1">
+						See all updates<div class="dib svgicon f8 ml1">{{ svg "chevron-right" }}</div>
+					</a>
 				</div>
 			</div>
 		{{ end }}
 		<div class="ph3 pv4 bb b--rich-gray">
-			<h2 class="c--theme-gradient-light">Projects</h2>
+			<h2 class="c--theme-gradient-light mb3">Projects</h2>
 			{{ template "jam_2024_lj_projects.html" .Projects }}
 		</div>
 	{{ else }}
@@ -82,7 +60,7 @@
 	{{ template "jam_2024_lj_description.html" . }}
 	{{ with .TwitchEmbedUrl }}
 		<div class="ph3 pv4 bb b--rich-gray">
-			<h2 class="dib c--theme-gradient-light">Recap Show</h2>
+			<h2 class="dib c--theme-gradient-light">Recap show</h2>
 			<p>
 				Watch the livestream celebrating all the submissions:
 			</p>
@@ -92,7 +70,14 @@
 		</div>
 	{{ end }}
 	<div class="ph3 pv4 bb b--rich-gray">
-		<h2 class="c--theme-gradient-light">Projects</h2>
-		{{ template "jam_2024_lj_projects.html" .Projects }}
+		<div class="flex justify-between items-baseline">
+			<h2 class="c--theme-gradient-light mb0">Submitted projects</h2>
+			<a href="{{ .JamFeedUrl }}" class="link--white tc">
+				See all updates<div class="dib svgicon f8 ml1">{{ svg "chevron-right" }}</div>
+			</a>
+		</div>
+		<div class="mt3">
+			{{ template "jam_2024_lj_projects.html" .Projects }}
+		</div>
 	</div>
 {{ end }}
