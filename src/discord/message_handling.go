@@ -285,8 +285,8 @@ func InternMessage(
 
 		_, err = dbConn.Exec(ctx,
 			`
-			INSERT INTO discord_message (id, channel_id, guild_id, url, user_id, sent_at, snippet_created)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			INSERT INTO discord_message (id, channel_id, guild_id, url, user_id, sent_at, snippet_created, backfilled)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			`,
 			msg.ID,
 			msg.ChannelID,
@@ -295,6 +295,7 @@ func InternMessage(
 			msg.Author.ID,
 			msg.Time(),
 			false,
+			msg.Backfilled,
 		)
 		if err != nil {
 			return oops.New(err, "failed to save new discord message")

@@ -929,6 +929,12 @@ func BuildDiscordShowcaseBacklog() string {
 	return Url("/discord_showcase_backlog", nil)
 }
 
+var RegexDiscordBotDebugPage = regexp.MustCompile("^/discord_bot_debug$")
+
+func BuildDiscordBotDebugPage() string {
+	return Url("/discord_bot_debug", nil)
+}
+
 /*
 * API
  */

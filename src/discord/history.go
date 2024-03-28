@@ -185,6 +185,7 @@ func Scrape(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earlies
 				return true
 			}
 
+			msg.Backfilled = true
 			err := HandleIncomingMessage(ctx, dbConn, &msg, createSnippets)
 
 			if err != nil {

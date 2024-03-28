@@ -15,6 +15,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 )
@@ -427,4 +428,19 @@ func saveDiscordAvatar(ctx context.Context, conn db.ConnOrTx, userID, avatarHash
 	}
 
 	return asset, nil
+}
+
+func DiscordBotDebugPage(c *RequestContext) ResponseData {
+	type DiscordBotDebugData struct {
+		templates.BaseData
+		BotEvents []discord.BotEvent
+	}
+	botEvents := discord.GetBotEvents()
+	var res ResponseData
+	res.MustWriteTemplate("discord_bot_debug.html", DiscordBotDebugData{
+		BaseData: getBaseData(c, "", nil),
+
+		BotEvents: botEvents,
+	}, c.Perf)
+	return res
 }

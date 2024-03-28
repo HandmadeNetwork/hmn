@@ -275,6 +275,7 @@ type Message struct {
 	Embeds      []Embed      `json:"embeds"`
 
 	originalMap map[string]interface{}
+	Backfilled  bool
 }
 
 func (m *Message) JumpURL() string {

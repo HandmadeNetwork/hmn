@@ -23,6 +23,34 @@ import (
 	"github.com/jpillora/backoff"
 )
 
+type BotEvent struct {
+	Timestamp time.Time
+	Name      string
+	Extra     string
+}
+
+var botEvents = make([]BotEvent, 0, 1000)
+var botEventsMutex = sync.Mutex{}
+
+func RecordBotEvent(name, extra string) {
+	botEventsMutex.Lock()
+	defer botEventsMutex.Unlock()
+	if len(botEvents) > 1000 {
+		botEvents = botEvents[len(botEvents)-500:]
+	}
+	botEvents = append(botEvents, BotEvent{
+		Timestamp: time.Now(),
+		Name:      name,
+		Extra:     extra,
+	})
+}
+
+func GetBotEvents() []BotEvent {
+	botEventsMutex.Lock()
+	defer botEventsMutex.Unlock()
+	return botEvents[:]
+}
+
 func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 	log := logging.ExtractLogger(ctx).With().Str("module", "discord").Logger()
 	ctx = logging.AttachLoggerToContext(&log, ctx)
@@ -56,6 +84,11 @@ func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 				log.Info().Msg("Connecting to the Discord gateway")
 				bot := newBotInstance(dbConn)
 				err := bot.Run(ctx)
+				disconnectMessage := ""
+				if err != nil {
+					disconnectMessage = err.Error()
+				}
+				RecordBotEvent("Disconnected", disconnectMessage)
 				if err != nil {
 					dur := boff.Duration()
 					log.Error().
@@ -100,6 +133,8 @@ var outgoingMessagesReady = make(chan struct{}, 1)
 type botInstance struct {
 	conn   *websocket.Conn
 	dbConn *pgxpool.Pool
+
+	resuming bool
 
 	heartbeatIntervalMs int
 	forceHeartbeat      chan struct{}
@@ -193,6 +228,7 @@ func (bot *botInstance) Run(ctx context.Context) (err error) {
 			logging.ExtractLogger(ctx).Info().Msg("Discord asked us to reconnect to the gateway")
 			return nil
 		case OpcodeInvalidSession:
+			RecordBotEvent("Failed to resume - invalid session", "")
 			// We tried to resume but the session was invalid.
 			// Delete the session and reconnect from scratch again.
 			_, err := bot.dbConn.Exec(ctx, `DELETE FROM discord_session`)
@@ -264,8 +300,11 @@ func (bot *botInstance) connect(ctx context.Context) error {
 		}
 	}
 
+	RecordBotEvent("Connected", "")
 	if shouldResume {
+		RecordBotEvent("Resuming with session ID", session.ID)
 		// Reconnect to the previous session
+		bot.resuming = true
 		err := bot.sendGatewayMessage(ctx, GatewayMessage{
 			Opcode: OpcodeResume,
 			Data: Resume{
@@ -540,11 +579,20 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 		panic(fmt.Sprintf("processEventMsg must only be used on Dispatch messages (opcode %d). Validate this before you call this function.", OpcodeDispatch))
 	}
 
+	if bot.resuming {
+		name := ""
+		if msg.EventName != nil {
+			name = *msg.EventName
+		}
+		RecordBotEvent("Got event while resuming", name)
+	}
 	switch *msg.EventName {
 	case "RESUMED":
 		// Nothing to do, but at least we can log something
 		logging.ExtractLogger(ctx).Info().Msg("Finished resuming gateway session")
 
+		bot.resuming = false
+		RecordBotEvent("Done resuming", "")
 		bot.createApplicationCommands(ctx)
 	case "MESSAGE_CREATE":
 		newMessage := *MessageFromMap(msg.Data, "")
