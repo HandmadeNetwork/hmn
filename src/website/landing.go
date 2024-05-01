@@ -160,11 +160,11 @@ func Index(c *RequestContext) ResponseData {
 		JamDaysUntilStart: daysUntil(hmndata.LJ2024.StartTime),
 		JamDaysUntilEnd:   daysUntil(hmndata.LJ2024.EndTime),
 
-		HMSDaysUntilStart: daysUntil(hmndata.HMS2023.StartTime),
-		HMSDaysUntilEnd:   daysUntil(hmndata.HMS2023.EndTime),
+		HMSDaysUntilStart: daysUntil(hmndata.HMS2024.StartTime),
+		HMSDaysUntilEnd:   daysUntil(hmndata.HMS2024.EndTime),
 
-		HMBostonDaysUntilStart: daysUntil(hmndata.HMBoston2023.StartTime),
-		HMBostonDaysUntilEnd:   daysUntil(hmndata.HMBoston2023.EndTime),
+		HMBostonDaysUntilStart: daysUntil(hmndata.HMBoston2024.StartTime),
+		HMBostonDaysUntilEnd:   daysUntil(hmndata.HMBoston2024.EndTime),
 	}, c.Perf)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render landing page template"))

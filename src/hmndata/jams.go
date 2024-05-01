@@ -88,6 +88,16 @@ var HMBoston2023 = Event{
 	EndTime:   time.Date(2023, 8, 4, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 }
 
+var HMS2024 = Event{
+	StartTime: time.Date(2024, 11, 20, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+	EndTime:   time.Date(2024, 11, 22, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+}
+
+var HMBoston2024 = Event{
+	StartTime: time.Date(2024, 8, 9, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+	EndTime:   time.Date(2024, 8, 10, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+}
+
 var AllJams = []Jam{WRJ2021, WRJ2022, VJ2023, WRJ2023, LJ2024}
 
 func CurrentJam() *Jam {
