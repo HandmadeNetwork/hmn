@@ -49,13 +49,6 @@ func BuildWhenIsIt() string {
 	return Url("/whenisit", nil)
 }
 
-var RegexNewsletterSignup = regexp.MustCompile("^/newsletter$")
-
-func BuildNewsletterSignup() string {
-	defer CatchPanic()
-	return Url("/newsletter", nil)
-}
-
 var RegexJamsIndex = regexp.MustCompile("^/jams$")
 
 func BuildJamsIndex() string {
@@ -145,6 +138,13 @@ var RegexJamGuidelines2024_Learning = regexp.MustCompile("^/jam/learning-2024/gu
 func BuildJamGuidelines2024_Learning() string {
 	defer CatchPanic()
 	return Url("/jam/learning-2024/guidelines", nil)
+}
+
+var RegexJamSaveTheDate = regexp.MustCompile("^/jam/upcoming$")
+
+func BuildJamSaveTheDate() string {
+	defer CatchPanic()
+	return Url("/jam/upcoming", nil)
 }
 
 func BuildJamIndexAny(slug string) string {
@@ -943,6 +943,12 @@ var RegexAPICheckUsername = regexp.MustCompile("^/api/check_username$")
 
 func BuildAPICheckUsername() string {
 	return Url("/api/check_username", nil)
+}
+
+var RegexAPINewsletterSignup = regexp.MustCompile("^/api/newsletter_signup$")
+
+func BuildAPINewsletterSignup() string {
+	return Url("/api/newsletter_signup", nil)
 }
 
 /*

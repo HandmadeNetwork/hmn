@@ -43,6 +43,39 @@ func JamsIndex(c *RequestContext) ResponseData {
 	return res
 }
 
+func JamSaveTheDate(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	type TemplateData struct {
+		templates.BaseData
+		UserAvatarUrl       string
+		JamsUrl             string
+		Visibility2023Url   string
+		WRJ2023Url          string
+		NewsletterSignupUrl string
+	}
+
+	tmpl := TemplateData{
+		BaseData:            getBaseDataAutocrumb(c, "Upcoming Jams"),
+		UserAvatarUrl:       templates.UserAvatarUrl(c.CurrentUser, "dark"),
+		JamsUrl:             hmnurl.BuildJamsIndex(),
+		Visibility2023Url:   hmnurl.BuildJamIndex2023_Visibility(),
+		WRJ2023Url:          hmnurl.BuildJamIndex2023(),
+		NewsletterSignupUrl: hmnurl.BuildAPINewsletterSignup(),
+	}
+	tmpl.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:title", Value: "Upcoming Jams"},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("HMNLogo_SaveThedate.png", true)},
+		{Property: "og:description", Value: "Upcoming programming jams from the Handmade community."},
+		{Property: "og:url", Value: hmnurl.BuildJamSaveTheDate()},
+	}
+
+	res.MustWriteTemplate("jam_save_the_date.html", tmpl, c.Perf)
+	return res
+}
+
 func JamIndex2024_Learning(c *RequestContext) ResponseData {
 	var res ResponseData
 

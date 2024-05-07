@@ -3,6 +3,7 @@ package website
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"html"
 	"html/template"
@@ -452,6 +453,15 @@ func (rd *ResponseData) MustWriteTemplate(name string, data interface{}, rp *per
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (rd *ResponseData) WriteJson(data any, rp *perf.RequestPerf) {
+	dataJson, err := json.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+	rd.Header().Set("Content-Type", "application/json")
+	rd.Write(dataJson)
 }
 
 func doRequest(rw http.ResponseWriter, c *RequestContext, h Handler) {

@@ -55,13 +55,10 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
 	hmnOnly.GET(hmnurl.RegexConferences, Conferences)
 	hmnOnly.GET(hmnurl.RegexWhenIsIt, WhenIsIt)
-	hmnOnly.GET(hmnurl.RegexNewsletterSignup, func(c *RequestContext) ResponseData {
-		return c.Redirect("https://cdn.forms-content.sg-form.com/9c83182a-f04a-11ed-a42d-f6f307313b7c", http.StatusFound)
-	})
 
 	hmnOnly.GET(hmnurl.RegexJamsIndex, JamsIndex)
 	hmnOnly.GET(hmnurl.RegexJamIndex, func(c *RequestContext) ResponseData {
-		return c.Redirect(hmnurl.BuildJamIndex2024_Learning(), http.StatusFound)
+		return c.Redirect(hmnurl.BuildJamSaveTheDate(), http.StatusFound)
 	})
 	hmnOnly.GET(hmnurl.RegexJamIndex2021, JamIndex2021)
 	hmnOnly.GET(hmnurl.RegexJamIndex2022, JamIndex2022)
@@ -74,6 +71,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexJamIndex2024_Learning, JamIndex2024_Learning)
 	hmnOnly.GET(hmnurl.RegexJamFeed2024_Learning, JamFeed2024_Learning)
 	hmnOnly.GET(hmnurl.RegexJamGuidelines2024_Learning, JamGuidelines2024_Learning)
+	hmnOnly.GET(hmnurl.RegexJamSaveTheDate, JamSaveTheDate)
 
 	hmnOnly.GET(hmnurl.RegexTimeMachine, TimeMachine)
 	hmnOnly.GET(hmnurl.RegexTimeMachineSubmissions, TimeMachineSubmissions)
@@ -160,6 +158,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.POST(hmnurl.RegexEducationArticleDelete, educationAuthorsOnly(csrfMiddleware(EducationArticleDeleteSubmit)))
 
 	hmnOnly.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
+	hmnOnly.POST(hmnurl.RegexAPINewsletterSignup, APINewsletterSignup)
 
 	hmnOnly.GET(hmnurl.RegexLibraryAny, func(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.BuildEducationIndex(), http.StatusFound)

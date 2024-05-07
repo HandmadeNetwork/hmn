@@ -463,8 +463,8 @@ func TestTimeMachineFormDone(t *testing.T) {
 }
 
 func TestNewsletterSignup(t *testing.T) {
-	AssertRegexMatch(t, BuildNewsletterSignup(), RegexNewsletterSignup, nil)
-	AssertSubdomain(t, BuildNewsletterSignup(), "")
+	AssertRegexMatch(t, BuildAPINewsletterSignup(), RegexNewsletterSignup, nil)
+	AssertSubdomain(t, BuildAPINewsletterSignup(), "")
 }
 
 func TestProjectNewJam(t *testing.T) {
