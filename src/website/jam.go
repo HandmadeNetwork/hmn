@@ -67,7 +67,7 @@ func JamSaveTheDate(c *RequestContext) ResponseData {
 		{Property: "og:title", Value: "Upcoming Jams"},
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("HMNLogo_SaveThedate.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("HMNLogo_SaveTheDate.png", true)},
 		{Property: "og:description", Value: "Upcoming programming jams from the Handmade community."},
 		{Property: "og:url", Value: hmnurl.BuildJamSaveTheDate()},
 	}
