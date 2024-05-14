@@ -33,12 +33,6 @@ var autostoreChannels = []string{
 }
 
 func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, createSnippets bool) error {
-	if handled, err := FreyaMode(ctx, dbConn, msg); handled {
-		return nil
-	} else if err != nil {
-		return err
-	}
-
 	deleted := false
 	var err error
 
@@ -62,6 +56,10 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 
 	if err == nil {
 		err = HandleInternedMessage(ctx, dbConn, msg, deleted, createSnippets)
+	}
+
+	if !deleted && err == nil {
+		err = FreyaMode(ctx, dbConn, msg)
 	}
 
 	return err
@@ -147,12 +145,12 @@ func CleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool
 	return deleted, nil
 }
 
-func FreyaMode(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
+func FreyaMode(ctx context.Context, dbConn db.ConnOrTx, msg *Message) error {
 	if msg.Author.IsBot {
-		return false, nil
+		return nil
 	}
-	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID {
-		return false, nil
+	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID || msg.ChannelID == config.Config.Discord.LibraryChannelID {
+		return nil
 	}
 
 	twitteryUrls := []string{
@@ -168,7 +166,7 @@ func FreyaMode(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, err
 		}
 	}
 	if !isTwittery {
-		return false, nil
+		return nil
 	}
 
 	// FREYA MODE ENGAGED
@@ -205,10 +203,10 @@ func FreyaMode(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, err
 		},
 	})
 	if err != nil {
-		return false, oops.New(err, "failed to send Freya tweet")
+		return oops.New(err, "failed to send Freya tweet")
 	}
 
-	return true, nil
+	return nil
 }
 
 func ShareToMatrix(ctx context.Context, msg *Message) error {
