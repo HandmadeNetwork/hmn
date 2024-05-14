@@ -33,33 +33,35 @@ var autostoreChannels = []string{
 }
 
 func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, createSnippets bool) error {
-	handled := false
+	if handled, err := FreyaMode(ctx, dbConn, msg); handled {
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	deleted := false
 	var err error
 
 	// NOTE(asaf): All functions called here should verify that the message applies to them.
 
-	if !handled && err == nil {
-		handled, err = CleanUpLibrary(ctx, dbConn, msg)
+	if !deleted && err == nil {
+		deleted, err = CleanUpLibrary(ctx, dbConn, msg)
 	}
 
-	if !handled && err == nil {
-		handled, err = CleanUpShowcase(ctx, dbConn, msg)
+	if !deleted && err == nil {
+		deleted, err = CleanUpShowcase(ctx, dbConn, msg)
 	}
 
-	if !handled && err == nil {
-		handled, err = FreyaMode(ctx, dbConn, msg)
-	}
-
-	if !handled && err == nil {
+	if !deleted && err == nil {
 		err = ShareToMatrix(ctx, msg)
 	}
 
-	if !handled && err == nil {
+	if !deleted && err == nil {
 		err = MaybeInternMessage(ctx, dbConn, msg)
 	}
 
 	if err == nil {
-		err = HandleInternedMessage(ctx, dbConn, msg, handled, createSnippets)
+		err = HandleInternedMessage(ctx, dbConn, msg, deleted, createSnippets)
 	}
 
 	return err
@@ -146,6 +148,13 @@ func CleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool
 }
 
 func FreyaMode(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
+	if msg.Author.IsBot {
+		return false, nil
+	}
+	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID {
+		return false, nil
+	}
+
 	twitteryUrls := []string{
 		"https://twitter.com",
 		"https://x.com",
@@ -159,11 +168,6 @@ func FreyaMode(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, err
 		}
 	}
 	if !isTwittery {
-		return false, nil
-	}
-
-	// paranoia
-	if msg.Author.IsBot {
 		return false, nil
 	}
 
