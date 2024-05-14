@@ -33,29 +33,33 @@ var autostoreChannels = []string{
 }
 
 func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, createSnippets bool) error {
-	deleted := false
+	handled := false
 	var err error
 
 	// NOTE(asaf): All functions called here should verify that the message applies to them.
 
-	if !deleted && err == nil {
-		deleted, err = CleanUpLibrary(ctx, dbConn, msg)
+	if !handled && err == nil {
+		handled, err = CleanUpLibrary(ctx, dbConn, msg)
 	}
 
-	if !deleted && err == nil {
-		deleted, err = CleanUpShowcase(ctx, dbConn, msg)
+	if !handled && err == nil {
+		handled, err = CleanUpShowcase(ctx, dbConn, msg)
 	}
 
-	if !deleted && err == nil {
+	if !handled && err == nil {
+		handled, err = FreyaMode(ctx, dbConn, msg)
+	}
+
+	if !handled && err == nil {
 		err = ShareToMatrix(ctx, msg)
 	}
 
-	if !deleted && err == nil {
+	if !handled && err == nil {
 		err = MaybeInternMessage(ctx, dbConn, msg)
 	}
 
 	if err == nil {
-		err = HandleInternedMessage(ctx, dbConn, msg, deleted, createSnippets)
+		err = HandleInternedMessage(ctx, dbConn, msg, handled, createSnippets)
 	}
 
 	return err
@@ -139,6 +143,68 @@ func CleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool
 	}
 
 	return deleted, nil
+}
+
+func FreyaMode(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
+	twitteryUrls := []string{
+		"https://twitter.com",
+		"https://x.com",
+		"https://vxtwitter.com",
+		"https://fxtwitter.com",
+	}
+	isTwittery := false
+	for _, url := range twitteryUrls {
+		if strings.Contains(msg.Content, url) {
+			isTwittery = true
+		}
+	}
+	if !isTwittery {
+		return false, nil
+	}
+
+	// paranoia
+	if msg.Author.IsBot {
+		return false, nil
+	}
+
+	// FREYA MODE ENGAGED
+	approvedTweets := []string{
+		"https://vxtwitter.com/FreyaHolmer/status/1757836988495847568",
+		"https://vxtwitter.com/FreyaHolmer/status/1752441092501361103",
+		"https://vxtwitter.com/FreyaHolmer/status/1753813557966217268",
+		"https://vxtwitter.com/FreyaHolmer/status/1746228932188295579",
+		"https://vxtwitter.com/FreyaHolmer/status/1732687685850894799",
+		"https://vxtwitter.com/FreyaHolmer/status/1761487879178736048",
+		"https://vxtwitter.com/FreyaHolmer/status/1733820461492863442",
+		"https://vxtwitter.com/FreyaHolmer/status/1732845451701871101",
+		"https://vxtwitter.com/FreyaHolmer/status/1765680355657359585",
+		"https://vxtwitter.com/FreyaHolmer/status/1784678195997852129",
+		"https://vxtwitter.com/FreyaHolmer/status/1741468609044508831",
+		"https://vxtwitter.com/FreyaHolmer/status/1759306434053870012",
+		"https://vxtwitter.com/FreyaHolmer/status/1754929898492162178",
+		"https://vxtwitter.com/FreyaHolmer/status/1782498313511534822",
+		"https://vxtwitter.com/FreyaHolmer/status/1623737764041695232",
+		"https://vxtwitter.com/FreyaHolmer/status/1718979996125925494",
+		"https://vxtwitter.com/FreyaHolmer/status/1675945798448607248",
+		"https://vxtwitter.com/FreyaHolmer/status/1662229911375953922",
+		"https://vxtwitter.com/FreyaHolmer/status/1652235944752185345",
+		"https://vxtwitter.com/FreyaHolmer/status/1386408507218427905",
+		"https://vxtwitter.com/FreyaHolmer/status/1436696408506212353",
+		"https://vxtwitter.com/FreyaHolmer/status/1444755552777670657",
+		"https://vxtwitter.com/FreyaHolmer/status/1232826293902888960",
+	}
+	tweet := approvedTweets[rand.Intn(len(approvedTweets))]
+	err := SendMessages(ctx, dbConn, MessageToSend{
+		ChannelID: msg.ChannelID,
+		Req: CreateMessageRequest{
+			Content: fmt.Sprintf("No. Only Freya is allowed to tweet. %s", tweet),
+		},
+	})
+	if err != nil {
+		return false, oops.New(err, "failed to send Freya tweet")
+	}
+
+	return true, nil
 }
 
 func ShareToMatrix(ctx context.Context, msg *Message) error {
