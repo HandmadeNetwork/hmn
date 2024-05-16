@@ -43,6 +43,34 @@
 			{{ with or .ProfileUser.Bio .ProfileUser.Blurb }}
 				<div class="mb3">{{ . }}</div>
 			{{ end }}
+			{{ if .FollowUrl }}
+				<a id="follow_link" class="db" href="javascript:;">{{ if .Following }}Unfollow{{ else }}Follow{{ end }}</a>
+				<script>
+					const followLink = document.getElementById("follow_link");
+					let following = {{ .Following }};
+					followLink.addEventListener("click", async function() {
+						followLink.disabled = true;
+
+						let formData = new FormData();
+						formData.set("csrf_token", "{{ .Session.CSRFToken }}");
+						formData.set("user_id", "{{ .ProfileUser.ID }}");
+						if (following) {
+							formData.set("unfollow", "true");
+						}
+						let result = await fetch("{{ .FollowUrl }}", {
+							method: "POST",
+							body: formData,
+							redirect: "error",
+						});
+						if (result.ok) {
+							following = !following;
+							followLink.textContent = (following ? "Unfollow" : "Follow");
+						}
+						
+						followLink.disabled = false;
+					});
+				</script>
+			{{ end }}
 			<div class="w-100 w-auto-ns w-100-l">
 				{{ if .ProfileUser.Email }}
 					<div class="pair flex">

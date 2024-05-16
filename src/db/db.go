@@ -62,8 +62,8 @@ func NewConnWithConfig(cfg config.PostgresConfig) *pgx.Conn {
 	pgcfg, err := pgx.ParseConfig(cfg.DSN())
 
 	pgcfg.Tracer = &tracelog.TraceLog{
-		zerologadapter.NewLogger(log.Logger),
-		cfg.LogLevel,
+		Logger:   zerologadapter.NewLogger(log.Logger),
+		LogLevel: cfg.LogLevel,
 	}
 
 	conn, err := pgx.ConnectConfig(context.Background(), pgcfg)
@@ -88,8 +88,8 @@ func NewConnPoolWithConfig(cfg config.PostgresConfig) *pgxpool.Pool {
 	pgcfg.MinConns = cfg.MinConn
 	pgcfg.MaxConns = cfg.MaxConn
 	pgcfg.ConnConfig.Tracer = &tracelog.TraceLog{
-		zerologadapter.NewLogger(log.Logger),
-		cfg.LogLevel,
+		Logger:   zerologadapter.NewLogger(log.Logger),
+		LogLevel: cfg.LogLevel,
 	}
 
 	conn, err := pgxpool.NewWithConfig(context.Background(), pgcfg)

@@ -43,6 +43,34 @@
 				</a>
 			</div>
 		{{ end }}
+		{{ if .FollowUrl }}
+			<a id="follow_link" class="db" href="javascript:;">{{ if .Following }}Unfollow{{ else }}Follow{{ end }}</a>
+			<script>
+				const followLink = document.getElementById("follow_link");
+				let following = {{ .Following }};
+				followLink.addEventListener("click", async function() {
+					followLink.disabled = true;
+
+					let formData = new FormData();
+					formData.set("csrf_token", "{{ .Session.CSRFToken }}");
+					formData.set("project_id", "{{ .Project.ID }}");
+					if (following) {
+						formData.set("unfollow", "true");
+					}
+					let result = await fetch("{{ .FollowUrl }}", {
+						method: "POST",
+						body: formData,
+						redirect: "error",
+					});
+					if (result.ok) {
+						following = !following;
+						followLink.textContent = (following ? "Unfollow" : "Follow");
+					}
+					
+					followLink.disabled = false;
+				});
+			</script>
+		{{ end }}
 		{{ if or .Header.Project.CanEdit (gt (len .RecentActivity) 0) }}
 			<hr class="w-100 mv4">
 			<div class="w-100 flex g3">

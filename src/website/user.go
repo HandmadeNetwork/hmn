@@ -36,6 +36,9 @@ type UserProfileTemplateData struct {
 	CanAddProject bool
 	NewProjectUrl string
 
+	FollowUrl string
+	Following bool
+
 	AdminSetOptionsUrl string
 	AdminNukeUrl       string
 
@@ -113,12 +116,10 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SQL", "Fetch posts")
 	posts, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		UserIDs:        []int{profileUser.ID},
 		SortDescending: true,
 	})
-	c.Perf.EndBlock()
 
 	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
 		OwnerIDs: []int{profileUser.ID},
@@ -172,6 +173,9 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	baseData := getBaseDataAutocrumb(c, templateUser.Name)
 
+	ownProfile := (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID)
+	followUrl := ""
+	following := false
 	snippetEdit := templates.SnippetEdit{}
 	if c.CurrentUser != nil {
 		snippetEdit = templates.SnippetEdit{
@@ -179,6 +183,19 @@ func UserProfile(c *RequestContext) ResponseData {
 			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
 			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
 		}
+
+		if !ownProfile {
+			followUrl = hmnurl.BuildFollowUser()
+			following, err = db.QueryOneScalar[bool](c, c.Conn, `
+				SELECT COUNT(*) > 0
+				FROM follower
+				WHERE user_id = $1 AND following_user_id = $2
+			`, c.CurrentUser.ID, profileUser.ID)
+			if err != nil {
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
+			}
+		}
+
 	}
 
 	var res ResponseData
@@ -188,10 +205,13 @@ func UserProfile(c *RequestContext) ResponseData {
 		ProfileUserLinks:    profileUserLinks,
 		ProfileUserProjects: templateProjects,
 		TimelineItems:       timelineItems,
-		OwnProfile:          (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID),
+		OwnProfile:          ownProfile,
 
 		CanAddProject: numPersonalProjects < maxPersonalProjects,
 		NewProjectUrl: hmnurl.BuildProjectNew(),
+
+		FollowUrl: followUrl,
+		Following: following,
 
 		AdminSetOptionsUrl: hmnurl.BuildAdminSetUserOptions(),
 		AdminNukeUrl:       hmnurl.BuildAdminNukeUser(),

@@ -938,6 +938,28 @@ func BuildTwitchEventSubCallback() string {
 var RegexTwitchDebugPage = regexp.MustCompile("^/twitch_debug$")
 
 /*
+* Following
+ */
+
+var RegexFollowingTest = regexp.MustCompile("^/following$")
+
+func BuildFollowingTest() string {
+	return Url("/following", nil)
+}
+
+var RegexFollowUser = regexp.MustCompile("^/follow/user$")
+
+func BuildFollowUser() string {
+	return Url("/follow/user", nil)
+}
+
+var RegexFollowProject = regexp.MustCompile("^/follow/project$")
+
+func BuildFollowProject() string {
+	return Url("/follow/project", nil)
+}
+
+/*
 * User assets
  */
 

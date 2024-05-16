@@ -319,6 +319,20 @@ func jamLink(jamSlug string) string {
 	}
 }
 
+type ProjectHomepageData struct {
+	templates.BaseData
+	Project        templates.Project
+	Owners         []templates.User
+	Screenshots    []string
+	ProjectLinks   []templates.Link
+	Licenses       []templates.Link
+	RecentActivity []templates.TimelineItem
+	SnippetEdit    templates.SnippetEdit
+
+	FollowUrl string
+	Following bool
+}
+
 func ProjectHomepage(c *RequestContext) ResponseData {
 	maxRecentActivity := 15
 
@@ -389,6 +403,9 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		NamedLinks, UnnamedLinks []templates.Link
 		RecentActivity           []templates.TimelineItem
 		SnippetEdit              templates.SnippetEdit
+
+		FollowUrl string
+		Following bool
 	}
 
 	var templateData ProjectHomepageData
@@ -500,6 +517,8 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	})
 	c.Perf.EndBlock()
 
+	followUrl := ""
+	following := false
 	if c.CurrentUser != nil {
 		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 			OwnerIDs: []int{c.CurrentUser.ID},
@@ -521,7 +540,19 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
 			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
 		}
+
+		followUrl = hmnurl.BuildFollowProject()
+		following, err = db.QueryOneScalar[bool](c, c.Conn, `
+			SELECT COUNT(*) > 0
+			FROM follower
+			WHERE user_id = $1 AND following_project_id = $2
+		`, c.CurrentUser.ID, c.CurrentProject.ID)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
+		}
 	}
+	templateData.FollowUrl = followUrl
+	templateData.Following = following
 
 	var res ResponseData
 	err = res.WriteTemplate("project_homepage.html", templateData, c.Perf)
