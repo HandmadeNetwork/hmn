@@ -1,0 +1,46 @@
+<div class="pv3 flex flex-column g2 items-center">
+    <form id="newsletter-form" class="flex flex-column items-center">
+        <div class="b pv2">Sign up for our email newsletter:</div>
+        <div class="flex g2 justify-center">
+            <input id="newsletter-email" type="email" class="input--jam flex-grow-1 flex-grow-0-ns" placeholder="me@example.com">
+            <button id="newsletter-button" class="white">Sign up</button>
+        </div>
+        <div id="newsletter-message" class="f7 pt1">
+            &nbsp;
+        </div>
+    </form>
+</div>
+<script>
+    {
+        const form = document.querySelector("#newsletter-form");
+        const emailField = document.querySelector("#newsletter-email");
+        const button = document.querySelector("#newsletter-button");
+        const message = document.querySelector("#newsletter-message");
+
+        form.addEventListener("submit", async e => {
+            e.preventDefault();
+            button.disabled = true;
+
+            try {
+                const res = await fetch("{{ .NewsletterSignupUrl }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        "email": emailField.value,
+                    }),
+                });
+                if (res.status >= 400) {
+                    throw new Error("bad request");
+                }
+
+                message.innerText = "Signed up successfully!";
+            } catch (err) {
+                message.innerText = "There was an error signing up.";
+            }
+
+            button.disabled = false;
+        });
+    }
+</script>

@@ -16,11 +16,12 @@ type BaseData struct {
 	Notices          []Notice
 	ReportIssueEmail string
 
-	CurrentUrl        string
-	CurrentProjectUrl string
-	LoginPageUrl      string
-	ProjectCSSUrl     string
-	DiscordInviteUrl  string
+	CurrentUrl          string
+	CurrentProjectUrl   string
+	LoginPageUrl        string
+	ProjectCSSUrl       string
+	DiscordInviteUrl    string
+	NewsletterSignupUrl string
 
 	Project Project
 	User    *User

@@ -47,11 +47,12 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		Title:       title,
 		Breadcrumbs: breadcrumbs,
 
-		CurrentUrl:        c.FullUrl(),
-		CurrentProjectUrl: c.UrlContext.BuildHomepage(),
-		LoginPageUrl:      hmnurl.BuildLoginPage(c.FullUrl()),
-		ProjectCSSUrl:     hmnurl.BuildProjectCSS(project.Color1),
-		DiscordInviteUrl:  "https://discord.gg/hmn",
+		CurrentUrl:          c.FullUrl(),
+		CurrentProjectUrl:   c.UrlContext.BuildHomepage(),
+		LoginPageUrl:        hmnurl.BuildLoginPage(c.FullUrl()),
+		ProjectCSSUrl:       hmnurl.BuildProjectCSS(project.Color1),
+		DiscordInviteUrl:    "https://discord.gg/hmn",
+		NewsletterSignupUrl: hmnurl.BuildAPINewsletterSignup(),
 
 		Project: templates.ProjectToTemplate(&project, c.UrlContext.BuildHomepage()),
 		User:    templateUser,
