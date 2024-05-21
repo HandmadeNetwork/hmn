@@ -58,9 +58,10 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 		err = HandleInternedMessage(ctx, dbConn, msg, deleted, createSnippets)
 	}
 
-	if !deleted && err == nil {
-		err = FreyaMode(ctx, dbConn, msg)
-	}
+	// when we needed her most...she vanished
+	// if !deleted && err == nil {
+	// 	err = FreyaMode(ctx, dbConn, msg)
+	// }
 
 	return err
 }
