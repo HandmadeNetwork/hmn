@@ -43,3 +43,7 @@ nodemon --exec "esbuild src\rawdata\scss\style.css --bundle --loader:.ttf=file -
 - [ ] Remove all uses of .content-block
 - [ ] Figure out what's up with the projects on the jam pages
 - [ ] Determine if we actually need .project-carousel, or if our general carousel styles (?) are sufficient
+- [ ] Rename `-2024` files
+- [ ] Validate accessibility of navigation
+- [ ] Make navigation work on mobile
+- [ ] Clean up code TODOs

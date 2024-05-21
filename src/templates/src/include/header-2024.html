@@ -1,0 +1,103 @@
+<header id="site-header" class="flex flex-row items-center link--white">
+	<a href="{{ .Header.HMNHomepageUrl }}" class="hmn-logo flex-shrink-0">
+		Handmade
+	</a>
+	<div class="flex-grow-1 flex-shrink-1"></div>
+	<div class="header-nav flex flex-row items-center lh-solid f6">
+		<a href="{{ .Header.ProjectIndexUrl }}">Projects</a>
+		<a href="{{ .Header.JamsUrl }}">Jams</a>
+        <div class="root-item">
+            <a aria-expanded="false" aria-controls="events-submenu" class="menu-dropdown-js" href="#">
+                Events <div class="menu-chevron svgicon">{{ svg "chevron-down-thick" }}</div>
+            </a>
+            <div class="submenu" id="events-submenu">
+                <a href="{{ .Header.JamsUrl }}">Jams</a>
+                <a href="https://twitch.tv/HandmadeNetwork">Unwind</a>
+            </div>
+        </div>
+        <div class="root-item">
+            <a aria-expanded="false" aria-controls="resource-submenu" class="menu-dropdown-js" href="#">
+              Resources <div class="menu-chevron svgicon">{{ svg "chevron-down-thick" }}</div>
+            </a>
+            <div class="submenu" id="resource-submenu">
+                <a href="{{ .Header.ForumsUrl }}">Forums</a>
+                <a href="{{ .Header.FishbowlUrl }}">Fishbowls</a>
+                <a href="{{ .Header.PodcastUrl }}">Podcast</a>
+                <!-- TODO: This is not a "resource", nor do we want to imply that we own Handmade Cities. -->
+                <a href="https://handmadecities.com/media/">Handmade Cities</a>
+                <!-- TODO: What about our existing conferences page? How to properly reference HandmadeCon? Does this give enough context? (Make sure to reference Casey's email to me and Abner.) -->
+                <a href="https://guide.handmadehero.org/hmcon/">HandmadeCon</a>
+            </div>
+        </div>
+		<div class="root-item">
+            <a aria-expanded="false" aria-controls="about-submenu" class="menu-dropdown-js" href="#">
+                About <div class="menu-chevron svgicon">{{ svg "chevron-down-thick" }}</div>
+            </a>
+            <div class="submenu" id="about-submenu">
+                <a href="{{ .Header.ManifestoUrl }}">Manifesto</a>
+                <a href="{{ .Header.AboutUrl }}">About the Team</a>
+            </div>
+        </div>
+	</div>
+    <a class="db ph3 pv2 flex" href="{{ or .Header.UserProfileUrl .LoginPageUrl }}">
+        <img class="avatar" src="{{ with .User }}{{ .AvatarUrl }}{{ end }}">
+    </a>
+</header>
+<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+        const header = document.querySelector('#site-header');
+
+        // set up dropdown stuff for mobile / touch
+        {
+            const rootItems = header.querySelectorAll('.root-item');
+
+            function clearDropdowns() {
+                for (const item of rootItems) {
+                    item.classList.remove('clicked');
+                }
+            }
+
+            function clickDropdown(el) {
+                header.classList.add('clicked');
+
+                if (el.classList.contains('clicked')) {
+                    clearDropdowns();
+                } else {
+                    clearDropdowns();
+                    el.classList.add('clicked');
+                }
+            }
+
+            for (const item of rootItems) {
+                if (item.querySelector('.submenu')) {
+                    item.addEventListener('click', e => {
+                        clickDropdown(item);
+                        e.stopPropagation();
+                    });
+                }
+            }
+        }
+
+        // dropdown accessiblity 
+        { 
+          const dropdowns = document.querySelectorAll('.menu-dropdown-js');
+          
+          for(let i = 0; i < dropdowns.length; i++) {
+                let dropdown = dropdowns[i];
+                dropdown.addEventListener('click', e => {
+                e.preventDefault();
+                for(let j = 0; j < dropdowns.length; j++){
+                  let each = dropdowns[j];
+                  if(each != dropdown){
+                    each.setAttribute("aria-expanded", false);
+                  }
+                }
+                // getAttribute returns a string so we have to do it this way
+                var toSetTo = dropdown.getAttribute("aria-expanded") == "false" ? "true" : "false"; 
+                dropdown.setAttribute("aria-expanded", toSetTo);
+                console.log(dropdown);
+            }); 
+          }
+        }
+    });
+</script>

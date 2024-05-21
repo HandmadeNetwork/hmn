@@ -9,7 +9,7 @@ function readableByteSize(numBytes) {
 		"gb"
 	];
 	let scale = 0;
-	while (numBytes > 1024 && scale < scales.length-1) {
+	while (numBytes > 1024 && scale < scales.length - 1) {
 		numBytes /= 1024;
 		scale++;
 	}
@@ -28,7 +28,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 	snippetEdit.avatarLink.href = ownerUrl;
 	snippetEdit.username.textContent = ownerName;
 	snippetEdit.username.href = ownerUrl;
-	snippetEdit.date.textContent = new Intl.DateTimeFormat([], {month: "2-digit", day: "2-digit", year: "numeric"}).format(date);
+	snippetEdit.date.textContent = new Intl.DateTimeFormat([], { month: "2-digit", day: "2-digit", year: "numeric" }).format(date);
 	snippetEdit.text.value = text;
 	if (attachmentElement) {
 		originalAttachment = attachmentElement.cloneNode(true);
@@ -56,7 +56,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 	updateProjectSelector();
 
 	if (originalSnippetEl) {
-		snippetEdit.cancelLink.addEventListener("click", function() {
+		snippetEdit.cancelLink.addEventListener("click", function () {
 			cancel();
 		});
 	} else {
@@ -78,7 +78,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 		if (proj.id == stickyProjectId) {
 			projEl.removeButton.remove();
 		} else {
-			projEl.removeButton.addEventListener("click", function(ev) {
+			projEl.removeButton.addEventListener("click", function (ev) {
 				projEl.root.remove();
 				updateProjectSelector();
 			});
@@ -126,7 +126,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 				option.textContent = remainingProjects[i].name;
 				projectSelector.appendChild(option);
 			}
-			projectSelector.addEventListener("change", function(ev) {
+			projectSelector.addEventListener("change", function (ev) {
 				if (projectSelector.selectedOptions.length > 0) {
 					let selected = projectSelector.selectedOptions[0];
 					if (selected.value != "") {
@@ -237,33 +237,33 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 		}
 	}
 
-	snippetEdit.uploadLink.addEventListener("click", function() {
+	snippetEdit.uploadLink.addEventListener("click", function () {
 		snippetEdit.file.click();
 	});
 
-	snippetEdit.removeLink.addEventListener("click", function() {
+	snippetEdit.removeLink.addEventListener("click", function () {
 		clearAttachment(false);
 	});
 
-	snippetEdit.replaceLink.addEventListener("click", function() {
+	snippetEdit.replaceLink.addEventListener("click", function () {
 		snippetEdit.file.click();
 	});
 
-	snippetEdit.resetLink.addEventListener("click", function() {
+	snippetEdit.resetLink.addEventListener("click", function () {
 		clearAttachment(true);
 	});
 
-	snippetEdit.uploadResetLink.addEventListener("click", function() {
+	snippetEdit.uploadResetLink.addEventListener("click", function () {
 		clearAttachment(true);
 	});
 
-	snippetEdit.file.addEventListener("change", function() {
+	snippetEdit.file.addEventListener("change", function () {
 		if (snippetEdit.file.files.length > 0) {
 			setFile(snippetEdit.file.files[0]);
 		}
 	});
 
-	snippetEdit.root.addEventListener("dragover", function(ev) {
+	snippetEdit.root.addEventListener("dragover", function (ev) {
 		let effect = "none";
 		for (let i = 0; i < ev.dataTransfer.items.length; ++i) {
 			if (ev.dataTransfer.items[i].kind.toLowerCase() == "file") {
@@ -277,7 +277,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 
 	let enterCounter = 0;
 
-	snippetEdit.root.addEventListener("dragenter", function(ev) {
+	snippetEdit.root.addEventListener("dragenter", function (ev) {
 		enterCounter++;
 		let droppable = Array.from(ev.dataTransfer.items).some(
 			item => item.kind.toLowerCase() === "file"
@@ -287,14 +287,14 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 		}
 	});
 
-	snippetEdit.root.addEventListener("dragleave", function(ev) {
+	snippetEdit.root.addEventListener("dragleave", function (ev) {
 		enterCounter--;
 		if (enterCounter == 0) {
 			snippetEdit.root.classList.remove("drop");
 		}
 	});
 
-	snippetEdit.root.addEventListener("drop", function(ev) {
+	snippetEdit.root.addEventListener("drop", function (ev) {
 		enterCounter = 0;
 		snippetEdit.root.classList.remove("drop");
 
@@ -305,18 +305,18 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 		ev.preventDefault();
 	});
 
-	snippetEdit.text.addEventListener("paste", function(ev) {
+	snippetEdit.text.addEventListener("paste", function (ev) {
 		const files = ev.clipboardData?.files ?? [];
 		if (files.length > 0) {
 			setFile(files[0]);
 		}
 	});
 
-	snippetEdit.text.addEventListener("input", function(ev) {
+	snippetEdit.text.addEventListener("input", function (ev) {
 		validate();
 	});
 
-	snippetEdit.saveButton.addEventListener("click", function(ev) {
+	snippetEdit.saveButton.addEventListener("click", function (ev) {
 		let projectsChanged = false;
 		let projInputs = snippetEdit.projectList.querySelectorAll("input[name=project_id]");
 		let assignedIds = [];
@@ -349,8 +349,8 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 			cancel();
 		}
 	});
-	
-	snippetEdit.deleteButton.addEventListener("click", function(ev) {
+
+	snippetEdit.deleteButton.addEventListener("click", function (ev) {
 		if (!window.confirm("Are you sure you want to delete this snippet?")) {
 			ev.preventDefault();
 			return;
@@ -367,7 +367,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 function editTimelineSnippet(timelineItemEl, stickyProjectId) {
 	let ownerName = timelineItemEl.querySelector(".user")?.textContent;
 	let ownerUrl = timelineItemEl.querySelector(".user")?.href;
-	let ownerAvatar = timelineItemEl.querySelector(".avatar-icon")?.src;
+	let ownerAvatar = timelineItemEl.querySelector(".avatar")?.src;
 	let creationDate = new Date(timelineItemEl.querySelector("time").dateTime);
 	let rawDesc = timelineItemEl.querySelector(".rawdesc").textContent;
 	let attachment = timelineItemEl.querySelector(".timeline-content-box")?.children?.[0];

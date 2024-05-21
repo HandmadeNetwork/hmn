@@ -58,6 +58,8 @@ type Header struct {
 	JamsUrl         string
 	EducationUrl    string
 	CalendarUrl     string
+	ManifestoUrl    string
+	AboutUrl        string
 
 	Project *ProjectHeader
 }
