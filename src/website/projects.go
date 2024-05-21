@@ -504,7 +504,11 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
 		}
 		templateProjects := make([]templates.Project, 0, len(userProjects))
+		templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
 		for _, p := range userProjects {
+			if p.Project.ID == c.CurrentProject.ID {
+				continue
+			}
 			templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
 			templateProjects = append(templateProjects, templateProject)
 		}
