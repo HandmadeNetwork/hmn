@@ -3,7 +3,6 @@ package website
 import (
 	"errors"
 	"net/http"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -116,58 +115,12 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	posts, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
-		UserIDs:        []int{profileUser.ID},
-		SortDescending: true,
-	})
-
-	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
-		OwnerIDs: []int{profileUser.ID},
+	timelineItems, err := FetchTimeline(c, c.Conn, c.CurrentUser, c.Theme, TimelineQuery{
+		UserIDs: []int{profileUser.ID},
 	})
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets for user: %s", username))
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
-
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
-
-	c.Perf.StartBlock("PROFILE", "Construct timeline items")
-	timelineItems := make([]templates.TimelineItem, 0, len(posts)+len(snippets))
-
-	for _, post := range posts {
-		timelineItems = append(timelineItems, PostToTimelineItem(
-			hmndata.UrlContextForProject(&post.Project),
-			lineageBuilder,
-			&post.Post,
-			&post.Thread,
-			profileUser,
-			c.Theme,
-		))
-	}
-
-	for _, s := range snippets {
-		item := SnippetToTimelineItem(
-			&s.Snippet,
-			s.Asset,
-			s.DiscordMessage,
-			s.Projects,
-			profileUser,
-			c.Theme,
-			(c.CurrentUser != nil && (profileUser.ID == c.CurrentUser.ID || c.CurrentUser.IsStaff)),
-		)
-		item.SmallInfo = true
-		timelineItems = append(timelineItems, item)
-	}
-
-	c.Perf.StartBlock("PROFILE", "Sort timeline")
-	sort.Slice(timelineItems, func(i, j int) bool {
-		return timelineItems[j].Date.Before(timelineItems[i].Date)
-	})
-	c.Perf.EndBlock()
-
-	c.Perf.EndBlock()
 
 	templateUser := templates.UserToTemplate(profileUser, c.Theme)
 

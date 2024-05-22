@@ -207,7 +207,7 @@ func MonitorCalendars(ctx context.Context) jobs.Job {
 				if err != nil {
 					logging.Error().Err(err).Msg("Panicked in MonitorCalendars")
 				}
-				monitorTimer.Reset(time.Minute)
+				monitorTimer.Reset(60 * time.Minute)
 			case <-ctx.Done():
 				return
 			}

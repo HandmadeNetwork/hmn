@@ -8,6 +8,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/perf"
 )
 
 const InvalidUserTwitchID = "INVALID_USER"
@@ -21,27 +22,58 @@ type TwitchStreamer struct {
 
 var twitchRegex = regexp.MustCompile(`twitch\.tv/(?P<login>[^/]+)$`)
 
-func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx) ([]TwitchStreamer, error) {
-	dbStreamers, err := db.Query[models.Link](ctx, dbConn,
+type TwitchStreamersQuery struct {
+	UserIDs    []int
+	ProjectIDs []int
+}
+
+func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx, q TwitchStreamersQuery) ([]TwitchStreamer, error) {
+	perf := perf.ExtractPerf(ctx)
+	perf.StartBlock("SQL", "Fetch twitch streamers")
+	defer perf.EndBlock()
+	var qb db.QueryBuilder
+	qb.Add(
 		`
 		SELECT $columns{link}
 		FROM
 			link
 			LEFT JOIN hmn_user AS link_owner ON link_owner.id = link.user_id
 		WHERE
-			url ~* 'twitch\.tv/([^/]+)$' AND
-			((link.user_id IS NOT NULL AND link_owner.status = $1) OR (link.project_id IS NOT NULL AND
+			TRUE
+		`,
+	)
+	if len(q.UserIDs) > 0 && len(q.ProjectIDs) > 0 {
+		qb.Add(
+			`AND (link.user_id = ANY ($?) OR link.project_id = ANY ($?))`,
+			q.UserIDs,
+			q.ProjectIDs,
+		)
+	} else {
+		if len(q.UserIDs) > 0 {
+			qb.Add(`AND link.user_id = ANY ($?)`, q.UserIDs)
+		}
+		if len(q.ProjectIDs) > 0 {
+			qb.Add(`AND link.project_id = ANY ($?)`, q.ProjectIDs)
+		}
+	}
+
+	qb.Add(
+		`
+			AND url ~* 'twitch\.tv/([^/]+)$'
+			AND ((link.user_id IS NOT NULL AND link_owner.status = $?) OR (link.project_id IS NOT NULL AND
 			(SELECT COUNT(*)
 			FROM
 				user_project AS hup
 				JOIN hmn_user AS project_owner ON project_owner.id = hup.user_id
 			WHERE
 				hup.project_id = link.project_id AND
-				project_owner.status != $1
+				project_owner.status != $?
 			) = 0))
 		`,
 		models.UserStatusApproved,
+		models.UserStatusApproved,
 	)
+	dbStreamers, err := db.Query[models.Link](ctx, dbConn, qb.String(), qb.Args()...)
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch twitch links")
 	}

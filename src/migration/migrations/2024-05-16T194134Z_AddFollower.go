@@ -32,7 +32,8 @@ func (m AddFollower) Up(ctx context.Context, tx pgx.Tx) error {
 		CREATE TABLE follower (
 			user_id int NOT NULL,
 			following_user_id int REFERENCES hmn_user (id) ON DELETE CASCADE,
-			following_project_id int REFERENCES project (id) ON DELETE CASCADE
+			following_project_id int REFERENCES project (id) ON DELETE CASCADE,
+			CONSTRAINT user_id_or_project_id CHECK ((following_user_id IS NOT NULL AND following_project_id IS NULL) OR (following_user_id IS NULL AND following_project_id IS NOT NULL))
 		);
 
 		CREATE INDEX follower_user_id ON follower(user_id);

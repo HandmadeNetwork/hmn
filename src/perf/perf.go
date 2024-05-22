@@ -174,7 +174,8 @@ const PerfContextKey = "HMNPerf"
 func ExtractPerf(ctx context.Context) *RequestPerf {
 	iperf := ctx.Value(PerfContextKey)
 	if iperf == nil {
-		return nil
+		// NOTE(asaf): Returning a dummy perf so we don't crash if it's missing
+		return MakeNewRequestPerf("PERF MISSING", "PERF MISSING", "PERF MISSING")
 	}
 	return iperf.(*RequestPerf)
 }

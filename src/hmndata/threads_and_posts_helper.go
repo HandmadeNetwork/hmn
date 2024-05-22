@@ -375,11 +375,15 @@ func FetchPosts(
 		models.VisibleProjectLifecycles,
 		models.HMNProjectID,
 	)
-	if len(q.ProjectIDs) > 0 {
-		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
-	}
-	if len(q.UserIDs) > 0 {
-		qb.Add(`AND post.author_id = ANY ($?)`, q.UserIDs)
+	if len(q.ProjectIDs) > 0 && len(q.UserIDs) > 0 {
+		qb.Add(`AND (project.id = ANY($?) OR post.author_id = ANY($?))`, q.ProjectIDs, q.UserIDs)
+	} else {
+		if len(q.ProjectIDs) > 0 {
+			qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
+		}
+		if len(q.UserIDs) > 0 {
+			qb.Add(`AND post.author_id = ANY ($?)`, q.UserIDs)
+		}
 	}
 	if len(q.ThreadIDs) > 0 {
 		qb.Add(`AND post.thread_id = ANY ($?)`, q.ThreadIDs)

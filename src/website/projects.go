@@ -382,19 +382,6 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
-
-	c.Perf.StartBlock("SQL", "Fetching project timeline")
-	posts, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
-		ProjectIDs:     []int{c.CurrentProject.ID},
-		Limit:          maxRecentActivity,
-		SortDescending: true,
-	})
-	c.Perf.EndBlock()
-
 	type ProjectHomepageData struct {
 		templates.BaseData
 		Project                  templates.Project
@@ -480,42 +467,14 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		}
 	}
 
-	for _, post := range posts {
-		templateData.RecentActivity = append(templateData.RecentActivity, PostToTimelineItem(
-			c.UrlContext,
-			lineageBuilder,
-			&post.Post,
-			&post.Thread,
-			post.Author,
-			c.Theme,
-		))
-	}
-
-	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
+	templateData.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, c.Theme, TimelineQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
 	})
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project snippets"))
-	}
-	for _, s := range snippets {
-		item := SnippetToTimelineItem(
-			&s.Snippet,
-			s.Asset,
-			s.DiscordMessage,
-			s.Projects,
-			s.Owner,
-			c.Theme,
-			(c.CurrentUser != nil && (s.Owner.ID == c.CurrentUser.ID || c.CurrentUser.IsStaff)),
-		)
-		item.SmallInfo = true
-		templateData.RecentActivity = append(templateData.RecentActivity, item)
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	c.Perf.StartBlock("PROFILE", "Sort timeline")
-	sort.Slice(templateData.RecentActivity, func(i, j int) bool {
-		return templateData.RecentActivity[j].Date.Before(templateData.RecentActivity[i].Date)
-	})
-	c.Perf.EndBlock()
+	templateData.RecentActivity = templateData.RecentActivity[:utils.IntMin(len(templateData.RecentActivity)-1, maxRecentActivity)]
 
 	followUrl := ""
 	following := false

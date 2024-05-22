@@ -1,19 +1,228 @@
 package website
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
+	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
 )
+
+func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User, theme string) ([]templates.TimelineItem, error) {
+	perf := perf.ExtractPerf(ctx)
+	type Follower struct {
+		UserID             int  `db:"user_id"`
+		FollowingUserID    *int `db:"following_user_id"`
+		FollowingProjectID *int `db:"following_project_id"`
+	}
+
+	perf.StartBlock("FOLLOW", "Assemble follow data")
+	following, err := db.Query[Follower](ctx, conn, `
+		SELECT $columns
+		FROM follower
+		WHERE user_id = $1
+	`, user.ID)
+
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch follow data")
+	}
+
+	projectIDs := make([]int, 0, len(following))
+	userIDs := make([]int, 0, len(following))
+	for _, f := range following {
+		if f.FollowingProjectID != nil {
+			projectIDs = append(projectIDs, *f.FollowingProjectID)
+		}
+		if f.FollowingUserID != nil {
+			userIDs = append(userIDs, *f.FollowingUserID)
+		}
+	}
+
+	timelineItems, err := FetchTimeline(ctx, conn, user, theme, TimelineQuery{
+		UserIDs:    userIDs,
+		ProjectIDs: projectIDs,
+	})
+	perf.EndBlock()
+
+	return timelineItems, err
+}
+
+type TimelineQuery struct {
+	UserIDs    []int
+	ProjectIDs []int
+}
+
+func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, theme string, q TimelineQuery) ([]templates.TimelineItem, error) {
+	perf := perf.ExtractPerf(ctx)
+	var users []*models.User
+	var projects []hmndata.ProjectAndStuff
+	var snippets []hmndata.SnippetAndStuff
+	var posts []hmndata.PostAndStuff
+	var streamers []hmndata.TwitchStreamer
+	var streams []*models.TwitchStreamHistory
+
+	perf.StartBlock("TIMELINE", "Fetch timeline data")
+	if len(q.UserIDs) > 0 || len(q.ProjectIDs) > 0 {
+		users, err := hmndata.FetchUsers(ctx, conn, currentUser, hmndata.UsersQuery{
+			UserIDs: q.UserIDs,
+		})
+		if err != nil {
+			return nil, oops.New(err, "failed to fetch users")
+		}
+
+		// NOTE(asaf): Clear out invalid users in case we banned someone after they got followed
+		q.UserIDs = q.UserIDs[0:0]
+		for _, u := range users {
+			q.UserIDs = append(q.UserIDs, u.ID)
+		}
+
+		projects, err = hmndata.FetchProjects(ctx, conn, currentUser, hmndata.ProjectsQuery{
+			ProjectIDs: q.ProjectIDs,
+		})
+		if err != nil {
+			return nil, oops.New(err, "failed to fetch projects")
+		}
+
+		// NOTE(asaf): The original projectIDs might container hidden/abandoned projects,
+		//             so we recreate it after the projects get filtered by FetchProjects.
+		q.ProjectIDs = q.ProjectIDs[0:0]
+		for _, p := range projects {
+			q.ProjectIDs = append(q.ProjectIDs, p.Project.ID)
+		}
+
+		snippets, err = hmndata.FetchSnippets(ctx, conn, currentUser, hmndata.SnippetQuery{
+			OwnerIDs:   q.UserIDs,
+			ProjectIDs: q.ProjectIDs,
+		})
+		if err != nil {
+			return nil, oops.New(err, "failed to fetch user snippets")
+		}
+
+		posts, err = hmndata.FetchPosts(ctx, conn, currentUser, hmndata.PostsQuery{
+			UserIDs:        q.UserIDs,
+			ProjectIDs:     q.ProjectIDs,
+			SortDescending: true,
+		})
+		if err != nil {
+			return nil, oops.New(err, "failed to fetch user posts")
+		}
+
+		streamers, err = hmndata.FetchTwitchStreamers(ctx, conn, hmndata.TwitchStreamersQuery{
+			UserIDs:    q.UserIDs,
+			ProjectIDs: q.ProjectIDs,
+		})
+		if err != nil {
+			return nil, oops.New(err, "failed to fetch streamers")
+		}
+
+		twitchLogins := make([]string, 0, len(streamers))
+		for _, s := range streamers {
+			twitchLogins = append(twitchLogins, s.TwitchLogin)
+		}
+		streams, err = db.Query[models.TwitchStreamHistory](ctx, conn,
+			`
+			SELECT $columns FROM twitch_stream_history WHERE twitch_login = ANY ($1)
+			`,
+			twitchLogins,
+		)
+		if err != nil {
+			return nil, oops.New(err, "failed to fetch stream histories")
+		}
+	}
+	perf.EndBlock()
+
+	perf.StartBlock("TIMELINE", "Construct timeline items")
+	timelineItems := make([]templates.TimelineItem, 0, len(snippets)+len(posts))
+
+	if len(posts) > 0 {
+		perf.StartBlock("SQL", "Fetch subforum tree")
+		subforumTree := models.GetFullSubforumTree(ctx, conn)
+		lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+		perf.EndBlock()
+
+		for _, post := range posts {
+			timelineItems = append(timelineItems, PostToTimelineItem(
+				hmndata.UrlContextForProject(&post.Project),
+				lineageBuilder,
+				&post.Post,
+				&post.Thread,
+				post.Author,
+				theme,
+			))
+		}
+	}
+
+	for _, s := range snippets {
+		item := SnippetToTimelineItem(
+			&s.Snippet,
+			s.Asset,
+			s.DiscordMessage,
+			s.Projects,
+			s.Owner,
+			theme,
+			false,
+		)
+		item.SmallInfo = true
+		timelineItems = append(timelineItems, item)
+	}
+
+	for _, s := range streams {
+		ownerAvatarUrl := ""
+		ownerName := ""
+		ownerUrl := ""
+
+		for _, streamer := range streamers {
+			if streamer.TwitchLogin == s.TwitchLogin {
+				if streamer.UserID != nil {
+					for _, u := range users {
+						if u.ID == *streamer.UserID {
+							ownerAvatarUrl = templates.UserAvatarUrl(u, theme)
+							ownerName = u.BestName()
+							ownerUrl = hmnurl.BuildUserProfile(u.Username)
+							break
+						}
+					}
+				} else if streamer.ProjectID != nil {
+					for _, p := range projects {
+						if p.Project.ID == *streamer.ProjectID {
+							ownerAvatarUrl = templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, theme)
+							ownerName = p.Project.Name
+							ownerUrl = hmndata.UrlContextForProject(&p.Project).BuildHomepage()
+						}
+						break
+					}
+				}
+				break
+			}
+		}
+		if ownerAvatarUrl == "" {
+			ownerAvatarUrl = templates.UserAvatarDefaultUrl(theme)
+		}
+		item := TwitchStreamToTimelineItem(s, ownerAvatarUrl, ownerName, ownerUrl)
+		timelineItems = append(timelineItems, item)
+	}
+
+	perf.StartBlock("TIMELINE", "Sort timeline")
+	sort.Slice(timelineItems, func(i, j int) bool {
+		return timelineItems[j].Date.Before(timelineItems[i].Date)
+	})
+	perf.EndBlock()
+	perf.EndBlock()
+
+	return timelineItems, nil
+}
 
 type TimelineTypeTitles struct {
 	TypeTitleFirst    string
@@ -57,6 +266,42 @@ func PostToTimelineItem(
 			Int("postID", post.ID).
 			Int("threadType", int(post.ThreadType)).
 			Msg("unknown thread type for post")
+	}
+
+	return item
+}
+
+func TwitchStreamToTimelineItem(
+	streamHistory *models.TwitchStreamHistory,
+	ownerAvatarUrl string,
+	ownerName string,
+	ownerUrl string,
+) templates.TimelineItem {
+	url := fmt.Sprintf("https://twitch.tv/%s", streamHistory.TwitchLogin)
+	title := fmt.Sprintf("%s is live on Twitch: %s", streamHistory.TwitchLogin, streamHistory.Title)
+	desc := ""
+	if streamHistory.StreamEnded {
+		if streamHistory.VODUrl != "" {
+			url = streamHistory.VODUrl
+		}
+		title = fmt.Sprintf("%s	was live on Twitch", streamHistory.TwitchLogin)
+
+		streamDuration := streamHistory.EndedAt.Sub(streamHistory.StartedAt).Truncate(time.Second).String()
+		desc = fmt.Sprintf("%s<br/><br/>Streamed for %s", streamHistory.Title, streamDuration)
+	}
+	item := templates.TimelineItem{
+		ID:          streamHistory.StreamID,
+		Date:        streamHistory.StartedAt,
+		FilterTitle: "Live streams",
+		Url:         url,
+		Title:       title,
+		Description: template.HTML(desc),
+
+		OwnerAvatarUrl: ownerAvatarUrl,
+		OwnerName:      ownerName,
+		OwnerUrl:       ownerUrl,
+
+		SmallInfo: true,
 	}
 
 	return item

@@ -5,7 +5,6 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/oops"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Subforum struct {
@@ -43,7 +42,7 @@ func (node *SubforumTreeNode) GetLineage() []*Subforum {
 	return result
 }
 
-func GetFullSubforumTree(ctx context.Context, conn *pgxpool.Pool) SubforumTree {
+func GetFullSubforumTree(ctx context.Context, conn db.ConnOrTx) SubforumTree {
 	subforums, err := db.Query[Subforum](ctx, conn,
 		`
 		SELECT $columns

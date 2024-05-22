@@ -93,7 +93,7 @@ func TwitchDebugPage(c *RequestContext) ResponseData {
 		Users []dataUser `json:"users"`
 		Logs  []dataLog  `json:"logs"`
 	}
-	streamers, err := hmndata.FetchTwitchStreamers(c, c.Conn)
+	streamers, err := hmndata.FetchTwitchStreamers(c, c.Conn, hmndata.TwitchStreamersQuery{})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch twitch streamers"))
 	}

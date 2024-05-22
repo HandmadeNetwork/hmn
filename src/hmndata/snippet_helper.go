@@ -62,11 +62,6 @@ func FetchSnippets(
 			return nil, oops.New(err, "failed to get snippet IDs for tag")
 		}
 
-		// special early-out: no snippets found for these tags at all
-		if len(snippetIDs) == 0 {
-			return nil, nil
-		}
-
 		tagSnippetIDs = snippetIDs
 	}
 
@@ -87,11 +82,6 @@ func FetchSnippets(
 			return nil, oops.New(err, "failed to get snippet IDs for tag")
 		}
 
-		// special early-out: no snippets found for these projects at all
-		if len(snippetIDs) == 0 {
-			return nil, nil
-		}
-
 		projectSnippetIDs = snippetIDs
 	}
 
@@ -109,17 +99,19 @@ func FetchSnippets(
 			TRUE
 		`,
 	)
-	if len(q.IDs) > 0 {
-		qb.Add(`AND snippet.id = ANY ($?)`, q.IDs)
-	}
-	if len(tagSnippetIDs) > 0 {
-		qb.Add(`AND snippet.id = ANY ($?)`, tagSnippetIDs)
-	}
-	if len(projectSnippetIDs) > 0 {
-		qb.Add(`AND snippet.id = ANY ($?)`, projectSnippetIDs)
-	}
-	if len(q.OwnerIDs) > 0 {
-		qb.Add(`AND snippet.owner_id = ANY ($?)`, q.OwnerIDs)
+	allIDs := make([]int, 0, len(q.IDs)+len(tagSnippetIDs)+len(projectSnippetIDs))
+	allIDs = append(allIDs, q.IDs...)
+	allIDs = append(allIDs, tagSnippetIDs...)
+	allIDs = append(allIDs, projectSnippetIDs...)
+	if len(allIDs) > 0 && len(q.OwnerIDs) > 0 {
+		qb.Add(`AND (snippet.id = ANY ($?) OR snippet.owner_id = ANY ($?))`, allIDs, q.OwnerIDs)
+	} else {
+		if len(allIDs) > 0 {
+			qb.Add(`AND snippet.id = ANY ($?)`, allIDs)
+		}
+		if len(q.OwnerIDs) > 0 {
+			qb.Add(`AND snippet.owner_id = ANY ($?)`, q.OwnerIDs)
+		}
 	}
 	if len(q.DiscordMessageIDs) > 0 {
 		qb.Add(`AND snippet.discord_message_id = ANY ($?)`, q.DiscordMessageIDs)

@@ -254,7 +254,7 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool, u
 	var stats twitchSyncStats
 
 	p.StartBlock("SQL", "Fetch list of streamers")
-	streamers, err := hmndata.FetchTwitchStreamers(ctx, dbConn)
+	streamers, err := hmndata.FetchTwitchStreamers(ctx, dbConn, hmndata.TwitchStreamersQuery{})
 	if err != nil {
 		log.Error().Err(err).Msg("Error while monitoring twitch")
 		return
@@ -546,7 +546,7 @@ func updateStreamStatus(ctx context.Context, dbConn db.ConnOrTx, twitchID string
 
 	// NOTE(asaf): Verifying that the streamer we're processing hasn't been removed from our db in the meantime.
 	foundStreamer := false
-	allStreamers, err := hmndata.FetchTwitchStreamers(ctx, dbConn)
+	allStreamers, err := hmndata.FetchTwitchStreamers(ctx, dbConn, hmndata.TwitchStreamersQuery{})
 	if err != nil {
 		log.Error().Err(err).Msg("failed to fetch hmn streamers")
 		return
@@ -599,7 +599,7 @@ func processEventSubNotification(ctx context.Context, dbConn db.ConnOrTx, notifi
 
 	// NOTE(asaf): Verifying that the streamer we're processing hasn't been removed from our db in the meantime.
 	foundStreamer := false
-	allStreamers, err := hmndata.FetchTwitchStreamers(ctx, dbConn)
+	allStreamers, err := hmndata.FetchTwitchStreamers(ctx, dbConn, hmndata.TwitchStreamersQuery{})
 	if err != nil {
 		log.Error().Err(err).Msg("failed to fetch hmn streamers")
 		return
