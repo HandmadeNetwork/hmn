@@ -1,15 +1,5 @@
 # Styling TODO
 
-## How to build
-
-```
-esbuild src\rawdata\scss\style.css --bundle --loader:.ttf=file --outdir=public --target=chrome109,firefox109,safari12
-
-nodemon --exec "esbuild src\rawdata\scss\style.css --bundle --loader:.ttf=file --outdir=public --target=chrome109,firefox109,safari12" src\rawdata\scss\style.css --ignore public
-```
-
-## TODO
-
 - [ ] Fix spacing of podcast episodes (used to use p-spaced)
 - [x] Audit uses of tables across the site to see where we might actually need to apply table-layout: fixed and border-collapse: collapse
     - There are zero tables on the site except one used for Asaf's debugging.
@@ -47,3 +37,20 @@ nodemon --exec "esbuild src\rawdata\scss\style.css --bundle --loader:.ttf=file -
 - [ ] Validate accessibility of navigation
 - [ ] Make navigation work on mobile
 - [ ] Clean up code TODOs
+- [ ] Support the following external logos:
+    - Twitter / X
+    - Patreon
+    - Discord
+    - Twitch
+    - Steam
+    - Itch?
+    - Generic website
+    - Bluesky
+    - YouTube
+    - Vimeo
+    - App Store
+    - Play Store
+    - GitHub
+    - Threads?
+    - TikTok?
+    - Trello?

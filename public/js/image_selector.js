@@ -1,12 +1,15 @@
 function ImageSelector(form, maxFileSize, container, defaultImageUrl) {
 	this.form = form;
 	this.maxFileSize = maxFileSize;
-	this.fileInput = container.querySelector(".image_input");
-	this.removeImageInput = container.querySelector(".remove_input");
+	this.fileInput = container.querySelector(".imginput");
+	this.removeImageInput = container.querySelector(".imginput-remove");
 	this.imageEl = container.querySelector("img");
-	this.resetLink = container.querySelector(".reset");
-	this.removeLink = container.querySelector(".remove");
-	this.originalImageUrl = this.imageEl.getAttribute("data-original");
+	this.container = container.querySelector(".imginput-container");
+	this.resetLink = container.querySelector(".imginput-reset-link");
+	this.removeLink = container.querySelector(".imginput-remove-link");
+	this.filenameText = container.querySelector(".imginput-filename");
+	this.originalImageUrl = this.imageEl.getAttribute("data-imginput-original");
+	this.originalImageFilename = this.imageEl.getAttribute("data-imginput-original-filename");
 	this.currentImageUrl = this.originalImageUrl;
 	this.defaultImageUrl = defaultImageUrl || "";
 
@@ -14,7 +17,7 @@ function ImageSelector(form, maxFileSize, container, defaultImageUrl) {
 	this.removeImageInput.value = "";
 
 	this.setImageUrl(this.originalImageUrl);
-	this.updateButtons();
+	this.updatePreview();
 
 	this.fileInput.addEventListener("change", function(ev) {
 		if (this.fileInput.files.length > 0) {
@@ -33,12 +36,16 @@ function ImageSelector(form, maxFileSize, container, defaultImageUrl) {
 	}
 }
 
+ImageSelector.prototype.openFileInput = function() {
+	this.fileInput.click();
+}
+
 ImageSelector.prototype.handleNewImageFile = function(file) {
 	if (file) {
 		this.updateSizeLimit(file.size);
 		this.removeImageInput.value = "";
 		this.setImageUrl(URL.createObjectURL(file));
-		this.updateButtons();
+		this.updatePreview(file);
 	}
 };
 
@@ -47,7 +54,7 @@ ImageSelector.prototype.removeImage = function() {
 	this.fileInput.value = "";
 	this.removeImageInput.value = "true";
 	this.setImageUrl(this.defaultImageUrl);
-	this.updateButtons();
+	this.updatePreview(null);
 };
 
 ImageSelector.prototype.resetImage = function() {
@@ -55,7 +62,7 @@ ImageSelector.prototype.resetImage = function() {
 	this.fileInput.value = "";
 	this.removeImageInput.value = "";
 	this.setImageUrl(this.originalImageUrl);
-	this.updateButtons();
+	this.updatePreview(null);
 };
 
 ImageSelector.prototype.updateSizeLimit = function(size) {
@@ -82,19 +89,24 @@ ImageSelector.prototype.setImageUrl = function(url) {
 	}
 };
 
-ImageSelector.prototype.updateButtons = function() {
-	if ((this.originalImageUrl.length > 0 && this.originalImageUrl != this.defaultImageUrl)
-		&& this.currentImageUrl != this.originalImageUrl) {
+ImageSelector.prototype.updatePreview = function(file) {
+	const showReset = (
+		this.originalImageUrl
+		&& this.originalImageUrl != this.defaultImageUrl
+		&& this.originalImageUrl != this.currentImageUrl
+	);
+	const showRemove = (
+		!this.fileInput.required
+		&& this.currentImageUrl != this.defaultImageUrl
+	);
+	this.resetLink.hidden = !showReset;
+	this.removeLink.hidden = !showRemove;
 
-		this.resetLink.style.display = "inline-block";
+	if (this.currentImageUrl == this.originalImageUrl) {
+		this.filenameText.innerText = this.originalImageFilename;
 	} else {
-		this.resetLink.style.display = "none";
+		this.filenameText.innerText = file ? file.name : "";
 	}
 
-	if (!this.fileInput.required && this.currentImageUrl != this.defaultImageUrl) {
-		this.removeLink.style.display = "inline-block";
-	} else {
-		this.removeLink.style.display = "none";
-	}
+	this.container.hidden = !this.currentImageUrl;
 };
-

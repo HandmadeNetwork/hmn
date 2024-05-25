@@ -1,4 +1,4 @@
-{{ template "base.html" . }}
+{{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
 	{{ template "markdown_previews.html" .TextEditor }}
@@ -22,212 +22,208 @@
 {{ end }}
 
 {{ define "content" }}
-	<div class="ph3 ph0-ns">
-		{{ if .Editing }}
-			<h1>Edit {{ .ProjectSettings.Name }}</h1>
-		{{ else }}
-			<h1>Create a new {{ if .ProjectSettings.JamParticipation }}jam {{ end }}project</h1>
-		{{ end }}
-		<form id="project_form" class="tabbed edit-form" method="POST" enctype="multipart/form-data">
+	<div class="bg1 flex bb">
+		<form id="project_form" class="hmn-form pa4 flex-fair" method="POST" enctype="multipart/form-data">
 			{{ csrftoken .Session }}
-			<div class="tab" data-name="General" data-slug="general">
-				<div class="edit-form-row">
-					<div class="pt-input-ns">Project name:</div>
-					<div>
-						<input required type="text" name="project_name" maxlength="255" class="textbox" value="{{ .ProjectSettings.Name }}">
-						<span class="note">* Required</span>
+
+			<h1 class="f3">
+				{{ if .Editing }}
+					Edit {{ .ProjectSettings.Name }}
+				{{ else }}
+					Create a {{ if .ProjectSettings.JamParticipation }}jam {{ end }}project
+				{{ end }}
+			</h1>
+
+			<hr class="mv3">
+
+			<div class="flex flex-column g3">
+				<div class="input-group">
+					<label>Project Title*</label>
+					<input required type="text" name="project_name" maxlength="255" class="textbox" value="{{ .ProjectSettings.Name }}">
+				</div>
+
+				<div class="input-group">
+					<label>Short Description*</label>
+					<textarea id="description" required maxlength="140" name="shortdesc">
+						{{- .ProjectSettings.Blurb -}}
+					</textarea>
+					<div class="f6">Plaintext only. No links or markdown.</div>
+				</div>
+				
+				<div class="input-group">
+					<label>Long Description</label>
+					<textarea id="full_description" class="w-100 h5 minh-5 mono lh-copy" name="full_description">
+						{{- .ProjectSettings.Description -}}
+					</textarea>
+					<div class="flex justify-end items-center f6">
+						<div class="upload_bar flex-grow-1">
+							<div class="instructions">
+								Upload files by dragging & dropping, pasting, or <label class="pointer link" for="file_input">selecting</label> them.
+							</div>
+							<div class="progress flex">
+								<div class="progress_text mr3"></div>
+								<div class="progress_bar flex-grow-1 flex-shrink-1 pa1"><div class=""></div></div>
+							</div>
+						</div>
 					</div>
 				</div>
-				<div class="edit-form-row">
-					<div class="pt-input-ns">Status:</div>
-					<div>
-						<select name="lifecycle">
-							<option value="active" {{ if eq .ProjectSettings.Lifecycle "active" }}selected{{ end }}>Active</option>
-							<option value="hiatus" {{ if eq .ProjectSettings.Lifecycle "hiatus" }}selected{{ end }}>On Hiatus</option>
-							<option value="done"   {{ if eq .ProjectSettings.Lifecycle "done"   }}selected{{ end }}>Completed</option>
-							<option value="dead"   {{ if eq .ProjectSettings.Lifecycle "dead"   }}selected{{ end }}>Abandoned</option>
-						</select>
-					</div>
+
+				<div class="input-group">
+					<label>Status</label>
+					<select name="lifecycle">
+						<option value="active" {{ if eq .ProjectSettings.Lifecycle "active" }}selected{{ end }}>Active</option>
+						<option value="hiatus" {{ if eq .ProjectSettings.Lifecycle "hiatus" }}selected{{ end }}>On Hiatus</option>
+						<option value="done"   {{ if eq .ProjectSettings.Lifecycle "done"   }}selected{{ end }}>Completed</option>
+						<option value="dead"   {{ if eq .ProjectSettings.Lifecycle "dead"   }}selected{{ end }}>Abandoned</option>
+					</select>
 				</div>
-				<div class="edit-form-row">
-					<div class="pt-input-ns">Owners:</div>
-					<div>
-						<input id="owner_name" form="" type="text" placeholder="Enter another user's username" />
-						<a href="javascript:;" id="owner_add" class="">Add</a>
-						<span id="owners_error" class="note"></span>
-						<div id="owner_list" class="pt1">
+
+				<fieldset>
+					<legend>Discord Tag</legend>
+					<div class="pa3 input-group">
+						<input
+							id="tag" name="tag" type="text"
+							pattern="^[a-z0-9]+(-[a-z0-9]+)*$" maxlength="20"
+							value="{{ .ProjectSettings.Tag }}"
+						>
+						<div class="f6 mt1" id="tag-discord-info">If you have linked your Discord account, any #project-showcase messages with the tag "&amp;<span id="tag-preview"></span>" will automatically be associated with this project.</div>
+						<div class="f6">Tags must be all lowercase, and can use hyphens to separate words.</div>
+					</div>
+				</fieldset>
+
+				<fieldset>
+					<legend class="flex justify-between">
+						<span>Project Logo</span>
+						<a href="#" class="normal" onclick="openLogoSelector(event)">+ Upload Project Logo</a>
+					</legend>
+					<div class="light_logo">
+						{{ template "image_selector.html" imageselectordata "light_logo" .ProjectSettings.LightLogo false }}
+						<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be square, and at least 256x256.</div>
+					</div>
+				</fieldset>
+
+				<fieldset>
+					<legend class="flex justify-between">
+						<span>Header Image</span>
+						<a href="#" class="normal" onclick="openHeaderSelector(event)">+ Upload Header Image</a>
+					</legend>
+					<div class="header_image">
+						{{ template "image_selector.html" imageselectordata "header_image" .ProjectSettings.HeaderImage false }}
+						<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be very beeg (TODO)</div>
+					</div>
+				</fieldset>
+
+				<fieldset>
+					<legend>Owners</legend>
+					<div class="pa3">
+						<div class="flex">
+							<input class="flex-grow-1 no-border bl bt bb br-0" id="owner_name" type="text" placeholder="Enter a username" />
+							<button class="flex no-padding no-border pa3 bt br bb bl-0 also-focus" id="owner_add"><span class="flex w1">{{ svg "add" }}</span></button>
+						</div>
+						<div id="owners_error" class="f6"></div>
+						<div id="owner_list" class="pt3 flex flex-wrap g3">
 							<template id="owner_row">
-								<div class="owner_row flex flex-row bg--card w5 pv1 ph2" data-tmpl="root">
+								<div class="owner_row flex flex-row items-center bg3 pa2" data-tmpl="root">
 									<input type="hidden" name="owners" data-tmpl="input" />
-									<span class="flex-grow-1" data-tmpl="name"></span>
-									<a class="remove_owner" href="javascript:;">X</a>
+									<span data-tmpl="name"></span>
+									<a class="remove_owner svgicon f7 link--normal pl2" href="javascript:;">{{ svg "close" }}</a>
 								</div>
 							</template>
 							{{ range .ProjectSettings.Owners }}
-								<div class="owner_row flex flex-row bg--card w5 pv1 ph2">
+								<div class="owner_row flex flex-row items-center bg3 pa2">
 									<input type="hidden" name="owners" value="{{ .Username }}" />
-									<span class="flex-grow-1">{{ .Username }}</span>
+									<span>{{ .Username }}</span>
 									{{ if (or $.User.IsStaff (ne .ID $.User.ID)) }}
-										<a class="remove_owner" href="javascript:;">X</a>
+										<a class="remove_owner svgicon f7 link--normal pl2" href="javascript:;">{{ svg "close" }}</a>
 									{{ end }}
 								</div>
 							{{ end }}
 						</div>
 					</div>
-				</div>
-				<div class="edit-form-row">
-					<div class="pt-input-ns">Tag:</div>
-					<div>
-						<input
-							id="tag" name="tag" type="text"
-							pattern="^[a-z0-9]+(-[a-z0-9]+)*$" maxlength="20"
-							value="{{ .ProjectSettings.Tag }}"
-						/>
-						<div class="c--dim f7 mt1">e.g. "imgui" or "text-editor". Tags must be all lowercase, and can use hyphens to separate words.</div>
-						<div class="c--dim f7" id="tag-discord-info">If you have linked your Discord account, any #project-showcase messages with the tag "&amp;<span id="tag-preview"></span>" will automatically be associated with this project.</div>
-					</div>
-				</div>
+				</fieldset>
+
 				{{ if .ProjectSettings.JamParticipation }}
-					<div class="edit-form-row">
-						<div class="pt-input-ns">Jam Participation</div>
-						<div class="pt-input-ns">
+					<fieldset>
+						<legend>Jam Participation</legend>
+						<div class="pa3 flex flex-column g2">
 							{{ range .ProjectSettings.JamParticipation }}
-								<div class="pb1">
+								<div>
 									<input id="jam_{{ .JamSlug }}" type="checkbox" name="jam_participation" value="{{ .JamSlug }}" {{ if .Participating }}checked{{ end }} />
 									<label for="jam_{{ .JamSlug }}">{{ .JamName }}</label>
 								</div>
 							{{ end }}
 						</div>
-					</div>
+					</fieldset>
 				{{ end }}
+
+				<fieldset>
+					<legend class="flex justify-between">
+						<span>Links</span>
+						<a href="#" class="normal" onclick="addLink(event)">+ Add Link</a>
+					</legend>
+					<div class="pa3 input-group">
+						<div id="links" class="flex flex-column g3 relative">
+						</div>
+						<template id="link_row">
+							<div class="link_row w-100 flex flex-row items-center" data-tmpl="root">
+								<span class="link_handle svgicon pr3 pointer grab" onmousedown="startLinkDrag(event)">{{ svg "draggable" }}</span>
+								<input data-tmpl="nameInput" class="link_name mr3 w4" type="text" placeholder="Name" />
+								<input data-tmpl="urlInput" class="link_url flex-grow-1" type="url" placeholder="Link" />
+								<a class="delete_link svgicon link--normal pl3 f3" href="javascript:;" onclick="deleteLink(event)">{{ svg "delete" }}</a>
+							</div>
+						</template>
+						<template id="link_row_dummy">
+							<div class="link_row_dummy flex flex-row" data-tmpl="root">
+								<input class="o-0">
+							</div>
+						</template>
+					</div>
+					<input id="links_json" type="hidden" name="links">
+				</fieldset>
+
 				{{ if and .Editing .User.IsStaff }}
-					<div class="edit-form-row">
-						<div class="pt-input-ns">Admin settings</div>
-					</div>
-					<div class="edit-form-row">
-						<div>Official:</div>
-						<div>
-							<input id="official" type="checkbox" name="official" {{ if not .ProjectSettings.Personal }}checked{{ end }} />
-							<label for="official">Official HMN project</label>
-						</div>
-					</div>
-					<div class="edit-form-row">
-						<div>Hidden:</div>
-						<div>
-							<input id="hidden" type="checkbox" name="hidden" {{ if .ProjectSettings.Hidden }}checked{{ end }} />
-							<label for="hidden">Hide</label>
-						</div>
-					</div>
-					<div class="edit-form-row">
-						<div class="pt-input-ns">Slug:</div>
-						<div>
-							<input type="text" name="slug" maxlength="255" class="textbox" value="{{ .ProjectSettings.Slug }}">
-							<div class="c--dim f7 mt1">Has no effect for personal projects. Personal projects have a slug derived from the title.</div>
-							<div class="c--dim f7">If you change this, make sure to change DNS too!</div>
-						</div>
-					</div>
-					<div class="edit-form-row">
-						<div>Featured:</div>
-						<div>
-							<input id="featured" type="checkbox" name="featured" {{ if .ProjectSettings.Featured }}checked{{ end }} />
-							<label for="featured">Featured</label>
-							<div class="c--dim f7">Bump to the top of the project index and show in the carousel. Has no effect for personal projects.</div>
-						</div>
-					</div>
-				{{ end }}
-				<div class="edit-form-row">
-					<div></div>
-					<div>
-						{{ if .Editing }}
-							<input type="submit" value="Save" />
-						{{ else }}
-							<a class="button submit" href="javascript:;" onclick="gotoTab('description');">Next</a>
-						{{ end }}
-					</div>
-				</div>
-			</div>
-			<div class="tab" data-name="Description" data-slug="description">
-				<div class="edit-form-row">
-					<div class="pt-input-ns">Short description:</div>
-					<div>
-						<textarea id="description" required maxlength="140" name="shortdesc">
-							{{- .ProjectSettings.Blurb -}}
-						</textarea>
-						<div class="c--dim f7">Plaintext only. No links or markdown.</div>
-					</div>
-				</div>
-				<div class="edit-form-row">
-					<div class="pt-input-ns">Project links:</div>
-					<div>
-						<textarea class="links" name="links" id="links" maxlength="2048" data-max-chars="2048">
-							{{- .ProjectSettings.LinksText -}}
-						</textarea>
-						<div class="c--dim f7">
-							<div>Relevant links to put on the project page.</div>
-							<div>Format: url [Title] (e.g. <code>http://example.com/ Example Site</code>)</div>
-							<div>(1 per line, 10 max)</div>
-						</div>
-					</div>
-				</div>
-				<div class="edit-form-row">
-					<div class="pt-input-ns">Full description:</div>
-					<div>
-						<textarea id="full_description" class="w-100 h5 minh-5 mono lh-copy" name="full_description">
-							{{- .ProjectSettings.Description -}}
-						</textarea>
-						<div class="flex justify-end items-center mt2">
-							<div class="upload_bar flex-grow-1">
-								<div class="instructions">
-									Upload files by dragging & dropping, pasting, or <label class="pointer link" for="file_input">selecting</label> them.
-								</div>
-								<div class="progress flex">
-									<div class="progress_text mr3"></div>
-									<div class="progress_bar flex-grow-1 flex-shrink-1 pa1"><div class=""></div></div>
-								</div>
+				<fieldset>
+					<legend>Admin Properties</legend>
+					<div class="pa3 flex flex-column g3">
+						<div class="flex flex-column g2">
+							<div>
+								<input id="official" type="checkbox" name="official" {{ if not .ProjectSettings.Personal }}checked{{ end }}>
+								<label for="official">Official HMN project</label>
+							</div>
+							<div>
+								<input id="hidden" type="checkbox" name="hidden" {{ if .ProjectSettings.Hidden }}checked{{ end }} />
+								<label for="hidden">Hide project</label>
+							</div>
+							<div>
+								<input id="featured" type="checkbox" name="featured" {{ if .ProjectSettings.Featured }}checked{{ end }} />
+								<label for="featured">Featured</label>
 							</div>
 						</div>
-						<div class="b mt3 mb2">Preview:</div>
-						<div id="desc-preview" class="w-100"></div>
+						<div class="input-group">
+							<label for="slug">Slug</label>
+							<input type="text" id="slug" name="slug" maxlength="255" class="textbox" value="{{ .ProjectSettings.Slug }}">
+							<div class="f6">Has no effect for personal projects. Personal projects have a slug derived from the title.</div>
+							<div class="f6">If you change this, make sure to change DNS too!</div>
+						</div>
 					</div>
-				</div>
-				<div class="edit-form-row">
-					<div></div>
-					<div>
-						{{ if .Editing }}
-							<input type="submit" value="Save" />
-						{{ else }}
-							<a class="button submit" href="javascript:;" onclick="gotoTab('assets');">Next</a>
-						{{ end }}
-					</div>
-				</div>
-			</div>
-			<div class="tab" data-name="Assets" data-slug="assets">
-				<div class="edit-form-row">
-					<div>Light theme logo:</div>
-					<div class="light_logo">
-						{{ template "image_selector.html" imageselectordata "light_logo" .ProjectSettings.LightLogo false }}
-					</div>
-				</div>
-				<div class="edit-form-row">
-					<div>Dark theme logo:</div>
-					<div class="dark_logo">
-						{{ template "image_selector.html" imageselectordata "dark_logo" .ProjectSettings.DarkLogo false }}
-					</div>
-				</div>
-				<div class="edit-form-row">
-					<div></div>
-					<div>
-						{{ if .Editing }}
-							<input type="submit" value="Save" />
-						{{ else }}
-							<input type="submit" value="Create project" />
-						{{ end }}
-					</div>
+				</fieldset>
+				{{ end }}
+
+				<div class="flex justify-end">
+					{{ if .Editing }}
+						<input class="btn-primary" type="submit" value="Save" />
+					{{ else }}
+						<input class="btn-primary" type="submit" value="Create Project" />
+					{{ end }}
 				</div>
 			</div>
 		</form>
-		<input type="file" multiple name="file_input" id="file_input" class="dn" />{{/* NOTE(mark): copied NOTE(asaf): Placing this outside the form to avoid submitting it to the server by accident */}}
+		<div class="flex-fair bl pa4 bg2">
+			<div id="desc-preview" class="w-100 post-content"></div>
+		</div>
 	</div>
+	<input type="file" multiple name="file_input" id="file_input" class="dn" />{{/* NOTE(mark): copied NOTE(asaf): Placing this outside the form to avoid submitting it to the server by accident */}}
+	
 	<script>
 	let csrf = JSON.parse({{ csrftokenjs .Session }});
 
@@ -248,8 +244,7 @@
 	const tag = document.querySelector('#tag');
 	const tagPreview = document.querySelector('#tag-preview');
 	function updateTagPreview() {
-		tagPreview.innerText = tag.value;
-		document.querySelector('#tag-discord-info').classList.toggle('dn', tag.value.length === 0);
+		tagPreview.innerText = tag.value || "[your tag]";
 	}
 	updateTagPreview();
 	tag.addEventListener('input', () => updateTagPreview());
@@ -299,6 +294,7 @@
 	});
 
 	addOwnerButton.addEventListener("click", function(ev) {
+		ev.preventDefault();
 		startAddOwner();
 	});
 
@@ -386,17 +382,31 @@
 
 	const logoMaxFileSize = {{ .LogoMaxFileSize }};
 
-	let lightLogoSelector = new ImageSelector(
+	const logoSelector = new ImageSelector(
 		document.querySelector("#project_form"),
 		logoMaxFileSize,
 		document.querySelector(".light_logo")
 	);
-	
-	let darkLogoSelector = new ImageSelector(
+	function openLogoSelector(e) {
+		e.preventDefault();
+		logoSelector.openFileInput();
+	}
+
+	///////////////////////
+	// Header management //
+	///////////////////////
+
+	const headerMaxFileSize = {{ .HeaderMaxFileSize }};
+
+	const headerSelector = new ImageSelector(
 		document.querySelector("#project_form"),
-		logoMaxFileSize,
-		document.querySelector(".dark_logo")
+		headerMaxFileSize,
+		document.querySelector(".header_image")
 	);
+	function openHeaderSelector(e) {
+		e.preventDefault();
+		headerSelector.openFileInput();
+	}
 
 	//////////////////
 	// Asset upload //
@@ -410,6 +420,122 @@
 		{{ .TextEditor.MaxFileSize }},
 		{{ .TextEditor.UploadUrl }}
 	);
+
+	///////////
+	// Links //
+	///////////
+
+	const linksContainer = document.querySelector("#links");
+	const linksJSONInput = document.querySelector("#links_json");
+	const linkTemplate = makeTemplateCloner("link_row");
+	const dummyLinkTemplate = makeTemplateCloner("link_row_dummy");
+	
+	const initialLinks = JSON.parse("{{ .ProjectSettings.LinksJSON }}");
+	for (const link of initialLinks) {
+		const l = linkTemplate();
+		l.nameInput.value = link.name;
+		l.urlInput.value = link.url;
+		linksContainer.appendChild(l.root)
+	}
+	ensureLinksEmptyState();
+
+	projectForm.addEventListener("submit", () => updateLinksJSON());
+
+	function addLink(e) {
+		e.preventDefault();
+		linksContainer.appendChild(linkTemplate().root);
+	}
+
+	function deleteLink(e) {
+		e.preventDefault();
+		const l = e.target.closest(".link_row");
+		l.remove();
+
+		ensureLinksEmptyState();
+	}
+
+	function ensureLinksEmptyState() {
+		if (!linksContainer.querySelector(".link_row")) {
+			// Empty state is a single row
+			linksContainer.appendChild(linkTemplate().root);
+		}
+	}
+
+	function updateLinksJSON() {
+		const links = [];
+		for (const l of linksContainer.querySelectorAll(".link_row")) {
+			links.push({
+				"name": l.querySelector(".link_name").value,
+				"url": l.querySelector(".link_url").value,
+			});
+		}
+		linksJSONInput.value = JSON.stringify(links);
+	}
+
+	let draggingLink = null;
+	let linkDragStartY = 0;
+	let linkDragStartMouseY = 0;
+
+	function startLinkDrag(e) {
+		e.preventDefault();
+		const l = e.target.closest(".link_row");
+
+		const top = l.offsetTop;
+
+		l.insertAdjacentElement("beforebegin", dummyLinkTemplate().root);
+		document.querySelector("body").classList.add("grabbing");
+		
+		l.style.position = "absolute";
+		l.style.top = `${top}px`;
+		l.classList.add("link_dragging");
+
+		draggingLink = l;
+		linkDragStartY = top;
+		linkDragStartMouseY = e.pageY;
+	}
+
+	function doLinkDrag(e) {
+		if (!draggingLink) {
+			return;
+		}
+
+		const maxTop = linksContainer.offsetHeight - draggingLink.offsetHeight;
+
+		const delta = e.pageY - linkDragStartMouseY;
+		const top = Math.max(0, Math.min(maxTop, linkDragStartY + delta));
+		const middle = top + draggingLink.offsetHeight/2;
+
+		draggingLink.style.top = `${top}px`;
+
+		const numLinks = linksContainer.querySelectorAll(".link_row").length;
+		const itemHeight = linksContainer.offsetHeight / numLinks;
+		const index = Math.floor(middle / itemHeight);
+		
+		const links = linksContainer.querySelectorAll(".link_row:not(.link_dragging)");
+		const dummy = linksContainer.querySelector(".link_row_dummy");
+		dummy.remove();
+		linksContainer.insertBefore(dummy, links[index]);
+	}
+	
+	function endLinkDrag(e) {
+		if (!draggingLink) {
+			return;
+		}
+
+		const dummy = linksContainer.querySelector(".link_row_dummy");
+		draggingLink.remove();
+		linksContainer.insertBefore(draggingLink, dummy);
+		dummy.remove();
+
+		draggingLink.style.position = null;
+		draggingLink.style.top = null;
+		draggingLink.classList.remove("link_dragging");
+
+		document.querySelector("body").classList.remove("grabbing");
+		draggingLink = null;
+	}
+	window.addEventListener("mouseup", endLinkDrag);
+	window.addEventListener("mousemove", doLinkDrag);
 
 	</script>
 {{ end }}

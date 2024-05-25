@@ -38,8 +38,9 @@ type ProjectsQuery struct {
 
 type ProjectAndStuff struct {
 	Project        models.Project
-	LogoLightAsset *models.Asset `db:"logolight_asset"`
-	LogoDarkAsset  *models.Asset `db:"logodark_asset"`
+	LogoLightAsset *models.Asset
+	LogoDarkAsset  *models.Asset
+	HeaderImage    *models.Asset
 	Owners         []*models.User
 	Tag            *models.Tag
 }
@@ -72,6 +73,7 @@ func FetchProjects(
 		Project        models.Project `db:"project"`
 		LogoLightAsset *models.Asset  `db:"logolight_asset"`
 		LogoDarkAsset  *models.Asset  `db:"logodark_asset"`
+		HeaderAsset    *models.Asset  `db:"header_asset"`
 		Tag            *models.Tag    `db:"tag"`
 	}
 
@@ -86,6 +88,7 @@ func FetchProjects(
 			project
 			LEFT JOIN asset AS logolight_asset ON logolight_asset.id = project.logolight_asset_id
 			LEFT JOIN asset AS logodark_asset ON logodark_asset.id = project.logodark_asset_id
+			LEFT JOIN asset AS header_asset ON header_asset.id = project.header_asset_id
 			LEFT JOIN tag ON project.tag = tag.id
 	`)
 	if len(q.OwnerIDs) > 0 {
@@ -219,6 +222,7 @@ func FetchProjects(
 				Project:        p.Project,
 				LogoLightAsset: p.LogoLightAsset,
 				LogoDarkAsset:  p.LogoDarkAsset,
+				HeaderImage:    p.HeaderAsset,
 				Owners:         owners,
 				Tag:            p.Tag,
 			})

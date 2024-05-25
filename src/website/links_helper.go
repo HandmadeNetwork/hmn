@@ -1,35 +1,27 @@
 package website
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
 
 	"git.handmade.network/hmn/hmn/src/models"
 )
 
 type ParsedLink struct {
-	Name string
-	Url  string
+	Name string `json:"name"`
+	Url  string `json:"url"`
 }
 
 func ParseLinks(text string) []ParsedLink {
-	lines := strings.Split(text, "\n")
-	res := make([]ParsedLink, 0, len(lines))
-	for _, line := range lines {
-		linkParts := strings.SplitN(line, " ", 2)
-		url := strings.TrimSpace(linkParts[0])
-		name := ""
-		if len(linkParts) > 1 {
-			name = strings.TrimSpace(linkParts[1])
-		}
-		if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-			continue
-		}
-		res = append(res, ParsedLink{Name: name, Url: url})
+	var links []ParsedLink
+	err := json.Unmarshal([]byte(text), &links)
+	if err != nil {
+		return nil
 	}
-	return res
+	return links
 }
 
+// TODO: Clean up use in user profiles I guess
 func LinksToText(links []*models.Link) string {
 	linksText := ""
 	for _, link := range links {

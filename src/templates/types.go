@@ -131,7 +131,8 @@ type Project struct {
 	ParsedDescription template.HTML
 	Owners            []User
 
-	Logo string
+	Logo        string
+	HeaderImage string
 
 	LifecycleBadgeClass string
 	LifecycleString     string
@@ -157,11 +158,22 @@ type ProjectSettings struct {
 
 	Blurb       string
 	Description string
-	LinksText   string
+	LinksJSON   string
 	Owners      []User
 
-	LightLogo string
-	DarkLogo  string
+	LightLogo   *Asset
+	DarkLogo    *Asset
+	HeaderImage *Asset
+}
+
+type Asset struct {
+	Url string
+
+	ID            string
+	Filename      string
+	Size          int
+	MimeType      string
+	Width, Height int
 }
 
 type ProjectJamParticipation struct {
@@ -203,10 +215,11 @@ type User struct {
 }
 
 type Link struct {
-	Name     string
-	Url      string
-	LinkText string
-	Icon     string
+	Name        string `json:"name"`
+	Url         string `json:"url"`
+	ServiceName string `json:"serviceName"`
+	Username    string `json:"text"`
+	Icon        string `json:"icon"`
 }
 
 type Podcast struct {
@@ -358,7 +371,7 @@ type ProjectCardData struct {
 
 type ImageSelectorData struct {
 	Name     string
-	Src      string
+	Asset    *Asset
 	Required bool
 }
 

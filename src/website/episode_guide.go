@@ -83,7 +83,7 @@ func EpisodeList(c *RequestContext) ResponseData {
 		if t != foundTopic {
 			url = c.UrlContext.BuildEpisodeList(t)
 		}
-		topicLinks = append(topicLinks, templates.Link{LinkText: t, Url: url})
+		topicLinks = append(topicLinks, templates.Link{Username: t, Url: url})
 	}
 
 	var res ResponseData

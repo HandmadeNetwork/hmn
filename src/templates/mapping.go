@@ -106,6 +106,9 @@ func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff, url string, theme str
 	for _, o := range p.Owners {
 		res.Owners = append(res.Owners, UserToTemplate(o, theme))
 	}
+	if p.HeaderImage != nil {
+		res.HeaderImage = hmnurl.BuildS3Asset(p.HeaderImage.S3Key)
+	}
 	return res
 }
 
@@ -129,7 +132,7 @@ func ProjectToProjectSettings(
 	p *models.Project,
 	owners []*models.User,
 	tag string,
-	lightLogoUrl, darkLogoUrl string,
+	lightLogo, darkLogo, headerImage *models.Asset,
 	currentTheme string,
 ) ProjectSettings {
 	ownerUsers := make([]User, 0, len(owners))
@@ -147,8 +150,26 @@ func ProjectToProjectSettings(
 		Blurb:       p.Blurb,
 		Description: p.Description,
 		Owners:      ownerUsers,
-		LightLogo:   lightLogoUrl,
-		DarkLogo:    darkLogoUrl,
+		LightLogo:   AssetToTemplate(lightLogo),
+		DarkLogo:    AssetToTemplate(darkLogo),
+		HeaderImage: AssetToTemplate(headerImage),
+	}
+}
+
+func AssetToTemplate(a *models.Asset) *Asset {
+	if a == nil {
+		return nil
+	}
+
+	return &Asset{
+		Url: hmnurl.BuildS3Asset(a.S3Key),
+
+		ID:       a.ID.String(),
+		Filename: a.Filename,
+		Size:     a.Size,
+		MimeType: a.MimeType,
+		Width:    a.Width,
+		Height:   a.Height,
 	}
 }
 
@@ -236,77 +257,102 @@ type LinkService struct {
 }
 
 var LinkServices = []LinkService{
+	// {
+	// 	Name:     "itch.io",
+	// 	IconName: "itch",
+	// 	Regex:    regexp.MustCompile(`://(?P<username>[\w-]+)\.itch\.io`),
+	// },
 	{
-		Name:     "YouTube",
-		IconName: "youtube",
-		Regex:    regexp.MustCompile(`youtube\.com/(c/)?(?P<userdata>[\w/-]+)$`),
+		Name:     "App Store",
+		IconName: "app-store",
+		Regex:    regexp.MustCompile(`^https?://apps.apple.com`),
 	},
 	{
-		Name:     "Twitter",
-		IconName: "twitter",
-		Regex:    regexp.MustCompile(`twitter\.com/(?P<userdata>\w+)$`),
+		Name:     "Bluesky",
+		IconName: "bluesky",
+		Regex:    regexp.MustCompile(`^https?://bsky.app/profile/(?P<username>[\w.-]+)$`),
+	},
+	{
+		Name:     "Discord",
+		IconName: "discord",
+		Regex:    regexp.MustCompile(`^https?://discord\.gg`),
 	},
 	{
 		Name:     "GitHub",
 		IconName: "github",
-		Regex:    regexp.MustCompile(`github\.com/(?P<userdata>[\w/-]+)$`),
+		Regex:    regexp.MustCompile(`^https?://github\.com/(?P<username>[\w/-]+)`),
 	},
 	{
-		Name:     "Twitch",
-		IconName: "twitch",
-		Regex:    regexp.MustCompile(`twitch\.tv/(?P<userdata>[\w/-]+)$`),
+		Name:     "GitLab",
+		IconName: "gitlab",
+		Regex:    regexp.MustCompile(`^https?://gitlab\.com/(?P<username>[\w/-]+)`),
 	},
 	{
-		Name:     "Hitbox",
-		IconName: "hitbox",
-		Regex:    regexp.MustCompile(`hitbox\.tv/(?P<userdata>[\w/-]+)$`),
+		Name:     "Google Play",
+		IconName: "google-play",
+		Regex:    regexp.MustCompile(`^https?://play\.google\.com`),
 	},
 	{
 		Name:     "Patreon",
 		IconName: "patreon",
-		Regex:    regexp.MustCompile(`patreon\.com/(?P<userdata>[\w/-]+)$`),
+		Regex:    regexp.MustCompile(`^https?://patreon\.com/(?P<username>[\w-]+)`),
 	},
 	{
-		Name:     "SoundCloud",
-		IconName: "soundcloud",
-		Regex:    regexp.MustCompile(`soundcloud\.com/(?P<userdata>[\w/-]+)$`),
+		Name:     "Twitch",
+		IconName: "twitch",
+		Regex:    regexp.MustCompile(`^https?://twitch\.tv/(?P<username>[\w/-]+)`),
 	},
 	{
-		Name:     "itch.io",
-		IconName: "itch",
-		Regex:    regexp.MustCompile(`(?P<userdata>[\w/-]+)\.itch\.io/?$`),
+		Name:     "Twitter",
+		IconName: "twitter",
+		Regex:    regexp.MustCompile(`^https?://(twitter|x)\.com/(?P<username>\w+)`),
+	},
+	{
+		Name:     "Vimeo",
+		IconName: "vimeo",
+		Regex:    regexp.MustCompile(`^https?://vimeo\.com/(?P<username>\w+)`),
+	},
+	{
+		Name:     "YouTube",
+		IconName: "youtube",
+		Regex:    regexp.MustCompile(`youtube\.com/(c/)?(?P<username>[@\w/-]+)$`),
 	},
 }
 
-func ParseKnownServicesForLink(link *models.Link) (service LinkService, userData string) {
+func ParseKnownServicesForLink(link *models.Link) (service LinkService, username string) {
 	for _, svc := range LinkServices {
 		match := svc.Regex.FindStringSubmatch(link.URL)
 		if match != nil {
-			return svc, match[svc.Regex.SubexpIndex("userdata")]
+			username := ""
+			if idx := svc.Regex.SubexpIndex("username"); idx >= 0 {
+				username = match[idx]
+			}
+
+			return svc, username
 		}
 	}
-	return LinkService{}, ""
+	return LinkService{
+		IconName: "website",
+	}, ""
 }
 
 func LinkToTemplate(link *models.Link) Link {
-	tlink := Link{
-		Name:     link.Name,
-		Url:      link.URL,
-		LinkText: link.URL,
+	service, username := ParseKnownServicesForLink(link)
+	return Link{
+		Name:        link.Name,
+		Url:         link.URL,
+		ServiceName: service.Name,
+		Icon:        service.IconName,
+		Username:    username,
 	}
+}
 
-	service, userData := ParseKnownServicesForLink(link)
-	if tlink.Name == "" && service.Name != "" {
-		tlink.Name = service.Name
+func LinksToTemplate(links []*models.Link) []Link {
+	res := make([]Link, len(links))
+	for i, link := range links {
+		res[i] = LinkToTemplate(link)
 	}
-	if service.IconName != "" {
-		tlink.Icon = service.IconName
-	}
-	if userData != "" {
-		tlink.LinkText = userData
-	}
-
-	return tlink
+	return res
 }
 
 func TimelineItemsToJSON(items []TimelineItem) string {

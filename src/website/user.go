@@ -214,6 +214,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		DefaultAvatarUrl  string
 
 		User        templates.User
+		Avatar      *templates.Asset
 		Email       string // these fields are handled specially on templates.User
 		ShowEmail   bool
 		LinksText   string
@@ -290,6 +291,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		AvatarMaxFileSize: UserAvatarMaxFileSize,
 		DefaultAvatarUrl:  templates.UserAvatarDefaultUrl(c.Theme),
 		User:              templateUser,
+		Avatar:            templates.AssetToTemplate(c.CurrentUser.AvatarAsset),
 		Email:             c.CurrentUser.Email,
 		ShowEmail:         c.CurrentUser.ShowEmail,
 		LinksText:         linksText,

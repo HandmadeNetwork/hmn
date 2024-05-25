@@ -302,10 +302,10 @@ var HMNTemplateFuncs = template.FuncMap{
 		}
 	},
 
-	"imageselectordata": func(name string, src string, required bool) ImageSelectorData {
+	"imageselectordata": func(name string, src *Asset, required bool) ImageSelectorData {
 		return ImageSelectorData{
 			Name:     name,
-			Src:      src,
+			Asset:    src,
 			Required: required,
 		}
 	},

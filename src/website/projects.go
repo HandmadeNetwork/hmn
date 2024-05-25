@@ -2,6 +2,7 @@ package website
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
@@ -318,17 +319,6 @@ func jamLink(jamSlug string) string {
 	}
 }
 
-type ProjectHomepageData struct {
-	templates.BaseData
-	Project        templates.Project
-	Owners         []templates.User
-	Screenshots    []string
-	ProjectLinks   []templates.Link
-	Licenses       []templates.Link
-	RecentActivity []templates.TimelineItem
-	SnippetEdit    templates.SnippetEdit
-}
-
 func ProjectHomepage(c *RequestContext) ResponseData {
 	maxRecentActivity := 15
 
@@ -390,6 +380,16 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		SortDescending: true,
 	})
 	c.Perf.EndBlock()
+
+	type ProjectHomepageData struct {
+		templates.BaseData
+		Project                  templates.Project
+		Owners                   []templates.User
+		Screenshots              []string
+		NamedLinks, UnnamedLinks []templates.Link
+		RecentActivity           []templates.TimelineItem
+		SnippetEdit              templates.SnippetEdit
+	}
 
 	var templateData ProjectHomepageData
 
@@ -455,8 +455,12 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		templateData.Screenshots = append(templateData.Screenshots, hmnurl.BuildUserFile(screenshotFilename))
 	}
 
-	for _, link := range projectLinks {
-		templateData.ProjectLinks = append(templateData.ProjectLinks, templates.LinkToTemplate(link))
+	for _, link := range templates.LinksToTemplate(projectLinks) {
+		if link.Name != "" {
+			templateData.NamedLinks = append(templateData.NamedLinks, link)
+		} else {
+			templateData.UnnamedLinks = append(templateData.UnnamedLinks, link)
+		}
 	}
 
 	for _, post := range posts {
@@ -528,6 +532,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 }
 
 var ProjectLogoMaxFileSize = 2 * 1024 * 1024
+var ProjectHeaderMaxFileSize = 2 * 1024 * 1024 // TODO(ben): Pick a real limit
 
 type ProjectEditData struct {
 	templates.BaseData
@@ -536,8 +541,8 @@ type ProjectEditData struct {
 	ProjectSettings templates.ProjectSettings
 	MaxOwners       int
 
-	APICheckUsernameUrl string
-	LogoMaxFileSize     int
+	APICheckUsernameUrl                string
+	LogoMaxFileSize, HeaderMaxFileSize int
 
 	TextEditor templates.TextEditor
 }
@@ -581,6 +586,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 
 		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
 		LogoMaxFileSize:     ProjectLogoMaxFileSize,
+		HeaderMaxFileSize:   ProjectHeaderMaxFileSize,
 
 		TextEditor: templates.TextEditor{
 			MaxFileSize: AssetMaxSize(c.CurrentUser),
@@ -695,18 +701,15 @@ func ProjectEdit(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	lightLogoUrl := templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, "light")
-	darkLogoUrl := templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, "dark")
-
 	projectSettings := templates.ProjectToProjectSettings(
 		&p.Project,
 		p.Owners,
 		p.TagText(),
-		lightLogoUrl, darkLogoUrl,
+		p.LogoLightAsset, p.LogoDarkAsset, p.HeaderImage,
 		c.Theme,
 	)
 
-	projectSettings.LinksText = LinksToText(projectLinks)
+	projectSettings.LinksJSON = string(utils.Must1(json.Marshal(templates.LinksToTemplate(projectLinks))))
 
 	projectSettings.JamParticipation = make([]templates.ProjectJamParticipation, 0, len(projectJams))
 	for _, jam := range projectJams {
@@ -726,6 +729,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 
 		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
 		LogoMaxFileSize:     ProjectLogoMaxFileSize,
+		HeaderMaxFileSize:   ProjectHeaderMaxFileSize,
 
 		TextEditor: templates.TextEditor{
 			MaxFileSize: AssetMaxSize(c.CurrentUser),
@@ -784,6 +788,7 @@ type ProjectPayload struct {
 	OwnerUsernames        []string
 	LightLogo             FormImage
 	DarkLogo              FormImage
+	HeaderImage           FormImage
 	Tag                   string
 	JamParticipationSlugs []string
 
@@ -850,6 +855,11 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		res.Error = oops.New(err, "Failed to read image from form")
 		return res
 	}
+	headerImage, err := GetFormImage(c, "header_image")
+	if err != nil {
+		res.Error = oops.New(err, "Failed to read image from form")
+		return res
+	}
 
 	owners := c.Req.Form["owners"]
 	if len(owners) > maxProjectOwners {
@@ -881,6 +891,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		OwnerUsernames:        owners,
 		LightLogo:             lightLogo,
 		DarkLogo:              darkLogo,
+		HeaderImage:           headerImage,
 		Tag:                   tag,
 		JamParticipationSlugs: jamParticipationSlugs,
 		Slug:                  slug,
@@ -924,6 +935,23 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			return oops.New(err, "Failed to save asset")
 		}
 		darkLogoUUID = &darkLogoAsset.ID
+	}
+
+	var headerImageUUID *uuid.UUID
+	if payload.HeaderImage.Exists {
+		headerImage := &payload.HeaderImage
+		headerImageAsset, err := assets.Create(ctx, tx, assets.CreateInput{
+			Content:     headerImage.Content,
+			Filename:    headerImage.Filename,
+			ContentType: headerImage.Mime,
+			UploaderID:  &user.ID,
+			Width:       headerImage.Width,
+			Height:      headerImage.Height,
+		})
+		if err != nil {
+			return oops.New(err, "Failed to save asset")
+		}
+		headerImageUUID = &headerImageAsset.ID
 	}
 
 	hasSelf := false
@@ -1018,6 +1046,23 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		)
 		if err != nil {
 			return oops.New(err, "Failed to update project's dark logo")
+		}
+	}
+
+	if payload.HeaderImage.Exists || payload.HeaderImage.Remove {
+		_, err = tx.Exec(ctx,
+			`
+			UPDATE project
+			SET
+				header_asset_id = $2
+			WHERE
+				id = $1
+			`,
+			payload.ProjectID,
+			headerImageUUID,
+		)
+		if err != nil {
+			return oops.New(err, "Failed to update project's header image")
 		}
 	}
 
