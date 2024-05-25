@@ -24,7 +24,6 @@ type LandingTemplateData struct {
 	ManifestoUrl   string
 	FeedUrl        string
 	PodcastUrl     string
-	StreamsUrl     string
 	ShowcaseUrl    string
 	AtomFeedUrl    string
 	MarkAllReadUrl string
@@ -151,7 +150,6 @@ func Index(c *RequestContext) ResponseData {
 		ManifestoUrl:   hmnurl.BuildManifesto(),
 		FeedUrl:        hmnurl.BuildFeed(),
 		PodcastUrl:     hmnurl.BuildPodcast(),
-		StreamsUrl:     hmnurl.BuildStreams(),
 		ShowcaseUrl:    hmnurl.BuildShowcase(),
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
 		MarkAllReadUrl: hmnurl.HMNProjectContext.BuildForumMarkRead(0),

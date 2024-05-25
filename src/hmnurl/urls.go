@@ -35,13 +35,6 @@ func BuildShowcase() string {
 	return Url("/showcase", nil)
 }
 
-var RegexStreams = regexp.MustCompile("^/streams$")
-
-func BuildStreams() string {
-	defer CatchPanic()
-	return Url("/streams", nil)
-}
-
 var RegexWhenIsIt = regexp.MustCompile("^/whenisit$")
 
 func BuildWhenIsIt() string {
@@ -1046,6 +1039,12 @@ func BuildUserFile(filepath string) string {
 	filepath = strings.Trim(filepath, "/")
 	return BuildPublic(fmt.Sprintf("media/%s", filepath), false)
 }
+
+/*
+* Redirects
+ */
+
+var RegexUnwind = regexp.MustCompile(`^/unwind$`)
 
 /*
 * Other

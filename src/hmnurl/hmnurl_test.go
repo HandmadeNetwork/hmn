@@ -44,10 +44,6 @@ func TestShowcase(t *testing.T) {
 	AssertRegexMatch(t, BuildShowcase(), RegexShowcase, nil)
 }
 
-func TestStreams(t *testing.T) {
-	AssertRegexMatch(t, BuildStreams(), RegexStreams, nil)
-}
-
 func TestWhenIsIt(t *testing.T) {
 	AssertRegexMatch(t, BuildWhenIsIt(), RegexWhenIsIt, nil)
 }
