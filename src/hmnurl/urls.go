@@ -981,6 +981,13 @@ func BuildS3Asset(s3key string) string {
 	return res
 }
 
+var RegexEsBuild = regexp.MustCompile("^/esbuild$")
+
+func BuildEsBuild() string {
+	defer CatchPanic()
+	return Url("/esbuild", nil)
+}
+
 var RegexPublic = regexp.MustCompile("^/public/.+$")
 
 func BuildPublic(filepath string, cachebust bool) string {

@@ -32,7 +32,8 @@ type HMNConfig struct {
 	EpisodeGuide      EpisodeGuide
 	DevConfig         DevConfig
 	PreviewGeneration PreviewGenerationConfig
-	Calendars      []CalendarSource
+	Calendars         []CalendarSource
+	EsBuild           EsBuildConfig
 }
 
 type PostgresConfig struct {
@@ -104,7 +105,7 @@ type MatrixConfig struct {
 
 type CalendarSource struct {
 	Name string
-	Url string
+	Url  string
 }
 
 type EpisodeGuide struct {
@@ -124,6 +125,10 @@ type DevConfig struct {
 type PreviewGenerationConfig struct {
 	FFMpegPath   string
 	CPULimitPath string
+}
+
+type EsBuildConfig struct {
+	Port uint16
 }
 
 func init() {

@@ -23,6 +23,8 @@ type BaseData struct {
 	DiscordInviteUrl    string
 	NewsletterSignupUrl string
 
+	EsBuildSSEUrl string
+
 	Project Project
 	User    *User
 	Session *Session

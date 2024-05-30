@@ -1,16 +1,22 @@
 package website
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/http/httputil"
 	"strconv"
+	"strings"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/buildscss"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
@@ -37,8 +43,53 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 		redirectToHMN,
 	)
 
+	routes.GET(hmnurl.RegexEsBuild, func(c *RequestContext) ResponseData {
+		if buildscss.ActiveServerPort != 0 {
+			var res ResponseData
+			proxy := httputil.ReverseProxy{
+				Director: func(r *http.Request) {
+					r.URL.Scheme = "http"
+					r.URL.Host = fmt.Sprintf("localhost:%d", buildscss.ActiveServerPort)
+					r.Host = "localhost"
+				},
+			}
+			logging.Debug().Msg("Redirecting esbuild SSE request to esbuild")
+			proxy.ServeHTTP(c.Res, c.Req)
+			res.hijacked = true
+			return res
+		}
+		return FourOhFour(c)
+	})
+
 	routes.GET(hmnurl.RegexPublic, func(c *RequestContext) ResponseData {
 		var res ResponseData
+		if buildscss.ActiveServerPort != 0 {
+			if strings.HasSuffix(c.Req.URL.Path, ".css") {
+				proxy := httputil.ReverseProxy{
+					Director: func(r *http.Request) {
+						r.URL.Scheme = "http"
+						r.URL.Host = fmt.Sprintf("localhost:%d", buildscss.ActiveServerPort)
+						r.Host = "localhost"
+					},
+					ModifyResponse: func(res *http.Response) error {
+						if res.StatusCode > 400 {
+							errStr, err := io.ReadAll(res.Body)
+							if err != nil {
+								return err
+							}
+							res.Body.Close()
+							logging.Error().Str("EsBuild error", string(errStr)).Msg("EsBuild is complaining")
+							res.Body = io.NopCloser(bytes.NewReader(errStr))
+						}
+						return nil
+					},
+				}
+				logging.Debug().Msg("Redirecting css request to esbuild")
+				proxy.ServeHTTP(c.Res, c.Req)
+				res.hijacked = true
+				return res
+			}
+		}
 		http.StripPrefix("/public/", http.FileServer(http.Dir("public"))).ServeHTTP(&res, c.Req)
 		addCORSHeaders(c, &res)
 		return res

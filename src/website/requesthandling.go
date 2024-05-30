@@ -408,6 +408,8 @@ type ResponseData struct {
 	FutureNotices []templates.Notice
 
 	header http.Header
+
+	hijacked bool
 }
 
 var _ http.ResponseWriter = &ResponseData{}
@@ -479,6 +481,12 @@ func doRequest(rw http.ResponseWriter, c *RequestContext, h Handler) {
 
 	// Run the chosen handler
 	res := h(c)
+
+	if res.hijacked {
+		// NOTE(asaf): In case we forward the request/response to another handler
+		//             (like esbuild).
+		return
+	}
 
 	if res.StatusCode == 0 {
 		res.StatusCode = http.StatusOK

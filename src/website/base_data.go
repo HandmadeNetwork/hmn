@@ -1,6 +1,7 @@
 package website
 
 import (
+	"git.handmade.network/hmn/hmn/src/buildscss"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -94,6 +95,10 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			ContactUrl:                 hmnurl.BuildContactPage(),
 			SearchActionUrl:            "https://duckduckgo.com",
 		},
+	}
+
+	if buildscss.ActiveServerPort != 0 {
+		baseData.EsBuildSSEUrl = hmnurl.BuildEsBuild()
 	}
 
 	if c.CurrentUser != nil {
