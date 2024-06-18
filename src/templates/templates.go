@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -38,8 +39,9 @@ var embeddedTemplates map[string]*template.Template
 //go:embed src/fishbowls
 var FishbowlFS embed.FS
 
-func getTemplatesFromFS(templateFS fs.ReadDirFS) map[string]*template.Template {
+func getTemplatesFromFS(templateFS fs.ReadDirFS) (map[string]*template.Template, map[string]error) {
 	templates := make(map[string]*template.Template)
+	errs := make(map[string]error)
 
 	files := utils.Must1(templateFS.ReadDir("src"))
 	for _, f := range files {
@@ -53,7 +55,8 @@ func getTemplatesFromFS(templateFS fs.ReadDirFS) map[string]*template.Template {
 				"src/"+f.Name(),
 			)
 			if err != nil {
-				logging.Fatal().Str("filename", f.Name()).Err(err).Msg("failed to parse template")
+				errs[f.Name()] = err
+				continue
 			}
 
 			templates[f.Name()] = t
@@ -70,17 +73,40 @@ func getTemplatesFromFS(templateFS fs.ReadDirFS) map[string]*template.Template {
 		}
 	}
 
-	return templates
+	return templates, errs
 }
 
 func Init() {
-	embeddedTemplates = getTemplatesFromFS(embeddedTemplateFs)
+	var errs map[string]error
+	type errEntry struct {
+		name string
+		err  error
+	}
+
+	embeddedTemplates, errs = getTemplatesFromFS(embeddedTemplateFs)
+	if len(errs) > 0 {
+		var errsList []errEntry
+		for filename, err := range errs {
+			errsList = append(errsList, errEntry{filename, err})
+		}
+		sort.Slice(errsList, func(i, j int) bool {
+			return strings.Compare(errsList[i].name, errsList[j].name) < 0
+		})
+		for _, err := range errsList {
+			logging.Error().Str("filename", err.name).Err(err.err).Msg("Failed to parse template")
+		}
+		panic("Failed to parse templates; see above")
+	}
 }
 
 func GetTemplate(name string) *template.Template {
 	var templates map[string]*template.Template
 	if config.Config.DevConfig.LiveTemplates {
-		templates = getTemplatesFromFS(utils.DirFS("src/templates").(fs.ReadDirFS))
+		var errs map[string]error
+		templates, errs = getTemplatesFromFS(utils.DirFS("src/templates").(fs.ReadDirFS))
+		if errs[name] != nil {
+			panic(oops.New(errs[name], "Error in template %s", name))
+		}
 	} else {
 		templates = embeddedTemplates
 	}
