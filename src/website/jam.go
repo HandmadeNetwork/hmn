@@ -57,7 +57,7 @@ func JamSaveTheDate(c *RequestContext) ResponseData {
 
 	tmpl := TemplateData{
 		BaseData:            getBaseDataAutocrumb(c, "Upcoming Jams"),
-		UserAvatarUrl:       templates.UserAvatarUrl(c.CurrentUser, "dark"),
+		UserAvatarUrl:       templates.UserAvatarUrl(c.CurrentUser),
 		JamsUrl:             hmnurl.BuildJamsIndex(),
 		Visibility2023Url:   hmnurl.BuildJamIndex2023_Visibility(),
 		WRJ2023Url:          hmnurl.BuildJamIndex2023(),
@@ -221,7 +221,7 @@ func getLJ2024BaseData(c *RequestContext) (JamBaseDataLJ2024, error) {
 	}
 
 	if c.CurrentUser != nil {
-		tmpl.UserAvatarUrl = templates.UserAvatarUrl(c.CurrentUser, "dark")
+		tmpl.UserAvatarUrl = templates.UserAvatarUrl(c.CurrentUser)
 		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 			OwnerIDs: []int{c.CurrentUser.ID},
 			JamSlugs: []string{hmndata.LJ2024.Slug},
@@ -252,7 +252,7 @@ func getLJ2024FeedData(c *RequestContext, maxTimelineItems int) (JamFeedDataLJ20
 	for _, jp := range jamProjects {
 		urlContext := hmndata.UrlContextForProject(&jp.Project)
 		projectUrl := urlContext.BuildHomepage()
-		projects = append(projects, templates.ProjectAndStuffToTemplate(&jp, projectUrl, c.Theme))
+		projects = append(projects, templates.ProjectAndStuffToTemplate(&jp, projectUrl))
 	}
 
 	projectIds := make([]int, 0, len(jamProjects))
@@ -272,7 +272,7 @@ func getLJ2024FeedData(c *RequestContext, maxTimelineItems int) (JamFeedDataLJ20
 
 		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
-			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
 			timelineItem.SmallInfo = true
 			timelineItems = append(timelineItems, timelineItem)
 		}
@@ -367,7 +367,7 @@ func JamIndex2023(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
 	}
 
 	projectIds := make([]int, 0, len(jamProjects))
@@ -385,7 +385,7 @@ func JamIndex2023(c *RequestContext) ResponseData {
 		}
 		showcaseItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
-			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
 			if timelineItem.CanShowcase {
 				showcaseItems = append(showcaseItems, timelineItem)
 			}
@@ -452,7 +452,7 @@ func JamFeed2023(c *RequestContext) ResponseData {
 
 		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
-			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
 			timelineItem.SmallInfo = true
 			timelineItems = append(timelineItems, timelineItem)
 		}
@@ -460,7 +460,7 @@ func JamFeed2023(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
 	}
 
 	type JamFeedData struct {
@@ -553,7 +553,7 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
 	}
 
 	projectIds := make([]int, 0, len(jamProjects))
@@ -571,7 +571,7 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 		}
 		showcaseItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
-			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
 			if timelineItem.CanShowcase {
 				showcaseItems = append(showcaseItems, timelineItem)
 			}
@@ -620,7 +620,7 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 
 		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
-			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
 			timelineItem.SmallInfo = true
 			timelineItems = append(timelineItems, timelineItem)
 		}
@@ -628,7 +628,7 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
 	}
 
 	type JamFeedData struct {
@@ -681,7 +681,7 @@ func JamRecap2023_Visibility(c *RequestContext) ResponseData {
 	var ben templates.User
 	benUser, err := hmndata.FetchUserByUsername(c, c.Conn, c.CurrentUser, "bvisness", hmndata.UsersQuery{})
 	if err == nil {
-		ben = templates.UserToTemplate(benUser, c.Theme)
+		ben = templates.UserToTemplate(benUser)
 	} else if err == db.NotFound {
 		ben = templates.UnknownUser
 	} else {
@@ -767,7 +767,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
 	}
 
 	projectIds := make([]int, 0, len(jamProjects))
@@ -785,7 +785,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 		}
 		showcaseItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
-			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
 			if timelineItem.CanShowcase {
 				showcaseItems = append(showcaseItems, timelineItem)
 			}
@@ -833,7 +833,7 @@ func JamFeed2022(c *RequestContext) ResponseData {
 
 		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
-			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
 			timelineItem.SmallInfo = true
 			timelineItems = append(timelineItems, timelineItem)
 		}
@@ -841,7 +841,7 @@ func JamFeed2022(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
 	}
 
 	type JamFeedData struct {
@@ -901,7 +901,7 @@ func JamIndex2021(c *RequestContext) ResponseData {
 	}
 	showcaseItems := make([]templates.TimelineItem, 0, len(snippets))
 	for _, s := range snippets {
-		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
 		if timelineItem.CanShowcase {
 			showcaseItems = append(showcaseItems, timelineItem)
 		}

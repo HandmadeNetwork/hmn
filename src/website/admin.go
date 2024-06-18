@@ -83,7 +83,6 @@ func AdminAtomFeed(c *RequestContext) ResponseData {
 			&post.Author,
 			false,
 			true,
-			c.Theme,
 		)
 
 		postItem.PostTypePrefix = fmt.Sprintf("ADMIN::UNAPPROVED: %s", postItem.PostTypePrefix)
@@ -177,7 +176,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 			userData = unapprovedUsers[idx]
 		} else {
 			userData = &unapprovedUserData{
-				User:      templates.UserToTemplate(s.Owner, c.Theme),
+				User:      templates.UserToTemplate(s.Owner),
 				UserLinks: make([]templates.Link, 0, 10),
 			}
 			unapprovedUsers = append(unapprovedUsers, userData)
@@ -187,7 +186,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		if s.Snippet.When.After(userData.Date) {
 			userData.Date = s.Snippet.When
 		}
-		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
+		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
 		timelineItem.OwnerAvatarUrl = ""
 		timelineItem.SmallInfo = true
 		userData.Timeline = append(userData.Timeline, timelineItem)
@@ -199,7 +198,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 			userData = unapprovedUsers[idx]
 		} else {
 			userData = &unapprovedUserData{
-				User:      templates.UserToTemplate(&p.Author, c.Theme),
+				User:      templates.UserToTemplate(&p.Author),
 				UserLinks: make([]templates.Link, 0, 10),
 			}
 			unapprovedUsers = append(unapprovedUsers, userData)
@@ -209,7 +208,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		if p.Post.PostDate.After(userData.Date) {
 			userData.Date = p.Post.PostDate
 		}
-		timelineItem := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, &p.Author, c.Theme)
+		timelineItem := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, &p.Author)
 		timelineItem.OwnerAvatarUrl = ""
 		timelineItem.SmallInfo = true
 		timelineItem.Description = template.HTML(p.CurrentVersion.TextParsed)
@@ -222,7 +221,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 			userData = unapprovedUsers[idx]
 		} else {
 			userData = &unapprovedUserData{
-				User:      templates.UserToTemplate(p.User, c.Theme),
+				User:      templates.UserToTemplate(p.User),
 				UserLinks: make([]templates.Link, 0, 10),
 			}
 			unapprovedUsers = append(unapprovedUsers, userData)
@@ -237,7 +236,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 			userData.Date = p.ProjectAndStuff.Project.DateCreated
 		}
 		userData.ProjectsWithLinks = append(userData.ProjectsWithLinks, projectWithLinks{
-			Project: templates.ProjectAndStuffToTemplate(p.ProjectAndStuff, hmndata.UrlContextForProject(&p.ProjectAndStuff.Project).BuildHomepage(), c.Theme),
+			Project: templates.ProjectAndStuffToTemplate(p.ProjectAndStuff, hmndata.UrlContextForProject(&p.ProjectAndStuff.Project).BuildHomepage()),
 			Links:   projectLinks,
 		})
 	}

@@ -40,6 +40,8 @@ func Index(c *RequestContext) ResponseData {
 
 	var timelineItems []templates.TimelineItem
 
+	FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser)
+
 	// This is essentially an alternate for feed page 1.
 	posts, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
 		ThreadTypes:    feedThreadTypes,
@@ -54,7 +56,7 @@ func Index(c *RequestContext) ResponseData {
 			continue // ignore news posts et. al.
 		}
 
-		item := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, p.Author, c.Theme)
+		item := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, p.Author)
 		if p.Thread.Type == models.ThreadTypeProjectBlogPost && p.Post.ID == p.Thread.FirstID {
 			// blog post
 			item.Description = template.HTML(p.CurrentVersion.TextParsed)
@@ -75,7 +77,7 @@ func Index(c *RequestContext) ResponseData {
 	var newsPostItem *templates.TimelineItem
 	if len(newsThreads) > 0 {
 		t := newsThreads[0]
-		item := PostToTimelineItem(hmndata.UrlContextForProject(&t.Project), lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor, c.Theme)
+		item := PostToTimelineItem(hmndata.UrlContextForProject(&t.Project), lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor)
 		item.Breadcrumbs = nil
 		item.TypeTitle = ""
 		item.AllowTitleWrap = true

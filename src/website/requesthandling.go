@@ -190,7 +190,6 @@ type RequestContext struct {
 	CurrentProjectLogoUrl string
 	CurrentUser           *models.User
 	CurrentSession        *models.Session
-	Theme                 string
 	UrlContext            *hmnurl.UrlContext
 
 	CurrentUserCanEditCurrentProject bool

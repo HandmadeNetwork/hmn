@@ -10,7 +10,7 @@ import (
 )
 
 func FollowingTest(c *RequestContext) ResponseData {
-	timelineItems, err := FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser, c.Theme)
+	timelineItems, err := FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}

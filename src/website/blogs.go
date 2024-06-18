@@ -67,7 +67,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		entries = append(entries, blogIndexEntry{
 			Title:   thread.Thread.Title,
 			Url:     c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title),
-			Author:  templates.UserToTemplate(thread.FirstPostAuthor, c.Theme),
+			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
 			Date:    thread.FirstPost.PostDate,
 			Content: template.HTML(thread.FirstPostCurrentVersion.TextParsed),
 		})
@@ -140,12 +140,12 @@ func BlogThread(c *RequestContext) ResponseData {
 
 	var templatePosts []templates.Post
 	for _, p := range posts {
-		post := templates.PostToTemplate(&p.Post, p.Author, c.Theme)
+		post := templates.PostToTemplate(&p.Post, p.Author)
 		post.AddContentVersion(p.CurrentVersion, p.Editor)
 		addBlogUrlsToPost(c.UrlContext, &post, &p.Thread, p.Post.ID)
 
 		if p.ReplyPost != nil {
-			reply := templates.PostToTemplate(p.ReplyPost, p.ReplyAuthor, c.Theme)
+			reply := templates.PostToTemplate(p.ReplyPost, p.ReplyAuthor)
 			addBlogUrlsToPost(c.UrlContext, &reply, &p.Thread, p.Post.ID)
 			post.ReplyPost = &reply
 		}
@@ -403,7 +403,7 @@ func BlogPostReply(c *RequestContext) ResponseData {
 		BlogThreadBreadcrumbs(c.UrlContext, &post.Thread),
 	)
 
-	replyPost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
+	replyPost := templates.PostToTemplate(&post.Post, post.Author)
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
 
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, &replyPost)
@@ -479,7 +479,7 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 		BlogThreadBreadcrumbs(c.UrlContext, &post.Thread),
 	)
 
-	templatePost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
+	templatePost := templates.PostToTemplate(&post.Post, post.Author)
 	templatePost.AddContentVersion(post.CurrentVersion, post.Editor)
 
 	type blogPostDeleteData struct {

@@ -57,7 +57,7 @@ func Snippet(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	canEdit := (c.CurrentUser != nil && (c.CurrentUser.IsStaff || c.CurrentUser.ID == s.Owner.ID))
-	snippet := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, canEdit)
+	snippet := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, canEdit)
 	snippet.SmallInfo = true
 
 	opengraph := []templates.OpenGraphItem{
@@ -114,7 +114,7 @@ func Snippet(c *RequestContext) ResponseData {
 		}
 		templateProjects := make([]templates.Project, 0, len(userProjects))
 		for _, p := range userProjects {
-			templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
+			templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 			templateProjects = append(templateProjects, templateProject)
 		}
 		snippetEdit = templates.SnippetEdit{

@@ -49,7 +49,7 @@ func loadCommonData(h Handler) Handler {
 					})
 					if err == nil {
 						c.CurrentProject = &dbProject.Project
-						c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(&dbProject.Project, dbProject.LogoLightAsset, dbProject.LogoDarkAsset, c.Theme)
+						c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(&dbProject.Project, dbProject.LogoLightAsset, dbProject.LogoDarkAsset)
 						owners = dbProject.Owners
 					} else {
 						if errors.Is(err, db.NotFound) {
@@ -69,7 +69,7 @@ func loadCommonData(h Handler) Handler {
 						panic(oops.New(err, "failed to fetch HMN project"))
 					}
 					c.CurrentProject = &dbProject.Project
-					c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(&dbProject.Project, dbProject.LogoLightAsset, dbProject.LogoDarkAsset, c.Theme)
+					c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(&dbProject.Project, dbProject.LogoLightAsset, dbProject.LogoDarkAsset)
 				}
 
 				if c.CurrentProject == nil {
@@ -79,11 +79,6 @@ func loadCommonData(h Handler) Handler {
 				c.CurrentUserCanEditCurrentProject = CanEditProject(c.CurrentUser, owners)
 
 				c.UrlContext = hmndata.UrlContextForProject(c.CurrentProject)
-			}
-
-			c.Theme = "light"
-			if c.CurrentUser != nil && c.CurrentUser.DarkTheme {
-				c.Theme = "dark"
 			}
 		}
 		c.Perf.EndBlock()

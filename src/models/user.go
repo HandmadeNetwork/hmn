@@ -38,8 +38,7 @@ type User struct {
 	Signature     string     `db:"signature"`
 	AvatarAssetID *uuid.UUID `db:"avatar_asset_id"`
 
-	DarkTheme bool   `db:"darktheme"`
-	Timezone  string `db:"timezone"`
+	Timezone string `db:"timezone"`
 
 	ShowEmail bool `db:"showemail"`
 

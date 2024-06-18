@@ -85,14 +85,13 @@ func MakePostListItem(
 	user *models.User,
 	unread bool,
 	includeBreadcrumbs bool,
-	currentTheme string,
 ) templates.PostListItem {
 	var result templates.PostListItem
 
 	urlContext := hmndata.UrlContextForProject(project)
 
 	result.Title = thread.Title
-	result.User = templates.UserToTemplate(user, currentTheme)
+	result.User = templates.UserToTemplate(user)
 	result.Date = post.PostDate
 	result.Unread = unread
 	result.Url = UrlForGenericPost(urlContext, thread, post, lineageBuilder)

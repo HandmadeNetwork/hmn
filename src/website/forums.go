@@ -124,9 +124,9 @@ func Forum(c *RequestContext) ResponseData {
 		return templates.ThreadListItem{
 			Title:     row.Thread.Title,
 			Url:       c.UrlContext.BuildForumThread(cd.LineageBuilder.GetSubforumLineageSlugs(*row.Thread.SubforumID), row.Thread.ID, row.Thread.Title, 1),
-			FirstUser: templates.UserToTemplate(row.FirstPostAuthor, c.Theme),
+			FirstUser: templates.UserToTemplate(row.FirstPostAuthor),
 			FirstDate: row.FirstPost.PostDate,
-			LastUser:  templates.UserToTemplate(row.LastPostAuthor, c.Theme),
+			LastUser:  templates.UserToTemplate(row.LastPostAuthor),
 			LastDate:  row.LastPost.PostDate,
 			Unread:    row.Unread,
 		}
@@ -391,12 +391,12 @@ func ForumThread(c *RequestContext) ResponseData {
 
 	var posts []templates.Post
 	for _, p := range postsAndStuff {
-		post := templates.PostToTemplate(&p.Post, p.Author, c.Theme)
+		post := templates.PostToTemplate(&p.Post, p.Author)
 		post.AddContentVersion(p.CurrentVersion, p.Editor)
 		addForumUrlsToPost(c.UrlContext, &post, currentSubforumSlugs, thread.ID, post.ID)
 
 		if p.ReplyPost != nil {
-			reply := templates.PostToTemplate(p.ReplyPost, p.ReplyAuthor, c.Theme)
+			reply := templates.PostToTemplate(p.ReplyPost, p.ReplyAuthor)
 			addForumUrlsToPost(c.UrlContext, &reply, currentSubforumSlugs, thread.ID, reply.ID)
 			post.ReplyPost = &reply
 		}
@@ -587,7 +587,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 		ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread),
 	)
 
-	replyPost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
+	replyPost := templates.PostToTemplate(&post.Post, post.Author)
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
 
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, &replyPost)
@@ -779,7 +779,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 		ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread),
 	)
 
-	templatePost := templates.PostToTemplate(&post.Post, post.Author, c.Theme)
+	templatePost := templates.PostToTemplate(&post.Post, post.Author)
 	templatePost.AddContentVersion(post.CurrentVersion, post.Editor)
 
 	type forumPostDeleteData struct {

@@ -238,7 +238,7 @@ func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error)
 	var restProjects []templates.Project
 	now := time.Now()
 	for _, p := range official {
-		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
+		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 
 		if p.Project.Slug == "hero" {
 			// NOTE(asaf): Handmade Hero gets special treatment. Must always be first in the list.
@@ -297,7 +297,7 @@ func getPersonalProjects(c *RequestContext, jamSlug string) ([]templates.Project
 
 	var personalProjects []templates.Project
 	for _, p := range projects {
-		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
+		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 		personalProjects = append(personalProjects, templateProject)
 	}
 
@@ -410,9 +410,9 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project details"))
 	}
-	templateData.Project = templates.ProjectAndStuffToTemplate(&p, c.UrlContext.BuildHomepage(), c.Theme)
+	templateData.Project = templates.ProjectAndStuffToTemplate(&p, c.UrlContext.BuildHomepage())
 	for _, owner := range owners {
-		templateData.Owners = append(templateData.Owners, templates.UserToTemplate(owner, c.Theme))
+		templateData.Owners = append(templateData.Owners, templates.UserToTemplate(owner))
 	}
 
 	if c.CurrentProject.Hidden {
@@ -467,7 +467,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		}
 	}
 
-	templateData.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, c.Theme, TimelineQuery{
+	templateData.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, TimelineQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
 	})
 	if err != nil {
@@ -486,12 +486,12 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
 		}
 		templateProjects := make([]templates.Project, 0, len(userProjects))
-		templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme))
+		templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
 		for _, p := range userProjects {
 			if p.Project.ID == c.CurrentProject.ID {
 				continue
 			}
-			templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
+			templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 			templateProjects = append(templateProjects, templateProject)
 		}
 		templateData.SnippetEdit = templates.SnippetEdit{
@@ -550,7 +550,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 	}
 
 	var project templates.ProjectSettings
-	project.Owners = append(project.Owners, templates.UserToTemplate(c.CurrentUser, c.Theme))
+	project.Owners = append(project.Owners, templates.UserToTemplate(c.CurrentUser))
 	project.Personal = true
 
 	var currentJam *hmndata.Jam
@@ -696,7 +696,6 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		p.Owners,
 		p.TagText(),
 		p.LogoLightAsset, p.LogoDarkAsset, p.HeaderImage,
-		c.Theme,
 	)
 
 	projectSettings.LinksJSON = string(utils.Must1(json.Marshal(templates.LinksToTemplate(projectLinks))))

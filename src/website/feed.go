@@ -168,7 +168,7 @@ func AtomFeed(c *RequestContext) ResponseData {
 				templateProject := templates.ProjectToTemplate(&p.Project, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 				templateProject.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(templateProject.Url)).URN()
 				for _, owner := range p.Owners {
-					templateProject.Owners = append(templateProject.Owners, templates.UserToTemplate(owner, ""))
+					templateProject.Owners = append(templateProject.Owners, templates.UserToTemplate(owner))
 				}
 
 				feedData.Projects = append(feedData.Projects, templateProject)
@@ -216,7 +216,6 @@ func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostLi
 			postAndStuff.Author,
 			postAndStuff.Unread,
 			true,
-			c.Theme,
 		)
 
 		postItem.UUID = uuid.NewSHA1(uuid.NameSpaceURL, []byte(postItem.Url)).URN()

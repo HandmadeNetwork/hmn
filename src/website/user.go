@@ -106,7 +106,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	templateProjects := make([]templates.Project, 0, len(projectsAndStuff))
 	numPersonalProjects := 0
 	for _, p := range projectsAndStuff {
-		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage(), c.Theme)
+		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
 		templateProjects = append(templateProjects, templateProject)
 
 		if p.Project.Personal {
@@ -115,14 +115,14 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	timelineItems, err := FetchTimeline(c, c.Conn, c.CurrentUser, c.Theme, TimelineQuery{
+	timelineItems, err := FetchTimeline(c, c.Conn, c.CurrentUser, TimelineQuery{
 		UserIDs: []int{profileUser.ID},
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	templateUser := templates.UserToTemplate(profileUser, c.Theme)
+	templateUser := templates.UserToTemplate(profileUser)
 
 	baseData := getBaseDataAutocrumb(c, templateUser.Name)
 
@@ -183,7 +183,6 @@ func UserSettings(c *RequestContext) ResponseData {
 		templates.BaseData
 
 		AvatarMaxFileSize int
-		DefaultAvatarUrl  string
 
 		User        templates.User
 		Avatar      *templates.Asset
@@ -254,14 +253,13 @@ func UserSettings(c *RequestContext) ResponseData {
 		}
 	}
 
-	templateUser := templates.UserToTemplate(c.CurrentUser, c.Theme)
+	templateUser := templates.UserToTemplate(c.CurrentUser)
 
 	baseData := getBaseDataAutocrumb(c, templateUser.Name)
 
 	res.MustWriteTemplate("user_settings.html", UserSettingsTemplateData{
 		BaseData:          baseData,
 		AvatarMaxFileSize: UserAvatarMaxFileSize,
-		DefaultAvatarUrl:  templates.UserAvatarDefaultUrl(c.Theme),
 		User:              templateUser,
 		Avatar:            templates.AssetToTemplate(c.CurrentUser.AvatarAsset),
 		Email:             c.CurrentUser.Email,
@@ -319,7 +317,6 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	}
 
 	showEmail := form.Get("showemail") != ""
-	darkTheme := form.Get("darktheme") != ""
 
 	blurb := form.Get("shortbio")
 	signature := form.Get("signature")
@@ -336,7 +333,6 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 			name = $?,
 			email = $?,
 			showemail = $?,
-			darktheme = $?,
 			blurb = $?,
 			signature = $?,
 			bio = $?
@@ -344,7 +340,6 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 		name,
 		email,
 		showEmail,
-		darkTheme,
 		blurb,
 		signature,
 		bio,

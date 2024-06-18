@@ -10,7 +10,6 @@ type BaseData struct {
 	CanonicalLink    string
 	OpenGraphItems   []OpenGraphItem
 	BackgroundImage  BackgroundImage
-	Theme            string
 	BodyClasses      []string
 	Breadcrumbs      []Breadcrumb
 	Notices          []Notice
@@ -205,7 +204,6 @@ type User struct {
 	AvatarUrl  string
 	ProfileUrl string
 
-	DarkTheme bool
 	ShowEmail bool
 	Timezone  string
 

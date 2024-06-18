@@ -24,7 +24,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	var templateUser *templates.User
 	var templateSession *templates.Session
 	if c.CurrentUser != nil {
-		u := templates.UserToTemplate(c.CurrentUser, c.Theme)
+		u := templates.UserToTemplate(c.CurrentUser)
 		s := templates.SessionToTemplate(c.CurrentSession)
 		templateUser = &u
 		templateSession = &s
@@ -44,7 +44,6 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	}
 
 	baseData := templates.BaseData{
-		Theme:       c.Theme,
 		Title:       title,
 		Breadcrumbs: breadcrumbs,
 

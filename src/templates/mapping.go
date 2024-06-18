@@ -14,7 +14,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 )
 
-func PostToTemplate(p *models.Post, author *models.User, currentTheme string) Post {
+func PostToTemplate(p *models.Post, author *models.User) Post {
 	return Post{
 		ID: p.ID,
 
@@ -23,7 +23,7 @@ func PostToTemplate(p *models.Post, author *models.User, currentTheme string) Po
 		Preview:  p.Preview,
 		ReadOnly: p.ReadOnly,
 
-		Author: UserToTemplate(author, currentTheme),
+		Author: UserToTemplate(author),
 		// No content. A lot of the time we don't have this handy and don't need it. See AddContentVersion.
 		PostDate: p.PostDate,
 	}
@@ -34,7 +34,7 @@ func (p *Post) AddContentVersion(ver models.PostVersion, editor *models.User) {
 	p.IP = maybeIp(ver.IP)
 
 	if editor != nil {
-		editorTmpl := UserToTemplate(editor, "theme not required here")
+		editorTmpl := UserToTemplate(editor)
 		p.Editor = &editorTmpl
 		p.EditDate = ver.Date
 		p.EditReason = ver.EditReason
@@ -61,15 +61,13 @@ var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
 	models.ProjectLifecycleLTS:              "Complete",
 }
 
-func ProjectLogoUrl(p *models.Project, lightAsset *models.Asset, darkAsset *models.Asset, theme string) string {
-	if theme == "dark" {
-		if darkAsset != nil {
-			return hmnurl.BuildS3Asset(darkAsset.S3Key)
-		}
-	} else {
-		if lightAsset != nil {
-			return hmnurl.BuildS3Asset(lightAsset.S3Key)
-		}
+// TODO(redesign): Remove one or the other of these from the database entirely.
+func ProjectLogoUrl(p *models.Project, lightAsset *models.Asset, darkAsset *models.Asset) string {
+	if lightAsset != nil {
+		return hmnurl.BuildS3Asset(lightAsset.S3Key)
+	}
+	if darkAsset != nil {
+		return hmnurl.BuildS3Asset(darkAsset.S3Key)
 	}
 	return ""
 }
@@ -100,11 +98,11 @@ func ProjectToTemplate(
 	}
 }
 
-func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff, url string, theme string) Project {
+func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff, url string) Project {
 	res := ProjectToTemplate(&p.Project, url)
-	res.Logo = ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, theme)
+	res.Logo = ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset)
 	for _, o := range p.Owners {
-		res.Owners = append(res.Owners, UserToTemplate(o, theme))
+		res.Owners = append(res.Owners, UserToTemplate(o))
 	}
 	if p.HeaderImage != nil {
 		res.HeaderImage = hmnurl.BuildS3Asset(p.HeaderImage.S3Key)
@@ -133,11 +131,10 @@ func ProjectToProjectSettings(
 	owners []*models.User,
 	tag string,
 	lightLogo, darkLogo, headerImage *models.Asset,
-	currentTheme string,
 ) ProjectSettings {
 	ownerUsers := make([]User, 0, len(owners))
 	for _, owner := range owners {
-		ownerUsers = append(ownerUsers, UserToTemplate(owner, currentTheme))
+		ownerUsers = append(ownerUsers, UserToTemplate(owner))
 	}
 	return ProjectSettings{
 		Name:        p.Name,
@@ -187,28 +184,23 @@ func ThreadToTemplate(t *models.Thread) Thread {
 	}
 }
 
-func UserAvatarDefaultUrl(currentTheme string) string {
-	return hmnurl.BuildTheme("empty-avatar.svg", currentTheme, true)
+func UserAvatarDefaultUrl(theme string) string {
+	return hmnurl.BuildTheme("empty-avatar.svg", theme, true)
 }
 
-func UserAvatarUrl(u *models.User, currentTheme string) string {
-	if currentTheme == "" {
-		currentTheme = "light"
-	}
+func UserAvatarUrl(u *models.User) string {
 	avatar := ""
 	if u != nil && u.AvatarAsset != nil {
 		avatar = hmnurl.BuildS3Asset(u.AvatarAsset.S3Key)
-	} else {
-		avatar = UserAvatarDefaultUrl(currentTheme)
 	}
 	return avatar
 }
 
-func UserToTemplate(u *models.User, currentTheme string) User {
+func UserToTemplate(u *models.User) User {
 	if u == nil {
 		return User{
 			Name:      "Deleted user",
-			AvatarUrl: UserAvatarUrl(nil, currentTheme),
+			AvatarUrl: UserAvatarUrl(nil),
 		}
 	}
 
@@ -231,10 +223,9 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 		Signature:  u.Signature,
 		DateJoined: u.DateJoined,
 		ProfileUrl: hmnurl.BuildUserProfile(u.Username),
-		AvatarUrl:  UserAvatarUrl(u, currentTheme),
+		AvatarUrl:  UserAvatarUrl(u),
 
-		DarkTheme: u.DarkTheme,
-		Timezone:  u.Timezone,
+		Timezone: u.Timezone,
 
 		DiscordSaveShowcase:                 u.DiscordSaveShowcase,
 		DiscordDeleteSnippetOnMessageDelete: u.DiscordDeleteSnippetOnMessageDelete,
@@ -246,7 +237,7 @@ func UserToTemplate(u *models.User, currentTheme string) User {
 
 var UnknownUser = User{
 	Name:      "Unknown User",
-	AvatarUrl: UserAvatarUrl(nil, ""),
+	AvatarUrl: UserAvatarUrl(nil),
 }
 
 // An online site/service for which we recognize the link

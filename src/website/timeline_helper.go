@@ -20,7 +20,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
-func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User, theme string) ([]templates.TimelineItem, error) {
+func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User) ([]templates.TimelineItem, error) {
 	perf := perf.ExtractPerf(ctx)
 	type Follower struct {
 		UserID             int  `db:"user_id"`
@@ -50,7 +50,7 @@ func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *mod
 		}
 	}
 
-	timelineItems, err := FetchTimeline(ctx, conn, user, theme, TimelineQuery{
+	timelineItems, err := FetchTimeline(ctx, conn, user, TimelineQuery{
 		UserIDs:    userIDs,
 		ProjectIDs: projectIDs,
 	})
@@ -64,7 +64,7 @@ type TimelineQuery struct {
 	ProjectIDs []int
 }
 
-func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, theme string, q TimelineQuery) ([]templates.TimelineItem, error) {
+func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, q TimelineQuery) ([]templates.TimelineItem, error) {
 	perf := perf.ExtractPerf(ctx)
 	var users []*models.User
 	var projects []hmndata.ProjectAndStuff
@@ -159,7 +159,6 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 				&post.Post,
 				&post.Thread,
 				post.Author,
-				theme,
 			))
 		}
 	}
@@ -171,7 +170,6 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 			s.DiscordMessage,
 			s.Projects,
 			s.Owner,
-			theme,
 			false,
 		)
 		item.SmallInfo = true
@@ -188,7 +186,7 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 				if streamer.UserID != nil {
 					for _, u := range users {
 						if u.ID == *streamer.UserID {
-							ownerAvatarUrl = templates.UserAvatarUrl(u, theme)
+							ownerAvatarUrl = templates.UserAvatarUrl(u)
 							ownerName = u.BestName()
 							ownerUrl = hmnurl.BuildUserProfile(u.Username)
 							break
@@ -197,7 +195,7 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 				} else if streamer.ProjectID != nil {
 					for _, p := range projects {
 						if p.Project.ID == *streamer.ProjectID {
-							ownerAvatarUrl = templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset, theme)
+							ownerAvatarUrl = templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset)
 							ownerName = p.Project.Name
 							ownerUrl = hmndata.UrlContextForProject(&p.Project).BuildHomepage()
 						}
@@ -206,9 +204,6 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 				}
 				break
 			}
-		}
-		if ownerAvatarUrl == "" {
-			ownerAvatarUrl = templates.UserAvatarDefaultUrl(theme)
 		}
 		item := TwitchStreamToTimelineItem(s, ownerAvatarUrl, ownerName, ownerUrl)
 		timelineItems = append(timelineItems, item)
@@ -241,7 +236,6 @@ func PostToTimelineItem(
 	post *models.Post,
 	thread *models.Thread,
 	owner *models.User,
-	currentTheme string,
 ) templates.TimelineItem {
 	item := templates.TimelineItem{
 		Date:        post.PostDate,
@@ -249,7 +243,7 @@ func PostToTimelineItem(
 		Breadcrumbs: GenericThreadBreadcrumbs(urlContext, lineageBuilder, thread),
 		Url:         UrlForGenericPost(urlContext, thread, post, lineageBuilder),
 
-		OwnerAvatarUrl: templates.UserAvatarUrl(owner, currentTheme),
+		OwnerAvatarUrl: templates.UserAvatarUrl(owner),
 		OwnerName:      owner.BestName(),
 		OwnerUrl:       hmnurl.BuildUserProfile(owner.Username),
 	}
@@ -313,7 +307,6 @@ func SnippetToTimelineItem(
 	discordMessage *models.DiscordMessage,
 	projects []*hmndata.ProjectAndStuff,
 	owner *models.User,
-	currentTheme string,
 	editable bool,
 ) templates.TimelineItem {
 	item := templates.TimelineItem{
@@ -322,7 +315,7 @@ func SnippetToTimelineItem(
 		FilterTitle: "Snippets",
 		Url:         hmnurl.BuildSnippet(snippet.ID),
 
-		OwnerAvatarUrl: templates.UserAvatarUrl(owner, currentTheme),
+		OwnerAvatarUrl: templates.UserAvatarUrl(owner),
 		OwnerName:      owner.BestName(),
 		OwnerUrl:       hmnurl.BuildUserProfile(owner.Username),
 
@@ -366,7 +359,7 @@ func SnippetToTimelineItem(
 		return projects[i].Project.Name < projects[j].Project.Name
 	})
 	for _, proj := range projects {
-		item.Projects = append(item.Projects, templates.ProjectAndStuffToTemplate(proj, hmndata.UrlContextForProject(&proj.Project).BuildHomepage(), currentTheme))
+		item.Projects = append(item.Projects, templates.ProjectAndStuffToTemplate(proj, hmndata.UrlContextForProject(&proj.Project).BuildHomepage()))
 	}
 
 	return item

@@ -54,3 +54,5 @@
     - Threads?
     - TikTok?
     - Trello?
+- [ ] Handle empty avatar URLs correctly in various places (render as theme-dependent default)
+- [ ] Resolve TODO(redesign) comments
