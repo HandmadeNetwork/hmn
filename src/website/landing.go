@@ -2,7 +2,6 @@ package website
 
 import (
 	"html/template"
-	"math"
 	"net/http"
 
 	"git.handmade.network/hmn/hmn/src/hmndata"
@@ -10,21 +9,19 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
-	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 type LandingTemplateData struct {
 	templates.BaseData
 
-	NewsPost             *templates.TimelineItem
-	TimelineItems        []templates.TimelineItem
-	Pagination           templates.Pagination
-	ShowcaseTimelineJson string
+	NewsPost       *templates.TimelineItem
+	FollowingItems []templates.TimelineItem
+	FeaturedItems  []templates.TimelineItem
+	RecentItems    []templates.TimelineItem
+	NewsItems      []templates.TimelineItem
 
 	ManifestoUrl   string
-	FeedUrl        string
 	PodcastUrl     string
-	ShowcaseUrl    string
 	AtomFeedUrl    string
 	MarkAllReadUrl string
 
@@ -42,30 +39,6 @@ func Index(c *RequestContext) ResponseData {
 	c.Perf.EndBlock()
 
 	var timelineItems []templates.TimelineItem
-
-	numPosts, err := hmndata.CountPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
-		ThreadTypes: feedThreadTypes,
-	})
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
-
-	numPages := int(math.Ceil(float64(numPosts) / feedPostsPerPage))
-
-	page, numPages, ok := getPageInfo("1", numPosts, feedPostsPerPage)
-	if !ok {
-		return c.Redirect(hmnurl.BuildFeed(), http.StatusSeeOther)
-	}
-
-	pagination := templates.Pagination{
-		Current: page,
-		Total:   numPages,
-
-		FirstUrl:    hmnurl.BuildFeed(),
-		LastUrl:     hmnurl.BuildFeedWithPage(numPages),
-		NextUrl:     hmnurl.BuildFeedWithPage(utils.IntClamp(1, page+1, numPages)),
-		PreviousUrl: hmnurl.BuildFeedWithPage(utils.IntClamp(1, page-1, numPages)),
-	}
 
 	// This is essentially an alternate for feed page 1.
 	posts, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
@@ -112,45 +85,21 @@ func Index(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
-		Limit: 40,
-	})
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
-	}
-	showcaseItems := make([]templates.TimelineItem, 0, len(snippets))
-	for _, s := range snippets {
-		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
-		if timelineItem.CanShowcase {
-			showcaseItems = append(showcaseItems, timelineItem)
-		}
-	}
-	c.Perf.EndBlock()
-
-	c.Perf.StartBlock("SHOWCASE", "Convert to json")
-	showcaseJson := templates.TimelineItemsToJSON(showcaseItems)
-	c.Perf.EndBlock()
-
 	baseData := getBaseData(c, "", nil)
-	baseData.BodyClasses = append(baseData.BodyClasses, "hmdev", "landing") // TODO: Is "hmdev" necessary any more?
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
-		Value:    "A community of programmers committed to producing quality software through deeper understanding.",
+		Value:    "A community of low-level programmers with high-level goals, working to correct the course of the software industry.",
 	})
 
 	var res ResponseData
 	err = res.WriteTemplate("landing.html", LandingTemplateData{
 		BaseData: baseData,
 
-		NewsPost:             newsPostItem,
-		TimelineItems:        timelineItems,
-		Pagination:           pagination,
-		ShowcaseTimelineJson: showcaseJson,
+		NewsPost:       newsPostItem,
+		FollowingItems: timelineItems,
 
 		ManifestoUrl:   hmnurl.BuildManifesto(),
-		FeedUrl:        hmnurl.BuildFeed(),
 		PodcastUrl:     hmnurl.BuildPodcast(),
-		ShowcaseUrl:    hmnurl.BuildShowcase(),
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
 		MarkAllReadUrl: hmnurl.HMNProjectContext.BuildForumMarkRead(0),
 

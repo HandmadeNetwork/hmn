@@ -189,7 +189,6 @@ func UserProfile(c *RequestContext) ResponseData {
 		ProfileUserProjects: templateProjects,
 		TimelineItems:       timelineItems,
 		OwnProfile:          (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID),
-		ShowcaseUrl:         hmnurl.BuildShowcase(),
 
 		CanAddProject: numPersonalProjects < maxPersonalProjects,
 		NewProjectUrl: hmnurl.BuildProjectNew(),

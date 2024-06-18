@@ -160,9 +160,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.POST(hmnurl.RegexAdminSetUserOptions, adminsOnly(csrfMiddleware(UserProfileAdminSetOptions)))
 	hmnOnly.POST(hmnurl.RegexAdminNukeUser, adminsOnly(csrfMiddleware(UserProfileAdminNuke)))
 
-	hmnOnly.GET(hmnurl.RegexFeed, Feed)
+	hmnOnly.GET(hmnurl.RegexFeed, Feed) // TODO: Remove / rework this page
 	hmnOnly.GET(hmnurl.RegexAtomFeed, AtomFeed)
-	hmnOnly.GET(hmnurl.RegexShowcase, Showcase)
 	hmnOnly.GET(hmnurl.RegexSnippet, Snippet)
 	hmnOnly.GET(hmnurl.RegexProjectIndex, ProjectIndex)
 

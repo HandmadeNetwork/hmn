@@ -40,10 +40,6 @@ func TestHomepage(t *testing.T) {
 	AssertSubdomain(t, hero.BuildHomepage(), "hero")
 }
 
-func TestShowcase(t *testing.T) {
-	AssertRegexMatch(t, BuildShowcase(), RegexShowcase, nil)
-}
-
 func TestWhenIsIt(t *testing.T) {
 	AssertRegexMatch(t, BuildWhenIsIt(), RegexWhenIsIt, nil)
 }
@@ -96,8 +92,6 @@ func TestStaticPages(t *testing.T) {
 	AssertRegexMatch(t, BuildManifesto(), RegexManifesto, nil)
 	AssertRegexMatch(t, BuildAbout(), RegexAbout, nil)
 	AssertRegexMatch(t, BuildFoundation(), RegexFoundation, nil)
-	AssertRegexMatch(t, BuildStaffRole("test"), RegexStaffRole, nil)
-	AssertRegexMatch(t, BuildStaffRolesIndex(), RegexStaffRolesIndex, nil)
 	AssertRegexMatch(t, BuildCommunicationGuidelines(), RegexCommunicationGuidelines, nil)
 	AssertRegexMatch(t, BuildContactPage(), RegexContactPage, nil)
 	AssertRegexMatch(t, BuildMonthlyUpdatePolicy(), RegexMonthlyUpdatePolicy, nil)
@@ -459,7 +453,7 @@ func TestTimeMachineFormDone(t *testing.T) {
 }
 
 func TestNewsletterSignup(t *testing.T) {
-	AssertRegexMatch(t, BuildAPINewsletterSignup(), RegexNewsletterSignup, nil)
+	AssertRegexMatch(t, BuildAPINewsletterSignup(), RegexAPINewsletterSignup, nil)
 	AssertSubdomain(t, BuildAPINewsletterSignup(), "")
 }
 

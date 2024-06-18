@@ -180,30 +180,6 @@ func AtomFeed(c *RequestContext) ResponseData {
 				updated = feedData.Projects[0].DateApproved
 			}
 			feedData.Updated = updated
-		case "showcase":
-			feedData.Title = "Showcase | Site-wide | Handmade Network"
-			feedData.Subtitle = feedData.Title
-			feedData.FeedType = FeedTypeShowcase
-			feedData.FeedID = FeedIDShowcase
-			feedData.AtomFeedUrl = hmnurl.BuildAtomFeedForShowcase()
-			feedData.FeedUrl = hmnurl.BuildShowcase()
-
-			snippets, err := hmndata.FetchSnippets(c, c.Conn, c.CurrentUser, hmndata.SnippetQuery{
-				Limit: itemsPerFeed,
-			})
-			if err != nil {
-				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippets"))
-			}
-			for _, s := range snippets {
-				timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, c.Theme, false)
-				feedData.Snippets = append(feedData.Snippets, timelineItem)
-			}
-			c.Perf.EndBlock()
-			updated := time.Now()
-			if len(feedData.Snippets) > 0 {
-				updated = feedData.Snippets[0].Date
-			}
-			feedData.Updated = updated
 		default:
 			return FourOhFour(c)
 		}
