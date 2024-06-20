@@ -322,6 +322,11 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send registration email"))
 	}
 
+	if config.Config.Env == config.Dev {
+		confirmUrl := hmnurl.BuildEmailConfirmation(username, ott, destination)
+		logging.Debug().Str("Confirmation url", confirmUrl).Msg("New user requires email confirmation")
+	}
+
 	c.Perf.StartBlock("SQL", "Commit user")
 	err = tx.Commit(c)
 	if err != nil {
@@ -600,9 +605,21 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 			}
 			resetToken = newToken
 
-			err = email.SendPasswordReset(user.Email, user.BestName(), user.Username, resetToken.Content, resetToken.Expires, c.Perf)
+			err = email.SendPasswordReset(
+				user.Email,
+				user.BestName(),
+				user.Username,
+				resetToken.Content,
+				resetToken.Expires,
+				c.Perf,
+			)
 			if err != nil {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send email"))
+			}
+
+			if config.Config.Env == config.Dev {
+				passwordResetUrl := hmnurl.BuildDoPasswordReset(username, resetToken.Content)
+				logging.Debug().Str("Reset url", passwordResetUrl).Msg("Password reset requested")
 			}
 		}
 	}
