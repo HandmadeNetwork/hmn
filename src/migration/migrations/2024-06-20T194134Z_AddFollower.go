@@ -15,7 +15,7 @@ func init() {
 type AddFollower struct{}
 
 func (m AddFollower) Version() types.MigrationVersion {
-	return types.MigrationVersion(time.Date(2024, 5, 16, 19, 41, 34, 0, time.UTC))
+	return types.MigrationVersion(time.Date(2024, 6, 20, 19, 41, 34, 0, time.UTC))
 }
 
 func (m AddFollower) Name() string {
