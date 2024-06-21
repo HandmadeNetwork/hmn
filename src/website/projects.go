@@ -334,7 +334,7 @@ type ProjectHomepageData struct {
 }
 
 func ProjectHomepage(c *RequestContext) ResponseData {
-	maxRecentActivity := 15
+	maxRecentActivity := 100
 
 	if c.CurrentProject == nil {
 		return FourOhFour(c)

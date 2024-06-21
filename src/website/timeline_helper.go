@@ -243,15 +243,17 @@ func PostToTimelineItem(
 	thread *models.Thread,
 	owner *models.User,
 ) templates.TimelineItem {
+	ownerTmpl := templates.UserToTemplate(owner)
+
 	item := templates.TimelineItem{
 		Date:        post.PostDate,
 		Title:       thread.Title,
 		Breadcrumbs: GenericThreadBreadcrumbs(urlContext, lineageBuilder, thread),
 		Url:         UrlForGenericPost(urlContext, thread, post, lineageBuilder),
 
-		OwnerAvatarUrl: templates.UserAvatarUrl(owner),
-		OwnerName:      owner.BestName(),
-		OwnerUrl:       hmnurl.BuildUserProfile(owner.Username),
+		OwnerAvatarUrl: ownerTmpl.AvatarUrl,
+		OwnerName:      ownerTmpl.Name,
+		OwnerUrl:       ownerTmpl.ProfileUrl,
 	}
 
 	if typeTitles, ok := TimelineTypeTitleMap[post.ThreadType]; ok {
