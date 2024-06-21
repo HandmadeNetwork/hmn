@@ -62,6 +62,8 @@ func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *mod
 type TimelineQuery struct {
 	UserIDs    []int
 	ProjectIDs []int
+
+	Limit int
 }
 
 func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, q TimelineQuery) ([]templates.TimelineItem, error) {

@@ -12,6 +12,12 @@ const (
 	ThreadTypePersonalBlogPost
 )
 
+var ValidThreadTypes = []ThreadType{
+	ThreadTypeProjectBlogPost,
+	ThreadTypeForumPost,
+	ThreadTypePersonalBlogPost,
+}
+
 type Thread struct {
 	ID int `db:"id"`
 

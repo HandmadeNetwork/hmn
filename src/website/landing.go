@@ -11,58 +11,30 @@ import (
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
-type LandingTemplateData struct {
-	templates.BaseData
-
-	NewsPost       *templates.TimelineItem
-	FollowingItems []templates.TimelineItem
-	FeaturedItems  []templates.TimelineItem
-	RecentItems    []templates.TimelineItem
-	NewsItems      []templates.TimelineItem
-
-	ManifestoUrl   string
-	PodcastUrl     string
-	AtomFeedUrl    string
-	MarkAllReadUrl string
-
-	JamUrl                             string
-	JamDaysUntilStart, JamDaysUntilEnd int
-
-	HMSDaysUntilStart, HMSDaysUntilEnd           int
-	HMBostonDaysUntilStart, HMBostonDaysUntilEnd int
-}
-
 func Index(c *RequestContext) ResponseData {
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
-	var timelineItems []templates.TimelineItem
+	var err error
+	var followingItems []templates.TimelineItem
+	var featuredItems []templates.TimelineItem
+	var recentItems []templates.TimelineItem
+	var newsItems []templates.TimelineItem
 
-	FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser)
+	if c.CurrentUser != nil {
+		followingItems, err = FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser)
+		if err != nil {
+			c.Logger.Warn().Err(err).Msg("failed to fetch following feed")
+		}
+	}
 
-	// This is essentially an alternate for feed page 1.
-	posts, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{
-		ThreadTypes:    feedThreadTypes,
-		Limit:          feedPostsPerPage,
-		SortDescending: true,
+	recentItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, TimelineQuery{
+		Limit: 100,
 	})
 	if err != nil {
-		c.Logger.Warn().Err(err).Msg("failed to fetch latest posts")
-	}
-	for _, p := range posts {
-		if p.Project.IsHMN() {
-			continue // ignore news posts et. al.
-		}
-
-		item := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, p.Author)
-		if p.Thread.Type == models.ThreadTypeProjectBlogPost && p.Post.ID == p.Thread.FirstID {
-			// blog post
-			item.Description = template.HTML(p.CurrentVersion.TextParsed)
-			item.TruncateDescription = true
-		}
-		timelineItems = append(timelineItems, item)
+		c.Logger.Warn().Err(err).Msg("failed to fetch recent feed")
 	}
 
 	c.Perf.StartBlock("SQL", "Get news")
@@ -87,6 +59,27 @@ func Index(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
+	type LandingTemplateData struct {
+		templates.BaseData
+
+		NewsPost       *templates.TimelineItem
+		FollowingItems []templates.TimelineItem
+		FeaturedItems  []templates.TimelineItem
+		RecentItems    []templates.TimelineItem
+		NewsItems      []templates.TimelineItem
+
+		ManifestoUrl   string
+		PodcastUrl     string
+		AtomFeedUrl    string
+		MarkAllReadUrl string
+
+		JamUrl                             string
+		JamDaysUntilStart, JamDaysUntilEnd int
+
+		HMSDaysUntilStart, HMSDaysUntilEnd           int
+		HMBostonDaysUntilStart, HMBostonDaysUntilEnd int
+	}
+
 	baseData := getBaseData(c, "", nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
@@ -98,7 +91,10 @@ func Index(c *RequestContext) ResponseData {
 		BaseData: baseData,
 
 		NewsPost:       newsPostItem,
-		FollowingItems: timelineItems,
+		FollowingItems: followingItems,
+		FeaturedItems:  featuredItems,
+		RecentItems:    recentItems,
+		NewsItems:      newsItems,
 
 		ManifestoUrl:   hmnurl.BuildManifesto(),
 		PodcastUrl:     hmnurl.BuildPodcast(),
