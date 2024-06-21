@@ -102,8 +102,8 @@ func BlogIndex(c *RequestContext) ResponseData {
 
 			FirstUrl:    c.UrlContext.BuildBlog(1),
 			LastUrl:     c.UrlContext.BuildBlog(numPages),
-			PreviousUrl: c.UrlContext.BuildBlog(utils.IntClamp(1, page-1, numPages)),
-			NextUrl:     c.UrlContext.BuildBlog(utils.IntClamp(1, page+1, numPages)),
+			PreviousUrl: c.UrlContext.BuildBlog(utils.Clamp(1, page-1, numPages)),
+			NextUrl:     c.UrlContext.BuildBlog(utils.Clamp(1, page+1, numPages)),
 		},
 
 		ShowContent:   len(entries) <= 5,

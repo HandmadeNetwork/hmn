@@ -129,7 +129,7 @@ func FetchEmbed(ctx context.Context, urlStr string, httpClient *http.Client, max
 	filename := ""
 	u, err := url.Parse(urlStr)
 	if err == nil {
-		lastSlash := utils.IntMax(strings.LastIndex(u.Path, "/"), 0)
+		lastSlash := utils.Max(strings.LastIndex(u.Path, "/"), 0)
 		filename = u.Path[lastSlash:]
 	}
 	result := Embed{

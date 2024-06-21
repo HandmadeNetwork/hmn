@@ -75,44 +75,50 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 
 	perf.StartBlock("TIMELINE", "Fetch timeline data")
 	if len(q.UserIDs) > 0 || len(q.ProjectIDs) > 0 {
-		users, err := hmndata.FetchUsers(ctx, conn, currentUser, hmndata.UsersQuery{
-			UserIDs: q.UserIDs,
-		})
-		if err != nil {
-			return nil, oops.New(err, "failed to fetch users")
+		var err error
+
+		if len(q.UserIDs) > 0 {
+			users, err = hmndata.FetchUsers(ctx, conn, currentUser, hmndata.UsersQuery{
+				UserIDs: q.UserIDs,
+			})
+			if err != nil {
+				return nil, oops.New(err, "failed to fetch users")
+			}
 		}
 
 		// NOTE(asaf): Clear out invalid users in case we banned someone after they got followed
-		q.UserIDs = q.UserIDs[0:0]
+		validUserIDs := make([]int, 0, len(q.UserIDs))
 		for _, u := range users {
-			q.UserIDs = append(q.UserIDs, u.ID)
+			validUserIDs = append(validUserIDs, u.ID)
 		}
 
-		projects, err = hmndata.FetchProjects(ctx, conn, currentUser, hmndata.ProjectsQuery{
-			ProjectIDs: q.ProjectIDs,
-		})
-		if err != nil {
-			return nil, oops.New(err, "failed to fetch projects")
+		if len(q.ProjectIDs) > 0 {
+			projects, err = hmndata.FetchProjects(ctx, conn, currentUser, hmndata.ProjectsQuery{
+				ProjectIDs: q.ProjectIDs,
+			})
+			if err != nil {
+				return nil, oops.New(err, "failed to fetch projects")
+			}
 		}
 
-		// NOTE(asaf): The original projectIDs might container hidden/abandoned projects,
+		// NOTE(asaf): The original projectIDs might contain hidden/abandoned projects,
 		//             so we recreate it after the projects get filtered by FetchProjects.
-		q.ProjectIDs = q.ProjectIDs[0:0]
+		validProjectIDs := make([]int, 0, len(q.ProjectIDs))
 		for _, p := range projects {
-			q.ProjectIDs = append(q.ProjectIDs, p.Project.ID)
+			validProjectIDs = append(validProjectIDs, p.Project.ID)
 		}
 
 		snippets, err = hmndata.FetchSnippets(ctx, conn, currentUser, hmndata.SnippetQuery{
-			OwnerIDs:   q.UserIDs,
-			ProjectIDs: q.ProjectIDs,
+			OwnerIDs:   validUserIDs,
+			ProjectIDs: validProjectIDs,
 		})
 		if err != nil {
 			return nil, oops.New(err, "failed to fetch user snippets")
 		}
 
 		posts, err = hmndata.FetchPosts(ctx, conn, currentUser, hmndata.PostsQuery{
-			UserIDs:        q.UserIDs,
-			ProjectIDs:     q.ProjectIDs,
+			UserIDs:        validUserIDs,
+			ProjectIDs:     validProjectIDs,
 			SortDescending: true,
 		})
 		if err != nil {
@@ -120,8 +126,8 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 		}
 
 		streamers, err = hmndata.FetchTwitchStreamers(ctx, conn, hmndata.TwitchStreamersQuery{
-			UserIDs:    q.UserIDs,
-			ProjectIDs: q.ProjectIDs,
+			UserIDs:    validUserIDs,
+			ProjectIDs: validProjectIDs,
 		})
 		if err != nil {
 			return nil, oops.New(err, "failed to fetch streamers")

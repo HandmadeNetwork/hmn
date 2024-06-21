@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/oops"
+	"golang.org/x/exp/constraints"
 )
 
 // Returns the provided value, or a default value if the input was zero.
@@ -37,29 +38,26 @@ func Must1[T any](v T, err error) T {
 	return v
 }
 
-func IntMin(a, b int) int {
+func Min[T constraints.Ordered](a, b T) T {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func IntMax(a, b int) int {
+func Max[T constraints.Ordered](a, b T) T {
 	if a > b {
 		return a
 	}
 	return b
 }
 
-func IntClamp(min, t, max int) int {
-	return IntMax(min, IntMin(t, max))
+func Clamp[T constraints.Ordered](min, t, max T) T {
+	return Max(min, Min(t, max))
 }
 
-func Int64Max(a, b int64) int64 {
-	if a > b {
-		return a
-	}
-	return b
+func ClampSlice[T any](s []T, max int) []T {
+	return s[:Min(len(s), max)]
 }
 
 func DurationRoundUp(d time.Duration, interval time.Duration) time.Duration {
@@ -67,7 +65,7 @@ func DurationRoundUp(d time.Duration, interval time.Duration) time.Duration {
 }
 
 func NumPages(numThings, thingsPerPage int) int {
-	return IntMax(int(math.Ceil(float64(numThings)/float64(thingsPerPage))), 1)
+	return Max(int(math.Ceil(float64(numThings)/float64(thingsPerPage))), 1)
 }
 
 /*

@@ -28,7 +28,7 @@ func ParsePageNumber(
 		}
 	}
 	if page < 1 || numPages < page {
-		return utils.IntClamp(1, page, numPages), false
+		return utils.Clamp(1, page, numPages), false
 	}
 
 	return page, true

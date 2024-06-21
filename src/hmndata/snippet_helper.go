@@ -99,16 +99,19 @@ func FetchSnippets(
 			TRUE
 		`,
 	)
-	allIDs := make([]int, 0, len(q.IDs)+len(tagSnippetIDs)+len(projectSnippetIDs))
-	allIDs = append(allIDs, q.IDs...)
-	allIDs = append(allIDs, tagSnippetIDs...)
-	allIDs = append(allIDs, projectSnippetIDs...)
-	if len(allIDs) > 0 && len(q.OwnerIDs) > 0 {
-		qb.Add(`AND (snippet.id = ANY ($?) OR snippet.owner_id = ANY ($?))`, allIDs, q.OwnerIDs)
+	allSnippetIDs := make([]int, 0, len(q.IDs)+len(tagSnippetIDs)+len(projectSnippetIDs))
+	allSnippetIDs = append(allSnippetIDs, q.IDs...)
+	allSnippetIDs = append(allSnippetIDs, tagSnippetIDs...)
+	allSnippetIDs = append(allSnippetIDs, projectSnippetIDs...)
+	if len(allSnippetIDs) == 0 {
+		// We already managed to filter out all snippets, and all further
+		// parts of this query are more filters, so we can just fail everything
+		// else from right here.
+		qb.Add(`AND FALSE`)
+	} else if len(q.OwnerIDs) > 0 {
+		qb.Add(`AND (snippet.id = ANY ($?) OR snippet.owner_id = ANY ($?))`, allSnippetIDs, q.OwnerIDs)
 	} else {
-		if len(allIDs) > 0 {
-			qb.Add(`AND snippet.id = ANY ($?)`, allIDs)
-		}
+		qb.Add(`AND snippet.id = ANY ($?)`, allSnippetIDs)
 		if len(q.OwnerIDs) > 0 {
 			qb.Add(`AND snippet.owner_id = ANY ($?)`, q.OwnerIDs)
 		}

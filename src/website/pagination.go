@@ -16,7 +16,7 @@ func getPageInfo(
 	totalPages int,
 	ok bool,
 ) {
-	totalPages = utils.IntMax(1, int(math.Ceil(float64(totalItems)/float64(itemsPerPage))))
+	totalPages = utils.Max(1, int(math.Ceil(float64(totalItems)/float64(itemsPerPage))))
 	ok = true
 
 	page = 1

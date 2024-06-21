@@ -117,7 +117,7 @@ func csrfMiddleware(h Handler) Handler {
 func securityTimerMiddleware(duration time.Duration, h Handler) Handler {
 	// NOTE(asaf): Will make sure that the request takes at least `duration` to finish. Adds a 10% random duration.
 	return func(c *RequestContext) ResponseData {
-		additionalDuration := time.Duration(rand.Int63n(utils.Int64Max(1, int64(duration)/10)))
+		additionalDuration := time.Duration(rand.Int63n(utils.Max(1, int64(duration)/10)))
 		timer := time.NewTimer(duration + additionalDuration)
 		res := h(c)
 		select {

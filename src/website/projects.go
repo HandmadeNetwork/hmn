@@ -126,12 +126,12 @@ func ProjectIndex(c *RequestContext) ResponseData {
 
 			AllProjects: true,
 
-			OfficialProjects:     officialProjects[:utils.IntMin(len(officialProjects), projectsPerSection)],
+			OfficialProjects:     officialProjects[:utils.Min(len(officialProjects), projectsPerSection)],
 			OfficialProjectsLink: hmnurl.BuildProjectIndex(1, "official"),
-			PersonalProjects:     personalProjects[:utils.IntMin(len(personalProjects), projectsPerSection)],
+			PersonalProjects:     personalProjects[:utils.Min(len(personalProjects), projectsPerSection)],
 			PersonalProjectsLink: hmnurl.BuildProjectIndex(1, "personal"),
 			// Current jam stuff set later
-			PreviousJamProjects:     previousJamProjects[:utils.IntMin(len(previousJamProjects), projectsPerSection)],
+			PreviousJamProjects:     previousJamProjects[:utils.Min(len(previousJamProjects), projectsPerSection)],
 			PreviousJamProjectsLink: hmnurl.BuildProjectIndex(1, previousJam.UrlSlug),
 			PreviousJamLink:         hmnurl.BuildJamIndexAny(previousJam.UrlSlug),
 			PreviousJamSlug:         previousJam.UrlSlug,
@@ -140,7 +140,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		}
 
 		if currentJam != nil {
-			tmpl.CurrentJamProjects = currentJamProjects[:utils.IntMin(len(currentJamProjects), projectsPerSection)]
+			tmpl.CurrentJamProjects = currentJamProjects[:utils.Min(len(currentJamProjects), projectsPerSection)]
 			tmpl.CurrentJamProjectsLink = hmnurl.BuildProjectIndex(1, currentJam.UrlSlug)
 			tmpl.CurrentJamLink = hmnurl.BuildJamIndexAny(currentJam.UrlSlug)
 			tmpl.CurrentJamSlug = currentJam.UrlSlug
@@ -195,12 +195,12 @@ func ProjectIndex(c *RequestContext) ResponseData {
 
 			FirstUrl:    hmnurl.BuildProjectIndex(1, cat),
 			LastUrl:     hmnurl.BuildProjectIndex(numPages, cat),
-			NextUrl:     hmnurl.BuildProjectIndex(utils.IntClamp(1, page+1, numPages), cat),
-			PreviousUrl: hmnurl.BuildProjectIndex(utils.IntClamp(1, page-1, numPages), cat),
+			NextUrl:     hmnurl.BuildProjectIndex(utils.Clamp(1, page+1, numPages), cat),
+			PreviousUrl: hmnurl.BuildProjectIndex(utils.Clamp(1, page-1, numPages), cat),
 		}
 
 		firstProjectIndex := (page - 1) * projectsPerPage
-		endIndex := utils.IntMin(firstProjectIndex+projectsPerPage, len(projects))
+		endIndex := utils.Min(firstProjectIndex+projectsPerPage, len(projects))
 		pageProjects := projects[firstProjectIndex:endIndex]
 
 		baseData := getBaseData(c, "Projects", []templates.Breadcrumb{
@@ -474,7 +474,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	templateData.RecentActivity = templateData.RecentActivity[:utils.IntMin(len(templateData.RecentActivity)-1, maxRecentActivity)]
+	templateData.RecentActivity = utils.ClampSlice(templateData.RecentActivity, maxRecentActivity)
 
 	followUrl := ""
 	following := false

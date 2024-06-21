@@ -53,8 +53,8 @@ func Feed(c *RequestContext) ResponseData {
 
 		FirstUrl:    hmnurl.BuildFeed(),
 		LastUrl:     hmnurl.BuildFeedWithPage(numPages),
-		NextUrl:     hmnurl.BuildFeedWithPage(utils.IntClamp(1, page+1, numPages)),
-		PreviousUrl: hmnurl.BuildFeedWithPage(utils.IntClamp(1, page-1, numPages)),
+		NextUrl:     hmnurl.BuildFeedWithPage(utils.Clamp(1, page+1, numPages)),
+		PreviousUrl: hmnurl.BuildFeedWithPage(utils.Clamp(1, page-1, numPages)),
 	}
 
 	posts, err := fetchAllPosts(c, (page-1)*feedPostsPerPage, feedPostsPerPage)

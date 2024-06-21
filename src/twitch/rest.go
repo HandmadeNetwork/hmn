@@ -44,7 +44,7 @@ func getTwitchUsersByLogin(ctx context.Context, logins []string) ([]twitchUser, 
 	for i := 0; i < numChunks; i++ {
 		query := url.Values{}
 		query.Add("first", "100")
-		for _, login := range logins[i*100 : utils.IntMin((i+1)*100, len(logins))] {
+		for _, login := range logins[i*100 : utils.Min((i+1)*100, len(logins))] {
 			query.Add("login", login)
 		}
 		req, err := http.NewRequestWithContext(ctx, "GET", buildUrl("/users", query.Encode()), nil)
@@ -94,7 +94,7 @@ func getStreamStatus(ctx context.Context, twitchIDs []string) ([]streamStatus, e
 	for i := 0; i < numChunks; i++ {
 		query := url.Values{}
 		query.Add("first", "100")
-		for _, tid := range twitchIDs[i*100 : utils.IntMin((i+1)*100, len(twitchIDs))] {
+		for _, tid := range twitchIDs[i*100 : utils.Min((i+1)*100, len(twitchIDs))] {
 			query.Add("user_id", tid)
 		}
 		req, err := http.NewRequestWithContext(ctx, "GET", buildUrl("/streams", query.Encode()), nil)

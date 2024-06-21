@@ -198,8 +198,8 @@ func Forum(c *RequestContext) ResponseData {
 
 			FirstUrl:    c.UrlContext.BuildForum(currentSubforumSlugs, 1),
 			LastUrl:     c.UrlContext.BuildForum(currentSubforumSlugs, numPages),
-			NextUrl:     c.UrlContext.BuildForum(currentSubforumSlugs, utils.IntClamp(1, page+1, numPages)),
-			PreviousUrl: c.UrlContext.BuildForum(currentSubforumSlugs, utils.IntClamp(1, page-1, numPages)),
+			NextUrl:     c.UrlContext.BuildForum(currentSubforumSlugs, utils.Clamp(1, page+1, numPages)),
+			PreviousUrl: c.UrlContext.BuildForum(currentSubforumSlugs, utils.Clamp(1, page-1, numPages)),
 		},
 		Subforums: subforums,
 	}, c.Perf)
@@ -375,8 +375,8 @@ func ForumThread(c *RequestContext) ResponseData {
 
 		FirstUrl:    c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, 1),
 		LastUrl:     c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, numPages),
-		NextUrl:     c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, utils.IntClamp(1, page+1, numPages)),
-		PreviousUrl: c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, utils.IntClamp(1, page-1, numPages)),
+		NextUrl:     c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, utils.Clamp(1, page+1, numPages)),
+		PreviousUrl: c.UrlContext.BuildForumThread(currentSubforumSlugs, thread.ID, thread.Title, utils.Clamp(1, page-1, numPages)),
 	}
 
 	postsAndStuff, err := hmndata.FetchPosts(c, c.Conn, c.CurrentUser, hmndata.PostsQuery{

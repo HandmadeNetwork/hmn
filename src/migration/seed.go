@@ -289,7 +289,7 @@ func seedProject(ctx context.Context, tx pgx.Tx, input models.Project, owners []
 		input.ForumEnabled, input.BlogEnabled,
 		utils.OrDefault(input.DateCreated, time.Now()),
 	)
-	latestProjectId = utils.IntMax(latestProjectId, project.ID)
+	latestProjectId = utils.Max(latestProjectId, project.ID)
 
 	// Create forum (even if unused)
 	forum := db.MustQueryOne[models.Subforum](ctx, tx,
