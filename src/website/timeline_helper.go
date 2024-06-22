@@ -18,18 +18,14 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User) ([]templates.TimelineItem, error) {
 	perf := perf.ExtractPerf(ctx)
-	type Follower struct {
-		UserID             int  `db:"user_id"`
-		FollowingUserID    *int `db:"following_user_id"`
-		FollowingProjectID *int `db:"following_project_id"`
-	}
 
 	perf.StartBlock("FOLLOW", "Assemble follow data")
-	following, err := db.Query[Follower](ctx, conn, `
+	following, err := db.Query[models.Follow](ctx, conn, `
 		SELECT $columns
 		FROM follower
 		WHERE user_id = $1
@@ -68,86 +64,58 @@ type TimelineQuery struct {
 
 func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, q TimelineQuery) ([]templates.TimelineItem, error) {
 	perf := perf.ExtractPerf(ctx)
-	var users []*models.User
-	var projects []hmndata.ProjectAndStuff
+	// var users []*models.User
+	// var projects []hmndata.ProjectAndStuff
 	var snippets []hmndata.SnippetAndStuff
 	var posts []hmndata.PostAndStuff
-	var streamers []hmndata.TwitchStreamer
-	var streams []*models.TwitchStreamHistory
+	// var streamers []hmndata.TwitchStreamer
+	// var streams []*models.TwitchStreamHistory
+	var err error
 
 	perf.StartBlock("TIMELINE", "Fetch timeline data")
-	if len(q.UserIDs) > 0 || len(q.ProjectIDs) > 0 {
-		var err error
-
-		if len(q.UserIDs) > 0 {
-			users, err = hmndata.FetchUsers(ctx, conn, currentUser, hmndata.UsersQuery{
-				UserIDs: q.UserIDs,
-			})
-			if err != nil {
-				return nil, oops.New(err, "failed to fetch users")
-			}
-		}
-
-		// NOTE(asaf): Clear out invalid users in case we banned someone after they got followed
-		validUserIDs := make([]int, 0, len(q.UserIDs))
-		for _, u := range users {
-			validUserIDs = append(validUserIDs, u.ID)
-		}
-
-		if len(q.ProjectIDs) > 0 {
-			projects, err = hmndata.FetchProjects(ctx, conn, currentUser, hmndata.ProjectsQuery{
-				ProjectIDs: q.ProjectIDs,
-			})
-			if err != nil {
-				return nil, oops.New(err, "failed to fetch projects")
-			}
-		}
-
-		// NOTE(asaf): The original projectIDs might contain hidden/abandoned projects,
-		//             so we recreate it after the projects get filtered by FetchProjects.
-		validProjectIDs := make([]int, 0, len(q.ProjectIDs))
-		for _, p := range projects {
-			validProjectIDs = append(validProjectIDs, p.Project.ID)
-		}
-
+	{
 		snippets, err = hmndata.FetchSnippets(ctx, conn, currentUser, hmndata.SnippetQuery{
-			OwnerIDs:   validUserIDs,
-			ProjectIDs: validProjectIDs,
+			OwnerIDs:   q.UserIDs,
+			ProjectIDs: q.ProjectIDs,
+
+			Limit: q.Limit,
 		})
 		if err != nil {
-			return nil, oops.New(err, "failed to fetch user snippets")
+			return nil, oops.New(err, "failed to fetch timeline snippets")
 		}
 
 		posts, err = hmndata.FetchPosts(ctx, conn, currentUser, hmndata.PostsQuery{
-			UserIDs:        validUserIDs,
-			ProjectIDs:     validProjectIDs,
+			UserIDs:        q.UserIDs,
+			ProjectIDs:     q.ProjectIDs,
 			SortDescending: true,
+
+			Limit: q.Limit,
 		})
 		if err != nil {
-			return nil, oops.New(err, "failed to fetch user posts")
+			return nil, oops.New(err, "failed to fetch timeline posts")
 		}
 
-		streamers, err = hmndata.FetchTwitchStreamers(ctx, conn, hmndata.TwitchStreamersQuery{
-			UserIDs:    validUserIDs,
-			ProjectIDs: validProjectIDs,
-		})
-		if err != nil {
-			return nil, oops.New(err, "failed to fetch streamers")
-		}
+		// streamers, err = hmndata.FetchTwitchStreamers(ctx, conn, hmndata.TwitchStreamersQuery{
+		// 	UserIDs:    validUserIDs,
+		// 	ProjectIDs: validProjectIDs,
+		// })
+		// if err != nil {
+		// 	return nil, oops.New(err, "failed to fetch streamers")
+		// }
 
-		twitchLogins := make([]string, 0, len(streamers))
-		for _, s := range streamers {
-			twitchLogins = append(twitchLogins, s.TwitchLogin)
-		}
-		streams, err = db.Query[models.TwitchStreamHistory](ctx, conn,
-			`
-			SELECT $columns FROM twitch_stream_history WHERE twitch_login = ANY ($1)
-			`,
-			twitchLogins,
-		)
-		if err != nil {
-			return nil, oops.New(err, "failed to fetch stream histories")
-		}
+		// twitchLogins := make([]string, 0, len(streamers))
+		// for _, s := range streamers {
+		// 	twitchLogins = append(twitchLogins, s.TwitchLogin)
+		// }
+		// streams, err = db.Query[models.TwitchStreamHistory](ctx, conn,
+		// 	`
+		// 	SELECT $columns FROM twitch_stream_history WHERE twitch_login = ANY ($1)
+		// 	`,
+		// 	twitchLogins,
+		// )
+		// if err != nil {
+		// 	return nil, oops.New(err, "failed to fetch stream histories")
+		// }
 	}
 	perf.EndBlock()
 
@@ -184,38 +152,38 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 		timelineItems = append(timelineItems, item)
 	}
 
-	for _, s := range streams {
-		ownerAvatarUrl := ""
-		ownerName := ""
-		ownerUrl := ""
+	// for _, s := range streams {
+	// 	ownerAvatarUrl := ""
+	// 	ownerName := ""
+	// 	ownerUrl := ""
 
-		for _, streamer := range streamers {
-			if streamer.TwitchLogin == s.TwitchLogin {
-				if streamer.UserID != nil {
-					for _, u := range users {
-						if u.ID == *streamer.UserID {
-							ownerAvatarUrl = templates.UserAvatarUrl(u)
-							ownerName = u.BestName()
-							ownerUrl = hmnurl.BuildUserProfile(u.Username)
-							break
-						}
-					}
-				} else if streamer.ProjectID != nil {
-					for _, p := range projects {
-						if p.Project.ID == *streamer.ProjectID {
-							ownerAvatarUrl = templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset)
-							ownerName = p.Project.Name
-							ownerUrl = hmndata.UrlContextForProject(&p.Project).BuildHomepage()
-						}
-						break
-					}
-				}
-				break
-			}
-		}
-		item := TwitchStreamToTimelineItem(s, ownerAvatarUrl, ownerName, ownerUrl)
-		timelineItems = append(timelineItems, item)
-	}
+	// 	for _, streamer := range streamers {
+	// 		if streamer.TwitchLogin == s.TwitchLogin {
+	// 			if streamer.UserID != nil {
+	// 				for _, u := range users {
+	// 					if u.ID == *streamer.UserID {
+	// 						ownerAvatarUrl = templates.UserAvatarUrl(u)
+	// 						ownerName = u.BestName()
+	// 						ownerUrl = hmnurl.BuildUserProfile(u.Username)
+	// 						break
+	// 					}
+	// 				}
+	// 			} else if streamer.ProjectID != nil {
+	// 				for _, p := range projects {
+	// 					if p.Project.ID == *streamer.ProjectID {
+	// 						ownerAvatarUrl = templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset)
+	// 						ownerName = p.Project.Name
+	// 						ownerUrl = hmndata.UrlContextForProject(&p.Project).BuildHomepage()
+	// 					}
+	// 					break
+	// 				}
+	// 			}
+	// 			break
+	// 		}
+	// 	}
+	// 	item := TwitchStreamToTimelineItem(s, ownerAvatarUrl, ownerName, ownerUrl)
+	// 	timelineItems = append(timelineItems, item)
+	// }
 
 	perf.StartBlock("TIMELINE", "Sort timeline")
 	sort.Slice(timelineItems, func(i, j int) bool {
@@ -224,7 +192,83 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 	perf.EndBlock()
 	perf.EndBlock()
 
+	if q.Limit > 0 {
+		timelineItems = utils.ClampSlice(timelineItems, q.Limit)
+	}
+
 	return timelineItems, nil
+}
+
+func FetchFollows(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, userID int) ([]templates.Follow, error) {
+	perf := perf.ExtractPerf(ctx)
+
+	perf.StartBlock("SQL", "Fetch follows")
+	following, err := db.Query[models.Follow](ctx, conn, `
+		SELECT $columns
+		FROM follower
+		WHERE user_id = $1
+	`, userID)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch follows")
+	}
+	perf.EndBlock()
+
+	var userIDs, projectIDs []int
+	for _, follow := range following {
+		if follow.FollowingUserID != nil {
+			userIDs = append(userIDs, *follow.FollowingUserID)
+		}
+		if follow.FollowingProjectID != nil {
+			projectIDs = append(projectIDs, *follow.FollowingProjectID)
+		}
+	}
+
+	var users []*models.User
+	var projectsAndStuff []hmndata.ProjectAndStuff
+	if len(userIDs) > 0 {
+		users, err = hmndata.FetchUsers(ctx, conn, currentUser, hmndata.UsersQuery{
+			UserIDs: userIDs,
+		})
+		if err != nil {
+			return nil, oops.New(err, "failed to fetch users for follows")
+		}
+	}
+	if len(projectIDs) > 0 {
+		projectsAndStuff, err = hmndata.FetchProjects(ctx, conn, currentUser, hmndata.ProjectsQuery{
+			ProjectIDs: projectIDs,
+		})
+		if err != nil {
+			return nil, oops.New(err, "failed to fetch projects for follows")
+		}
+	}
+
+	var result []templates.Follow
+	for _, follow := range following {
+		if follow.FollowingUserID != nil {
+			for _, user := range users {
+				if user.ID == *follow.FollowingUserID {
+					u := templates.UserToTemplate(user)
+					result = append(result, templates.Follow{
+						User: &u,
+					})
+					break
+				}
+			}
+		}
+		if follow.FollowingProjectID != nil {
+			for _, p := range projectsAndStuff {
+				if p.Project.ID == *follow.FollowingProjectID {
+					proj := templates.ProjectAndStuffToTemplate(&p)
+					result = append(result, templates.Follow{
+						Project: &proj,
+					})
+					break
+				}
+			}
+		}
+	}
+
+	return result, nil
 }
 
 type TimelineTypeTitles struct {
@@ -369,7 +413,7 @@ func SnippetToTimelineItem(
 		return projects[i].Project.Name < projects[j].Project.Name
 	})
 	for _, proj := range projects {
-		item.Projects = append(item.Projects, templates.ProjectAndStuffToTemplate(proj, hmndata.UrlContextForProject(&proj.Project).BuildHomepage()))
+		item.Projects = append(item.Projects, templates.ProjectAndStuffToTemplate(proj))
 	}
 
 	return item

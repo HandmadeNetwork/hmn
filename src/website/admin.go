@@ -236,7 +236,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 			userData.Date = p.ProjectAndStuff.Project.DateCreated
 		}
 		userData.ProjectsWithLinks = append(userData.ProjectsWithLinks, projectWithLinks{
-			Project: templates.ProjectAndStuffToTemplate(p.ProjectAndStuff, hmndata.UrlContextForProject(&p.ProjectAndStuff.Project).BuildHomepage()),
+			Project: templates.ProjectAndStuffToTemplate(p.ProjectAndStuff),
 			Links:   projectLinks,
 		})
 	}

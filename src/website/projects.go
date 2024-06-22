@@ -238,7 +238,7 @@ func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error)
 	var restProjects []templates.Project
 	now := time.Now()
 	for _, p := range official {
-		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
+		templateProject := templates.ProjectAndStuffToTemplate(&p)
 
 		if p.Project.Slug == "hero" {
 			// NOTE(asaf): Handmade Hero gets special treatment. Must always be first in the list.
@@ -297,7 +297,7 @@ func getPersonalProjects(c *RequestContext, jamSlug string) ([]templates.Project
 
 	var personalProjects []templates.Project
 	for _, p := range projects {
-		templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
+		templateProject := templates.ProjectAndStuffToTemplate(&p)
 		personalProjects = append(personalProjects, templateProject)
 	}
 
@@ -410,7 +410,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project details"))
 	}
-	templateData.Project = templates.ProjectAndStuffToTemplate(&p, c.UrlContext.BuildHomepage())
+	templateData.Project = templates.ProjectAndStuffToTemplate(&p)
 	for _, owner := range owners {
 		templateData.Owners = append(templateData.Owners, templates.UserToTemplate(owner))
 	}
@@ -486,12 +486,12 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
 		}
 		templateProjects := make([]templates.Project, 0, len(userProjects))
-		templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
+		templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&p))
 		for _, p := range userProjects {
 			if p.Project.ID == c.CurrentProject.ID {
 				continue
 			}
-			templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
+			templateProject := templates.ProjectAndStuffToTemplate(&p)
 			templateProjects = append(templateProjects, templateProject)
 		}
 		templateData.SnippetEdit = templates.SnippetEdit{

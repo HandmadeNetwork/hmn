@@ -74,7 +74,6 @@ func ProjectLogoUrl(p *models.Project, lightAsset *models.Asset, darkAsset *mode
 
 func ProjectToTemplate(
 	p *models.Project,
-	url string,
 ) Project {
 	return Project{
 		ID:                p.ID,
@@ -82,7 +81,7 @@ func ProjectToTemplate(
 		Subdomain:         p.Subdomain(),
 		Color1:            p.Color1,
 		Color2:            p.Color2,
-		Url:               url,
+		Url:               hmndata.UrlContextForProject(p).BuildHomepage(),
 		Blurb:             p.Blurb,
 		ParsedDescription: template.HTML(p.ParsedDescription),
 
@@ -98,8 +97,8 @@ func ProjectToTemplate(
 	}
 }
 
-func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff, url string) Project {
-	res := ProjectToTemplate(&p.Project, url)
+func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff) Project {
+	res := ProjectToTemplate(&p.Project)
 	res.Logo = ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset)
 	for _, o := range p.Owners {
 		res.Owners = append(res.Owners, UserToTemplate(o))

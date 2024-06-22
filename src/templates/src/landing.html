@@ -84,29 +84,43 @@
 <div class="flex justify-center pa3">
 	<div class="w-100 mw-site flex g3">
 		<!-- Sidebar -->
-		<div class="w5 flex flex-column g2">
-			<div class="bg--card pa2">
-				<div class="pb2 flex justify-between items-center">
-					<span class="f7">Your projects</span>
-					<span class="svgicon f8">{{ svg "chevron-down" }}</span>
+		<div class="w5 flex flex-column g2 flex-shrink-0">
+			{{ if .User }}
+				<div class="bg--card link--normal">
+					<div class="pa2 flex justify-between items-center">
+						<span class="f7">Your projects</span>
+						<span class="svgicon-lite">{{ svg "chevron-down" }}</span>
+					</div>
+					<div class="ph2 flex flex-column g2">
+						{{ range .UserProjects }}
+							{{ template "list-project" . }}
+						{{ else }}
+							<div class="f7 pv3 tc c--dim">You have not created any projects.</div>
+						{{ end }}
+					</div>
+					<a class="bt mt2 pa2 flex justify-between" href="{{ .NewProjectUrl }}">
+						<div>Create new project</div>
+						<div class="svgicon-lite flex items-center">{{ svg "add" }}</div>
+					</a>
 				</div>
-				<div>
-					You have not created any projects.
+				<div class="bg--card link--normal">
+					<div class="pa2 flex justify-between items-center">
+						<span class="f7">Following</span>
+						<span class="svgicon f8">{{ svg "chevron-down" }}</span>
+					</div>
+					<div class="ph2 pb2 flex flex-column g2">
+						{{ range .Following }}
+							{{ template "list-follow" . }}
+						{{ else }}
+							<div class="f7 pv3 tc c--dim">You are not following anything.</div>
+						{{ end }}
+					</div>
 				</div>
-			</div>
-			<div class="bg--card pa2">
-				<div class="pb2 flex justify-between items-center">
-					<span class="f7">Following</span>
-					<span class="svgicon f8">{{ svg "chevron-down" }}</span>
-				</div>
-				<div>
-					You are not following anything yet.
-				</div>
-			</div>
+			{{ end }}
 		</div>
 
 		<!-- Feed -->
-		<div class="flex flex-column flex-grow-1">
+		<div class="flex flex-column flex-grow-1 overflow-hidden">
 			<div class="timeline flex flex-column g3">
 				{{ range .RecentItems }}
 					{{ template "timeline_item.html" . }}
@@ -117,4 +131,39 @@
 	</div>
 </div>
 
+{{ end }}
+
+{{ define "list-project" }}
+	<a class="flex g2 items-center" href="{{ .Url }}">
+		{{ with .Logo }}
+			<img class="avatar avatar-small" src="{{ . }}">
+		{{ else }}
+			<div class="avatar avatar-small"></div>
+		{{ end }}
+		<div>{{ .Name }}</div>
+	</a>
+{{ end }}
+
+{{ define "list-follow" }}
+	{{ if .User }}
+		<a class="flex g2 items-center" href="{{ .User.ProfileUrl }}">
+			{{ with .User.AvatarUrl }}
+				<img class="avatar avatar-user avatar-small" src="{{ . }}">
+			{{ else }}
+				<div class="avatar avatar-user avatar-small"></div>
+			{{ end }}
+			<div>{{ .User.Name }}</div>
+		</a>
+	{{ else if .Project }}
+		<a class="flex g2 items-center" href="{{ .Project.Url }}">
+			{{ with .Project.Logo }}
+				<img class="avatar avatar-small" src="{{ . }}">
+			{{ else }}
+				<div class="avatar avatar-small"></div>
+			{{ end }}
+			<div>{{ .Project.Name }}</div>
+		</a>
+	{{ else }}
+		???
+	{{ end }}
 {{ end }}

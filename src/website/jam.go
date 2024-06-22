@@ -250,9 +250,7 @@ func getLJ2024FeedData(c *RequestContext, maxTimelineItems int) (JamFeedDataLJ20
 
 	projects := make([]templates.Project, 0, len(jamProjects))
 	for _, jp := range jamProjects {
-		urlContext := hmndata.UrlContextForProject(&jp.Project)
-		projectUrl := urlContext.BuildHomepage()
-		projects = append(projects, templates.ProjectAndStuffToTemplate(&jp, projectUrl))
+		projects = append(projects, templates.ProjectAndStuffToTemplate(&jp))
 	}
 
 	projectIds := make([]int, 0, len(jamProjects))
@@ -367,7 +365,7 @@ func JamIndex2023(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
 	}
 
 	projectIds := make([]int, 0, len(jamProjects))
@@ -460,7 +458,7 @@ func JamFeed2023(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
 	}
 
 	type JamFeedData struct {
@@ -553,7 +551,7 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
 	}
 
 	projectIds := make([]int, 0, len(jamProjects))
@@ -628,7 +626,7 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
 	}
 
 	type JamFeedData struct {
@@ -767,7 +765,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
 	}
 
 	projectIds := make([]int, 0, len(jamProjects))
@@ -841,7 +839,7 @@ func JamFeed2022(c *RequestContext) ResponseData {
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
 	for _, p := range jamProjects {
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
 	}
 
 	type JamFeedData struct {

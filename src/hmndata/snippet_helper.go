@@ -44,6 +44,8 @@ func FetchSnippets(
 	}
 	defer tx.Rollback(ctx)
 
+	isFiltering := len(q.IDs) > 0 || len(q.Tags) > 0 || len(q.ProjectIDs) > 0
+
 	var tagSnippetIDs []int
 	if len(q.Tags) > 0 {
 		// Get snippet IDs with this tag, then use that in the main query
@@ -103,15 +105,17 @@ func FetchSnippets(
 	allSnippetIDs = append(allSnippetIDs, q.IDs...)
 	allSnippetIDs = append(allSnippetIDs, tagSnippetIDs...)
 	allSnippetIDs = append(allSnippetIDs, projectSnippetIDs...)
-	if len(allSnippetIDs) == 0 {
+	if isFiltering && len(allSnippetIDs) == 0 {
 		// We already managed to filter out all snippets, and all further
 		// parts of this query are more filters, so we can just fail everything
 		// else from right here.
 		qb.Add(`AND FALSE`)
-	} else if len(q.OwnerIDs) > 0 {
+	} else if len(allSnippetIDs) > 0 && len(q.OwnerIDs) > 0 {
 		qb.Add(`AND (snippet.id = ANY ($?) OR snippet.owner_id = ANY ($?))`, allSnippetIDs, q.OwnerIDs)
 	} else {
-		qb.Add(`AND snippet.id = ANY ($?)`, allSnippetIDs)
+		if len(allSnippetIDs) > 0 {
+			qb.Add(`AND snippet.id = ANY ($?)`, allSnippetIDs)
+		}
 		if len(q.OwnerIDs) > 0 {
 			qb.Add(`AND snippet.owner_id = ANY ($?)`, q.OwnerIDs)
 		}

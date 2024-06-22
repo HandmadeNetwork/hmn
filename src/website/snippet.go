@@ -114,7 +114,7 @@ func Snippet(c *RequestContext) ResponseData {
 		}
 		templateProjects := make([]templates.Project, 0, len(userProjects))
 		for _, p := range userProjects {
-			templateProject := templates.ProjectAndStuffToTemplate(&p, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
+			templateProject := templates.ProjectAndStuffToTemplate(&p)
 			templateProjects = append(templateProjects, templateProject)
 		}
 		snippetEdit = templates.SnippetEdit{

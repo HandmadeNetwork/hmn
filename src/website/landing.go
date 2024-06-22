@@ -17,6 +17,31 @@ func Index(c *RequestContext) ResponseData {
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
+	type LandingTemplateData struct {
+		templates.BaseData
+
+		NewsPost       *templates.TimelineItem
+		FollowingItems []templates.TimelineItem
+		FeaturedItems  []templates.TimelineItem
+		RecentItems    []templates.TimelineItem
+		NewsItems      []templates.TimelineItem
+
+		UserProjects []templates.Project
+		Following    []templates.Follow
+
+		ManifestoUrl   string
+		PodcastUrl     string
+		AtomFeedUrl    string
+		MarkAllReadUrl string
+		NewProjectUrl  string
+
+		JamUrl                             string
+		JamDaysUntilStart, JamDaysUntilEnd int
+
+		HMSDaysUntilStart, HMSDaysUntilEnd           int
+		HMBostonDaysUntilStart, HMBostonDaysUntilEnd int
+	}
+
 	var err error
 	var followingItems []templates.TimelineItem
 	var featuredItems []templates.TimelineItem
@@ -59,25 +84,26 @@ func Index(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	type LandingTemplateData struct {
-		templates.BaseData
+	var projects []templates.Project
+	if c.CurrentUser != nil {
+		projectsDb, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+		})
+		if err != nil {
+			c.Logger.Warn().Err(err).Msg("failed to fetch user projects")
+		}
 
-		NewsPost       *templates.TimelineItem
-		FollowingItems []templates.TimelineItem
-		FeaturedItems  []templates.TimelineItem
-		RecentItems    []templates.TimelineItem
-		NewsItems      []templates.TimelineItem
+		for _, p := range projectsDb {
+			projects = append(projects, templates.ProjectAndStuffToTemplate(&p))
+		}
+	}
 
-		ManifestoUrl   string
-		PodcastUrl     string
-		AtomFeedUrl    string
-		MarkAllReadUrl string
-
-		JamUrl                             string
-		JamDaysUntilStart, JamDaysUntilEnd int
-
-		HMSDaysUntilStart, HMSDaysUntilEnd           int
-		HMBostonDaysUntilStart, HMBostonDaysUntilEnd int
+	var follows []templates.Follow
+	if c.CurrentUser != nil {
+		follows, err = FetchFollows(c, c.Conn, c.CurrentUser, c.CurrentUser.ID)
+		if err != nil {
+			c.Logger.Warn().Err(err).Msg("failed to fetch user follows")
+		}
 	}
 
 	baseData := getBaseData(c, "", nil)
@@ -96,10 +122,14 @@ func Index(c *RequestContext) ResponseData {
 		RecentItems:    recentItems,
 		NewsItems:      newsItems,
 
+		UserProjects: projects,
+		Following:    follows,
+
 		ManifestoUrl:   hmnurl.BuildManifesto(),
 		PodcastUrl:     hmnurl.BuildPodcast(),
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
 		MarkAllReadUrl: hmnurl.HMNProjectContext.BuildForumMarkRead(0),
+		NewProjectUrl:  hmnurl.BuildProjectNew(),
 
 		JamUrl:            hmnurl.BuildJamIndex2024_Learning(),
 		JamDaysUntilStart: daysUntil(hmndata.LJ2024.StartTime),

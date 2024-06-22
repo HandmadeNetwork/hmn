@@ -177,6 +177,11 @@ type Asset struct {
 	Width, Height int
 }
 
+type Follow struct {
+	User    *User
+	Project *Project
+}
+
 type ProjectJamParticipation struct {
 	JamName       string
 	JamSlug       string

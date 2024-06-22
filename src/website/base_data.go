@@ -54,7 +54,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		DiscordInviteUrl:    "https://discord.gg/hmn",
 		NewsletterSignupUrl: hmnurl.BuildAPINewsletterSignup(),
 
-		Project: templates.ProjectToTemplate(&project, c.UrlContext.BuildHomepage()),
+		Project: templates.ProjectToTemplate(&project),
 		User:    templateUser,
 		Session: templateSession,
 		Notices: notices,
