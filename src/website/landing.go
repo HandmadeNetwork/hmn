@@ -30,6 +30,7 @@ func Index(c *RequestContext) ResponseData {
 		Following    []templates.Follow
 
 		ManifestoUrl   string
+		AboutUrl       string
 		PodcastUrl     string
 		AtomFeedUrl    string
 		MarkAllReadUrl string
@@ -126,6 +127,7 @@ func Index(c *RequestContext) ResponseData {
 		Following:    follows,
 
 		ManifestoUrl:   hmnurl.BuildManifesto(),
+		AboutUrl:       hmnurl.BuildAbout(),
 		PodcastUrl:     hmnurl.BuildPodcast(),
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
 		MarkAllReadUrl: hmnurl.HMNProjectContext.BuildForumMarkRead(0),
