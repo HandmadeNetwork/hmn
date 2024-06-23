@@ -24,8 +24,13 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 	let attachmentChanged = false;
 	let hasAttachment = false;
 	snippetEdit.redirect.value = location.href;
-	snippetEdit.avatarImg.src = ownerAvatar;
-	snippetEdit.avatarLink.href = ownerUrl;
+	if (ownerAvatar) {
+		snippetEdit.avatarImg.src = ownerAvatar;
+		snippetEdit.avatarLink.href = ownerUrl;
+		snippetEdit.avatarImg.hidden = false;
+	} else {
+		snippetEdit.avatarImg.hidden = true;
+	}
 	snippetEdit.username.textContent = ownerName;
 	snippetEdit.username.href = ownerUrl;
 	snippetEdit.date.textContent = new Intl.DateTimeFormat([], { month: "2-digit", day: "2-digit", year: "numeric" }).format(date);
