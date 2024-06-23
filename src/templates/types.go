@@ -337,8 +337,7 @@ type TimelineItem struct {
 	Description    template.HTML
 	RawDescription string
 
-	PreviewMedia TimelineItemMedia
-	EmbedMedia   []TimelineItemMedia
+	EmbedMedia []TimelineItemMedia
 
 	SmallInfo           bool
 	AllowTitleWrap      bool
