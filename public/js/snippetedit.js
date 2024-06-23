@@ -375,7 +375,7 @@ function editTimelineSnippet(timelineItemEl, stickyProjectId) {
 	let ownerAvatar = timelineItemEl.querySelector(".avatar")?.src;
 	let creationDate = new Date(timelineItemEl.querySelector("time").dateTime);
 	let rawDesc = timelineItemEl.querySelector(".rawdesc").textContent;
-	let attachment = timelineItemEl.querySelector(".timeline-content-box")?.children?.[0];
+	let attachment = timelineItemEl.querySelector(".timeline-media")?.children?.[0];
 	let projectIds = [];
 	let projectEls = timelineItemEl.querySelectorAll(".projects > a");
 	for (let i = 0; i < projectEls.length; ++i) {

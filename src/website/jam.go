@@ -271,7 +271,6 @@ func getLJ2024FeedData(c *RequestContext, maxTimelineItems int) (JamFeedDataLJ20
 		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
 			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
-			timelineItem.SmallInfo = true
 			timelineItems = append(timelineItems, timelineItem)
 		}
 	}
@@ -451,7 +450,6 @@ func JamFeed2023(c *RequestContext) ResponseData {
 		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
 			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
-			timelineItem.SmallInfo = true
 			timelineItems = append(timelineItems, timelineItem)
 		}
 	}
@@ -619,7 +617,6 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
 			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
-			timelineItem.SmallInfo = true
 			timelineItems = append(timelineItems, timelineItem)
 		}
 	}
@@ -832,7 +829,6 @@ func JamFeed2022(c *RequestContext) ResponseData {
 		timelineItems = make([]templates.TimelineItem, 0, len(snippets))
 		for _, s := range snippets {
 			timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
-			timelineItem.SmallInfo = true
 			timelineItems = append(timelineItems, timelineItem)
 		}
 	}

@@ -78,7 +78,6 @@ func Index(c *RequestContext) ResponseData {
 		item := PostToTimelineItem(hmndata.UrlContextForProject(&t.Project), lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor)
 		item.Breadcrumbs = nil
 		item.TypeTitle = ""
-		item.AllowTitleWrap = true
 		item.Description = template.HTML(t.FirstPostCurrentVersion.TextParsed)
 		item.TruncateDescription = true
 		newsPostItem = &item

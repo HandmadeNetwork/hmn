@@ -388,16 +388,17 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 		builder.WriteString(item.Url)
 		builder.WriteString(`",`)
 
+		// TODO(redesign): This only serializes a single piece of media.
 		var mediaType TimelineItemMediaType
 		var assetUrl string
 		var thumbnailUrl string
 		var width, height int
-		if len(item.EmbedMedia) > 0 {
-			mediaType = item.EmbedMedia[0].Type
-			assetUrl = item.EmbedMedia[0].AssetUrl
-			thumbnailUrl = item.EmbedMedia[0].ThumbnailUrl
-			width = item.EmbedMedia[0].Width
-			height = item.EmbedMedia[0].Height
+		if len(item.Media) > 0 {
+			mediaType = item.Media[0].Type
+			assetUrl = item.Media[0].AssetUrl
+			thumbnailUrl = item.Media[0].ThumbnailUrl
+			width = item.Media[0].Width
+			height = item.Media[0].Height
 		}
 
 		builder.WriteString(`"media_type":`)

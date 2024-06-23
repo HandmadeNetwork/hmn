@@ -58,7 +58,6 @@ func Snippet(c *RequestContext) ResponseData {
 
 	canEdit := (c.CurrentUser != nil && (c.CurrentUser.IsStaff || c.CurrentUser.ID == s.Owner.ID))
 	snippet := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, canEdit)
-	snippet.SmallInfo = true
 
 	opengraph := []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
@@ -68,8 +67,8 @@ func Snippet(c *RequestContext) ResponseData {
 		{Property: "og:description", Value: string(snippet.Description)},
 	}
 
-	if len(snippet.EmbedMedia) > 0 {
-		media := snippet.EmbedMedia[0]
+	if len(snippet.Media) > 0 {
+		media := snippet.Media[0]
 
 		switch media.Type {
 		case templates.TimelineItemMediaTypeImage:

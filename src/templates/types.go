@@ -337,10 +337,9 @@ type TimelineItem struct {
 	Description    template.HTML
 	RawDescription string
 
-	EmbedMedia []TimelineItemMedia
+	Media []TimelineItemMedia
 
-	SmallInfo           bool
-	AllowTitleWrap      bool
+	ForumLayout         bool
 	TruncateDescription bool
 	CanShowcase         bool // whether this snippet can be shown in a showcase gallery
 	Editable            bool

@@ -148,7 +148,6 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 			s.Owner,
 			false,
 		)
-		item.SmallInfo = true
 		timelineItems = append(timelineItems, item)
 	}
 
@@ -300,6 +299,8 @@ func PostToTimelineItem(
 		OwnerAvatarUrl: ownerTmpl.AvatarUrl,
 		OwnerName:      ownerTmpl.Name,
 		OwnerUrl:       ownerTmpl.ProfileUrl,
+
+		ForumLayout: true,
 	}
 
 	if typeTitles, ok := TimelineTypeTitleMap[post.ThreadType]; ok {
@@ -349,7 +350,7 @@ func TwitchStreamToTimelineItem(
 		OwnerName:      ownerName,
 		OwnerUrl:       ownerUrl,
 
-		SmallInfo: true,
+		ForumLayout: true,
 	}
 
 	return item
@@ -382,26 +383,26 @@ func SnippetToTimelineItem(
 
 	if asset != nil {
 		if strings.HasPrefix(asset.MimeType, "image/") {
-			item.EmbedMedia = append(item.EmbedMedia, imageMediaItem(asset))
+			item.Media = append(item.Media, imageMediaItem(asset))
 		} else if strings.HasPrefix(asset.MimeType, "video/") {
-			item.EmbedMedia = append(item.EmbedMedia, videoMediaItem(asset))
+			item.Media = append(item.Media, videoMediaItem(asset))
 		} else if strings.HasPrefix(asset.MimeType, "audio/") {
-			item.EmbedMedia = append(item.EmbedMedia, audioMediaItem(asset))
+			item.Media = append(item.Media, audioMediaItem(asset))
 		} else {
-			item.EmbedMedia = append(item.EmbedMedia, unknownMediaItem(asset))
+			item.Media = append(item.Media, unknownMediaItem(asset))
 		}
 	}
 
 	if snippet.Url != nil {
 		url := *snippet.Url
 		if videoId := getYoutubeVideoID(url); videoId != "" {
-			item.EmbedMedia = append(item.EmbedMedia, youtubeMediaItem(videoId))
+			item.Media = append(item.Media, youtubeMediaItem(videoId))
 			item.CanShowcase = false
 		}
 	}
 
-	if len(item.EmbedMedia) == 0 ||
-		(len(item.EmbedMedia) > 0 && (item.EmbedMedia[0].Width == 0 || item.EmbedMedia[0].Height == 0)) {
+	if len(item.Media) == 0 ||
+		(len(item.Media) > 0 && (item.Media[0].Width == 0 || item.Media[0].Height == 0)) {
 		item.CanShowcase = false
 	}
 
