@@ -14,6 +14,7 @@
     - [x] column
     - [ ] content
     - [ ] description
+    - [ ] c--dim and friends
 - [ ] Re-evaluate form styles
     - [ ] theme-color-light is used only for buttons
 - [x] center-layout vs. margin-center
