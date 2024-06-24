@@ -20,7 +20,6 @@ func Index(c *RequestContext) ResponseData {
 	type LandingTemplateData struct {
 		templates.BaseData
 
-		NewsPost       *templates.TimelineItem
 		FollowingItems []templates.TimelineItem
 		FeaturedItems  []templates.TimelineItem
 		RecentItems    []templates.TimelineItem
@@ -56,6 +55,24 @@ func Index(c *RequestContext) ResponseData {
 		}
 	}
 
+	featuredProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		FeaturedOnly: true,
+	})
+	if err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to fetch featured projects")
+	}
+	var featuredProjectIDs []int
+	for _, p := range featuredProjects {
+		featuredProjectIDs = append(featuredProjectIDs, p.Project.ID)
+	}
+	featuredItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, TimelineQuery{
+		ProjectIDs: featuredProjectIDs,
+		Limit:      100,
+	})
+	if err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to fetch featured feed")
+	}
+
 	recentItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, TimelineQuery{
 		Limit: 100,
 	})
@@ -63,26 +80,24 @@ func Index(c *RequestContext) ResponseData {
 		c.Logger.Warn().Err(err).Msg("failed to fetch recent feed")
 	}
 
-	c.Perf.StartBlock("SQL", "Get news")
 	newsThreads, err := hmndata.FetchThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
-		ProjectIDs:  []int{models.HMNProjectID},
-		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
-		Limit:       1,
+		ProjectIDs:     []int{models.HMNProjectID},
+		ThreadTypes:    []models.ThreadType{models.ThreadTypeProjectBlogPost},
+		Limit:          100,
+		OrderByCreated: true,
 	})
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news post"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news threads"))
 	}
-	var newsPostItem *templates.TimelineItem
-	if len(newsThreads) > 0 {
-		t := newsThreads[0]
-		item := PostToTimelineItem(hmndata.UrlContextForProject(&t.Project), lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor)
+	for _, t := range newsThreads {
+		item := PostToTimelineItem(c.UrlContext, lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor)
 		item.Breadcrumbs = nil
 		item.TypeTitle = ""
 		item.Description = template.HTML(t.FirstPostCurrentVersion.TextParsed)
+		item.AllowTitleWrap = true
 		item.TruncateDescription = true
-		newsPostItem = &item
+		newsItems = append(newsItems, item)
 	}
-	c.Perf.EndBlock()
 
 	var projects []templates.Project
 	if c.CurrentUser != nil {
@@ -116,7 +131,6 @@ func Index(c *RequestContext) ResponseData {
 	err = res.WriteTemplate("landing.html", LandingTemplateData{
 		BaseData: baseData,
 
-		NewsPost:       newsPostItem,
 		FollowingItems: followingItems,
 		FeaturedItems:  featuredItems,
 		RecentItems:    recentItems,

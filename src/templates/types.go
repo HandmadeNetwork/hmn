@@ -340,6 +340,7 @@ type TimelineItem struct {
 	Media []TimelineItemMedia
 
 	ForumLayout         bool
+	AllowTitleWrap      bool
 	TruncateDescription bool
 	CanShowcase         bool // whether this snippet can be shown in a showcase gallery
 	Editable            bool
