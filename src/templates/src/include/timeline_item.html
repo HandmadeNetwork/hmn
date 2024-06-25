@@ -1,43 +1,64 @@
 <div class="timeline-item flex flex-column pa3" data-id="{{ .ID }}" {{ with .FilterTitle }}data-filter-title="{{ . }}"{{ end }}>
 	{{/* top bar - avatar, info, date */}}
+
 	<div class="flex items-center">
 		{{ if .OwnerAvatarUrl }}
 			<a class="flex flex-shrink-0" href="{{ .OwnerUrl }}">
-				<img class="avatar avatar-user {{ if .SmallInfo }}avatar-small mr2{{ else }}mr3{{ end }}" src="{{ .OwnerAvatarUrl }}" />
+				<img class="avatar avatar-user {{ if .ForumLayout }}mr3{{ else }}mr2{{ end }}" src="{{ .OwnerAvatarUrl }}" />
 			</a>
 		{{ end }}
+		{{ if .ForumLayout }}
+			<div class="overflow-hidden flex-grow-1 flex flex-column g1 justify-center">
+				{{ with .Breadcrumbs }}
+					{{ template "breadcrumbs.html" . }}
+				{{ end }}
+				{{ if .Title }}
+					<div class="f5 lh-title {{ if not .AllowTitleWrap }}nowrap truncate{{ end }}">
+						{{ with .TypeTitle }}<b class="dn di-ns">{{ . }}:</b>{{ end }}
+						<a href="{{ .Url }}">{{ .Title }}</a>
+					</div>
+				{{ end }}
+				<div class="details link--normal">
+					<a class="user" href="{{ .OwnerUrl }}">{{ .OwnerName }}</a>
+					&mdash; {{ timehtml (absoluteshortdate .Date) .Date }}
+				</div>
+			</div>
 
-		<div class="overflow-hidden flex-grow-1 flex flex-column justify-center">
-			{{ if .Breadcrumbs }}
-				{{ template "breadcrumbs.html" .Breadcrumbs }}
+			{{ if .Editable }}
+				<a href="javascript:;" class="edit ml2">&#9998;</a>
+				<div class="dn rawdesc">{{ .RawDescription }}</div>
 			{{ end }}
-			{{ if .Title }}
-				<div class="f5 {{ if not .AllowTitleWrap }}nowrap truncate{{ end }}">
-					{{ with .TypeTitle }}<b class="dn di-ns">{{ . }}:</b>{{ end }}
-					<a href="{{ .Url }}">{{ .Title }}</a>
+		{{ else }}
+			<div class="overflow-hidden flex-grow-1 flex flex-column g1 justify-center link--normal">
+				{{ if .Breadcrumbs }}
+					<div>Use .ForumLayout if you want breadcrumbs :)</div>
+				{{ end }}
+				{{ if .Title }}
+					<div>Use .ForumLayout if you want a title :)</div>
+				{{ end }}
+				<a class="user b" href="{{ .OwnerUrl }}">{{ .OwnerName }}</a>
+				<a class="f6" href="{{ .Url }}">{{ timehtml (absoluteshortdate .Date) .Date }}</a>
+			</div>
+			{{ if eq (len .Projects) 1 }}
+				{{ $p := index .Projects 0 }}
+				<div class="overflow-hidden flex flex-column g1 justify-center link--normal tr">
+					<a class="user b" href="{{ $p.Url }}">{{ $p.Name }}</a>
 				</div>
 			{{ end }}
-			<div class="details">
-				<a class="user" href="{{ .OwnerUrl }}">{{ .OwnerName }}</a>
-				{{ if not .SmallInfo }}
-					&mdash; {{ timehtml (relativedate .Date) .Date }}
+			{{ range .Projects }}
+				{{ if .Logo }}
+					<a class="flex flex-shrink-0" href="{{ .Url }}">
+						<img class="avatar ml2" src="{{ .Logo }}">
+					</a>
 				{{ end }}
-			</div>
-		</div>
-
-		{{ if .SmallInfo }}
-			<a href="{{ .Url }}">{{ timehtml (relativedate .Date) .Date }}</a>
-		{{ end }}
-		{{ if .Editable }}
-			<a href="javascript:;" class="edit ml2">&#9998;</a>
-			<div class="dn rawdesc">{{ .RawDescription }}</div>
+			{{ end }}
 		{{ end }}
 	</div>
 
 	{{/* content */}}
 
-	{{ range .EmbedMedia }}
-		<div class="timeline-content-box mt3 {{ if eq .Type mediaembed }}embed{{ end }} overflow-hidden flex {{ if not (eq .Type mediaunknown) }}timeline-item-bg justify-center{{ end }}">
+	{{ range .Media }}
+		<div class="timeline-media mt3 {{ if eq .Type mediaembed }}timeline-embed{{ end }} overflow-hidden flex {{ if not (eq .Type mediaunknown) }}justify-center{{ end }}">
 			{{ if eq .Type mediaimage }}
 				<img src="{{ .AssetUrl }}">
 			{{ else if eq .Type mediavideo }}
@@ -72,14 +93,7 @@
 		{{ end }}
 	{{ end }}
 
-	{{ with .Projects }}
-		<div class="mt3 flex g2 projects">
-			{{ range $i, $proj := . }}
-				<a data-projid="{{ $proj.ID }}" href="{{ $proj.Url }}" class="snippet-project flex flex-row items-center bg-theme-dimmer ph2 pv1">
-					<img src="{{ $proj.Logo }}" class="db mr1 br1 h1-5" />
-					<div>{{ $proj.Name }}</div>
-				</a>
-			{{ end }}
-		</div>
+	{{ with .DiscordMessageUrl }}
+		<a class="f7 mt3 i" href="{{ . }}" target="_blank">View original message on Discord</a>
 	{{ end }}
 </div>

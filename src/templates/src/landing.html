@@ -2,6 +2,7 @@
 
 {{ define "extrahead" }}
 <script src="{{ static "js/templates.js" }}"></script>
+<script src="{{ static "js/tabs.js" }}"></script>
 {{ end }}
 
 {{ define "content" }}
@@ -87,31 +88,31 @@
 		<div class="w5 flex flex-column g2 flex-shrink-0">
 			{{ if .User }}
 				<div class="sidebar-card bg--card link--normal">
-					<div onclick="collapse(event)" class="pa2 flex justify-between items-center pointer">
+					<div onclick="collapse(event)" class="pa3 flex justify-between items-center pointer">
 						<span class="f7">Your projects</span>
 						<span class="sidebar-chevron svgicon-lite rot-180">{{ svg "chevron-down" }}</span>
 					</div>
 					<div class="sidebar-card-content">
-						<div class="ph2 flex flex-column g2">
+						<div class="ph3 flex flex-column g2">
 							{{ range .UserProjects }}
 								{{ template "list-project" . }}
 							{{ else }}
 								<div class="f7 pv3 tc c--dim">You have not created any projects.</div>
 							{{ end }}
 						</div>
-						<a class="bt mt2 pa2 flex justify-between" href="{{ .NewProjectUrl }}">
+						<a class="bt mt3 pa3 flex justify-between" href="{{ .NewProjectUrl }}">
 							<div>Create new project</div>
 							<div class="svgicon-lite flex items-center">{{ svg "add" }}</div>
 						</a>
 					</div>
 				</div>
 				<div class="sidebar-card bg--card link--normal">
-					<div onclick="collapse(event)" class="pa2 flex justify-between items-center pointer">
+					<div onclick="collapse(event)" class="pa3 flex justify-between items-center pointer">
 						<span class="f7">Following</span>
 						<span class="sidebar-chevron svgicon-lite rot-180">{{ svg "chevron-down" }}</span>
 					</div>
 					<div class="sidebar-card-content">
-						<div class="ph2 pb2 flex flex-column g2">
+						<div class="ph3 pb3 flex flex-column g2">
 							{{ range .Following }}
 								{{ template "list-follow" . }}
 							{{ else }}
@@ -122,11 +123,11 @@
 				</div>
 			{{ else }}
 				<div class="bg--card link--normal">
-					<div class="pa2 flex flex-column g2">
+					<div class="pa3 flex flex-column g2">
 						<div class="b">Join the Handmade Network</div>
 						<div class="f6 post-content">Share your own Handmade projects with the community.</div>
 					</div>
-					<a class="bt pa2 flex justify-between" href="{{ .LoginPageUrl }}">
+					<a class="bt pa3 flex justify-between" href="{{ .LoginPageUrl }}">
 						<div>Log in</div>
 						<div class="svgicon-lite flex items-center">{{ svg "chevron-right" }}</div>
 					</a>
@@ -139,11 +140,40 @@
 
 		<!-- Feed -->
 		<div class="flex flex-column flex-grow-1 overflow-hidden">
-			<div class="timeline flex flex-column g3">
-				{{ range .RecentItems }}
-					{{ template "timeline_item.html" . }}
-				{{ end }}
-				TODO: READ MORE LINK
+			<div id="landing-tabs">
+				<div class="bb mb2 flex f6">
+					{{ if .User }}
+						<div data-tab-button="following" class="tab-button ph3 pv1 pointer">Following</div>
+					{{ end }}
+					<div data-tab-button="featured" class="tab-button ph3 pv1 pointer">Featured</div>
+					<div data-tab-button="recent" class="tab-button ph3 pv1 pointer">Recent</div>
+					<div data-tab-button="news" class="tab-button ph3 pv1 pointer">News</div>
+				</div>
+				<div>
+					{{ if .User }}
+						<div data-tab="following" class="timeline flex flex-column g3">
+							{{ range .FollowingItems }}
+								{{ template "timeline_item.html" . }}
+							{{ end }}
+						</div>
+					{{ end }}
+					<div data-tab="featured" class="timeline flex flex-column g3">
+						{{ range .FeaturedItems }}
+							{{ template "timeline_item.html" . }}
+						{{ end }}
+					</div>
+					<div data-tab="recent" class="timeline flex flex-column g3">
+						{{ range .RecentItems }}
+							{{ template "timeline_item.html" . }}
+						{{ end }}
+					</div>
+					<div data-tab="news" class="timeline flex flex-column g3">
+						{{ range .NewsItems }}
+							{{ template "timeline_item.html" . }}
+						{{ end }}
+					</div>
+					TODO: READ MORE LINK
+				</div>
 			</div>
 		</div>
 	</div>
@@ -160,6 +190,8 @@
 		content.hidden = hide;
 		chevron.classList.toggle("rot-180", !hide);
 	}
+
+	initTabs(document.querySelector("#landing-tabs"));
 </script>
 
 {{ end }}

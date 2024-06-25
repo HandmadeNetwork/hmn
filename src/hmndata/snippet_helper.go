@@ -16,6 +16,8 @@ type SnippetQuery struct {
 	Tags              []int
 	DiscordMessageIDs []string
 
+	FeaturedOnly bool
+
 	Limit, Offset int // if empty, no pagination
 }
 

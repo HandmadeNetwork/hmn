@@ -23,6 +23,7 @@ type ProjectsQuery struct {
 	// are generally visible to all users.
 	Lifecycles    []models.ProjectLifecycle // If empty, defaults to visible lifecycles. Do not conflate this with permissions; those are checked separately.
 	Types         ProjectTypeQuery          // bitfield
+	FeaturedOnly  bool
 	IncludeHidden bool
 
 	// Ignored when using FetchProject
@@ -132,6 +133,9 @@ func FetchProjects(
 			qb.Add(`OR NOT project.personal`)
 		}
 		qb.Add(`)`)
+	}
+	if q.FeaturedOnly {
+		qb.Add(`AND project.featured`)
 	}
 	if !q.IncludeHidden {
 		qb.Add(`AND NOT project.hidden`)

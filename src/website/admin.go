@@ -188,7 +188,6 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		}
 		timelineItem := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, false)
 		timelineItem.OwnerAvatarUrl = ""
-		timelineItem.SmallInfo = true
 		userData.Timeline = append(userData.Timeline, timelineItem)
 	}
 
@@ -210,7 +209,6 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		}
 		timelineItem := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, &p.Author)
 		timelineItem.OwnerAvatarUrl = ""
-		timelineItem.SmallInfo = true
 		timelineItem.Description = template.HTML(p.CurrentVersion.TextParsed)
 		userData.Timeline = append(userData.Timeline, timelineItem)
 	}
