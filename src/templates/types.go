@@ -206,6 +206,7 @@ type User struct {
 	Bio        string
 	Signature  string
 	DateJoined time.Time
+	Avatar     *Asset
 	AvatarUrl  string
 	ProfileUrl string
 

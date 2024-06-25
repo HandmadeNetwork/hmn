@@ -409,7 +409,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	}
 
 	// Update avatar
-	newAvatar, err := GetFormImage(c, "avatar")
+	newAvatar, err := GetFormImage(c, "user_avatar")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to read image from form"))
 	}

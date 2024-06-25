@@ -222,6 +222,7 @@ func UserToTemplate(u *models.User) User {
 		Signature:  u.Signature,
 		DateJoined: u.DateJoined,
 		ProfileUrl: hmnurl.BuildUserProfile(u.Username),
+		Avatar:     AssetToTemplate(u.AvatarAsset),
 		AvatarUrl:  UserAvatarUrl(u),
 
 		Timezone: u.Timezone,

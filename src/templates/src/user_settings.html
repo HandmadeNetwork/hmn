@@ -1,4 +1,4 @@
-{{ template "base.html" . }}
+{{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
 	<script src="{{ static "js/tabs.js" }}"></script>
@@ -6,6 +6,207 @@
 {{ end }}
 
 {{ define "content" }}
+<div class="flex justify-center pa3">
+	<div class="w-100 mw-site flex g3">
+		<div class="w5 flex flex-column g2 flex-shrink-0">
+			<div class="sidebar-card bg--card link--normal">
+				<div class="pv1 sidebar-card-content flex flex-column">
+					<a class="ph2 pv1" href="#profile">Profile</a>
+					<a class="ph2 pv1" href="#account">Account</a>
+					<a class="ph2 pv1" href="#password">Password</a>
+					<a class="ph2 pv1" href="#discord">Discord</a>
+				</div>
+			</div>
+		</div>
+		<div class="flex-grow-1">
+			<form id="user_form" class="hmn-form" action="{{ .SubmitUrl }}" method="POST" enctype="multipart/form-data">
+				{{ csrftoken .Session }}
+
+				<script>
+					function lengthReporter(inputEl, lengthEl) {
+						let updateLength = function() {
+							lengthEl.textContent = `${inputEl.value.length}/${inputEl.getAttribute("maxlength")}`;
+						}
+						inputEl.addEventListener("input", updateLength);
+						updateLength();
+					}
+				</script>
+
+				<div hidden class="settings_panel flex flex-column g3" data-slug="profile">
+					<div class="input-group">
+						<label for="realname">Real name</label>
+						<input type="text" id="realname" name="realname" maxlength="255" class="w-100" value="{{ .User.Name }}" />
+						<div class="f6 tr realname-length">0/255</div>
+						<script>
+							lengthReporter(document.getElementById("realname"), document.querySelector(".realname-length"));
+						</script>
+					</div>
+					<fieldset>
+						<legend class="flex justify-between">
+							<span>Avatar</span>
+							<a href="javascript:;" class="normal" onclick="openUserAvatarSelector(event)">+ Upload Avatar</a>
+						</legend>
+						<div class="user_avatar">
+							{{ template "image_selector.html" imageselectordata "user_avatar" .User.Avatar false }}
+							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be square, and at least 256x256.</div>
+							<script>
+								let avatarMaxFileSize = {{ .AvatarMaxFileSize }};
+								let avatarSelector = new ImageSelector(
+									document.querySelector("#user_form"),
+									avatarMaxFileSize,
+									document.querySelector(".user_avatar"),
+								);
+
+								function openUserAvatarSelector(ev) {
+									ev.preventDefault();
+									avatarSelector.openFileInput();
+								}
+							</script>
+						</div>
+					</fieldset>
+					<fieldset>
+						<legend>Links</legend>
+					</fieldset>
+					<div class="input-group">
+						<label for="shortbio">Short bio</label>
+						<textarea class="w-100" maxlength="140" data-max-chars="140" name="shortbio" id="shortbio">
+							{{- .User.Blurb -}}
+						</textarea>
+						<div class="f6 tr shortbio-length">0/140</div>
+						<script>
+							lengthReporter(document.getElementById("shortbio"), document.querySelector(".shortbio-length"));
+						</script>
+					</div>
+					<div class="input-group">
+						<label for="longbio">Full bio</label>
+						<textarea class="w-100 h5" id="longbio" name="longbio" maxlength="1018" data-max-chars="1018">
+							{{- .User.Bio -}}
+						</textarea>
+						<div class="f6 tr longbio-length">0/1018</div>
+						<script>
+							lengthReporter(document.getElementById("longbio"), document.querySelector(".longbio-length"));
+						</script>
+					</div>
+					{{ if .User.Signature }}
+						<div class="input-group">
+							<label for="signature">Forum signature</label>
+							<textarea class="w-100" maxlength="255" data-max-chars="255" name="signature" id="signature">
+								{{- .User.Signature -}}
+							</textarea>
+							<div class="f6 tr signature-length">0/255</div>
+						<script>
+							lengthReporter(document.getElementById("signature"), document.querySelector(".signature-length"));
+						</script>
+						</div>
+					{{ end }}
+					<input class="btn-primary self-end" type="submit" value="Save" />
+				</div>
+
+				<div hidden class="settings_panel flex flex-column g3" data-slug="account">
+					<div class="input-group">
+						<label for="username">Username</label>
+						<input id="username" class="w-100" type="text" disabled value="{{ .User.Username }}" />
+						<div class="c--dim f6">If you would like to change your username, please <a href="{{ .ContactUrl }}">contact us</a>.</div>
+					</div>
+					<div class="input-group">
+						<label for="email">E-mail</label>
+						<input id="email" type="email" name="email" maxlength="254" class="w-100" value="{{ .Email }}" />
+						<div>
+							<input type="checkbox" name="showemail" id="email_on_profile" {{ if .ShowEmail }}checked{{ end }} />
+							<label for="email_on_profile">Show on your profile</label>
+						</div>
+					</div>
+					<input class="btn-primary self-end" type="submit" value="Save" />
+				</div>
+
+				<div class="settings_panel flex flex-column g3" data-slug="password">
+					<fieldset>
+						<legend>Reset your password</legend>
+						<div class="pa3 flex flex-column g2">
+							{{ if .HasPassword }}
+								<input id="id_old_password" name="old_password" placeholder="Old password" type="password" />
+							{{ end }}
+							<input name="new_password" placeholder="New password" type="password" />
+							<div class="c--dim f6">
+								Your password must be 8 or more characters, and must differ from your username{{ if .HasPassword }} and current password{{ end }}.
+								Other than that, <a href="http://krebsonsecurity.com/password-dos-and-donts/" class="external" target="_blank">please follow best practices</a>.
+							</div>
+						</div>
+					</fieldset>
+					<input class="btn-primary self-end" type="submit" value="Update password" />
+				</div>
+
+				<div class="settings_panel flex flex-column g3" data-slug="discord">
+					<div>
+						{{ if .DiscordUser }}
+							Linked account:
+							<span class="b ph2">{{ .DiscordUser.Username }}#{{ .DiscordUser.Discriminator }}</span>
+							<a href="javascript:void(0)" onclick="unlinkDiscord()">
+								Unlink account
+							</a>
+						{{ else }}
+							You haven't linked your Discord account.
+							<a href="{{ .DiscordAuthorizeUrl }}">Link account</a>
+						{{ end }}
+					</div>
+					<div class="input-group">
+						<div>
+							<input type="checkbox" name="discord-showcase-auto" id="discord-showcase-auto" {{ if .User.DiscordSaveShowcase }}checked{{ end }} {{ if not .DiscordUser }}disabled{{ end }} />
+							<label for="discord-showcase-auto">Automatically capture everything I post in <span class="b nowrap">#project-showcase</span></label>
+						</div>
+						<div class="f6 c--dim">Snippets will only be created while this setting is on.</div>
+					</div>
+					<div class="input-group">
+						<div>
+							<input type="checkbox" name="discord-snippet-keep" id="discord-snippet-keep" {{ if not .User.DiscordDeleteSnippetOnMessageDelete }}checked{{ end }} {{ if not .DiscordUser }}disabled{{ end }} />
+							<label for="discord-snippet-keep">Keep captured snippets even if I delete them in Discord</label>
+						</div>
+					</div>
+					{{ if .DiscordUser }}
+						<div class="mv3 mw6">
+							<a href="javascript:void(0)" onclick="discordShowcaseBacklog()">
+								Create snippets from all of my <span class="b nowrap">#project-showcase</span> posts
+							</a>
+							<div class="f7 c--dimmer">
+								Use this if you have a backlog of content in <span class="b nowrap">#project-showcase</span> that you want on your profile.
+							</div>
+							{{ if gt .DiscordNumUnsavedMessages 0 }}
+								<div class="f7 c--dimmer">
+									<span class="b">WARNING:</span> {{ .DiscordNumUnsavedMessages }} of your messages are currently waiting to be processed. If you run this command now, some snippets may still be missing.
+								</div>
+							{{ end }}
+						</div>
+					{{ end }}
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+<script>
+	function updateVisibleSettings() {
+		let hash = location.hash;
+		if (hash[0] == "#") {
+			hash = hash.slice(1);
+		}
+
+		let panels = document.querySelectorAll(".settings_panel");
+		let found = false;
+		for (let i = 0; i < panels.length; ++i) {
+			visible = hash == panels[i].dataset.slug;
+			panels[i].hidden = !visible;
+			if (visible) {
+				found = true;
+			}
+		}
+		if (!found) {
+			panels[0].hidden = false;
+		}
+	}
+
+	window.addEventListener("hashchange", updateVisibleSettings);
+	updateVisibleSettings();
+</script>
+<!--
 <form class="tabbed edit-form" action="{{ .SubmitUrl }}" method="post" enctype="multipart/form-data">
     {{ csrftoken .Session }}
     <div class="tab" data-name="Account" data-slug="account">
@@ -40,12 +241,14 @@
                 <div class="c--dim f7">(Allowed image types: PNG, JPEG and GIF. Avatars may weigh up to 1MB and will be resized if larger than 400x400 pixels)</div>
             </div>
 			<script>
+				/*
 				let avatarMaxFileSize = {{ .AvatarMaxFileSize }};
 				let avatarSelector = new ImageSelector(
 					document.querySelector("#user_form"),
 					avatarMaxFileSize,
 					document.querySelector(".user_avatar"),
 				);
+				*/
 			</script>
         </div>
         <div class="edit-form-row">
@@ -176,6 +379,7 @@
         <input type="submit" value="Save profile" />
     </div>
 </form>
+-->
 
 <form id="discord-unlink-form" class="dn" action="{{ .DiscordUnlinkUrl }}" method="POST">
     {{ csrftoken .Session }}
