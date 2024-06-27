@@ -56,4 +56,11 @@
     - TikTok?
     - Trello?
 - [ ] Handle empty avatar URLs correctly in various places (render as theme-dependent default)
+- [ ] Convert to new color vars
 - [ ] Resolve TODO(redesign) comments
+
+stack!
+
+timeline-media-background (see if an existing color works)
+red (c-red)
+projectcarddata

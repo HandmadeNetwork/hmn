@@ -321,13 +321,6 @@ var HMNTemplateFuncs = template.FuncMap{
 	},
 
 	// NOTE(asaf): Template specific functions:
-	"projectcarddata": func(project Project, classes string) ProjectCardData {
-		return ProjectCardData{
-			Project: &project,
-			Classes: classes,
-		}
-	},
-
 	"imageselectordata": func(name string, src *Asset, required bool) ImageSelectorData {
 		return ImageSelectorData{
 			Name:     name,

@@ -25,6 +25,7 @@ function doOnce(f) {
     }
 }
 
+// TODO(redesign): Fix snippet editing, given that snippets are now presented very differently.
 function makeShowcaseItem(timelineItem) {
     const timestamp = showcaseTimestamp(timelineItem.date);
 
@@ -45,7 +46,7 @@ function makeShowcaseItem(timelineItem) {
         createModalContentFunc = () => {
             const modalImage = document.createElement('img');
             modalImage.src = timelineItem.asset_url;
-            modalImage.classList.add('mw-100', 'mh-60vh');
+            modalImage.classList.add('mw-100', 'maxh-60vh');
             return modalImage;
         };
 
@@ -76,7 +77,7 @@ function makeShowcaseItem(timelineItem) {
                 modalVideo.preload = 'metadata';
             }
             modalVideo.controls = true;
-            modalVideo.classList.add('mw-100', 'mh-60vh');
+            modalVideo.classList.add('mw-100', 'maxh-60vh');
             return modalVideo;
         };
 
