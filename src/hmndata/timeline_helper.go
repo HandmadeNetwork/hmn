@@ -129,10 +129,12 @@ func FetchTimeline(
 			WHERE TRUE
 		`,
 	)
-	if len(q.ProjectIDs) > 0 {
-		qb.Add(
-			`
-			AND (
+	if len(q.ProjectIDs)+len(q.OwnerIDs) > 0 {
+		qb.Add(`AND (`)
+		if len(q.ProjectIDs) > 0 {
+			qb.Add(
+				`
+				(
 				SELECT count(*)
 				FROM snippet_project
 				WHERE
@@ -140,9 +142,19 @@ func FetchTimeline(
 					AND
 					snippet_project.project_id = ANY($?)
 				) > 0
-			`,
-			q.ProjectIDs,
-		)
+				`,
+				q.ProjectIDs,
+			)
+		} else {
+			qb.Add("FALSE")
+		}
+		qb.Add(" OR ")
+		if len(q.OwnerIDs) > 0 {
+			qb.Add(`owner_id = ANY($?)`, q.OwnerIDs)
+		} else {
+			qb.Add("FALSE")
+		}
+		qb.Add(`)`)
 	}
 	qb.Add(
 		`
@@ -169,8 +181,20 @@ func FetchTimeline(
 			WHERE post.deleted = false AND thread.deleted = false
 		`,
 	)
-	if len(q.ProjectIDs) > 0 {
-		qb.Add(`AND post.project_id = ANY($?)`, q.ProjectIDs)
+	if len(q.OwnerIDs)+len(q.ProjectIDs) > 0 {
+		qb.Add(`AND (`)
+		if len(q.ProjectIDs) > 0 {
+			qb.Add(`post.project_id = ANY($?)`, q.ProjectIDs)
+		} else {
+			qb.Add("FALSE")
+		}
+		qb.Add(" OR ")
+		if len(q.OwnerIDs) > 0 {
+			qb.Add(`post.author_id = ANY($?)`, q.OwnerIDs)
+		} else {
+			qb.Add("FALSE")
+		}
+		qb.Add(`)`)
 	}
 	qb.Add(
 		`
@@ -191,10 +215,6 @@ func FetchTimeline(
 		WHERE TRUE
 		`,
 	)
-
-	if len(q.OwnerIDs) > 0 {
-		qb.Add(`AND owner_id = ANY($?)`, q.OwnerIDs)
-	}
 
 	if currentUser == nil {
 		qb.Add(
