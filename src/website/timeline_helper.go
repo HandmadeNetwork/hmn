@@ -18,10 +18,9 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
-	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User) ([]templates.TimelineItem, error) {
+func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User, lineageBuilder *models.SubforumLineageBuilder) ([]templates.TimelineItem, error) {
 	perf := perf.ExtractPerf(ctx)
 
 	perf.StartBlock("FOLLOW", "Assemble follow data")
@@ -46,153 +45,30 @@ func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *mod
 		}
 	}
 
-	timelineItems, err := FetchTimeline(ctx, conn, user, TimelineQuery{
-		UserIDs:    userIDs,
-		ProjectIDs: projectIDs,
-	})
+	timelineItems := []templates.TimelineItem{}
+	if len(userIDs)+len(projectIDs) > 0 {
+		timelineItems, err = FetchTimeline(ctx, conn, user, lineageBuilder, hmndata.TimelineQuery{
+			OwnerIDs:   userIDs,
+			ProjectIDs: projectIDs,
+		})
+	}
 	perf.EndBlock()
 
 	return timelineItems, err
 }
 
-type TimelineQuery struct {
-	UserIDs    []int
-	ProjectIDs []int
-
-	Limit int
-}
-
-func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, q TimelineQuery) ([]templates.TimelineItem, error) {
-	perf := perf.ExtractPerf(ctx)
-	// var users []*models.User
-	// var projects []hmndata.ProjectAndStuff
-	var snippets []hmndata.SnippetAndStuff
-	var posts []hmndata.PostAndStuff
-	// var streamers []hmndata.TwitchStreamer
-	// var streams []*models.TwitchStreamHistory
-	var err error
-
-	perf.StartBlock("TIMELINE", "Fetch timeline data")
-	{
-		snippets, err = hmndata.FetchSnippets(ctx, conn, currentUser, hmndata.SnippetQuery{
-			OwnerIDs:   q.UserIDs,
-			ProjectIDs: q.ProjectIDs,
-
-			Limit: q.Limit,
-		})
-		if err != nil {
-			return nil, oops.New(err, "failed to fetch timeline snippets")
-		}
-
-		posts, err = hmndata.FetchPosts(ctx, conn, currentUser, hmndata.PostsQuery{
-			UserIDs:        q.UserIDs,
-			ProjectIDs:     q.ProjectIDs,
-			SortDescending: true,
-
-			Limit: q.Limit,
-		})
-		if err != nil {
-			return nil, oops.New(err, "failed to fetch timeline posts")
-		}
-
-		// streamers, err = hmndata.FetchTwitchStreamers(ctx, conn, hmndata.TwitchStreamersQuery{
-		// 	UserIDs:    validUserIDs,
-		// 	ProjectIDs: validProjectIDs,
-		// })
-		// if err != nil {
-		// 	return nil, oops.New(err, "failed to fetch streamers")
-		// }
-
-		// twitchLogins := make([]string, 0, len(streamers))
-		// for _, s := range streamers {
-		// 	twitchLogins = append(twitchLogins, s.TwitchLogin)
-		// }
-		// streams, err = db.Query[models.TwitchStreamHistory](ctx, conn,
-		// 	`
-		// 	SELECT $columns FROM twitch_stream_history WHERE twitch_login = ANY ($1)
-		// 	`,
-		// 	twitchLogins,
-		// )
-		// if err != nil {
-		// 	return nil, oops.New(err, "failed to fetch stream histories")
-		// }
+func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, lineageBuilder *models.SubforumLineageBuilder, q hmndata.TimelineQuery) ([]templates.TimelineItem, error) {
+	results, err := hmndata.FetchTimeline(ctx, conn, currentUser, q)
+	if err != nil {
+		logging.Error().Err(err).Msg("Fail")
 	}
-	perf.EndBlock()
-
-	perf.StartBlock("TIMELINE", "Construct timeline items")
-	timelineItems := make([]templates.TimelineItem, 0, len(snippets)+len(posts))
-
-	if len(posts) > 0 {
-		perf.StartBlock("SQL", "Fetch subforum tree")
-		subforumTree := models.GetFullSubforumTree(ctx, conn)
-		lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-		perf.EndBlock()
-
-		for _, post := range posts {
-			timelineItems = append(timelineItems, PostToTimelineItem(
-				hmndata.UrlContextForProject(&post.Project),
-				lineageBuilder,
-				&post.Post,
-				&post.Thread,
-				post.Author,
-			))
-		}
+	if err != nil {
+		return nil, err
 	}
 
-	for _, s := range snippets {
-		item := SnippetToTimelineItem(
-			&s.Snippet,
-			s.Asset,
-			s.DiscordMessage,
-			s.Projects,
-			s.Owner,
-			false,
-		)
-		timelineItems = append(timelineItems, item)
-	}
-
-	// for _, s := range streams {
-	// 	ownerAvatarUrl := ""
-	// 	ownerName := ""
-	// 	ownerUrl := ""
-
-	// 	for _, streamer := range streamers {
-	// 		if streamer.TwitchLogin == s.TwitchLogin {
-	// 			if streamer.UserID != nil {
-	// 				for _, u := range users {
-	// 					if u.ID == *streamer.UserID {
-	// 						ownerAvatarUrl = templates.UserAvatarUrl(u)
-	// 						ownerName = u.BestName()
-	// 						ownerUrl = hmnurl.BuildUserProfile(u.Username)
-	// 						break
-	// 					}
-	// 				}
-	// 			} else if streamer.ProjectID != nil {
-	// 				for _, p := range projects {
-	// 					if p.Project.ID == *streamer.ProjectID {
-	// 						ownerAvatarUrl = templates.ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset)
-	// 						ownerName = p.Project.Name
-	// 						ownerUrl = hmndata.UrlContextForProject(&p.Project).BuildHomepage()
-	// 					}
-	// 					break
-	// 				}
-	// 			}
-	// 			break
-	// 		}
-	// 	}
-	// 	item := TwitchStreamToTimelineItem(s, ownerAvatarUrl, ownerName, ownerUrl)
-	// 	timelineItems = append(timelineItems, item)
-	// }
-
-	perf.StartBlock("TIMELINE", "Sort timeline")
-	sort.Slice(timelineItems, func(i, j int) bool {
-		return timelineItems[j].Date.Before(timelineItems[i].Date)
-	})
-	perf.EndBlock()
-	perf.EndBlock()
-
-	if q.Limit > 0 {
-		timelineItems = utils.ClampSlice(timelineItems, q.Limit)
+	timelineItems := make([]templates.TimelineItem, 0, len(results))
+	for _, r := range results {
+		timelineItems = append(timelineItems, TimelineItemToTemplate(r, lineageBuilder, false))
 	}
 
 	return timelineItems, nil
@@ -502,4 +378,114 @@ func unknownMediaItem(asset *models.Asset) templates.TimelineItemMedia {
 		Filename: asset.Filename,
 		FileSize: asset.Size,
 	}
+}
+
+func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *models.SubforumLineageBuilder, editable bool) templates.TimelineItem {
+	filterTitle := ""
+	typeTitle := ""
+	url := ""
+	var breadcrumbs []templates.Breadcrumb
+	switch item.Item.Type {
+	case models.TimelineItemTypeSnippet:
+		filterTitle = "Snippets"
+		typeTitle = "Snippet"
+		url = hmnurl.BuildSnippet(item.Item.ID)
+
+	case models.TimelineItemTypePost:
+		urlContext := hmndata.UrlContextForProject(&item.Projects[0].Project)
+		if item.Item.ThreadType == models.ThreadTypeProjectBlogPost {
+			filterTitle = "Blogs"
+			if item.Item.FirstPost {
+				typeTitle = "New blog post"
+			} else {
+				typeTitle = "Blog comment"
+			}
+			url = urlContext.BuildBlogThreadWithPostHash(item.Item.ThreadID, item.Item.Title, item.Item.ID)
+			breadcrumbs = []templates.Breadcrumb{
+				{
+					Name: urlContext.ProjectName,
+					Url:  urlContext.BuildHomepage(),
+				},
+				{
+					Name: "Blog",
+					Url:  urlContext.BuildBlog(1),
+				},
+			}
+		} else if item.Item.ThreadType == models.ThreadTypeForumPost {
+			filterTitle = "Forums"
+			if item.Item.FirstPost {
+				typeTitle = "New forum thread"
+			} else {
+				typeTitle = "Forum reply"
+			}
+			url = urlContext.BuildForumPost(lineageBuilder.GetSubforumLineageSlugs(item.Item.SubforumID), item.Item.ThreadID, item.Item.ID)
+			breadcrumbs = SubforumBreadcrumbs(urlContext, lineageBuilder, item.Item.SubforumID)
+		}
+	}
+
+	ownerTmpl := templates.UserToTemplate(item.Owner)
+
+	ti := templates.TimelineItem{
+		ID:                strconv.Itoa(item.Item.ID),
+		Date:              item.Item.Date,
+		Title:             item.Item.Title,
+		TypeTitle:         typeTitle,
+		FilterTitle:       filterTitle,
+		Breadcrumbs:       breadcrumbs,
+		Url:               url,
+		DiscordMessageUrl: "",
+
+		OwnerAvatarUrl: ownerTmpl.AvatarUrl,
+		OwnerName:      ownerTmpl.Name,
+		OwnerUrl:       ownerTmpl.ProfileUrl,
+
+		Projects:       nil,
+		Description:    template.HTML(item.Item.ParsedDescription),
+		RawDescription: item.Item.RawDescription,
+
+		Media: nil,
+
+		ForumLayout:         item.Item.Type == models.TimelineItemTypePost,
+		AllowTitleWrap:      false,
+		TruncateDescription: false,
+		CanShowcase:         item.Item.Type == models.TimelineItemTypeSnippet,
+		Editable:            item.Item.Type == models.TimelineItemTypeSnippet && editable,
+	}
+
+	if item.Asset != nil {
+		if strings.HasPrefix(item.Asset.MimeType, "image/") {
+			ti.Media = append(ti.Media, imageMediaItem(item.Asset))
+		} else if strings.HasPrefix(item.Asset.MimeType, "video/") {
+			ti.Media = append(ti.Media, videoMediaItem(item.Asset))
+		} else if strings.HasPrefix(item.Asset.MimeType, "audio/") {
+			ti.Media = append(ti.Media, audioMediaItem(item.Asset))
+		} else {
+			ti.Media = append(ti.Media, unknownMediaItem(item.Asset))
+		}
+	}
+
+	if item.Item.ExternalUrl != nil {
+		if videoId := getYoutubeVideoID(*item.Item.ExternalUrl); videoId != "" {
+			ti.Media = append(ti.Media, youtubeMediaItem(videoId))
+			ti.CanShowcase = false
+		}
+	}
+
+	if len(ti.Media) == 0 ||
+		(len(ti.Media) > 0 && (ti.Media[0].Width == 0 || ti.Media[0].Height == 0)) {
+		ti.CanShowcase = false
+	}
+
+	if item.DiscordMessage != nil {
+		ti.DiscordMessageUrl = item.DiscordMessage.Url
+	}
+
+	sort.Slice(item.Projects, func(i, j int) bool {
+		return item.Projects[i].Project.Name < item.Projects[j].Project.Name
+	})
+	for _, proj := range item.Projects {
+		ti.Projects = append(ti.Projects, templates.ProjectAndStuffToTemplate(proj))
+	}
+
+	return ti
 }

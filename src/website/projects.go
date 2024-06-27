@@ -467,7 +467,12 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		}
 	}
 
-	templateData.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, TimelineQuery{
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	c.Perf.EndBlock()
+
+	templateData.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
 	})
 	if err != nil {

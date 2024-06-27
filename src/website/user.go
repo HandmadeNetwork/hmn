@@ -115,8 +115,13 @@ func UserProfile(c *RequestContext) ResponseData {
 	}
 	c.Perf.EndBlock()
 
-	timelineItems, err := FetchTimeline(c, c.Conn, c.CurrentUser, TimelineQuery{
-		UserIDs: []int{profileUser.ID},
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	c.Perf.EndBlock()
+
+	timelineItems, err := FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
+		OwnerIDs: []int{profileUser.ID},
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)

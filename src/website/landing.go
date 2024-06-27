@@ -49,7 +49,7 @@ func Index(c *RequestContext) ResponseData {
 	var newsItems []templates.TimelineItem
 
 	if c.CurrentUser != nil {
-		followingItems, err = FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser)
+		followingItems, err = FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser, lineageBuilder)
 		if err != nil {
 			c.Logger.Warn().Err(err).Msg("failed to fetch following feed")
 		}
@@ -65,7 +65,7 @@ func Index(c *RequestContext) ResponseData {
 	for _, p := range featuredProjects {
 		featuredProjectIDs = append(featuredProjectIDs, p.Project.ID)
 	}
-	featuredItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, TimelineQuery{
+	featuredItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
 		ProjectIDs: featuredProjectIDs,
 		Limit:      100,
 	})
@@ -73,7 +73,7 @@ func Index(c *RequestContext) ResponseData {
 		c.Logger.Warn().Err(err).Msg("failed to fetch featured feed")
 	}
 
-	recentItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, TimelineQuery{
+	recentItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
 		Limit: 100,
 	})
 	if err != nil {

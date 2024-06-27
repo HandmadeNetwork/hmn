@@ -5,12 +5,18 @@ import (
 	"strconv"
 
 	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
 func FollowingTest(c *RequestContext) ResponseData {
-	timelineItems, err := FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser)
+	c.Perf.StartBlock("SQL", "Fetch subforum tree")
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	c.Perf.EndBlock()
+
+	timelineItems, err := FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser, lineageBuilder)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
