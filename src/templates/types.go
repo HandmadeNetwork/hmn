@@ -18,7 +18,6 @@ type BaseData struct {
 	CurrentUrl          string
 	CurrentProjectUrl   string
 	LoginPageUrl        string
-	ProjectCSSUrl       string
 	DiscordInviteUrl    string
 	NewsletterSignupUrl string
 

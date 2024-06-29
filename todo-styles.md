@@ -60,6 +60,7 @@
 - [ ] Make snippet descriptions partially collapse by default
 - [ ] Make the home page remember which tab you were on
 - [ ] Resolve TODO(redesign) comments
+- [ ] Audit all project lifecycles on HMN - probably remove "complete", replace with stuff like "alpha", "beta", maybe other stuff that makes sense for other types of projects.
 
 stack!
 

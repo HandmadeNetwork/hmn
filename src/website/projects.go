@@ -30,32 +30,6 @@ import (
 const maxPersonalProjects = 10
 const maxProjectOwners = 5
 
-func ProjectCSS(c *RequestContext) ResponseData {
-	color := c.URL().Query().Get("color")
-	if color == "" {
-		return c.ErrorResponse(http.StatusBadRequest, NewSafeError(nil, "You must provide a 'color' parameter.\n"))
-	}
-
-	baseData := getBaseData(c, "", nil)
-
-	templateData := struct {
-		templates.BaseData
-		Color string
-	}{
-		BaseData: baseData,
-		Color:    color,
-	}
-
-	var res ResponseData
-	res.Header().Add("Content-Type", "text/css")
-	err := res.WriteTemplate("project.css", templateData, c.Perf)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to generate project CSS"))
-	}
-
-	return res
-}
-
 type ProjectTemplateData struct {
 	templates.BaseData
 

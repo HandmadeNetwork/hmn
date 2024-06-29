@@ -324,10 +324,6 @@ func TestAssetUpload(t *testing.T) {
 	AssertSubdomain(t, hero.BuildAssetUpload(), "hero")
 }
 
-func TestProjectCSS(t *testing.T) {
-	AssertRegexMatch(t, BuildProjectCSS("000000"), RegexProjectCSS, nil)
-}
-
 func TestMarkdownWorkerJS(t *testing.T) {
 	AssertRegexMatch(t, BuildMarkdownWorkerJS(), RegexMarkdownWorkerJS, nil)
 }

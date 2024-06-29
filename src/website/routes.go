@@ -302,7 +302,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	anyProject.GET(hmnurl.RegexEpisode, Episode)
 	anyProject.GET(hmnurl.RegexCineraIndex, CineraIndex)
 
-	anyProject.GET(hmnurl.RegexProjectCSS, ProjectCSS)
 	anyProject.GET(hmnurl.RegexMarkdownWorkerJS, func(c *RequestContext) ResponseData {
 		var res ResponseData
 		res.MustWriteTemplate("markdown_worker.js", nil, c.Perf)

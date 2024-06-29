@@ -963,13 +963,6 @@ func (c *UrlContext) BuildAssetUpload() string {
 * Assets
  */
 
-var RegexProjectCSS = regexp.MustCompile("^/assets/project.css$")
-
-func BuildProjectCSS(color string) string {
-	defer CatchPanic()
-	return Url("/assets/project.css", []Q{{"color", color}})
-}
-
 var RegexMarkdownWorkerJS = regexp.MustCompile("^/assets/markdown_worker.js$")
 
 func BuildMarkdownWorkerJS() string {
