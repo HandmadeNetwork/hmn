@@ -69,6 +69,8 @@ type TimelineQuery struct {
 	SkipSnippets bool
 	SkipPosts    bool
 
+	IncludePostDescription bool
+
 	Limit, Offset int
 }
 
@@ -251,6 +253,10 @@ func FetchTimeline(
 	for idx := range results {
 		if results[idx].Owner != nil {
 			results[idx].Owner.AvatarAsset = results[idx].AvatarAsset
+		}
+		if results[idx].Item.Type == models.TimelineItemTypePost && !q.IncludePostDescription {
+			results[idx].Item.RawDescription = ""
+			results[idx].Item.ParsedDescription = ""
 		}
 	}
 

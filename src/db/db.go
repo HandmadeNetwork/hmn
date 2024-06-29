@@ -479,6 +479,7 @@ This is common for custom types like:
 */
 var queryableKinds = []reflect.Kind{
 	reflect.Int,
+	reflect.String,
 }
 
 /*

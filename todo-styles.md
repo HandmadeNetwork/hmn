@@ -56,7 +56,9 @@
     - TikTok?
     - Trello?
 - [ ] Handle empty avatar URLs correctly in various places (render as theme-dependent default)
-- [ ] Convert to new color vars
+- [x] Convert to new color vars
+- [ ] Make snippet descriptions partially collapse by default
+- [ ] Make the home page remember which tab you were on
 - [ ] Resolve TODO(redesign) comments
 
 stack!
