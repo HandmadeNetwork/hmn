@@ -30,15 +30,24 @@
 		</div>
 		<div class="w-100 mw-site-narrow pa3 bg-transparent link-normal flex g3 overflow-hidden" style="margin-top: -4rem">
 			{{ if .Project.Logo }}
-				<a href="{{ .Project.Url }}">
+				<a class="flex-shrink-0 flex" href="{{ .Project.Url }}">
 					<img class="project-card-logo" src="{{ .Project.Logo }}" alt="Project Logo">
 				</a>
 			{{ end }}
 			<div class="details flex-grow-1">
 				<a href="{{ .Project.Url }}"><h3 class="b mb2 f4">{{ .Project.Name }}</h3></a>
 				<div class="blurb">{{ .Project.Blurb }}</div>
-				<hr>
-				<div>TODO: Authors</div>
+				{{ with .Owners }}
+					<hr class="mv3">
+					<div class="flex flex-wrap g2">
+						{{ range . }}
+							<a class="flex g1 items-center b" href="{{ .ProfileUrl }}">
+								<img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}">
+								<span>{{ .Name }}</span>
+							</a>
+						{{ end }}
+					</div>
+				{{ end }}
 				{{ if .Project.LifecycleString }}
 					<div class="badges mt2">
 						<span class="badge {{ .Project.LifecycleBadgeClass }}">{{ .Project.LifecycleString }}</span>
@@ -90,14 +99,14 @@
 	</div>
 </div>
 {{ if or .Header.Project.CanEdit (gt (len .RecentActivity) 0) }}
-<div class="bg1 mt4 bt bb pv4 flex justify-center">
-	<div class="w-100 mw-site flex g3">
+<div class="bg1 mt4 bt bb pv4">
+	<div class="m-center mw-site flex g3">
 		<div class="flex flex-column g3">
 			<div class="bg3 pa3 w5">
 				Filters
 			</div>
 		</div>
-		<div class="flex-grow-1">
+		<div class="flex-grow-1 overflow-hidden">
 			<div class="flex flex-row items-center mb2">
 				<h2 id="recent">Recent Activity</h2>
 				<div class="flex-grow-1"></div>
@@ -105,7 +114,7 @@
 					<a href="javascript:;" class="create_snippet_link button">Add Snippet</a>
 				{{ end }}
 			</div>
-			<div class="timeline flex flex-column g3">
+			<div class="timeline">
 				{{ range .RecentActivity }}
 					{{ template "timeline_item.html" . }}
 				{{ end }}
