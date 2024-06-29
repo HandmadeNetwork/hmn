@@ -37,7 +37,6 @@
 - [ ] Rename `-2024` files
 - [ ] Validate accessibility of navigation
 - [ ] Make navigation work on mobile
-- [ ] Clean up code TODOs
 - [ ] Support the following external logos:
     - Twitter / X
     - Patreon
@@ -59,6 +58,7 @@
 - [x] Convert to new color vars
 - [ ] Make snippet descriptions partially collapse by default
 - [ ] Make the home page remember which tab you were on
+- [ ] Convert any plain TODOs introduced in this massive branch into TODO(redesign)
 - [ ] Resolve TODO(redesign) comments
 - [ ] Audit all project lifecycles on HMN - probably remove "complete", replace with stuff like "alpha", "beta", maybe other stuff that makes sense for other types of projects.
 
