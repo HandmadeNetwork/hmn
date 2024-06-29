@@ -154,25 +154,30 @@
 						<div data-tab="following" class="timeline">
 							{{ range .FollowingItems }}
 								{{ template "timeline_item.html" . }}
+							{{ else }}
+								<div class="pv4 f6 tc">You are not following anything. Follow users and projects to see their posts here.</div>
 							{{ end }}
+							TODO: READ MORE LINK
 						</div>
 					{{ end }}
 					<div data-tab="featured" class="timeline">
 						{{ range .FeaturedItems }}
 							{{ template "timeline_item.html" . }}
 						{{ end }}
+						TODO: READ MORE LINK
 					</div>
 					<div data-tab="recent" class="timeline">
 						{{ range .RecentItems }}
 							{{ template "timeline_item.html" . }}
 						{{ end }}
+						TODO: READ MORE LINK
 					</div>
 					<div data-tab="news" class="timeline">
 						{{ range .NewsItems }}
 							{{ template "timeline_item.html" . }}
 						{{ end }}
+						TODO: READ MORE LINK
 					</div>
-					TODO: READ MORE LINK
 				</div>
 			</div>
 		</div>
@@ -191,7 +196,19 @@
 		chevron.classList.toggle("rot-180", !hide);
 	}
 
-	initTabs(document.querySelector("#landing-tabs"));
+	const noFollowing = document.querySelectorAll("[data-tab='following'] .timeline-item").length === 0;
+	const { selectTab } = initTabs(document.querySelector("#landing-tabs"), {
+		initialTab: document.location.hash.substring(1) || (noFollowing && "featured"),
+		onSelect(name) {
+			document.location.hash = `#${name}`;
+		}
+	});
+	window.addEventListener("hashchange", e => {
+		const tab = new URL(e.newURL).hash.substring(1);
+		if (tab) {
+			selectTab(tab, { sendEvent: false });
+		}
+	});
 </script>
 
 {{ end }}

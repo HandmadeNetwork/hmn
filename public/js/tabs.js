@@ -1,24 +1,38 @@
-function initTabs(container, initialTab = null) {
+function initTabs(container, {
+    initialTab = null,
+    onSelect = (name) => {},
+}) {
     const buttons = Array.from(container.querySelectorAll("[data-tab-button]"));
     const tabs = Array.from(container.querySelectorAll("[data-tab]"));
 
-    if (!initialTab) {
-        initialTab = tabs[0].getAttribute("data-tab");
-    }
+    const firstTab = tabs[0].getAttribute("data-tab");
 
-    function switchTo(name) {
+    function selectTab(name, { sendEvent = true } = {}) {
+        if (!document.querySelector(`[data-tab="${name}"]`)) {
+            console.warn("no tab found with name", name);
+            return selectTab(firstTab, initial);
+        }
+
         for (const tab of tabs) {
             tab.hidden = tab.getAttribute("data-tab") !== name;
         }
         for (const button of buttons) {
             button.classList.toggle("tab-button-active", button.getAttribute("data-tab-button") === name);
         }
+
+        if (sendEvent) {
+            onSelect(name);
+        }
     }
-    switchTo(initialTab);
+    selectTab(initialTab || firstTab, { sendEvent: false });
 
     for (const button of buttons) {
         button.addEventListener("click", () => {
-            switchTo(button.getAttribute("data-tab-button"));
+            selectTab(button.getAttribute("data-tab-button"));
         });
     }
+
+    return {
+        selectTab,
+    };
 }

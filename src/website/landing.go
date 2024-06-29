@@ -12,6 +12,8 @@ import (
 )
 
 func Index(c *RequestContext) ResponseData {
+	const maxPostsPerTab = 60
+
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
@@ -67,14 +69,14 @@ func Index(c *RequestContext) ResponseData {
 	}
 	featuredItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
 		ProjectIDs: featuredProjectIDs,
-		Limit:      100,
+		Limit:      maxPostsPerTab,
 	})
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to fetch featured feed")
 	}
 
 	recentItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
-		Limit: 100,
+		Limit: maxPostsPerTab,
 	})
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to fetch recent feed")
@@ -83,7 +85,7 @@ func Index(c *RequestContext) ResponseData {
 	newsThreads, err := hmndata.FetchThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:     []int{models.HMNProjectID},
 		ThreadTypes:    []models.ThreadType{models.ThreadTypeProjectBlogPost},
-		Limit:          100,
+		Limit:          maxPostsPerTab,
 		OrderByCreated: true,
 	})
 	if err != nil {
