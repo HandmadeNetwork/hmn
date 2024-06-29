@@ -53,8 +53,6 @@ func (lc ProjectLifecycle) In(lcs []ProjectLifecycle) bool {
 	return false
 }
 
-const RecentProjectUpdateTimespanSec = 60 * 60 * 24 * 28 // NOTE(asaf): Four weeks
-
 type Project struct {
 	ID int `db:"id"`
 
@@ -81,6 +79,7 @@ type Project struct {
 	ForumLastUpdated      time.Time `db:"forum_last_updated"`
 	BlogLastUpdated       time.Time `db:"blog_last_updated"`
 	AnnotationLastUpdated time.Time `db:"annotation_last_updated"`
+	SnippetLastPosted     time.Time `db:"snippet_last_posted"`
 
 	ForumEnabled   bool `db:"forum_enabled"`
 	BlogEnabled    bool `db:"blog_enabled"`

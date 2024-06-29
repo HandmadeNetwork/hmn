@@ -382,6 +382,8 @@ func SnippetEditSubmit(c *RequestContext) ResponseData {
 			}
 		}
 
+		hmndata.UpdateSnippetLastPostedForAllProjects(c, tx)
+
 		err = tx.Commit(c)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit transaction"))

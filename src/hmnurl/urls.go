@@ -453,22 +453,11 @@ func BuildAtomFeedForShowcase() string {
 * Projects
  */
 
-var RegexProjectIndex = regexp.MustCompile(`^/projects(/(?P<category>[a-z0-9-]+)(/(?P<page>\d+))?)?$`)
+var RegexProjectIndex = regexp.MustCompile(`^/projects$`)
 
-func BuildProjectIndex(page int, category string) string {
+func BuildProjectIndex() string {
 	defer CatchPanic()
-	if page < 1 {
-		panic(oops.New(nil, "page must be >= 1"))
-	}
-	catpath := ""
-	if category != "" {
-		catpath = "/" + category
-	}
-	if page == 1 {
-		return Url(fmt.Sprintf("/projects%s", catpath), nil)
-	} else {
-		return Url(fmt.Sprintf("/projects%s/%d", catpath, page), nil)
-	}
+	return Url("/projects", nil)
 }
 
 var RegexProjectNew = regexp.MustCompile("^/p/new$")

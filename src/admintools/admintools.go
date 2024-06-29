@@ -20,6 +20,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -513,6 +514,8 @@ func init() {
 					panic(err)
 				}
 			}
+
+			hmndata.UpdateSnippetLastPostedForAllProjects(ctx, conn)
 
 			fmt.Printf("Done!\n")
 		},

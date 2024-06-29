@@ -365,90 +365,87 @@ func ResetDB() {
 	ctx := context.Background()
 
 	// Create the HMN database user
+	credentials := append(
+		[]pgCredentials{
+			{getSystemUsername(), "", true}, // Postgres.app on Mac
+		},
+		guessCredentials()...,
+	)
+
+	var superuserConn *pgconn.PgConn
+	var connErrors []error
+	for _, cred := range credentials {
+		// NOTE(asaf): We have to use the low-level API of pgconn, because the pgx Exec always wraps the query in a transaction.
+		var err error
+		superuserConn, err = connectLowLevel(ctx, cred.User, cred.Password)
+		if err == nil {
+			if cred.SafeToPrint {
+				fmt.Printf("Connected by guessing username \"%s\" and password \"%s\".\n", cred.User, cred.Password)
+			}
+			break
+		} else {
+			connErrors = append(connErrors, err)
+		}
+	}
+	if superuserConn == nil {
+		fmt.Println("Failed to connect to the db to reset it.")
+		fmt.Println("The following errors occurred for each attempted set of credentials:")
+		for _, err := range connErrors {
+			fmt.Printf("- %v\n", err)
+		}
+		fmt.Println()
+		fmt.Println("If this is a local development environment, please let us know what platform you")
+		fmt.Println("are using and how you installed Postgres. We want to try and streamline the setup")
+		fmt.Println("process for you.")
+		fmt.Println()
+		fmt.Println("If on the other hand this is a real deployment, please go into psql and manually")
+		fmt.Println("create the user:")
+		fmt.Println()
+		fmt.Println("    CREATE USER <username> WITH")
+		fmt.Println("        ENCRYPTED PASSWORD '<password>'")
+		fmt.Println("        CREATEDB;")
+		fmt.Println()
+		fmt.Println("and add the username and password to your config.")
+		os.Exit(1)
+	}
+	defer superuserConn.Close(ctx)
+
+	// Create the HMN user
 	{
-		credentials := append(
-			[]pgCredentials{
-				{config.Config.Postgres.User, config.Config.Postgres.Password, false}, // Existing HMN user
-				{getSystemUsername(), "", true},                                       // Postgres.app on Mac
-			},
-			guessCredentials()...,
-		)
-
-		var workingCred pgCredentials
-		var createUserConn *pgconn.PgConn
-		var connErrors []error
-		for _, cred := range credentials {
-			// NOTE(asaf): We have to use the low-level API of pgconn, because the pgx Exec always wraps the query in a transaction.
-			var err error
-			createUserConn, err = connectLowLevel(ctx, cred.User, cred.Password)
-			if err == nil {
-				workingCred = cred
-				if cred.SafeToPrint {
-					fmt.Printf("Connected by guessing username \"%s\" and password \"%s\".\n", cred.User, cred.Password)
-				}
-				break
-			} else {
-				connErrors = append(connErrors, err)
-			}
-		}
-		if createUserConn == nil {
-			fmt.Println("Failed to connect to the db to reset it.")
-			fmt.Println("The following errors occurred for each attempted set of credentials:")
-			for _, err := range connErrors {
-				fmt.Printf("- %v\n", err)
-			}
-			fmt.Println()
-			fmt.Println("If this is a local development environment, please let us know what platform you")
-			fmt.Println("are using and how you installed Postgres. We want to try and streamline the setup")
-			fmt.Println("process for you.")
-			fmt.Println()
-			fmt.Println("If on the other hand this is a real deployment, please go into psql and manually")
-			fmt.Println("create the user:")
-			fmt.Println()
-			fmt.Println("    CREATE USER <username> WITH")
-			fmt.Println("        ENCRYPTED PASSWORD '<password>'")
-			fmt.Println("        CREATEDB;")
-			fmt.Println()
-			fmt.Println("and add the username and password to your config.")
-			os.Exit(1)
-		}
-		defer createUserConn.Close(ctx)
-
-		// Create the HMN user
-		{
-			userExists := workingCred.User == config.Config.Postgres.User && workingCred.Password == config.Config.Postgres.Password
-			if !userExists {
-				result := createUserConn.ExecParams(ctx, fmt.Sprintf(`
-					CREATE USER %s WITH
-						ENCRYPTED PASSWORD '%s'
-						CREATEDB
-				`, config.Config.Postgres.User, config.Config.Postgres.Password), nil, nil, nil, nil)
-				_, err := result.Close()
-				if err != nil {
-					panic(fmt.Errorf("failed to create HMN user: %w", err))
-				}
+		result := superuserConn.ExecParams(ctx, fmt.Sprintf(`
+				CREATE USER %s WITH
+					ENCRYPTED PASSWORD '%s'
+					CREATEDB
+			`, config.Config.Postgres.User, config.Config.Postgres.Password), nil, nil, nil, nil)
+		_, err := result.Close()
+		pgErr, isPgError := err.(*pgconn.PgError)
+		if err != nil {
+			if !(isPgError && pgErr.SQLState() == "42710") { // NOTE(ben): 42710 means "duplicate object", i.e. already exists
+				panic(fmt.Errorf("failed to create HMN user: %w", err))
 			}
 		}
 	}
+
+	// Disconnect all other users
+	{
+		result := superuserConn.ExecParams(ctx, fmt.Sprintf(`
+				SELECT pg_terminate_backend(pid)
+				FROM pg_stat_activity
+				WHERE datname IN ('%s', 'template1') AND pid <> pg_backend_pid()
+			`, config.Config.Postgres.DbName), nil, nil, nil, nil)
+		_, err := result.Close()
+		if err != nil {
+			panic(fmt.Errorf("failed to disconnect other users: %w", err))
+		}
+	}
+	superuserConn.Close(ctx)
 
 	// Connect as the HMN user
 	conn, err := connectLowLevel(ctx, config.Config.Postgres.User, config.Config.Postgres.Password)
 	if err != nil {
 		panic(fmt.Errorf("failed to connect to db: %w", err))
 	}
-
-	// Disconnect all other users
-	{
-		result := conn.ExecParams(ctx, fmt.Sprintf(`
-			SELECT pg_terminate_backend(pid)
-			FROM pg_stat_activity
-			WHERE datname IN ('%s', 'template1') AND pid <> pg_backend_pid()
-		`, config.Config.Postgres.DbName), nil, nil, nil, nil)
-		_, err := result.Close()
-		if err != nil {
-			panic(fmt.Errorf("failed to disconnect other users: %w", err))
-		}
-	}
+	defer conn.Close(ctx)
 
 	// Drop the database
 	{

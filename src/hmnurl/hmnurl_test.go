@@ -132,10 +132,7 @@ func TestFeed(t *testing.T) {
 }
 
 func TestProjectIndex(t *testing.T) {
-	AssertRegexMatch(t, BuildProjectIndex(1, ""), RegexProjectIndex, nil)
-	AssertRegexMatch(t, BuildProjectIndex(1, "test"), RegexProjectIndex, map[string]string{"category": "test"})
-	AssertRegexMatch(t, BuildProjectIndex(2, "test"), RegexProjectIndex, map[string]string{"page": "2", "category": "test"})
-	assert.Panics(t, func() { BuildProjectIndex(0, "") })
+	AssertRegexMatch(t, BuildProjectIndex(), RegexProjectIndex, nil)
 }
 
 func TestProjectNew(t *testing.T) {

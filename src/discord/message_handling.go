@@ -995,6 +995,8 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 				}
 			}
 		}
+
+		hmndata.UpdateSnippetLastPostedForAllProjects(ctx, tx)
 	}
 
 	err = tx.Commit(ctx)

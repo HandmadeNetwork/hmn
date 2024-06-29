@@ -526,3 +526,20 @@ func SetProjectTag(
 
 	return resultTag, nil
 }
+
+func UpdateSnippetLastPostedForAllProjects(ctx context.Context, dbConn db.ConnOrTx) error {
+	_, err := dbConn.Exec(ctx,
+		`
+		UPDATE project p SET (snippet_last_posted, all_last_updated) = (
+			SELECT
+				COALESCE(MAX(s."when"), 'epoch'),
+				GREATEST(p.forum_last_updated, p.blog_last_updated, p.annotation_last_updated, MAX(s."when"))
+			FROM
+				snippet s
+				JOIN snippet_project sp ON s.id = sp.snippet_id
+			WHERE sp.project_id = p.id
+		)
+		`,
+	)
+	return err
+}

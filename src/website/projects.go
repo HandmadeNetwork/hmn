@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"math/rand"
 	"net/http"
 	"path"
 	"sort"
@@ -60,167 +59,25 @@ func ProjectCSS(c *RequestContext) ResponseData {
 type ProjectTemplateData struct {
 	templates.BaseData
 
-	AllProjects bool
-
-	// Stuff for all projects
-	OfficialProjects        []templates.Project
-	OfficialProjectsLink    string
-	PersonalProjects        []templates.Project
-	PersonalProjectsLink    string
-	CurrentJamProjects      []templates.Project
-	CurrentJamProjectsLink  string
-	CurrentJamLink          string
-	CurrentJamSlug          string
-	PreviousJamProjects     []templates.Project
-	PreviousJamProjectsLink string
-	PreviousJamLink         string
-	PreviousJamSlug         string
-
-	// Stuff for pages of projects only
-	Category     string
-	Pagination   templates.Pagination
-	PageProjects []templates.Project
-	PageJamLink  string
-
-	// Stuff for both
-	CreateProjectLink string
+	OfficialProjects []templates.Project
 }
 
 func ProjectIndex(c *RequestContext) ResponseData {
-	cat := c.PathParams["category"]
-	pageStr := c.PathParams["page"]
-
-	currentJam := hmndata.CurrentJam()
-	previousJam := hmndata.PreviousJam()
-
-	if cat == "" && pageStr == "" {
-		const projectsPerSection = 8
-
-		officialProjects, err := getShuffledOfficialProjects(c)
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, err)
-		}
-
-		personalProjects, err := getPersonalProjects(c, "")
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, err)
-		}
-
-		var currentJamProjects []templates.Project
-		if currentJam != nil {
-			var err error
-			currentJamProjects, err = getPersonalProjects(c, currentJam.Slug)
-			if err != nil {
-				return c.ErrorResponse(http.StatusInternalServerError, err)
-			}
-		}
-
-		previousJamProjects, err := getPersonalProjects(c, previousJam.Slug)
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, err)
-		}
-
-		baseData := getBaseDataAutocrumb(c, "Projects")
-		tmpl := ProjectTemplateData{
-			BaseData: baseData,
-
-			AllProjects: true,
-
-			OfficialProjects:     officialProjects[:utils.Min(len(officialProjects), projectsPerSection)],
-			OfficialProjectsLink: hmnurl.BuildProjectIndex(1, "official"),
-			PersonalProjects:     personalProjects[:utils.Min(len(personalProjects), projectsPerSection)],
-			PersonalProjectsLink: hmnurl.BuildProjectIndex(1, "personal"),
-			// Current jam stuff set later
-			PreviousJamProjects:     previousJamProjects[:utils.Min(len(previousJamProjects), projectsPerSection)],
-			PreviousJamProjectsLink: hmnurl.BuildProjectIndex(1, previousJam.UrlSlug),
-			PreviousJamLink:         hmnurl.BuildJamIndexAny(previousJam.UrlSlug),
-			PreviousJamSlug:         previousJam.UrlSlug,
-
-			CreateProjectLink: hmnurl.BuildProjectNew(),
-		}
-
-		if currentJam != nil {
-			tmpl.CurrentJamProjects = currentJamProjects[:utils.Min(len(currentJamProjects), projectsPerSection)]
-			tmpl.CurrentJamProjectsLink = hmnurl.BuildProjectIndex(1, currentJam.UrlSlug)
-			tmpl.CurrentJamLink = hmnurl.BuildJamIndexAny(currentJam.UrlSlug)
-			tmpl.CurrentJamSlug = currentJam.UrlSlug
-		}
-
-		var res ResponseData
-		res.MustWriteTemplate("project_index.html", tmpl, c.Perf)
-		return res
-	} else {
-		const projectsPerPage = 20
-
-		var breadcrumb templates.Breadcrumb
-		breadcrumbUrl := hmnurl.BuildProjectIndex(1, cat)
-
-		var projects []templates.Project
-		var jamLink string
-
-		var err error
-		switch cat {
-		case hmndata.WRJ2022.UrlSlug:
-			projects, err = getPersonalProjects(c, hmndata.WRJ2022.Slug)
-			breadcrumb = templates.Breadcrumb{Name: "Wheel Reinvention Jam 2022"}
-			jamLink = hmnurl.BuildJamIndex2022()
-		case hmndata.VJ2023.UrlSlug:
-			projects, err = getPersonalProjects(c, hmndata.VJ2023.Slug)
-			breadcrumb = templates.Breadcrumb{"2023 Visibility Jam", breadcrumbUrl}
-			jamLink = hmnurl.BuildJamIndex2023_Visibility()
-		case hmndata.WRJ2023.UrlSlug:
-			projects, err = getPersonalProjects(c, hmndata.WRJ2023.Slug)
-			breadcrumb = templates.Breadcrumb{"Wheel Reinvention Jam 2023", breadcrumbUrl}
-			jamLink = hmnurl.BuildJamIndex2023()
-		case "personal":
-			projects, err = getPersonalProjects(c, "")
-			breadcrumb = templates.Breadcrumb{"Personal Projects", breadcrumbUrl}
-		case "official":
-			projects, err = getShuffledOfficialProjects(c)
-			breadcrumb = templates.Breadcrumb{"Official Projects", breadcrumbUrl}
-		default:
-			return c.Redirect(hmnurl.BuildProjectIndex(1, ""), http.StatusSeeOther)
-		}
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, err)
-		}
-
-		page, numPages, ok := getPageInfo(pageStr, len(projects), projectsPerPage)
-		if !ok {
-			return c.Redirect(hmnurl.BuildProjectIndex(1, cat), http.StatusSeeOther)
-		}
-		pagination := templates.Pagination{
-			Current: page,
-			Total:   numPages,
-
-			FirstUrl:    hmnurl.BuildProjectIndex(1, cat),
-			LastUrl:     hmnurl.BuildProjectIndex(numPages, cat),
-			NextUrl:     hmnurl.BuildProjectIndex(utils.Clamp(1, page+1, numPages), cat),
-			PreviousUrl: hmnurl.BuildProjectIndex(utils.Clamp(1, page-1, numPages), cat),
-		}
-
-		firstProjectIndex := (page - 1) * projectsPerPage
-		endIndex := utils.Min(firstProjectIndex+projectsPerPage, len(projects))
-		pageProjects := projects[firstProjectIndex:endIndex]
-
-		baseData := getBaseData(c, "Projects", []templates.Breadcrumb{
-			{"Projects", hmnurl.BuildProjectIndex(1, "")},
-			breadcrumb,
-		})
-		var res ResponseData
-		res.MustWriteTemplate("project_index.html", ProjectTemplateData{
-			BaseData: baseData,
-
-			AllProjects: false,
-
-			Category:          cat,
-			Pagination:        pagination,
-			PageProjects:      pageProjects,
-			CreateProjectLink: hmnurl.BuildProjectNew(),
-			PageJamLink:       jamLink,
-		}, c.Perf)
-		return res
+	officialProjects, err := getShuffledOfficialProjects(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
+
+	baseData := getBaseDataAutocrumb(c, "Projects")
+	tmpl := ProjectTemplateData{
+		BaseData: baseData,
+
+		OfficialProjects: officialProjects,
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("project_index.html", tmpl, c.Perf)
+	return res
 }
 
 func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error) {
@@ -232,47 +89,44 @@ func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error)
 	}
 
 	c.Perf.StartBlock("PROJECTS", "Grouping and sorting")
-	var handmadeHero *templates.Project
-	var featuredProjects []templates.Project
-	var recentProjects []templates.Project
-	var restProjects []templates.Project
-	now := time.Now()
+	var handmadeHero hmndata.ProjectAndStuff
+	var featuredProjects []hmndata.ProjectAndStuff
+	var restProjects []hmndata.ProjectAndStuff
 	for _, p := range official {
-		templateProject := templates.ProjectAndStuffToTemplate(&p)
-
 		if p.Project.Slug == "hero" {
 			// NOTE(asaf): Handmade Hero gets special treatment. Must always be first in the list.
-			handmadeHero = &templateProject
+			handmadeHero = p
 			continue
 		}
 		if p.Project.Featured {
-			featuredProjects = append(featuredProjects, templateProject)
-		} else if now.Sub(p.Project.AllLastUpdated).Seconds() < models.RecentProjectUpdateTimespanSec {
-			recentProjects = append(recentProjects, templateProject)
+			featuredProjects = append(featuredProjects, p)
 		} else {
-			restProjects = append(restProjects, templateProject)
+			restProjects = append(restProjects, p)
 		}
 	}
 
-	_, randSeed := now.ISOWeek()
-	random := rand.New(rand.NewSource(int64(randSeed)))
-	random.Shuffle(len(featuredProjects), func(i, j int) { featuredProjects[i], featuredProjects[j] = featuredProjects[j], featuredProjects[i] })
-	random.Shuffle(len(recentProjects), func(i, j int) { recentProjects[i], recentProjects[j] = recentProjects[j], recentProjects[i] })
-	random.Shuffle(len(restProjects), func(i, j int) { restProjects[i], restProjects[j] = restProjects[j], restProjects[i] })
+	sort.Slice(featuredProjects, func(i, j int) bool {
+		return featuredProjects[i].Project.AllLastUpdated.After(featuredProjects[j].Project.AllLastUpdated)
+	})
+	sort.Slice(restProjects, func(i, j int) bool {
+		return restProjects[i].Project.AllLastUpdated.After(restProjects[j].Project.AllLastUpdated)
+	})
 
-	if handmadeHero != nil {
+	projects := make([]templates.Project, 0, 1+len(featuredProjects)+len(restProjects))
+	if handmadeHero.Project.ID != 0 {
 		// NOTE(asaf): As mentioned above, inserting HMH first.
-		featuredProjects = append([]templates.Project{*handmadeHero}, featuredProjects...)
+		projects = append(projects, templates.ProjectAndStuffToTemplate(&handmadeHero))
 	}
-
-	officialProjects := make([]templates.Project, 0, len(featuredProjects)+len(recentProjects)+len(restProjects))
-	officialProjects = append(officialProjects, featuredProjects...)
-	officialProjects = append(officialProjects, recentProjects...)
-	officialProjects = append(officialProjects, restProjects...)
+	for _, p := range featuredProjects {
+		projects = append(projects, templates.ProjectAndStuffToTemplate(&p))
+	}
+	for _, p := range restProjects {
+		projects = append(projects, templates.ProjectAndStuffToTemplate(&p))
+	}
 
 	c.Perf.EndBlock()
 
-	return officialProjects, nil
+	return projects, nil
 }
 
 func getPersonalProjects(c *RequestContext, jamSlug string) ([]templates.Project, error) {
