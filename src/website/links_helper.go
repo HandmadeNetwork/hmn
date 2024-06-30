@@ -8,8 +8,9 @@ import (
 )
 
 type ParsedLink struct {
-	Name string `json:"name"`
-	Url  string `json:"url"`
+	Name    string `json:"name"`
+	Url     string `json:"url"`
+	Primary bool   `json:"primary"`
 }
 
 func ParseLinks(text string) []ParsedLink {

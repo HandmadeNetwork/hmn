@@ -335,6 +335,7 @@ func LinkToTemplate(link *models.Link) Link {
 		ServiceName: service.Name,
 		Icon:        service.IconName,
 		Username:    username,
+		Primary:     link.Primary,
 	}
 }
 

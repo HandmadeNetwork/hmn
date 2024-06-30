@@ -1,6 +1,7 @@
 package website
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -193,7 +194,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		Avatar      *templates.Asset
 		Email       string // these fields are handled specially on templates.User
 		ShowEmail   bool
-		LinksText   string
+		LinksJSON   string
 		HasPassword bool
 
 		SubmitUrl  string
@@ -219,7 +220,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user links"))
 	}
 
-	linksText := LinksToText(links)
+	linksJSON := string(utils.Must1(json.Marshal(templates.LinksToTemplate(links))))
 
 	var tduser *templates.DiscordUser
 	var numUnsavedMessages int
@@ -269,7 +270,7 @@ func UserSettings(c *RequestContext) ResponseData {
 		Avatar:            templates.AssetToTemplate(c.CurrentUser.AvatarAsset),
 		Email:             c.CurrentUser.Email,
 		ShowEmail:         c.CurrentUser.ShowEmail,
-		LinksText:         linksText,
+		LinksJSON:         linksJSON,
 		HasPassword:       c.CurrentUser.Password != "",
 
 		SubmitUrl:  hmnurl.BuildUserSettings(""),
@@ -378,12 +379,13 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 		for i, link := range links {
 			_, err := tx.Exec(c,
 				`
-				INSERT INTO link (name, url, ordering, user_id)
-				VALUES ($1, $2, $3, $4)
+				INSERT INTO link (name, url, ordering, primary_link, user_id)
+				VALUES ($1, $2, $3, $4, $5)
 				`,
 				link.Name,
 				link.Url,
 				i,
+				link.Primary,
 				c.CurrentUser.ID,
 			)
 			if err != nil {

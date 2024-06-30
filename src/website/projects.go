@@ -935,12 +935,13 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	for i, link := range payload.Links {
 		_, err = tx.Exec(ctx,
 			`
-			INSERT INTO link (name, url, ordering, project_id)
-			VALUES ($1, $2, $3, $4)
+			INSERT INTO link (name, url, ordering, primary_link, project_id)
+			VALUES ($1, $2, $3, $4, $5)
 			`,
 			link.Name,
 			link.Url,
 			i,
+			link.Primary,
 			payload.ProjectID,
 		)
 		if err != nil {

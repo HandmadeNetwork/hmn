@@ -225,6 +225,7 @@ type Link struct {
 	ServiceName string `json:"serviceName"`
 	Username    string `json:"text"`
 	Icon        string `json:"icon"`
+	Primary     bool   `json:"primary"`
 }
 
 type Podcast struct {
