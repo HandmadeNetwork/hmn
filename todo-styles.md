@@ -63,6 +63,8 @@
 - [ ] Resolve TODO(redesign) comments
 - [ ] Audit all project lifecycles on HMN - probably remove "complete", replace with stuff like "alpha", "beta", maybe other stuff that makes sense for other types of projects.
     - [ ] Afterward, re-enable badges
+- [ ] Add logout / settings menu on avatar
+- [ ] Delete all the scss :D
 
 stack!
 

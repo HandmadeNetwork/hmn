@@ -212,12 +212,15 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	type ProjectHomepageData struct {
 		templates.BaseData
-		Project                  templates.Project
-		Owners                   []templates.User
-		Screenshots              []string
-		NamedLinks, UnnamedLinks []templates.Link
-		RecentActivity           []templates.TimelineItem
-		SnippetEdit              templates.SnippetEdit
+		Project                      templates.Project
+		Owners                       []templates.User
+		Screenshots                  []string
+		PrimaryLinks, SecondaryLinks []templates.Link
+		RecentActivity               []templates.TimelineItem
+		SnippetEdit                  templates.SnippetEdit
+
+		CanEdit bool
+		EditUrl string
 
 		FollowUrl string
 		Following bool
@@ -242,6 +245,8 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	for _, owner := range owners {
 		templateData.Owners = append(templateData.Owners, templates.UserToTemplate(owner))
 	}
+	templateData.CanEdit = c.CurrentUserCanEditCurrentProject
+	templateData.EditUrl = c.UrlContext.BuildProjectEdit("")
 
 	if c.CurrentProject.Hidden {
 		templateData.BaseData.AddImmediateNotice(
@@ -288,10 +293,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	}
 
 	for _, link := range templates.LinksToTemplate(projectLinks) {
-		if link.Name != "" {
-			templateData.NamedLinks = append(templateData.NamedLinks, link)
+		if link.Primary {
+			templateData.PrimaryLinks = append(templateData.PrimaryLinks, link)
 		} else {
-			templateData.UnnamedLinks = append(templateData.UnnamedLinks, link)
+			templateData.SecondaryLinks = append(templateData.SecondaryLinks, link)
 		}
 	}
 
