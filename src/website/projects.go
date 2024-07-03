@@ -639,7 +639,7 @@ type ProjectEditFormResult struct {
 
 func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	var res ProjectEditFormResult
-	maxBodySize := int64(ProjectLogoMaxFileSize*2 + 1024*1024)
+	maxBodySize := int64(ProjectLogoMaxFileSize + ProjectHeaderMaxFileSize + 1024*1024)
 	c.Req.Body = http.MaxBytesReader(c.Res, c.Req.Body, maxBodySize)
 	err := c.Req.ParseMultipartForm(maxBodySize)
 	if err != nil {

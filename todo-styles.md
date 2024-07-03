@@ -16,6 +16,7 @@
     - [ ] content
     - [ ] description
     - [ ] c--dim and friends
+    - [ ] badge
 - [x] Re-evaluate form styles
     - [x] theme-color-light is used only for buttons
 - [x] center-layout vs. margin-center

@@ -11,6 +11,7 @@ function ImageSelector(form, maxFileSize, container, {
 	this.resetLink = container.querySelector(".imginput-reset-link");
 	this.removeLink = container.querySelector(".imginput-remove-link");
 	this.filenameText = container.querySelector(".imginput-filename");
+	this.errorEl = container.querySelector(".error");
 	this.originalImageUrl = this.imageEl.getAttribute("data-imginput-original");
 	this.originalImageFilename = this.imageEl.getAttribute("data-imginput-original-filename");
 	this.currentImageUrl = this.originalImageUrl;
@@ -79,6 +80,8 @@ ImageSelector.prototype.updateSizeLimit = function(size) {
 };
 
 ImageSelector.prototype.setError = function(error) {
+	this.errorEl.textContent = error;
+	this.errorEl.hidden = !error;
 	this.fileInput.setCustomValidity(error);
 	this.fileInput.reportValidity();
 }
