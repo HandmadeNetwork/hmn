@@ -64,13 +64,11 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 		IsProjectPage: !project.IsHMN(),
 		Header: templates.Header{
-			AdminUrl:            hmnurl.BuildAdminApprovalQueue(), // TODO(asaf): Replace with general-purpose admin page
-			UserSettingsUrl:     hmnurl.BuildUserSettings(""),
-			LoginActionUrl:      hmnurl.BuildLoginAction(c.FullUrl()),
-			LogoutActionUrl:     hmnurl.BuildLogoutAction(c.FullUrl()),
-			ForgotPasswordUrl:   hmnurl.BuildRequestPasswordReset(),
-			RegisterUrl:         hmnurl.BuildRegister(""),
-			LoginWithDiscordUrl: hmnurl.BuildLoginWithDiscord(c.FullUrl()),
+			AdminUrl:          hmnurl.BuildAdminApprovalQueue(), // TODO(asaf): Replace with general-purpose admin page
+			UserSettingsUrl:   hmnurl.BuildUserSettings(""),
+			LogoutUrl:         hmnurl.BuildLogoutAction(c.FullUrl()),
+			ForgotPasswordUrl: hmnurl.BuildRequestPasswordReset(),
+			RegisterUrl:       hmnurl.BuildRegister(""),
 
 			HMNHomepageUrl:  hmnurl.BuildHomepage(),
 			ProjectIndexUrl: hmnurl.BuildProjectIndex(),

@@ -40,14 +40,12 @@ func (bd *BaseData) AddImmediateNotice(class, content string) {
 }
 
 type Header struct {
-	AdminUrl            string
-	UserProfileUrl      string
-	UserSettingsUrl     string
-	LoginActionUrl      string
-	LogoutActionUrl     string
-	ForgotPasswordUrl   string
-	RegisterUrl         string
-	LoginWithDiscordUrl string
+	AdminUrl          string
+	UserProfileUrl    string
+	UserSettingsUrl   string
+	LogoutUrl         string
+	ForgotPasswordUrl string
+	RegisterUrl       string
 
 	HMNHomepageUrl  string
 	ProjectIndexUrl string

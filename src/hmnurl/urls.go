@@ -219,7 +219,7 @@ func BuildLoginWithDiscord(redirectTo string) string {
 	return Url("/login-with-discord", []Q{{Name: "redirect", Value: redirectTo}})
 }
 
-var RegexLogoutAction = regexp.MustCompile("^/logout$")
+var RegexLogout = regexp.MustCompile("^/logout$")
 
 func BuildLogoutAction(redir string) string {
 	defer CatchPanic()

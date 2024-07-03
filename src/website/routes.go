@@ -137,7 +137,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexOldHome, Index)
 
 	hmnOnly.POST(hmnurl.RegexLoginAction, securityTimerMiddleware(time.Millisecond*100, Login))
-	hmnOnly.GET(hmnurl.RegexLogoutAction, Logout)
+	hmnOnly.GET(hmnurl.RegexLogout, Logout)
 	hmnOnly.GET(hmnurl.RegexLoginPage, LoginPage)
 	hmnOnly.GET(hmnurl.RegexLoginWithDiscord, LoginWithDiscord)
 
