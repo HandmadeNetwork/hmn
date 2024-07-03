@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"image"
 	"io"
 	"net/http"
@@ -372,6 +373,8 @@ type ProjectEditData struct {
 	APICheckUsernameUrl                string
 	LogoMaxFileSize, HeaderMaxFileSize int
 
+	AllLogos []templates.Icon
+
 	TextEditor templates.TextEditor
 }
 
@@ -396,7 +399,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 		currentJam = hmndata.CurrentJam()
 		if currentJam != nil {
 			project.JamParticipation = []templates.ProjectJamParticipation{
-				templates.ProjectJamParticipation{
+				{
 					JamName:       currentJam.Name,
 					JamSlug:       currentJam.Slug,
 					Participating: true,
@@ -415,6 +418,8 @@ func ProjectNew(c *RequestContext) ResponseData {
 		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
 		LogoMaxFileSize:     ProjectLogoMaxFileSize,
 		HeaderMaxFileSize:   ProjectHeaderMaxFileSize,
+
+		AllLogos: allLogos(),
 
 		TextEditor: templates.TextEditor{
 			MaxFileSize: AssetMaxSize(c.CurrentUser),
@@ -557,6 +562,8 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
 		LogoMaxFileSize:     ProjectLogoMaxFileSize,
 		HeaderMaxFileSize:   ProjectHeaderMaxFileSize,
+
+		AllLogos: allLogos(),
 
 		TextEditor: templates.TextEditor{
 			MaxFileSize: AssetMaxSize(c.CurrentUser),
@@ -1101,4 +1108,17 @@ func CanEditProject(user *models.User, owners []*models.User) bool {
 		}
 	}
 	return false
+}
+
+func allLogos() []templates.Icon {
+	var logos []templates.Icon
+	logoEntries := templates.ListImgsDir("logos")
+	for _, logo := range logoEntries {
+		logos = append(logos, templates.Icon{
+			Name: logo.Name()[:len(logo.Name())-len(".svg")],
+			Svg:  template.HTML(templates.GetImg(fmt.Sprintf("logos/%s", logo.Name()))),
+		})
+	}
+
+	return logos
 }

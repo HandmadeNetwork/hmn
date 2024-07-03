@@ -228,6 +228,11 @@ type Link struct {
 	Primary     bool   `json:"primary"`
 }
 
+type Icon struct {
+	Name string        `json:"name"`
+	Svg  template.HTML `json:"svg"`
+}
+
 type Podcast struct {
 	Title       string
 	Description string

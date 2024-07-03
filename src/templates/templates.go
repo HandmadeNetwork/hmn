@@ -155,6 +155,23 @@ func GetImg(file string) []byte {
 	return utils.Must1(io.ReadAll(img))
 }
 
+func ListImgsDir(dir string) []fs.DirEntry {
+	var imgs fs.ReadDirFS
+	if config.Config.DevConfig.LiveTemplates {
+		imgs = utils.DirFS("src/templates/img").(fs.ReadDirFS)
+	} else {
+		imgs = Imgs
+		dir = filepath.Join("img/", dir)
+	}
+
+	entries, err := imgs.ReadDir(dir)
+	if err != nil {
+		panic(err)
+	}
+
+	return entries
+}
+
 var controlCharRegex = regexp.MustCompile(`\p{Cc}`)
 
 var HMNTemplateFuncs = template.FuncMap{
@@ -247,10 +264,7 @@ var HMNTemplateFuncs = template.FuncMap{
 		}
 	},
 	"svg": func(name string) template.HTML {
-		contents, err := Imgs.ReadFile(fmt.Sprintf("img/%s.svg", name))
-		if err != nil {
-			panic("SVG not found: " + name)
-		}
+		contents := GetImg(fmt.Sprintf("%s.svg", name))
 		return template.HTML(contents)
 	},
 	"static": func(filepath string) string {

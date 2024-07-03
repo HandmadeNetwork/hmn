@@ -5,14 +5,14 @@
 	</legend>
 	<div class="pa3 input-group">
 		<div id="links" class="flex flex-column g2 relative">
-			<div class="b">Primary Links</div>
+			<div class="b primary_links">Primary Links</div>
 			<div class="b drop_slot secondary_links">Secondary Links</div>
 		</div>
 		<template id="link_row">
 			<div class="link_row drop_slot w-100 flex flex-row items-center" data-tmpl="root">
 				<span class="link_handle svgicon pr3 pointer grab" onmousedown="startLinkDrag(event)">{{ svg "draggable" }}</span>
-				<input data-tmpl="nameInput" class="link_name mr3 w5" type="text" placeholder="Name" />
-				<input data-tmpl="urlInput" class="link_url flex-grow-1" type="url" placeholder="Link" />
+				<input data-tmpl="nameInput" class="link_name mr3 w5" type="text" placeholder="Name" oninput="linkInput(event)" />
+				<input data-tmpl="urlInput" class="link_url flex-grow-1" type="url" placeholder="Link" oninput="linkInput(event)" />
 				<a class="delete_link svgicon link-normal pl3 f3" href="javascript:;" onclick="deleteLink(event)">{{ svg "delete" }}</a>
 			</div>
 		</template>
@@ -51,6 +51,8 @@
 	function addLink(e) {
 		e.preventDefault();
 		linksContainer.appendChild(linkTemplate().root);
+
+		fireLinkEditEvent();
 	}
 
 	function deleteLink(e) {
@@ -59,6 +61,8 @@
 		l.remove();
 
 		ensureLinksEmptyState();
+
+		fireLinkEditEvent();
 	}
 
 	function ensureLinksEmptyState() {
@@ -169,9 +173,19 @@
 
 		document.body.classList.remove("grabbing");
 		draggingLink = null;
+
+		fireLinkEditEvent();
 	}
 	window.addEventListener("mouseup", endLinkDrag);
 	window.addEventListener("mousemove", doLinkDrag);
+
+	function linkInput(e) {
+		fireLinkEditEvent();
+	}
+
+	function fireLinkEditEvent() {
+		window.dispatchEvent(new Event("linkedit"));
+	}
 	</script>
 </fieldset>
 

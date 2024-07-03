@@ -6,9 +6,20 @@
 	<script src="{{ static "js/templates.js" }}"></script>
 	<script src="{{ static "js/base64.js" }}"></script>
 	<script src="{{ static "js/markdown_upload.js" }}"></script>
+	<script src="{{ static "go_wasm_exec.js" }}"></script>
+
+	<script>
+		const go = new Go();
+		WebAssembly.instantiateStreaming(fetch('{{ static "parsing.wasm" }}'), go.importObject)
+			.then(result => {
+				go.run(result.instance); // don't await this; we want it to be continuously running
+				updateLinkPreviews();
+			});
+		window.parseKnownServicesForUrl = null; // will be set by the Go code
+	</script>
 	
 	<style>
-		#desc-preview:empty::after {
+		#desc_preview:empty::after {
 			content: 'A preview of your description will appear here.';
 			color: var(--dimmer-color);
 			font-style: italic;
@@ -195,7 +206,38 @@
 			</div>
 		</form>
 		<div class="flex-fair bl pa4">
-			<div id="desc-preview" class="w-100 post-content"></div>
+			<!-- Link / card templates -->
+			<template id="primary_link">
+				<!-- need href -->
+				<a data-tmpl="root" class="ph3 pv2 flex items-center"><span data-tmpl="name"></span><span class="svgicon f6 ml2">{{ svg "arrow-right-up" }}</span></a>
+			</template>
+			<template id="secondary_link">
+				<!-- need href and title -->
+				<a data-tmpl="root" class="ph2 flex"><!-- need icon --></a>
+			</template>
+			<div hidden>
+				{{ range .AllLogos }}
+					<span id="link-icon-{{ .Name }}">{{ .Svg }}</span>
+				{{ end }}
+			</div>
+
+			<!--
+				NOTE(ben): This is a copy-paste from project_homepage.html right now.
+				We don't have a good story for sharing templates between Go and JS.
+			-->
+
+			<!-- Header image / links -->
+			<div id="header_img_preview" class="project-header-img"><!-- Needs background-image -->
+				<div class="flex justify-end pa3">
+					<div class="flex g3">
+						<div id="primary_links_preview" class="project-links hide-if-empty"></div>
+						<div id="secondary_links_preview" class="project-links ph1 hide-if-empty"></div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Long description preview -->
+			<div id="desc_preview" class="w-100 post-content"></div>
 		</div>
 	</div>
 	<input type="file" multiple name="file_input" id="file_input" class="dn" />{{/* NOTE(mark): copied NOTE(asaf): Placing this outside the form to avoid submitting it to the server by accident */}}
@@ -235,7 +277,7 @@
 		const projectName = "{{ .Project.Name }}";
 	{{ end }}
 	const description = document.querySelector('#full_description');
-	const descPreview = document.querySelector('#desc-preview');
+	const descPreview = document.querySelector('#desc_preview');
 	const { clear: clearDescription } = autosaveContent({
 		inputEl: description,
 		storageKey: `project-description/${projectName}`,
@@ -396,6 +438,65 @@
 		{{ .TextEditor.MaxFileSize }},
 		{{ .TextEditor.UploadUrl }}
 	);
+
+	/////////////////////
+	// Link management //
+	/////////////////////
+
+	const primaryLinkTemplate = makeTemplateCloner("primary_link");
+	const secondaryLinkTemplate = makeTemplateCloner("secondary_link");
+
+	function updateLinkPreviews() {
+		const links = document.querySelector("#links");
+		const linksChildren = Array.from(links.children);
+
+		const secondaryHeader = links.querySelector(".secondary_links");
+		const rows = links.querySelectorAll(".link_row");
+
+		function index(el) {
+			return linksChildren.indexOf(el);
+		}
+
+		const primaryPreview = document.querySelector("#primary_links_preview");
+		const secondaryPreview = document.querySelector("#secondary_links_preview");
+
+		primaryPreview.innerHTML = "";
+		secondaryPreview.innerHTML = "";
+
+		const indexOfSecondary = index(secondaryHeader);
+		for (const row of rows) {
+			const name = row.querySelector(".link_name").value;
+			const url = row.querySelector(".link_url").value;
+
+			const primary = index(row) < indexOfSecondary;
+			if (primary) {
+				const l = primaryLinkTemplate();
+				l.root.href = url;
+				l.name.innerText = name;
+				primaryPreview.appendChild(l.root);
+			} else {
+				let icon = "website";
+				let title = "";
+				if (parseKnownServicesForUrl) {
+					const guess = parseKnownServicesForUrl(url);
+					icon = guess.icon;
+					title = guess.service;
+					if (guess.username) {
+						title += ` (${guess.username})`;
+					}
+				}
+				const iconSVG = document.querySelector(`#link-icon-${icon}`).innerHTML;
+				
+				const l = secondaryLinkTemplate();
+				l.root.href = url;
+				l.root.title = name || title;
+				l.root.innerHTML = iconSVG;
+				secondaryPreview.appendChild(l.root);
+			}
+		}
+	}
+	updateLinkPreviews();
+	window.addEventListener("linkedit", () => updateLinkPreviews());
 
 	</script>
 {{ end }}
