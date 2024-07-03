@@ -123,8 +123,10 @@
 <div class="bg1 mt4 bt bb pv4">
 	<div class="m-center mw-site flex g3">
 		<div class="flex flex-column g3">
-			<div class="bg3 pa3 w5">
+			<div class="bg3 pa3 w5 flex flex-column g2">
 				Filters
+				<div class="timeline-filters flex flex-column g1">
+				</div>
 			</div>
 		</div>
 		<div class="flex-grow-1 overflow-hidden">
@@ -259,5 +261,53 @@
 	}
 	showOrHideLongdescLink();
 	window.addEventListener("resize", showOrHideLongdescLink);
+</script>
+
+<script>
+	const filterTitles = [];
+	for (const item of document.querySelectorAll('.timeline-item')) {
+		const title = item.getAttribute('data-filter-title');
+		if (title && !filterTitles.includes(title)) {
+			filterTitles.push(title);
+		}
+	}
+	filterTitles.sort();
+
+	function itemsForFilterTitle(title) {
+		return document.querySelectorAll(`.timeline-item[data-filter-title="${title}"]`);
+	}
+
+	const filters = document.querySelector('.timeline-filters');
+
+	for (const title of filterTitles) {
+		const container = document.createElement("div");
+		container.className = "dib filter mr2";
+
+		const id = `timeline-checkbox-${title.replaceAll(/\s/g, '-')}`;
+
+		const input = document.createElement("input");
+		input.className = "v-mid mr1";
+		input.type = "checkbox";
+		input.id = id;
+		input.checked = true;
+		input.addEventListener("change", e => {
+			for (const item of itemsForFilterTitle(title)) {
+				if (e.target.checked) {
+					item.hidden = false;
+				} else {
+					item.hidden = true;
+				}
+			}
+		});
+		container.appendChild(input);
+
+		const label = document.createElement("label");
+		label.className = "v-mid";
+		label.htmlFor = id;
+		label.innerText = `${title} (${itemsForFilterTitle(title).length})`;
+		container.appendChild(label);
+
+		filters.appendChild(container);
+	}
 </script>
 {{ end }}
