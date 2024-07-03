@@ -1,4 +1,7 @@
-function ImageSelector(form, maxFileSize, container, defaultImageUrl) {
+function ImageSelector(form, maxFileSize, container, {
+	defaultImageUrl = "",
+	onUpdate = (url) => {},
+} = {}) {
 	this.form = form;
 	this.maxFileSize = maxFileSize;
 	this.fileInput = container.querySelector(".imginput");
@@ -11,12 +14,13 @@ function ImageSelector(form, maxFileSize, container, defaultImageUrl) {
 	this.originalImageUrl = this.imageEl.getAttribute("data-imginput-original");
 	this.originalImageFilename = this.imageEl.getAttribute("data-imginput-original-filename");
 	this.currentImageUrl = this.originalImageUrl;
-	this.defaultImageUrl = defaultImageUrl || "";
+	this.defaultImageUrl = defaultImageUrl;
+	this.onUpdate = onUpdate;
 
 	this.fileInput.value = "";
 	this.removeImageInput.value = "";
 
-	this.setImageUrl(this.originalImageUrl);
+	this.setImageUrl(this.originalImageUrl, true);
 	this.updatePreview();
 
 	this.fileInput.addEventListener("change", function(ev) {
@@ -79,13 +83,17 @@ ImageSelector.prototype.setError = function(error) {
 	this.fileInput.reportValidity();
 }
 
-ImageSelector.prototype.setImageUrl = function(url) {
+ImageSelector.prototype.setImageUrl = function(url, initial = false) {
 	this.currentImageUrl = url;
 	this.imageEl.src = url;
 	if (url.length > 0) {
 		this.imageEl.style.display = "block";
 	} else {
 		this.imageEl.style.display = "none";
+	}
+	this.url = url;
+	if (!initial) {
+		this.onUpdate(url);
 	}
 };
 

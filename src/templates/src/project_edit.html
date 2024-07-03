@@ -49,12 +49,24 @@
 			<div class="flex flex-column g3">
 				<div class="input-group">
 					<label>Project Title*</label>
-					<input required type="text" name="project_name" maxlength="255" class="textbox" value="{{ .ProjectSettings.Name }}">
+					<input
+						required
+						type="text"
+						id="project_name" name="project_name"
+						maxlength="255"
+						value="{{ .ProjectSettings.Name }}"
+						oninput="updateCardPreview()"
+					>
 				</div>
 
 				<div class="input-group">
 					<label>Short Description*</label>
-					<textarea id="description" required maxlength="140" name="shortdesc">
+					<textarea
+						required
+						id="description" name="shortdesc"
+						maxlength="140"
+						oninput="updateCardPreview()"
+					>
 						{{- .ProjectSettings.Blurb -}}
 					</textarea>
 					<div class="f6">Plaintext only. No links or markdown.</div>
@@ -215,6 +227,13 @@
 				<!-- need href and title -->
 				<a data-tmpl="root" class="ph2 flex"><!-- need icon --></a>
 			</template>
+			<template id="owner_preview">
+				<div class="flex g1 items-center b">
+					<img data-tmpl="avatar" class="avatar avatar-user avatar-small"><!-- need src -->
+					<span data-tmpl="name"><!-- need name --></span>
+				</div>
+			</template>
+
 			<div hidden>
 				{{ range .AllLogos }}
 					<span id="link-icon-{{ .Name }}">{{ .Svg }}</span>
@@ -226,17 +245,43 @@
 				We don't have a good story for sharing templates between Go and JS.
 			-->
 
-			<!-- Header image / links -->
-			<div id="header_img_preview" class="project-header-img"><!-- Needs background-image -->
-				<div class="flex justify-end pa3">
-					<div class="flex g3">
-						<div id="primary_links_preview" class="project-links hide-if-empty"></div>
-						<div id="secondary_links_preview" class="project-links ph1 hide-if-empty"></div>
+			<div class="flex flex-column items-center">
+				<!-- Header image / links -->
+				<div id="header_img_preview" class="project-header-img"><!-- Needs background-image -->
+					<div class="flex justify-end pa3">
+						<div class="flex g3">
+							<div id="primary_links_preview" class="project-links hide-if-empty"></div>
+							<div id="secondary_links_preview" class="project-links ph1 hide-if-empty"></div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Card -->
+				<div class="project-homepage-card">
+					<div id="logo_preview" class="flex-shrink-0 flex">
+						<img class="project-card-logo" alt="Project Logo">
+					</div>
+					<div class="details flex-grow-1">
+						<h3 id="name_preview" class="b mb2 f4"></h3>
+						<div id="blurb_preview" class="blurb"></div>
+						<div id="owners_preview_container">
+							<hr class="mv3">
+							<div id="owners_preview" class="flex flex-wrap g2">
+								<!-- TODO(redesign): Actually preview owners -->
+								<div class="flex g1 items-center b">
+									<div class="avatar avatar-user avatar-small"></div>
+									<span>Example User</span>
+								</div>
+							</div>
+						</div>
+						<!-- TODO(redesign): Preview badges -->
 					</div>
 				</div>
 			</div>
 
 			<!-- Long description preview -->
+			<h3 class="pt4 f4">About {{ .Project.Name }}</h3>
+			<hr class="mv3">
 			<div id="desc_preview" class="w-100 post-content"></div>
 		</div>
 	</div>
@@ -246,14 +291,6 @@
 	let csrf = JSON.parse({{ csrftokenjs .Session }});
 
 	let projectForm = document.querySelector("#project_form");
-
-	projectForm.addEventListener("invalid", function(ev) {
-		switchToTabOfElement(document.body, ev.target);
-	}, true);
-
-	function gotoTab(tabName) {
-		switchTab(document.body, tabName);
-	}
 
 	//////////
 	// Tags //
@@ -302,6 +339,7 @@
 	let ownersError = document.querySelector("#owners_error");
 	let ownerList = document.querySelector("#owner_list");
 	let ownerTemplate = makeTemplateCloner("owner_row");
+	let ownerPreviewTemplate = makeTemplateCloner("owner_preview");
 
 	addOwnerInput.addEventListener("keypress", function(ev) {
 		if (ev.which == 13) {
@@ -394,37 +432,51 @@
 		updateAddOwnerStyles();
 	});
 
-	/////////////////////
-	// Logo management //
-	/////////////////////
+	//////////////////////////////
+	// Logo / header management //
+	//////////////////////////////
 
 	const logoMaxFileSize = {{ .LogoMaxFileSize }};
+	const headerMaxFileSize = {{ .HeaderMaxFileSize }};
 
 	const logoSelector = new ImageSelector(
 		document.querySelector("#project_form"),
 		logoMaxFileSize,
-		document.querySelector(".light_logo")
+		document.querySelector(".light_logo"),
+		{
+			onUpdate() {
+				updateCardPreview();
+			},
+		},
 	);
 	function openLogoSelector(e) {
 		e.preventDefault();
 		logoSelector.openFileInput();
 	}
 
-	///////////////////////
-	// Header management //
-	///////////////////////
-
-	const headerMaxFileSize = {{ .HeaderMaxFileSize }};
-
 	const headerSelector = new ImageSelector(
 		document.querySelector("#project_form"),
 		headerMaxFileSize,
-		document.querySelector(".header_image")
+		document.querySelector(".header_image"),
+		{
+			onUpdate() {
+				updateCardPreview();
+			},
+		},
 	);
 	function openHeaderSelector(e) {
 		e.preventDefault();
 		headerSelector.openFileInput();
 	}
+
+	function updateCardPreview() {
+		document.querySelector("#logo_preview").hidden = !logoSelector.url;
+		document.querySelector("#logo_preview img").src = logoSelector.url;
+		document.querySelector("#header_img_preview").style.backgroundImage = `url(${headerSelector.url})`;
+		document.querySelector("#name_preview").innerText = document.querySelector("#project_name").value;
+		document.querySelector("#blurb_preview").innerText = document.querySelector("#description").value;
+	}
+	updateCardPreview();
 
 	//////////////////
 	// Asset upload //
