@@ -64,12 +64,25 @@ var WRJ2023 = Jam{
 
 var LJ2024 = Jam{
 	Event: Event{
-		StartTime: time.Date(2024, 3, 15, 17, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(2024, 3, 25, 0, 0, 0, 0, time.UTC),
+		StartTime: time.Date(2024, 8, 15, 17, 0, 0, 0, time.UTC),
+		EndTime:   time.Date(2024, 8, 25, 0, 0, 0, 0, time.UTC),
 	},
 	Name:    "Learning Jam 2024",
 	Slug:    "LJ2024",
 	UrlSlug: "learning-2024",
+}
+
+var VJ2024 = Jam{
+	// Trying looser times this year.
+	// Start: 6am Seattle / 8am Minneapolis / 1pm UTC / 2pm London / 4pm Jerusalem
+	// End: 10pm Seattle / 12am Minneapolis / 5am UTC / 6am London / 8am Jerusalem
+	Event: Event{
+		StartTime: time.Date(2024, 7, 19, 13, 0, 0, 0, time.UTC),
+		EndTime:   time.Date(2024, 7, 22, 5, 0, 0, 0, time.UTC),
+	},
+	Name:    "Visibility Jam 2024",
+	Slug:    "VJ2024",
+	UrlSlug: "visibility-2024",
 }
 
 // Conferences
@@ -98,7 +111,7 @@ var HMBoston2024 = Event{
 	EndTime:   time.Date(2024, 8, 10, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 }
 
-var AllJams = []Jam{WRJ2021, WRJ2022, VJ2023, WRJ2023, LJ2024}
+var AllJams = []Jam{WRJ2021, WRJ2022, VJ2023, WRJ2023, LJ2024, VJ2024}
 
 func CurrentJam() *Jam {
 	now := time.Now()

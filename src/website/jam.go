@@ -28,6 +28,7 @@ func JamsIndex(c *RequestContext) ResponseData {
 		VJ2023Url  string
 		WRJ2023Url string
 		LJ2024Url  string
+		VJ2024Url  string
 	}
 
 	res.MustWriteTemplate("jams_index.html", TemplateData{
@@ -39,6 +40,7 @@ func JamsIndex(c *RequestContext) ResponseData {
 		VJ2023Url:  hmnurl.BuildJamIndex2023_Visibility(),
 		WRJ2023Url: hmnurl.BuildJamIndex2023(),
 		LJ2024Url:  hmnurl.BuildJamIndex2024_Learning(),
+		VJ2024Url:  hmnurl.BuildJamIndex2024_Visibility(),
 	}, c.Perf)
 	return res
 }
@@ -74,6 +76,98 @@ func JamSaveTheDate(c *RequestContext) ResponseData {
 
 	res.MustWriteTemplate("jam_save_the_date.html", tmpl, c.Perf)
 	return res
+}
+
+type JamBaseDataVJ2024 struct {
+	DaysUntilStart, DaysUntilEnd int
+	StartTimeUnix, EndTimeUnix   int64
+	JamUrl                       string
+	JamFeedUrl                   string
+	NewProjectUrl                string
+	GuidelinesUrl                string
+	SubmittedProject             *templates.Project
+}
+
+func JamIndex2024_Visibility(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	jam := hmndata.VJ2024
+
+	jamBaseData, err := getVJ2024BaseData(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:title", Value: "Visibility Jam"},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2024/opengraph.png", true)},
+		{Property: "og:description", Value: "See things in a new way. July 19 - 21."},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex2024_Visibility()},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2024/TwitterCard.png", true)},
+	}
+	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+
+	type JamPageData struct {
+		templates.BaseData
+		JamBaseDataVJ2024
+
+		JamProjects []templates.Project
+	}
+
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		JamSlugs: []string{jam.Slug},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+	}
+
+	pageProjects := make([]templates.Project, 0, len(jamProjects))
+	for _, p := range jamProjects {
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
+	}
+
+	res.MustWriteTemplate("jam_2024_vj_index.html", JamPageData{
+		BaseData:          baseData,
+		JamBaseDataVJ2024: jamBaseData,
+		JamProjects:       pageProjects,
+	}, c.Perf)
+	return res
+}
+
+func getVJ2024BaseData(c *RequestContext) (JamBaseDataVJ2024, error) {
+	jam := hmndata.VJ2024
+
+	var submittedProject *templates.Project
+	if c.CurrentUser != nil {
+		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+			JamSlugs: []string{jam.Slug},
+			Limit:    1,
+		})
+		if err != nil {
+			return JamBaseDataVJ2024{}, oops.New(err, "failed to fetch jam projects for current user")
+		}
+		if len(projects) > 0 {
+			submittedProject = utils.P(templates.ProjectAndStuffToTemplate(&projects[0]))
+		}
+	}
+
+	return JamBaseDataVJ2024{
+		DaysUntilStart: daysUntil(jam.StartTime),
+		DaysUntilEnd:   daysUntil(jam.EndTime),
+		StartTimeUnix:  jam.StartTime.Unix(),
+		EndTimeUnix:    jam.EndTime.Unix(),
+
+		JamUrl: hmnurl.BuildJamIndex2024_Visibility(),
+		// JamFeedUrl:       hmnurl.BuildJamFeed2024_Visibility(),
+		NewProjectUrl: hmnurl.BuildProjectNewJam(),
+		// GuidelinesUrl:    hmnurl.BuildJamGuidelines2024_Visibility(),
+		SubmittedProject: submittedProject,
+	}, nil
 }
 
 func JamIndex2024_Learning(c *RequestContext) ResponseData {

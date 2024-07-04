@@ -118,3 +118,8 @@ func Assert[T comparable](value T, msg ...any) {
 		panic(finalMsg)
 	}
 }
+
+// Because sometimes you just want a pointer to the thing.
+func P[T any](value T) *T {
+	return &value
+}

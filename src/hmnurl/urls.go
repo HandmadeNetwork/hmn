@@ -119,6 +119,13 @@ func BuildJamGuidelines2024_Learning() string {
 	return Url("/jam/learning-2024/guidelines", nil)
 }
 
+var RegexJamIndex2024_Visibility = regexp.MustCompile("^/jam/visibility-2024$")
+
+func BuildJamIndex2024_Visibility() string {
+	defer CatchPanic()
+	return Url("/jam/visibility-2024", nil)
+}
+
 var RegexJamSaveTheDate = regexp.MustCompile("^/jam/upcoming$")
 
 func BuildJamSaveTheDate() string {

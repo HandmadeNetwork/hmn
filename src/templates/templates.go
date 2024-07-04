@@ -8,7 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
-	"path/filepath"
+	"path"
 	"regexp"
 	"sort"
 	"strings"
@@ -144,7 +144,7 @@ func GetImg(file string) []byte {
 		imgs = utils.DirFS("src/templates/img")
 	} else {
 		imgs = Imgs
-		file = filepath.Join("img/", file)
+		file = path.Join("img/", file)
 	}
 
 	img, err := imgs.Open(file)
@@ -161,7 +161,7 @@ func ListImgsDir(dir string) []fs.DirEntry {
 		imgs = utils.DirFS("src/templates/img").(fs.ReadDirFS)
 	} else {
 		imgs = Imgs
-		dir = filepath.Join("img/", dir)
+		dir = path.Join("img/", dir)
 	}
 
 	entries, err := imgs.ReadDir(dir)
