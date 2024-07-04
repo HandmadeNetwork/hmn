@@ -60,6 +60,17 @@ type Header struct {
 	AboutUrl        string
 
 	Project *ProjectHeader
+
+	BannerEvent     *BannerEvent
+	SuppressBanners bool
+}
+
+type BannerEvent struct {
+	Slug string
+	Url  string
+
+	DaysUntilStart, DaysUntilEnd int
+	StartTimeUnix, EndTimeUnix   int64
 }
 
 type ProjectHeader struct {

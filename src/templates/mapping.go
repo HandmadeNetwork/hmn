@@ -12,6 +12,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/links"
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 func PostToTemplate(p *models.Post, author *models.User) Post {
@@ -491,6 +492,17 @@ func CalendarEventToTemplate(ev *calendar.CalendarEvent) CalendarEvent {
 		StartTime: ev.StartTime.UTC(),
 		EndTime:   ev.EndTime.UTC(),
 		CalName:   ev.CalName,
+	}
+}
+
+func JamToBannerEvent(jam hmndata.Jam) BannerEvent {
+	return BannerEvent{
+		Slug:           jam.Slug,
+		DaysUntilStart: utils.DaysUntil(jam.StartTime),
+		DaysUntilEnd:   utils.DaysUntil(jam.EndTime),
+		StartTimeUnix:  jam.StartTime.Unix(),
+		EndTimeUnix:    jam.EndTime.Unix(),
+		Url:            hmnurl.BuildJamIndexAny(jam.UrlSlug),
 	}
 }
 

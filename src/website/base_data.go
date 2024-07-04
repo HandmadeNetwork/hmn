@@ -1,11 +1,15 @@
 package website
 
 import (
+	"time"
+
 	"git.handmade.network/hmn/hmn/src/buildscss"
 	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 func getBaseDataAutocrumb(c *RequestContext, title string) templates.BaseData {
@@ -40,6 +44,19 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 				Url:  projectUrl,
 			}
 			breadcrumbs = append([]templates.Breadcrumb{rootBreadcrumb}, breadcrumbs...)
+		}
+	}
+
+	var bannerEvent *templates.BannerEvent
+	for _, jam := range hmndata.AllJams {
+		graceBefore := (24 * time.Hour) * 30
+		graceAfter := (24 * time.Hour) * 14
+
+		afterStart := time.Now().After(jam.StartTime.Add(-graceBefore))
+		beforeEnd := time.Now().Before(jam.EndTime.Add(graceAfter))
+
+		if afterStart && beforeEnd {
+			bannerEvent = utils.P(templates.JamToBannerEvent(jam))
 		}
 	}
 
@@ -81,6 +98,8 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			CalendarUrl:     hmnurl.BuildCalendarIndex(),
 			ManifestoUrl:    hmnurl.BuildManifesto(),
 			AboutUrl:        hmnurl.BuildAbout(),
+
+			BannerEvent: bannerEvent,
 		},
 		Footer: templates.Footer{
 			HomepageUrl:                hmnurl.BuildHomepage(),

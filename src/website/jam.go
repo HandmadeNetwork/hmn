@@ -110,6 +110,7 @@ func JamIndex2024_Visibility(c *RequestContext) ResponseData {
 		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2024/TwitterCard.png", true)},
 	}
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.Header.SuppressBanners = true
 
 	type JamPageData struct {
 		templates.BaseData
@@ -157,8 +158,8 @@ func getVJ2024BaseData(c *RequestContext) (JamBaseDataVJ2024, error) {
 	}
 
 	return JamBaseDataVJ2024{
-		DaysUntilStart: daysUntil(jam.StartTime),
-		DaysUntilEnd:   daysUntil(jam.EndTime),
+		DaysUntilStart: utils.DaysUntil(jam.StartTime),
+		DaysUntilEnd:   utils.DaysUntil(jam.EndTime),
 		StartTimeUnix:  jam.StartTime.Unix(),
 		EndTimeUnix:    jam.EndTime.Unix(),
 
@@ -301,8 +302,8 @@ type JamFeedDataLJ2024 struct {
 }
 
 func getLJ2024BaseData(c *RequestContext) (JamBaseDataLJ2024, error) {
-	daysUntilStart := daysUntil(hmndata.LJ2024.StartTime)
-	daysUntilEnd := daysUntil(hmndata.LJ2024.EndTime)
+	daysUntilStart := utils.DaysUntil(hmndata.LJ2024.StartTime)
+	daysUntilEnd := utils.DaysUntil(hmndata.LJ2024.EndTime)
 
 	tmpl := JamBaseDataLJ2024{
 		UserAvatarUrl:  templates.UserAvatarDefaultUrl("dark"),
@@ -405,8 +406,8 @@ func getTwitchEmbedUrl(c *RequestContext) string {
 func JamIndex2023(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	daysUntilStart := daysUntil(hmndata.WRJ2023.StartTime)
-	daysUntilEnd := daysUntil(hmndata.WRJ2023.EndTime)
+	daysUntilStart := utils.DaysUntil(hmndata.WRJ2023.StartTime)
+	daysUntilEnd := utils.DaysUntil(hmndata.WRJ2023.EndTime)
 
 	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2023.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
@@ -561,8 +562,8 @@ func JamFeed2023(c *RequestContext) ResponseData {
 		TimelineItems []templates.TimelineItem
 	}
 
-	daysUntilStart := daysUntil(hmndata.WRJ2023.StartTime)
-	daysUntilEnd := daysUntil(hmndata.WRJ2023.EndTime)
+	daysUntilStart := utils.DaysUntil(hmndata.WRJ2023.StartTime)
+	daysUntilEnd := utils.DaysUntil(hmndata.WRJ2023.EndTime)
 
 	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2023.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
@@ -587,8 +588,8 @@ func JamFeed2023(c *RequestContext) ResponseData {
 func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	daysUntilStart := daysUntil(hmndata.VJ2023.StartTime)
-	daysUntilEnd := daysUntil(hmndata.VJ2023.EndTime)
+	daysUntilStart := utils.DaysUntil(hmndata.VJ2023.StartTime)
+	daysUntilEnd := utils.DaysUntil(hmndata.VJ2023.EndTime)
 
 	baseData := getBaseDataAutocrumb(c, hmndata.VJ2023.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
@@ -729,8 +730,8 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 		TimelineItems []templates.TimelineItem
 	}
 
-	daysUntilStart := daysUntil(hmndata.VJ2023.StartTime)
-	daysUntilEnd := daysUntil(hmndata.VJ2023.EndTime)
+	daysUntilStart := utils.DaysUntil(hmndata.VJ2023.StartTime)
+	daysUntilEnd := utils.DaysUntil(hmndata.VJ2023.EndTime)
 
 	baseData := getBaseDataAutocrumb(c, hmndata.VJ2023.Name)
 
@@ -804,8 +805,8 @@ func JamRecap2023_Visibility(c *RequestContext) ResponseData {
 func JamIndex2022(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	daysUntilStart := daysUntil(hmndata.WRJ2022.StartTime)
-	daysUntilEnd := daysUntil(hmndata.WRJ2022.EndTime)
+	daysUntilStart := utils.DaysUntil(hmndata.WRJ2022.StartTime)
+	daysUntilEnd := utils.DaysUntil(hmndata.WRJ2022.EndTime)
 
 	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2022.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
@@ -940,8 +941,8 @@ func JamFeed2022(c *RequestContext) ResponseData {
 		TimelineItems []templates.TimelineItem
 	}
 
-	daysUntilStart := daysUntil(hmndata.WRJ2022.StartTime)
-	daysUntilEnd := daysUntil(hmndata.WRJ2022.EndTime)
+	daysUntilStart := utils.DaysUntil(hmndata.WRJ2022.StartTime)
+	daysUntilEnd := utils.DaysUntil(hmndata.WRJ2022.EndTime)
 
 	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2022.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
@@ -966,7 +967,7 @@ func JamFeed2022(c *RequestContext) ResponseData {
 func JamIndex2021(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	daysUntilJam := daysUntil(hmndata.WRJ2021.StartTime)
+	daysUntilJam := utils.DaysUntil(hmndata.WRJ2021.StartTime)
 	if daysUntilJam < 0 {
 		daysUntilJam = 0
 	}
@@ -1021,12 +1022,4 @@ func JamIndex2021(c *RequestContext) ResponseData {
 		ShowcaseItemsJSON: showcaseJson,
 	}, c.Perf)
 	return res
-}
-
-func daysUntil(t time.Time) int {
-	d := t.Sub(time.Now())
-	if d < 0 {
-		d = 0
-	}
-	return int(utils.DurationRoundUp(d, 24*time.Hour) / (24 * time.Hour))
 }
