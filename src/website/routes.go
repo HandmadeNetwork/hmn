@@ -105,7 +105,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
 	hmnOnly.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
 	hmnOnly.GET(hmnurl.RegexConferences, Conferences)
-	hmnOnly.GET(hmnurl.RegexWhenIsIt, WhenIsIt)
 
 	hmnOnly.GET(hmnurl.RegexJamsIndex, JamsIndex)
 	hmnOnly.GET(hmnurl.RegexJamIndex, func(c *RequestContext) ResponseData {

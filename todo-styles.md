@@ -21,7 +21,7 @@
     - [x] theme-color-light is used only for buttons
 - [x] center-layout vs. margin-center
 - [x] Make sure old projects look ok (background images are gone)
-- [ ] Audit or delete whenisit
+- [x] Audit or delete whenisit
 - [ ] optionbar fixes
     - [ ] Remove "external" styles (width, padding, etc.)
     - [ ] Fix options (no more "buttons")

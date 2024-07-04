@@ -28,13 +28,6 @@ func (c *UrlContext) BuildHomepage() string {
 	return c.Url("/", nil)
 }
 
-var RegexWhenIsIt = regexp.MustCompile("^/whenisit$")
-
-func BuildWhenIsIt() string {
-	defer CatchPanic()
-	return Url("/whenisit", nil)
-}
-
 var RegexJamsIndex = regexp.MustCompile("^/jams$")
 
 func BuildJamsIndex() string {

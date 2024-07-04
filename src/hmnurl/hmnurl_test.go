@@ -40,10 +40,6 @@ func TestHomepage(t *testing.T) {
 	AssertSubdomain(t, hero.BuildHomepage(), "hero")
 }
 
-func TestWhenIsIt(t *testing.T) {
-	AssertRegexMatch(t, BuildWhenIsIt(), RegexWhenIsIt, nil)
-}
-
 func TestAtomFeed(t *testing.T) {
 	AssertRegexMatch(t, BuildAtomFeed(), RegexAtomFeed, nil)
 	AssertRegexMatch(t, BuildAtomFeedForProjects(), RegexAtomFeed, map[string]string{"feedtype": "projects"})
