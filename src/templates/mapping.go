@@ -184,11 +184,12 @@ func ThreadToTemplate(t *models.Thread) Thread {
 }
 
 func UserAvatarDefaultUrl(theme string) string {
+	// TODO(redesign): Get rid of theme here
 	return hmnurl.BuildTheme("empty-avatar.svg", theme, true)
 }
 
 func UserAvatarUrl(u *models.User) string {
-	avatar := ""
+	avatar := UserAvatarDefaultUrl("light")
 	if u != nil && u.AvatarAsset != nil {
 		avatar = hmnurl.BuildS3Asset(u.AvatarAsset.S3Key)
 	}

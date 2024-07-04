@@ -145,18 +145,24 @@
 						<div id="owners_error" class="f6"></div>
 						<div id="owner_list" class="pt3 flex flex-wrap g3">
 							<template id="owner_row">
-								<div class="owner_row flex flex-row items-center bg2 pa2" data-tmpl="root">
+								<div class="owner_row flex flex-row items-center g2 bg3 pa2" data-tmpl="root">
 									<input type="hidden" name="owners" data-tmpl="input" />
-									<span data-tmpl="name"></span>
-									<a class="remove_owner svgicon f7 link-normal pl2" href="javascript:;">{{ svg "close" }}</a>
+									<div class="flex g1 items-center b">
+										<img data-tmpl="avatar" class="avatar avatar-user avatar-small" src="" />
+										<span data-tmpl="name"></span>
+									</div>
+									<a class="remove_owner svgicon f7 link-normal" href="javascript:;">{{ svg "close" }}</a>
 								</div>
 							</template>
 							{{ range .ProjectSettings.Owners }}
-								<div class="owner_row flex flex-row items-center bg2 pa2">
+								<div class="owner_row flex flex-row items-center g2 bg3 pa2">
 									<input type="hidden" name="owners" value="{{ .Username }}" />
-									<span>{{ .Username }}</span>
+									<div class="flex g1 items-center b">
+										<img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}" />
+										<span title="{{ .Username }}">{{ .Name }}</span>
+									</div>
 									{{ if (or $.User.IsStaff (ne .ID $.User.ID)) }}
-										<a class="remove_owner svgicon f7 link-normal pl2" href="javascript:;">{{ svg "close" }}</a>
+										<a class="remove_owner svgicon f7 link-normal" href="javascript:;">{{ svg "close" }}</a>
 									{{ end }}
 								</div>
 							{{ end }}
@@ -267,11 +273,6 @@
 						<div id="owners_preview_container">
 							<hr class="mv3">
 							<div id="owners_preview" class="flex flex-wrap g2">
-								<!-- TODO(redesign): Actually preview owners -->
-								<div class="flex g1 items-center b">
-									<div class="avatar avatar-user avatar-small"></div>
-									<span>Example User</span>
-								</div>
 							</div>
 						</div>
 						<!-- TODO(redesign): Preview badges -->
@@ -340,6 +341,7 @@
 	let ownerList = document.querySelector("#owner_list");
 	let ownerTemplate = makeTemplateCloner("owner_row");
 	let ownerPreviewTemplate = makeTemplateCloner("owner_preview");
+	let ownersPreviewContainer = document.querySelector("#owners_preview");
 
 	addOwnerInput.addEventListener("keypress", function(ev) {
 		if (ev.which == 13) {
@@ -385,7 +387,7 @@
 			let result = xhr.response;
 			if (result) {
 				if (result.found) {
-					addOwner(result.canonical);
+					addOwner(result.username, result.name, result.avatarUrl);
 					addOwnerInput.value = "";
 				} else {
 					ownersError.textContent = "Username not found";
@@ -417,20 +419,40 @@
 		updateAddOwnerStyles();
 	}
 
-	function addOwner(username) {
+	function addOwner(username, bestName, avatarUrl) {
 		let ownerEl = ownerTemplate();
 		ownerEl.input.value = username;
-		ownerEl.name.textContent = username;
+		ownerEl.name.textContent = bestName;
+		ownerEl.title = username;
+		ownerEl.avatar.src = avatarUrl;
 		ownerList.appendChild(ownerEl.root);
 		updateAddOwnerStyles();
+		updateOwnersPreview();
 	}
 
 	ownerList.addEventListener("click", function(ev) {
-		if (ev.target.classList.contains("remove_owner")) {
-			ev.target.parentElement.remove();
+		if (ev.target.closest(".remove_owner")) {
+			ev.target.closest(".owner_row").remove();
 		}
 		updateAddOwnerStyles();
+		updateOwnersPreview();
 	});
+
+	function updateOwnersPreview() {
+		let ownerEls = ownerList.querySelectorAll(".owner_row");
+		ownersPreviewContainer.innerHTML = "";
+		for (let i = 0; i < ownerEls.length; ++i) {
+			let avatarUrl = ownerEls[i].querySelector("img").src;
+			let name = ownerEls[i].querySelector("span").textContent;
+			let previewEl = ownerPreviewTemplate();
+			previewEl.avatar.src = avatarUrl;
+			previewEl.name.textContent = name;
+			ownersPreviewContainer.appendChild(previewEl.root);
+		}
+		
+	}
+
+	updateOwnersPreview();
 
 	//////////////////////////////
 	// Logo / header management //
