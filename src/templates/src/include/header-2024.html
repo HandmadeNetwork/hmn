@@ -1,11 +1,11 @@
 <header id="site-header" class="flex flex-row items-stretch link-normal">
-	<a href="{{ .Header.HMNHomepageUrl }}" class="hmn-logo flex-shrink-0">
-		Handmade
-	</a>
-	<div class="flex-grow-1 flex-shrink-1"></div>
-	<div class="header-nav flex flex-row items-center lh-solid f6">
-		<a href="{{ .Header.ProjectIndexUrl }}">Projects</a>
-		<a href="{{ .Header.JamsUrl }}">Jams</a>
+    <a href="{{ .Header.HMNHomepageUrl }}" class="hmn-logo flex-shrink-0">
+        Handmade
+    </a>
+    <div class="flex-grow-1 flex-shrink-1"></div>
+    <div class="header-nav lh-solid f6 dn" id="header_nav">
+        <a href="{{ .Header.ProjectIndexUrl }}">Projects</a>
+        <a href="{{ .Header.JamsUrl }}">Jams</a>
         <div class="root-item">
             <a aria-expanded="false" aria-controls="events-submenu" class="menu-dropdown-js" href="#">
                 Events <div class="menu-chevron svgicon-lite">{{ svg "chevron-down" }}</div>
@@ -17,7 +17,7 @@
         </div>
         <div class="root-item">
             <a aria-expanded="false" aria-controls="resource-submenu" class="menu-dropdown-js" href="#">
-              Resources <div class="menu-chevron svgicon-lite">{{ svg "chevron-down" }}</div>
+                Resources <div class="menu-chevron svgicon-lite">{{ svg "chevron-down" }}</div>
             </a>
             <div class="submenu" id="resource-submenu">
                 <a href="{{ .Header.ForumsUrl }}">Forums</a>
@@ -29,7 +29,7 @@
                 <a href="https://guide.handmadehero.org/hmcon/">HandmadeCon</a>
             </div>
         </div>
-		<div class="root-item">
+        <div class="root-item">
             <a aria-expanded="false" aria-controls="about-submenu" class="menu-dropdown-js" href="#">
                 About <div class="menu-chevron svgicon-lite">{{ svg "chevron-down" }}</div>
             </a>
@@ -38,67 +38,84 @@
                 <a href="{{ .Header.AboutUrl }}">About the Team</a>
             </div>
         </div>
-	</div>
-    <div class="root-item f6">
-        <a class="db {{ if .User }}pv2 ph3{{ else }}pa3{{ end }} lh-solid flex f6 {{ if not .User }}bl{{ end }}" href="{{ or .Header.UserProfileUrl .LoginPageUrl }}">
+        <div class="root-item db dn-ns">
+            <a aria-expanded="false" aria-controls="profile-submenu" class="menu-dropdown-js" href="#">
+                User <div class="menu-chevron svgicon-lite">{{ svg "chevron-down" }}</div>
+            </a>
+            <div class="submenu" id="profile-submenu-mobile">
+                <a href="{{ .Header.UserProfileUrl }}">Profile</a>
+                <a href="{{ .Header.UserSettingsUrl }}">Settings</a>
+            </div>
+        </div>
+        <a class="db dn-ns" href="{{ .Header.LogoutUrl }}">Log Out</a>
+    </div>
+    <div class="root-item f6 {{ if not .User }}bl-ns{{ end }} flex items-stretch">
+        <a class="db pl3 pr2 pr3-ns lh-solid flex items-center" href="{{ or .Header.UserProfileUrl .LoginPageUrl }}">
             {{ with .User }}
-                <img class="avatar avatar-user" src="{{ .AvatarUrl }}">
+            <img class="avatar avatar-user" src="{{ .AvatarUrl }}">
             {{ else }}
-                Log In
+            Log In
             {{ end }}
         </a>
+        <a class="pl2 pr3 flex dn-ns items-center" href="#" id="mobile_menu">
+            {{ svg "menu" }}
+        </a>
         {{ if .User }}
+        <div class="dn db-ns">
             <div class="submenu right-0" id="profile-submenu">
                 <a href="{{ .Header.UserProfileUrl }}">Profile</a>
                 <a href="{{ .Header.UserSettingsUrl }}">Settings</a>
                 <a href="{{ .Header.LogoutUrl }}">Log Out</a>
             </div>
+        </div>
         {{ end }}
     </div>
 </header>
 {{ if and .Header.BannerEvent (not .Header.SuppressBanners) }}
-    {{ with .Header.BannerEvent }}
-        {{ if eq .Slug "VJ2024" }}
-            <a
-                class="db tc pv2 link-normal c-white"
-                style="background: linear-gradient(to bottom right, #20dddd, #007178)"
-                href="{{ .Url }}"
-            >
-                <b>Visibility Jam.</b>
-                July 19-21, 2024.
-                {{ if gt .DaysUntilEnd 0 }}
-                    {{ if eq .DaysUntilStart 0 }}
-                        <b>Happening now.</b>
-                    {{ else if eq .DaysUntilStart 1 }}
-                        <b>Starting tomorrow.</b>
-                    {{ else }}
-                        <b>In {{ .DaysUntilStart }} days.</b>
-                    {{ end }}
-                {{ else }}
-                    <b>See the results.</b>
-                {{ end }}
-            </a>
-        {{ end }}
-    {{ end }}
+{{ with .Header.BannerEvent }}
+{{ if eq .Slug "VJ2024" }}
+<a
+class="db tc pv2 link-normal c-white"
+style="background: linear-gradient(to bottom right, #20dddd, #007178)"
+href="{{ .Url }}"
+>
+<b>Visibility Jam.</b>
+July 19-21, 2024.
+{{ if gt .DaysUntilEnd 0 }}
+{{ if eq .DaysUntilStart 0 }}
+<b>Happening now.</b>
+{{ else if eq .DaysUntilStart 1 }}
+<b>Starting tomorrow.</b>
+{{ else }}
+<b>In {{ .DaysUntilStart }} days.</b>
+{{ end }}
+{{ else }}
+<b>See the results.</b>
+{{ end }}
+</a>
+{{ end }}
+{{ end }}
 {{ end }}
 
 <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function() {
-        const header = document.querySelector('#site-header');
-
+        const header = document.querySelector("#site-header");
+        const headerNav = document.querySelector("#header_nav");
+        const mobileMenuButton = document.querySelector("#mobile_menu");
+        
         // set up dropdown stuff for mobile / touch
         {
             const rootItems = header.querySelectorAll('.root-item');
-
+            
             function clearDropdowns() {
                 for (const item of rootItems) {
                     item.classList.remove('clicked');
                 }
             }
-
+            
             function clickDropdown(el) {
                 header.classList.add('clicked');
-
+                
                 if (el.classList.contains('clicked')) {
                     clearDropdowns();
                 } else {
@@ -106,7 +123,7 @@
                     el.classList.add('clicked');
                 }
             }
-
+            
             for (const item of rootItems) {
                 if (item.querySelector('.submenu')) {
                     item.addEventListener('click', e => {
@@ -116,27 +133,33 @@
                 }
             }
         }
-
+        
         // dropdown accessiblity 
         { 
-          const dropdowns = document.querySelectorAll('.menu-dropdown-js');
-          
-          for(let i = 0; i < dropdowns.length; i++) {
+            const dropdowns = document.querySelectorAll('.menu-dropdown-js');
+            
+            for(let i = 0; i < dropdowns.length; i++) {
                 let dropdown = dropdowns[i];
                 dropdown.addEventListener('click', e => {
-                e.preventDefault();
-                for(let j = 0; j < dropdowns.length; j++){
-                  let each = dropdowns[j];
-                  if(each != dropdown){
-                    each.setAttribute("aria-expanded", false);
-                  }
-                }
-                // getAttribute returns a string so we have to do it this way
-                var toSetTo = dropdown.getAttribute("aria-expanded") == "false" ? "true" : "false"; 
-                dropdown.setAttribute("aria-expanded", toSetTo);
-                console.log(dropdown);
-            }); 
-          }
+                    e.preventDefault();
+                    for(let j = 0; j < dropdowns.length; j++){
+                        let each = dropdowns[j];
+                        if(each != dropdown){
+                            each.setAttribute("aria-expanded", false);
+                        }
+                    }
+                    // getAttribute returns a string so we have to do it this way
+                    var toSetTo = dropdown.getAttribute("aria-expanded") == "false" ? "true" : "false"; 
+                    dropdown.setAttribute("aria-expanded", toSetTo);
+                    console.log(dropdown);
+                }); 
+            }
         }
+
+        mobileMenuButton.addEventListener("click", e => {
+            e.preventDefault();
+            e.stopPropagation();
+            headerNav.classList.toggle("dn");
+        });
     });
 </script>
