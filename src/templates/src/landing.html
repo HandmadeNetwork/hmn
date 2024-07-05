@@ -141,6 +141,14 @@
 
 		<!-- Feed -->
 		<div class="flex flex-column flex-grow-1 overflow-hidden">
+			{{ $latestNews := (index .NewsItems 0) }}
+			<div id="latest_news" class="mb2 bg3 link-normal" data-id="{{ $latestNews.ID }}" {{ if $latestNews.Unread }}data-unread{{ end }}>
+				<div class="flex justify-between">
+					<h2 class="pt3 ph3 f4">Latest News</h2>
+					<a class="pt3 ph3" href="#" onclick="closeLatestNews(event)">{{ svg "close" }}</a>
+				</div>
+				{{ template "timeline_item.html" $latestNews }}
+			</div>
 			<div id="landing-tabs">
 				<div class="bb mb2 flex f6">
 					{{ if .User }}
@@ -148,7 +156,7 @@
 					{{ end }}
 					<div data-tab-button="featured" class="tab-button ph3 pv1 pointer">Featured</div>
 					<div data-tab-button="recent" class="tab-button ph3 pv1 pointer">Recent</div>
-					<div data-tab-button="news" class="tab-button ph3 pv1 pointer">News</div>
+					<div data-tab-button="news" class="tab-button ph3 pv1 pointer">News {{ if $latestNews.Unread }}<span class="timeline-unread"></span>{{ end }}</div>
 				</div>
 				<div>
 					{{ if .User }}
@@ -206,6 +214,27 @@
 			selectTab(tab, { sendEvent: false });
 		}
 	});
+
+	// Latest news
+
+	const latestNews = document.querySelector("#latest_news");
+	const latestNewsPostID = latestNews.getAttribute("data-id");
+	const latestNewsClosedKey = "latest_news_closed";
+
+	function closeLatestNews(e) {
+		e.preventDefault();
+		localStorage.setItem(latestNewsClosedKey, latestNewsPostID);
+		hideLatestNewsIfClosedOrRead();
+	}
+
+	function hideLatestNewsIfClosedOrRead() {
+		const isUnread = latestNews.hasAttribute("data-unread");
+		const closedID = localStorage.getItem(latestNewsClosedKey);
+		if (!isUnread || closedID === latestNewsPostID) {
+			latestNews.hidden = true;
+		}
+	}
+	hideLatestNewsIfClosedOrRead();
 </script>
 
 {{ end }}

@@ -99,6 +99,7 @@ func Index(c *RequestContext) ResponseData {
 		item.Description = template.HTML(t.FirstPostCurrentVersion.TextParsed)
 		item.AllowTitleWrap = true
 		item.TruncateDescription = true
+		item.Unread = t.Unread
 		newsItems = append(newsItems, item)
 	}
 

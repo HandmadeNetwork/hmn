@@ -1,25 +1,64 @@
 {{ template "base-2024.html" . }}
 
 {{ define "content" }}
-<div class="flex justify-center pa3">
-	<div class="mw-site post-content flex flex-column g2">
-		<div>
-			<h1>{{ .Thread.Title }}</h1>
-			{{ with .MainPost }}
-				<div class="flex justify-between items-center mt2 mb3">
-					<div class="flex items-center">
-						<div class="avatar contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
-						<div class="flex flex-column ml2">
-							<div>
-								<a class="username" href="{{ .Author.ProfileUrl }}" target="_blank">{{ .Author.Name }}</a>
-							</div>
-							<div class="c--dim f7">{{ timehtml (absoluteshortdate .PostDate) .PostDate }}</div>
+<div class="m-center mw-site pv3 pv5-ns ph3 ph0-l flex flex-column g2">
+	<h1 class="tc-ns f3 f2-ns lh-title">{{ .Thread.Title }}</h1>
+	{{ with .MainPost }}
+		<div class="flex justify-center-ns items-center g2">
+			<img class="avatar avatar-user avatar-small" src="{{ .Author.AvatarUrl }}">
+			<span class="f6 f5-ns">
+				<a class="b link-normal" href="{{ .Author.ProfileUrl }}">{{ .Author.Name }}</a>
+				— {{ timehtml (absoluteshortdate .PostDate) .PostDate }}
+				{{ if and $.User (or (eq .Author.ID $.User.ID) $.User.IsStaff) }}
+				(<a href="{{ .EditUrl }}" title="Edit">Edit</a>, <a href="{{ .DeleteUrl }}" title="Delete">Delete</a>)
+				{{ end }}
+			</span>
+		</div>
+	{{ end }}
+</div>
+<div class="m-center mw-site-narrow ph3 ph0-l flex flex-column g2">
+	<div class="post-content overflow-x-auto {{ if .IsProjectPage }}mb3{{ end }}">
+		{{ .MainPost.Content }}
+	</div>
+
+	{{ if not .IsProjectPage }}
+		{{ template "newsletter_signup.html" . }}
+	{{ end }}
+</div>
+
+<hr class="m-center mw-site">
+
+<div class="pt4 m-center mw-site-narrow ph3 ph0-l flex flex-column g2">
+	<div class="flex justify-between">
+		<h3 class="f4">Comments</h3>
+		{{ if .Project.HasBlog }}
+			<a class="flex items-center g2" href="{{ not (not $.User) | ternary .ReplyLink .LoginLink }}">{{ svg "add" }}<span>Leave a Comment</span></a>
+		{{ end }}
+	</div>
+	<div class="flex flex-column g2">
+		{{ range .Comments }}
+			<div class="bg3 pa3 flex flex-column g3">
+				<div class="flex link-normal">
+					<img class="avatar avatar-user mr2" src="{{ .Author.AvatarUrl }}">
+					<div class="flex flex-column g1">
+						<div class="flex items-center g2">
+							<a class="b" href="{{ .Author.ProfileUrl }}">{{ .Author.Name }}</a>
+							{{ if .Author.IsStaff }}
+								<div class="badge staff"></div>
+							{{ end }}
 						</div>
-					</div>
-					<div class="di ph1">
-						{{ if .Author.IsStaff }}
-							<div class="badge staff"></div>
-						{{ end }}
+						<div class="f6">
+							{{ timehtml (absoluteshortdate .PostDate) .PostDate }}
+							{{- if .Editor -}}
+								.
+								Edited by <a class="name" href="{{ .Editor.ProfileUrl }}">{{ coalesce .Editor.Name .Editor.Username }}</a>
+								on {{ timehtml (absolutedate .EditDate) .EditDate }}
+								{{ with .EditReason }}
+									Reason: {{ . }}
+								{{ end }}
+								</span>
+							{{ end }}
+						</div>
 					</div>
 					<div class="flex-grow-1"></div>
 					<div>
@@ -35,97 +74,29 @@
 									{{ end }}
 									<a class="reply action button" href="{{ .ReplyUrl }}" title="Reply">&hookrightarrow;</a>&nbsp;
 								{{ end }}
+								<span class="postid">
+									<a name="{{ .ID }}" href="{{ .Url }}">#{{ .ID }}</a>
+								</span>
 							</div>
 						{{ end }}
 					</div>
 				</div>
-			{{ end }}
-
-			<!-- Main post -->
-			<div class="{{ if .IsProjectPage }}mb3{{ end }}">
 				<div class="post-content overflow-x-auto">
-					{{ .MainPost.Content }}
+					{{ .Content }}
 				</div>
 			</div>
-		</div>
-
-		{{ if not .IsProjectPage }}
-			{{ template "newsletter_signup.html" . }}
+		{{ else }}
+			<div class="bg3 tc pv4 f7">
+				No comments yet.
+			</div>
 		{{ end }}
-
-		<div class="bb ba1"></div>
-
-		{{ range .Comments }}
-			<div class="pa2 flex items-start background-even">
-				<div>
-					<div class="avatar contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
-				</div>
-				<div class="pl3 flex flex-column w-100">
-					<div class="flex justify-between">
-						<div>
-							<div>
-								<a class="username" href="{{ .Author.ProfileUrl }}" target="_blank">{{ .Author.Name }}</a>
-							</div>
-							<div class="c--dim f7">
-								{{ timehtml (relativedate .PostDate) .PostDate }}
-								{{ if .Editor }}
-									<span class="pl3">
-										Edited by
-										<a class="name" href="{{ .Editor.ProfileUrl }}" target="_blank">{{ coalesce .Editor.Name .Editor.Username }}</a>
-										on {{ timehtml (absolutedate .EditDate) .EditDate }}
-										{{ with .EditReason }}
-											Reason: {{ . }}
-										{{ end }}
-									</span>
-								{{ end }}
-							</div>
-						</div>
-						<div class="di ph1">
-							{{ if .Author.IsStaff }}
-								<div class="badge staff"></div>
-							{{ end }}
-						</div>
-						<div class="flex-grow-1"></div>
-						<div>
-							{{ if and $.User $.Project.HasBlog }}
-								<div class="flex">
-									{{ if or (eq .Author.ID $.User.ID) $.User.IsStaff }}
-										<a class="delete action button" href="{{ .DeleteUrl }}" title="Delete">&#10006;</a>&nbsp;
-										<a class="edit action button" href="{{ .EditUrl }}" title="Edit">&#9998;</a>&nbsp;
-									{{ end }}
-									{{ if or (not $.Thread.Locked) $.User.IsStaff }}
-										{{ if $.Thread.Locked }}
-											WARNING: locked thread - use power responsibly!
-										{{ end }}
-										<a class="reply action button" href="{{ .ReplyUrl }}" title="Reply">&hookrightarrow;</a>&nbsp;
-									{{ end }}
-									<span class="postid">
-										<a name="{{ .ID }}" href="{{ .Url }}">#{{ .ID }}</a>
-									</span>
-								</div>
-							{{ end }}
-						</div>
-					</div>
-					<div class="w-100 pt3">
-						<div class="post-content overflow-x-auto">
-							{{ .Content }}
-						</div>
-					</div>
-				</div>
-			</div>    
-		{{ end }}
-
-		<div class="bb ba1"></div>
-
-		<div>
-			{{ if .Project.HasBlog }}
-				{{ if $.User }}
-					<a href="{{ .ReplyLink }}"><span class="big pr1">+</span> Add Comment</a>
-				{{ else }}
-					<a href="{{ .LoginLink }}">Log in to comment</a>
-				{{ end }}
-			{{ end }}
-		</div>
 	</div>
+	{{ if .Project.HasBlog }}
+		{{ if gt (len .Comments) 0 }}
+			<div class="flex justify-end">
+				<a class="flex items-center g2" href="{{ not (not $.User) | ternary .ReplyLink .LoginLink }}">{{ svg "add" }}<span>Leave a Comment</span></a>
+			</div>
+		{{ end }}
+	{{ end }}
 </div>
 {{ end }}

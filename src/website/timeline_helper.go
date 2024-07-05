@@ -167,6 +167,7 @@ func PostToTimelineItem(
 	ownerTmpl := templates.UserToTemplate(owner)
 
 	item := templates.TimelineItem{
+		ID:          strconv.Itoa(post.ID),
 		Date:        post.PostDate,
 		Title:       thread.Title,
 		Breadcrumbs: GenericThreadBreadcrumbs(urlContext, lineageBuilder, thread),

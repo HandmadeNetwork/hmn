@@ -354,6 +354,8 @@ type TimelineItem struct {
 
 	Media []TimelineItemMedia
 
+	Unread bool
+
 	ForumLayout         bool
 	AllowTitleWrap      bool
 	TruncateDescription bool
