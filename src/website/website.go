@@ -12,7 +12,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/auth"
-	"git.handmade.network/hmn/hmn/src/buildscss"
+	"git.handmade.network/hmn/hmn/src/buildcss"
 	"git.handmade.network/hmn/hmn/src/calendar"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
@@ -55,7 +55,7 @@ var WebsiteCommand = &cobra.Command{
 			hmns3.StartServer(backgroundJobContext),
 			assets.BackgroundPreviewGeneration(backgroundJobContext, conn),
 			calendar.MonitorCalendars(backgroundJobContext),
-			buildscss.RunServer(backgroundJobContext),
+			buildcss.RunServer(backgroundJobContext),
 		)
 
 		signals := make(chan os.Signal, 1)

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"git.handmade.network/hmn/hmn/src/buildscss"
+	"git.handmade.network/hmn/hmn/src/buildcss"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/hmndata"
@@ -44,12 +44,12 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	)
 
 	routes.GET(hmnurl.RegexEsBuild, func(c *RequestContext) ResponseData {
-		if buildscss.ActiveServerPort != 0 {
+		if buildcss.ActiveServerPort != 0 {
 			var res ResponseData
 			proxy := httputil.ReverseProxy{
 				Director: func(r *http.Request) {
 					r.URL.Scheme = "http"
-					r.URL.Host = fmt.Sprintf("localhost:%d", buildscss.ActiveServerPort)
+					r.URL.Host = fmt.Sprintf("localhost:%d", buildcss.ActiveServerPort)
 					r.Host = "localhost"
 				},
 			}
@@ -63,12 +63,12 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 
 	routes.GET(hmnurl.RegexPublic, func(c *RequestContext) ResponseData {
 		var res ResponseData
-		if buildscss.ActiveServerPort != 0 {
+		if buildcss.ActiveServerPort != 0 {
 			if strings.HasSuffix(c.Req.URL.Path, ".css") {
 				proxy := httputil.ReverseProxy{
 					Director: func(r *http.Request) {
 						r.URL.Scheme = "http"
-						r.URL.Host = fmt.Sprintf("localhost:%d", buildscss.ActiveServerPort)
+						r.URL.Host = fmt.Sprintf("localhost:%d", buildcss.ActiveServerPort)
 						r.Host = "localhost"
 					},
 					ModifyResponse: func(res *http.Response) error {

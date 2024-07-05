@@ -269,7 +269,7 @@ type PodcastEpisode struct {
 	Duration        int
 }
 
-// NOTE(asaf): See /src/rawdata/scss/_notices.scss for a list of classes.
+// NOTE(asaf): See /src/rawdata/css/notices.css for a list of classes.
 type Notice struct {
 	Content template.HTML
 	Class   string

@@ -1,4 +1,4 @@
-package buildscss
+package buildcss
 
 import (
 	"context"
@@ -48,9 +48,9 @@ func RunServer(ctx context.Context) jobs.Job {
 func BuildContext() (api.BuildContext, *api.ContextError) {
 	return api.Context(api.BuildOptions{
 		EntryPoints: []string{
-			"src/rawdata/scss/style.css",
+			"src/rawdata/css/style.css",
 		},
-		Outbase:  "src/rawdata/scss",
+		Outbase:  "src/rawdata/css",
 		Outdir:   "public",
 		External: []string{"/public/*"},
 		Bundle:   true,

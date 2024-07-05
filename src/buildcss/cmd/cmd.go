@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"git.handmade.network/hmn/hmn/src/buildscss"
+	"git.handmade.network/hmn/hmn/src/buildcss"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/spf13/cobra"
@@ -12,10 +12,10 @@ import (
 
 func init() {
 	buildCommand := &cobra.Command{
-		Use:   "buildscss",
+		Use:   "buildcss",
 		Short: "Build the website CSS",
 		Run: func(cmd *cobra.Command, args []string) {
-			ctx, err := buildscss.BuildContext()
+			ctx, err := buildcss.BuildContext()
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)

@@ -65,7 +65,7 @@
 - [ ] Audit all project lifecycles on HMN - probably remove "complete", replace with stuff like "alpha", "beta", maybe other stuff that makes sense for other types of projects.
     - [ ] Afterward, re-enable badges
 - [x] Add logout / settings menu on avatar
-- [ ] Delete all the scss :D
+- [x] Delete all the scss :D
 
 stack!
 
