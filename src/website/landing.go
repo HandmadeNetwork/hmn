@@ -33,7 +33,7 @@ func Index(c *RequestContext) ResponseData {
 
 		ManifestoUrl   string
 		AboutUrl       string
-		PodcastUrl     string
+		GuidelinesUrl  string
 		AtomFeedUrl    string
 		MarkAllReadUrl string
 		NewProjectUrl  string
@@ -144,7 +144,7 @@ func Index(c *RequestContext) ResponseData {
 
 		ManifestoUrl:   hmnurl.BuildManifesto(),
 		AboutUrl:       hmnurl.BuildAbout(),
-		PodcastUrl:     hmnurl.BuildPodcast(),
+		GuidelinesUrl:  hmnurl.BuildCommunicationGuidelines(),
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
 		MarkAllReadUrl: hmnurl.HMNProjectContext.BuildForumMarkRead(0),
 		NewProjectUrl:  hmnurl.BuildProjectNew(),
