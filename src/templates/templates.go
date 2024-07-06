@@ -190,6 +190,9 @@ var HMNTemplateFuncs = template.FuncMap{
 	"absoluteshortdate": func(t time.Time) string {
 		return t.UTC().Format("January 2, 2006")
 	},
+	"absoluteshortdateabbrv": func(t time.Time) string {
+		return t.UTC().Format("Jan 2, 2006")
+	},
 	"rfc3339": func(t time.Time) string {
 		return t.UTC().Format(time.RFC3339)
 	},
