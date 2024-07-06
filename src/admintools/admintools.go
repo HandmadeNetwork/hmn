@@ -620,5 +620,20 @@ func init() {
 	}
 	adminCommand.AddCommand(uploadAsset)
 
+	adminCommand.AddCommand(&cobra.Command{
+		Use:   "newsletteremails",
+		Short: "Print a list of all newsletter email receipients",
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx := context.Background()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
+
+			recipients := utils.Must1(db.Query[models.NewsletterEmail](ctx, conn, `SELECT $columns FROM newsletter_emails`))
+			for _, r := range recipients {
+				fmt.Println(r.Email)
+			}
+		},
+	})
+
 	addProjectCommands(adminCommand)
 }
