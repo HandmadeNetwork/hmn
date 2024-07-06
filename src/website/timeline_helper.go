@@ -20,7 +20,12 @@ import (
 	"git.handmade.network/hmn/hmn/src/templates"
 )
 
-func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User, lineageBuilder *models.SubforumLineageBuilder) ([]templates.TimelineItem, error) {
+type FollowTimelineQuery struct {
+	Offset int
+	Limit  int
+}
+
+func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User, lineageBuilder *models.SubforumLineageBuilder, q FollowTimelineQuery) ([]templates.TimelineItem, error) {
 	perf := perf.ExtractPerf(ctx)
 
 	perf.StartBlock("FOLLOW", "Assemble follow data")
@@ -50,6 +55,8 @@ func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *mod
 		timelineItems, err = FetchTimeline(ctx, conn, user, lineageBuilder, hmndata.TimelineQuery{
 			OwnerIDs:   userIDs,
 			ProjectIDs: projectIDs,
+			Offset:     q.Offset,
+			Limit:      q.Limit,
 		})
 	}
 	perf.EndBlock()

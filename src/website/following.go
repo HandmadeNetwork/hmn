@@ -16,7 +16,12 @@ func FollowingTest(c *RequestContext) ResponseData {
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
 	c.Perf.EndBlock()
 
-	timelineItems, err := FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser, lineageBuilder)
+	timelineItems, err := FetchFollowTimelineForUser(
+		c, c.Conn,
+		c.CurrentUser,
+		lineageBuilder,
+		FollowTimelineQuery{},
+	)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}

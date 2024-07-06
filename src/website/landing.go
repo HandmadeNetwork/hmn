@@ -52,7 +52,14 @@ func Index(c *RequestContext) ResponseData {
 	var newsItems []templates.TimelineItem
 
 	if c.CurrentUser != nil {
-		followingItems, err = FetchFollowTimelineForUser(c, c.Conn, c.CurrentUser, lineageBuilder)
+		followingItems, err = FetchFollowTimelineForUser(
+			c, c.Conn,
+			c.CurrentUser,
+			lineageBuilder,
+			FollowTimelineQuery{
+				Limit: 100,
+			},
+		)
 		if err != nil {
 			c.Logger.Warn().Err(err).Msg("failed to fetch following feed")
 		}
