@@ -1,4 +1,4 @@
-{{ template "base.html" . }}
+{{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
 <style>
@@ -9,86 +9,89 @@
 {{ end }}
 
 {{ define "content" }}
-<div>
-	{{ range .UnapprovedUsers }}
-		<div class="flex flex-row bg3 mb3 pa2">
-			<div class="
-				sidebar flex-shrink-0 
-				flex flex-column items-stretch-l
-				overflow-hidden
-			" style="width: 200px;">
-				<a class="db" href="{{ .User.ProfileUrl }}">{{ .User.Username }}</a>
-				<div>{{ .User.Name }}</div>
-				<div class="w-100 flex-shrink-0 flex justify-center">
-					<img class="br3" alt="{{ .User.Name }}'s Avatar" src="{{ .User.AvatarUrl }}">
-				</div>
-				<div class="mt3 mt0-ns mt3-l ml3-ns ml0-l flex flex-column items-start overflow-hidden">
-					{{ with or .User.Bio .User.Blurb }}
-						<div class="mb3">{{ . }}</div>
-					{{ end }}
-					<div class="w-100 w-auto-ns w-100-l">
-						{{ if .User.Email }}
-							<div class="pair flex">
-								<div class="key flex-auto flex-shrink-0 mr2">Email</div>
-								<div class="value projectlink truncate">{{ .User.Email }}</div>
-							</div>
-						{{ end }}
-						{{ range .UserLinks }}
-							<div class="pair flex">
-								<div class="key flex-auto flex-shrink-0 mr2">{{ .Name }}</div>
-								<div class="value projectlink truncate"><a class="external" href="{{ .Url }}" ><span class="icon-{{ .Icon }}"></span> {{ .LinkText }}</a></div>
-							</div>
-						{{ end }}
-
-						<div>{{ absoluteshortdate .User.DateJoined }}</div>
+<div class="w-100 flex flex-column items-center pa3">
+	<div class="mw-site">
+		{{ range .UnapprovedUsers }}
+			<div class="flex flex-row bg3 mb3 pa2">
+				<div class="
+					sidebar flex-shrink-0 
+					flex flex-column items-stretch-l
+					g2
+					overflow-hidden
+				" style="width: 200px;">
+					<a class="db" href="{{ .User.ProfileUrl }}">{{ .User.Username }}</a>
+					<div>{{ .User.Name }}</div>
+					<div class="w-100 flex-shrink-0 flex justify-center">
+						<img class="br3" alt="{{ .User.Name }}'s Avatar" src="{{ .User.AvatarUrl }}">
 					</div>
-				</div>
-				<div>
-					<form method="POST" class="mb2" action="{{ $.SubmitUrl }}">
-						{{ csrftoken $.Session }}
-						<input type="hidden" name="action" value="{{ $.ApprovalAction }}" />
-						<input type="hidden" name="user_id" value="{{ .User.ID }}" />
-						<input type="submit" class="w-100" value="Approve User" />
-					</form>
-					<form method="POST" action="{{ $.SubmitUrl }}">
-						{{ csrftoken $.Session }}
-						<input type="hidden" name="action" value="{{ $.SpammerAction }}" />
-						<input type="hidden" name="user_id" value="{{ .User.ID }}" />
-						<input type="submit" class="w-100" value="Mark as spammer" />
-					</form>
-				</div>
-			</div>
-			<div class="flex-grow-1 flex flex-column ml3">
-				{{ range .ProjectsWithLinks }}
-					<div class="project-card flex br2 overflow-hidden items-center relative mv3 w-100">
-						{{ with .Project.Logo }}
-							<div class="image-container flex-shrink-0">
-								<div class="image bg-center cover" style="background-image:url({{ . }})"></div>
-							</div>
+					<div class="mt3 mt0-ns mt3-l ml3-ns ml0-l flex flex-column items-start overflow-hidden">
+						{{ with or .User.Bio .User.Blurb }}
+							<div class="mb3">{{ . }}</div>
 						{{ end }}
-						<div class="details pa3 flex-grow-1">
-							<h3 class="mb1"><a href="{{ .Project.Url }}">{{ .Project.Name }}</a></h3>
-							<div class="blurb">{{ .Project.Blurb }}</div>
-							<div class="badges mt2">
-								{{ if .Project.LifecycleString }}
-									<span class="badge {{ .Project.LifecycleBadgeClass }}">{{ .Project.LifecycleString }}</span>
-								{{ end }}
-							</div>
-							{{ range .Links }}
+						<div class="w-100 w-auto-ns w-100-l">
+							{{ if .User.Email }}
 								<div class="pair flex">
-									<div class="key flex-auto flex-shrink-0 mr2">{{ .Name }}</div>
-									<div class="value projectlink truncate"><a class="external" href="{{ .Url }}" ><span class="icon-{{ .Icon }}"></span> {{ .LinkText }}</a></div>
+									<div class="key flex-auto flex-shrink-0 mr2">Email</div>
+									<div class="value projectlink truncate">{{ .User.Email }}</div>
 								</div>
 							{{ end }}
+							{{ range .UserLinks }}
+								<div class="pair flex">
+									<div class="key flex-auto flex-shrink-0 mr2">{{ .Name }}</div>
+									<div class="value projectlink truncate"><a class="external" href="{{ .Url }}" ><span class="icon-{{ .Icon }}"></span> {{ .ServiceName }}</a></div>
+								</div>
+							{{ end }}
+
+							<div>{{ absoluteshortdate .User.DateJoined }}</div>
 						</div>
 					</div>
-				{{ end }}
-				{{ range .Timeline }}
-					{{ template "timeline_item.html" . }}
-				{{ end }}
+					<div class="flex flex-column g3">
+						<form class="hmn-form" method="POST" class="mb2" action="{{ $.SubmitUrl }}">
+							{{ csrftoken $.Session }}
+							<input type="hidden" name="action" value="{{ $.ApprovalAction }}" />
+							<input type="hidden" name="user_id" value="{{ .User.ID }}" />
+							<input type="submit" class="w-100 btn-primary" value="Approve User" />
+						</form>
+						<form class="hmn-form" method="POST" action="{{ $.SubmitUrl }}">
+							{{ csrftoken $.Session }}
+							<input type="hidden" name="action" value="{{ $.SpammerAction }}" />
+							<input type="hidden" name="user_id" value="{{ .User.ID }}" />
+							<input type="submit" class="w-100 btn-primary" value="Mark as spammer" />
+						</form>
+					</div>
+				</div>
+				<div class="flex-grow-1 flex flex-column ml3 g2">
+					{{ range .ProjectsWithLinks }}
+						<div class="project-card flex br2 overflow-hidden items-center relative mv3 w-100">
+							{{ with .Project.Logo }}
+								<div class="image-container flex-shrink-0">
+									<div class="image bg-center cover" style="background-image:url({{ . }})"></div>
+								</div>
+							{{ end }}
+							<div class="details pa3 flex-grow-1">
+								<h3 class="mb1"><a href="{{ .Project.Url }}">{{ .Project.Name }}</a></h3>
+								<div class="blurb">{{ .Project.Blurb }}</div>
+								<div class="badges mt2">
+									{{ if .Project.LifecycleString }}
+										<span class="badge {{ .Project.LifecycleBadgeClass }}">{{ .Project.LifecycleString }}</span>
+									{{ end }}
+								</div>
+								{{ range .Links }}
+									<div class="pair flex">
+										<div class="key flex-auto flex-shrink-0 mr2">{{ .Name }}</div>
+										<div class="value projectlink truncate"><a class="external" href="{{ .Url }}" ><span class="icon-{{ .Icon }}"></span> {{ .LinkText }}</a></div>
+									</div>
+								{{ end }}
+							</div>
+						</div>
+					{{ end }}
+					{{ range .Timeline }}
+						{{ template "timeline_item.html" . }}
+					{{ end }}
+				</div>
 			</div>
-		</div>
-	{{ end }}
+		{{ end }}
+	</div>
 </div>
 {{ end }}
 
