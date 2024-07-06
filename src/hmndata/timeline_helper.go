@@ -232,13 +232,18 @@ func FetchTimeline(
 		}
 	}
 
+	projectsSeen := make(map[int]bool)
 	var projectIds []int
 	var snippetIds []int
 	projectTargets := make(map[int][]*TimelineItemAndStuff)
 	snippetItems := make(map[int]*TimelineItemAndStuff)
 	for _, r := range results {
 		if r.Item.ProjectID != 0 {
-			projectIds = append(projectIds, r.Item.ProjectID)
+			if _, found := projectsSeen[r.Item.ProjectID]; !found {
+				projectIds = append(projectIds, r.Item.ProjectID)
+				projectsSeen[r.Item.ProjectID] = true
+			}
+
 			projectTargets[r.Item.ProjectID] = append(projectTargets[r.Item.ProjectID], r)
 		}
 		if r.Item.Type == models.TimelineItemTypeSnippet {
@@ -264,7 +269,10 @@ func FetchTimeline(
 	}
 
 	for _, sp := range snippetProjects {
-		projectIds = append(projectIds, sp.ProjectID)
+		if _, found := projectsSeen[sp.ProjectID]; !found {
+			projectIds = append(projectIds, sp.ProjectID)
+			projectsSeen[sp.ProjectID] = true
+		}
 		projectTargets[sp.ProjectID] = append(projectTargets[sp.ProjectID], snippetItems[sp.SnippetID])
 	}
 
