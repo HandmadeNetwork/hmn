@@ -57,7 +57,7 @@ func Index(c *RequestContext) ResponseData {
 			c.CurrentUser,
 			lineageBuilder,
 			FollowTimelineQuery{
-				Limit: 100,
+				Limit: maxPostsPerTab,
 			},
 		)
 		if err != nil {
