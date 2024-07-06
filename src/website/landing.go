@@ -90,6 +90,8 @@ func Index(c *RequestContext) ResponseData {
 		ProjectIDs: featuredProjectIDs,
 		OwnerIDs:   featuredUserIDs,
 		Limit:      maxPostsPerTab,
+
+		SkipPosts: true,
 	})
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to fetch featured feed")
