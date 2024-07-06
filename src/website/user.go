@@ -500,15 +500,19 @@ func UserProfileAdminSetOptions(c *RequestContext) ResponseData {
 		return c.RejectRequest("the education role is bad and you should feel bad")
 	}
 
+	featuredFlag := c.Req.Form.Get("featured")
+	featured := featuredFlag != ""
+
 	_, err = c.Conn.Exec(c,
 		`
 		UPDATE hmn_user
-		SET status = $2, education_role = $3
+		SET status = $2, education_role = $3, featured = $4
 		WHERE id = $1
 		`,
 		userId,
 		desiredStatus,
 		desiredEduRole,
+		featured,
 	)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user admin settings"))

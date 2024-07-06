@@ -217,6 +217,7 @@ func UserToTemplate(u *models.User) User {
 		Email:    email,
 		IsStaff:  u.IsStaff,
 		Status:   int(u.Status),
+		Featured: u.Featured,
 
 		Name:       u.BestName(),
 		Bio:        u.Bio,

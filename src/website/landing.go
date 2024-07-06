@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -65,18 +66,29 @@ func Index(c *RequestContext) ResponseData {
 		}
 	}
 
-	featuredProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		FeaturedOnly: true,
-	})
+	featuredProjectIDs, err := db.QueryScalar[int](c, c.Conn,
+		`
+		SELECT id
+		FROM project
+		WHERE featured = true
+		`,
+	)
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to fetch featured projects")
 	}
-	var featuredProjectIDs []int
-	for _, p := range featuredProjects {
-		featuredProjectIDs = append(featuredProjectIDs, p.Project.ID)
+	featuredUserIDs, err := db.QueryScalar[int](c, c.Conn,
+		`
+		SELECT id
+		FROM hmn_user
+		WHERE featured = true
+		`,
+	)
+	if err != nil {
+		c.Logger.Warn().Err(err).Msg("failed to fetch featured users")
 	}
 	featuredItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
 		ProjectIDs: featuredProjectIDs,
+		OwnerIDs:   featuredUserIDs,
 		Limit:      maxPostsPerTab,
 	})
 	if err != nil {

@@ -31,6 +31,7 @@ type User struct {
 	IsStaff       bool       `db:"is_staff"`
 	Status        UserStatus `db:"status"`
 	EducationRole EduRole    `db:"education_role"`
+	Featured      bool       `db:"featured"`
 
 	Name          string     `db:"name"`
 	Bio           string     `db:"bio"`
