@@ -10,58 +10,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/perf"
 )
 
-/*
-WITH snippet_item AS (
-	SELECT id,
-    "when",
-    'snippet' AS timeline_type,
-    owner_id,
-    '' AS title,
-    _description_html AS parsed_desc,
-    description AS raw_desc,
-    asset_id,
-    discord_message_id,
-    url,
-    0 AS project_id,
-    0 AS thread_id,
-    0 AS subforum_id,
-    0 AS thread_type,
-    false AS stream_ended,
-    NOW() AS stream_end_time,
-    '' AS twitch_login,
-    '' AS stream_id
-	FROM snippet
-),
-post_item AS (
-	SELECT post.id,
-    postdate AS "when",
-    'post' AS timeline_type,
-    author_id AS owner_id,
-    thread.title AS title,
-    post_version.text_parsed AS parsed_desc,
-    post_version.text_raw AS raw_desc,
-    NULL::uuid AS asset_id,
-    NULL AS discord_message_id,
-    NULL AS url,
-    post.project_id,
-    thread_id,
-    subforum_id,
-    0 AS thread_type,
-    false AS stream_ended,
-    NOW() AS stream_end_time,
-    '' AS twitch_login,
-    '' AS stream_id
-	FROM post
-	JOIN thread ON thread.id = post.thread_id
-	JOIN post_version ON post_version.id = post.current_id
-	WHERE post.deleted = false AND thread.deleted = false
-)
-SELECT * from snippet_item
-UNION ALL
-SELECT * from post_item
-ORDER BY "when" DESC LIMIT 100;
-*/
-
 type TimelineQuery struct {
 	OwnerIDs   []int
 	ProjectIDs []int
@@ -94,6 +42,16 @@ func FetchTimeline(
 	defer perf.EndBlock()
 
 	var qb db.QueryBuilder
+
+	currentUserId := -1
+	if currentUser != nil {
+		currentUserId = currentUser.ID
+	}
+
+	currentUserIsAdmin := false
+	if currentUser != nil {
+		currentUserIsAdmin = currentUser.IsStaff
+	}
 
 	itemSelects := []string{}
 	if !q.SkipSnippets {
@@ -180,8 +138,22 @@ func FetchTimeline(
 			FROM post
 			JOIN thread ON thread.id = thread_id
 			JOIN post_version ON post_version.id = current_id
-			WHERE post.deleted = false AND thread.deleted = false
+			JOIN project ON project.id = post.project_id
+			WHERE
+				post.deleted = false AND thread.deleted = false
+				AND $? = true OR project.id = $? OR (
+					project.lifecycle = ANY($?) AND NOT project.hidden
+					AND (SELECT bool_or(user_project.user_id = $?) OR bool_and(hmn_user.status = $?)
+					FROM user_project
+					JOIN hmn_user ON hmn_user.id = user_project.user_id
+					WHERE user_project.project_id = project.id) = true
+				)
 		`,
+		currentUserIsAdmin,
+		models.HMNProjectID,
+		models.VisibleProjectLifecycles,
+		currentUserId,
+		models.UserStatusApproved,
 	)
 	if len(q.OwnerIDs)+len(q.ProjectIDs) > 0 {
 		qb.Add(`AND (`)

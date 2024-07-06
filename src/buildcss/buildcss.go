@@ -28,7 +28,9 @@ func RunServer(ctx context.Context) jobs.Job {
 		Port:     config.Config.EsBuild.Port,
 		Servedir: "./",
 		OnRequest: func(args api.ServeOnRequestArgs) {
-			logger.Info().Interface("args", args).Msg("Response from esbuild server")
+			if args.Status != 200 {
+				logger.Warn().Interface("args", args).Msg("Response from esbuild server")
+			}
 		},
 	})
 	if err != nil {
