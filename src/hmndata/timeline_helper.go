@@ -69,7 +69,32 @@ func FetchTimeline(
 
 	qb.Add(
 		`
-		WITH snippet_item AS (
+		WITH visible_project AS (
+			SELECT *
+			FROM project
+			WHERE
+				$? = true
+				OR project.id = $?
+				OR (SELECT count(*) > 0 FROM user_project WHERE project_id = project.id AND user_id = $?)
+				OR (
+					project.lifecycle = ANY($?)
+					AND NOT project.hidden
+					AND (SELECT every(hmn_user.status = $?)
+						 FROM user_project
+						 JOIN hmn_user ON hmn_user.id = user_project.user_id
+						 WHERE user_project.project_id = project.id
+					)
+				)
+		),`,
+		currentUserIsAdmin,
+		models.HMNProjectID,
+		currentUserId,
+		models.VisibleProjectLifecycles,
+		models.UserStatusApproved,
+	)
+	qb.Add(
+		`
+		snippet_item AS (
 			SELECT id,
 			"when",
 			'snippet' AS timeline_type,
@@ -155,22 +180,10 @@ func FetchTimeline(
 			FROM post
 			JOIN thread ON thread.id = thread_id
 			JOIN post_version ON post_version.id = current_id
-			JOIN project ON project.id = post.project_id
+			JOIN visible_project ON visible_project.id = post.project_id
 			WHERE
 				post.deleted = false AND thread.deleted = false
-				AND ($? = true OR project.id = $? OR (
-					project.lifecycle = ANY($?) AND NOT project.hidden
-					AND (SELECT bool_or(user_project.user_id = $?) OR bool_and(hmn_user.status = $?)
-					FROM user_project
-					JOIN hmn_user ON hmn_user.id = user_project.user_id
-					WHERE user_project.project_id = project.id) = true
-				))
 		`,
-		currentUserIsAdmin,
-		models.HMNProjectID,
-		models.VisibleProjectLifecycles,
-		currentUserId,
-		models.UserStatusApproved,
 	)
 	if len(q.OwnerIDs)+len(q.ProjectIDs) > 0 {
 		qb.Add(`AND (`)
