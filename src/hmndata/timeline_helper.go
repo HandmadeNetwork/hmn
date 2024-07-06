@@ -141,13 +141,13 @@ func FetchTimeline(
 			JOIN project ON project.id = post.project_id
 			WHERE
 				post.deleted = false AND thread.deleted = false
-				AND $? = true OR project.id = $? OR (
+				AND ($? = true OR project.id = $? OR (
 					project.lifecycle = ANY($?) AND NOT project.hidden
 					AND (SELECT bool_or(user_project.user_id = $?) OR bool_and(hmn_user.status = $?)
 					FROM user_project
 					JOIN hmn_user ON hmn_user.id = user_project.user_id
 					WHERE user_project.project_id = project.id) = true
-				)
+				))
 		`,
 		currentUserIsAdmin,
 		models.HMNProjectID,
