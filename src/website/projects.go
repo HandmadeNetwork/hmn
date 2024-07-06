@@ -308,12 +308,11 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	templateData.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
+		Limit:      maxRecentActivity,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
-
-	templateData.RecentActivity = utils.ClampSlice(templateData.RecentActivity, maxRecentActivity)
 
 	followUrl := ""
 	following := false
