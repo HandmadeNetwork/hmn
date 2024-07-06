@@ -125,8 +125,25 @@ func FetchTimeline(
 			'post' AS timeline_type,
 			author_id AS owner_id,
 			thread.title AS title,
+		`,
+	)
+	if q.IncludePostDescription {
+		qb.Add(
+			`
 			post_version.text_parsed AS parsed_desc,
 			post_version.text_raw AS raw_desc,
+			`,
+		)
+	} else {
+		qb.Add(
+			`
+			'' AS parsed_desc,
+			'' AS raw_desc,
+			`,
+		)
+	}
+	qb.Add(
+		`
 			NULL::uuid AS asset_id,
 			NULL AS discord_message_id,
 			NULL AS url,
@@ -217,7 +234,9 @@ func FetchTimeline(
 		qb.Add(`LIMIT $? OFFSET $?`, q.Limit, q.Offset)
 	}
 
+	perf.StartBlock("SQL", "Query timeline")
 	results, err := db.Query[TimelineItemAndStuff](ctx, dbConn, qb.String(), qb.Args()...)
+	perf.EndBlock()
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch timeline items")
 	}
@@ -226,12 +245,10 @@ func FetchTimeline(
 		if results[idx].Owner != nil {
 			results[idx].Owner.AvatarAsset = results[idx].AvatarAsset
 		}
-		if results[idx].Item.Type == models.TimelineItemTypePost && !q.IncludePostDescription {
-			results[idx].Item.RawDescription = ""
-			results[idx].Item.ParsedDescription = ""
-		}
 	}
 
+	perf.StartBlock("TIMELINE", "Fixup projects")
+	defer perf.EndBlock()
 	projectsSeen := make(map[int]bool)
 	var projectIds []int
 	var snippetIds []int
@@ -256,6 +273,7 @@ func FetchTimeline(
 		SnippetID int `db:"snippet_id"`
 		ProjectID int `db:"project_id"`
 	}
+	perf.StartBlock("SQL", "Fetch snippet projects")
 	snippetProjects, err := db.Query[snippetProjectRow](ctx, dbConn,
 		`
 		SELECT $columns
@@ -264,6 +282,7 @@ func FetchTimeline(
 		`,
 		snippetIds,
 	)
+	perf.EndBlock()
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch project ids for timeline")
 	}
