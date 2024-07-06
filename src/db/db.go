@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/logging"
@@ -298,12 +299,21 @@ func QueryIterator[T any](
 
 	compiled := compileQuery(query, destType)
 
+	queryStart := time.Now()
 	rows, err := conn.Query(ctx, compiled.query, args...)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			panic("query exceeded its deadline")
 		}
 		return nil, err
+	}
+	duration := time.Now().Sub(queryStart)
+	if config.Config.Postgres.SlowQueryThresholdMs > 0 && duration > time.Duration(config.Config.Postgres.SlowQueryThresholdMs)*time.Millisecond {
+		logging.Warn().
+			Interface("Duration", duration.String()).
+			Interface("Query", strings.ReplaceAll(strings.ReplaceAll(compiled.query, "\n", " "), "\t", " ")).
+			Interface("Args", args).
+			Msg("Slow query")
 	}
 
 	it := &Iterator[T]{

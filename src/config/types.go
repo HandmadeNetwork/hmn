@@ -37,14 +37,15 @@ type HMNConfig struct {
 }
 
 type PostgresConfig struct {
-	User     string
-	Password string
-	Hostname string
-	Port     int
-	DbName   string
-	LogLevel tracelog.LogLevel
-	MinConn  int32
-	MaxConn  int32
+	User                 string
+	Password             string
+	Hostname             string
+	Port                 int
+	DbName               string
+	LogLevel             tracelog.LogLevel
+	MinConn              int32
+	MaxConn              int32
+	SlowQueryThresholdMs int
 }
 
 type AuthConfig struct {
