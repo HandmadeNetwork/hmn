@@ -41,6 +41,7 @@ func (bd *BaseData) AddImmediateNotice(class, content string) {
 
 type Header struct {
 	AdminApprovalQueueUrl string
+	AdminUrl              string // TODO(redesign): Remove this once we get rid of the old header
 	UserProfileUrl        string
 	UserSettingsUrl       string
 	LogoutUrl             string
