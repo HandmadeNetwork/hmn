@@ -366,13 +366,14 @@ func youtubeMediaItem(videoId string) templates.TimelineItemMedia {
 	return templates.TimelineItemMedia{
 		Type: templates.TimelineItemMediaTypeEmbed,
 		EmbedHTML: template.HTML(fmt.Sprintf(
-			`<iframe src="https://www.youtube-nocookie.com/embed/%s" allow="accelerometer; encrypted-media; gyroscope;" allowfullscreen frameborder="0"></iframe>`,
+			`<iframe src="https://www.youtube-nocookie.com/embed/%s?autoplay=1" allow="autoplay; accelerometer; encrypted-media; gyroscope;" allowfullscreen frameborder="0"></iframe>`,
 			template.HTMLEscapeString(videoId),
 		)),
 		ExtraOpenGraphItems: []templates.OpenGraphItem{
 			{Property: "og:video", Value: fmt.Sprintf("https://youtube.com/watch?v=%s", videoId)},
 			{Name: "twitter:card", Value: "player"},
 		},
+		ThumbnailUrl: fmt.Sprintf("https://i.ytimg.com/vi/%s/hq720.jpg", videoId),
 	}
 }
 
