@@ -55,6 +55,11 @@ func EpisodeList(c *RequestContext) ResponseData {
 		return c.Redirect(c.UrlContext.BuildHomepage(), http.StatusSeeOther)
 	}
 
+	if slug == "hero" {
+		// NOTE(asaf): Manual override for HMH
+		return c.Redirect(fmt.Sprintf("https://guide.handmadehero.org/%s", topic), http.StatusSeeOther)
+	}
+
 	if topic == "" {
 		return c.Redirect(c.UrlContext.BuildEpisodeList(defaultTopic), http.StatusSeeOther)
 	}
@@ -114,6 +119,11 @@ func Episode(c *RequestContext) ResponseData {
 
 	if !hasEpisodeGuide {
 		return c.Redirect(c.UrlContext.BuildHomepage(), http.StatusSeeOther)
+	}
+
+	if slug == "hero" {
+		// NOTE(asaf): Manual override for HMH
+		return c.Redirect(fmt.Sprintf("https://guide.handmadehero.org/%s/%s", topic, episode), http.StatusSeeOther)
 	}
 
 	_, foundTopic := topicsForProject(slug, topic)
