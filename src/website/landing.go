@@ -14,7 +14,8 @@ import (
 )
 
 func Index(c *RequestContext) ResponseData {
-	const maxPostsPerTab = 60
+	const maxPostsPerTab = 50
+	const maxNewsPosts = 10
 
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
@@ -107,7 +108,7 @@ func Index(c *RequestContext) ResponseData {
 	newsThreads, err := hmndata.FetchThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:     []int{models.HMNProjectID},
 		ThreadTypes:    []models.ThreadType{models.ThreadTypeProjectBlogPost},
-		Limit:          maxPostsPerTab,
+		Limit:          maxNewsPosts,
 		OrderByCreated: true,
 	})
 	if err != nil {
