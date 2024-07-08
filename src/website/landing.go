@@ -14,7 +14,7 @@ import (
 )
 
 func Index(c *RequestContext) ResponseData {
-	const maxPostsPerTab = 50
+	const maxPostsPerTab = 20
 	const maxNewsPosts = 10
 
 	c.Perf.StartBlock("SQL", "Fetch subforum tree")
