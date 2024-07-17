@@ -16,6 +16,24 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
+func JamCurrentTime(c *RequestContext, ev hmndata.Event) time.Time {
+	t := time.Now()
+	testTime := c.Req.URL.Query().Get("testtime")
+	if testTime == "pre" {
+		t = ev.StartTime.Add(-100 * time.Hour)
+	} else if testTime == "during" {
+		t = ev.StartTime.Add(10 * time.Minute)
+	} else if testTime == "post" {
+		t = ev.EndTime.Add(100 * time.Hour)
+	} else {
+		parsed, err := time.Parse(time.RFC3339, testTime)
+		if err == nil {
+			t = parsed
+		}
+	}
+	return t
+}
+
 func JamsIndex(c *RequestContext) ResponseData {
 	var res ResponseData
 
@@ -79,21 +97,32 @@ func JamSaveTheDate(c *RequestContext) ResponseData {
 }
 
 type JamBaseDataVJ2024 struct {
-	DaysUntilStart, DaysUntilEnd int
-	StartTimeUnix, EndTimeUnix   int64
-	JamUrl                       string
-	JamFeedUrl                   string
-	NewProjectUrl                string
-	GuidelinesUrl                string
-	SubmittedProject             *templates.Project
+	Timespans                  hmndata.EventTimespans
+	StartTimeUnix, EndTimeUnix int64
+	JamUrl                     string
+	JamFeedUrl                 string
+	NewProjectUrl              string
+	GuidelinesUrl              string
+	SubmittedProject           *templates.Project
+}
+
+type JamPageDataVJ2024 struct {
+	templates.BaseData
+	JamBaseDataVJ2024
+
+	TwitchEmbedUrl string
+	JamProjects    []templates.Project
+	TimelineItems  []templates.TimelineItem
+	ShortFeed      bool
 }
 
 func JamIndex2024_Visibility(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jam := hmndata.VJ2024
+	now := JamCurrentTime(c, jam.Event)
 
-	jamBaseData, err := getVJ2024BaseData(c)
+	jamBaseData, err := getVJ2024BaseData(c, now)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -112,12 +141,71 @@ func JamIndex2024_Visibility(c *RequestContext) ResponseData {
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
 	baseData.Header.SuppressBanners = true
 
-	type JamPageData struct {
-		templates.BaseData
-		JamBaseDataVJ2024
+	pageProjects := []templates.Project{}
+	timelineItems := []templates.TimelineItem{}
+	twitchEmbedUrl := ""
 
-		JamProjects []templates.Project
+	if jamBaseData.Timespans.AfterStart {
+		jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			JamSlugs: []string{jam.Slug},
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+		}
+
+		projectIDs := make([]int, 0, len(jamProjects))
+		pageProjects = make([]templates.Project, 0, len(jamProjects))
+		for _, p := range jamProjects {
+			pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
+			projectIDs = append(projectIDs, p.Project.ID)
+		}
+
+		if len(jamProjects) > 0 {
+			timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
+				ProjectIDs: projectIDs,
+				SkipPosts:  true,
+				Limit:      10,
+			})
+		}
+
+		twitchEmbedUrl = getTwitchEmbedUrl(c)
 	}
+
+	res.MustWriteTemplate("jam_2024_vj_index.html", JamPageDataVJ2024{
+		BaseData:          baseData,
+		JamBaseDataVJ2024: jamBaseData,
+		JamProjects:       pageProjects,
+		TimelineItems:     timelineItems,
+		ShortFeed:         true,
+		TwitchEmbedUrl:    twitchEmbedUrl,
+	}, c.Perf)
+	return res
+}
+
+func JamFeed2024_Visibility(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	jam := hmndata.VJ2024
+	now := JamCurrentTime(c, jam.Event)
+
+	jamBaseData, err := getVJ2024BaseData(c, now)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:title", Value: "Visibility Jam"},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2024/opengraph.png", true)},
+		{Property: "og:description", Value: "See things in a new way. July 19 - 21."},
+		{Property: "og:url", Value: hmnurl.BuildJamFeed2024_Visibility()},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2024/TwitterCard.png", true)},
+	}
+	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.Header.SuppressBanners = true
 
 	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 		JamSlugs: []string{jam.Slug},
@@ -127,19 +215,63 @@ func JamIndex2024_Visibility(c *RequestContext) ResponseData {
 	}
 
 	pageProjects := make([]templates.Project, 0, len(jamProjects))
+	projectIDs := make([]int, 0, len(jamProjects))
 	for _, p := range jamProjects {
+		projectIDs = append(projectIDs, p.Project.ID)
 		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
 	}
 
-	res.MustWriteTemplate("jam_2024_vj_index.html", JamPageData{
+	timelineItems := []templates.TimelineItem{}
+
+	if len(projectIDs) > 0 {
+		timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
+			ProjectIDs: projectIDs,
+			SkipPosts:  true,
+		})
+	}
+
+	res.MustWriteTemplate("jam_2024_vj_feed.html", JamPageDataVJ2024{
 		BaseData:          baseData,
 		JamBaseDataVJ2024: jamBaseData,
 		JamProjects:       pageProjects,
+		TimelineItems:     timelineItems,
 	}, c.Perf)
 	return res
 }
 
-func getVJ2024BaseData(c *RequestContext) (JamBaseDataVJ2024, error) {
+func JamGuidelines2024_Visibility(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	jam := hmndata.VJ2024
+	now := JamCurrentTime(c, jam.Event)
+
+	jamBaseData, err := getVJ2024BaseData(c, now)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:title", Value: "Visibility Jam"},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2024/opengraph.png", true)},
+		{Property: "og:description", Value: "See things in a new way. July 19 - 21."},
+		{Property: "og:url", Value: hmnurl.BuildJamGuidelines2024_Visibility()},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2024/TwitterCard.png", true)},
+	}
+	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.Header.SuppressBanners = true
+
+	res.MustWriteTemplate("jam_2024_vj_guidelines.html", JamPageDataVJ2024{
+		BaseData:          baseData,
+		JamBaseDataVJ2024: jamBaseData,
+	}, c.Perf)
+	return res
+}
+
+func getVJ2024BaseData(c *RequestContext, now time.Time) (JamBaseDataVJ2024, error) {
 	jam := hmndata.VJ2024
 
 	var submittedProject *templates.Project
@@ -158,15 +290,14 @@ func getVJ2024BaseData(c *RequestContext) (JamBaseDataVJ2024, error) {
 	}
 
 	return JamBaseDataVJ2024{
-		DaysUntilStart: utils.DaysUntil(jam.StartTime),
-		DaysUntilEnd:   utils.DaysUntil(jam.EndTime),
-		StartTimeUnix:  jam.StartTime.Unix(),
-		EndTimeUnix:    jam.EndTime.Unix(),
+		StartTimeUnix: jam.StartTime.Unix(),
+		EndTimeUnix:   jam.EndTime.Unix(),
+		Timespans:     hmndata.CalcTimespans(jam.Event, now),
 
-		JamUrl: hmnurl.BuildJamIndex2024_Visibility(),
-		// JamFeedUrl:       hmnurl.BuildJamFeed2024_Visibility(),
-		NewProjectUrl: hmnurl.BuildProjectNewJam(),
-		// GuidelinesUrl:    hmnurl.BuildJamGuidelines2024_Visibility(),
+		JamUrl:           hmnurl.BuildJamIndex2024_Visibility(),
+		JamFeedUrl:       hmnurl.BuildJamFeed2024_Visibility(),
+		NewProjectUrl:    hmnurl.BuildProjectNewJam(),
+		GuidelinesUrl:    hmnurl.BuildJamGuidelines2024_Visibility(),
 		SubmittedProject: submittedProject,
 	}, nil
 }

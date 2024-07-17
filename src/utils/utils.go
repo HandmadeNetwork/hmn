@@ -68,6 +68,14 @@ func NumPages(numThings, thingsPerPage int) int {
 	return Max(int(math.Ceil(float64(numThings)/float64(thingsPerPage))), 1)
 }
 
+func DaysUntilT(targetTime time.Time, referenceTime time.Time) int {
+	d := targetTime.Sub(referenceTime)
+	if d < 0 {
+		d = 0
+	}
+	return int(DurationRoundUp(d, 24*time.Hour) / (24 * time.Hour))
+}
+
 func DaysUntil(t time.Time) int {
 	d := t.Sub(time.Now())
 	if d < 0 {

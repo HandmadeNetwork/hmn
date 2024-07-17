@@ -15,6 +15,32 @@ type Event struct {
 	StartTime, EndTime time.Time
 }
 
+type EventTimespans struct {
+	DaysUntilStart int
+	DaysUntilEnd   int
+
+	Pre        bool
+	During     bool
+	Post       bool
+	BeforeEnd  bool // Pre OR During
+	AfterStart bool // During OR Post
+}
+
+func CalcTimespans(ev Event, t time.Time) EventTimespans {
+	timespans := EventTimespans{
+		DaysUntilStart: utils.DaysUntilT(ev.StartTime, t),
+		DaysUntilEnd:   utils.DaysUntilT(ev.EndTime, t),
+		Pre:            t.Before(ev.StartTime),
+		During:         t.Before(ev.EndTime) && ev.StartTime.Before(t),
+		Post:           ev.EndTime.Before(t),
+	}
+
+	timespans.BeforeEnd = timespans.Pre || timespans.During
+	timespans.AfterStart = timespans.During || timespans.Post
+
+	return timespans
+}
+
 type Jam struct {
 	Event
 	Name    string
@@ -158,7 +184,7 @@ func FetchJamsForProject(ctx context.Context, dbConn db.ConnOrTx, user *models.U
 
 	currentJam := CurrentJam()
 	foundCurrent := false
-	for i, _ := range jamProjects {
+	for i := range jamProjects {
 		jam := JamBySlug(jamProjects[i].JamSlug)
 		jamProjects[i].JamName = jam.Name
 		jamProjects[i].JamStartTime = jam.StartTime
