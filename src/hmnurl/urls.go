@@ -963,6 +963,16 @@ func BuildFollowProject() string {
 }
 
 /*
+* Perf
+ */
+
+var RegexPerfmon = regexp.MustCompile("^/perfmon$")
+
+func BuildPerfmon() string {
+	return Url("/perfmon", nil)
+}
+
+/*
 * User assets
  */
 

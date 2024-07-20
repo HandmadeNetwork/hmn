@@ -115,9 +115,11 @@ type PerfCollector struct {
 }
 
 func RunPerfCollector(ctx context.Context) *PerfCollector {
-	in := make(chan RequestPerf)
+	in := make(chan RequestPerf, 100)
 	job := jobs.New()
 	requestCopy := make(chan (chan<- PerfStorage))
+
+	cleanupTicker := time.NewTicker(10 * time.Second)
 
 	var storage PerfStorage
 	// TODO(asaf): Load history from file
@@ -131,7 +133,15 @@ func RunPerfCollector(ctx context.Context) *PerfCollector {
 				storage.AllRequests = append(storage.AllRequests, perf)
 				// TODO(asaf): Write to file
 			case resultChan := <-requestCopy:
-				resultChan <- storage
+				storageCopy := make([]RequestPerf, len(storage.AllRequests))
+				copy(storageCopy, storage.AllRequests)
+				resultChan <- PerfStorage{
+					storageCopy,
+				}
+			case <-cleanupTicker.C:
+				if len(storage.AllRequests) > 1000 {
+					storage.AllRequests = storage.AllRequests[len(storage.AllRequests)-800:]
+				}
 			case <-ctx.Done():
 				return
 			}

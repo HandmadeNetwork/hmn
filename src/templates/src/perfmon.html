@@ -1,0 +1,236 @@
+{{ template "base-2024.html" . }}
+
+{{ define "extrahead" }}
+	<style>
+:root {
+	--middleware-bg: grey;
+	--middleware-text: white;
+
+	--sql-bg: #ff7474;
+	--sql-text: black;
+
+	--perf-bg: black;
+	--perf-text: white;
+
+	--email-bg: orange;
+	--email-text: black;
+
+	--twitchapi-bg: pink;
+	--twitchhapi-text: black;
+
+	--auth-bg: pink;
+	--auth-text: black;
+
+	--follow-bg: pink;
+	--follow-text: black;
+
+	--showcase-bg: green;
+	--showcase-text: black;
+
+	--podcast-bg: green;
+	--podcast-text: black;
+
+	--os-bg: green;
+	--os-text: black;
+
+	--mp3-bg: green;
+	--mp3-text: black;
+
+	--markdown-bg: green;
+	--markdown-text: black;
+
+	--forums-bg: green;
+	--forums-text: black;
+
+	--blogs-bg: green;
+	--blogs-text: black;
+
+	--image-bg: green;
+	--image-text: black;
+
+	--feed-bg: green;
+	--feed-text: black;
+
+	--projects-bg: green;
+	--projects-text: black;
+
+	--timeline-bg: green;
+	--timeline-text: black;
+
+	--template-bg: #009fff;
+	--template-text: black;
+}
+	</style>
+	<script src="{{ static "js/templates.js" }}"></script>
+{{ end }}
+
+{{ define "content" }}
+<template id="single-record">
+	<div data-tmpl="row" class="flex flex-column br3 bg3 pa3">
+		<div class="flex flex-column">
+			<div class="flex flex-row">
+				<div data-tmpl="route" class="flex-grow-1"></div>
+				<div data-tmpl="duration" class=""></div>
+			</div>
+			<div data-tmpl="path" class="f7"></div>
+		</div>
+		<div data-tmpl="flamegraph" class="flex flex-column items-stretch">
+		</div>
+	</div>
+</template>
+
+<template id="route">
+	<div data-tmpl="route" class="route pointer flex flex-row br3 bg3 pa3">
+		<div data-tmpl="name" class="flex-grow-1"></div>
+		<div class="flex flex-column g1 w5">
+			<div class="flex flex-row g2">
+				<div>Hits:</div>
+				<div data-tmpl="hits"></div>
+			</div>
+			<div class="flex flex-row g2">
+				<div>Median time:</div>
+				<div data-tmpl="duration"></div>
+			</div>
+		</div>
+	</div>
+</template>
+
+<div class="flex justify-center pa3">
+	<div class="flex flex-column g3 w-100">
+		<h2>Routes</h2>
+		<div id="routes" class="w-100 flex flex-column g2">
+		</div>
+		<h2>Recent hits</h2>
+		<div id="records" class="w-100 flex flex-column g2">
+		</div>
+	</div>
+</div>
+
+<script>
+	const singleRowTemplate = makeTemplateCloner("single-record");
+	const routeTemplate = makeTemplateCloner("route");
+	const data = JSON.parse(`{{ .PerfRecordsJSON }}`);
+	const recordsContainer = document.querySelector("#records");
+	const routesContainer = document.querySelector("#routes");
+
+	let routes = {}
+	let recents = [];
+
+	for (let i = data.length-1; i >= 0; --i) {
+		let record = data[i];
+
+		if (recents.length < 100) {
+			recents.push(record);
+		}
+
+		if (!routes[record.Route]) {
+			routes[record.Route] = {
+				route: record.Route,
+				records: [],
+			};
+		}
+
+		routes[record.Route].records.push(record);
+	}
+
+	function showRecords(records){
+		recordsContainer.innerHTML = "";
+		for (let i = 0; i < records.length; ++i) {
+			let record = records[i];
+			let row = singleRowTemplate();
+			row.route.textContent = record.Route;
+			row.duration.textContent = record.Duration / 1000 + "ms";
+			row.path.textContent = record.Path;
+			let flameGraph = row.flamegraph;
+
+			let flameRows = [];
+			function getFlameRow(idx) {
+				while (flameRows.length <= idx) {
+					let flameRow = document.createElement("DIV");
+					flameRow.classList.add("h1");
+					flameRow.classList.add("relative");
+					flameRows.push(flameRow);
+					flameGraph.appendChild(flameRow);
+				}
+
+				return flameRows[idx];
+			}
+
+			function placeFlameItems(parent, depth, maxDuration) {
+				let rowEl = getFlameRow(depth);
+				for (let childIdx = 0; childIdx < parent.Children.length; ++childIdx) {
+					let child = parent.Children[childIdx];
+					let item = document.createElement("DIV");
+					let catCSS = child.Category.toLowerCase();
+					item.classList.add("absolute");
+					item.classList.add("h1");
+					item.classList.add("overflow-hidden");
+					item.classList.add("f7");
+					item.classList.add("nowrap");
+					item.style.color = `var(--${catCSS}-text)`;
+					item.style.backgroundColor = `var(--${catCSS}-bg)`;
+					item.textContent = `[${child.Category}] ${child.Description} | ${child.Duration/1000}ms`;
+					item.title = item.textContent;
+					item.style.width = ((child.Duration / maxDuration) * 100) + "%";
+					item.style.left = (((child.Offset) / maxDuration) * 100) + "%";
+					rowEl.appendChild(item);
+
+					if (child.Children && child.Children.length > 0) {
+						placeFlameItems(child, depth+1, maxDuration);
+					}
+				}
+			}
+
+			if (record.Breakdown.Children) {
+				placeFlameItems(record.Breakdown, 0, record.Breakdown.Duration);
+			}
+
+			recordsContainer.appendChild(row.row);
+		}
+	}
+
+	for (key in routes) {
+		routes[key].records.sort(function(a, b) {
+			return b.Duration - a.Duration;
+		});
+	}
+
+	let routesList = Object.values(routes);
+	routesList.sort(function(a, b) {
+		const medianA =  a.records[Math.floor(a.records.length/2)].Duration;
+		const medianB =  b.records[Math.floor(b.records.length/2)].Duration;
+		return medianB - medianA;
+	});
+
+	let activeRoute = "";
+
+	for (let i = 0; i < routesList.length; ++i) {
+		let r = routesList[i];
+		let routeEl = routeTemplate();
+		routeEl.name.textContent = r.route;
+		routeEl.hits.textContent = r.records.length;
+		routeEl.duration.textContent = (r.records[Math.floor(r.records.length/2)].Duration / 1000) + "ms";
+		routeEl.route.dataset.route = r.route;
+		routesContainer.appendChild(routeEl.route);
+		routesList[i].el = routeEl;
+
+		routeEl.route.addEventListener("click", function(ev) {
+			let el = ev.target.closest(".route");
+			if (el.dataset.route == activeRoute) {
+				el.classList.remove("bg4");
+				activeRoute = "";
+				showRecords(recents);
+			} else {
+				for (let i = 0; i < routesList.length; ++i) {
+					routesList[i].el.route.classList.remove("bg4");
+				}
+				activeRoute = el.dataset.route;
+				el.classList.add("bg4");
+				showRecords(routes[activeRoute].records);
+			}
+		});
+	}
+
+	showRecords(recents);
+</script>
+{{ end }}

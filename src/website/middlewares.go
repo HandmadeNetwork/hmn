@@ -33,25 +33,28 @@ func panicCatcherMiddleware(h Handler) Handler {
 	}
 }
 
-func trackRequestPerf(h Handler) Handler {
-	return func(c *RequestContext) ResponseData {
-		c.Perf = perf.MakeNewRequestPerf(c.Route, c.Req.Method, c.Req.URL.Path)
-		defer func() {
-			c.Perf.EndRequest()
-			log := logging.Info()
-			blockStack := make([]time.Time, 0)
-			for i, block := range c.Perf.Blocks {
-				for len(blockStack) > 0 && block.End.After(blockStack[len(blockStack)-1]) {
-					blockStack = blockStack[:len(blockStack)-1]
+func trackRequestPerf(perfCollector *perf.PerfCollector) func(Handler) Handler {
+	return func(h Handler) Handler {
+		return func(c *RequestContext) ResponseData {
+			c.Perf = perf.MakeNewRequestPerf(c.Route, c.Req.Method, c.Req.URL.Path)
+			c.PerfCollector = perfCollector
+			defer func() {
+				c.Perf.EndRequest()
+				log := logging.Info()
+				blockStack := make([]time.Time, 0)
+				for i, block := range c.Perf.Blocks {
+					for len(blockStack) > 0 && block.End.After(blockStack[len(blockStack)-1]) {
+						blockStack = blockStack[:len(blockStack)-1]
+					}
+					log.Str(fmt.Sprintf("[%4.d] At %9.2fms", i, c.Perf.MsFromStart(&block)), fmt.Sprintf("%*.s[%s] %s (%.4fms)", len(blockStack)*2, "", block.Category, block.Description, block.DurationMs()))
+					blockStack = append(blockStack, block.End)
 				}
-				log.Str(fmt.Sprintf("[%4.d] At %9.2fms", i, c.Perf.MsFromStart(&block)), fmt.Sprintf("%*.s[%s] %s (%.4fms)", len(blockStack)*2, "", block.Category, block.Description, block.DurationMs()))
-				blockStack = append(blockStack, block.End)
-			}
-			log.Msg(fmt.Sprintf("Served [%s] %s in %.4fms", c.Perf.Method, c.Perf.Path, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
-			// perfCollector.SubmitRun(c.Perf) // TODO(asaf): Implement a use for this
-		}()
+				log.Msg(fmt.Sprintf("Served [%s] %s in %.4fms", c.Perf.Method, c.Perf.Path, float64(c.Perf.End.Sub(c.Perf.Start).Nanoseconds())/1000/1000))
+				perfCollector.SubmitRun(c.Perf)
+			}()
 
-		return h(c)
+			return h(c)
+		}
 	}
 }
 

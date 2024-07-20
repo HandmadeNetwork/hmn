@@ -19,17 +19,18 @@ import (
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
+func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) http.Handler {
 	router := &Router{}
 	routes := RouteBuilder{
 		Router: router,
 		Middlewares: []Middleware{
 			setDBConn(conn),
-			trackRequestPerf,
+			trackRequestPerf(perfCollector),
 			logContextErrorsMiddleware,
 			panicCatcherMiddleware,
 		},
@@ -161,6 +162,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool) http.Handler {
 	hmnOnly.POST(hmnurl.RegexAdminApprovalQueue, adminsOnly(csrfMiddleware(AdminApprovalQueueSubmit)))
 	hmnOnly.POST(hmnurl.RegexAdminSetUserOptions, adminsOnly(csrfMiddleware(UserProfileAdminSetOptions)))
 	hmnOnly.POST(hmnurl.RegexAdminNukeUser, adminsOnly(csrfMiddleware(UserProfileAdminNuke)))
+
+	hmnOnly.GET(hmnurl.RegexPerfmon, adminsOnly(Perfmon))
 
 	hmnOnly.GET(hmnurl.RegexFeed, Feed) // TODO: Remove / rework this page
 	hmnOnly.GET(hmnurl.RegexAtomFeed, AtomFeed)

@@ -194,7 +194,8 @@ type RequestContext struct {
 
 	CurrentUserCanEditCurrentProject bool
 
-	Perf *perf.RequestPerf
+	Perf          *perf.RequestPerf
+	PerfCollector *perf.PerfCollector
 
 	ctx context.Context
 }
