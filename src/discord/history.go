@@ -138,7 +138,7 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 
 			log.Info().Str("msg", discordMsg.ShortString()).Msg("fetched message for content")
 
-			err = HandleInternedMessage(ctx, dbConn, discordMsg, false, false)
+			err = HandleInternedMessage(ctx, dbConn, discordMsg, false, false, false)
 			if err != nil {
 				log.Error().Err(err).Msg("failed to save content for message")
 				continue

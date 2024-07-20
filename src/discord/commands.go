@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"git.handmade.network/hmn/hmn/src/hmndata"
+	"git.handmade.network/hmn/hmn/src/utils"
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
@@ -16,6 +17,8 @@ import (
 // Slash command names and options
 const SlashCommandProfile = "profile"
 const ProfileOptionUser = "user"
+
+const MessageCommandSave = "Save to HMN Profile"
 
 const SlashCommandManifesto = "manifesto"
 
@@ -50,6 +53,11 @@ func (bot *botInstance) createApplicationCommands(ctx context.Context) {
 	}))
 
 	doOrWarn(CreateGuildApplicationCommand(ctx, CreateGuildApplicationCommandRequest{
+		Type: ApplicationCommandType(ApplicationCommandTypeMessage),
+		Name: MessageCommandSave,
+	}))
+
+	doOrWarn(CreateGuildApplicationCommand(ctx, CreateGuildApplicationCommandRequest{
 		Type:        ApplicationCommandTypeChatInput,
 		Name:        SlashCommandManifesto,
 		Description: "Read the Handmade manifesto",
@@ -76,6 +84,10 @@ func (bot *botInstance) doInteraction(ctx context.Context, i *Interaction) {
 		bot.handleProfileCommand(ctx, i, userID)
 	case UserCommandProfile:
 		bot.handleProfileCommand(ctx, i, i.Data.TargetID)
+
+	case MessageCommandSave:
+		bot.handleSaveCommand(ctx, i)
+
 	case SlashCommandManifesto:
 		err := CreateInteractionResponse(ctx, i.ID, i.Token, InteractionResponse{
 			Type: InteractionCallbackTypeChannelMessageWithSource,
@@ -165,6 +177,49 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 		Type: InteractionCallbackTypeChannelMessageWithSource,
 		Data: &InteractionCallbackData{
 			Content: msg,
+			Flags:   FlagEphemeral,
+		},
+	})
+	if err != nil {
+		logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to send profile response")
+	}
+}
+
+func (bot *botInstance) handleSaveCommand(ctx context.Context, i *Interaction) {
+	utils.Assert(len(i.Data.Resolved.Messages), "expected a message from the message command")
+
+	var msg Message
+	for _, m := range i.Data.Resolved.Messages {
+		msg = m
+		break
+	}
+
+	err := InternMessage(ctx, bot.dbConn, &msg)
+	if err != nil {
+		logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to intern message")
+		return
+	}
+
+	err = HandleInternedMessage(ctx, bot.dbConn, &msg, true, false, true)
+	if err != nil {
+		logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to handle interned message")
+	}
+
+	// TODO: It would really be more reasonable if this returned db.NotFound, so we didn't have to do a nil check.
+	snippet, err := FetchSnippetForMessage(ctx, bot.dbConn, msg.ID)
+	if err != nil {
+		logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to look up snippet for newly-saved message")
+	}
+
+	responseMsg := "Message saved, but no post was created on your profile."
+	if snippet != nil {
+		responseMsg = fmt.Sprintf("Message saved: %s", hmnurl.BuildSnippet(snippet.ID))
+	}
+
+	err = CreateInteractionResponse(ctx, i.ID, i.Token, InteractionResponse{
+		Type: InteractionCallbackTypeChannelMessageWithSource,
+		Data: &InteractionCallbackData{
+			Content: responseMsg,
 			Flags:   FlagEphemeral,
 		},
 	})

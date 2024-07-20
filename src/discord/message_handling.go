@@ -55,7 +55,7 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	}
 
 	if err == nil {
-		err = HandleInternedMessage(ctx, dbConn, msg, deleted, createSnippets)
+		err = HandleInternedMessage(ctx, dbConn, msg, false, deleted, createSnippets)
 	}
 
 	// when we needed her most...she vanished
@@ -406,7 +406,9 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 // 1. Saves/updates content
 // 2. Saves/updates snippet
 // 3. Deletes content/snippet
-func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, removeInternedMessage bool, createSnippet bool) error {
+func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, forceCreate bool, forceDelete bool, createSnippet bool) error {
+	utils.Assert(!(forceCreate && forceDelete), "doesn't make sense to request both forceCreate and forceDelete")
+
 	tx, err := dbConn.Begin(ctx)
 	if err != nil {
 		return oops.New(err, "failed to start transaction")
@@ -414,18 +416,23 @@ func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	defer tx.Rollback(ctx)
 
 	interned, err := FetchInternedMessage(ctx, tx, msg.ID)
-	if err != nil && !errors.Is(err, db.NotFound) {
+	if errors.Is(err, db.NotFound) {
+		// Message not interned; ignore.
+	} else if err != nil {
 		return err
-	} else if err == nil {
-		if !removeInternedMessage {
-			removeInternedMessage = !messageShouldBeStored(msg)
+	} else {
+		removeInternedMessage := !messageShouldBeStored(msg)
+		if forceCreate {
+			removeInternedMessage = false
+		}
+		if forceDelete {
+			removeInternedMessage = true
 		}
 
 		if !removeInternedMessage {
 			err = SaveMessageContents(ctx, tx, interned, msg)
 			if err != nil {
 				return err
-
 			}
 			if createSnippet {
 				err = HandleSnippetForInternedMessage(ctx, tx, interned, false)
@@ -440,6 +447,7 @@ func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 			}
 		}
 	}
+
 	err = tx.Commit(ctx)
 	if err != nil {
 		return oops.New(err, "failed to commit Discord message updates")

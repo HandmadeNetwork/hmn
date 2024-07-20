@@ -13,7 +13,7 @@ var ActiveServerPort uint16
 
 func RunServer(ctx context.Context) jobs.Job {
 	job := jobs.New()
-	if config.Config.Env != config.Dev {
+	if !config.Config.DevConfig.LiveTemplates {
 		job.Done()
 		return job
 	}
