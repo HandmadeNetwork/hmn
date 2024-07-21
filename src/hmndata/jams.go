@@ -160,6 +160,17 @@ func PreviousJam() *Jam {
 	return mostRecent
 }
 
+func RecentJams() []*Jam {
+	now := time.Now()
+	result := []*Jam{}
+	for i, jam := range AllJams {
+		if jam.StartTime.Before(now) && now.Before(jam.EndTime.Add(14*24*time.Hour)) {
+			result = append(result, &AllJams[i])
+		}
+	}
+	return result
+}
+
 func JamBySlug(slug string) Jam {
 	for _, jam := range AllJams {
 		if jam.Slug == slug {
