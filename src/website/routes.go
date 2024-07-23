@@ -46,6 +46,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	routes.GET(hmnurl.RegexEsBuild, func(c *RequestContext) ResponseData {
 		if buildcss.ActiveServerPort != 0 {
+			var err error
+			defer utils.RecoverPanicAsError(&err)
 			var res ResponseData
 			proxy := httputil.ReverseProxy{
 				Director: func(r *http.Request) {

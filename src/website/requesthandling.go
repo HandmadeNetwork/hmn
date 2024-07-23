@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"html/template"
@@ -15,6 +16,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
@@ -527,13 +529,23 @@ func doRequest(rw http.ResponseWriter, c *RequestContext, h Handler) {
 		// Write preamble, if any
 		_, err := rw.Write(preamble)
 		if err != nil {
-			logging.Error().Err(err).Msg("Failed to write response preamble")
+			if errors.Is(err, syscall.EPIPE) {
+				// NOTE(asaf): Can be triggered when other side hangs up
+				logging.Debug().Msg("Broken pipe")
+			} else {
+				logging.Error().Err(err).Msg("Failed to write response preamble")
+			}
 		}
 
 		// Write remainder of body
 		_, err = io.Copy(rw, res.Body)
 		if err != nil {
-			logging.Error().Err(err).Msg("copied res.Body")
+			if errors.Is(err, syscall.EPIPE) {
+				// NOTE(asaf): Can be triggered when other side hangs up
+				logging.Debug().Msg("Broken pipe")
+			} else {
+				logging.Error().Err(err).Msg("copied res.Body")
+			}
 		}
 	}
 }
