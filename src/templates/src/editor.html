@@ -1,4 +1,4 @@
-{{ template "base.html" . }}
+{{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
     {{ template "markdown_previews.html" .TextEditor }}
@@ -14,128 +14,155 @@
         #editor.drop {
             box-shadow: inset 0px 0px 5px yellow;
         }
+
+        #preview:empty::after {
+            content: 'A preview of your post will appear here.';
+            color: var(--dimmer-color);
+            font-style: italic;
+        }
     </style>
 {{ end }}
 
 {{ define "content" }}
-<div class="ph3 ph0-ns">
-    {{ if not .CanEditPostTitle }}
-        <h2>{{ .PostTitle }}</h2>
-    {{ end }}
-    <div class="flex flex-column flex-row-ns">
-        <form id="form" action="{{ .SubmitUrl }}" method="post" class="flex-fair-ns overflow-hidden">
+    <div class="flex bb">
+        <form id="form" action="{{ .SubmitUrl }}" method="POST" class="hmn-form bg1 pa3 pa4-ns flex-fair-ns">
             {{ csrftoken .Session }}
 
-            {{ if .CanEditPostTitle }}
-                <input id="title" class="b w-100 mb1" name="title" type="text" placeholder="Post title..." value="{{ .PostTitle }}" />
-            {{ end }}
-            <textarea id="editor" class="w-100 h6 minh-6 pa2 mono lh-copy" name="body">{{ .EditInitialContents }}</textarea>
-
-            <div class="flex justify-end items-center mt2">
-                <div class="upload_bar flex-grow-1">
-                    <div class="instructions">
-                        Upload files by dragging & dropping, pasting, or <label class="pointer link" for="file_input">selecting</label> them.
+            <div class="flex flex-column g3">
+                {{ if .CanEditPostTitle }}
+                    <div class="input-group">
+                        <label>Post Title</label>
+                        <input
+                            required
+                            id="title"
+                            name="title"
+                            type="text"
+                            value="{{ .PostTitle }}"
+                        />
                     </div>
-                    <div class="progress flex">
-                        <div class="progress_text mr3"></div>
-                        <div class="progress_bar flex-grow-1 flex-shrink-1 pa1"><div class=""></div></div>
+                {{ else }}
+                    <h2 class="f3">Replying to post</h2>
+                    <hr />
+                {{ end }}
+                <div class="input-group">
+                    <label>Post Body</label>
+                    <textarea
+                        id="editor"
+                        class="w-100 h6 minh-6 pa2 mono lh-copy"
+                        name="body"
+                        required>{{ .EditInitialContents }}</textarea>
+                    <div class="flex justify-end items-center f6">
+                        <div class="upload_bar flex-grow-1">
+                            <div class="instructions">
+                                Upload files by dragging & dropping, pasting, or <label class="pointer link" for="file_input">selecting</label> them.
+                            </div>
+                            <div class="progress flex">
+                                <div class="progress_text mr3"></div>
+                                <div class="progress_bar flex-grow-1 flex-shrink-1 pa1"><div class=""></div></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <input type="submit" class="button ml2 flex-grow-0 flex-shrink-0" name="submit" value="{{ .SubmitLabel }}" />
+                {{ if .IsEditing }}
+                    <div class="input-group">
+                        <label>Edit Reason</label>
+                        <input
+                            name="editreason"
+                            maxlength="255"
+                            type="text"
+                            id="editreason"
+                        />
+                    </div>
+                {{ end }}
+				<div class="flex justify-end">
+                    <input type="submit" class="btn-primary" name="submit" value="{{ .SubmitLabel }}" />
+                </div>
             </div>
 
-            {{ if .IsEditing }}
-                <span class="editreason">
-                    <label for="editreason">Edit reason:</label>
-                    <input name="editreason" maxlength="255" type="text" id="editreason" />
-                </span>
-            {{ end }}
-
             {{ with .PostReplyingTo }}
-                <h4 class="mt3">The post you're replying to:</h4>
-                <div class="maxh-6 overflow-y-auto">
+                <div class="input-group">
+                    <label>The post you&apos;re replying to:</label>
                     {{ template "forum_post_standalone.html" . }}
                 </div>
             {{ end }}
 
             {{ if .ShowEduOptions }}
                 {{/* Hope you have a .Article field! */}}
-                <div class="bg2 br3 pa3 mt3">
-                    <h4>Education Options</h4>
-                    <div class="mb2">
-                        <label for="slug">Slug:</label>
+                <fieldset>
+                    <legend>Education Options</legend>
+                    <div class="pa3 input-group">
+                        <label for="slug">Slug</label>
                         <input name="slug" maxlength="255" type="text" id="slug" required value="{{ .Article.Slug }}" />
                     </div>
-                    <div class="mb2">
-                        <label for="type">Type:</label>
+                    <div class="pa3 input-group">
+                        <label for="type">Type</label>
                         <select name="type" id="type">
                             <option value="article"  {{ if eq .Article.Type "article"  }}selected{{ end }}>Article</option>
                             <option value="glossary" {{ if eq .Article.Type "glossary" }}selected{{ end }}>Glossary Term</option>
                         </select>
                     </div>
-                    <div class="mb2">
-                        <label for="description">Description:</label>
+                    <div class="pa3 input-group">
+                        <label for="description">Description</label>
                         <div>
-                            <textarea name="description" id="slug" required>{{ .Article.Description }}</textarea>
+                            <textarea name="description" class="w-100" id="slug" required>{{ .Article.Description }}</textarea>
                         </div>
                     </div>
-                    <div class="mb2">
-                        <label for="published">Published:</label>
+                    <div class="pa3">
                         <input name="published" id="published" type="checkbox" {{ if .Article.Published }}checked{{ end }}>
+                        <label for="published">Published</label>
                     </div>
-                </div>
+                </fieldset>
             {{ end }}
         </form>
-        <div id="preview-container" class="post post-preview mathjax flex-fair-ns overflow-auto mv3 mv0-ns ml3-ns pa3 br3 bg2 {{ .PreviewClass }}">
+        <div id="preview-container" class="mathjax flex-fair pa4 {{ .PreviewClass }}">
             <div id="preview" class="post-content"></div>
         </div>
         <input type="file" multiple name="file_input" id="file_input" class="dn" />{{/* NOTE(asaf): Placing this outside the form to avoid submitting it to the server by accident */}}
     </div>
-</div>
 
-<script>
-    const maxFileSize = {{ .TextEditor.MaxFileSize }};
-    const uploadUrl = {{ .TextEditor.UploadUrl }};
+    <script>
+        const maxFileSize = {{ .TextEditor.MaxFileSize }};
+        const uploadUrl = {{ .TextEditor.UploadUrl }};
 
-    const form = document.querySelector('#form');
-    const titleField = document.querySelector('#title'); // may be undefined, be careful!
-    const textField = document.querySelector('#editor');
-    const preview = document.querySelector('#preview');
+        const form = document.querySelector('#form');
+        const titleField = document.querySelector('#title'); // may be undefined, be careful!
+        const textField = document.querySelector('#editor');
+        const preview = document.querySelector('#preview');
 
-    // Save content on change, clear on submit
-    const clearFuncs = [];
-    if (titleField) {
-        const { clear: clearTitle } = autosaveContent({
-            inputEl: titleField,
-            storageKey: `post-title/${window.location.host}${window.location.pathname}`,
-        });
-        clearFuncs.push(clearTitle);
-    }
-    const { clear: clearContent } = autosaveContent({
-        inputEl: textField,
-        storageKey: `post-content/${window.location.host}${window.location.pathname}`,
-    });
-    clearFuncs.push(clearContent);
-    form.addEventListener('submit', e => {
-        for (const clear of clearFuncs) {
-            clear();
+        // Save content on change, clear on submit
+        const clearFuncs = [];
+        if (titleField) {
+            const { clear: clearTitle } = autosaveContent({
+                inputEl: titleField,
+                storageKey: `post-title/${window.location.host}${window.location.pathname}`,
+            });
+            clearFuncs.push(clearTitle);
         }
-    });
+        const { clear: clearContent } = autosaveContent({
+            inputEl: textField,
+            storageKey: `post-content/${window.location.host}${window.location.pathname}`,
+        });
+        clearFuncs.push(clearContent);
+        form.addEventListener('submit', e => {
+            for (const clear of clearFuncs) {
+                clear();
+            }
+        });
 
-    // Do live Markdown previews
-    let doMarkdown = initLiveMarkdown({ inputEl: textField, previewEl: preview });
+        // Do live Markdown previews
+        let doMarkdown = initLiveMarkdown({ inputEl: textField, previewEl: preview });
 
-    /*
-    / Asset upload
-    */ 
-    setupMarkdownUpload(
-        document.querySelectorAll("#form input[type=submit]"),
-        document.querySelector('#file_input'),
-        document.querySelector('.upload_bar'),
-        textField,
-        doMarkdown,
-        maxFileSize,
-        uploadUrl
-    );
-</script>
+        /*
+        / Asset upload
+        */ 
+        setupMarkdownUpload(
+            document.querySelectorAll("#form input[type=submit]"),
+            document.querySelector('#file_input'),
+            document.querySelector('.upload_bar'),
+            textField,
+            doMarkdown,
+            maxFileSize,
+            uploadUrl
+        );
+    </script>
 {{ end }}
