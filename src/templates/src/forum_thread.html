@@ -1,134 +1,33 @@
-{{ template "base.html" . }}
+{{ template "base-2024.html" . }}
 
 {{ define "content" }}
-<div>
-    <div class="optionbar">
-        <div class="options">
-            <a class="button" href="{{ .SubforumUrl }}">&larr; Back to index</a>
-        </div>
-        <div class="options">
-            {{ template "pagination.html" .Pagination }}
-        </div>
-    </div>
-    {{ range .Posts }}
-        <div class="post background-even pa3">
-            <div class="fl w-100 w-25-l pt3 pa3-l flex tc-l">
-                <div class="fl w-20 mw3 dn-l w3">
-                    <!-- Mobile avatar -->
-                    <div class="aspect-ratio--1x1 contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
-                </div>
-                <div class="w-100-l pl3 pl0-l flex flex-column items-center-l">
-                    <div>
-                        <a class="username" href="{{ .Author.ProfileUrl }}" target="_blank">{{ .Author.Username }}</a>
-                        <!-- Mobile badges -->
-                        <div class="di dn-l ph1">
-                            {{ if .Author.IsStaff }}
-                                <div class="badge staff"></div>
-                            {{ end }}
-                        </div>
-                    </div>
-                    {{ if and .Author.Name (ne .Author.Name .Author.Username) }}
-                        <div class="c--dim f7"> {{ .Author.Name }} </div>
-                    {{ end }}
-                    <!-- Large avatar -->
-                    <div class="dn db-l w-60 pv2">
-                        <div class="aspect-ratio--1x1 contain bg-center" style="background-image:url('{{ .Author.AvatarUrl }}');"></div>
-                    </div>
-                    <div class="c--dim f7">
-                        {{ .AuthorNumPosts }} posts
-                        {{ if gt .AuthorNumProjects 0 }}
-                            / {{ .AuthorNumProjects }} project{{ if gt .AuthorNumProjects 1 }}s{{ end }}
-                        {{ end }}
-                    </div>
-                    <!-- Large badges -->
-                    <div class="dn db-l pv2">
-                        {{ if .Author.IsStaff }}
-                            <div class="badge staff"></div>
-                        {{ end }}
-                    </div>
-                    <div class="i c--dim f7">
-                        {{ if .Author.Blurb }}
-                            {{ .Author.Blurb }} {{/* TODO: Linebreaks? */}}
-                        {{ else if .Author.Bio }}
-                            {{ .Author.Bio }}
-                        {{ end }}
-                    </div>
-                </div>
+<div class="flex justify-center pa3">
+    <div class="w-100 mw-site flex flex-column g3">
+        <div class="flex">
+            <a class="" href="{{ .SubforumUrl }}">&larr; Back to index</a>
+            <div class="flex-grow-1"></div>
+            <div class="">
+                {{ template "pagination.html" .Pagination }}
             </div>
-            <div class="fl w-100 w-75-l pv3 pa3-l">
-                <div class="w-100 flex-l flex-row-reverse-l">
-                    <div class="inline-flex flex-row-reverse pl3-l pb3 items-center">
-                        <div class="postid">
-                            <a name="{{ .ID }}" href="{{ .Url }}">#{{ .ID }}</a>
-                        </div>
-                        {{ if and $.User $.Project.HasForum }}
-                            <div class="flex pr3">
-                                {{ if or (eq .Author.ID $.User.ID) $.User.IsStaff }}
-                                    <a class="delete action button" href="{{ .DeleteUrl }}" title="Delete">&#10006;</a>&nbsp;
-                                    <a class="edit action button" href="{{ .EditUrl }}" title="Edit">&#9998;</a>&nbsp;
-                                {{ end }}
-                                {{ if or (not $.Thread.Locked) $.User.IsStaff }}
-                                    {{ if $.Thread.Locked }}
-                                        WARNING: locked thread - use power responsibly!
-                                    {{ end }}
-                                    <a class="reply action button" href="{{ .ReplyUrl }}" title="Reply">&hookrightarrow;</a>&nbsp;
-                                {{ end }}
-                            </div>
-                        {{ end }}
-                    </div>
-                    <div class="w-100 pb3">
-                        <div class="b" role="heading" aria-level="2">{{ $.Thread.Title }}</div>
-                        {{ timehtml (relativedate .PostDate) .PostDate }}
-                        {{ if .Editor }}
-                            <span class="pl3">
-                                Edited by
-                                <a class="name" href="{{ .Editor.ProfileUrl }}" target="_blank">{{ coalesce .Editor.Name .Editor.Username }}</a>
-								{{ if $.User }}
-									{{ if and $.User.IsStaff .IP }}<span class="ip">[{{ .IP }}]</span>{{ end }}
-								{{ end }}
-                                on {{ timehtml (absolutedate .EditDate) .EditDate }}
-                                {{ with .EditReason }}
-                                    Reason: {{ . }}
-                                {{ end }}
-                            </span>
-                        {{ else if $.User }}
-                            {{ if and $.User.IsStaff .IP }}
-                                <span>[{{ .IP }}]</span>
-                            {{ end }}
-                        {{ end }}
-                    </div>
-                </div>
-                {{ with .ReplyPost }}
-                    <div class="i c--dim f7 pb2">
-                        Replying to {{ with .Author }}{{ .Username }}{{ else }}deleted user{{ end }} (<a href="{{ .Url }}">#{{ .ID }}</a>)
-                    </div>
-                {{ end }}
-                <div class="post-content overflow-x-auto">
-                    {{ .Content }}
-                </div>
-                {{/* {% if post.author.signature|length %}
-                    <div class="signature"><hr />
-                        {{ post.author.signature|bbdecode|safe }}
-                    </div>
-                {% endif %} */}}
-            </div>
-            <div class="cb"></div>
         </div>
-    {{ end }}
-    <div class="optionbar bottom">
-        <div class="options order-1">
-            <a class="button" href="{{ .SubforumUrl }}">&larr; Back to index</a>
+        <hr />
+        {{ range .Posts }}
+            <div class="bg3">
+                {{ template "forum_post_standalone.html" . }}
+            </div>
+        {{ end }}
+        <div class="flex">
+            <div class="flex-grow-1"></div>
             {{ if .Thread.Locked }}
-                <span>Thread is locked.</span>
+                <div>Thread is locked.</div>
             {{ else if .Project.HasForum }}
-                {{ if .User }}
-                    <a class="button" href="{{ .ReplyUrl }}">&#10551; Reply to Thread</a>
-                {{ else }}
-                    <span class="pa2"><a href="{{ .LoginPageUrl }}">Log in</a> to reply</span>
-                {{ end }}
+                <a class="flex items-center g2" href="{{ not (not .User) | ternary .ReplyUrl .LoginPageUrl }}">{{ svg "add" }}<span>Reply to Thread</span></a>
             {{ end }}
         </div>
-        <div class="options order-0 order-last-ns">
+        <hr />
+        <div class="flex">
+            <a class="" href="{{ .SubforumUrl }}">&larr; Back to index</a>
+            <div class="flex-grow-1"></div>
             {{ template "pagination.html" .Pagination }}
         </div>
     </div>

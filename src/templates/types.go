@@ -111,8 +111,9 @@ type Post struct {
 	EditUrl   string
 	ReplyUrl  string
 
-	Preview  string
-	ReadOnly bool
+	Preview      string
+	ReadOnly     bool
+	ThreadLocked bool
 
 	Author   User
 	Content  template.HTML

@@ -393,11 +393,13 @@ func ForumThread(c *RequestContext) ResponseData {
 	for _, p := range postsAndStuff {
 		post := templates.PostToTemplate(&p.Post, p.Author)
 		post.AddContentVersion(p.CurrentVersion, p.Editor)
-		addForumUrlsToPost(c.UrlContext, &post, currentSubforumSlugs, thread.ID, post.ID)
+		post.ThreadLocked = thread.Locked
+		addForumUrlsToPost(c.UrlContext, &post, c.CurrentUser, p.Author, currentSubforumSlugs, thread.ID, post.ID)
 
 		if p.ReplyPost != nil {
 			reply := templates.PostToTemplate(p.ReplyPost, p.ReplyAuthor)
-			addForumUrlsToPost(c.UrlContext, &reply, currentSubforumSlugs, thread.ID, reply.ID)
+			reply.ThreadLocked = thread.Locked
+			addForumUrlsToPost(c.UrlContext, &reply, c.CurrentUser, p.Author, currentSubforumSlugs, thread.ID, reply.ID)
 			post.ReplyPost = &reply
 		}
 
@@ -950,11 +952,13 @@ func validateSubforums(lineageBuilder *models.SubforumLineageBuilder, project *m
 	return subforumId, valid
 }
 
-func addForumUrlsToPost(urlContext *hmnurl.UrlContext, p *templates.Post, subforums []string, threadId int, postId int) {
+func addForumUrlsToPost(urlContext *hmnurl.UrlContext, p *templates.Post, currentUser *models.User, author *models.User, subforums []string, threadId int, postId int) {
 	p.Url = urlContext.BuildForumPost(subforums, threadId, postId)
-	p.DeleteUrl = urlContext.BuildForumPostDelete(subforums, threadId, postId)
-	p.EditUrl = urlContext.BuildForumPostEdit(subforums, threadId, postId)
-	p.ReplyUrl = urlContext.BuildForumPostReply(subforums, threadId, postId)
+	if currentUser != nil && ((author != nil && currentUser.ID == author.ID && !p.ThreadLocked) || currentUser.IsStaff) {
+		p.DeleteUrl = urlContext.BuildForumPostDelete(subforums, threadId, postId)
+		p.EditUrl = urlContext.BuildForumPostEdit(subforums, threadId, postId)
+		p.ReplyUrl = urlContext.BuildForumPostReply(subforums, threadId, postId)
+	}
 }
 
 // Takes a template post and adds information about how many posts the user has made

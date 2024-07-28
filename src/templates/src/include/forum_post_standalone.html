@@ -1,30 +1,56 @@
-<div class="pa3 flex flex-column g2">
-    <div class="flex items-center">
-        <a class="flex flex-shrink-0" href="{{ .Author.ProfileUrl }}">
-            <img class="avatar avatar-user mr3" src="{{ .Author.AvatarUrl }}" />
-        </a>
-        <div class="overflow-hidden flex-grow-1 flex flex-column g1 justify-center link-normal">
+<div class="pa3 flex flex-column g3">
+    <div class="flex link-normal">
+        <img class="avatar avatar-user mr2" src="{{ .Author.AvatarUrl }}" />
+        <div class="flex flex-column g1 flex-grow-1">
             <div class="flex flex-row g1 items-center">
+                <a class="b" href="{{ .Author.ProfileUrl }}">{{ .Author.Name }}</a>
                 {{ if .Author.IsStaff }}
                     <div class="badge staff"></div>
                 {{ end }}
-                <a class="user" href="{{ .Author.ProfileUrl }}">{{ .Author.Name }}</a>
-                &mdash; {{ timehtml (absoluteshortdate .PostDate) .PostDate }}
-            </div>
-            {{ if .Editor }}
-                <span class="f7 fw2">
-                    Edited by
-                    <a class="name" href="{{ .Editor.ProfileUrl }}" target="_blank">{{ coalesce .Editor.Name .Editor.Username }}</a>
-                    on {{ timehtml (absolutedate .EditDate) .EditDate }}
-                    {{ with .EditReason }}
-                        <br />
-                        Reason: {{ . }}
+                <div class="flex-grow-1"></div>
+                <div class="flex items-start">
+                    {{ if .DeleteUrl }}
+                        <a class="delete action button" href="{{ .DeleteUrl }}" title="Delete">&#10006;</a>&nbsp;
                     {{ end }}
-                </span>
-            {{ end }}
+                    {{ if .EditUrl }}
+                        <a class="edit action button" href="{{ .EditUrl }}" title="Edit">&#9998;</a>&nbsp;
+                    {{ end }}
+                    {{ if .ReplyUrl }}
+                        {{ if .ThreadLocked }}
+                            WARNING: locked thread - use power responsibly!
+                        {{ end }}
+                        <a class="reply action button" href="{{ .ReplyUrl }}" title="Reply">&hookrightarrow;</a>&nbsp;
+                    {{ end }}
+                    {{ if .Url }}
+                        <a name="{{ .ID }}" href="{{ .Url }}">#{{ .ID }}</a>
+                    {{ end }}
+                </div>
+            </div>
+            <div class="f6">
+                {{ timehtml (absoluteshortdate .PostDate) .PostDate }}
+            </div>
         </div>
     </div>
     <div class="post-content">
         {{ .Content }}
     </div>
+    {{ if or .ReplyPost .Editor }}
+        <hr />
+        <div class="flex flex-column">
+            {{- if .Editor -}}
+                <div class="f6 fw2">
+                    Edited by <a class="name" href="{{ .Editor.ProfileUrl }}">{{ coalesce .Editor.Name .Editor.Username }}</a>
+                    on {{ timehtml (absolutedate .EditDate) .EditDate }}
+                    {{ with .EditReason }}
+                        Reason: {{ . }}
+                    {{ end }}
+                </div>
+            {{ end }}
+            {{ with .ReplyPost }}
+                <div class="f6 fw2">
+                    Replying to {{ with .Author }}{{ .Username }}{{ else }}deleted user{{ end }} (<a href="{{ .Url }}">#{{ .ID }}</a>)
+                </div>
+            {{ end }}
+        </div>
+    {{ end }}
 </div>
