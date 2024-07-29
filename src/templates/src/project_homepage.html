@@ -1,9 +1,6 @@
 {{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
-	{{ range .Screenshots }}
-		<link rel="preload" href="{{ . }}" as="image">
-	{{ end }}
 	<script src="{{ static "js/templates.js" }}"></script>
 {{ end }}
 
@@ -148,35 +145,6 @@
 	</div>
 </div>
 {{ end }}
-<div class="flex flex-column flex-row-l">
-	<div class="flex-grow-1 overflow-hidden">
-		{{ with .Screenshots }}
-			<div class="carousel-container mw-100 mb3">
-				<div class="carousel aspect-ratio aspect-ratio--16x9 overflow-hidden bg2 br2-ns">
-					<div class="dn db-l">
-						{{ range $index, $screenshot := . }}
-							<div class="carousel-item aspect-ratio--object bg2 {{ if eq $index 0 }}active{{ end }}">
-								<div class="w-100 h-100" style="background:url('{{ $screenshot }}') no-repeat center / contain"></div>
-							</div>
-						{{ end }}
-					</div>
-					<div class="db dn-l">
-						{{ range $index, $screenshot := . }}
-							<div class="carousel-item-small aspect-ratio--object {{ if eq $index 0 }}active{{ end }}">
-								<div class="w-100 h-100" style="background:url('{{ $screenshot }}') no-repeat center / contain"></div>
-							</div>
-						{{ end }}
-					</div>
-				</div>
-				<div class="flex justify-center pv2">
-					{{ range $index, $screenshot := . }}
-						<div class="carousel-button br-pill w1 h1 mh2 {{ if eq $index 0 }}active{{ end }}" onclick="carouselButtonClick({{ $index }})"></div>
-					{{ end }}
-				</div>
-			</div>
-		{{ end }}
-	</div>
-</div>
 {{ if .User }}
 	{{ template "snippet_edit.html" . }}
 	{{ if .Header.Project.CanEdit }}
@@ -207,38 +175,6 @@
 	{{ end }}
 {{ end }}
 <script>
-	const numCarouselItems = {{ len .Screenshots }};
-
-	function activateCarouselItem(i) {
-		const items = document.querySelectorAll('.carousel-item');
-		items.forEach(item => item.classList.remove('active'));
-		items[i].classList.add('active');
-
-		const smallItems = document.querySelectorAll('.carousel-item-small');
-		smallItems.forEach(item => item.classList.remove('active'));
-		smallItems[i].classList.add('active');
-
-		const buttons = document.querySelectorAll('.carousel-button');
-		buttons.forEach(button => button.classList.remove('active'));
-		buttons[i].classList.add('active');
-	}
-
-	let carouselTimerCurrent = 0;
-	const carouselTimer = setInterval(() => {
-		if (numCarouselItems === 0) {
-			return;
-		}
-
-		const next = (carouselTimerCurrent + 1) % numCarouselItems;
-		activateCarouselItem(next);
-		carouselTimerCurrent = next;
-	}, 10000);
-
-	function carouselButtonClick(i) {
-		activateCarouselItem(i);
-		clearInterval(carouselTimer);
-	}
-
 	const longdesc = document.querySelector("#longdesc");
 	const longdescLink = longdesc.querySelector(".longdesc-link");
 	const longdescContent = longdesc.querySelector(".longdesc-content");
