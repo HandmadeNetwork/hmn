@@ -1,82 +1,97 @@
-{{ template "base.html" . }}
+{{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
-<!-- TODO(redesign): Adapt these stylesheets to use media queries and variables -->
-<link rel="stylesheet" href="fishbowl-dark.css">
-<!-- <link rel="stylesheet" href="fishbowl-light.css"> -->
+    <!-- TODO(redesign): Adapt these stylesheets to use media queries and variables -->
+    <link rel="stylesheet" href="{{ static "fishbowl.css" }}">
 
-<script>
-    function scrollToMessage(event, id) {
-        var element = document.getElementById('chatlog__message-container-' + id);
-        if (!element)
-            return;
+    <script>
+        function scrollToMessage(event, id) {
+            var element = document.getElementById('chatlog__message-container-' + id);
+            if (!element)
+                return;
 
-        event.preventDefault();
-        element.classList.add('chatlog__message-container--highlighted');
-
-        window.scrollTo({
-            top: element.getBoundingClientRect().top - document.body.getBoundingClientRect().top - (window.innerHeight / 2),
-            behavior: 'smooth'
-        });
-
-        window.setTimeout(function() {
-            element.classList.remove('chatlog__message-container--highlighted');
-        }, 2000);
-    }
-
-    function showSpoiler(event, element) {
-        if (!element)
-            return;
-
-        if (element.classList.contains('chatlog__attachment--hidden')) {
             event.preventDefault();
-            element.classList.remove('chatlog__attachment--hidden');
+            element.classList.add('chatlog__message-container--highlighted');
+
+            window.scrollTo({
+                top: element.getBoundingClientRect().top - document.body.getBoundingClientRect().top - (window.innerHeight / 2),
+                behavior: 'smooth'
+            });
+
+            window.setTimeout(function() {
+                element.classList.remove('chatlog__message-container--highlighted');
+            }, 2000);
         }
 
-        if (element.classList.contains('chatlog__markdown-spoiler--hidden')) {
-            event.preventDefault();
-            element.classList.remove('chatlog__markdown-spoiler--hidden');
+        function showSpoiler(event, element) {
+            if (!element)
+                return;
+
+            if (element.classList.contains('chatlog__attachment--hidden')) {
+                event.preventDefault();
+                element.classList.remove('chatlog__attachment--hidden');
+            }
+
+            if (element.classList.contains('chatlog__markdown-spoiler--hidden')) {
+                event.preventDefault();
+                element.classList.remove('chatlog__markdown-spoiler--hidden');
+            }
         }
-    }
-</script>
+    </script>
 
-<style>
-    .fishbowl-banner {
-        /* TODO(redesign) */
-        background-color: #254464;
-        /* background-color: #a0c8f2; */
-        background-image: url({{ static "waterline-dark.svg" }});
-        /* background-image: url({{ static "waterline-light.svg" }}); */
-        background-size: 734px 30px;
-        background-repeat: repeat-x;
-        padding-top: 30px;
-    }
+    <style>
+        :root {
+            --fishbowl-bg: #36393e;
+            --fishbowl-c: #dcddde;
+            --fishbowl-link-c: #00aff4;
+            --fishbowl-preamble-c: #fff;
+            --fishbowl-highlighted-bg: rgba(114, 137, 218, 0.2);
+            --fishbowl-pinned-bg: rgba(249, 168, 37, 0.05);
+            --fishbowl-border-c: #4f545c;
+            --fishbowl-timestamp-c: #a3a6aa;
+            --fishbowl-reply-c: #b5b6b8;
+        }
 
-    .fishbowl-banner a {
-        /* TODO(redesign) */
-        color: #9ad0ff;
-        /* color: #1f4f99; */
-    }
+        .fishbowl-banner {
+            /* TODO(redesign) */
+            background-color: #254464;
+            /* background-color: #a0c8f2; */
+            background-image: url({{ static "waterline-dark.svg" }});
+            /* background-image: url({{ static "waterline-light.svg" }}); */
+            background-size: 734px 30px;
+            background-repeat: repeat-x;
+            padding-top: 30px;
+        }
 
-    .fishbowl .chatlog__author a {
-        color: inherit;
-    }
-</style>
+        .fishbowl-banner a {
+            /* TODO(redesign) */
+            color: #9ad0ff;
+            /* color: #1f4f99; */
+        }
+
+        .fishbowl .chatlog__author a {
+            color: inherit;
+        }
+    </style>
 {{ end }}
 
 {{ define "content" }}
-<div class="ph3 ph0-ns">
-    <h2>{{ .Info.Title }}</h2>
-    <p>{{ .Info.Description }}</p>
+    <div class="flex justify-center pa3">
+        <div class="w-100 mw-site-narrow flex flex-column g3">
+            <div class="post-content">
+                <h2>{{ .Info.Title }}</h2>
+                <p>{{ .Info.Description }}</p>
 
-    <div class="fishbowl-banner br3 mb3">
-        <div class="pa3">
-            This is a <b>fishbowl</b>: a panel conversation held on the Handmade Network Discord where a select few participants discuss a topic in depth. We host them on a regular basis, so if you want to catch the next one, <a href="https://discord.gg/hmn" target="_blank">join the Discord!</a>
+                <div class="fishbowl-banner mb3">
+                    <div class="pa3">
+                        This is a <b>fishbowl</b>: a panel conversation held on the Handmade Network Discord where a select few participants discuss a topic in depth. We host them on a regular basis, so if you want to catch the next one, <a href="https://discord.gg/hmn" target="_blank">join the Discord!</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fishbowl">
+                {{- .Contents -}}
+            </div>
         </div>
     </div>
-
-    <div class="fishbowl br3">
-        {{- .Contents -}}
-    </div>
-</div>
 {{ end }}
