@@ -72,3 +72,22 @@ stack!
 timeline-media-background (see if an existing color works)
 red (c-red)
 projectcarddata
+
+
+## forum_post_standalone.html variations
+
+- Forum post on thread page
+    - No title
+    - Reply/edit footer
+    - No breadcrumbs
+- Forum post on delete page
+    - Title
+    - No breadcrumbs
+- Blog post on blog index
+    - Title
+    - No footer
+    - No breadcrumbs
+- Blog post on delete page
+    - Title
+    - No footer
+    - No breadcrumbs

@@ -484,15 +484,17 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 
 	type blogPostDeleteData struct {
 		templates.BaseData
-		Post      templates.Post
-		SubmitUrl string
+		Post        templates.Post
+		ThreadTitle string
+		SubmitUrl   string
 	}
 
 	var res ResponseData
 	res.MustWriteTemplate("blog_post_delete.html", blogPostDeleteData{
-		BaseData:  baseData,
-		SubmitUrl: c.UrlContext.BuildBlogPostDelete(cd.ThreadID, cd.PostID),
-		Post:      templatePost,
+		BaseData:    baseData,
+		SubmitUrl:   c.UrlContext.BuildBlogPostDelete(cd.ThreadID, cd.PostID),
+		Post:        templatePost,
+		ThreadTitle: post.Thread.Title,
 	}, c.Perf)
 	return res
 }
