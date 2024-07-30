@@ -1,54 +1,64 @@
-{{ template "base.html" . }}
+{{ template "base-2024.html" . }}
 
 {{ define "content" }}
-<div>
-    {{ range .Subforums }}
-        <div class="mv3">
-            <h2 class="ma0 ph3 pb2">
-                <a href="{{ .Url }}">
-                    {{ .Name }} &raquo;<br/>
-                </a>
-            </h2>
+    <div class="flex justify-center pa3">
+        <div class="w-100 mw-site-narrow flex flex-column g3 hmn-form">
+            {{ range .Subforums }}
+                <fieldset>
+                    <legend class="link-normal">
+                        <a href="{{ .Url }}">
+                            {{ .Name }}
+                        </a>
+                    </legend>
+                    <div class="pa3 flex flex-column g3">
+                        {{ range .Threads }}
+                            {{ template "thread_list_item.html" . }}
+                        {{ end }}
+                        {{ $more := sub .TotalThreads 3 }}
+                        {{ if gt $more 0 }}
+                            <div class="flex justify-end">
+                                <a class="" href="{{ .Url }}">{{ $more }} more &raquo;</a>
+                            </div>
+                        {{ end }}
+                    </div>
+                </fieldset>
+            {{ end }}
+            <div class="flex justify-end">
+                {{ template "pagination.html" .Pagination }}
+            </div>
+            <hr />
+            <div class="">
+                {{ template "subforum_options" . }}
+            </div>
             {{ range .Threads }}
                 {{ template "thread_list_item.html" . }}
             {{ end }}
-            {{ $more := sub .TotalThreads 3 }}
-            {{ if gt $more 0 }}
-                <div class="ph3 pv1">
-                    <a class="title" href="{{ .Url }}">{{ $more }} more &raquo;</a>
-                </div>
-            {{ end }}
+            <div class="">
+                {{ template "subforum_options" . }}
+            </div>
+            <hr />
+            <div class="flex justify-end">
+                {{ template "pagination.html" .Pagination }}
+            </div>
         </div>
-    {{ end }}
-    <div class="optionbar">
-        {{ template "subforum_options" . }}
     </div>
-    {{ range .Threads }}
-        {{ template "thread_list_item.html" . }}
-    {{ end }}
-    <div class="optionbar bottom">
-        {{ template "subforum_options" . }}
-    </div>
-</div>
 {{ end }}
 
 {{ define "subforum_options" }}
-<div class="options">
-    {{ if .Project.HasForum }}
-        {{ if .User }}
-            <a class="button new-thread" href="{{ .NewThreadUrl }}"><span class="big pr1">+</span> New Thread</a>
-        {{ else }}
-            <a class="button" href="{{ .LoginPageUrl }}">Log in to post a new thread</a>
+    <div class="flex items-center">
+        {{ if .Project.HasForum }}
+            {{ if .User }}
+                <a class="flex items-center g2" href="{{ .NewThreadUrl }}">{{ svg "add" }}<span>New Thread</span></a>
+            {{ else }}
+                <a class="" href="{{ .LoginPageUrl }}">Log in to post a new thread</a>
+            {{ end }}
         {{ end }}
-    {{ end }}
-    {{ if .User }}
-        <form method="POST" action="{{ .MarkReadUrl }}">
-            {{ csrftoken .Session }}
-            <button type="submit"><span class="big pr1">&#x2713;</span> Mark threads here as read</button>
-        </form>
-    {{ end }}
-</div>
-<div class="options">
-    {{ template "pagination.html" .Pagination }}
-</div>
+        <div class="flex-grow-1"></div>
+        {{ if .User }}
+            <form method="POST" action="{{ .MarkReadUrl }}">
+                {{ csrftoken .Session }}
+                <button type="submit" class="link-button"><span class="">&#x2713;</span> Mark threads here as read</button>
+            </form>
+        {{ end }}
+    </div>
 {{ end }}
