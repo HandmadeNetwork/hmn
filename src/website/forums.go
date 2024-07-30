@@ -786,15 +786,17 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 
 	type forumPostDeleteData struct {
 		templates.BaseData
-		Post      templates.Post
-		SubmitUrl string
+		Post        templates.Post
+		ThreadTitle string
+		SubmitUrl   string
 	}
 
 	var res ResponseData
 	res.MustWriteTemplate("forum_post_delete.html", forumPostDeleteData{
-		BaseData:  baseData,
-		SubmitUrl: c.UrlContext.BuildForumPostDelete(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID),
-		Post:      templatePost,
+		BaseData:    baseData,
+		SubmitUrl:   c.UrlContext.BuildForumPostDelete(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID),
+		ThreadTitle: post.Thread.Title,
+		Post:        templatePost,
 	}, c.Perf)
 	return res
 }
