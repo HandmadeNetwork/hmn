@@ -956,10 +956,13 @@ func validateSubforums(lineageBuilder *models.SubforumLineageBuilder, project *m
 
 func addForumUrlsToPost(urlContext *hmnurl.UrlContext, p *templates.Post, currentUser *models.User, author *models.User, subforums []string, threadId int, postId int) {
 	p.Url = urlContext.BuildForumPost(subforums, threadId, postId)
-	if currentUser != nil && ((author != nil && currentUser.ID == author.ID && !p.ThreadLocked) || currentUser.IsStaff) {
-		p.DeleteUrl = urlContext.BuildForumPostDelete(subforums, threadId, postId)
-		p.EditUrl = urlContext.BuildForumPostEdit(subforums, threadId, postId)
+	if currentUser != nil && (!p.ThreadLocked || currentUser.IsStaff) {
 		p.ReplyUrl = urlContext.BuildForumPostReply(subforums, threadId, postId)
+
+		if (author != nil && currentUser.ID == author.ID && !p.ThreadLocked) || currentUser.IsStaff {
+			p.DeleteUrl = urlContext.BuildForumPostDelete(subforums, threadId, postId)
+			p.EditUrl = urlContext.BuildForumPostEdit(subforums, threadId, postId)
+		}
 	}
 }
 
