@@ -140,6 +140,27 @@ func BuildJamGuidelines2024_Visibility() string {
 	return Url("/jam/visibility-2024/guidelines", nil)
 }
 
+var RegexJamIndex2024 = regexp.MustCompile("^/jam/2024$")
+
+func BuildJamIndex2024() string {
+	defer CatchPanic()
+	return Url("/jam/2024", nil)
+}
+
+var RegexJamFeed2024 = regexp.MustCompile("^/jam/2024/feed$")
+
+func BuildJamFeed2024() string {
+	defer CatchPanic()
+	return Url("/jam/2024/feed", nil)
+}
+
+var RegexJamGuidelines2024 = regexp.MustCompile("^/jam/2024/guidelines$")
+
+func BuildJamGuidelines2024() string {
+	defer CatchPanic()
+	return Url("/jam/2024/guidelines", nil)
+}
+
 var RegexJamSaveTheDate = regexp.MustCompile("^/jam/upcoming$")
 
 func BuildJamSaveTheDate() string {
