@@ -178,7 +178,6 @@ func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.
 			is_staff,
 			status,
 			name, bio, blurb, signature,
-			darktheme,
 			showemail,
 			date_joined, registration_ip, avatar_asset_id
 		)
@@ -187,7 +186,6 @@ func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.
 			$4,
 			$5,
 			$6, $7, $8, $9,
-			TRUE,
 			$10,
 			'2017-01-01T00:00:00Z', '192.168.2.1', NULL
 		)

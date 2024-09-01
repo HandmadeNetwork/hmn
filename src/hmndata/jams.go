@@ -111,6 +111,16 @@ var VJ2024 = Jam{
 	UrlSlug: "visibility-2024",
 }
 
+var WRJ2024 = Jam{
+	Event: Event{
+		StartTime: time.Date(2024, 9, 23, 14, 0, 0, 0, utils.Must1(time.LoadLocation("Europe/London"))),
+		EndTime:   time.Date(2024, 9, 30, 6, 0, 0, 0, utils.Must1(time.LoadLocation("Europe/London"))),
+	},
+	Name:    "Wheel Reinvention Jam 2024",
+	Slug:    "WRJ2024",
+	UrlSlug: "2024",
+}
+
 // Conferences
 var HMS2022 = Event{
 	StartTime: time.Date(2022, 11, 16, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
@@ -137,7 +147,7 @@ var HMBoston2024 = Event{
 	EndTime:   time.Date(2024, 8, 10, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 }
 
-var AllJams = []Jam{WRJ2021, WRJ2022, VJ2023, WRJ2023, LJ2024, VJ2024}
+var AllJams = []Jam{WRJ2021, WRJ2022, VJ2023, WRJ2023, LJ2024, VJ2024, WRJ2024}
 
 func CurrentJam() *Jam {
 	now := time.Now()
