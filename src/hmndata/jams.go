@@ -113,8 +113,8 @@ var VJ2024 = Jam{
 
 var WRJ2024 = Jam{
 	Event: Event{
-		StartTime: time.Date(2024, 9, 23, 14, 0, 0, 0, utils.Must1(time.LoadLocation("Europe/London"))),
-		EndTime:   time.Date(2024, 9, 30, 6, 0, 0, 0, utils.Must1(time.LoadLocation("Europe/London"))),
+		StartTime: time.Date(2024, 9, 23, 13, 0, 0, 0, time.UTC),
+		EndTime:   time.Date(2024, 9, 30, 5, 0, 0, 0, time.UTC),
 	},
 	Name:    "Wheel Reinvention Jam 2024",
 	Slug:    "WRJ2024",
