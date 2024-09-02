@@ -98,6 +98,203 @@ func JamSaveTheDate(c *RequestContext) ResponseData {
 	return res
 }
 
+type JamBaseDataWRJ2024 struct {
+	Timespans                  hmndata.EventTimespans
+	StartTimeUnix, EndTimeUnix int64
+	JamUrl                     string
+	JamFeedUrl                 string
+	NewProjectUrl              string
+	GuidelinesUrl              string
+	SubmittedProject           *templates.Project
+}
+
+type JamPageDataWRJ2024 struct {
+	templates.BaseData
+	JamBaseDataWRJ2024
+
+	TwitchEmbedUrl string
+	JamProjects    []templates.Project
+	TimelineItems  []templates.TimelineItem
+	ShortFeed      bool
+}
+
+func JamIndex2024(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	jam := hmndata.WRJ2024
+	now := JamCurrentTime(c, jam.Event)
+
+	jamBaseData, err := getWRJ2024BaseData(c, now)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	baseData := getBaseDataAutocrumb(c, jam.Name)
+	
+	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.Header.SuppressBanners = true
+
+	pageProjects := []templates.Project{}
+	timelineItems := []templates.TimelineItem{}
+	twitchEmbedUrl := ""
+
+	if jamBaseData.Timespans.AfterStart {
+		jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			JamSlugs: []string{jam.Slug},
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+		}
+
+		projectIDs := make([]int, 0, len(jamProjects))
+		pageProjects = make([]templates.Project, 0, len(jamProjects))
+		for _, p := range jamProjects {
+			pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
+			projectIDs = append(projectIDs, p.Project.ID)
+		}
+
+		if len(jamProjects) > 0 {
+			timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
+				ProjectIDs: projectIDs,
+				SkipPosts:  true,
+				Limit:      10,
+			})
+		}
+
+		twitchEmbedUrl = getTwitchEmbedUrl(c)
+	}
+
+	res.MustWriteTemplate("jam_2024_wrj_index.html", JamPageDataWRJ2024{
+		BaseData:          baseData,
+		JamBaseDataWRJ2024: jamBaseData,
+		JamProjects:       pageProjects,
+		TimelineItems:     timelineItems,
+		ShortFeed:         true,
+		TwitchEmbedUrl:    twitchEmbedUrl,
+	}, c.Perf)
+	return res
+}
+
+func JamFeed2024(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	jam := hmndata.WRJ2024
+	now := JamCurrentTime(c, jam.Event)
+
+	jamBaseData, err := getWRJ2024BaseData(c, now)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:title", Value: "Wheel Reinvention Jam"},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2024/opengraph.png", true)},
+		{Property: "og:description", Value: "A one-week jam where we build software from scratch. September 23 - September 30 on Handmade Network."},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex2024()},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("wheel/TwitterCard.png", true)},
+	}
+	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.Header.SuppressBanners = true
+
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		JamSlugs: []string{jam.Slug},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+	}
+
+	pageProjects := make([]templates.Project, 0, len(jamProjects))
+	projectIDs := make([]int, 0, len(jamProjects))
+	for _, p := range jamProjects {
+		projectIDs = append(projectIDs, p.Project.ID)
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
+	}
+
+	timelineItems := []templates.TimelineItem{}
+
+	if len(projectIDs) > 0 {
+		timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
+			ProjectIDs: projectIDs,
+			SkipPosts:  true,
+		})
+	}
+
+	res.MustWriteTemplate("jam_2024_wrj_feed.html", JamPageDataWRJ2024{
+		BaseData:          baseData,
+		JamBaseDataWRJ2024: jamBaseData,
+		JamProjects:       pageProjects,
+		TimelineItems:     timelineItems,
+	}, c.Perf)
+	return res
+}
+
+func JamGuidelines2024(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	jam := hmndata.WRJ2024
+	now := JamCurrentTime(c, jam.Event)
+
+	jamBaseData, err := getWRJ2024BaseData(c, now)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:title", Value: "Wheel Reinvention Jam"},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2024/opengraph.png", true)},
+		{Property: "og:description", Value: "A one-week jam where we build software from scratch. September 23 - September 30 on Handmade Network."},
+		{Property: "og:url", Value: hmnurl.BuildJamIndex2024()},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("wheel/TwitterCard.png", true)},
+	}
+	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.Header.SuppressBanners = true
+
+	res.MustWriteTemplate("jam_2024_wrj_guidelines.html", JamPageDataWRJ2024{
+		BaseData:          baseData,
+		JamBaseDataWRJ2024: jamBaseData,
+	}, c.Perf)
+	return res
+}
+
+func getWRJ2024BaseData(c *RequestContext, now time.Time) (JamBaseDataWRJ2024, error) {
+	jam := hmndata.WRJ2024
+
+	var submittedProject *templates.Project
+	if c.CurrentUser != nil {
+		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+			JamSlugs: []string{jam.Slug},
+			Limit:    1,
+		})
+		if err != nil {
+			return JamBaseDataWRJ2024{}, oops.New(err, "failed to fetch jam projects for current user")
+		}
+		if len(projects) > 0 {
+			submittedProject = utils.P(templates.ProjectAndStuffToTemplate(&projects[0]))
+		}
+	}
+
+	return JamBaseDataWRJ2024{
+		StartTimeUnix: jam.StartTime.Unix(),
+		EndTimeUnix:   jam.EndTime.Unix(),
+		Timespans:     hmndata.CalcTimespans(jam.Event, now),
+
+		JamUrl:           hmnurl.BuildJamIndex2024(),
+		JamFeedUrl:       hmnurl.BuildJamFeed2024(),
+		NewProjectUrl:    hmnurl.BuildProjectNewJam(),
+		GuidelinesUrl:    hmnurl.BuildJamGuidelines2024(),
+		SubmittedProject: submittedProject,
+	}, nil
+}
+
 type JamBaseDataVJ2024 struct {
 	Timespans                  hmndata.EventTimespans
 	StartTimeUnix, EndTimeUnix int64
