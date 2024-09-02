@@ -88,20 +88,16 @@ func Index(c *RequestContext) ResponseData {
 		c.Logger.Warn().Err(err).Msg("failed to fetch featured users")
 	}
 
-	recentJams := hmndata.RecentJams()
-	if len(recentJams) > 0 {
-		slugs := make([]string, 0, len(recentJams))
-		for _, j := range recentJams {
-			slugs = append(slugs, j.Slug)
-		}
+	if recentJam := hmndata.RecentJam(JamRecentWindow); recentJam != nil {
+		slug := recentJam.Slug
 		jamProjectIDs, err := db.QueryScalar[int](c, c.Conn,
 			`
 			SELECT project_id
 			FROM jam_project
 			WHERE 
-			jam_slug = ANY ($1) AND participating = TRUE
+			jam_slug = $1 AND participating = TRUE
 			`,
-			slugs,
+			slug,
 		)
 		if err != nil {
 			c.Logger.Warn().Err(err).Msg("failed to fetch recent jam projects")

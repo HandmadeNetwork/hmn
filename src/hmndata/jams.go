@@ -15,6 +15,14 @@ type Event struct {
 	StartTime, EndTime time.Time
 }
 
+func (ev Event) Within(t time.Time) bool {
+	return ev.WithinGrace(t, 0, 0)
+}
+
+func (ev Event) WithinGrace(t time.Time, before, after time.Duration) bool {
+	return ev.StartTime.Add(-before).Before(t) && t.Before(ev.EndTime.Add(after))
+}
+
 type EventTimespans struct {
 	DaysUntilStart int
 	DaysUntilEnd   int
@@ -152,33 +160,31 @@ var AllJams = []Jam{WRJ2021, WRJ2022, VJ2023, WRJ2023, LJ2024, VJ2024, WRJ2024}
 func CurrentJam() *Jam {
 	now := time.Now()
 	for i, jam := range AllJams {
-		if jam.StartTime.Before(now) && now.Before(jam.EndTime) {
+		if jam.Event.Within(now) {
 			return &AllJams[i]
 		}
 	}
 	return nil
 }
 
-func PreviousJam() *Jam {
+func UpcomingJam(window time.Duration) *Jam {
 	now := time.Now()
-	var mostRecent *Jam
 	for i, jam := range AllJams {
-		if jam.EndTime.Before(now) {
-			mostRecent = &AllJams[i]
+		if jam.Event.WithinGrace(now, window, 0) {
+			return &AllJams[i]
 		}
 	}
-	return mostRecent
+	return nil
 }
 
-func RecentJams() []*Jam {
+func RecentJam(window time.Duration) *Jam {
 	now := time.Now()
-	result := []*Jam{}
 	for i, jam := range AllJams {
-		if jam.StartTime.Before(now) && now.Before(jam.EndTime.Add(14*24*time.Hour)) {
-			result = append(result, &AllJams[i])
+		if jam.Event.WithinGrace(now, 0, window) {
+			return &AllJams[i]
 		}
 	}
-	return result
+	return nil
 }
 
 func JamBySlug(slug string) Jam {

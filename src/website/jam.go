@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
@@ -16,6 +17,9 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
+const JamProjectCreateGracePeriod = 3 * 24 * time.Hour
+const JamRecentWindow = 14 * 24 * time.Hour
+
 func JamCurrentTime(c *RequestContext, ev hmndata.Event) time.Time {
 	t := time.Now()
 	testTime := c.Req.URL.Query().Get("testtime")
@@ -25,11 +29,10 @@ func JamCurrentTime(c *RequestContext, ev hmndata.Event) time.Time {
 		t = ev.StartTime.Add(10 * time.Minute)
 	} else if testTime == "post" {
 		t = ev.EndTime.Add(100 * time.Hour)
-	} else {
-		parsed, err := time.Parse(time.RFC3339, testTime)
-		if err == nil {
-			t = parsed
-		}
+	} else if days, err := strconv.Atoi(testTime); err == nil {
+		t = ev.StartTime.Add(time.Duration(days) * 24 * time.Hour)
+	} else if parsed, err := time.Parse(time.RFC3339, testTime); err == nil {
+		t = parsed
 	}
 	return t
 }
@@ -130,7 +133,7 @@ func JamIndex2024(c *RequestContext) ResponseData {
 	}
 
 	baseData := getBaseDataAutocrumb(c, jam.Name)
-	
+
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
 	baseData.Header.SuppressBanners = true
 
@@ -165,12 +168,12 @@ func JamIndex2024(c *RequestContext) ResponseData {
 	}
 
 	res.MustWriteTemplate("jam_2024_wrj_index.html", JamPageDataWRJ2024{
-		BaseData:          baseData,
+		BaseData:           baseData,
 		JamBaseDataWRJ2024: jamBaseData,
-		JamProjects:       pageProjects,
-		TimelineItems:     timelineItems,
-		ShortFeed:         true,
-		TwitchEmbedUrl:    twitchEmbedUrl,
+		JamProjects:        pageProjects,
+		TimelineItems:      timelineItems,
+		ShortFeed:          true,
+		TwitchEmbedUrl:     twitchEmbedUrl,
 	}, c.Perf)
 	return res
 }
@@ -224,10 +227,10 @@ func JamFeed2024(c *RequestContext) ResponseData {
 	}
 
 	res.MustWriteTemplate("jam_2024_wrj_feed.html", JamPageDataWRJ2024{
-		BaseData:          baseData,
+		BaseData:           baseData,
 		JamBaseDataWRJ2024: jamBaseData,
-		JamProjects:       pageProjects,
-		TimelineItems:     timelineItems,
+		JamProjects:        pageProjects,
+		TimelineItems:      timelineItems,
 	}, c.Perf)
 	return res
 }
@@ -258,7 +261,7 @@ func JamGuidelines2024(c *RequestContext) ResponseData {
 	baseData.Header.SuppressBanners = true
 
 	res.MustWriteTemplate("jam_2024_wrj_guidelines.html", JamPageDataWRJ2024{
-		BaseData:          baseData,
+		BaseData:           baseData,
 		JamBaseDataWRJ2024: jamBaseData,
 	}, c.Perf)
 	return res
@@ -282,6 +285,11 @@ func getWRJ2024BaseData(c *RequestContext, now time.Time) (JamBaseDataWRJ2024, e
 		}
 	}
 
+	var newProjectUrl string
+	if jam.Event.WithinGrace(JamCurrentTime(c, jam.Event), JamProjectCreateGracePeriod, 0) {
+		newProjectUrl = hmnurl.BuildProjectNewJam()
+	}
+
 	return JamBaseDataWRJ2024{
 		StartTimeUnix: jam.StartTime.Unix(),
 		EndTimeUnix:   jam.EndTime.Unix(),
@@ -289,7 +297,7 @@ func getWRJ2024BaseData(c *RequestContext, now time.Time) (JamBaseDataWRJ2024, e
 
 		JamUrl:           hmnurl.BuildJamIndex2024(),
 		JamFeedUrl:       hmnurl.BuildJamFeed2024(),
-		NewProjectUrl:    hmnurl.BuildProjectNewJam(),
+		NewProjectUrl:    newProjectUrl,
 		GuidelinesUrl:    hmnurl.BuildJamGuidelines2024(),
 		SubmittedProject: submittedProject,
 	}, nil
