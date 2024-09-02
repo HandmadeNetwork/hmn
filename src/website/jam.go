@@ -128,7 +128,7 @@ var opengraphWRJ2024 = []templates.OpenGraphItem{
 	{Property: "og:site_name", Value: "Handmade Network"},
 	{Property: "og:type", Value: "website"},
 	{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2024/opengraph.png", true)},
-	{Property: "og:description", Value: "A one-week jam where we build software from scratch. September 23 - September 29 on the Handmade Network."},
+	{Property: "og:description", Value: "A one-week jam where we build software from scratch. September 23 - 29 on the Handmade Network."},
 	{Property: "og:url", Value: hmnurl.BuildJamIndex2024()},
 	{Name: "twitter:card", Value: "summary_large_image"},
 	{Name: "twitter:image", Value: hmnurl.BuildPublic("wheeljam2024/TwitterCard.png", true)},
