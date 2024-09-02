@@ -98,8 +98,8 @@ var WRJ2023 = Jam{
 
 var LJ2024 = Jam{
 	Event: Event{
-		StartTime: time.Date(2024, 8, 15, 17, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(2024, 8, 25, 0, 0, 0, 0, time.UTC),
+		StartTime: time.Date(2024, 3, 15, 17, 0, 0, 0, time.UTC),
+		EndTime:   time.Date(2024, 3, 25, 0, 0, 0, 0, time.UTC),
 	},
 	Name:    "Learning Jam 2024",
 	Slug:    "LJ2024",

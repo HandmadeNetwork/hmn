@@ -19,6 +19,8 @@ import (
 
 const JamProjectCreateGracePeriod = 3 * 24 * time.Hour
 const JamRecentWindow = 14 * 24 * time.Hour
+const JamBannerGraceBefore = 30 * 24 * time.Hour
+const JamBannerGraceAfter = 14 * 24 * time.Hour
 
 func JamCurrentTime(c *RequestContext, ev hmndata.Event) time.Time {
 	t := time.Now()

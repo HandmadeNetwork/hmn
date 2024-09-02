@@ -49,13 +49,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 	var bannerEvent *templates.BannerEvent
 	for _, jam := range hmndata.AllJams {
-		graceBefore := (24 * time.Hour) * 30
-		graceAfter := (24 * time.Hour) * 14
-
-		afterStart := time.Now().After(jam.StartTime.Add(-graceBefore))
-		beforeEnd := time.Now().Before(jam.EndTime.Add(graceAfter))
-
-		if afterStart && beforeEnd {
+		if jam.Event.WithinGrace(time.Now(), JamBannerGraceBefore, JamBannerGraceAfter) {
 			bannerEvent = utils.P(templates.JamToBannerEvent(jam))
 		}
 	}
