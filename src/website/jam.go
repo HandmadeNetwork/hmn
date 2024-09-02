@@ -121,6 +121,17 @@ type JamPageDataWRJ2024 struct {
 	ShortFeed      bool
 }
 
+var opengraphWRJ2024 = []templates.OpenGraphItem{
+	{Property: "og:title", Value: "Wheel Reinvention Jam"},
+	{Property: "og:site_name", Value: "Handmade Network"},
+	{Property: "og:type", Value: "website"},
+	{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2024/opengraph.png", true)},
+	{Property: "og:description", Value: "A one-week jam where we build software from scratch. September 23 - September 29 on the Handmade Network."},
+	{Property: "og:url", Value: hmnurl.BuildJamIndex2024()},
+	{Name: "twitter:card", Value: "summary_large_image"},
+	{Name: "twitter:image", Value: hmnurl.BuildPublic("wheeljam2024/TwitterCard.png", true)},
+}
+
 func JamIndex2024(c *RequestContext) ResponseData {
 	var res ResponseData
 
@@ -133,7 +144,7 @@ func JamIndex2024(c *RequestContext) ResponseData {
 	}
 
 	baseData := getBaseDataAutocrumb(c, jam.Name)
-
+	baseData.OpenGraphItems = opengraphWRJ2024
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
 	baseData.Header.SuppressBanners = true
 
@@ -190,16 +201,7 @@ func JamFeed2024(c *RequestContext) ResponseData {
 	}
 
 	baseData := getBaseDataAutocrumb(c, jam.Name)
-	baseData.OpenGraphItems = []templates.OpenGraphItem{
-		{Property: "og:title", Value: "Wheel Reinvention Jam"},
-		{Property: "og:site_name", Value: "Handmade Network"},
-		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2024/opengraph.png", true)},
-		{Property: "og:description", Value: "A one-week jam where we build software from scratch. September 23 - September 30 on Handmade Network."},
-		{Property: "og:url", Value: hmnurl.BuildJamIndex2024()},
-		{Name: "twitter:card", Value: "summary_large_image"},
-		{Name: "twitter:image", Value: hmnurl.BuildPublic("wheel/TwitterCard.png", true)},
-	}
+	baseData.OpenGraphItems = opengraphWRJ2024
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
 	baseData.Header.SuppressBanners = true
 
@@ -247,16 +249,7 @@ func JamGuidelines2024(c *RequestContext) ResponseData {
 	}
 
 	baseData := getBaseDataAutocrumb(c, jam.Name)
-	baseData.OpenGraphItems = []templates.OpenGraphItem{
-		{Property: "og:title", Value: "Wheel Reinvention Jam"},
-		{Property: "og:site_name", Value: "Handmade Network"},
-		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2024/opengraph.png", true)},
-		{Property: "og:description", Value: "A one-week jam where we build software from scratch. September 23 - September 30 on Handmade Network."},
-		{Property: "og:url", Value: hmnurl.BuildJamIndex2024()},
-		{Name: "twitter:card", Value: "summary_large_image"},
-		{Name: "twitter:image", Value: hmnurl.BuildPublic("wheel/TwitterCard.png", true)},
-	}
+	baseData.OpenGraphItems = opengraphWRJ2024
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
 	baseData.Header.SuppressBanners = true
 
