@@ -126,7 +126,7 @@ var WRJ2024 = Jam{
 	},
 	Name:    "Wheel Reinvention Jam 2024",
 	Slug:    "WRJ2024",
-	UrlSlug: "2024",
+	UrlSlug: "wheel-reinvention-2024",
 }
 
 // Conferences

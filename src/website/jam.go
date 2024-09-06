@@ -65,7 +65,7 @@ func JamsIndex(c *RequestContext) ResponseData {
 		WRJ2023Url: hmnurl.BuildJamIndex2023(),
 		LJ2024Url:  hmnurl.BuildJamIndex2024_Learning(),
 		VJ2024Url:  hmnurl.BuildJamIndex2024_Visibility(),
-		WRJ2024Url: hmnurl.BuildJamIndex2024(),
+		WRJ2024Url: hmnurl.BuildJamIndex2024_WRJ(),
 	}, c.Perf)
 	return res
 }
@@ -129,12 +129,12 @@ var opengraphWRJ2024 = []templates.OpenGraphItem{
 	{Property: "og:type", Value: "website"},
 	{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2024/TwitterCard.png", true)},
 	{Property: "og:description", Value: "A one-week jam where we build software from scratch. September 23 - 29 on the Handmade Network."},
-	{Property: "og:url", Value: hmnurl.BuildJamIndex2024()},
+	{Property: "og:url", Value: hmnurl.BuildJamIndex2024_WRJ()},
 	{Name: "twitter:card", Value: "summary_large_image"},
 	{Name: "twitter:image", Value: hmnurl.BuildPublic("wheeljam2024/TwitterCard.png", true)},
 }
 
-func JamIndex2024(c *RequestContext) ResponseData {
+func JamIndex2024_WRJ(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jam := hmndata.WRJ2024
@@ -191,7 +191,7 @@ func JamIndex2024(c *RequestContext) ResponseData {
 	return res
 }
 
-func JamFeed2024(c *RequestContext) ResponseData {
+func JamFeed2024_WRJ(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jam := hmndata.WRJ2024
@@ -239,7 +239,7 @@ func JamFeed2024(c *RequestContext) ResponseData {
 	return res
 }
 
-func JamGuidelines2024(c *RequestContext) ResponseData {
+func JamGuidelines2024_WRJ(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jam := hmndata.WRJ2024
@@ -290,10 +290,10 @@ func getWRJ2024BaseData(c *RequestContext, now time.Time) (JamBaseDataWRJ2024, e
 		EndTimeUnix:   jam.EndTime.Unix(),
 		Timespans:     hmndata.CalcTimespans(jam.Event, now),
 
-		JamUrl:           hmnurl.BuildJamIndex2024(),
-		JamFeedUrl:       hmnurl.BuildJamFeed2024(),
+		JamUrl:           hmnurl.BuildJamIndex2024_WRJ(),
+		JamFeedUrl:       hmnurl.BuildJamFeed2024_WRJ(),
 		NewProjectUrl:    newProjectUrl,
-		GuidelinesUrl:    hmnurl.BuildJamGuidelines2024(),
+		GuidelinesUrl:    hmnurl.BuildJamGuidelines2024_WRJ(),
 		SubmittedProject: submittedProject,
 	}, nil
 }
