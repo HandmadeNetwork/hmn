@@ -111,7 +111,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	hmnOnly.GET(hmnurl.RegexJamsIndex, JamsIndex)
 	hmnOnly.GET(hmnurl.RegexJamIndex, func(c *RequestContext) ResponseData {
-		return c.Redirect(hmnurl.BuildJamIndex2024_Visibility(), http.StatusFound)
+		return c.Redirect(hmnurl.BuildJamIndex2024_WRJ(), http.StatusFound)
 	})
 	hmnOnly.GET(hmnurl.RegexJamIndex2021, JamIndex2021)
 	hmnOnly.GET(hmnurl.RegexJamIndex2022, JamIndex2022)
