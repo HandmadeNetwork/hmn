@@ -394,7 +394,7 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, err)
 		} else if err == nil {
 			// NOTE(asaf): Creating snippet even if the checkbox is off because the user asked us to.
-			err = discord.HandleSnippetForInternedMessage(c, c.Conn, interned, true)
+			err = discord.HandleSnippetForInternedMessage(c, c.Conn, interned, true, false)
 			if err != nil {
 				return c.ErrorResponse(http.StatusInternalServerError, err)
 			}

@@ -375,6 +375,8 @@ type ProjectEditData struct {
 	AllLogos []templates.Icon
 
 	TextEditor templates.TextEditor
+
+	DiscordSettingsUrl string
 }
 
 func ProjectNew(c *RequestContext) ResponseData {
@@ -423,6 +425,8 @@ func ProjectNew(c *RequestContext) ResponseData {
 			MaxFileSize: AssetMaxSize(c.CurrentUser),
 			UploadUrl:   c.UrlContext.BuildAssetUpload(),
 		},
+
+		DiscordSettingsUrl: hmnurl.BuildUserSettings("discord"),
 	}, c.Perf)
 	return res
 }
@@ -567,6 +571,8 @@ func ProjectEdit(c *RequestContext) ResponseData {
 			MaxFileSize: AssetMaxSize(c.CurrentUser),
 			UploadUrl:   c.UrlContext.BuildAssetUpload(),
 		},
+
+		DiscordSettingsUrl: hmnurl.BuildUserSettings("discord"),
 	}, c.Perf)
 	return res
 }

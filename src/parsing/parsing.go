@@ -50,6 +50,16 @@ var DiscordMarkdown = makeGoldmark(
 	goldmark.WithRendererOptions(html.WithHardWraps()),
 )
 
+var DiscordTagMarkdown = makeGoldmark(
+	false,
+	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
+		Previews: false,
+		Embeds:   false,
+	})...),
+	goldmark.WithRendererOptions(html.WithHardWraps()),
+	goldmark.WithRenderer(projectTagRenderer{}),
+)
+
 // Used for rendering real-time previews of post content.
 var EducationPreviewMarkdown = makeGoldmark(
 	true,

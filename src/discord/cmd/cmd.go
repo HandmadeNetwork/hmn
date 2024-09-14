@@ -31,7 +31,7 @@ func init() {
 			defer conn.Close()
 
 			for _, channelID := range args {
-				discord.Scrape(ctx, conn, channelID, time.Time{}, false)
+				discord.ScrapeAll(ctx, conn, channelID, time.Time{})
 			}
 		},
 	}
@@ -68,7 +68,7 @@ func init() {
 					logging.Error().Msg(fmt.Sprintf("failed to intern discord message id %s", msgID))
 					continue
 				}
-				err = discord.HandleInternedMessage(ctx, conn, message, false, true)
+				err = discord.HandleInternedMessage(ctx, conn, message, false, true, false)
 				if err != nil {
 					logging.Error().Msg(fmt.Sprintf("failed to handle interned message id %s", msgID))
 					continue

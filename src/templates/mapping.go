@@ -211,6 +211,12 @@ func UserToTemplate(u *models.User) User {
 		email = u.Email
 	}
 
+	var discordUser *DiscordUser
+	if u.DiscordUser != nil {
+		du := DiscordUserToTemplate(u.DiscordUser)
+		discordUser = &du
+	}
+
 	return User{
 		ID:       u.ID,
 		Username: u.Username,
@@ -235,6 +241,8 @@ func UserToTemplate(u *models.User) User {
 
 		IsEduTester: u.CanSeeUnpublishedEducationContent(),
 		IsEduAuthor: u.CanAuthorEducation(),
+
+		DiscordUser: discordUser,
 	}
 }
 

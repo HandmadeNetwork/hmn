@@ -229,6 +229,8 @@ type User struct {
 
 	IsEduTester bool
 	IsEduAuthor bool
+
+	DiscordUser *DiscordUser
 }
 
 type Link struct {

@@ -19,6 +19,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmndata"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -32,8 +33,9 @@ var autostoreChannels = []string{
 	// TODO(asaf): Add jam channel
 }
 
-func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, createSnippets bool) error {
+func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, notifyUser bool) error {
 	deleted := false
+	interned := false
 	var err error
 
 	// NOTE(asaf): All functions called here should verify that the message applies to them.
@@ -43,19 +45,21 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	}
 
 	if !deleted && err == nil {
-		deleted, err = CleanUpShowcase(ctx, dbConn, msg)
-	}
-
-	if !deleted && err == nil {
 		err = ShareToMatrix(ctx, msg)
 	}
 
+	tags := parseTags(msg.Content)
+
 	if !deleted && err == nil {
-		err = MaybeInternMessage(ctx, dbConn, msg)
+		interned, err = MaybeInternMessage(ctx, dbConn, msg, tags)
+	}
+
+	if !deleted && err == nil {
+		deleted, err = CleanUpShowcase(ctx, dbConn, msg, interned)
 	}
 
 	if err == nil {
-		err = HandleInternedMessage(ctx, dbConn, msg, deleted, createSnippets)
+		err = HandleInternedMessage(ctx, dbConn, msg, deleted, true, notifyUser)
 	}
 
 	// when we needed her most...she vanished
@@ -66,7 +70,62 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	return err
 }
 
-func CleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
+type TagProject struct {
+	Tag       string `db:"tag.text"`
+	ProjectID int    `db:"project.id"`
+}
+
+func HandleIncomingMessageTags(ctx context.Context, dbConn db.ConnOrTx, hmnUser *models.User, authorID string, tags []string, notifyUser bool) ([]*TagProject, error) {
+	if len(tags) > 0 && hmnUser != nil {
+		existingUserTags, err := db.Query[TagProject](ctx, dbConn,
+			`
+			SELECT $columns
+			FROM
+				tag
+				JOIN project ON project.tag = tag.id
+				JOIN user_project ON user_project.project_id = project.id
+			WHERE user_project.user_id = $1 AND tag.text = ANY ($2)
+			`,
+			hmnUser.ID,
+			tags,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		missingTags := []string{}
+		for _, t := range tags {
+			found := false
+			for _, et := range existingUserTags {
+				if et.Tag == t {
+					found = true
+					break
+				}
+			}
+			if !found {
+				missingTags = append(missingTags, t)
+			}
+		}
+
+		if len(missingTags) > 0 && notifyUser {
+			err = SendDM(ctx, dbConn,
+				authorID,
+				fmt.Sprintf(
+					"It looks like you tried linking a message to a Handmade Network project, but we couldn't find a project matching the tags you provided (%s).\nGo to your project's settings on the Handmade Network website, set a tag, then edit or repost your message on Discord.\nIf this is a false positive, please let us know in #network-meta.",
+					strings.Join(missingTags, ", "),
+				),
+			)
+			if err != nil {
+				return existingUserTags, oops.New(err, "failed to send unidentified tags warning message")
+			}
+		}
+		return existingUserTags, nil
+	}
+
+	return nil, nil
+}
+
+func CleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message, interned bool) (bool, error) {
 	deleted := false
 	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID {
 		switch msg.Type {
@@ -75,7 +134,7 @@ func CleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 			return deleted, nil
 		}
 
-		if !messageShouldBeStored(msg) {
+		if !interned {
 			err := DeleteMessage(ctx, msg.ChannelID, msg.ID)
 			if err != nil {
 				return deleted, oops.New(err, "failed to delete message")
@@ -83,17 +142,10 @@ func CleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 			deleted = true
 
 			if !msg.Author.IsBot {
-				channel, err := CreateDM(ctx, msg.Author.ID)
-				if err != nil {
-					return deleted, oops.New(err, "failed to create DM channel")
-				}
+				err = SendDM(ctx, dbConn, msg.Author.ID,
+					"Posts in #project-showcase are required to have either an image/video or a link, or start with `!til`, or be tagged to an hmn project. Discuss showcase content in #project-discussion.",
+				)
 
-				err = SendMessages(ctx, dbConn, MessageToSend{
-					ChannelID: channel.ID,
-					Req: CreateMessageRequest{
-						Content: "Posts in #project-showcase are required to have either an image/video or a link, or start with `!til`. Discuss showcase content in #projects.",
-					},
-				})
 				if err != nil {
 					return deleted, oops.New(err, "failed to send showcase warning message")
 				}
@@ -125,17 +177,9 @@ func CleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool
 			deleted = true
 
 			if !msg.Author.IsBot {
-				channel, err := CreateDM(ctx, msg.Author.ID)
-				if err != nil {
-					return deleted, oops.New(err, "failed to create DM channel")
-				}
-
-				err = SendMessages(ctx, dbConn, MessageToSend{
-					ChannelID: channel.ID,
-					Req: CreateMessageRequest{
-						Content: "Posts in #the-library are required to have a link. Discuss library content in other relevant channels.",
-					},
-				})
+				err = SendDM(ctx, dbConn, msg.Author.ID,
+					"Posts in #the-library are required to have a link. Discuss library content in other relevant channels.",
+				)
 				if err != nil {
 					return deleted, oops.New(err, "failed to send showcase warning message")
 				}
@@ -301,18 +345,20 @@ func ShareToMatrix(ctx context.Context, msg *Message) error {
 	return nil
 }
 
-func MaybeInternMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message) error {
-	if messageShouldBeStored(msg) {
+func MaybeInternMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, tags []string) (bool, error) {
+	interned := false
+	if messageShouldBeStored(msg, tags) {
+		interned = true
 		err := InternMessage(ctx, dbConn, msg)
 		if errors.Is(err, errNotEnoughInfo) {
 			logging.ExtractLogger(ctx).Warn().
 				Interface("msg", msg).
 				Msg("didn't have enough info to intern Discord message")
 		} else if err != nil {
-			return err
+			return interned, err
 		}
 	}
-	return nil
+	return interned, nil
 }
 
 var errNotEnoughInfo = errors.New("Discord didn't send enough info in this event for us to do this")
@@ -399,6 +445,9 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 	if err != nil {
 		return nil, err
 	}
+	if interned.MessageContent != nil {
+		interned.MessageContent.ParsedTags = parseTags(interned.MessageContent.LastContent)
+	}
 	return interned, nil
 }
 
@@ -406,7 +455,7 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 // 1. Saves/updates content
 // 2. Saves/updates snippet
 // 3. Deletes content/snippet
-func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, removeInternedMessage bool, createSnippet bool) error {
+func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, messageDeleted bool, createSnippet bool, notifyUser bool) error {
 	tx, err := dbConn.Begin(ctx)
 	if err != nil {
 		return oops.New(err, "failed to start transaction")
@@ -417,18 +466,25 @@ func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	if err != nil && !errors.Is(err, db.NotFound) {
 		return err
 	} else if err == nil {
-		if !removeInternedMessage {
-			removeInternedMessage = !messageShouldBeStored(msg)
-		}
-
-		if !removeInternedMessage {
+		if !messageDeleted {
+			if msg.InternType == InternTypeExplicit && interned.DiscordUser == nil {
+				if notifyUser {
+					err := SendDM(ctx, dbConn,
+						msg.Author.ID,
+						fmt.Sprintf("It looks like you tried linking a message to a Handmade Network project, but your Discord account is not linked to your Handmade Network account.\nYou can link your account at <%s>, then edit or repost your message on Discord.\nIf this is a false positive, please let us know in #network-meta.", hmnurl.BuildUserSettings("discord")),
+					)
+					if err != nil {
+						return oops.New(err, "failed to send unlinked account warning message")
+					}
+				}
+			}
 			err = SaveMessageContents(ctx, tx, interned, msg)
 			if err != nil {
 				return err
 
 			}
 			if createSnippet {
-				err = HandleSnippetForInternedMessage(ctx, tx, interned, false)
+				err = HandleSnippetForInternedMessage(ctx, tx, interned, false, notifyUser)
 				if err != nil {
 					return err
 				}
@@ -543,6 +599,7 @@ func SaveMessageContents(
 				return oops.New(err, "failed to fetch message contents")
 			}
 			interned.MessageContent = content
+			interned.MessageContent.ParsedTags = parseTags(interned.MessageContent.LastContent)
 		}
 
 		// Save attachments
@@ -846,7 +903,7 @@ If forceCreate is true, it does not check any user settings such as automaticall
 #project-showcase. If we have the content, it will make a snippet for it, no
 questions asked. Bear that in mind.
 */
-func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, interned *InternedMessage, forceCreate bool) error {
+func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, interned *InternedMessage, forceCreate bool, notifyUser bool) error {
 	if interned.HMNUser == nil {
 		// NOTE(asaf): Can't handle snippets when there's no linked user
 		return nil
@@ -949,14 +1006,9 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 
 		// Try to associate tags in the message with project tags in HMN.
 		// Match only tags for projects in which the current user is a collaborator.
-		messageTags := getDiscordTags(existingSnippet.Description)
-
-		// Fetch projects so we know what tags the user can apply to their snippet.
-		projects, err := hmndata.FetchProjects(ctx, tx, interned.HMNUser, hmndata.ProjectsQuery{
-			OwnerIDs: []int{interned.HMNUser.ID},
-		})
+		tags, err := HandleIncomingMessageTags(ctx, tx, interned.HMNUser, interned.Message.UserID, interned.MessageContent.ParsedTags, notifyUser)
 		if err != nil {
-			return oops.New(err, "failed to look up user projects")
+			return err
 		}
 
 		_, err = tx.Exec(ctx,
@@ -973,27 +1025,21 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 			return oops.New(err, "failed to clear project association for snippet")
 		}
 
-		for _, p := range projects {
-			if p.Tag != nil {
-				for _, messageTag := range messageTags {
-					if strings.EqualFold(p.Tag.Text, messageTag) {
-						_, err = tx.Exec(ctx,
-							`
-							INSERT INTO snippet_project (project_id, snippet_id, kind)
-							VALUES ($1, $2, $3)
-							ON CONFLICT DO NOTHING
-							`,
-							p.Project.ID,
-							existingSnippet.ID,
-							models.SnippetProjectKindDiscord,
-						)
-						if err != nil {
-							return oops.New(err, "failed to associate snippet with project")
-						}
-						break
-					}
-				}
+		for _, t := range tags {
+			_, err = tx.Exec(ctx,
+				`
+				INSERT INTO snippet_project (project_id, snippet_id, kind)
+				VALUES ($1, $2, $3)
+				ON CONFLICT DO NOTHING
+				`,
+				t.ProjectID,
+				existingSnippet.ID,
+				models.SnippetProjectKindDiscord,
+			)
+			if err != nil {
+				return oops.New(err, "failed to associate snippet with project")
 			}
+
 		}
 
 		hmndata.UpdateSnippetLastPostedForAllProjects(ctx, tx)
@@ -1005,20 +1051,6 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 	}
 
 	return nil
-}
-
-// TODO(asaf): I believe this will also match https://example.com?hello=1&whatever=5
-//
-//	Probably need to add word boundaries.
-var REDiscordTag = regexp.MustCompile(`&([a-zA-Z0-9]+(-[a-zA-Z0-9]+)*)`)
-
-func getDiscordTags(content string) []string {
-	matches := REDiscordTag.FindAllStringSubmatch(content, -1)
-	result := make([]string, len(matches))
-	for i, m := range matches {
-		result[i] = m[1]
-	}
-	return result
 }
 
 // NOTE(ben): This is maybe redundant with the regexes we use for markdown. But
@@ -1084,12 +1116,18 @@ func messageHasLinks(content string) bool {
 	return false
 }
 
-func messageShouldBeStored(msg *Message) bool {
+func messageShouldBeStored(msg *Message, tags []string) bool {
 	if msg == nil {
 		return false
 	}
 
 	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(msg.Content)), "!til") {
+		msg.InternType = InternTypeExplicit
+		return true
+	}
+
+	if len(tags) > 0 {
+		msg.InternType = InternTypeExplicit
 		return true
 	}
 
@@ -1111,8 +1149,44 @@ func messageShouldBeStored(msg *Message) bool {
 			hasGoodAttachments = false
 		}
 
-		return hasGoodContent || hasGoodAttachments
+		intern := hasGoodContent || hasGoodAttachments
+		if intern {
+			msg.InternType = InternTypeImplicit
+		}
+
+		return intern
 	}
 
 	return false
+}
+
+func parseTags(content string) []string {
+	var tags []string
+
+	tagStr := parsing.ParseMarkdown(content, parsing.DiscordTagMarkdown)
+	tagStr = strings.Trim(tagStr, "\n")
+	if len(tagStr) > 0 {
+		tags = strings.Split(tagStr, "\n")
+	}
+
+	return tags
+}
+
+func SendDM(ctx context.Context, dbConn db.ConnOrTx, authorID string, text string) error {
+	channel, err := CreateDM(ctx, authorID)
+	if err != nil {
+		return oops.New(err, "failed to create DM channel")
+	}
+
+	err = SendMessages(ctx, dbConn, MessageToSend{
+		ChannelID: channel.ID,
+		Req: CreateMessageRequest{
+			Content: text,
+		},
+	})
+	if err != nil {
+		return oops.New(err, "failed to send DM to message owner")
+	}
+
+	return nil
 }
