@@ -89,9 +89,10 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 			LEFT JOIN discord_message_content AS content ON content.message_id = message.id
 			LEFT JOIN hmn_user AS hmnuser ON hmnuser.id = duser.hmn_user_id
 		WHERE
-			content.last_content IS NULL
+			content.last_content IS NULL AND message.guild_id = $1
 		ORDER BY message.sent_at DESC
 		`,
+		config.Config.Discord.GuildID,
 	)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to check for messages without content")
