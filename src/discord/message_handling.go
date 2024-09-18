@@ -1169,6 +1169,12 @@ func parseTags(content string) []string {
 		tags = strings.Split(tagStr, "\n")
 	}
 
+	for idx, tag := range tags {
+		tags[idx] = strings.ToLower(tag)
+	}
+
+	logging.Debug().Strs("tags", tags).Msg("tags")
+
 	return tags
 }
 
