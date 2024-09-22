@@ -11,6 +11,8 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
+const JamProjectCreateGracePeriod = 3 * 24 * time.Hour
+
 type Event struct {
 	StartTime, EndTime time.Time
 }
@@ -209,7 +211,7 @@ func FetchJamsForProject(ctx context.Context, dbConn db.ConnOrTx, user *models.U
 		return nil, oops.New(err, "failed to fetch jams for project")
 	}
 
-	currentJam := CurrentJam()
+	currentJam := UpcomingJam(JamProjectCreateGracePeriod)
 	foundCurrent := false
 	for i := range jamProjects {
 		jam := JamBySlug(jamProjects[i].JamSlug)

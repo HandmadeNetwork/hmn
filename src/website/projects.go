@@ -396,7 +396,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 	project.Personal = true
 
 	if c.Req.URL.Query().Has("jam") {
-		currentJam := hmndata.UpcomingJam(JamProjectCreateGracePeriod)
+		currentJam := hmndata.UpcomingJam(hmndata.JamProjectCreateGracePeriod)
 		if currentJam != nil {
 			project.JamParticipation = []templates.ProjectJamParticipation{
 				{

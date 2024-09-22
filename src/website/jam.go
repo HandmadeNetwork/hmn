@@ -17,7 +17,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-const JamProjectCreateGracePeriod = 3 * 24 * time.Hour
 const JamRecentWindow = 14 * 24 * time.Hour
 const JamBannerGraceBefore = 30 * 24 * time.Hour
 const JamBannerGraceAfter = 14 * 24 * time.Hour
@@ -281,7 +280,7 @@ func getWRJ2024BaseData(c *RequestContext, now time.Time) (JamBaseDataWRJ2024, e
 	}
 
 	var newProjectUrl string
-	if jam.Event.WithinGrace(JamCurrentTime(c, jam.Event), JamProjectCreateGracePeriod, 0) {
+	if jam.Event.WithinGrace(JamCurrentTime(c, jam.Event), hmndata.JamProjectCreateGracePeriod, 0) {
 		newProjectUrl = hmnurl.BuildProjectNewJam()
 	}
 
