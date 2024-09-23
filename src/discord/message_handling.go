@@ -44,9 +44,9 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 		deleted, err = CleanUpLibrary(ctx, dbConn, msg)
 	}
 
-	if !deleted && err == nil {
-		err = ShareToMatrix(ctx, msg)
-	}
+	// if !deleted && err == nil {
+	// 	err = ShareToMatrix(ctx, msg)
+	// }
 
 	tags := parseTags(msg.Content)
 
@@ -111,7 +111,7 @@ func HandleIncomingMessageTags(ctx context.Context, dbConn db.ConnOrTx, hmnUser 
 			err = SendDM(ctx, dbConn,
 				authorID,
 				fmt.Sprintf(
-					"It looks like you tried linking a message to a Handmade Network project, but we couldn't find a project matching the tags you provided (%s).\nGo to your project's settings on the Handmade Network website, set a tag, then edit or repost your message on Discord.\nIf this is a false positive, please let us know in #network-meta.",
+					"It looks like you tried linking a message to a Handmade Network project, but we couldn't find a project matching the tags you provided (%s).\nGo to your project's settings on the Handmade Network website, set a Discord tag, then edit or repost your message on Discord.\nIf this is a false positive, please let us know in #network-meta.",
 					strings.Join(missingTags, ", "),
 				),
 			)
@@ -143,7 +143,7 @@ func CleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message, inte
 
 			if !msg.Author.IsBot {
 				err = SendDM(ctx, dbConn, msg.Author.ID,
-					"Posts in #project-showcase are required to have either an image/video or a link, or start with `!til`, or be tagged to an hmn project. Discuss showcase content in #project-discussion.",
+					"Posts in #project-showcase are required to have either an image/video or a link, or start with `!til`, or be tagged to an hmn project (like `&myproject`). Discuss showcase content in #project-discussion.",
 				)
 
 				if err != nil {
