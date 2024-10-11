@@ -161,13 +161,6 @@ func BuildJamGuidelines2024_WRJ() string {
 	return Url("/jam/wheel-reinvention-2024/guidelines", nil)
 }
 
-var RegexJamSaveTheDate = regexp.MustCompile("^/jam/upcoming$")
-
-func BuildJamSaveTheDate() string {
-	defer CatchPanic()
-	return Url("/jam/upcoming", nil)
-}
-
 func BuildJamIndexAny(slug string) string {
 	defer CatchPanic()
 	return Url(fmt.Sprintf("/jam/%s", slug), nil)
@@ -352,6 +345,13 @@ var RegexContactPage = regexp.MustCompile("^/contact$")
 func BuildContactPage() string {
 	defer CatchPanic()
 	return Url("/contact", nil)
+}
+
+var RegexNewsletterSignup = regexp.MustCompile("^/newsletter$")
+
+func BuildNewsletterSignup() string {
+	defer CatchPanic()
+	return Url("/newsletter", nil)
 }
 
 var RegexMonthlyUpdatePolicy = regexp.MustCompile("^/monthly-update-policy$")
