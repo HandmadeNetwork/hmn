@@ -51,6 +51,7 @@ type Header struct {
 	HMNHomepageUrl  string
 	ProjectIndexUrl string
 	PodcastUrl      string
+	NewsletterUrl   string
 	FishbowlUrl     string
 	ForumsUrl       string
 	ConferencesUrl  string
