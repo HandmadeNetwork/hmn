@@ -76,7 +76,15 @@ func StartServer(ctx context.Context) jobs.Job {
 func (s *server) getObject(w http.ResponseWriter, r *http.Request) {
 	bucket, key := bucketKey(r)
 
-	file := utils.Must1(os.Open(filepath.Join(dir, bucket, key)))
+	file, err := os.Open(filepath.Join(dir, bucket, key))
+	if errors.Is(err, os.ErrNotExist) {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	} else if err != nil {
+		s.log.Err(err).Msg("failed to open S3 file")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	io.Copy(w, file)
 }
 

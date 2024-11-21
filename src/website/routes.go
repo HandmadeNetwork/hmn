@@ -352,6 +352,12 @@ func officialProjectMiddleware(h Handler) Handler {
 			return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
 		}
 
+		// If the current project now has a new slug, redirect to the new slug.
+		slug := hmnurl.GetOfficialProjectSlugFromHost(c.Req.Host)
+		if slug != "" && slug != c.CurrentProject.Slug {
+			return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)
+		}
+
 		return h(c)
 	}
 }

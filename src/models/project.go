@@ -58,12 +58,13 @@ type Project struct {
 
 	ForumID *int `db:"forum_id"`
 
-	Slug              string `db:"slug"`
-	Name              string `db:"name"`
-	TagID             *int   `db:"tag"`
-	Blurb             string `db:"blurb"`
-	Description       string `db:"description"`
-	ParsedDescription string `db:"descparsed"`
+	Slug              string   `db:"slug"`
+	SlugAliases       []string `db:"slug_aliases"`
+	Name              string   `db:"name"`
+	TagID             *int     `db:"tag"`
+	Blurb             string   `db:"blurb"`
+	Description       string   `db:"description"`
+	ParsedDescription string   `db:"descparsed"`
 
 	Lifecycle ProjectLifecycle `db:"lifecycle"` // TODO(asaf): Ensure we only fetch projects in the correct lifecycle phase everywhere.
 

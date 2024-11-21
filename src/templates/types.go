@@ -161,6 +161,7 @@ type Project struct {
 type ProjectSettings struct {
 	Name             string
 	Slug             string
+	SlugAliases      string
 	Hidden           bool
 	Featured         bool
 	Personal         bool

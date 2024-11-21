@@ -38,8 +38,7 @@ func loadCommonData(h Handler) Handler {
 
 			// get current official project (HMN or otherwise, by subdomain)
 			{
-				hostPrefix := strings.TrimSuffix(c.Req.Host, hmnurl.GetBaseHost())
-				slug := strings.TrimRight(hostPrefix, ".")
+				slug := hmnurl.GetOfficialProjectSlugFromHost(c.Req.Host)
 				var owners []*models.User
 
 				if len(slug) > 0 {

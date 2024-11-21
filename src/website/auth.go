@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	neturl "net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 var UsernameRegex = regexp.MustCompile(`^[0-9a-zA-Z][\w-]{2,29}$`)
@@ -895,7 +897,12 @@ func validateUsernameAndToken(c *RequestContext, username string, token string, 
 }
 
 func urlIsLocal(url string) bool {
-	return strings.HasPrefix(url, config.Config.BaseUrl)
+	urlParsed, err := neturl.Parse(url)
+	if err != nil {
+		return false
+	}
+	baseUrl := utils.Must1(neturl.Parse(config.Config.BaseUrl))
+	return strings.HasSuffix(urlParsed.Host, baseUrl.Host)
 }
 
 func emailIsBlacklisted(email string) bool {

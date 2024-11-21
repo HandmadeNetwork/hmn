@@ -144,7 +144,7 @@ func FetchProjects(
 		qb.Add(`AND project.id = ANY ($?)`, q.ProjectIDs)
 	}
 	if len(q.Slugs) > 0 {
-		qb.Add(`AND (project.slug != '' AND project.slug = ANY ($?))`, q.Slugs)
+		qb.Add(`AND (project.slug != '' AND (project.slug = ANY ($?) OR $? && project.slug_aliases))`, q.Slugs, q.Slugs)
 	}
 	if len(q.JamSlugs) > 0 {
 		qb.Add(`AND (jam_project.jam_slug = ANY ($?) AND jam_project.participating = TRUE)`, q.JamSlugs)

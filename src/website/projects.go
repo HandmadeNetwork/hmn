@@ -630,9 +630,10 @@ type ProjectPayload struct {
 	Tag                   string
 	JamParticipationSlugs []string
 
-	Slug     string
-	Featured bool
-	Personal bool
+	Slug        string
+	SlugAliases string // comma-separated
+	Featured    bool
+	Personal    bool
 }
 
 type ProjectEditFormResult struct {
@@ -706,6 +707,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	}
 
 	slug := strings.TrimSpace(c.Req.Form.Get("slug"))
+	slugAliases := c.Req.Form.Get("slug_aliases")
 	officialStr := c.Req.Form.Get("official")
 	official := len(officialStr) > 0
 	featuredStr := c.Req.Form.Get("featured")
@@ -733,6 +735,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		Tag:                   tag,
 		JamParticipationSlugs: jamParticipationSlugs,
 		Slug:                  slug,
+		SlugAliases:           slugAliases,
 		Personal:              !official,
 		Featured:              featured,
 	}
@@ -832,13 +835,19 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	}
 
 	if user.IsStaff {
+		slugAliases := strings.Split(payload.SlugAliases, ",")
+		for i := range slugAliases {
+			slugAliases[i] = strings.TrimSpace(slugAliases[i])
+		}
+
 		_, err = tx.Exec(ctx,
 			`
 			UPDATE project SET
 				slug = $2,
 				featured = $3,
 				personal = $4,
-				hidden = $5
+				hidden = $5,
+				slug_aliases = $6
 			WHERE
 				id = $1
 			`,
@@ -847,6 +856,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			payload.Featured,
 			payload.Personal,
 			payload.Hidden,
+			slugAliases,
 		)
 		if err != nil {
 			return oops.New(err, "Failed to update project with admin fields")

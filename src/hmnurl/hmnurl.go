@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strings"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/models"
@@ -61,6 +62,12 @@ func SetS3BaseUrl(base string) {
 
 func GetBaseHost() string {
 	return baseUrlParsed.Host
+}
+
+func GetOfficialProjectSlugFromHost(host string) string {
+	hostPrefix := strings.TrimSuffix(host, GetBaseHost())
+	slug := strings.TrimRight(hostPrefix, ".")
+	return slug
 }
 
 type UrlContext struct {

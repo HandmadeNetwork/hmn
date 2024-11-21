@@ -139,6 +139,7 @@ func ProjectToProjectSettings(
 	return ProjectSettings{
 		Name:        p.Name,
 		Slug:        p.Slug,
+		SlugAliases: strings.Join(p.SlugAliases, ", "),
 		Hidden:      p.Hidden,
 		Featured:    p.Featured,
 		Personal:    p.Personal,
