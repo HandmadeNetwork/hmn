@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync/atomic"
 
 	color "git.handmade.network/hmn/hmn/src/ansicolor"
 	"git.handmade.network/hmn/hmn/src/config"
@@ -59,7 +60,7 @@ func With() zerolog.Context {
 
 type PrettyZerologWriter struct {
 	wd                  string
-	wasLastLogMultiline bool
+	wasLastLogMultiline atomic.Bool
 }
 
 type PrettyLogEntry struct {
@@ -91,7 +92,7 @@ func NewPrettyZerologWriter() *PrettyZerologWriter {
 	wd, _ := os.Getwd()
 	return &PrettyZerologWriter{
 		wd:                  wd,
-		wasLastLogMultiline: false,
+		wasLastLogMultiline: atomic.Bool{},
 	}
 }
 
@@ -130,7 +131,7 @@ func (w *PrettyZerologWriter) Write(p []byte) (int, error) {
 	isMultiline := (pretty.Error != "" || pretty.StackTrace != nil || pretty.OtherFields != nil)
 
 	var b strings.Builder
-	if isMultiline || w.wasLastLogMultiline {
+	if isMultiline || w.wasLastLogMultiline.Load() {
 		b.WriteString("---------------------------------------\n")
 	}
 	b.WriteString(pretty.Timestamp)
@@ -177,7 +178,7 @@ func (w *PrettyZerologWriter) Write(p []byte) (int, error) {
 		}
 	}
 
-	w.wasLastLogMultiline = isMultiline
+	w.wasLastLogMultiline.Store(isMultiline)
 
 	return os.Stderr.Write([]byte(b.String()))
 }
