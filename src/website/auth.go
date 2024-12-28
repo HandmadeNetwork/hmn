@@ -1,6 +1,7 @@
 package website
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -215,7 +216,11 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	}
 
 	c.Perf.StartBlock("SQL", "Check blacklist")
-	if blacklist(username, emailAddress) {
+	blacklisted, err := blacklist(c, c.Conn, username, emailAddress)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check email blacklist"))
+	}
+	if blacklisted {
 		// NOTE(asaf): Silent rejection so we don't allow attackers to harvest emails.
 		logEvent.Msg("blacklisted registration attempt")
 		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
@@ -224,7 +229,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 
 	c.Perf.StartBlock("SQL", "Check for existing usernames and emails")
 	userAlreadyExists := true
-	_, err := db.QueryOneScalar[int](c, c.Conn,
+	_, err = db.QueryOneScalar[int](c, c.Conn,
 		`
 		SELECT id
 		FROM hmn_user
@@ -923,15 +928,30 @@ func urlIsLocal(url string) bool {
 
 var reStupidUsername = regexp.MustCompile(`[a-z]{10}`)
 
-func blacklist(username, email string) bool {
+func blacklist(ctx context.Context, conn db.ConnOrTx, username, email string) (bool, error) {
 	if reStupidUsername.MatchString(username) {
-		return true
+		return true, nil
 	}
 	if strings.Count(email, ".") > 5 {
-		return true
+		return true, nil
 	}
 
-	// TODO(asaf): Actually check email against blacklist
+	count, err := db.QueryOneScalar[int](ctx, conn,
+		`
+		SELECT count(*)
+		FROM email_blacklist
+		WHERE email = $1
+		`,
+		email,
+	)
 
-	return false
+	if err != nil {
+		return false, oops.New(err, "Failed to query db blacklist")
+	}
+
+	if count > 0 {
+		return true, nil
+	}
+
+	return false, nil
 }

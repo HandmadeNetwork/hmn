@@ -318,13 +318,15 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 		}
 		whatHappened = fmt.Sprintf("%s approved successfully", user.Username)
 	} else if action == ApprovalQueueActionSpammer {
+		banReason := fmt.Sprintf("Banned by %s on %s through admin approval queue", c.CurrentUser.Username, time.Now().Format(time.RFC3339))
 		_, err := c.Conn.Exec(c,
 			`
 			UPDATE hmn_user
-			SET status = $1
-			WHERE id = $2
+			SET status = $1, ban_reason = $2
+			WHERE id = $3
 			`,
 			models.UserStatusBanned,
+			banReason,
 			user.ID,
 		)
 		if err != nil {

@@ -51,6 +51,8 @@ type User struct {
 	// Non-db fields, to be filled in by fetch helpers
 	AvatarAsset *Asset
 	DiscordUser *DiscordUser
+
+	BanReason string `db:"ban_reason"`
 }
 
 func (u *User) BestName() string {

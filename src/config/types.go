@@ -34,6 +34,7 @@ type HMNConfig struct {
 	PreviewGeneration PreviewGenerationConfig
 	Calendars         []CalendarSource
 	EsBuild           EsBuildConfig
+	Postmark          PostmarkConfig
 }
 
 type PostgresConfig struct {
@@ -130,6 +131,10 @@ type PreviewGenerationConfig struct {
 
 type EsBuildConfig struct {
 	Port uint16
+}
+
+type PostmarkConfig struct {
+	TransactionalStreamToken string
 }
 
 func init() {
