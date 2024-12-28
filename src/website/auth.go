@@ -193,19 +193,31 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	emailAddress := strings.TrimSpace(c.Req.Form.Get("email"))
 	password := c.Req.Form.Get("password")
 	destination := strings.TrimSpace(c.Req.Form.Get("destination"))
+
+	logEvent := c.Logger.Info().
+		Str("username", username).
+		Str("email", emailAddress).
+		Str("ip", c.Req.RemoteAddr).
+		Str("Referer", c.Req.Referer()).
+		Str("X-Forwarded-For", c.Req.Header.Get("X-Forwarded-For"))
+
 	if !UsernameRegex.Match([]byte(username)) {
+		logEvent.Msg("registration attempt with invalid username")
 		return c.RejectRequest("Invalid username")
 	}
 	if !email.IsEmail(emailAddress) {
+		logEvent.Msg("registration attempt with invalid email address")
 		return c.RejectRequest("Invalid email address")
 	}
 	if len(password) < 8 {
+		logEvent.Msg("registration attempt with invalid password")
 		return c.RejectRequest("Password too short")
 	}
 
 	c.Perf.StartBlock("SQL", "Check blacklist")
-	if emailIsBlacklisted(emailAddress) {
+	if blacklist(username, emailAddress) {
 		// NOTE(asaf): Silent rejection so we don't allow attackers to harvest emails.
+		logEvent.Msg("blacklisted registration attempt")
 		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
 	}
 	c.Perf.EndBlock()
@@ -229,6 +241,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 	}
 
 	if userAlreadyExists {
+		logEvent.Msg("registration attempt with duplicate username")
 		return c.RejectRequest(fmt.Sprintf("Username (%s) already exists.", username))
 	}
 
@@ -264,6 +277,7 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send existing account email"))
 		}
 
+		logEvent.Msg("registration attempt with duplicate email (follow-up sent)")
 		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
 	}
 
@@ -335,6 +349,8 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit user to the db"))
 	}
 	c.Perf.EndBlock()
+
+	logEvent.Msg("registration succeeded")
 	return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
 }
 
@@ -905,7 +921,12 @@ func urlIsLocal(url string) bool {
 	return strings.HasSuffix(urlParsed.Host, baseUrl.Host)
 }
 
-func emailIsBlacklisted(email string) bool {
+var reStupidUsername = regexp.MustCompile(`[a-z]{10}`)
+
+func blacklist(username, email string) bool {
+	if reStupidUsername.MatchString(username) {
+		return true
+	}
 	if strings.Count(email, ".") > 5 {
 		return true
 	}
