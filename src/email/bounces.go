@@ -21,7 +21,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var badCodeRegex = regexp.MustCompile(`^(smtp;)?421|450|451|452`)
+var badCodeRegex = regexp.MustCompile(`^(smtp;)?((421)|(450)|(451)|(452)|(552))`)
 
 var httpClient = &http.Client{}
 
@@ -89,6 +89,9 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 					}
 
 					logging.Debug().Interface("last", lastBlacklistDate).Msg("Fetching bounces from postmark")
+					if lastBlacklistDate.IsZero() {
+						lastBlacklistDate = time.Now().Add(-45 * (time.Hour * 24))
+					}
 					bounces, err := PostmarkGetBounces(ctx, lastBlacklistDate)
 					if err != nil {
 						log.Error().Err(err).Msg("Error while requesting bounces from postmark")
