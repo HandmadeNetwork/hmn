@@ -65,7 +65,7 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 		}()
 		log.Info().Msg("Running email bounce monitor...")
 
-		monitorTicker := time.NewTicker(30 * time.Minute)
+		monitorTimer := utils.MakeAutoResetTimer(ctx, 30*time.Minute, true)
 
 		for {
 			done, err := func() (done bool, retErr error) {
@@ -74,12 +74,12 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 				select {
 				case <-ctx.Done():
 					return true, nil
-				case <-monitorTicker.C:
-					lastBlacklistDate, err := db.QueryOneScalar[time.Time](ctx, conn,
+				case <-monitorTimer.C:
+					lastBounceDate, err := db.QueryOneScalar[time.Time](ctx, conn,
 						`
-						SELECT blacklisted_at
+						SELECT bounced_at
 						FROM email_blacklist
-						ORDER BY blacklisted_at DESC
+						ORDER BY bounced_at DESC
 						LIMIT 1
 						`,
 					)
@@ -88,11 +88,11 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 						return
 					}
 
-					logging.Debug().Interface("last", lastBlacklistDate).Msg("Fetching bounces from postmark")
-					if lastBlacklistDate.IsZero() {
-						lastBlacklistDate = time.Now().Add(-45 * (time.Hour * 24))
+					if lastBounceDate.IsZero() {
+						lastBounceDate = time.Now().Add(-45 * (time.Hour * 24))
 					}
-					bounces, err := PostmarkGetBounces(ctx, lastBlacklistDate)
+					logging.Debug().Interface("last", lastBounceDate).Msg("Fetching bounces from postmark")
+					bounces, err := PostmarkGetBounces(ctx, lastBounceDate)
 					if err != nil {
 						log.Error().Err(err).Msg("Error while requesting bounces from postmark")
 						return
@@ -103,15 +103,18 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 					now := time.Now()
 					for _, b := range bounces {
 						if badCodeRegex.Match([]byte(b.Details)) {
+							bouncedAt, _ := time.Parse(time.RFC3339, b.BouncedAt)
 							newBlacklists = append(newBlacklists, models.EmailBlacklist{
 								Email:         b.Email,
 								BlacklistedAt: now,
+								BouncedAt:     bouncedAt,
 								Reason:        "Bounced",
 								Details:       b.Details,
 							})
 						}
 					}
 
+					logging.Debug().Int("Num blacklisted", len(newBlacklists)).Msg("Emails to blacklist")
 					tx, err := conn.Begin(ctx)
 					if err != nil {
 						log.Error().Err(oops.New(err, "Failed to create db transaction")).Msg("Failed to create db transaction")
@@ -121,12 +124,13 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 					for _, b := range newBlacklists {
 						_, err = tx.Exec(ctx,
 							`
-							INSERT INTO email_blacklist (email, blacklisted_at, reason, details)
-							VALUES ($1, $2, $3, $4)
+							INSERT INTO email_blacklist (email, blacklisted_at, bounced_at, reason, details)
+							VALUES ($1, $2, $3, $4, $5)
 							ON CONFLICT DO NOTHING
 							`,
 							b.Email,
 							b.BlacklistedAt,
+							b.BouncedAt,
 							b.Reason,
 							b.Details,
 						)
