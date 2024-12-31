@@ -1,6 +1,6 @@
 module git.handmade.network/hmn/hmn
 
-go 1.21
+go 1.22
 
 require (
 	github.com/HandmadeNetwork/golorem v0.0.0-20220507185207-414965a3a817
@@ -26,8 +26,8 @@ require (
 	github.com/teacat/noire v1.1.0
 	github.com/yuin/goldmark v1.4.13
 	github.com/yuin/goldmark-highlighting v0.0.0-20210516132338-9216f9c5aa01
-	golang.org/x/crypto v0.17.0
-	golang.org/x/image v0.18.0
+	golang.org/x/crypto v0.31.0
+	golang.org/x/image v0.23.0
 	mvdan.cc/xurls/v2 v2.4.0
 )
 
@@ -59,9 +59,9 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/teambition/rrule-go v1.7.2 // indirect
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
-	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

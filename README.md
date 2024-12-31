@@ -10,7 +10,7 @@ We want the website to be a great example of Handmade software on the web. We en
 
 You will need the following software installed:
 
-- Go 1.21 or newer: https://go.dev/
+- Go 1.22 or newer: https://go.dev/
 
     You can download Go directly from the website, or install it through major package managers. If you already have Go installed, but are unsure of the version, you can check by running `go version`.
 
