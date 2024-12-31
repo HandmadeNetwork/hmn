@@ -65,7 +65,8 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 		}()
 		log.Info().Msg("Running email bounce monitor...")
 
-		monitorTimer := utils.MakeAutoResetTimer(ctx, 30*time.Minute, true)
+		monitorTimer := utils.NewInstaTicker(30 * time.Minute)
+		defer monitorTimer.Stop()
 
 		for {
 			done, err := func() (done bool, retErr error) {
