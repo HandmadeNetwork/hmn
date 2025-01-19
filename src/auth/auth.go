@@ -15,7 +15,6 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/jobs"
-	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
@@ -236,10 +235,10 @@ func DeleteExpiredPasswordResets(ctx context.Context, conn *pgxpool.Pool) (int64
 	return tag.RowsAffected(), nil
 }
 
-func PeriodicallyDeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
-	job := jobs.New()
+func PeriodicallyDeleteInactiveUsers(conn *pgxpool.Pool) *jobs.Job {
+	job := jobs.New("periodically delete inactive users")
 	go func() {
-		defer job.Done()
+		defer job.Finish()
 
 		t := time.NewTicker(1 * time.Hour)
 		for {
@@ -247,29 +246,30 @@ func PeriodicallyDeleteInactiveUsers(ctx context.Context, conn *pgxpool.Pool) jo
 			case <-t.C:
 				err := func() (err error) {
 					defer utils.RecoverPanicAsError(&err)
-					n, err := DeleteInactiveUsers(ctx, conn)
+
+					n, err := DeleteInactiveUsers(job.Ctx, conn)
 					if err == nil {
 						if n > 0 {
-							logging.Info().Int64("num deleted users", n).Msg("Deleted inactive users")
+							job.Logger.Info().Int64("num deleted users", n).Msg("Deleted inactive users")
 						}
 					} else {
-						logging.Error().Err(err).Msg("Failed to delete inactive users")
+						job.Logger.Error().Err(err).Msg("Failed to delete inactive users")
 					}
 
-					n, err = DeleteExpiredPasswordResets(ctx, conn)
+					n, err = DeleteExpiredPasswordResets(job.Ctx, conn)
 					if err == nil {
 						if n > 0 {
-							logging.Info().Int64("num deleted password resets", n).Msg("Deleted expired password resets")
+							job.Logger.Info().Int64("num deleted password resets", n).Msg("Deleted expired password resets")
 						}
 					} else {
-						logging.Error().Err(err).Msg("Failed to delete expired password resets")
+						job.Logger.Error().Err(err).Msg("Failed to delete expired password resets")
 					}
 					return nil
 				}()
 				if err != nil {
-					logging.Error().Err(err).Msg("Panicked in PeriodicallyDeleteInactiveUsers")
+					job.Logger.Error().Err(err).Msg("Panicked in PeriodicallyDeleteInactiveUsers")
 				}
-			case <-ctx.Done():
+			case <-job.Canceled():
 				return
 			}
 		}

@@ -12,7 +12,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/jobs"
-	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
@@ -152,10 +151,10 @@ func DeleteExpiredPendingLogins(ctx context.Context, conn *pgxpool.Pool) (int64,
 	return tag.RowsAffected(), nil
 }
 
-func PeriodicallyDeleteExpiredStuff(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
-	job := jobs.New()
+func PeriodicallyDeleteExpiredStuff(conn *pgxpool.Pool) *jobs.Job {
+	job := jobs.New("periodically delete expired stuff")
 	go func() {
-		defer job.Done()
+		defer job.Finish()
 
 		t := time.NewTicker(1 * time.Minute)
 		for {
@@ -164,30 +163,30 @@ func PeriodicallyDeleteExpiredStuff(ctx context.Context, conn *pgxpool.Pool) job
 				err := func() (err error) {
 					defer utils.RecoverPanicAsError(&err)
 
-					n, err := DeleteExpiredSessions(ctx, conn)
+					n, err := DeleteExpiredSessions(job.Ctx, conn)
 					if err == nil {
 						if n > 0 {
-							logging.Info().Int64("num deleted sessions", n).Msg("Deleted expired sessions")
+							job.Logger.Info().Int64("num deleted sessions", n).Msg("Deleted expired sessions")
 						}
 					} else {
-						logging.Error().Err(err).Msg("Failed to delete expired sessions")
+						job.Logger.Error().Err(err).Msg("Failed to delete expired sessions")
 					}
 
-					n, err = DeleteExpiredPendingLogins(ctx, conn)
+					n, err = DeleteExpiredPendingLogins(job.Ctx, conn)
 					if err == nil {
 						if n > 0 {
-							logging.Info().Int64("num deleted pending logins", n).Msg("Deleted expired pending logins")
+							job.Logger.Info().Int64("num deleted pending logins", n).Msg("Deleted expired pending logins")
 						}
 					} else {
-						logging.Error().Err(err).Msg("Failed to delete expired pending logins")
+						job.Logger.Error().Err(err).Msg("Failed to delete expired pending logins")
 					}
 
 					return nil
 				}()
 				if err != nil {
-					logging.Error().Err(err).Msg("Panicked in PeriodicallyDeleteExpiredStuff")
+					job.Logger.Error().Err(err).Msg("Panicked in PeriodicallyDeleteExpiredStuff")
 				}
-			case <-ctx.Done():
+			case <-job.Canceled():
 				return
 			}
 		}

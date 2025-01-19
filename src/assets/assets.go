@@ -260,12 +260,12 @@ func ExtractPreview(ctx context.Context, mimeType string, inBytes []byte) ([]byt
 	return imageBytes, cfg.Width, cfg.Height, nil
 }
 
-func BackgroundPreviewGeneration(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
-	log := logging.ExtractLogger(ctx).With().Str("module", "preview_gen").Logger()
-	job := jobs.New()
+func BackgroundPreviewGeneration(conn *pgxpool.Pool) *jobs.Job {
+	job := jobs.New("preview generation")
+	log := job.Logger
 
 	go func() {
-		defer job.Done()
+		defer job.Finish()
 		log.Debug().Msg("Starting preview gen job")
 
 		if getFFMpegPath() == "" {
@@ -273,7 +273,7 @@ func BackgroundPreviewGeneration(ctx context.Context, conn *pgxpool.Pool) jobs.J
 			return
 		}
 
-		assets, err := db.Query[models.Asset](ctx, conn,
+		assets, err := db.Query[models.Asset](job.Ctx, conn,
 			`
 			SELECT $columns
 			FROM asset
@@ -297,13 +297,13 @@ func BackgroundPreviewGeneration(ctx context.Context, conn *pgxpool.Pool) jobs.J
 
 		for _, asset := range assets {
 			select {
-			case <-ctx.Done():
+			case <-job.Canceled():
 				return
 			default:
 			}
 
 			log := log.With().Str("AssetID", asset.ID.String()).Logger()
-			ctx := logging.AttachLoggerToContext(&log, ctx)
+			ctx := logging.AttachLoggerToContext(&log, job.Ctx)
 
 			log.Debug().Msg("Generating preview")
 			assetUrl := hmnurl.BuildS3Asset(asset.S3Key)

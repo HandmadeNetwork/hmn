@@ -47,21 +47,19 @@ type Bounce struct {
 	// Content       string `json:"Content"`
 }
 
-func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
-	log := logging.ExtractLogger(ctx).With().Str("email goroutine", "bounce monitoring").Logger()
-	ctx = logging.AttachLoggerToContext(&log, ctx)
+func MonitorBounces(conn *pgxpool.Pool) *jobs.Job {
+	job := jobs.New("email bounce monitoring")
+	log := job.Logger
 
 	if config.Config.Postmark.TransactionalStreamToken == "" {
 		log.Warn().Msg("No postmark token provided.")
-		return jobs.Noop()
+		return job.Finish()
 	}
-
-	job := jobs.New()
 
 	go func() {
 		defer func() {
 			log.Info().Msg("Shutting down email bounce monitor")
-			job.Done()
+			job.Finish()
 		}()
 		log.Info().Msg("Running email bounce monitor...")
 
@@ -73,10 +71,10 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 				defer utils.RecoverPanicAsError(&retErr)
 
 				select {
-				case <-ctx.Done():
+				case <-job.Canceled():
 					return true, nil
 				case <-monitorTimer.C:
-					lastBounceDate, err := db.QueryOneScalar[time.Time](ctx, conn,
+					lastBounceDate, err := db.QueryOneScalar[time.Time](job.Ctx, conn,
 						`
 						SELECT bounced_at
 						FROM email_blacklist
@@ -93,7 +91,7 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 						lastBounceDate = time.Now().Add(-45 * (time.Hour * 24))
 					}
 					logging.Debug().Interface("last", lastBounceDate).Msg("Fetching bounces from postmark")
-					bounces, err := PostmarkGetBounces(ctx, lastBounceDate)
+					bounces, err := PostmarkGetBounces(job.Ctx, lastBounceDate)
 					if err != nil {
 						log.Error().Err(err).Msg("Error while requesting bounces from postmark")
 						return
@@ -116,14 +114,14 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 					}
 
 					logging.Debug().Int("Num blacklisted", len(newBlacklists)).Msg("Emails to blacklist")
-					tx, err := conn.Begin(ctx)
+					tx, err := conn.Begin(job.Ctx)
 					if err != nil {
 						log.Error().Err(oops.New(err, "Failed to create db transaction")).Msg("Failed to create db transaction")
 						return
 					}
-					defer tx.Rollback(ctx)
+					defer tx.Rollback(job.Ctx)
 					for _, b := range newBlacklists {
-						_, err = tx.Exec(ctx,
+						_, err = tx.Exec(job.Ctx,
 							`
 							INSERT INTO email_blacklist (email, blacklisted_at, bounced_at, reason, details)
 							VALUES ($1, $2, $3, $4, $5)
@@ -140,7 +138,7 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 							return
 						}
 
-						_, err = tx.Exec(ctx,
+						_, err = tx.Exec(job.Ctx,
 							`
 							UPDATE hmn_user
 							SET
@@ -158,7 +156,7 @@ func MonitorBounces(ctx context.Context, conn *pgxpool.Pool) jobs.Job {
 							},
 						)
 					}
-					tx.Commit(ctx)
+					tx.Commit(job.Ctx)
 				}
 
 				return false, nil

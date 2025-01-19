@@ -24,15 +24,17 @@ type server struct {
 	log zerolog.Logger
 }
 
-func StartServer(ctx context.Context) jobs.Job {
+func StartServer() *jobs.Job {
+	job := jobs.New("fake S3 server")
+
 	if !config.Config.DigitalOcean.RunFakeServer {
-		return jobs.Noop()
+		return job.Finish()
 	}
 
 	utils.Must(os.MkdirAll(dir, fs.ModePerm))
 
 	s := server{
-		log: logging.ExtractLogger(ctx).With().
+		log: logging.ExtractLogger(job.Ctx).With().
 			Str("module", "S3 server").
 			Logger(),
 	}
@@ -46,14 +48,13 @@ func StartServer(ctx context.Context) jobs.Job {
 		}
 	})
 
-	job := jobs.New()
 	srv := http.Server{
 		Addr: config.Config.DigitalOcean.FakeAddr,
 	}
 
 	s.log.Info().Msg("Starting local S3 server")
 	go func() {
-		defer job.Done()
+		defer job.Finish()
 		err := srv.ListenAndServe()
 		if err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
@@ -65,7 +66,7 @@ func StartServer(ctx context.Context) jobs.Job {
 	}()
 
 	go func() {
-		<-ctx.Done()
+		<-job.Canceled()
 		s.log.Info().Msg("Shutting down local S3 server")
 		srv.Shutdown(context.Background())
 	}()

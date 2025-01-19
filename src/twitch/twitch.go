@@ -67,23 +67,22 @@ type twitchNotification struct {
 var twitchNotificationChannel chan twitchNotification
 var linksChangedChannel chan struct{}
 
-func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
-	log := logging.ExtractLogger(ctx).With().Str("twitch goroutine", "stream monitor").Logger()
-	ctx = logging.AttachLoggerToContext(&log, ctx)
+func MonitorTwitchSubscriptions(dbConn *pgxpool.Pool) *jobs.Job {
+	job := jobs.New("monitor twitch subscriptions")
+	log := job.Logger
 
 	if config.Config.Twitch.ClientID == "" {
 		log.Warn().Msg("No twitch config provided.")
-		return jobs.Noop()
+		return job.Finish()
 	}
 
 	twitchNotificationChannel = make(chan twitchNotification, 100)
 	linksChangedChannel = make(chan struct{}, 10)
-	job := jobs.New()
 
 	go func() {
 		defer func() {
 			log.Info().Msg("Shutting down twitch monitor")
-			job.Done()
+			job.Finish()
 		}()
 		log.Info().Msg("Running twitch monitor...")
 
@@ -97,7 +96,7 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 			done, err := func() (done bool, retErr error) {
 				defer utils.RecoverPanicAsError(&retErr)
 				select {
-				case <-ctx.Done():
+				case <-job.Canceled():
 					for _, timer := range timers {
 						timer.Stop()
 					}
@@ -110,15 +109,15 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 						}
 					}
 				case <-firstRunChannel:
-					err := refreshAccessToken(ctx)
+					err := refreshAccessToken(job.Ctx)
 					if err != nil {
 						log.Error().Err(err).Msg("Failed to fetch refresh token on start")
 						return true, nil
 					}
-					syncWithTwitch(ctx, dbConn, true, true)
+					syncWithTwitch(job.Ctx, dbConn, true, true)
 				case <-monitorTicker.C:
-					twitchLogClear(ctx, dbConn)
-					syncWithTwitch(ctx, dbConn, true, true)
+					twitchLogClear(job.Ctx, dbConn)
+					syncWithTwitch(job.Ctx, dbConn, true, true)
 				case <-linksChangedChannel:
 					// NOTE(asaf): Since we update links inside transactions for users/projects
 					//             we won't see the updated list of links until the transaction is committed.
@@ -127,13 +126,13 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 					var timer *time.Timer
 					t := time.AfterFunc(5*time.Second, func() {
 						expiredTimers <- timer
-						syncWithTwitch(ctx, dbConn, false, false)
+						syncWithTwitch(job.Ctx, dbConn, false, false)
 					})
 					timer = t
 					timers = append(timers, t)
 				case notification := <-twitchNotificationChannel:
 					if notification.Type == notificationTypeRevocation {
-						syncWithTwitch(ctx, dbConn, false, false)
+						syncWithTwitch(job.Ctx, dbConn, false, false)
 					} else {
 						// NOTE(asaf): The twitch API (getStreamStatus) lags behind the notification and
 						//             would return old data if we called it immediately, so we process
@@ -143,11 +142,11 @@ func MonitorTwitchSubscriptions(ctx context.Context, dbConn *pgxpool.Pool) jobs.
 						var timer *time.Timer
 						t := time.AfterFunc(3*time.Minute, func() {
 							expiredTimers <- timer
-							updateStreamStatus(ctx, dbConn, notification.Status.TwitchID, notification.Status.TwitchLogin)
+							updateStreamStatus(job.Ctx, dbConn, notification.Status.TwitchID, notification.Status.TwitchLogin)
 						})
 						timer = t
 						timers = append(timers, t)
-						processEventSubNotification(ctx, dbConn, &notification)
+						processEventSubNotification(job.Ctx, dbConn, &notification)
 					}
 				}
 				return false, nil

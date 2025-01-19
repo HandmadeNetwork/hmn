@@ -51,7 +51,7 @@ var ZerologStackMarshaler = func(err error) interface{} {
 		return asOops.Stack
 	}
 	// NOTE(asaf): If we got here, it means zerolog is trying to output a non-oops error.
-	//			   We remove this call and the zerolog caller from the stack.
+	//             We remove this call and the zerolog caller from the stack.
 	return Trace()[2:]
 }
 

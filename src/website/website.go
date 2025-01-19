@@ -8,6 +8,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/assets"
@@ -30,65 +31,91 @@ import (
 var WebsiteCommand = &cobra.Command{
 	Short: "Run the HMN website",
 	Run: func(cmd *cobra.Command, args []string) {
-		templates.Init()
-
 		defer logging.LogPanics(nil)
-
 		logging.Info().Msg("Hello, HMN!")
 
-		backgroundJobContext, cancelBackgroundJobs := context.WithCancel(context.Background())
+		templates.Init()
+
+		var wg sync.WaitGroup
 
 		conn := db.NewConnPool()
-		perfCollector := perf.RunPerfCollector(backgroundJobContext)
+		perfCollector, perfCollectorJob := perf.RunPerfCollector()
 
+		// Start background jobs
+		wg.Add(1)
+		backgroundJobs := jobs.Jobs{
+			auth.PeriodicallyDeleteExpiredStuff(conn),
+			auth.PeriodicallyDeleteInactiveUsers(conn),
+			perfCollectorJob,
+			discord.RunDiscordBot(conn),
+			discord.RunHistoryWatcher(conn),
+			twitch.MonitorTwitchSubscriptions(conn),
+			hmns3.StartServer(),
+			assets.BackgroundPreviewGeneration(conn),
+			calendar.MonitorCalendars(),
+			buildcss.RunServer(),
+			email.MonitorBounces(conn),
+		}
+
+		// Create HTTP server
+		wg.Add(1)
 		server := http.Server{
 			Addr:    config.Config.Addr,
 			Handler: NewWebsiteRoutes(conn, perfCollector),
 		}
-
-		backgroundJobsDone := jobs.Zip(
-			auth.PeriodicallyDeleteExpiredStuff(backgroundJobContext, conn),
-			auth.PeriodicallyDeleteInactiveUsers(backgroundJobContext, conn),
-			perfCollector.Job,
-			discord.RunDiscordBot(backgroundJobContext, conn),
-			discord.RunHistoryWatcher(backgroundJobContext, conn),
-			twitch.MonitorTwitchSubscriptions(backgroundJobContext, conn),
-			hmns3.StartServer(backgroundJobContext),
-			assets.BackgroundPreviewGeneration(backgroundJobContext, conn),
-			calendar.MonitorCalendars(backgroundJobContext),
-			buildcss.RunServer(backgroundJobContext),
-			email.MonitorBounces(backgroundJobContext, conn),
-		)
-
-		signals := make(chan os.Signal, 1)
-		signal.Notify(signals, os.Interrupt)
 		go func() {
-			<-signals
-			logging.Info().Msg("Shutting down the website")
-			go func() {
-				timeout, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-				defer cancel()
-				logging.Info().Msg("cancelling background jobs")
-				cancelBackgroundJobs()
-				logging.Info().Msg("shutting down web server")
-				server.Shutdown(timeout)
-			}()
-
-			<-signals
-			logging.Warn().Msg("Forcibly killed the website")
-			os.Exit(1)
+			logging.Info().Str("addr", config.Config.Addr).Msg("Serving the website")
+			serverErr := server.ListenAndServe()
+			if !errors.Is(serverErr, http.ErrServerClosed) {
+				logging.Error().Err(serverErr).Msg("Server shut down unexpectedly")
+			}
+			// The wg.Done() happens in the shutdown logic below.
 		}()
 
+		// Start up the private HTTP server for pprof. Because it uses the default
+		// mux, and we import pprof, it will automatically have all the routes.
 		go func() {
+			// We don't bother to gracefully shut this down.
 			log.Println(http.ListenAndServe(config.Config.PrivateAddr, nil))
 		}()
 
-		logging.Info().Str("addr", config.Config.Addr).Msg("Serving the website")
-		serverErr := server.ListenAndServe()
-		if !errors.Is(serverErr, http.ErrServerClosed) {
-			logging.Error().Err(serverErr).Msg("Server shut down unexpectedly")
-		}
+		// Wait for SIGINT in the background and trigger graceful shutdown
+		signals := make(chan os.Signal, 1)
+		signal.Notify(signals, os.Interrupt)
+		go func() {
+			<-signals // First SIGINT (start shutdown)
+			logging.Info().Msg("Shutting down the website")
 
-		<-backgroundJobsDone.C
+			const timeout = 10 * time.Second
+
+			go func() {
+				logging.Info().Msg("Shutting down background jobs...")
+				unfinished := backgroundJobs.CancelAndWait(10 * time.Second)
+				if len(unfinished) == 0 {
+					logging.Info().Msg("Background jobs closed gracefully")
+				} else {
+					logging.Warn().Strs("Unfinished", unfinished).Msg("Background jobs did not finish by the deadline")
+				}
+				wg.Done()
+			}()
+
+			// Gracefully shut down the HTTP server
+			go func() {
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), timeout)
+				defer cancel()
+				err := server.Shutdown(timeoutCtx)
+				if err != nil {
+					logging.Warn().Err(err).Msg("Server did not shut down gracefully")
+				}
+				wg.Done()
+			}()
+
+			<-signals // Second SIGINT (force quit)
+			logging.Warn().Strs("Unfinished background jobs", backgroundJobs.ListUnfinished()).Msg("Forcibly killed the website")
+			os.Exit(1)
+		}()
+
+		// Wait for all of the above to finish, then exit
+		wg.Wait()
 	},
 }

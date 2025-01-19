@@ -1,35 +1,32 @@
 package buildcss
 
 import (
-	"context"
-
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/jobs"
-	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/evanw/esbuild/pkg/api"
 )
 
 var ActiveServerPort uint16
 
-func RunServer(ctx context.Context) jobs.Job {
-	job := jobs.New()
+func RunServer() *jobs.Job {
+	job := jobs.New("esbuild CSS server")
+	log := job.Logger
+
 	if config.Config.Env != config.Dev {
-		job.Done()
-		return job
+		return job.Finish()
 	}
-	logger := logging.ExtractLogger(ctx).With().Str("module", "EsBuild").Logger()
-	esCtx, ctxErr := BuildContext()
-	if ctxErr != nil {
-		panic(ctxErr)
-	}
-	logger.Info().Msg("Starting esbuild server and watcher")
+
+	esCtx := utils.Must1(BuildContext())
+	job.Logger.Info().Msg("Starting esbuild server and watcher")
+
 	err := esCtx.Watch(api.WatchOptions{})
 	serverResult, err := esCtx.Serve(api.ServeOptions{
 		Port:     config.Config.EsBuild.Port,
 		Servedir: "./",
 		OnRequest: func(args api.ServeOnRequestArgs) {
 			if args.Status != 200 {
-				logger.Warn().Interface("args", args).Msg("Response from esbuild server")
+				log.Warn().Interface("args", args).Msg("Response from esbuild server")
 			}
 		},
 	})
@@ -38,10 +35,10 @@ func RunServer(ctx context.Context) jobs.Job {
 	}
 	ActiveServerPort = serverResult.Port
 	go func() {
-		<-ctx.Done()
-		logger.Info().Msg("Shutting down esbuild server and watcher")
+		<-job.Canceled()
+		log.Info().Msg("Shutting down esbuild server and watcher")
 		esCtx.Dispose()
-		job.Done()
+		job.Finish()
 	}()
 
 	return job

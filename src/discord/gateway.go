@@ -51,20 +51,19 @@ func GetBotEvents() []BotEvent {
 	return botEvents[:]
 }
 
-func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
-	log := logging.ExtractLogger(ctx).With().Str("module", "discord").Logger()
-	ctx = logging.AttachLoggerToContext(&log, ctx)
+func RunDiscordBot(dbConn *pgxpool.Pool) *jobs.Job {
+	job := jobs.New("discord bot")
+	log := job.Logger
 
 	if config.Config.Discord.BotToken == "" {
 		log.Warn().Msg("No Discord bot token was provided, so the Discord bot cannot run.")
-		return jobs.Noop()
+		return job.Finish()
 	}
 
-	job := jobs.New()
 	go func() {
 		defer func() {
 			log.Debug().Msg("shut down Discord bot")
-			job.Done()
+			job.Finish()
 		}()
 
 		boff := backoff.Backoff{
@@ -74,7 +73,7 @@ func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 
 		for {
 			select {
-			case <-ctx.Done():
+			case <-job.Canceled():
 				return
 			default:
 			}
@@ -83,7 +82,7 @@ func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 				defer utils.RecoverPanicAsError(&retErr)
 				log.Info().Msg("Connecting to the Discord gateway")
 				bot := newBotInstance(dbConn)
-				err := bot.Run(ctx)
+				err := bot.Run(job.Ctx)
 				disconnectMessage := ""
 				if err != nil {
 					disconnectMessage = err.Error()
@@ -98,7 +97,7 @@ func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 
 					timer := time.NewTimer(dur)
 					select {
-					case <-ctx.Done():
+					case <-job.Canceled():
 					case <-timer.C:
 					}
 
@@ -106,7 +105,7 @@ func RunDiscordBot(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 				}
 
 				select {
-				case <-ctx.Done():
+				case <-job.Canceled():
 					return
 				default:
 				}

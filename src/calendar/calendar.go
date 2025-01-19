@@ -174,21 +174,19 @@ func GetFutureEvents() []CalendarEvent {
 	return futureEvents
 }
 
-func MonitorCalendars(ctx context.Context) jobs.Job {
-	log := logging.ExtractLogger(ctx).With().Str("calendar goroutine", "calendar monitor").Logger()
+func MonitorCalendars() *jobs.Job {
+	job := jobs.New("calendar monitor")
+	log := job.Logger
+
 	if len(config.Config.Calendars) == 0 {
 		log.Info().Msg("No calendars specified in config")
-		return jobs.Noop()
+		return job.Finish()
 	}
-
-	ctx = logging.AttachLoggerToContext(&log, ctx)
-
-	job := jobs.New()
 
 	go func() {
 		defer func() {
 			log.Info().Msg("Shutting down calendar monitor")
-			job.Done()
+			job.Finish()
 		}()
 		log.Info().Msg("Running calendar monitor")
 
@@ -200,7 +198,7 @@ func MonitorCalendars(ctx context.Context) jobs.Job {
 				err := func() (err error) {
 					defer utils.RecoverPanicAsError(&err)
 
-					ReloadCalendars(ctx)
+					ReloadCalendars(job.Ctx)
 
 					return nil
 				}()
@@ -208,7 +206,7 @@ func MonitorCalendars(ctx context.Context) jobs.Job {
 					logging.Error().Err(err).Msg("Panicked in MonitorCalendars")
 				}
 				monitorTimer.Reset(60 * time.Minute)
-			case <-ctx.Done():
+			case <-job.Canceled():
 				return
 			}
 		}

@@ -13,20 +13,19 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func RunHistoryWatcher(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
-	log := logging.ExtractLogger(ctx).With().Str("discord goroutine", "history watcher").Logger()
-	ctx = logging.AttachLoggerToContext(&log, ctx)
+func RunHistoryWatcher(dbConn *pgxpool.Pool) *jobs.Job {
+	job := jobs.New("discord history watcher")
+	log := job.Logger
 
 	if config.Config.Discord.BotToken == "" {
 		log.Warn().Msg("No Discord bot token was provided, so the Discord history bot cannot run.")
-		return jobs.Noop()
+		return job.Finish()
 	}
 
-	job := jobs.New()
 	go func() {
 		defer func() {
 			log.Debug().Msg("shut down Discord history watcher")
-			job.Done()
+			job.Finish()
 		}()
 
 		newUserTicker := time.NewTicker(5 * time.Second)
@@ -41,7 +40,7 @@ func RunHistoryWatcher(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 			log.Info().Msg("Running backfill")
 			// Run a backfill to patch up places where the Discord bot missed (does create snippets)
 			now := time.Now()
-			done := ScrapeRecents(ctx, dbConn,
+			done := ScrapeRecents(job.Ctx, dbConn,
 				config.Config.Discord.ShowcaseChannelID,
 				lastBackfillTime,
 			)
@@ -54,11 +53,11 @@ func RunHistoryWatcher(ctx context.Context, dbConn *pgxpool.Pool) jobs.Job {
 			done, err := func() (done bool, err error) {
 				defer utils.RecoverPanicAsError(&err)
 				select {
-				case <-ctx.Done():
+				case <-job.Canceled():
 					return true, nil
 				case <-newUserTicker.C:
 					// Get content for messages when a user links their account (but do not create snippets)
-					fetchMissingContent(ctx, dbConn)
+					fetchMissingContent(job.Ctx, dbConn)
 				case <-backfillFirstRun:
 					runBackfill()
 				case <-backfillTicker.C:

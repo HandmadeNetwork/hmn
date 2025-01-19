@@ -110,13 +110,12 @@ type PerfStorage struct {
 
 type PerfCollector struct {
 	In          chan<- RequestPerf
-	Job         jobs.Job
 	RequestCopy chan<- (chan<- PerfStorage)
 }
 
-func RunPerfCollector(ctx context.Context) *PerfCollector {
+func RunPerfCollector() (*PerfCollector, *jobs.Job) {
 	in := make(chan RequestPerf, 100)
-	job := jobs.New()
+	job := jobs.New("perf collector")
 	requestCopy := make(chan (chan<- PerfStorage))
 
 	cleanupTicker := time.NewTicker(10 * time.Second)
@@ -125,8 +124,6 @@ func RunPerfCollector(ctx context.Context) *PerfCollector {
 	// TODO(asaf): Load history from file
 
 	go func() {
-		defer job.Done()
-
 		for {
 			select {
 			case perf := <-in:
@@ -142,7 +139,8 @@ func RunPerfCollector(ctx context.Context) *PerfCollector {
 				if len(storage.AllRequests) > 1000 {
 					storage.AllRequests = storage.AllRequests[len(storage.AllRequests)-800:]
 				}
-			case <-ctx.Done():
+			case <-job.Canceled():
+				job.Finish()
 				return
 			}
 		}
@@ -150,10 +148,9 @@ func RunPerfCollector(ctx context.Context) *PerfCollector {
 
 	perfCollector := PerfCollector{
 		In:          in,
-		Job:         job,
 		RequestCopy: requestCopy,
 	}
-	return &perfCollector
+	return &perfCollector, job
 }
 
 func (perfCollector *PerfCollector) SubmitRun(run *RequestPerf) {

@@ -11,6 +11,13 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+// We have this because otherwise passing a nil *SomeError through Must or
+// Must1 will result in a non-nil interface value and a spurious panic.
+type comparableError interface {
+	comparable
+	error
+}
+
 // Returns the provided value, or a default value if the input was zero.
 func OrDefault[T comparable](v T, def T) T {
 	var zero T
@@ -22,20 +29,32 @@ func OrDefault[T comparable](v T, def T) T {
 }
 
 // Takes an (error) return and panics if there is an error.
-// Helps avoid `if err != nil` in scripts. Use sparingly in real code.
-func Must(err error) {
-	if err != nil {
+// Helps avoid `if err != nil` in scripts.
+func Must[E comparableError](err E) {
+	var zero E
+	if err != zero {
 		panic(err)
 	}
 }
 
 // Takes a (something, error) return and panics if there is an error.
-// Helps avoid `if err != nil` in scripts. Use sparingly in real code.
-func Must1[T any](v T, err error) T {
-	if err != nil {
+// Helps avoid `if err != nil` in scripts.
+func Must1[T any, E comparableError](v T, err E) T {
+	var zero E
+	if err != zero {
 		panic(err)
 	}
 	return v
+}
+
+// Takes a (something, something, error) return and panics if there is an
+// error. Helps avoid `if err != nil` in scripts.
+func Must2[T1 any, T2 any, E comparableError](v1 T1, v2 T2, err E) (T1, T2) {
+	var zero E
+	if err != zero {
+		panic(err)
+	}
+	return v1, v2
 }
 
 func Min[T constraints.Ordered](a, b T) T {
@@ -91,25 +110,32 @@ Recover a panic and convert it to a returned error. Call it like so:
 		defer utils.RecoverPanicAsError(&err)
 	}
 
-If an error was already present, the panicked error will take precedence. Unfortunately there's
-no good way to include both errors because you can't really have two chains of errors and still
-play nice with the standard library's Unwrap behavior. But most of the time this shouldn't be an
-issue, since the panic will probably occur before a meaningful error value was set.
+If an error was already present, it will be [errors.Join]'d with the panicked
+error. Therefore, [errors.Is] and [errors.As] may still be used. (It is worth
+noting that this case should be rare, since a panic will usually occur before
+an error value is returned.)
 */
 func RecoverPanicAsError(err *error) {
 	if r := recover(); r != nil {
+		var existingError error
+		if err != nil {
+			existingError = *err
+		}
+
 		var recoveredErr error
 		if rerr, ok := r.(error); ok {
 			recoveredErr = rerr
 		} else {
 			recoveredErr = fmt.Errorf("panic with value: %v", r)
 		}
-		*err = oops.New(recoveredErr, "panic recovered as error")
+
+		*err = errors.Join(existingError, oops.New(recoveredErr, "panic recovered as error"))
 	}
 }
 
 var ErrSleepInterrupted = errors.New("sleep interrupted by context cancellation")
 
+// An alternative to [time.Sleep] that can be interrupted by a [context.Context].
 func SleepContext(ctx context.Context, d time.Duration) error {
 	select {
 	case <-ctx.Done():
