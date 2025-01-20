@@ -154,19 +154,18 @@ func BlogThread(c *RequestContext) ResponseData {
 	}
 	// Update thread last read info
 	if c.CurrentUser != nil {
-		c.Perf.StartBlock("SQL", "Update TLRI")
 		_, err := c.Conn.Exec(c,
 			`
-		INSERT INTO thread_last_read_info (thread_id, user_id, lastread)
-		VALUES ($1, $2, $3)
-		ON CONFLICT (thread_id, user_id) DO UPDATE
-			SET lastread = EXCLUDED.lastread
-		`,
+			---- Update TLRI
+			INSERT INTO thread_last_read_info (thread_id, user_id, lastread)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (thread_id, user_id) DO UPDATE
+				SET lastread = EXCLUDED.lastread
+			`,
 			cd.ThreadID,
 			c.CurrentUser.ID,
 			time.Now(),
 		)
-		c.Perf.EndBlock()
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update blog tlri"))
 		}
@@ -250,6 +249,7 @@ func BlogNewThreadSubmit(c *RequestContext) ResponseData {
 	var threadId int
 	err = tx.QueryRow(c,
 		`
+		---- Create thread
 		INSERT INTO thread (title, type, project_id, first_id, last_id)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id
@@ -362,6 +362,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 	if title != "" {
 		_, err := tx.Exec(c,
 			`
+			---- Update thread title
 			UPDATE thread SET title = $1 WHERE id = $2
 			`,
 			title,
@@ -547,8 +548,7 @@ type commonBlogData struct {
 }
 
 func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
-	c.Perf.StartBlock("BLOGS", "Fetch common blog data")
-	defer c.Perf.EndBlock()
+	defer c.Perf.StartBlock("BLOGS", "Fetch common blog data").End()
 
 	res := commonBlogData{
 		c: c,
@@ -561,9 +561,9 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 		}
 		res.ThreadID = threadId
 
-		c.Perf.StartBlock("SQL", "Verify that the thread exists")
 		threadExists, err := db.QueryOneScalar[bool](c, c.Conn,
 			`
+			---- Verify that the thread exists
 			SELECT COUNT(*) > 0
 			FROM thread
 			WHERE
@@ -573,7 +573,6 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 			res.ThreadID,
 			c.CurrentProject.ID,
 		)
-		c.Perf.EndBlock()
 		if err != nil {
 			panic(err)
 		}
@@ -589,9 +588,9 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 		}
 		res.PostID = postId
 
-		c.Perf.StartBlock("SQL", "Verify that the post exists")
 		postExists, err := db.QueryOneScalar[bool](c, c.Conn,
 			`
+			---- Verify that the post exists
 			SELECT COUNT(*) > 0
 			FROM post
 			WHERE
@@ -601,7 +600,6 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 			res.PostID,
 			res.ThreadID,
 		)
-		c.Perf.EndBlock()
 		if err != nil {
 			panic(err)
 		}

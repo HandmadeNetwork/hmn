@@ -17,6 +17,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
@@ -39,6 +40,8 @@ type twitchUser struct {
 }
 
 func getTwitchUsersByLogin(ctx context.Context, logins []string) ([]twitchUser, error) {
+	defer perf.StartBlock(ctx, "TwitchAPI", "Fetch twitch user info").End()
+
 	result := make([]twitchUser, 0, len(logins))
 	numChunks := len(logins)/100 + 1
 	for i := 0; i < numChunks; i++ {
@@ -89,6 +92,8 @@ func getTwitchUsersByLogin(ctx context.Context, logins []string) ([]twitchUser, 
 }
 
 func getStreamStatus(ctx context.Context, twitchIDs []string) ([]streamStatus, error) {
+	defer perf.StartBlock(ctx, "TwitchAPI", "Fetch stream status").End()
+
 	result := make([]streamStatus, 0, len(twitchIDs))
 	numChunks := len(twitchIDs)/100 + 1
 	for i := 0; i < numChunks; i++ {
@@ -191,6 +196,8 @@ func getArchivedVideos(ctx context.Context, videoIDs []string) ([]archivedVideo,
 }
 
 func getArchivedVideosByQuery(ctx context.Context, query url.Values) ([]archivedVideo, error) {
+	defer perf.StartBlock(ctx, "TwitchAPI", "Query archived videos").End()
+
 	req, err := http.NewRequestWithContext(ctx, "GET", buildUrl("/videos", query.Encode()), nil)
 	if err != nil {
 		return nil, oops.New(err, "failed to create request")
@@ -275,6 +282,8 @@ type twitchEventSub struct {
 }
 
 func getEventSubscriptions(ctx context.Context) ([]twitchEventSub, error) {
+	defer perf.StartBlock(ctx, "TwitchAPI", "Fetch event subscriptions").End()
+
 	result := make([]twitchEventSub, 0)
 	after := ""
 	for {
@@ -337,6 +346,8 @@ func getEventSubscriptions(ctx context.Context) ([]twitchEventSub, error) {
 }
 
 func subscribeToEvent(ctx context.Context, eventType string, twitchID string) error {
+	defer perf.StartBlock(ctx, "TwitchAPI", fmt.Sprintf("Subscribe to event: %s", eventType)).End()
+
 	type eventBody struct {
 		Type      string `json:"type"`
 		Version   string `json:"version"`
@@ -388,6 +399,8 @@ func subscribeToEvent(ctx context.Context, eventType string, twitchID string) er
 }
 
 func unsubscribeFromEvent(ctx context.Context, eventID string) error {
+	defer perf.StartBlock(ctx, "TwitchAPI", "Unsubscribe from event").End()
+
 	query := url.Values{}
 	query.Add("id", eventID)
 	req, err := http.NewRequestWithContext(ctx, "DELETE", buildUrl("/eventsub/subscriptions", query.Encode()), nil)
@@ -415,6 +428,8 @@ func unsubscribeFromEvent(ctx context.Context, eventID string) error {
 var twitchNotFound = errors.New("Twitch API 404")
 
 func doRequest(ctx context.Context, waitOnRateLimit bool, req *http.Request) (*http.Response, error) {
+	defer perf.StartBlock(ctx, "TwitchAPI", "API Request").End()
+
 	serviceUnavailable := false
 	numRetries := 5
 
@@ -508,6 +523,8 @@ type AccessTokenResponse struct {
 }
 
 func refreshAccessToken(ctx context.Context) error {
+	defer perf.StartBlock(ctx, "TwitchAPI", "Refresh access token").End()
+
 	logging.ExtractLogger(ctx).Info().Msg("Refreshing twitch token")
 	query := url.Values{}
 	query.Add("client_id", config.Config.Twitch.ClientID)

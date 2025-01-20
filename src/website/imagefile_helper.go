@@ -44,14 +44,15 @@ func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, 
 				ValidationError: fmt.Sprintf("Image filesize too big. Max size: %d bytes", maxSize),
 			}
 		} else {
-			c.Perf.StartBlock("IMAGE", "Decoding image")
+			b := c.Perf.StartBlock("IMAGE", "Decoding image")
 			config, format, err := image.DecodeConfig(img)
-			c.Perf.EndBlock()
+			b.End()
 			if err != nil {
 				return SaveImageFileResult{
 					ValidationError: "Image type not supported",
 				}
 			}
+
 			width = config.Width
 			height = config.Height
 			if width == 0 || height == 0 {
@@ -62,28 +63,31 @@ func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, 
 
 			filename = fmt.Sprintf("%s.%s", filepath, format)
 			storageFilename := fmt.Sprintf("public/media/%s", filename)
-			c.Perf.StartBlock("IMAGE", "Writing image file")
-			file, err := os.Create(storageFilename)
-			if err != nil {
-				return SaveImageFileResult{
-					FatalError: oops.New(err, "Failed to create local image file"),
+			{
+				b := c.Perf.StartBlock("IMAGE", "Writing image file")
+				defer b.End()
+
+				file, err := os.Create(storageFilename)
+				if err != nil {
+					return SaveImageFileResult{
+						FatalError: oops.New(err, "Failed to create local image file"),
+					}
 				}
-			}
-			img.Seek(0, io.SeekStart)
-			_, err = io.Copy(file, img)
-			if err != nil {
-				return SaveImageFileResult{
-					FatalError: oops.New(err, "Failed to write image to file"),
+				img.Seek(0, io.SeekStart)
+				_, err = io.Copy(file, img)
+				if err != nil {
+					return SaveImageFileResult{
+						FatalError: oops.New(err, "Failed to write image to file"),
+					}
 				}
+				file.Close()
+				img.Close()
+
+				b.End()
 			}
-			file.Close()
-			img.Close()
-			c.Perf.EndBlock()
 		}
 	}
-	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SQL", "Saving image file")
 	if filename != "" {
 		hasher := sha1.New()
 		img.Seek(0, io.SeekStart)
@@ -91,6 +95,7 @@ func SaveImageFile(c *RequestContext, dbConn db.ConnOrTx, fileFieldName string, 
 		sha1sum := hasher.Sum(nil)
 		imageFile, err := db.QueryOne[models.ImageFile](c, dbConn,
 			`
+			---- Save image file
 			INSERT INTO image_file (file, size, sha1sum, protected, width, height)
 			VALUES ($1, $2, $3, $4, $5, $6)
 			RETURNING $columns

@@ -37,11 +37,10 @@ func FetchTimeline(
 	currentUser *models.User,
 	q TimelineQuery,
 ) ([]*TimelineItemAndStuff, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch timeline")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "TIMELINE", "Fetch timeline").End()
 
 	var qb db.QueryBuilder
+	qb.AddName("Fetch base timeline data")
 
 	currentUserId := -1
 	if currentUser != nil {
@@ -247,9 +246,7 @@ func FetchTimeline(
 		qb.Add(`LIMIT $? OFFSET $?`, q.Limit, q.Offset)
 	}
 
-	perf.StartBlock("SQL", "Query timeline")
 	results, err := db.Query[TimelineItemAndStuff](ctx, dbConn, qb.String(), qb.Args()...)
-	perf.EndBlock()
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch timeline items")
 	}
@@ -260,8 +257,6 @@ func FetchTimeline(
 		}
 	}
 
-	perf.StartBlock("TIMELINE", "Fixup projects")
-	defer perf.EndBlock()
 	projectsSeen := make(map[int]bool)
 	var projectIds []int
 	var snippetIds []int
@@ -286,16 +281,15 @@ func FetchTimeline(
 		SnippetID int `db:"snippet_id"`
 		ProjectID int `db:"project_id"`
 	}
-	perf.StartBlock("SQL", "Fetch snippet projects")
 	snippetProjects, err := db.Query[snippetProjectRow](ctx, dbConn,
 		`
+		---- Fetch snippet projects
 		SELECT $columns
 		FROM snippet_project
 		WHERE snippet_id = ANY($1)
 		`,
 		snippetIds,
 	)
-	perf.EndBlock()
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch project ids for timeline")
 	}

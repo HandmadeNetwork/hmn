@@ -1294,11 +1294,10 @@ func JamIndex2021(c *RequestContext) ResponseData {
 			showcaseItems = append(showcaseItems, timelineItem)
 		}
 	}
-	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SHOWCASE", "Convert to json")
+	b := c.Perf.StartBlock("SHOWCASE", "Convert to json")
 	showcaseJson := templates.TimelineItemsToJSON(showcaseItems)
-	c.Perf.EndBlock()
+	b.End()
 
 	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2021.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{

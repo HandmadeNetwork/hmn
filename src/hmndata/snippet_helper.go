@@ -36,9 +36,7 @@ func FetchSnippets(
 	currentUser *models.User,
 	q SnippetQuery,
 ) ([]SnippetAndStuff, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch snippets")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "SNIPPET", "Fetch snippets").End()
 
 	tx, err := dbConn.Begin(ctx)
 	if err != nil {
@@ -53,6 +51,7 @@ func FetchSnippets(
 		// Get snippet IDs with this tag, then use that in the main query
 		snippetIDs, err := db.QueryScalar[int](ctx, tx,
 			`
+			---- Get snippet IDs for tag
 			SELECT DISTINCT snippet_id
 			FROM
 				snippet_tag
@@ -74,6 +73,7 @@ func FetchSnippets(
 		// Get snippet IDs for these projects, then use that in the main query
 		snippetIDs, err := db.QueryScalar[int](ctx, tx,
 			`
+			---- Get snippet IDs for projects
 			SELECT DISTINCT snippet_id
 			FROM
 				snippet_project
@@ -92,6 +92,7 @@ func FetchSnippets(
 	var qb db.QueryBuilder
 	qb.Add(
 		`
+		---- Get snippets
 		SELECT $columns
 		FROM
 			snippet
@@ -183,6 +184,7 @@ func FetchSnippets(
 	}
 	snippetTags, err := db.Query[snippetTagRow](ctx, tx,
 		`
+		---- Get tags for snippets
 		SELECT $columns
 		FROM
 			snippet_tag
@@ -213,6 +215,7 @@ func FetchSnippets(
 	}
 	snippetProjects, err := db.Query[snippetProjectRow](ctx, tx,
 		`
+		---- Get projects for snippets
 		SELECT $columns
 		FROM snippet_project
 		WHERE snippet_id = ANY($1)
@@ -257,6 +260,8 @@ func FetchSnippet(
 	snippetID int,
 	q SnippetQuery,
 ) (SnippetAndStuff, error) {
+	defer perf.StartBlock(ctx, "SNIPPET", "Fetch snippet").End()
+
 	q.IDs = []int{snippetID}
 	q.Limit = 1
 	q.Offset = 0
@@ -280,6 +285,8 @@ func FetchSnippetForDiscordMessage(
 	discordMessageID string,
 	q SnippetQuery,
 ) (SnippetAndStuff, error) {
+	defer perf.StartBlock(ctx, "SNIPPET", "Fetch snippet for Discord message").End()
+
 	q.DiscordMessageIDs = []string{discordMessageID}
 	q.Limit = 1
 	q.Offset = 0

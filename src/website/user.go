@@ -77,9 +77,9 @@ func UserProfile(c *RequestContext) ResponseData {
 		}
 	}
 
-	c.Perf.StartBlock("SQL", "Fetch user links")
 	userLinks, err := db.Query[models.Link](c, c.Conn,
 		`
+		---- Fetch user links
 		SELECT $columns
 		FROM
 			link as link
@@ -96,7 +96,6 @@ func UserProfile(c *RequestContext) ResponseData {
 	for _, l := range userLinks {
 		profileUserLinks = append(profileUserLinks, templates.LinkToTemplate(l))
 	}
-	c.Perf.EndBlock()
 
 	projectsAndStuff, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 		OwnerIDs:      []int{profileUser.ID},
@@ -114,12 +113,9 @@ func UserProfile(c *RequestContext) ResponseData {
 			numPersonalProjects++
 		}
 	}
-	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
 
 	timelineItems, err := FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
 		OwnerIDs: []int{profileUser.ID},

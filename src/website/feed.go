@@ -151,7 +151,6 @@ func AtomFeed(c *RequestContext) ResponseData {
 			feedData.AtomFeedUrl = hmnurl.BuildAtomFeedForProjects()
 			feedData.FeedUrl = hmnurl.BuildProjectIndex()
 
-			c.Perf.StartBlock("SQL", "Fetching projects")
 			_, hasAll := c.Req.URL.Query()["all"]
 			if hasAll {
 				itemsPerFeed = 100000
@@ -173,7 +172,6 @@ func AtomFeed(c *RequestContext) ResponseData {
 
 				feedData.Projects = append(feedData.Projects, templateProject)
 			}
-			c.Perf.EndBlock()
 
 			updated := time.Now()
 			if len(feedData.Projects) > 0 {
@@ -200,12 +198,10 @@ func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostLi
 	if err != nil {
 		return nil, err
 	}
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("FEED", "Build post items")
+	b := c.Perf.StartBlock("FEED", "Build post items")
 	var postItems []templates.PostListItem
 	for _, postAndStuff := range postsAndStuff {
 		postItem := MakePostListItem(
@@ -223,7 +219,7 @@ func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostLi
 
 		postItems = append(postItems, postItem)
 	}
-	c.Perf.EndBlock()
+	b.End()
 
 	return postItems, nil
 }

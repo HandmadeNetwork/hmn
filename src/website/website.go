@@ -38,8 +38,8 @@ var WebsiteCommand = &cobra.Command{
 
 		var wg sync.WaitGroup
 
-		conn := db.NewConnPool()
 		perfCollector, perfCollectorJob := perf.RunPerfCollector()
+		conn := db.NewConnPool()
 
 		// Start background jobs
 		wg.Add(1)

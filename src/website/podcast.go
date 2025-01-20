@@ -112,13 +112,21 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	c.Perf.StartBlock("PODCAST", "Handling file upload")
-	c.Perf.StartBlock("PODCAST", "Parsing form")
-	maxFileSize := int64(2 * 1024 * 1024)
-	maxBodySize := maxFileSize + 1024*1024
-	c.Req.Body = http.MaxBytesReader(c.Res, c.Req.Body, maxBodySize)
-	err = c.Req.ParseMultipartForm(maxBodySize)
-	c.Perf.EndBlock()
+	defer c.Perf.StartBlock("PODCAST", "Handling file upload").End()
+
+	var maxFileSize int64
+	{
+		b := c.Perf.StartBlock("PODCAST", "Parsing form")
+		defer b.End()
+
+		maxFileSize = int64(2 * 1024 * 1024)
+		maxBodySize := maxFileSize + 1024*1024
+		c.Req.Body = http.MaxBytesReader(c.Res, c.Req.Body, maxBodySize)
+		err = c.Req.ParseMultipartForm(maxBodySize)
+
+		b.End()
+	}
+
 	if err != nil {
 		// NOTE(asaf): The error for exceeding the max filesize doesn't have a special type, so we can't easily detect it here.
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to parse form"))
@@ -180,7 +188,6 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 		)
 	}
 	err = tx.Commit(c)
-	c.Perf.EndBlock()
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to commit db transaction"))
 	}
@@ -347,9 +354,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	c.Perf.StartBlock("OS", "Fetching podcast episode files")
 	episodeFiles, err := GetEpisodeFiles(c.CurrentProject.Slug)
-	c.Perf.EndBlock()
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch podcast episode file list"))
 	}
@@ -381,44 +386,49 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		return c.RejectRequest("Requested episode file not found")
 	}
 
-	c.Perf.StartBlock("MP3", "Parsing mp3 file for duration")
-	file, err := os.Open(fmt.Sprintf("public/media/podcast/%s/%s", c.CurrentProject.Slug, episodeFile))
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to open podcast file"))
-	}
-
-	mp3Decoder := mp3.NewDecoder(file)
 	var duration float64
-	skipped := 0
-	var decodingError error
-	var f mp3.Frame
-	for {
-		if err = mp3Decoder.Decode(&f, &skipped); err != nil {
-			if err == io.EOF {
-				break
-			} else {
-				decodingError = err
-				break
-			}
+	{
+		b := c.Perf.StartBlock("MP3", "Parsing mp3 file for duration")
+		defer b.End()
+
+		file, err := os.Open(fmt.Sprintf("public/media/podcast/%s/%s", c.CurrentProject.Slug, episodeFile))
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to open podcast file"))
 		}
-		duration = duration + f.Duration().Seconds()
-	}
-	file.Close()
-	c.Perf.EndBlock()
-	if decodingError != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to decode mp3 file"))
+
+		mp3Decoder := mp3.NewDecoder(file)
+		skipped := 0
+		var decodingError error
+		var f mp3.Frame
+		for {
+			if err = mp3Decoder.Decode(&f, &skipped); err != nil {
+				if err == io.EOF {
+					break
+				} else {
+					decodingError = err
+					break
+				}
+			}
+			duration = duration + f.Duration().Seconds()
+		}
+		file.Close()
+		if decodingError != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to decode mp3 file"))
+		}
+
+		b.End()
 	}
 
-	c.Perf.StartBlock("MARKDOWN", "Parsing description")
+	b := c.Perf.StartBlock("MARKDOWN", "Parsing description")
 	descriptionRendered := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
-	c.Perf.EndBlock()
+	b.End()
 
 	guidStr := ""
 	if isEdit {
 		guidStr = podcastResult.Episodes[0].GUID.String()
-		c.Perf.StartBlock("SQL", "Updating podcast episode")
 		_, err := c.Conn.Exec(c,
 			`
+			---- Update podcast episode
 			UPDATE podcast_episode
 			SET
 				title = $1,
@@ -438,16 +448,15 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 			episodeNumber,
 			podcastResult.Episodes[0].GUID,
 		)
-		c.Perf.EndBlock()
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update podcast episode"))
 		}
 	} else {
 		guid := uuid.New()
 		guidStr = guid.String()
-		c.Perf.StartBlock("SQL", "Creating new podcast episode")
 		_, err := c.Conn.Exec(c,
 			`
+			---- Creating new podcast episode
 			INSERT INTO podcast_episode
 				(guid, title, description, description_rendered, audio_filename, duration, pub_date, episode_number, podcast_id)
 			VALUES
@@ -463,7 +472,6 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 			episodeNumber,
 			podcastResult.Podcast.ID,
 		)
-		c.Perf.EndBlock()
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to create podcast episode"))
 		}
@@ -527,13 +535,13 @@ type PodcastResult struct {
 
 func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeGUID string) (PodcastResult, error) {
 	var result PodcastResult
-	c.Perf.StartBlock("SQL", "Fetch podcast")
 	type podcastQuery struct {
 		Podcast       models.Podcast `db:"podcast"`
 		ImageFilename string         `db:"imagefile.file"`
 	}
 	podcastQueryResult, err := db.QueryOne[podcastQuery](c, c.Conn,
 		`
+		---- Fetch podcast
 		SELECT $columns
 		FROM
 			podcast
@@ -542,7 +550,6 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 		`,
 		projectId,
 	)
-	c.Perf.EndBlock()
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			return result, nil
@@ -557,9 +564,9 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 
 	if fetchEpisodes {
 		if episodeGUID == "" {
-			c.Perf.StartBlock("SQL", "Fetch podcast episodes")
 			episodes, err := db.Query[models.PodcastEpisode](c, c.Conn,
 				`
+				---- Fetch podcast episodes
 				SELECT $columns
 				FROM podcast_episode AS episode
 				WHERE episode.podcast_id = $1
@@ -567,7 +574,6 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 				`,
 				podcast.ID,
 			)
-			c.Perf.EndBlock()
 			if err != nil {
 				return result, oops.New(err, "failed to fetch podcast episodes")
 			}
@@ -577,9 +583,9 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 			if err != nil {
 				return result, err
 			}
-			c.Perf.StartBlock("SQL", "Fetch podcast episode")
 			episode, err := db.QueryOne[models.PodcastEpisode](c, c.Conn,
 				`
+				---- Fetch podcast episode
 				SELECT $columns
 				FROM podcast_episode AS episode
 				WHERE episode.podcast_id = $1 AND episode.guid = $2
@@ -587,7 +593,6 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 				podcast.ID,
 				guid,
 			)
-			c.Perf.EndBlock()
 			if err != nil {
 				if errors.Is(err, db.NotFound) {
 					return result, nil

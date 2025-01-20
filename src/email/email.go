@@ -34,9 +34,10 @@ func SendRegistrationEmail(
 	destination string,
 	perf *perf.RequestPerf,
 ) error {
-	perf.StartBlock("EMAIL", "Registration email")
+	defer perf.StartBlock("EMAIL", "Registration email").End()
 
-	perf.StartBlock("EMAIL", "Rendering template")
+	b1 := perf.StartBlock("EMAIL", "Rendering template")
+	defer b1.End()
 	contents, err := renderTemplate("email_registration.html", RegistrationEmailData{
 		Name:                    toName,
 		HomepageUrl:             hmnurl.BuildHomepage(),
@@ -45,16 +46,15 @@ func SendRegistrationEmail(
 	if err != nil {
 		return err
 	}
-	perf.EndBlock()
+	b1.End()
 
-	perf.StartBlock("EMAIL", "Sending email")
+	b2 := perf.StartBlock("EMAIL", "Sending email")
+	defer b2.End()
 	err = sendMail(toAddress, toName, "[Handmade Network] Registration confirmation", contents)
 	if err != nil {
 		return oops.New(err, "Failed to send email")
 	}
-	perf.EndBlock()
-
-	perf.EndBlock()
+	b2.End()
 
 	return nil
 }
@@ -73,9 +73,10 @@ func SendExistingAccountEmail(
 	destination string,
 	perf *perf.RequestPerf,
 ) error {
-	perf.StartBlock("EMAIL", "Existing account email")
+	defer perf.StartBlock("EMAIL", "Existing account email").End()
 
-	perf.StartBlock("EMAIL", "Rendering template")
+	b1 := perf.StartBlock("EMAIL", "Rendering template")
+	defer b1.End()
 	contents, err := renderTemplate("email_account_existing.html", ExistingAccountEmailData{
 		Name:        toName,
 		Username:    username,
@@ -85,16 +86,15 @@ func SendExistingAccountEmail(
 	if err != nil {
 		return err
 	}
-	perf.EndBlock()
+	b1.End()
 
-	perf.StartBlock("EMAIL", "Sending email")
+	b2 := perf.StartBlock("EMAIL", "Sending email")
+	defer b2.End()
 	err = sendMail(toAddress, toName, "[Handmade Network] You already have an account!", contents)
 	if err != nil {
 		return oops.New(err, "Failed to send email")
 	}
-	perf.EndBlock()
-
-	perf.EndBlock()
+	b2.End()
 
 	return nil
 }
@@ -106,9 +106,10 @@ type PasswordResetEmailData struct {
 }
 
 func SendPasswordReset(toAddress string, toName string, username string, resetToken string, expiration time.Time, perf *perf.RequestPerf) error {
-	perf.StartBlock("EMAIL", "Password reset email")
+	defer perf.StartBlock("EMAIL", "Password reset email").End()
 
-	perf.StartBlock("EMAIL", "Rendering template")
+	b1 := perf.StartBlock("EMAIL", "Rendering template")
+	defer b1.End()
 	contents, err := renderTemplate("email_password_reset.html", PasswordResetEmailData{
 		Name:               toName,
 		DoPasswordResetUrl: hmnurl.BuildDoPasswordReset(username, resetToken),
@@ -117,16 +118,15 @@ func SendPasswordReset(toAddress string, toName string, username string, resetTo
 	if err != nil {
 		return err
 	}
-	perf.EndBlock()
+	b1.End()
 
-	perf.StartBlock("EMAIL", "Sending email")
+	b2 := perf.StartBlock("EMAIL", "Sending email")
+	defer b2.End()
 	err = sendMail(toAddress, toName, "[Handmade Network] Your password reset request", contents)
 	if err != nil {
 		return oops.New(err, "Failed to send email")
 	}
-	perf.EndBlock()
-
-	perf.EndBlock()
+	b2.End()
 
 	return nil
 }
@@ -142,8 +142,7 @@ type TimeMachineEmailData struct {
 }
 
 func SendTimeMachineEmail(profileUrl, username, userEmail, discordUsername string, mediaUrls []string, deviceInfo, description string, perf *perf.RequestPerf) error {
-	perf.StartBlock("EMAIL", "Time machine email")
-	defer perf.EndBlock()
+	defer perf.StartBlock("EMAIL", "Time machine email").End()
 
 	contents, err := renderTemplate("email_time_machine.html", TimeMachineEmailData{
 		ProfileUrl:      profileUrl,

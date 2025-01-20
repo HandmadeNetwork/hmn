@@ -201,6 +201,7 @@ func JamBySlug(slug string) Jam {
 func FetchJamsForProject(ctx context.Context, dbConn db.ConnOrTx, user *models.User, projectId int) ([]*models.JamProject, error) {
 	jamProjects, err := db.Query[models.JamProject](ctx, dbConn,
 		`
+		---- Fetch jams for project
 		SELECT $columns
 		FROM jam_project
 		WHERE project_id = $1
