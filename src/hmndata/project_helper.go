@@ -60,9 +60,7 @@ func FetchProjects(
 	currentUser *models.User,
 	q ProjectsQuery,
 ) ([]ProjectAndStuff, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch projects")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "PROJECT", "Fetch projects").End()
 
 	tx, err := dbConn.Begin(ctx)
 	if err != nil {
@@ -80,6 +78,7 @@ func FetchProjects(
 
 	// Fetch all valid projects (not yet subject to user permission checks)
 	var qb db.QueryBuilder
+	qb.AddName("Fetch projects")
 	if len(q.OrderBy) > 0 {
 		qb.Add(`SELECT * FROM (`)
 	}
@@ -174,6 +173,7 @@ func FetchProjects(
 		return nil, err
 	}
 
+	b := perf.StartBlock(ctx, "PROJECT", "Compute permissions")
 	var res []ProjectAndStuff
 	for i, p := range projectRows {
 		owners := projectOwners[i].Owners
@@ -232,6 +232,7 @@ func FetchProjects(
 			})
 		}
 	}
+	b.End()
 
 	err = tx.Commit(ctx)
 	if err != nil {
@@ -253,6 +254,8 @@ func FetchProject(
 	projectID int,
 	q ProjectsQuery,
 ) (ProjectAndStuff, error) {
+	defer perf.StartBlock(ctx, "PROJECT", "Fetch project").End()
+
 	q.ProjectIDs = []int{projectID}
 	q.Limit = 1
 	q.Offset = 0
@@ -281,6 +284,8 @@ func FetchProjectBySlug(
 	projectSlug string,
 	q ProjectsQuery,
 ) (ProjectAndStuff, error) {
+	defer perf.StartBlock(ctx, "PROJECT", "Fetch project by slug").End()
+
 	q.Slugs = []string{projectSlug}
 	q.Limit = 1
 	q.Offset = 0
@@ -303,9 +308,7 @@ func CountProjects(
 	currentUser *models.User,
 	q ProjectsQuery,
 ) (int, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Count projects")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "PROJECT", "Count projects").End()
 
 	q.Limit = 0
 	q.Offset = 0
@@ -338,9 +341,7 @@ func FetchMultipleProjectsOwners(
 	dbConn db.ConnOrTx,
 	projectIds []int,
 ) ([]ProjectOwners, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch owners for multiple projects")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "PROJECT", "Fetch owners for multiple projects").End()
 
 	tx, err := dbConn.Begin(ctx)
 	if err != nil {
@@ -355,6 +356,7 @@ func FetchMultipleProjectsOwners(
 	}
 	userProjects, err := db.Query[userProject](ctx, tx,
 		`
+		---- Fetch user/project pairs
 		SELECT $columns
 		FROM user_project
 		WHERE project_id = ANY($1)
@@ -430,9 +432,7 @@ func FetchProjectOwners(
 	dbConn db.ConnOrTx,
 	projectId int,
 ) ([]*models.User, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch owners for project")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "PROJECT", "Fetch project owners").End()
 
 	projectOwners, err := FetchMultipleProjectsOwners(ctx, dbConn, []int{projectId})
 	if err != nil {
@@ -458,6 +458,8 @@ func SetProjectTag(
 	projectID int,
 	tagText string,
 ) (*models.Tag, error) {
+	defer perf.StartBlock(ctx, "PROJECT", "Set project tag").End()
+
 	tx, err := dbConn.Begin(ctx)
 	if err != nil {
 		return nil, oops.New(err, "failed to start transaction")
@@ -480,6 +482,7 @@ func SetProjectTag(
 		// Create a tag
 		tag, err := db.QueryOne[models.Tag](ctx, tx,
 			`
+			---- Create a new tag
 			INSERT INTO tag (text) VALUES ($1)
 			RETURNING $columns
 			`,
@@ -493,6 +496,7 @@ func SetProjectTag(
 		// Attach it to the project
 		_, err = tx.Exec(ctx,
 			`
+			---- Associate tag with project
 			UPDATE project
 			SET tag = $1
 			WHERE id = $2
@@ -506,6 +510,7 @@ func SetProjectTag(
 		// Update the text of an existing one
 		tag, err := db.QueryOne[models.Tag](ctx, tx,
 			`
+			---- Update the text of the existing tag
 			UPDATE tag
 			SET text = $1
 			WHERE id = (SELECT tag FROM project WHERE id = $2)
@@ -530,6 +535,7 @@ func SetProjectTag(
 func UpdateSnippetLastPostedForAllProjects(ctx context.Context, dbConn db.ConnOrTx) error {
 	_, err := dbConn.Exec(ctx,
 		`
+		---- Update snippet_last_posted for everything
 		UPDATE project p SET (snippet_last_posted, all_last_updated) = (
 			SELECT
 				COALESCE(MAX(s."when"), 'epoch'),

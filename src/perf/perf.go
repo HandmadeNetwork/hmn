@@ -32,8 +32,13 @@ func (rp *RequestPerf) EndRequest() {
 		return
 	}
 
-	for rp.EndBlock() {
+	// Close any open blocks (arguably a bug! do better, user!)
+	for i := len(rp.Blocks) - 1; i >= 0; i -= 1 {
+		if rp.Blocks[i].End.Equal(time.Time{}) {
+			rp.Blocks[i].End = time.Now()
+		}
 	}
+
 	rp.End = time.Now()
 }
 
@@ -52,9 +57,36 @@ func (rp *RequestPerf) Checkpoint(category, description string) {
 	rp.Blocks = append(rp.Blocks, checkpoint)
 }
 
-func (rp *RequestPerf) StartBlock(category, description string) {
-	if rp == nil {
+type BlockHandle struct {
+	rp    *RequestPerf
+	ended bool
+}
+
+func (b *BlockHandle) End() {
+	if b.rp == nil {
 		return
+	}
+	if b.ended {
+		return
+	}
+
+	b.ended = true
+	for i := len(b.rp.Blocks) - 1; i >= 0; i -= 1 {
+		if b.rp.Blocks[i].End.Equal(time.Time{}) {
+			b.rp.Blocks[i].End = time.Now()
+			return
+		}
+	}
+}
+
+func StartBlock(ctx context.Context, category, description string) *BlockHandle {
+	p := ExtractPerf(ctx)
+	return p.StartBlock(category, description)
+}
+
+func (rp *RequestPerf) StartBlock(category, description string) *BlockHandle {
+	if rp == nil {
+		return &BlockHandle{}
 	}
 
 	now := time.Now()
@@ -65,20 +97,10 @@ func (rp *RequestPerf) StartBlock(category, description string) {
 		Description: description,
 	}
 	rp.Blocks = append(rp.Blocks, checkpoint)
-}
 
-func (rp *RequestPerf) EndBlock() bool {
-	if rp == nil {
-		return false
+	return &BlockHandle{
+		rp: rp,
 	}
-
-	for i := len(rp.Blocks) - 1; i >= 0; i -= 1 {
-		if rp.Blocks[i].End.Equal(time.Time{}) {
-			rp.Blocks[i].End = time.Now()
-			return true
-		}
-	}
-	return false
 }
 
 func (rp *RequestPerf) MsFromStart(block *PerfBlock) float64 {

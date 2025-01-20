@@ -17,10 +17,8 @@ func Index(c *RequestContext) ResponseData {
 	const maxPostsPerTab = 20
 	const maxNewsPosts = 10
 
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
 
 	type LandingTemplateData struct {
 		templates.BaseData

@@ -252,13 +252,11 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool, u
 	}
 	var stats twitchSyncStats
 
-	p.StartBlock("SQL", "Fetch list of streamers")
 	streamers, err := hmndata.FetchTwitchStreamers(ctx, dbConn, hmndata.TwitchStreamersQuery{})
 	if err != nil {
 		log.Error().Err(err).Msg("Error while monitoring twitch")
 		return
 	}
-	p.EndBlock()
 
 	needID := make([]string, 0)
 	streamerMap := make(map[string]*hmndata.TwitchStreamer)
@@ -269,14 +267,12 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool, u
 
 	twitchUsers := []twitchUser{}
 	if len(needID) > 0 {
-		p.StartBlock("TwitchAPI", "Fetch twitch user info")
 		log.Debug().Interface("needID", needID).Msg("IDs")
 		twitchUsers, err = getTwitchUsersByLogin(ctx, needID)
 		if err != nil {
 			log.Error().Err(err).Msg("Error while monitoring twitch")
 			return
 		}
-		p.EndBlock()
 	}
 
 	for _, tu := range twitchUsers {
@@ -290,13 +286,11 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool, u
 		}
 	}
 
-	p.StartBlock("TwitchAPI", "Fetch event subscriptions")
 	subscriptions, err := getEventSubscriptions(ctx)
 	if err != nil {
 		log.Error().Err(err).Msg("Error while monitoring twitch")
 		return
 	}
-	p.EndBlock()
 
 	type isSubbedByType map[string]bool
 
@@ -336,7 +330,9 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool, u
 	}
 
 	if config.Config.Env != config.Dev { // NOTE(asaf): Can't subscribe to events from dev. We need a non-localhost callback url.
-		p.StartBlock("TwitchAPI", "Sync subscriptions with twitch")
+		b := p.StartBlock("TwitchAPI", "Sync subscriptions with twitch")
+		defer b.End()
+
 		for _, ev := range toUnsub {
 			err = unsubscribeFromEvent(ctx, ev.EventID)
 			if err != nil {
@@ -358,7 +354,8 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool, u
 				}
 			}
 		}
-		p.EndBlock()
+
+		b.End()
 	}
 
 	tx, err := dbConn.Begin(ctx)
@@ -371,16 +368,17 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool, u
 	for _, streamer := range validStreamers {
 		allIDs = append(allIDs, streamer.TwitchID)
 	}
-	p.StartBlock("SQL", "Remove untracked streamers")
 	_, err = tx.Exec(ctx,
-		`DELETE FROM twitch_latest_status WHERE NOT (twitch_id = ANY($1))`,
+		`
+		---- Remove untracked streamers
+		DELETE FROM twitch_latest_status WHERE NOT (twitch_id = ANY($1))
+		`,
 		allIDs,
 	)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to remove untracked twitch ids from streamer list in db")
 		return
 	}
-	p.EndBlock()
 
 	usersToUpdate := make([]string, 0)
 	if updateAll {
@@ -399,43 +397,47 @@ func syncWithTwitch(ctx context.Context, dbConn *pgxpool.Pool, updateAll bool, u
 	}
 
 	if len(usersToUpdate) > 0 {
-		p.StartBlock("TwitchAPI", "Fetch twitch stream statuses")
 		statuses, err := getStreamStatus(ctx, usersToUpdate)
 		if err != nil {
 			log.Error().Err(err).Msg("failed to fetch stream statuses")
 			return
 		}
 		twitchLog(ctx, tx, models.TwitchLogTypeOther, "", "Batch resync", fmt.Sprintf("%#v", statuses))
-		p.EndBlock()
-		p.StartBlock("SQL", "Update stream statuses in db")
-		for _, twitchId := range usersToUpdate {
-			var status *streamStatus
-			for idx, st := range statuses {
-				if st.TwitchID == twitchId {
-					status = &statuses[idx]
-					break
-				}
-			}
-			if status == nil {
-				twitchLogin := ""
-				for _, streamer := range validStreamers {
-					if streamer.TwitchID == twitchId {
-						twitchLogin = streamer.TwitchLogin
+
+		{
+			b := p.StartBlock("SQL", "Update stream statuses in db")
+			defer b.End()
+
+			for _, twitchId := range usersToUpdate {
+				var status *streamStatus
+				for idx, st := range statuses {
+					if st.TwitchID == twitchId {
+						status = &statuses[idx]
 						break
 					}
 				}
-				status = &streamStatus{
-					TwitchID:    twitchId,
-					TwitchLogin: twitchLogin,
+				if status == nil {
+					twitchLogin := ""
+					for _, streamer := range validStreamers {
+						if streamer.TwitchID == twitchId {
+							twitchLogin = streamer.TwitchLogin
+							break
+						}
+					}
+					status = &streamStatus{
+						TwitchID:    twitchId,
+						TwitchLogin: twitchLogin,
+					}
+				}
+				twitchLog(ctx, tx, models.TwitchLogTypeREST, status.TwitchLogin, "Resync", fmt.Sprintf("%#v", status))
+				err = gotRESTUpdate(ctx, tx, status)
+				if err != nil {
+					log.Error().Err(err).Msg("failed to update twitch stream status")
 				}
 			}
-			twitchLog(ctx, tx, models.TwitchLogTypeREST, status.TwitchLogin, "Resync", fmt.Sprintf("%#v", status))
-			err = gotRESTUpdate(ctx, tx, status)
-			if err != nil {
-				log.Error().Err(err).Msg("failed to update twitch stream status")
-			}
+
+			b.End()
 		}
-		p.EndBlock()
 	}
 	err = tx.Commit(ctx)
 	if err != nil {

@@ -28,12 +28,12 @@ type TwitchStreamersQuery struct {
 }
 
 func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx, q TwitchStreamersQuery) ([]TwitchStreamer, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch twitch streamers")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "TWITCH", "Fetch Twitch streamers").End()
+
 	var qb db.QueryBuilder
 	qb.Add(
 		`
+		---- Fetch Twitch links
 		SELECT $columns{link}
 		FROM
 			link
@@ -108,8 +108,11 @@ func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx, q TwitchStrea
 }
 
 func FetchTwitchLoginsForUserOrProject(ctx context.Context, dbConn db.ConnOrTx, userId *int, projectId *int) ([]string, error) {
+	defer perf.StartBlock(ctx, "TWITCH", "Fetch Twitch logins").End()
+
 	links, err := db.Query[models.Link](ctx, dbConn,
 		`
+		---- Fetch Twitch links
 		SELECT $columns
 		FROM
 			link

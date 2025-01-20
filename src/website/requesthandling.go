@@ -446,8 +446,8 @@ func (rd *ResponseData) AddFutureNotice(class string, content string) {
 
 func (rd *ResponseData) WriteTemplate(name string, data interface{}, rp *perf.RequestPerf) error {
 	if rp != nil {
-		rp.StartBlock("TEMPLATE", name)
-		defer rp.EndBlock()
+		b := rp.StartBlock("TEMPLATE", name)
+		defer b.End()
 	}
 	return templates.GetTemplate(name).Execute(rd, data)
 }

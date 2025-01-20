@@ -31,9 +31,7 @@ func FetchUsers(
 	currentUser *models.User,
 	q UsersQuery,
 ) ([]*models.User, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch users")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "USER", "Fetch users").End()
 
 	var currentUserID *int
 	if currentUser != nil {
@@ -52,6 +50,7 @@ func FetchUsers(
 
 	var qb db.QueryBuilder
 	qb.Add(`
+		---- Fetch users
 		SELECT $columns
 		FROM
 			hmn_user
@@ -116,6 +115,8 @@ func FetchUser(
 	userID int,
 	q UsersQuery,
 ) (*models.User, error) {
+	defer perf.StartBlock(ctx, "USER", "Fetch user").End()
+
 	q.UserIDs = []int{userID}
 
 	res, err := FetchUsers(ctx, dbConn, currentUser, q)
@@ -144,6 +145,8 @@ func FetchUserByUsername(
 	username string,
 	q UsersQuery,
 ) (*models.User, error) {
+	defer perf.StartBlock(ctx, "USER", "Fetch user by username").End()
+
 	q.Usernames = []string{username}
 
 	res, err := FetchUsers(ctx, dbConn, currentUser, q)

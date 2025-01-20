@@ -26,14 +26,16 @@ type FollowTimelineQuery struct {
 }
 
 func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User, lineageBuilder *models.SubforumLineageBuilder, q FollowTimelineQuery) ([]templates.TimelineItem, error) {
-	perf := perf.ExtractPerf(ctx)
+	defer perf.StartBlock(ctx, "FOLLOW", "Assemble follow data").End()
 
-	perf.StartBlock("FOLLOW", "Assemble follow data")
-	following, err := db.Query[models.Follow](ctx, conn, `
+	following, err := db.Query[models.Follow](ctx, conn,
+		`
 		SELECT $columns
 		FROM follower
 		WHERE user_id = $1
-	`, user.ID)
+		`,
+		user.ID,
+	)
 
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch follow data")
@@ -59,7 +61,6 @@ func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *mod
 			Limit:      q.Limit,
 		})
 	}
-	perf.EndBlock()
 
 	return timelineItems, err
 }
@@ -82,10 +83,10 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 }
 
 func FetchFollows(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, userID int) ([]templates.Follow, error) {
-	perf := perf.ExtractPerf(ctx)
+	defer perf.StartBlock(ctx, "FOLLOW", "Fetch follows")
 
-	perf.StartBlock("SQL", "Fetch follows")
 	following, err := db.Query[models.Follow](ctx, conn, `
+		---- Fetch follows
 		SELECT $columns
 		FROM follower
 		WHERE user_id = $1
@@ -93,7 +94,6 @@ func FetchFollows(ctx context.Context, conn db.ConnOrTx, currentUser *models.Use
 	if err != nil {
 		return nil, oops.New(err, "failed to fetch follows")
 	}
-	perf.EndBlock()
 
 	var userIDs, projectIDs []int
 	for _, follow := range following {

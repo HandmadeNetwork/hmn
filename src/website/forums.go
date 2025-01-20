@@ -207,10 +207,8 @@ func Forum(c *RequestContext) ResponseData {
 }
 
 func ForumMarkRead(c *RequestContext) ResponseData {
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
 
 	sfId, err := strconv.Atoi(c.PathParams["sfid"])
 	if err != nil {
@@ -262,42 +260,40 @@ func ForumMarkRead(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete subforum unread info"))
 		}
 	} else {
-		c.Perf.StartBlock("SQL", "Update SLRIs")
 		_, err = tx.Exec(c,
 			`
-		INSERT INTO subforum_last_read_info (subforum_id, user_id, lastread)
-			SELECT id, $2, $3
-			FROM subforum
-			WHERE id = ANY ($1)
-		ON CONFLICT (subforum_id, user_id) DO UPDATE
-			SET lastread = EXCLUDED.lastread
-		`,
+			---- Update SLRIs
+			INSERT INTO subforum_last_read_info (subforum_id, user_id, lastread)
+				SELECT id, $2, $3
+				FROM subforum
+				WHERE id = ANY ($1)
+			ON CONFLICT (subforum_id, user_id) DO UPDATE
+				SET lastread = EXCLUDED.lastread
+			`,
 			sfIds,
 			c.CurrentUser.ID,
 			time.Now(),
 		)
-		c.Perf.EndBlock()
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update forum slris"))
 		}
 
-		c.Perf.StartBlock("SQL", "Delete TLRIs")
 		_, err = tx.Exec(c,
 			`
-		DELETE FROM thread_last_read_info
-		WHERE
-			user_id = $2
-			AND thread_id IN (
-				SELECT id
-				FROM thread
-				WHERE
-					subforum_id = ANY ($1)
-			)
-		`,
+			---- Delete TLRIs
+			DELETE FROM thread_last_read_info
+			WHERE
+				user_id = $2
+				AND thread_id IN (
+					SELECT id
+					FROM thread
+					WHERE
+						subforum_id = ANY ($1)
+				)
+			`,
 			sfIds,
 			c.CurrentUser.ID,
 		)
-		c.Perf.EndBlock()
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete unnecessary tlris"))
 		}
@@ -410,9 +406,9 @@ func ForumThread(c *RequestContext) ResponseData {
 
 	// Update thread last read info
 	if c.CurrentUser != nil {
-		c.Perf.StartBlock("SQL", "Update TLRI")
 		_, err = c.Conn.Exec(c,
 			`
+			---- Update TLRI
 			INSERT INTO thread_last_read_info (thread_id, user_id, lastread)
 			VALUES ($1, $2, $3)
 			ON CONFLICT (thread_id, user_id) DO UPDATE
@@ -422,7 +418,6 @@ func ForumThread(c *RequestContext) ResponseData {
 			c.CurrentUser.ID,
 			time.Now(),
 		)
-		c.Perf.EndBlock()
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update forum tlri"))
 		}
@@ -850,10 +845,8 @@ func WikiArticleRedirect(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up wiki thread"))
 	}
 
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
 
 	dest := UrlForGenericThread(c.UrlContext, &thread.Thread, lineageBuilder)
 	return c.Redirect(dest, http.StatusFound)
@@ -879,13 +872,10 @@ Does NOT validate that the requested thread and post ID are valid.
 If this returns false, then something was malformed and you should 404.
 */
 func getCommonForumData(c *RequestContext) (commonForumData, bool) {
-	c.Perf.StartBlock("FORUMS", "Fetch common forum data")
-	defer c.Perf.EndBlock()
+	defer c.Perf.StartBlock("FORUMS", "Fetch common forum data").End()
 
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
 
 	res := commonForumData{
 		c:              c,

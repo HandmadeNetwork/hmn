@@ -45,6 +45,7 @@ func (node *SubforumTreeNode) GetLineage() []*Subforum {
 func GetFullSubforumTree(ctx context.Context, conn db.ConnOrTx) SubforumTree {
 	subforums, err := db.Query[Subforum](ctx, conn,
 		`
+		---- Get subforum tree
 		SELECT $columns
 		FROM subforum
 		ORDER BY sort, id ASC

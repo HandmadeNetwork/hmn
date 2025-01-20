@@ -17,13 +17,12 @@ type TagQuery struct {
 }
 
 func FetchTags(ctx context.Context, dbConn db.ConnOrTx, q TagQuery) ([]*models.Tag, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch tags")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "TAG", "Fetch tags").End()
 
 	var qb db.QueryBuilder
 	qb.Add(
 		`
+		---- Fetch tags
 		SELECT $columns
 		FROM tag
 		WHERE

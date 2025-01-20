@@ -19,7 +19,7 @@ import (
 
 func loadCommonData(h Handler) Handler {
 	return func(c *RequestContext) ResponseData {
-		c.Perf.StartBlock("MIDDLEWARE", "Load common website data")
+		b := c.Perf.StartBlock("MIDDLEWARE", "Load common website data")
 		{
 			// get user
 			{
@@ -80,7 +80,7 @@ func loadCommonData(h Handler) Handler {
 				c.UrlContext = hmndata.UrlContextForProject(c.CurrentProject)
 			}
 		}
-		c.Perf.EndBlock()
+		b.End()
 
 		return h(c)
 	}

@@ -10,9 +10,9 @@ import (
 )
 
 func Perfmon(c *RequestContext) ResponseData {
-	c.Perf.StartBlock("PERF", "Requesting perf data")
+	b := c.Perf.StartBlock("PERF", "Requesting perf data")
 	perfData := c.PerfCollector.GetPerfCopy()
-	c.Perf.EndBlock()
+	b.End()
 
 	type FlameItem struct {
 		Offset      int64
@@ -36,53 +36,58 @@ func Perfmon(c *RequestContext) ResponseData {
 		PerfRecordsJSON string
 	}
 
-	perfRecords := []PerfRecord{}
+	var perfJSON []byte
+	{
+		b := c.Perf.StartBlock("PERF", "Processing perf data")
+		defer b.End()
 
-	c.Perf.StartBlock("PERF", "Processing perf data")
-	for _, item := range perfData.AllRequests {
-		record := PerfRecord{
-			Route:    item.Route,
-			Path:     item.Path,
-			Duration: item.End.Sub(item.Start).Microseconds(),
-			Breakdown: &FlameItem{
-				Offset:   0,
+		perfRecords := []PerfRecord{}
+		for _, item := range perfData.AllRequests {
+			record := PerfRecord{
+				Route:    item.Route,
+				Path:     item.Path,
 				Duration: item.End.Sub(item.Start).Microseconds(),
-				End:      item.End,
-			},
-		}
-
-		parent := record.Breakdown
-		for _, block := range item.Blocks {
-			for parent.Parent != nil && block.End.After(parent.End) {
-				parent = parent.Parent
-			}
-			flame := FlameItem{
-				Offset:      block.Start.Sub(item.Start).Microseconds(),
-				Duration:    block.End.Sub(block.Start).Microseconds(),
-				Category:    block.Category,
-				Description: block.Description,
-				End:         block.End,
-				Parent:      parent,
+				Breakdown: &FlameItem{
+					Offset:   0,
+					Duration: item.End.Sub(item.Start).Microseconds(),
+					End:      item.End,
+				},
 			}
 
-			parent.Children = append(parent.Children, &flame)
-			parent = &flame
+			parent := record.Breakdown
+			for _, block := range item.Blocks {
+				for parent.Parent != nil && block.End.After(parent.End) {
+					parent = parent.Parent
+				}
+				flame := FlameItem{
+					Offset:      block.Start.Sub(item.Start).Microseconds(),
+					Duration:    block.End.Sub(block.Start).Microseconds(),
+					Category:    block.Category,
+					Description: block.Description,
+					End:         block.End,
+					Parent:      parent,
+				}
+
+				parent.Children = append(parent.Children, &flame)
+				parent = &flame
+			}
+
+			perfRecords = append(perfRecords, record)
 		}
 
-		perfRecords = append(perfRecords, record)
-	}
+		var err error
+		perfJSON, err = json.Marshal(perfRecords)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to marshal json"))
+		}
 
-	json, err := json.Marshal(perfRecords)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to marshal json"))
+		b.End()
 	}
-
-	c.Perf.EndBlock()
 
 	var res ResponseData
 	res.MustWriteTemplate("perfmon.html", PerfmonData{
 		BaseData:        getBaseDataAutocrumb(c, "Perfmon"),
-		PerfRecordsJSON: string(json),
+		PerfRecordsJSON: string(perfJSON),
 	}, c.Perf)
 	return res
 }

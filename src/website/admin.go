@@ -69,10 +69,8 @@ func AdminAtomFeed(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch unapproved posts"))
 	}
 
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
 
 	for _, post := range unapprovedPosts {
 		postItem := MakePostListItem(
@@ -133,10 +131,8 @@ type unapprovedUserData struct {
 }
 
 func AdminApprovalQueue(c *RequestContext) ResponseData {
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
 
 	potentialUsers, err := db.QueryScalar[int](c, c.Conn,
 		`

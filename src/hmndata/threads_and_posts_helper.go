@@ -56,9 +56,7 @@ func FetchThreads(
 	currentUser *models.User,
 	q ThreadsQuery,
 ) ([]ThreadAndStuff, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch threads")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "POST", "Fetch threads").End()
 
 	var qb db.QueryBuilder
 
@@ -69,6 +67,7 @@ func FetchThreads(
 
 	qb.Add(
 		`
+		---- Fetch threads
 		SELECT $columns
 		FROM
 			thread
@@ -191,6 +190,8 @@ func FetchThread(
 	threadID int,
 	q ThreadsQuery,
 ) (ThreadAndStuff, error) {
+	defer perf.StartBlock(ctx, "POST", "Fetch thread").End()
+
 	q.ThreadIDs = []int{threadID}
 	q.Limit = 1
 	q.Offset = 0
@@ -213,9 +214,7 @@ func CountThreads(
 	currentUser *models.User,
 	q ThreadsQuery,
 ) (int, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Count threads")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "POST", "Count threads").End()
 
 	var qb db.QueryBuilder
 
@@ -226,6 +225,7 @@ func CountThreads(
 
 	qb.Add(
 		`
+		---- Count threads
 		SELECT COUNT(*)
 		FROM
 			thread
@@ -316,9 +316,7 @@ func FetchPosts(
 	currentUser *models.User,
 	q PostsQuery,
 ) ([]PostAndStuff, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Fetch posts")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "POST", "Fetch posts").End()
 
 	var qb db.QueryBuilder
 
@@ -338,6 +336,7 @@ func FetchPosts(
 
 	qb.Add(
 		`
+		---- Fetch posts
 		SELECT $columns
 		FROM
 			post
@@ -474,6 +473,8 @@ func FetchThreadPosts(
 	threadID int,
 	q PostsQuery,
 ) (models.Thread, []PostAndStuff, error) {
+	defer perf.StartBlock(ctx, "POST", "Fetch posts for thread").End()
+
 	q.ThreadIDs = []int{threadID}
 
 	res, err := FetchPosts(ctx, dbConn, currentUser, q)
@@ -503,6 +504,8 @@ func FetchThreadPost(
 	threadID, postID int,
 	q PostsQuery,
 ) (PostAndStuff, error) {
+	defer perf.StartBlock(ctx, "POST", "Fetch post for thread").End()
+
 	q.ThreadIDs = []int{threadID}
 	q.PostIDs = []int{postID}
 	q.Limit = 1
@@ -534,6 +537,8 @@ func FetchPost(
 	postID int,
 	q PostsQuery,
 ) (PostAndStuff, error) {
+	defer perf.StartBlock(ctx, "POST", "Fetch post").End()
+
 	q.PostIDs = []int{postID}
 	q.Limit = 1
 	q.Offset = 0
@@ -556,9 +561,7 @@ func CountPosts(
 	currentUser *models.User,
 	q PostsQuery,
 ) (int, error) {
-	perf := perf.ExtractPerf(ctx)
-	perf.StartBlock("SQL", "Count posts")
-	defer perf.EndBlock()
+	defer perf.StartBlock(ctx, "POST", "Count posts").End()
 
 	var qb db.QueryBuilder
 
@@ -569,6 +572,7 @@ func CountPosts(
 
 	qb.Add(
 		`
+		---- Count posts
 		SELECT COUNT(*)
 		FROM
 			post
@@ -632,6 +636,7 @@ func UserCanEditPost(ctx context.Context, connOrTx db.ConnOrTx, user models.User
 
 	authorID, err := db.QueryOneScalar[*int](ctx, connOrTx,
 		`
+		---- Check if user can edit post
 		SELECT post.author_id
 		FROM
 			post
@@ -662,9 +667,12 @@ func CreateNewPost(
 	unparsedContent string,
 	ipString string,
 ) (postId, versionId int) {
+	defer perf.StartBlock(ctx, "POST", "Create post").End()
+
 	// Create post
 	err := tx.QueryRow(ctx,
 		`
+		---- Create new post
 		INSERT INTO post (postdate, thread_id, thread_type, current_id, author_id, project_id, reply_id, preview)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
@@ -723,12 +731,15 @@ func DeletePost(
 	tx pgx.Tx,
 	threadId, postId int,
 ) (threadDeleted bool) {
+	defer perf.StartBlock(ctx, "POST", "Delete post").End()
+
 	type threadInfo struct {
 		FirstPostID int  `db:"first_id"`
 		Deleted     bool `db:"deleted"`
 	}
 	info, err := db.QueryOne[threadInfo](ctx, tx,
 		`
+		---- Get thread
 		SELECT $columns
 		FROM
 			thread
@@ -749,6 +760,7 @@ func DeletePost(
 		// Just delete the whole thread and all its posts.
 		_, err = tx.Exec(ctx,
 			`
+			---- Mark thread as deleted
 			UPDATE thread
 			SET deleted = TRUE
 			WHERE id = $1
@@ -757,6 +769,7 @@ func DeletePost(
 		)
 		_, err = tx.Exec(ctx,
 			`
+			---- Mark thread's posts as deleted
 			UPDATE post
 			SET deleted = TRUE
 			WHERE thread_id = $1
@@ -769,6 +782,7 @@ func DeletePost(
 
 	_, err = tx.Exec(ctx,
 		`
+		---- Delete post
 		UPDATE post
 		SET deleted = TRUE
 		WHERE
@@ -795,6 +809,8 @@ func DeletePost(
 const maxPostContentLength = 200000
 
 func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedContent string, ipString string, editReason string, editorId *int) (versionId int) {
+	defer perf.StartBlock(ctx, "POST", "Create post version").End()
+
 	if len(unparsedContent) > maxPostContentLength {
 		logging.ExtractLogger(ctx).Warn().
 			Str("preview", unparsedContent[:400]).
@@ -815,6 +831,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 	// Create post version
 	err := tx.QueryRow(ctx,
 		`
+		---- Create post version
 		INSERT INTO post_version (post_id, text_raw, text_parsed, ip, date, edit_reason, editor_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
@@ -834,6 +851,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 	// Update post with version id and preview
 	_, err = tx.Exec(ctx,
 		`
+		---- Update post to new version
 		UPDATE post
 		SET current_id = $1, preview = $2
 		WHERE id = $3
@@ -900,8 +918,11 @@ Returns errThreadEmpty if the thread contains no visible posts any more.
 You should probably mark the thread as deleted in this case.
 */
 func FixThreadPostIds(ctx context.Context, conn db.ConnOrTx, threadId int) error {
+	defer perf.StartBlock(ctx, "POST", "Fix thread post IDs").End()
+
 	posts, err := db.Query[models.Post](ctx, conn,
 		`
+		---- Get posts in thread
 		SELECT $columns
 		FROM post
 		WHERE
@@ -930,6 +951,7 @@ func FixThreadPostIds(ctx context.Context, conn db.ConnOrTx, threadId int) error
 
 	_, err = conn.Exec(ctx,
 		`
+		---- Update thread first/last
 		UPDATE thread
 		SET first_id = $1, last_id = $2
 		WHERE id = $3

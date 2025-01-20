@@ -11,10 +11,8 @@ import (
 )
 
 func FollowingTest(c *RequestContext) ResponseData {
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
 
 	timelineItems, err := FetchFollowTimelineForUser(
 		c, c.Conn,

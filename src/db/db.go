@@ -12,37 +12,10 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
-	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
-	zerologadapter "github.com/jackc/pgx-zerolog"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/tracelog"
-	"github.com/rs/zerolog/log"
 )
-
-/*
-A general error to be used when no results are found. This is the error returned
-by QueryOne, and can generally be used by other database helpers that fetch a single
-result but find nothing.
-*/
-var NotFound = errors.New("not found")
-
-// This interface should match both a direct pgx connection or a pgx transaction.
-type ConnOrTx interface {
-	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
-	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
-	CopyFrom(ctx context.Context, tableName pgx.Identifier, columnNames []string, rowSrc pgx.CopyFromSource) (int64, error)
-
-	// Both raw database connections and transactions in pgx can begin/commit
-	// transactions. For database connections it does the obvious thing; for
-	// transactions it creates a "pseudo-nested transaction" but conceptually
-	// works the same. See the documentation of pgx.Tx.Begin.
-	Begin(ctx context.Context) (pgx.Tx, error)
-}
 
 var pgTypeMap = pgtype.NewMap()
 
@@ -51,68 +24,12 @@ func init() {
 	pgTypeMap.TypeForValue(nil)
 }
 
-// Creates a new connection to the HMN database.
-// This connection is not safe for concurrent use.
-func NewConn() *pgx.Conn {
-	return NewConnWithConfig(config.PostgresConfig{})
-}
-
-func NewConnWithConfig(cfg config.PostgresConfig) *pgx.Conn {
-	cfg = overrideDefaultConfig(cfg)
-
-	pgcfg, err := pgx.ParseConfig(cfg.DSN())
-
-	pgcfg.Tracer = &tracelog.TraceLog{
-		Logger:   zerologadapter.NewLogger(log.Logger),
-		LogLevel: cfg.LogLevel,
-	}
-
-	conn, err := pgx.ConnectConfig(context.Background(), pgcfg)
-	if err != nil {
-		panic(oops.New(err, "failed to connect to database"))
-	}
-
-	return conn
-}
-
-// Creates a connection pool for the HMN database.
-// The resulting pool is safe for concurrent use.
-func NewConnPool() *pgxpool.Pool {
-	return NewConnPoolWithConfig(config.PostgresConfig{})
-}
-
-func NewConnPoolWithConfig(cfg config.PostgresConfig) *pgxpool.Pool {
-	cfg = overrideDefaultConfig(cfg)
-
-	pgcfg, err := pgxpool.ParseConfig(cfg.DSN())
-
-	pgcfg.MinConns = cfg.MinConn
-	pgcfg.MaxConns = cfg.MaxConn
-	pgcfg.ConnConfig.Tracer = &tracelog.TraceLog{
-		Logger:   zerologadapter.NewLogger(log.Logger),
-		LogLevel: cfg.LogLevel,
-	}
-
-	conn, err := pgxpool.NewWithConfig(context.Background(), pgcfg)
-	if err != nil {
-		panic(oops.New(err, "failed to create database connection pool"))
-	}
-
-	return conn
-}
-
-func overrideDefaultConfig(cfg config.PostgresConfig) config.PostgresConfig {
-	return config.PostgresConfig{
-		User:     utils.OrDefault(cfg.User, config.Config.Postgres.User),
-		Password: utils.OrDefault(cfg.Password, config.Config.Postgres.Password),
-		Hostname: utils.OrDefault(cfg.Hostname, config.Config.Postgres.Hostname),
-		Port:     utils.OrDefault(cfg.Port, config.Config.Postgres.Port),
-		DbName:   utils.OrDefault(cfg.DbName, config.Config.Postgres.DbName),
-		LogLevel: utils.OrDefault(cfg.LogLevel, config.Config.Postgres.LogLevel),
-		MinConn:  utils.OrDefault(cfg.MinConn, config.Config.Postgres.MinConn),
-		MaxConn:  utils.OrDefault(cfg.MaxConn, config.Config.Postgres.MaxConn),
-	}
-}
+/*
+A general error to be used when no results are found. This is the error returned
+by QueryOne, and can generally be used by other database helpers that fetch a single
+result but find nothing.
+*/
+var NotFound = errors.New("not found")
 
 /*
 Performs a SQL query and returns a slice of all the result rows. The query is just plain SQL, but make sure to read the package documentation for details. You must explicitly provide the type argument - this is how it knows what Go type to map the results to, and it cannot be inferred.

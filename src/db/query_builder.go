@@ -33,6 +33,10 @@ func (qb *QueryBuilder) Add(sql string, args ...any) {
 	qb.sql.WriteString("\n")
 }
 
+func (qb *QueryBuilder) AddName(name string) {
+	qb.Add("---- " + name + "\n")
+}
+
 func (qb *QueryBuilder) String() string {
 	return qb.sql.String()
 }

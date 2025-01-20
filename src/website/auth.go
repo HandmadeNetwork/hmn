@@ -90,6 +90,7 @@ func Login(c *RequestContext) ResponseData {
 
 	user, err := db.QueryOne[models.User](c, c.Conn,
 		`
+		---- Get user
 		SELECT $columns
 		FROM hmn_user
 		WHERE LOWER(username) = LOWER($1)
@@ -134,6 +135,7 @@ func LoginWithDiscord(c *RequestContext) ResponseData {
 
 	pendingLogin, err := db.QueryOne[models.PendingLogin](c, c.Conn,
 		`
+		---- Create pending login
 		INSERT INTO pending_login (id, expires_at, destination_url)
 		VALUES ($1, $2, $3)
 		RETURNING $columns
@@ -215,55 +217,68 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		return c.RejectRequest("Password too short")
 	}
 
-	c.Perf.StartBlock("SQL", "Check blacklist")
-	blacklisted, err := blacklist(c, c.Conn, username, emailAddress)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check email blacklist"))
-	}
-	if blacklisted {
-		// NOTE(asaf): Silent rejection so we don't allow attackers to harvest emails.
-		logEvent.Msg("blacklisted registration attempt")
-		return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
-	}
-	c.Perf.EndBlock()
+	{
+		b := c.Perf.StartBlock("SQL", "Check blacklist")
+		defer b.End()
 
-	c.Perf.StartBlock("SQL", "Check for existing usernames and emails")
+		blacklisted, err := isBlacklisted(c, c.Conn, username, emailAddress)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to check email blacklist"))
+		}
+		if blacklisted {
+			// NOTE(asaf): Silent rejection so we don't allow attackers to harvest emails.
+			logEvent.Msg("blacklisted registration attempt")
+			return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
+		}
+
+		b.End()
+	}
+
+	var existingUser *models.User
 	userAlreadyExists := true
-	_, err = db.QueryOneScalar[int](c, c.Conn,
-		`
-		SELECT id
-		FROM hmn_user
-		WHERE LOWER(username) = LOWER($1)
-		`,
-		username,
-	)
-	if err != nil {
+	{
+		b := c.Perf.StartBlock("AUTH", "Check for existing usernames and emails")
+		defer b.End()
+
+		_, err := db.QueryOneScalar[int](c, c.Conn,
+			`
+			---- Load users with same username
+			SELECT id
+			FROM hmn_user
+			WHERE LOWER(username) = LOWER($1)
+			`,
+			username,
+		)
+		if err != nil {
+			if errors.Is(err, db.NotFound) {
+				userAlreadyExists = false
+			} else {
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
+			}
+		}
+
+		if userAlreadyExists {
+			logEvent.Msg("registration attempt with duplicate username")
+			return c.RejectRequest(fmt.Sprintf("Username (%s) already exists.", username))
+		}
+
+		existingUser, err = db.QueryOne[models.User](c, c.Conn,
+			`
+			---- Load users with same email
+			SELECT $columns
+			FROM hmn_user
+			WHERE LOWER(email) = LOWER($1)
+			`,
+			emailAddress,
+		)
 		if errors.Is(err, db.NotFound) {
-			userAlreadyExists = false
-		} else {
+			// this is fine
+		} else if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
 		}
-	}
 
-	if userAlreadyExists {
-		logEvent.Msg("registration attempt with duplicate username")
-		return c.RejectRequest(fmt.Sprintf("Username (%s) already exists.", username))
+		b.End()
 	}
-
-	existingUser, err := db.QueryOne[models.User](c, c.Conn,
-		`
-		SELECT $columns
-		FROM hmn_user
-		WHERE LOWER(email) = LOWER($1)
-		`,
-		emailAddress,
-	)
-	if errors.Is(err, db.NotFound) {
-		// this is fine
-	} else if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user"))
-	}
-	c.Perf.EndBlock()
 
 	if existingUser != nil {
 		// Render the page as if it was a successful new registration, but
@@ -288,7 +303,6 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 
 	hashed := auth.HashPassword(password)
 
-	c.Perf.StartBlock("SQL", "Create user and one time token")
 	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start db transaction"))
@@ -297,35 +311,44 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 
 	now := time.Now()
 
-	var newUserId int
-	err = tx.QueryRow(c,
-		`
-		INSERT INTO hmn_user (username, email, password, date_joined, name, registration_ip)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id
-		`,
-		username, emailAddress, hashed.String(), now, displayName, c.GetIP(),
-	).Scan(&newUserId)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to store user"))
-	}
+	var ott string
+	{
+		b := c.Perf.StartBlock("AUTH", "Create user and one time token")
+		defer b.End()
 
-	ott := models.GenerateToken()
-	_, err = tx.Exec(c,
-		`
-		INSERT INTO one_time_token (token_type, created, expires, token_content, owner_id)
-		VALUES($1, $2, $3, $4, $5)
-		`,
-		models.TokenTypeRegistration,
-		now,
-		now.Add(time.Hour*24*7),
-		ott,
-		newUserId,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to store one-time token"))
+		var newUserId int
+		err = tx.QueryRow(c,
+			`
+			---- Create new user
+			INSERT INTO hmn_user (username, email, password, date_joined, name, registration_ip)
+			VALUES ($1, $2, $3, $4, $5, $6)
+			RETURNING id
+			`,
+			username, emailAddress, hashed.String(), now, displayName, c.GetIP(),
+		).Scan(&newUserId)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to store user"))
+		}
+
+		ott = models.GenerateToken()
+		_, err = tx.Exec(c,
+			`
+			---- Create OTT
+			INSERT INTO one_time_token (token_type, created, expires, token_content, owner_id)
+			VALUES($1, $2, $3, $4, $5)
+			`,
+			models.TokenTypeRegistration,
+			now,
+			now.Add(time.Hour*24*7),
+			ott,
+			newUserId,
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to store one-time token"))
+		}
+
+		b.End()
 	}
-	c.Perf.EndBlock()
 
 	mailName := displayName
 	if mailName == "" {
@@ -348,12 +371,10 @@ func RegisterNewUserSubmit(c *RequestContext) ResponseData {
 		logging.Debug().Str("Confirmation url", confirmUrl).Msg("New user requires email confirmation")
 	}
 
-	c.Perf.StartBlock("SQL", "Commit user")
 	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit user to the db"))
 	}
-	c.Perf.EndBlock()
 
 	logEvent.Msg("registration succeeded")
 	return c.Redirect(hmnurl.BuildRegistrationSuccess(), http.StatusSeeOther)
@@ -457,41 +478,48 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		return res
 	}
 
-	c.Perf.StartBlock("SQL", "Updating user status and deleting token")
 	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start db transaction"))
 	}
 	defer tx.Rollback(c)
 
-	_, err = tx.Exec(c,
-		`
-		UPDATE hmn_user
-		SET status = $1
-		WHERE id = $2
-		`,
-		models.UserStatusConfirmed,
-		validationResult.User.ID,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user status"))
-	}
+	{
+		b := c.Perf.StartBlock("SQL", "Updating user status and deleting token")
+		defer b.End()
 
-	_, err = tx.Exec(c,
-		`
-		DELETE FROM one_time_token WHERE id = $1
-		`,
-		validationResult.OneTimeToken.ID,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete one time token"))
-	}
+		_, err = tx.Exec(c,
+			`
+			---- Confirm user via email
+			UPDATE hmn_user
+			SET status = $1
+			WHERE id = $2
+			`,
+			models.UserStatusConfirmed,
+			validationResult.User.ID,
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update user status"))
+		}
 
-	err = tx.Commit(c)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit transaction"))
+		_, err = tx.Exec(c,
+			`
+			---- Delete OTT
+			DELETE FROM one_time_token WHERE id = $1
+			`,
+			validationResult.OneTimeToken.ID,
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete one time token"))
+		}
+
+		err = tx.Commit(c)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit transaction"))
+		}
+
+		b.End()
 	}
-	c.Perf.EndBlock()
 
 	redirect := hmnurl.BuildHomepage()
 	if destination != "" && urlIsLocal(destination) {
@@ -547,12 +575,12 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 		return c.RejectRequest("You must provide a username and an email address.")
 	}
 
-	c.Perf.StartBlock("SQL", "Fetching user")
 	type userQuery struct {
 		User models.User `db:"hmn_user"`
 	}
 	user, err := db.QueryOne[models.User](c, c.Conn,
 		`
+		---- Get user for password reset
 		SELECT $columns
 		FROM hmn_user
 		WHERE
@@ -562,7 +590,6 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 		username,
 		emailAddress,
 	)
-	c.Perf.EndBlock()
 	if err != nil {
 		if !errors.Is(err, db.NotFound) {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
@@ -570,9 +597,9 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 	}
 
 	if user != nil && user.Status != models.UserStatusBanned {
-		c.Perf.StartBlock("SQL", "Fetching existing token")
 		resetToken, err := db.QueryOne[models.OneTimeToken](c, c.Conn,
 			`
+			---- Fetching existing token
 			SELECT $columns
 			FROM one_time_token
 			WHERE
@@ -582,7 +609,6 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 			models.TokenTypePasswordReset,
 			user.ID,
 		)
-		c.Perf.EndBlock()
 		if err != nil {
 			if !errors.Is(err, db.NotFound) {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch onetimetoken for user"))
@@ -592,15 +618,14 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 
 		if resetToken != nil {
 			if resetToken.Expires.Before(now.Add(time.Minute * 30)) { // NOTE(asaf): Expired or about to expire
-				c.Perf.StartBlock("SQL", "Deleting expired token")
 				_, err = c.Conn.Exec(c,
 					`
+					---- Deleting expired token
 					DELETE FROM one_time_token
 					WHERE id = $1
 					`,
 					resetToken.ID,
 				)
-				c.Perf.EndBlock()
 				if err != nil {
 					return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete onetimetoken"))
 				}
@@ -609,9 +634,9 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 		}
 
 		if resetToken == nil {
-			c.Perf.StartBlock("SQL", "Creating new token")
 			newToken, err := db.QueryOne[models.OneTimeToken](c, c.Conn,
 				`
+				---- Creating new token
 				INSERT INTO one_time_token (token_type, created, expires, token_content, owner_id)
 				VALUES ($1, $2, $3, $4, $5)
 				RETURNING $columns
@@ -622,7 +647,6 @@ func RequestPasswordResetSubmit(c *RequestContext) ResponseData {
 				models.GenerateToken(),
 				user.ID,
 			)
-			c.Perf.EndBlock()
 			if err != nil {
 				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create onetimetoken"))
 			}
@@ -723,7 +747,6 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 
 	hashed := auth.HashPassword(password)
 
-	c.Perf.StartBlock("SQL", "Update user's password and delete reset token")
 	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start db transaction"))
@@ -732,6 +755,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 
 	tag, err := tx.Exec(c,
 		`
+		---- Update user's password
 		UPDATE hmn_user
 		SET password = $1
 		WHERE id = $2
@@ -746,6 +770,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 	if validationResult.User.Status == models.UserStatusInactive {
 		_, err = tx.Exec(c,
 			`
+			---- Mark user as confirmed
 			UPDATE hmn_user
 			SET status = $1
 			WHERE id = $2
@@ -760,6 +785,7 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 
 	_, err = tx.Exec(c,
 		`
+		---- Delete OTT
 		DELETE FROM one_time_token
 		WHERE id = $1
 		`,
@@ -773,7 +799,6 @@ func DoPasswordResetSubmit(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit password reset to the db"))
 	}
-	c.Perf.EndBlock()
 
 	res := c.Redirect(hmnurl.BuildUserSettings(""), http.StatusSeeOther)
 	res.AddFutureNotice("success", "Password changed successfully.")
@@ -789,8 +814,8 @@ func tryLogin(c *RequestContext, user *models.User, password string) (bool, erro
 		return false, nil
 	}
 
-	c.Perf.StartBlock("AUTH", "Checking password")
-	defer c.Perf.EndBlock()
+	defer c.Perf.StartBlock("AUTH", "Checking password").End()
+
 	hashed, err := auth.ParsePasswordString(user.Password)
 	if err != nil {
 		if user.Password == "" {
@@ -811,20 +836,25 @@ func tryLogin(c *RequestContext, user *models.User, password string) (bool, erro
 
 	// re-hash and save the user's password if necessary
 	if hashed.IsOutdated() {
+		b := c.Perf.StartBlock("AUTH", "Re-hash password")
+		defer b.End()
+
 		newHashed := auth.HashPassword(password)
 		err := auth.UpdatePassword(c, c.Conn, user.Username, newHashed)
 		if err != nil {
 			c.Logger.Error().Err(err).Msg("failed to update user's password")
 		}
 		// If errors happen here, we can still continue with logging them in
+
+		b.End()
 	}
 
 	return true, nil
 }
 
 func loginUser(c *RequestContext, user *models.User, responseData *ResponseData) error {
-	c.Perf.StartBlock("SQL", "Setting last login and creating session")
-	defer c.Perf.EndBlock()
+	defer c.Perf.StartBlock("AUTH", "Setting last login and creating session").End()
+
 	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		return oops.New(err, "failed to start db transaction")
@@ -835,6 +865,7 @@ func loginUser(c *RequestContext, user *models.User, responseData *ResponseData)
 
 	_, err = tx.Exec(c,
 		`
+		---- Set last login
 		UPDATE hmn_user
 		SET last_login = $1
 		WHERE id = $2
@@ -880,14 +911,13 @@ type validateUserAndTokenResult struct {
 }
 
 func validateUsernameAndToken(c *RequestContext, username string, token string, tokenType models.OneTimeTokenType) validateUserAndTokenResult {
-	c.Perf.StartBlock("SQL", "Check username and token")
-	defer c.Perf.EndBlock()
 	type userAndTokenQuery struct {
 		User         models.User          `db:"hmn_user"`
 		OneTimeToken *models.OneTimeToken `db:"onetimetoken"`
 	}
 	data, err := db.QueryOne[userAndTokenQuery](c, c.Conn,
 		`
+		---- Load username and token
 		SELECT $columns
 		FROM hmn_user
 		LEFT JOIN asset AS hmn_user_avatar ON hmn_user_avatar.id = hmn_user.avatar_asset_id
@@ -928,7 +958,7 @@ func urlIsLocal(url string) bool {
 
 var reStupidUsername = regexp.MustCompile(`^[a-z]{10}$`)
 
-func blacklist(ctx context.Context, conn db.ConnOrTx, username, email string) (bool, error) {
+func isBlacklisted(ctx context.Context, conn db.ConnOrTx, username, email string) (bool, error) {
 	if reStupidUsername.MatchString(username) {
 		return true, nil
 	}
@@ -938,6 +968,7 @@ func blacklist(ctx context.Context, conn db.ConnOrTx, username, email string) (b
 
 	count, err := db.QueryOneScalar[int](ctx, conn,
 		`
+		---- Check blacklist
 		SELECT count(*)
 		FROM email_blacklist
 		WHERE email = $1

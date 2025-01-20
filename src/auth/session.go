@@ -76,7 +76,10 @@ func CreateSession(ctx context.Context, conn *pgxpool.Pool, username string) (*m
 	}
 
 	_, err := conn.Exec(ctx,
-		"INSERT INTO session (id, username, expires_at, csrf_token) VALUES ($1, $2, $3, $4)",
+		`
+		---- Create session
+		INSERT INTO session (id, username, expires_at, csrf_token) VALUES ($1, $2, $3, $4)
+		`,
 		session.ID, session.Username, session.ExpiresAt, session.CSRFToken,
 	)
 	if err != nil {

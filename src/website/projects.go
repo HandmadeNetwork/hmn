@@ -63,7 +63,8 @@ func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error)
 		return nil, oops.New(err, "failed to fetch projects")
 	}
 
-	c.Perf.StartBlock("PROJECTS", "Grouping and sorting")
+	defer c.Perf.StartBlock("PROJECT", "Grouping and sorting").End()
+
 	var handmadeHero hmndata.ProjectAndStuff
 	var featuredProjects []hmndata.ProjectAndStuff
 	var restProjects []hmndata.ProjectAndStuff
@@ -98,8 +99,6 @@ func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error)
 	for _, p := range restProjects {
 		projects = append(projects, templates.ProjectAndStuffToTemplate(&p))
 	}
-
-	c.Perf.EndBlock()
 
 	return projects, nil
 }
@@ -177,9 +176,9 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	c.Perf.StartBlock("SQL", "Fetching screenshots")
 	screenshotFilenames, err := db.QueryScalar[string](c, c.Conn,
 		`
+		---- Fetching screenshots
 		SELECT screenshot.file
 		FROM
 			image_file AS screenshot
@@ -192,11 +191,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch screenshots for project"))
 	}
-	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SQL", "Fetching project links")
 	projectLinks, err := db.Query[models.Link](c, c.Conn,
 		`
+		---- Fetching project links
 		SELECT $columns
 		FROM
 			link as link
@@ -209,7 +207,6 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
 	}
-	c.Perf.EndBlock()
 
 	type ProjectHomepageData struct {
 		templates.BaseData
@@ -301,10 +298,8 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		}
 	}
 
-	c.Perf.StartBlock("SQL", "Fetch subforum tree")
 	subforumTree := models.GetFullSubforumTree(c, c.Conn)
 	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-	c.Perf.EndBlock()
 
 	templateData.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
 		ProjectIDs: []int{c.CurrentProject.ID},
@@ -512,9 +507,9 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	c.Perf.StartBlock("SQL", "Fetching project links")
 	projectLinks, err := db.Query[models.Link](c, c.Conn,
 		`
+		---- Fetching project links
 		SELECT $columns
 		FROM
 			link as link
@@ -527,14 +522,11 @@ func ProjectEdit(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
 	}
-	c.Perf.EndBlock()
 
-	c.Perf.StartBlock("SQL", "Fetching project jams")
 	projectJams, err := hmndata.FetchJamsForProject(c, c.Conn, c.CurrentUser, p.Project.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jams for project"))
 	}
-	c.Perf.EndBlock()
 
 	projectSettings := templates.ProjectToProjectSettings(
 		&p.Project,

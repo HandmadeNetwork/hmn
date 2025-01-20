@@ -21,7 +21,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"github.com/google/uuid"
-
 	"mvdan.cc/xurls/v2"
 )
 
@@ -54,7 +53,6 @@ func Snippet(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch snippet"))
 		}
 	}
-	c.Perf.EndBlock()
 
 	canEdit := (c.CurrentUser != nil && (c.CurrentUser.IsStaff || c.CurrentUser.ID == s.Owner.ID))
 	snippet := SnippetToTimelineItem(&s.Snippet, s.Asset, s.DiscordMessage, s.Projects, s.Owner, canEdit)
