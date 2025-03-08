@@ -439,6 +439,7 @@ func PodcastEpisodeToTemplate(episode *models.PodcastEpisode, audioFileSize int6
 		Description:     episode.Description,
 		DescriptionHtml: template.HTML(episode.DescriptionHtml),
 		EpisodeNumber:   episode.EpisodeNumber,
+		SeasonNumber:    episode.SeasonNumber,
 		Url:             hmnurl.BuildPodcastEpisode(episode.GUID.String()),
 		ImageUrl:        imageUrl,
 		FileUrl:         hmnurl.BuildPodcastEpisodeFile(episode.AudioFile),

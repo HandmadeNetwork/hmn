@@ -27,5 +27,5 @@ type PodcastEpisode struct {
 	PublicationDate time.Time `db:"pub_date"`
 	Duration        int       `db:"duration"` // NOTE(asaf): In seconds
 	EpisodeNumber   int       `db:"episode_number"`
-	SeasonNumber    *int      `db:"season_number"` // TODO(asaf): Do we need this??
+	SeasonNumber    int       `db:"season_number"`
 }

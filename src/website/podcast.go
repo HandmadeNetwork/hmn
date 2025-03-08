@@ -252,6 +252,7 @@ type PodcastEpisodeEditData struct {
 	Title         string
 	Description   string
 	EpisodeNumber int
+	SeasonNumber  int
 	CurrentFile   string
 	EpisodeFiles  []string
 }
@@ -327,6 +328,7 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 		Title:         episode.Title,
 		Description:   episode.Description,
 		EpisodeNumber: episode.EpisodeNumber,
+		SeasonNumber:  episode.SeasonNumber,
 		CurrentFile:   episode.AudioFile,
 		EpisodeFiles:  episodeFiles,
 	}
@@ -367,6 +369,11 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	description := c.Req.Form.Get("description")
 	if len(strings.TrimSpace(description)) == 0 {
 		return c.RejectRequest("Episode description is empty")
+	}
+	seasonNumberStr := c.Req.Form.Get("season_number")
+	seasonNumber, err := strconv.Atoi(seasonNumberStr)
+	if err != nil {
+		return c.RejectRequest("Season number can't be parsed")
 	}
 	episodeNumberStr := c.Req.Form.Get("episode_number")
 	episodeNumber, err := strconv.Atoi(episodeNumberStr)
@@ -436,9 +443,10 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 				description_rendered = $3,
 				audio_filename = $4,
 				duration = $5,
-				episode_number = $6
+				episode_number = $6,
+				season_number = $7
 			WHERE
-				guid = $7
+				guid = $8
 			`,
 			title,
 			description,
@@ -446,6 +454,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 			episodeFile,
 			duration,
 			episodeNumber,
+			seasonNumber,
 			podcastResult.Episodes[0].GUID,
 		)
 		if err != nil {
@@ -458,9 +467,9 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 			`
 			---- Creating new podcast episode
 			INSERT INTO podcast_episode
-				(guid, title, description, description_rendered, audio_filename, duration, pub_date, episode_number, podcast_id)
+				(guid, title, description, description_rendered, audio_filename, duration, pub_date, episode_number, season_number, podcast_id)
 			VALUES
-				($1, $2, $3, $4, $5, $6, $7, $8, $9)
+				($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 			`,
 			guid,
 			title,
@@ -470,6 +479,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 			duration,
 			time.Now(),
 			episodeNumber,
+			seasonNumber,
 			podcastResult.Podcast.ID,
 		)
 		if err != nil {

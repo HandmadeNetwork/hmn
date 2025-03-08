@@ -268,6 +268,7 @@ type PodcastEpisode struct {
 	Description     string
 	DescriptionHtml template.HTML
 	EpisodeNumber   int
+	SeasonNumber    int
 	Url             string
 	ImageUrl        string
 	FileUrl         string
