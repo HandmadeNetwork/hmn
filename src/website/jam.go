@@ -44,30 +44,229 @@ func JamsIndex(c *RequestContext) ResponseData {
 	type TemplateData struct {
 		templates.BaseData
 
-		LispJamUrl string
-		WRJ2021Url string
-		WRJ2022Url string
-		VJ2023Url  string
-		WRJ2023Url string
-		LJ2024Url  string
-		VJ2024Url  string
-		WRJ2024Url string
+		LispJamUrl  string
+		WRJ2021Url  string
+		WRJ2022Url  string
+		VJ2023Url   string
+		WRJ2023Url  string
+		LJ2024Url   string
+		VJ2024Url   string
+		WRJ2024Url  string
+		XRAY2025Url string
 	}
 
 	res.MustWriteTemplate("jams_index.html", TemplateData{
 		BaseData: getBaseDataAutocrumb(c, "Jams"),
 
-		LispJamUrl: hmnurl.BuildFishbowl("lisp-jam"),
-		WRJ2021Url: hmnurl.BuildJamIndex2021(),
-		WRJ2022Url: hmnurl.BuildJamIndex2022(),
-		VJ2023Url:  hmnurl.BuildJamIndex2023_Visibility(),
-		WRJ2023Url: hmnurl.BuildJamIndex2023(),
-		LJ2024Url:  hmnurl.BuildJamIndex2024_Learning(),
-		VJ2024Url:  hmnurl.BuildJamIndex2024_Visibility(),
-		WRJ2024Url: hmnurl.BuildJamIndex2024_WRJ(),
+		LispJamUrl:  hmnurl.BuildFishbowl("lisp-jam"),
+		WRJ2021Url:  hmnurl.BuildJamIndex2021(),
+		WRJ2022Url:  hmnurl.BuildJamIndex2022(),
+		VJ2023Url:   hmnurl.BuildJamIndex2023_Visibility(),
+		WRJ2023Url:  hmnurl.BuildJamIndex2023(),
+		LJ2024Url:   hmnurl.BuildJamIndex2024_Learning(),
+		VJ2024Url:   hmnurl.BuildJamIndex2024_Visibility(),
+		WRJ2024Url:  hmnurl.BuildJamIndex2024_WRJ(),
+		XRAY2025Url: hmnurl.BuildJamIndex2025_XRAY(),
 	}, c.Perf)
 	return res
 }
+
+type JamBaseDataXRAY2025 struct {
+	Timespans                  hmndata.EventTimespans
+	StartTimeUnix, EndTimeUnix int64
+	JamUrl                     string
+	JamFeedUrl                 string
+	NewProjectUrl              string
+	GuidelinesUrl              string
+	SubmittedProject           *templates.Project
+}
+
+type JamPageDataXRAY2025 struct {
+	templates.BaseData
+	JamBaseDataXRAY2025
+
+	TwitchEmbedUrl string
+	JamProjects    []templates.Project
+	TimelineItems  []templates.TimelineItem
+	ShortFeed      bool
+}
+
+var opengraphXRAY2025 = []templates.OpenGraphItem{
+	{Property: "og:title", Value: "X-Ray Jam"},
+	{Property: "og:site_name", Value: "Handmade Network"},
+	{Property: "og:type", Value: "website"},
+	{Property: "og:image", Value: hmnurl.BuildPublic("xrayjam2025/TwitterCard.png", true)},
+	{Property: "og:description", Value: "A one-week jam where we peek at black boxes and see what's inside. June 9 - 15 on the Handmade Network."},
+	{Property: "og:url", Value: hmnurl.BuildJamIndex2025_XRAY()},
+	{Name: "twitter:card", Value: "summary_large_image"},
+	{Name: "twitter:image", Value: hmnurl.BuildPublic("xrayjam2025/TwitterCard.png", true)},
+}
+
+func JamIndex2025_XRAY(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	jam := hmndata.XRAY2025
+	now := JamCurrentTime(c, jam.Event)
+
+	jamBaseData, err := getXRAY2025BaseData(c, now)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData.OpenGraphItems = opengraphXRAY2025
+	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.Header.SuppressBanners = true
+
+	pageProjects := []templates.Project{}
+	timelineItems := []templates.TimelineItem{}
+	twitchEmbedUrl := ""
+
+	if jamBaseData.Timespans.AfterStart {
+		jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			JamSlugs: []string{jam.Slug},
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+		}
+
+		projectIDs := make([]int, 0, len(jamProjects))
+		pageProjects = make([]templates.Project, 0, len(jamProjects))
+		for _, p := range jamProjects {
+			pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
+			projectIDs = append(projectIDs, p.Project.ID)
+		}
+
+		if len(jamProjects) > 0 {
+			timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
+				ProjectIDs: projectIDs,
+				SkipPosts:  true,
+				Limit:      10,
+			})
+		}
+
+		twitchEmbedUrl = getTwitchEmbedUrl(c)
+	}
+
+	res.MustWriteTemplate("jam_2025_xray_index.html", JamPageDataXRAY2025{
+		BaseData:           baseData,
+		JamBaseDataXRAY2025: jamBaseData,
+		JamProjects:        pageProjects,
+		TimelineItems:      timelineItems,
+		ShortFeed:          true,
+		TwitchEmbedUrl:     twitchEmbedUrl,
+	}, c.Perf)
+	return res
+}
+
+func JamFeed2025_XRAY(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	jam := hmndata.XRAY2025
+	now := JamCurrentTime(c, jam.Event)
+
+	jamBaseData, err := getXRAY2025BaseData(c, now)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData.OpenGraphItems = opengraphXRAY2025
+	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.Header.SuppressBanners = true
+
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		JamSlugs: []string{jam.Slug},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
+	}
+
+	pageProjects := make([]templates.Project, 0, len(jamProjects))
+	projectIDs := make([]int, 0, len(jamProjects))
+	for _, p := range jamProjects {
+		projectIDs = append(projectIDs, p.Project.ID)
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
+	}
+
+	timelineItems := []templates.TimelineItem{}
+
+	if len(projectIDs) > 0 {
+		timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
+			ProjectIDs: projectIDs,
+			SkipPosts:  true,
+		})
+	}
+
+	res.MustWriteTemplate("jam_2025_xray_feed.html", JamPageDataXRAY2025{
+		BaseData:           baseData,
+		JamBaseDataXRAY2025: jamBaseData,
+		JamProjects:        pageProjects,
+		TimelineItems:      timelineItems,
+	}, c.Perf)
+	return res
+}
+
+func JamGuidelines2025_XRAY(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	jam := hmndata.XRAY2025
+	now := JamCurrentTime(c, jam.Event)
+
+	jamBaseData, err := getXRAY2025BaseData(c, now)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData.OpenGraphItems = opengraphXRAY2025
+	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.Header.SuppressBanners = true
+
+	res.MustWriteTemplate("jam_2025_xray_guidelines.html", JamPageDataXRAY2025{
+		BaseData:           baseData,
+		JamBaseDataXRAY2025: jamBaseData,
+	}, c.Perf)
+	return res
+}
+
+func getXRAY2025BaseData(c *RequestContext, now time.Time) (JamBaseDataXRAY2025, error) {
+	jam := hmndata.XRAY2025
+
+	var submittedProject *templates.Project
+	if c.CurrentUser != nil {
+		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+			JamSlugs: []string{jam.Slug},
+			Limit:    1,
+		})
+		if err != nil {
+			return JamBaseDataXRAY2025{}, oops.New(err, "failed to fetch jam projects for current user")
+		}
+		if len(projects) > 0 {
+			submittedProject = utils.P(templates.ProjectAndStuffToTemplate(&projects[0]))
+		}
+	}
+
+	var newProjectUrl string
+	if jam.Event.WithinGrace(JamCurrentTime(c, jam.Event), hmndata.JamProjectCreateGracePeriod, 0) {
+		newProjectUrl = hmnurl.BuildProjectNewJam()
+	}
+
+	return JamBaseDataXRAY2025{
+		StartTimeUnix: jam.StartTime.Unix(),
+		EndTimeUnix:   jam.EndTime.Unix(),
+		Timespans:     hmndata.CalcTimespans(jam.Event, now),
+
+		JamUrl:           hmnurl.BuildJamIndex2025_XRAY(),
+		JamFeedUrl:       hmnurl.BuildJamFeed2025_XRAY(),
+		NewProjectUrl:    newProjectUrl,
+		GuidelinesUrl:    hmnurl.BuildJamGuidelines2025_XRAY(),
+		SubmittedProject: submittedProject,
+	}, nil
+}
+
+//---------------------------------------
 
 type JamBaseDataWRJ2024 struct {
 	Timespans                  hmndata.EventTimespans
@@ -263,6 +462,8 @@ func getWRJ2024BaseData(c *RequestContext, now time.Time) (JamBaseDataWRJ2024, e
 		SubmittedProject: submittedProject,
 	}, nil
 }
+
+//--------------------------------------------
 
 type JamBaseDataVJ2024 struct {
 	Timespans                  hmndata.EventTimespans
