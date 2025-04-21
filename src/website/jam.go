@@ -266,8 +266,6 @@ func getXRAY2025BaseData(c *RequestContext, now time.Time) (JamBaseDataXRAY2025,
 	}, nil
 }
 
-//---------------------------------------
-
 type JamBaseDataWRJ2024 struct {
 	Timespans                  hmndata.EventTimespans
 	StartTimeUnix, EndTimeUnix int64
@@ -462,8 +460,6 @@ func getWRJ2024BaseData(c *RequestContext, now time.Time) (JamBaseDataWRJ2024, e
 		SubmittedProject: submittedProject,
 	}, nil
 }
-
-//--------------------------------------------
 
 type JamBaseDataVJ2024 struct {
 	Timespans                  hmndata.EventTimespans
