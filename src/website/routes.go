@@ -131,6 +131,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexJamIndex2024_WRJ, JamIndex2024_WRJ)
 	hmnOnly.GET(hmnurl.RegexJamFeed2024_WRJ, JamFeed2024_WRJ)
 	hmnOnly.GET(hmnurl.RegexJamGuidelines2024_WRJ, JamGuidelines2024_WRJ)
+	hmnOnly.GET(hmnurl.RegexJamIndex2025_XRAY, JamIndex2025_XRAY)
+	hmnOnly.GET(hmnurl.RegexJamFeed2025_XRAY, JamFeed2025_XRAY)
+	hmnOnly.GET(hmnurl.RegexJamGuidelines2025_XRAY, JamGuidelines2025_XRAY)
 
 	hmnOnly.GET(hmnurl.RegexTimeMachine, TimeMachine)
 	hmnOnly.GET(hmnurl.RegexTimeMachineSubmissions, TimeMachineSubmissions)
