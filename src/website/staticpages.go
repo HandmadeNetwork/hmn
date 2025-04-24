@@ -38,12 +38,6 @@ func About(c *RequestContext) ResponseData {
 	return res
 }
 
-func Foundation(c *RequestContext) ResponseData {
-	var res ResponseData
-	res.MustWriteTemplate("foundation.html", getBaseDataAutocrumb(c, "Foundation"), c.Perf)
-	return res
-}
-
 func CommunicationGuidelines(c *RequestContext) ResponseData {
 	baseData := getBaseDataAutocrumb(c, "Communication Guidelines")
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
