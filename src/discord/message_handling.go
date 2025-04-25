@@ -52,7 +52,8 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 		}
 	}
 
-	if !deleted && messageShouldBeInterned(msg) {
+	autostore := slices.Contains(autostoreChannels, msg.ChannelID)
+	if !deleted && autostore {
 		if err := InternMessage(ctx, dbConn, msg); err != nil {
 			return err
 		}
@@ -962,15 +963,6 @@ func messageHasLinks(content string) bool {
 		if err == nil {
 			return true
 		}
-	}
-
-	return false
-}
-
-func messageShouldBeInterned(msg *Message) bool {
-	autostore := slices.Contains(autostoreChannels, msg.ChannelID)
-	if autostore {
-		return true
 	}
 
 	return false
