@@ -1,17 +1,13 @@
 package discord
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -24,7 +20,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/parsing"
-	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 )
 
@@ -44,10 +39,6 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 		deleted, err = CleanUpLibrary(ctx, dbConn, msg)
 	}
 
-	// if !deleted && err == nil {
-	// 	err = ShareToMatrix(ctx, msg)
-	// }
-
 	tags := parseTags(msg.Content)
 
 	if !deleted && err == nil {
@@ -61,11 +52,6 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	if err == nil {
 		err = HandleInternedMessage(ctx, dbConn, msg, deleted, true, notifyUser)
 	}
-
-	// when we needed her most...she vanished
-	// if !deleted && err == nil {
-	// 	err = FreyaMode(ctx, dbConn, msg)
-	// }
 
 	return err
 }
@@ -188,161 +174,6 @@ func CleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool
 	}
 
 	return deleted, nil
-}
-
-func FreyaMode(ctx context.Context, dbConn db.ConnOrTx, msg *Message) error {
-	if msg.Author.IsBot {
-		return nil
-	}
-	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID || msg.ChannelID == config.Config.Discord.LibraryChannelID {
-		return nil
-	}
-
-	twitteryUrls := []string{
-		"https://twitter.com",
-		"https://x.com",
-		"https://vxtwitter.com",
-		"https://fxtwitter.com",
-	}
-	isTwittery := false
-	for _, url := range twitteryUrls {
-		if strings.Contains(msg.Content, url) {
-			isTwittery = true
-		}
-	}
-	if !isTwittery {
-		return nil
-	}
-
-	// FREYA MODE ENGAGED
-	approvedTweets := []string{
-		"https://vxtwitter.com/FreyaHolmer/status/1757836988495847568",
-		"https://vxtwitter.com/FreyaHolmer/status/1752441092501361103",
-		"https://vxtwitter.com/FreyaHolmer/status/1753813557966217268",
-		"https://vxtwitter.com/FreyaHolmer/status/1746228932188295579",
-		"https://vxtwitter.com/FreyaHolmer/status/1732687685850894799",
-		"https://vxtwitter.com/FreyaHolmer/status/1761487879178736048",
-		"https://vxtwitter.com/FreyaHolmer/status/1733820461492863442",
-		"https://vxtwitter.com/FreyaHolmer/status/1732845451701871101",
-		"https://vxtwitter.com/FreyaHolmer/status/1765680355657359585",
-		"https://vxtwitter.com/FreyaHolmer/status/1784678195997852129",
-		"https://vxtwitter.com/FreyaHolmer/status/1741468609044508831",
-		"https://vxtwitter.com/FreyaHolmer/status/1759306434053870012",
-		"https://vxtwitter.com/FreyaHolmer/status/1754929898492162178",
-		"https://vxtwitter.com/FreyaHolmer/status/1782498313511534822",
-		"https://vxtwitter.com/FreyaHolmer/status/1623737764041695232",
-		"https://vxtwitter.com/FreyaHolmer/status/1718979996125925494",
-		"https://vxtwitter.com/FreyaHolmer/status/1675945798448607248",
-		"https://vxtwitter.com/FreyaHolmer/status/1662229911375953922",
-		"https://vxtwitter.com/FreyaHolmer/status/1652235944752185345",
-		"https://vxtwitter.com/FreyaHolmer/status/1386408507218427905",
-		"https://vxtwitter.com/FreyaHolmer/status/1436696408506212353",
-		"https://vxtwitter.com/FreyaHolmer/status/1444755552777670657",
-		"https://vxtwitter.com/FreyaHolmer/status/1232826293902888960",
-	}
-	tweet := approvedTweets[rand.Intn(len(approvedTweets))]
-	err := SendMessages(ctx, dbConn, MessageToSend{
-		ChannelID: msg.ChannelID,
-		Req: CreateMessageRequest{
-			Content: fmt.Sprintf("No. Only Freya is allowed to tweet. %s", tweet),
-		},
-	})
-	if err != nil {
-		return oops.New(err, "failed to send Freya tweet")
-	}
-
-	return nil
-}
-
-func ShareToMatrix(ctx context.Context, msg *Message) error {
-	if msg.Flags&MessageFlagCrossposted == 0 {
-		return nil
-	}
-	if config.Config.Matrix.Username == "" {
-		logging.ExtractLogger(ctx).Warn().Msg("No Matrix user provided; Discord announcement will not be shared")
-	}
-
-	fullMsg, err := GetChannelMessage(ctx, msg.ChannelID, msg.ID)
-	if err != nil {
-		return oops.New(err, "failed to get published message contents")
-	}
-
-	bodyMarkdown := CleanUpMarkdown(ctx, fullMsg.Content)
-	bodyHTML := parsing.ParseMarkdown(bodyMarkdown, parsing.DiscordMarkdown)
-
-	// Log in to Matrix (we don't bother to keep access tokens around)
-	var accessToken string
-	{
-		type MatrixLogin struct {
-			Type     string `json:"type"`
-			User     string `json:"user"`
-			Password string `json:"password"`
-		}
-		type MatrixLoginResponse struct {
-			AccessToken string `json:"access_token"`
-		}
-		body := MatrixLogin{
-			Type:     "m.login.password",
-			User:     config.Config.Matrix.Username,
-			Password: config.Config.Matrix.Password,
-		}
-		bodyBytes := utils.Must1(json.Marshal(body))
-		res, err := http.Post(
-			"https://matrix.handmadecities.com/_matrix/client/r0/login",
-			"application/json",
-			bytes.NewReader(bodyBytes),
-		)
-		if err != nil || res.StatusCode >= 300 {
-			return oops.New(err, "failed to log into Matrix")
-		}
-		defer res.Body.Close()
-		resBodyBytes := utils.Must1(io.ReadAll(res.Body))
-		var resBody MatrixLoginResponse
-		utils.Must(json.Unmarshal(resBodyBytes, &resBody))
-
-		accessToken = resBody.AccessToken
-	}
-
-	// Create message
-	{
-		type MessageEvent struct {
-			MsgType       string `json:"msgtype"`
-			Body          string `json:"body"`
-			Format        string `json:"format,omitempty"`
-			FormattedBody string `json:"formatted_body,omitempty"`
-		}
-		tid := "hmn" + strconv.Itoa(rand.Int())
-		body := MessageEvent{
-			MsgType:       "m.text",
-			Body:          bodyMarkdown,
-			Format:        "org.matrix.custom.html",
-			FormattedBody: bodyHTML,
-		}
-		bodyBytes := utils.Must1(json.Marshal(body))
-		req := utils.Must1(http.NewRequestWithContext(
-			ctx,
-			http.MethodPut,
-			fmt.Sprintf(
-				"%s/_matrix/client/v3/rooms/%s/send/m.room.message/%s",
-				config.Config.Matrix.BaseUrl,
-				config.Config.Matrix.AnnouncementsRoomID,
-				tid,
-			),
-			bytes.NewReader(bodyBytes),
-		))
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-		req.Header.Add("Content-Type", "application/json")
-		res, err := http.DefaultClient.Do(req)
-		if err != nil || res.StatusCode >= 300 {
-			return oops.New(err, "failed to send Matrix message")
-		}
-	}
-
-	logging.ExtractLogger(ctx).Info().
-		Str("contents", bodyMarkdown).
-		Msg("Published Discord announcement to Matrix")
-
-	return nil
 }
 
 func MaybeInternMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, tags []string) (bool, error) {
