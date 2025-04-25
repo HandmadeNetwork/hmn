@@ -263,9 +263,9 @@ const (
 type InternType int
 
 const (
-	InternTypeNone InternType = iota
-	InternTypeImplicit
-	InternTypeExplicit
+	InternTypeNone     InternType = iota // The message should not be interned.
+	InternTypeImplicit                   // The message should be interned even though the user did not explicitly request it.
+	InternTypeExplicit                   // The user explicitly requested that the message be interned (e.g. by a &tag).
 )
 
 // https://discord.com/developers/docs/resources/channel#message-object
@@ -282,10 +282,11 @@ type Message struct {
 	Attachments []Attachment `json:"attachments"`
 	Embeds      []Embed      `json:"embeds"`
 
-	InternType InternType
+	// A synthesized property for debugging purposes; true if this message was
+	// received from a scrape instead of from the gateway.
+	Backfilled bool
 
 	originalMap map[string]interface{}
-	Backfilled  bool
 }
 
 func (m *Message) JumpURL() string {

@@ -85,6 +85,7 @@ type DiscordConfig struct {
 	GuildID           string
 	MemberRoleID      string
 	ShowcaseChannelID string
+	JamChannelID      string
 	LibraryChannelID  string
 	StreamsChannelID  string
 }

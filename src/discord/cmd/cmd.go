@@ -68,7 +68,7 @@ func init() {
 					logging.Error().Msg(fmt.Sprintf("failed to intern discord message id %s", msgID))
 					continue
 				}
-				err = discord.HandleInternedMessage(ctx, conn, message, false, true, false)
+				err = discord.UpdateInternedMessage(ctx, conn, message, false, true, false)
 				if err != nil {
 					logging.Error().Msg(fmt.Sprintf("failed to handle interned message id %s", msgID))
 					continue
