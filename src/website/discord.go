@@ -296,6 +296,19 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save updates from Discord OAuth"))
 	}
 
+	// Send the user a welcome DM
+	discord.SendDM(c, c.Conn, user.ID, fmt.Sprintf(
+		"Welcome to the Handmade Network! Now that you've linked your Discord account, any posts you make in <#%s> will be automatically linked to your Handmade Network [profile](<%s>). If you haven't yet, [create a project](<%s>) to show off what you're working on, and use its &tag to automatically link your showcase posts.",
+		config.Config.Discord.ShowcaseChannelID,
+		hmnurl.BuildUserProfile(hmnUser.Username),
+		hmnurl.BuildProjectNew(),
+	))
+	if hmnMember == nil {
+		discord.SendDM(c, c.Conn, user.ID,
+			"Oh, and since you don't seem to be a member of the Handmade Network Discord yet, make sure to join at https://discord.gg/hmn!",
+		)
+	}
+
 	// Add the role on Discord
 	if hmnMember != nil {
 		err = discord.AddGuildMemberRole(c, user.ID, config.Config.Discord.MemberRoleID)
