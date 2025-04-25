@@ -260,14 +260,6 @@ const (
 	MessageFlagIsVoiceMessage
 )
 
-type InternType int
-
-const (
-	InternTypeNone     InternType = iota // The message should not be interned.
-	InternTypeImplicit                   // The message should be interned even though the user did not explicitly request it.
-	InternTypeExplicit                   // The user explicitly requested that the message be interned (e.g. by a &tag).
-)
-
 // https://discord.com/developers/docs/resources/channel#message-object
 type Message struct {
 	ID        string       `json:"id"`
