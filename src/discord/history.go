@@ -56,8 +56,7 @@ func RunHistoryWatcher(dbConn *pgxpool.Pool) *jobs.Job {
 				case <-job.Canceled():
 					return true, nil
 				case <-newUserTicker.C:
-					// Get content for messages when a user links their account (but do not create snippets)
-					fetchMissingContent(job.Ctx, dbConn)
+					fetchMissingContentOnLinkAccount(job.Ctx, dbConn)
 				case <-backfillFirstRun:
 					runBackfill()
 				case <-backfillTicker.C:
@@ -76,7 +75,8 @@ func RunHistoryWatcher(dbConn *pgxpool.Pool) *jobs.Job {
 	return job
 }
 
-func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
+// Get content for messages when a user links their account (but do not create snippets)
+func fetchMissingContentOnLinkAccount(ctx context.Context, dbConn *pgxpool.Pool) {
 	log := logging.ExtractLogger(ctx)
 
 	messagesWithoutContent, err := db.Query[InternedMessage](ctx, dbConn,
@@ -219,7 +219,7 @@ func ScrapeAll(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earl
 			}
 
 			msg.Backfilled = true
-			err := InternMessage(ctx, dbConn, &msg)
+			err := TrackMessage(ctx, dbConn, &msg)
 			if err == nil {
 				err = UpdateInternedMessage(ctx, dbConn, &msg, false, false, false)
 			}
