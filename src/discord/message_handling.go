@@ -25,11 +25,31 @@ import (
 	"github.com/google/uuid"
 )
 
+// Channels for which we will automatically intern messages and their contents.
+// Whether we create snippets is up to shouldAutomaticallyCreateSnippet.
 var autostoreChannels = []string{
 	config.Config.Discord.ShowcaseChannelID,
+	config.Config.Discord.JamChannelID,
+}
 
-	// During jams, uncomment this:
-	// config.Config.Discord.JamChannelID,
+func shouldAutomaticallyCreateSnippet(interned *InternedMessage) bool {
+	// Never create snippets for unlinked users, or users who have turned off the snippet pref.
+	if interned.HMNUser == nil || !interned.HMNUser.DiscordSaveShowcase {
+		return false
+	}
+
+	switch interned.Message.ChannelID {
+	case config.Config.Discord.ShowcaseChannelID:
+		// Create a snippet for any message that does not get cleaned up.
+		return true
+	case config.Config.Discord.JamChannelID:
+		// Create a snippet for any message that has an explicit project tag.
+		hasTags := len(parseTags(interned.MessageContent.LastContent)) > 0
+		jamIsHappeningMoreOrLessRightNow := false // change to true during/around a jam :P
+		return hasTags && jamIsHappeningMoreOrLessRightNow
+	default:
+		return false
+	}
 }
 
 func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, notifyUser bool) error {
@@ -39,14 +59,14 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	// NOTE(asaf): All functions called here should verify that the message applies to them.
 
 	if !deleted {
-		deleted, err = CleanUpLibrary(ctx, dbConn, msg)
+		deleted, err = cleanUpLibrary(ctx, dbConn, msg)
 		if err != nil {
 			return err
 		}
 	}
 
 	if !deleted {
-		deleted, err = CleanUpShowcase(ctx, dbConn, msg)
+		deleted, err = cleanUpShowcase(ctx, dbConn, msg)
 		if err != nil {
 			return err
 		}
@@ -54,7 +74,7 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 
 	autostore := slices.Contains(autostoreChannels, msg.ChannelID)
 	if !deleted && autostore {
-		if err := InternMessage(ctx, dbConn, msg); err != nil {
+		if err := TrackMessage(ctx, dbConn, msg); err != nil {
 			return err
 		}
 	}
@@ -66,7 +86,7 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	return nil
 }
 
-func CleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
+func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
 	if msg.ChannelID != config.Config.Discord.ShowcaseChannelID {
 		return false, nil
 	}
@@ -100,7 +120,7 @@ func CleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 	return false, nil
 }
 
-func CleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
+func cleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
 	if msg.ChannelID != config.Config.Discord.LibraryChannelID {
 		return false, nil
 	}
@@ -147,7 +167,7 @@ the database.
 This does not create snippets or save content or do anything besides save a
 record of the message itself.
 */
-func InternMessage(
+func TrackMessage(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
 	msg *Message,
@@ -218,7 +238,7 @@ func UpdateInternedMessage(
 	dbConn db.ConnOrTx,
 	msg *Message,
 	messageDeleted bool, // whether the message was deleted before this update, e.g. as part of showcase cleanup
-	createSnippet bool, // whether to create snippets for this message
+	canCreateSnippet bool, // if false, no snippet will be created for this message regardless of contents
 	notifyUser bool, // whether to notify the user of any problems with their message
 ) error {
 	tx, err := dbConn.Begin(ctx)
@@ -244,11 +264,11 @@ func UpdateInternedMessage(
 		if err != nil {
 			return err
 		}
-		if createSnippet {
-			err = UpdateSnippetForInternedMessage(ctx, tx, interned, false, notifyUser)
-			if err != nil {
-				return err
-			}
+
+		createSnippet := canCreateSnippet && shouldAutomaticallyCreateSnippet(interned)
+		err = UpdateSnippetForInternedMessage(ctx, tx, interned, createSnippet, notifyUser)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -676,15 +696,12 @@ content saved, nothing will happen.
 
 If a user does not have their Discord account linked, this function will
 naturally do nothing because we have no message content saved.
-If forceCreate is true, it does not check any user settings such as automatically creating snippets from
-#project-showcase. If we have the content, it will make a snippet for it, no
-questions asked. Bear that in mind.
 */
 func UpdateSnippetForInternedMessage(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
 	interned *InternedMessage,
-	forceCreate bool,
+	canCreateSnippets bool, // if false, existing snippets will be updated but new snippets will not be created
 	notifyUser bool,
 ) error {
 	if interned.HMNUser == nil {
@@ -738,9 +755,7 @@ func UpdateSnippetForInternedMessage(
 			existingSnippet.DescriptionHtml = contentHTML
 		}
 	} else {
-		userAllowsSnippet := interned.HMNUser.DiscordSaveShowcase || forceCreate
-		shouldCreate := !interned.Message.SnippetCreated && userAllowsSnippet
-
+		shouldCreate := canCreateSnippets && !interned.Message.SnippetCreated
 		if shouldCreate {
 			// Get an asset ID or URL to make a snippet from
 			assetId, url, err := getSnippetAssetOrUrl(ctx, tx, &interned.Message)

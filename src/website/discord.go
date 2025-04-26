@@ -407,6 +407,8 @@ func DiscordShowcaseBacklog(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, err)
 		} else if err == nil {
 			// NOTE(asaf): Creating snippet even if the checkbox is off because the user asked us to.
+			// NOTE(ben): It's fine to unconditionally pass true here because any non-snippetable messages
+			// will have been cleaned up already.
 			err = discord.UpdateSnippetForInternedMessage(c, c.Conn, interned, true, false)
 			if err != nil {
 				return c.ErrorResponse(http.StatusInternalServerError, err)

@@ -63,9 +63,9 @@ func init() {
 					logging.Error().Msg(fmt.Sprintf("failed to fetch discord message id %s", msgID))
 					continue
 				}
-				err = discord.InternMessage(ctx, conn, message)
+				err = discord.TrackMessage(ctx, conn, message)
 				if err != nil {
-					logging.Error().Msg(fmt.Sprintf("failed to intern discord message id %s", msgID))
+					logging.Error().Msg(fmt.Sprintf("failed to track discord message id %s", msgID))
 					continue
 				}
 				err = discord.UpdateInternedMessage(ctx, conn, message, false, true, false)
