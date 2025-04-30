@@ -110,9 +110,9 @@ func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff) Project {
 	} else {
 		src := rand.NewSource(int64(p.Project.ID))
 		rnd := rand.New(src)
-		res.PlaceHolderImageAngle = rnd.Int31n(16)
-		res.PlaceHolderImageHue   = rnd.Int31n(360)
-		res.PlaceHolderImageSize  = rnd.Int31n(1500) + 1000
+		res.PlaceholderImageAngle = rnd.Int31n(16)
+		res.PlaceholderImageHue   = rnd.Int31n(360)
+		res.PlaceholderImageSize  = rnd.Int31n(1500) + 1000
 	}
 	return res
 }
