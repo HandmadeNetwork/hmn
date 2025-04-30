@@ -6,6 +6,7 @@ import (
 	"net/netip"
 	"strconv"
 	"strings"
+	"math/rand"
 
 	"git.handmade.network/hmn/hmn/src/calendar"
 	"git.handmade.network/hmn/hmn/src/hmndata"
@@ -106,6 +107,12 @@ func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff) Project {
 	}
 	if p.HeaderImage != nil {
 		res.HeaderImage = hmnurl.BuildS3Asset(p.HeaderImage.S3Key)
+	} else {
+		src := rand.NewSource(int64(p.Project.ID))
+		rnd := rand.New(src)
+		res.PlaceHolderImageAngle = rnd.Int31n(16)
+		res.PlaceHolderImageHue   = rnd.Int31n(360)
+		res.PlaceHolderImageSize  = rnd.Int31n(1500) + 1000
 	}
 	return res
 }

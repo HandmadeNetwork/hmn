@@ -145,6 +145,9 @@ type Project struct {
 
 	Logo        string
 	HeaderImage string
+	PlaceHolderImageAngle int32
+	PlaceHolderImageHue   int32
+	PlaceHolderImageSize  int32
 
 	LifecycleBadgeClass string
 	LifecycleString     string
