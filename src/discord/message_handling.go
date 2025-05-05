@@ -1,17 +1,14 @@
 package discord
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
+	"slices"
 	"strings"
 	"time"
 
@@ -28,395 +25,179 @@ import (
 	"github.com/google/uuid"
 )
 
+// Channels for which we will automatically intern messages and their contents.
+// Whether we create snippets is up to shouldAutomaticallyCreateSnippet.
 var autostoreChannels = []string{
 	config.Config.Discord.ShowcaseChannelID,
-	// TODO(asaf): Add jam channel
+	config.Config.Discord.JamChannelID,
+}
+
+func shouldAutomaticallyCreateSnippet(interned *InternedMessage) bool {
+	// Never create snippets for unlinked users, or users who have turned off the snippet pref.
+	if interned.HMNUser == nil || !interned.HMNUser.DiscordSaveShowcase {
+		return false
+	}
+
+	switch interned.Message.ChannelID {
+	case config.Config.Discord.ShowcaseChannelID:
+		// Create a snippet for any message that does not get cleaned up.
+		return true
+	case config.Config.Discord.JamChannelID:
+		// Create a snippet for any message that has an explicit project tag.
+		hasTags := len(parseTags(interned.MessageContent.LastContent)) > 0
+		jamIsHappeningMoreOrLessRightNow := false // change to true during/around a jam :P
+		return hasTags && jamIsHappeningMoreOrLessRightNow
+	default:
+		return false
+	}
 }
 
 func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, notifyUser bool) error {
-	deleted := false
-	interned := false
+	var deleted bool
 	var err error
 
 	// NOTE(asaf): All functions called here should verify that the message applies to them.
 
-	if !deleted && err == nil {
-		deleted, err = CleanUpLibrary(ctx, dbConn, msg)
-	}
-
-	// if !deleted && err == nil {
-	// 	err = ShareToMatrix(ctx, msg)
-	// }
-
-	tags := parseTags(msg.Content)
-
-	if !deleted && err == nil {
-		interned, err = MaybeInternMessage(ctx, dbConn, msg, tags)
-	}
-
-	if !deleted && err == nil {
-		deleted, err = CleanUpShowcase(ctx, dbConn, msg, interned)
-	}
-
-	if err == nil {
-		err = HandleInternedMessage(ctx, dbConn, msg, deleted, true, notifyUser)
-	}
-
-	// when we needed her most...she vanished
-	// if !deleted && err == nil {
-	// 	err = FreyaMode(ctx, dbConn, msg)
-	// }
-
-	return err
-}
-
-type TagProject struct {
-	Tag       string `db:"tag.text"`
-	ProjectID int    `db:"project.id"`
-}
-
-func HandleIncomingMessageTags(ctx context.Context, dbConn db.ConnOrTx, hmnUser *models.User, authorID string, tags []string, notifyUser bool) ([]*TagProject, error) {
-	if len(tags) > 0 && hmnUser != nil {
-		existingUserTags, err := db.Query[TagProject](ctx, dbConn,
-			`
-			SELECT $columns
-			FROM
-				tag
-				JOIN project ON project.tag = tag.id
-				JOIN user_project ON user_project.project_id = project.id
-			WHERE user_project.user_id = $1 AND tag.text = ANY ($2)
-			`,
-			hmnUser.ID,
-			tags,
-		)
+	if !deleted {
+		deleted, err = cleanUpLibrary(ctx, dbConn, msg)
 		if err != nil {
-			return nil, err
+			return err
+		}
+	}
+
+	if !deleted {
+		deleted, err = cleanUpShowcase(ctx, dbConn, msg)
+		if err != nil {
+			return err
+		}
+	}
+
+	autostore := slices.Contains(autostoreChannels, msg.ChannelID)
+	if !deleted && autostore {
+		if err := TrackMessage(ctx, dbConn, msg); err != nil {
+			return err
+		}
+	}
+
+	if err := UpdateInternedMessage(ctx, dbConn, msg, deleted, true, notifyUser); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
+	if msg.ChannelID != config.Config.Discord.ShowcaseChannelID {
+		return false, nil
+	}
+
+	// Ignore messages that are of unusual types.
+	switch msg.Type {
+	case MessageTypeDefault, MessageTypeReply, MessageTypeApplicationCommand:
+	default:
+		return false, nil
+	}
+
+	if !messageIsSnippetable(msg) {
+		err := DeleteMessage(ctx, msg.ChannelID, msg.ID)
+		if err != nil {
+			return false, oops.New(err, "failed to delete message")
 		}
 
-		missingTags := []string{}
-		for _, t := range tags {
-			found := false
-			for _, et := range existingUserTags {
-				if et.Tag == t {
-					found = true
-					break
-				}
-			}
-			if !found {
-				missingTags = append(missingTags, t)
+		if !msg.Author.IsBot {
+			err = SendDM(ctx, dbConn, msg.Author.ID,
+				"Posts in #project-showcase are required to have an image, video, or link. Please discuss showcase content in #project-discussion.",
+			)
+
+			if err != nil {
+				return true, oops.New(err, "failed to send showcase warning message")
 			}
 		}
 
-		if len(missingTags) > 0 && notifyUser {
-			err = SendDM(ctx, dbConn,
-				authorID,
-				fmt.Sprintf(
-					"It looks like you tried linking a message to a Handmade Network project, but we couldn't find a project matching the tags you provided (%s).\nGo to your project's settings on the Handmade Network website, set a Discord tag, then edit or repost your message on Discord.\nIf this is a false positive, please let us know in #network-meta.",
-					strings.Join(missingTags, ", "),
-				),
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func cleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
+	if msg.ChannelID != config.Config.Discord.LibraryChannelID {
+		return false, nil
+	}
+
+	// Ignore messages that are of unusual types.
+	switch msg.Type {
+	case MessageTypeDefault, MessageTypeReply, MessageTypeApplicationCommand:
+	default:
+		return false, nil
+	}
+
+	if !msg.OriginalHasFields("content") {
+		return false, nil
+	}
+
+	if !messageHasLinks(msg.Content) {
+		err := DeleteMessage(ctx, msg.ChannelID, msg.ID)
+		if err != nil {
+			return false, oops.New(err, "failed to delete message")
+		}
+
+		if !msg.Author.IsBot {
+			err = SendDM(ctx, dbConn, msg.Author.ID,
+				"Posts in #the-library are required to have a link. Please discuss library content in other relevant channels.",
 			)
 			if err != nil {
-				return existingUserTags, oops.New(err, "failed to send unidentified tags warning message")
+				return true, oops.New(err, "failed to send showcase warning message")
 			}
 		}
-		return existingUserTags, nil
+
+		return true, nil
 	}
 
-	return nil, nil
-}
-
-func CleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message, interned bool) (bool, error) {
-	deleted := false
-	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID {
-		switch msg.Type {
-		case MessageTypeDefault, MessageTypeReply, MessageTypeApplicationCommand:
-		default:
-			return deleted, nil
-		}
-
-		if !interned {
-			err := DeleteMessage(ctx, msg.ChannelID, msg.ID)
-			if err != nil {
-				return deleted, oops.New(err, "failed to delete message")
-			}
-			deleted = true
-
-			if !msg.Author.IsBot {
-				err = SendDM(ctx, dbConn, msg.Author.ID,
-					"Posts in #project-showcase are required to have either an image/video or a link, or start with `!til`, or be tagged to an hmn project (like `&myproject`). Discuss showcase content in #project-discussion.",
-				)
-
-				if err != nil {
-					return deleted, oops.New(err, "failed to send showcase warning message")
-				}
-			}
-		}
-	}
-
-	return deleted, nil
-}
-
-func CleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
-	deleted := false
-	if msg.ChannelID == config.Config.Discord.LibraryChannelID {
-		switch msg.Type {
-		case MessageTypeDefault, MessageTypeReply, MessageTypeApplicationCommand:
-		default:
-			return deleted, nil
-		}
-
-		if !msg.OriginalHasFields("content") {
-			return deleted, nil
-		}
-
-		if !messageHasLinks(msg.Content) {
-			err := DeleteMessage(ctx, msg.ChannelID, msg.ID)
-			if err != nil {
-				return deleted, oops.New(err, "failed to delete message")
-			}
-			deleted = true
-
-			if !msg.Author.IsBot {
-				err = SendDM(ctx, dbConn, msg.Author.ID,
-					"Posts in #the-library are required to have a link. Discuss library content in other relevant channels.",
-				)
-				if err != nil {
-					return deleted, oops.New(err, "failed to send showcase warning message")
-				}
-			}
-		}
-	}
-
-	return deleted, nil
-}
-
-func FreyaMode(ctx context.Context, dbConn db.ConnOrTx, msg *Message) error {
-	if msg.Author.IsBot {
-		return nil
-	}
-	if msg.ChannelID == config.Config.Discord.ShowcaseChannelID || msg.ChannelID == config.Config.Discord.LibraryChannelID {
-		return nil
-	}
-
-	twitteryUrls := []string{
-		"https://twitter.com",
-		"https://x.com",
-		"https://vxtwitter.com",
-		"https://fxtwitter.com",
-	}
-	isTwittery := false
-	for _, url := range twitteryUrls {
-		if strings.Contains(msg.Content, url) {
-			isTwittery = true
-		}
-	}
-	if !isTwittery {
-		return nil
-	}
-
-	// FREYA MODE ENGAGED
-	approvedTweets := []string{
-		"https://vxtwitter.com/FreyaHolmer/status/1757836988495847568",
-		"https://vxtwitter.com/FreyaHolmer/status/1752441092501361103",
-		"https://vxtwitter.com/FreyaHolmer/status/1753813557966217268",
-		"https://vxtwitter.com/FreyaHolmer/status/1746228932188295579",
-		"https://vxtwitter.com/FreyaHolmer/status/1732687685850894799",
-		"https://vxtwitter.com/FreyaHolmer/status/1761487879178736048",
-		"https://vxtwitter.com/FreyaHolmer/status/1733820461492863442",
-		"https://vxtwitter.com/FreyaHolmer/status/1732845451701871101",
-		"https://vxtwitter.com/FreyaHolmer/status/1765680355657359585",
-		"https://vxtwitter.com/FreyaHolmer/status/1784678195997852129",
-		"https://vxtwitter.com/FreyaHolmer/status/1741468609044508831",
-		"https://vxtwitter.com/FreyaHolmer/status/1759306434053870012",
-		"https://vxtwitter.com/FreyaHolmer/status/1754929898492162178",
-		"https://vxtwitter.com/FreyaHolmer/status/1782498313511534822",
-		"https://vxtwitter.com/FreyaHolmer/status/1623737764041695232",
-		"https://vxtwitter.com/FreyaHolmer/status/1718979996125925494",
-		"https://vxtwitter.com/FreyaHolmer/status/1675945798448607248",
-		"https://vxtwitter.com/FreyaHolmer/status/1662229911375953922",
-		"https://vxtwitter.com/FreyaHolmer/status/1652235944752185345",
-		"https://vxtwitter.com/FreyaHolmer/status/1386408507218427905",
-		"https://vxtwitter.com/FreyaHolmer/status/1436696408506212353",
-		"https://vxtwitter.com/FreyaHolmer/status/1444755552777670657",
-		"https://vxtwitter.com/FreyaHolmer/status/1232826293902888960",
-	}
-	tweet := approvedTweets[rand.Intn(len(approvedTweets))]
-	err := SendMessages(ctx, dbConn, MessageToSend{
-		ChannelID: msg.ChannelID,
-		Req: CreateMessageRequest{
-			Content: fmt.Sprintf("No. Only Freya is allowed to tweet. %s", tweet),
-		},
-	})
-	if err != nil {
-		return oops.New(err, "failed to send Freya tweet")
-	}
-
-	return nil
-}
-
-func ShareToMatrix(ctx context.Context, msg *Message) error {
-	if msg.Flags&MessageFlagCrossposted == 0 {
-		return nil
-	}
-	if config.Config.Matrix.Username == "" {
-		logging.ExtractLogger(ctx).Warn().Msg("No Matrix user provided; Discord announcement will not be shared")
-	}
-
-	fullMsg, err := GetChannelMessage(ctx, msg.ChannelID, msg.ID)
-	if err != nil {
-		return oops.New(err, "failed to get published message contents")
-	}
-
-	bodyMarkdown := CleanUpMarkdown(ctx, fullMsg.Content)
-	bodyHTML := parsing.ParseMarkdown(bodyMarkdown, parsing.DiscordMarkdown)
-
-	// Log in to Matrix (we don't bother to keep access tokens around)
-	var accessToken string
-	{
-		type MatrixLogin struct {
-			Type     string `json:"type"`
-			User     string `json:"user"`
-			Password string `json:"password"`
-		}
-		type MatrixLoginResponse struct {
-			AccessToken string `json:"access_token"`
-		}
-		body := MatrixLogin{
-			Type:     "m.login.password",
-			User:     config.Config.Matrix.Username,
-			Password: config.Config.Matrix.Password,
-		}
-		bodyBytes := utils.Must1(json.Marshal(body))
-		res, err := http.Post(
-			"https://matrix.handmadecities.com/_matrix/client/r0/login",
-			"application/json",
-			bytes.NewReader(bodyBytes),
-		)
-		if err != nil || res.StatusCode >= 300 {
-			return oops.New(err, "failed to log into Matrix")
-		}
-		defer res.Body.Close()
-		resBodyBytes := utils.Must1(io.ReadAll(res.Body))
-		var resBody MatrixLoginResponse
-		utils.Must(json.Unmarshal(resBodyBytes, &resBody))
-
-		accessToken = resBody.AccessToken
-	}
-
-	// Create message
-	{
-		type MessageEvent struct {
-			MsgType       string `json:"msgtype"`
-			Body          string `json:"body"`
-			Format        string `json:"format,omitempty"`
-			FormattedBody string `json:"formatted_body,omitempty"`
-		}
-		tid := "hmn" + strconv.Itoa(rand.Int())
-		body := MessageEvent{
-			MsgType:       "m.text",
-			Body:          bodyMarkdown,
-			Format:        "org.matrix.custom.html",
-			FormattedBody: bodyHTML,
-		}
-		bodyBytes := utils.Must1(json.Marshal(body))
-		req := utils.Must1(http.NewRequestWithContext(
-			ctx,
-			http.MethodPut,
-			fmt.Sprintf(
-				"%s/_matrix/client/v3/rooms/%s/send/m.room.message/%s",
-				config.Config.Matrix.BaseUrl,
-				config.Config.Matrix.AnnouncementsRoomID,
-				tid,
-			),
-			bytes.NewReader(bodyBytes),
-		))
-		req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-		req.Header.Add("Content-Type", "application/json")
-		res, err := http.DefaultClient.Do(req)
-		if err != nil || res.StatusCode >= 300 {
-			return oops.New(err, "failed to send Matrix message")
-		}
-	}
-
-	logging.ExtractLogger(ctx).Info().
-		Str("contents", bodyMarkdown).
-		Msg("Published Discord announcement to Matrix")
-
-	return nil
-}
-
-func MaybeInternMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, tags []string) (bool, error) {
-	interned := false
-	if messageShouldBeStored(msg, tags) {
-		interned = true
-		err := InternMessage(ctx, dbConn, msg)
-		if errors.Is(err, errNotEnoughInfo) {
-			logging.ExtractLogger(ctx).Warn().
-				Interface("msg", msg).
-				Msg("didn't have enough info to intern Discord message")
-		} else if err != nil {
-			return interned, err
-		}
-	}
-	return interned, nil
+	return false, nil
 }
 
 var errNotEnoughInfo = errors.New("Discord didn't send enough info in this event for us to do this")
 
 /*
-Ensures that a Discord message is stored in the database. This function is
+Ensures that a Discord message is tracked in the database. This function is
 idempotent and can be called regardless of whether the item already exists in
 the database.
 
-This does not create snippets or save content or do anything besides save the message itself.
+This does not create snippets or save content or do anything besides save a
+record of the message itself.
 */
-func InternMessage(
+func TrackMessage(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
 	msg *Message,
 ) error {
-	_, err := db.QueryOne[models.DiscordMessage](ctx, dbConn,
+	if !msg.OriginalHasFields("author", "timestamp") {
+		return errNotEnoughInfo
+	}
+
+	// We can receive messages without guild IDs when fetching messages from
+	// history instead of receiving them from the gateway. In this case we just
+	// assume it's from the HMN server.
+	guildID := utils.OrDefault(msg.GuildID, &config.Config.Discord.GuildID)
+
+	_, err := dbConn.Exec(ctx,
 		`
-		SELECT $columns
-		FROM discord_message
-		WHERE id = $1
+		INSERT INTO discord_message (id, channel_id, guild_id, url, user_id, sent_at, snippet_created, backfilled)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT DO NOTHING
 		`,
 		msg.ID,
+		msg.ChannelID,
+		*guildID,
+		msg.JumpURL(),
+		msg.Author.ID,
+		msg.Time(),
+		false,
+		msg.Backfilled,
 	)
-	if errors.Is(err, db.NotFound) {
-		if !msg.OriginalHasFields("author", "timestamp") {
-			return errNotEnoughInfo
-		}
-
-		guildID := msg.GuildID
-		if guildID == nil {
-			/*
-				This is weird, but it can happen when we fetch messages from
-				history instead of receiving it from the gateway. In this case
-				we just assume it's from the HMN server.
-			*/
-			guildID = &config.Config.Discord.GuildID
-		}
-
-		_, err = dbConn.Exec(ctx,
-			`
-			INSERT INTO discord_message (id, channel_id, guild_id, url, user_id, sent_at, snippet_created, backfilled)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-			`,
-			msg.ID,
-			msg.ChannelID,
-			*guildID,
-			msg.JumpURL(),
-			msg.Author.ID,
-			msg.Time(),
-			false,
-			msg.Backfilled,
-		)
-		if err != nil {
-			return oops.New(err, "failed to save new discord message")
-		}
-	} else if err != nil {
-		return oops.New(err, "failed to check for existing Discord message")
+	if err != nil {
+		return oops.New(err, "failed to save new discord message")
 	}
 
 	return nil
@@ -445,9 +226,6 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 	if err != nil {
 		return nil, err
 	}
-	if interned.MessageContent != nil {
-		interned.MessageContent.ParsedTags = parseTags(interned.MessageContent.LastContent)
-	}
 	return interned, nil
 }
 
@@ -455,7 +233,14 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 // 1. Saves/updates content
 // 2. Saves/updates snippet
 // 3. Deletes content/snippet
-func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, messageDeleted bool, createSnippet bool, notifyUser bool) error {
+func UpdateInternedMessage(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	msg *Message,
+	messageDeleted bool, // whether the message was deleted before this update, e.g. as part of showcase cleanup
+	canCreateSnippet bool, // if false, no snippet will be created for this message regardless of contents
+	notifyUser bool, // whether to notify the user of any problems with their message
+) error {
 	tx, err := dbConn.Begin(ctx)
 	if err != nil {
 		return oops.New(err, "failed to start transaction")
@@ -463,39 +248,30 @@ func HandleInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	defer tx.Rollback(ctx)
 
 	interned, err := FetchInternedMessage(ctx, tx, msg.ID)
-	if err != nil && !errors.Is(err, db.NotFound) {
+	if errors.Is(err, db.NotFound) {
+		return nil
+	} else if err != nil {
 		return err
-	} else if err == nil {
-		if !messageDeleted {
-			if msg.InternType == InternTypeExplicit && interned.DiscordUser == nil {
-				if notifyUser {
-					err := SendDM(ctx, dbConn,
-						msg.Author.ID,
-						fmt.Sprintf("It looks like you tried linking a message to a Handmade Network project, but your Discord account is not linked to your Handmade Network account.\nYou can link your account at <%s>, then edit or repost your message on Discord.\nIf this is a false positive, please let us know in #network-meta.", hmnurl.BuildUserSettings("discord")),
-					)
-					if err != nil {
-						return oops.New(err, "failed to send unlinked account warning message")
-					}
-				}
-			}
-			err = SaveMessageContents(ctx, tx, interned, msg)
-			if err != nil {
-				return err
+	}
 
-			}
-			if createSnippet {
-				err = HandleSnippetForInternedMessage(ctx, tx, interned, false, notifyUser)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			err = DeleteInternedMessage(ctx, tx, interned)
-			if err != nil {
-				return err
-			}
+	if messageDeleted {
+		err := DeleteInternedMessage(ctx, tx, interned)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = SaveMessageContents(ctx, tx, interned, msg, notifyUser)
+		if err != nil {
+			return err
+		}
+
+		createSnippet := canCreateSnippet && shouldAutomaticallyCreateSnippet(interned)
+		err = UpdateSnippetForInternedMessage(ctx, tx, interned, createSnippet, notifyUser)
+		if err != nil {
+			return err
 		}
 	}
+
 	err = tx.Commit(ctx)
 	if err != nil {
 		return oops.New(err, "failed to commit Discord message updates")
@@ -564,90 +340,111 @@ func SaveMessageContents(
 	dbConn db.ConnOrTx,
 	interned *InternedMessage,
 	msg *Message,
+	notifyUser bool,
 ) error {
-	if interned.DiscordUser != nil {
-		// We have a linked Discord account, so save the message contents (regardless of
-		// whether we create a snippet or not).
-		if msg.OriginalHasFields("content") {
-			_, err := dbConn.Exec(ctx,
-				`
-				INSERT INTO discord_message_content (message_id, discord_id, last_content)
-				VALUES ($1, $2, $3)
-				ON CONFLICT (message_id) DO UPDATE SET
-					discord_id = EXCLUDED.discord_id,
-					last_content = EXCLUDED.last_content
-				`,
-				interned.Message.ID,
-				interned.DiscordUser.ID,
-				CleanUpMarkdown(ctx, msg.Content),
-			)
-			if err != nil {
-				return oops.New(err, "failed to create or update message contents")
-			}
+	if interned.DiscordUser == nil {
+		// We do not save message contents unless a Discord account is linked.
 
-			content, err := db.QueryOne[models.DiscordMessageContent](ctx, dbConn,
-				`
-				SELECT $columns
-				FROM
-					discord_message_content
-				WHERE
-					discord_message_content.message_id = $1
-				`,
-				interned.Message.ID,
+		// If the user tried to tag a project, though, we warn them here.
+		tags := parseTags(msg.Content)
+		if len(tags) > 0 && notifyUser {
+			err := SendDM(ctx, dbConn,
+				interned.Message.UserID,
+				fmt.Sprintf(
+					"If you're trying to tag a Handmade Network project called \"&%s\", you need to link your Discord account first. Link your Discord account at <%s>, then edit or re-post your message on Discord.",
+					tags[0],
+					hmnurl.BuildUserSettings("discord"),
+				),
 			)
 			if err != nil {
-				return oops.New(err, "failed to fetch message contents")
+				return oops.New(err, "failed to send unlinked account warning message")
 			}
-			interned.MessageContent = content
-			interned.MessageContent.ParsedTags = parseTags(interned.MessageContent.LastContent)
 		}
 
-		// Save attachments
-		if msg.OriginalHasFields("attachments") {
-			for _, attachment := range msg.Attachments {
-				_, err := saveAttachment(ctx, dbConn, &attachment, interned.DiscordUser.HMNUserId, msg.ID)
+		return nil
+	}
+
+	// We have a linked Discord account, so save the message contents (regardless of
+	// whether we create a snippet or not).
+	if msg.OriginalHasFields("content") {
+		_, err := dbConn.Exec(ctx,
+			`
+			INSERT INTO discord_message_content (message_id, discord_id, last_content)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (message_id) DO UPDATE SET
+				discord_id = EXCLUDED.discord_id,
+				last_content = EXCLUDED.last_content
+			`,
+			interned.Message.ID,
+			interned.DiscordUser.ID,
+			CleanUpMarkdown(ctx, msg.Content),
+		)
+		if err != nil {
+			return oops.New(err, "failed to create or update message contents")
+		}
+
+		content, err := db.QueryOne[models.DiscordMessageContent](ctx, dbConn,
+			`
+			SELECT $columns
+			FROM
+				discord_message_content
+			WHERE
+				discord_message_content.message_id = $1
+			`,
+			interned.Message.ID,
+		)
+		if err != nil {
+			return oops.New(err, "failed to fetch message contents")
+		}
+		interned.MessageContent = content
+	}
+
+	// Save attachments
+	if msg.OriginalHasFields("attachments") {
+		for _, attachment := range msg.Attachments {
+			_, err := saveAttachment(ctx, dbConn, &attachment, interned.DiscordUser.HMNUserId, msg.ID)
+			if err != nil {
+				return oops.New(err, "failed to save attachment")
+			}
+		}
+	}
+
+	// Save / delete embeds
+	if msg.OriginalHasFields("embeds") {
+		numSavedEmbeds, err := db.QueryOneScalar[int](ctx, dbConn,
+			`
+			SELECT COUNT(*)
+			FROM discord_message_embed
+			WHERE message_id = $1
+			`,
+			msg.ID,
+		)
+		if err != nil {
+			return oops.New(err, "failed to count existing embeds")
+		}
+		if numSavedEmbeds == 0 {
+			// No embeds yet, so save new ones
+			for _, embed := range msg.Embeds {
+				_, err := saveEmbed(ctx, dbConn, &embed, interned.DiscordUser.HMNUserId, msg.ID)
 				if err != nil {
-					return oops.New(err, "failed to save attachment")
+					return oops.New(err, "failed to save embed")
 				}
 			}
-		}
-
-		// Save / delete embeds
-		if msg.OriginalHasFields("embeds") {
-			numSavedEmbeds, err := db.QueryOneScalar[int](ctx, dbConn,
+		} else if len(msg.Embeds) > 0 {
+			// Embeds were removed from the message
+			_, err := dbConn.Exec(ctx,
 				`
-				SELECT COUNT(*)
-				FROM discord_message_embed
+				DELETE FROM discord_message_embed
 				WHERE message_id = $1
 				`,
 				msg.ID,
 			)
 			if err != nil {
-				return oops.New(err, "failed to count existing embeds")
-			}
-			if numSavedEmbeds == 0 {
-				// No embeds yet, so save new ones
-				for _, embed := range msg.Embeds {
-					_, err := saveEmbed(ctx, dbConn, &embed, interned.DiscordUser.HMNUserId, msg.ID)
-					if err != nil {
-						return oops.New(err, "failed to save embed")
-					}
-				}
-			} else if len(msg.Embeds) > 0 {
-				// Embeds were removed from the message
-				_, err := dbConn.Exec(ctx,
-					`
-				DELETE FROM discord_message_embed
-				WHERE message_id = $1
-				`,
-					msg.ID,
-				)
-				if err != nil {
-					return oops.New(err, "failed to delete embeds")
-				}
+				return oops.New(err, "failed to delete embeds")
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -899,11 +696,14 @@ content saved, nothing will happen.
 
 If a user does not have their Discord account linked, this function will
 naturally do nothing because we have no message content saved.
-If forceCreate is true, it does not check any user settings such as automatically creating snippets from
-#project-showcase. If we have the content, it will make a snippet for it, no
-questions asked. Bear that in mind.
 */
-func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, interned *InternedMessage, forceCreate bool, notifyUser bool) error {
+func UpdateSnippetForInternedMessage(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	interned *InternedMessage,
+	canCreateSnippets bool, // if false, existing snippets will be updated but new snippets will not be created
+	notifyUser bool,
+) error {
 	if interned.HMNUser == nil {
 		// NOTE(asaf): Can't handle snippets when there's no linked user
 		return nil
@@ -955,9 +755,7 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 			existingSnippet.DescriptionHtml = contentHTML
 		}
 	} else {
-		userAllowsSnippet := interned.HMNUser.DiscordSaveShowcase || forceCreate
-		shouldCreate := !interned.Message.SnippetCreated && userAllowsSnippet
-
+		shouldCreate := canCreateSnippets && !interned.Message.SnippetCreated
 		if shouldCreate {
 			// Get an asset ID or URL to make a snippet from
 			assetId, url, err := getSnippetAssetOrUrl(ctx, tx, &interned.Message)
@@ -1006,7 +804,8 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 
 		// Try to associate tags in the message with project tags in HMN.
 		// Match only tags for projects in which the current user is a collaborator.
-		tags, err := HandleIncomingMessageTags(ctx, tx, interned.HMNUser, interned.Message.UserID, interned.MessageContent.ParsedTags, notifyUser)
+		msgTags := parseTags(interned.MessageContent.LastContent)
+		tags, err := HandleIncomingMessageTags(ctx, tx, interned, msgTags, notifyUser)
 		if err != nil {
 			return err
 		}
@@ -1051,6 +850,74 @@ func HandleSnippetForInternedMessage(ctx context.Context, dbConn db.ConnOrTx, in
 	}
 
 	return nil
+}
+
+type TagProject struct {
+	Tag       string `db:"tag.text"`
+	ProjectID int    `db:"project.id"`
+}
+
+func HandleIncomingMessageTags(
+	ctx context.Context,
+	dbConn db.ConnOrTx,
+	interned *InternedMessage,
+	tags []string,
+	notifyUser bool,
+) ([]*TagProject, error) {
+	if len(tags) == 0 || interned.HMNUser == nil {
+		return nil, nil
+	}
+
+	existingUserTags, err := db.Query[TagProject](ctx, dbConn,
+		`
+		SELECT $columns
+		FROM
+			tag
+			JOIN project ON project.tag = tag.id
+			JOIN user_project ON user_project.project_id = project.id
+		WHERE user_project.user_id = $1 AND tag.text = ANY ($2)
+		`,
+		interned.HMNUser.ID,
+		tags,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	missingTags := []string{}
+	for _, t := range tags {
+		found := false
+		for _, et := range existingUserTags {
+			if et.Tag == t {
+				found = true
+				break
+			}
+		}
+		if !found {
+			missingTags = append(missingTags, "&"+t)
+		}
+	}
+
+	if len(missingTags) > 0 && notifyUser {
+		var tagMsg string
+		if len(missingTags) > 1 {
+			tagMsg = "these tags: " + strings.Join(missingTags, ", ")
+		} else {
+			tagMsg = "the tag \"" + missingTags[0] + "\""
+		}
+		err = SendDM(ctx, dbConn,
+			interned.Message.UserID,
+			fmt.Sprintf(
+				"We couldn't find any Handmade Network project with %s. Go to your project's settings on the Handmade Network website, set a Discord tag, then edit or re-post your message on Discord.",
+				tagMsg,
+			),
+		)
+		if err != nil {
+			return existingUserTags, oops.New(err, "failed to send unidentified tags warning message")
+		}
+	}
+
+	return existingUserTags, nil
 }
 
 // NOTE(ben): This is maybe redundant with the regexes we use for markdown. But
@@ -1116,48 +983,18 @@ func messageHasLinks(content string) bool {
 	return false
 }
 
-func messageShouldBeStored(msg *Message, tags []string) bool {
-	if msg == nil {
-		return false
+func messageIsSnippetable(msg *Message) bool {
+	hasGoodContent := true
+	if msg.OriginalHasFields("content") && !messageHasLinks(msg.Content) {
+		hasGoodContent = false
 	}
 
-	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(msg.Content)), "!til") {
-		msg.InternType = InternTypeExplicit
-		return true
+	hasGoodAttachments := true
+	if msg.OriginalHasFields("attachments") && len(msg.Attachments) == 0 {
+		hasGoodAttachments = false
 	}
 
-	if len(tags) > 0 {
-		msg.InternType = InternTypeExplicit
-		return true
-	}
-
-	autostore := false
-	for _, cid := range autostoreChannels {
-		if msg.ChannelID == cid {
-			autostore = true
-			break
-		}
-	}
-	if autostore {
-		hasGoodContent := true
-		if msg.OriginalHasFields("content") && !messageHasLinks(msg.Content) {
-			hasGoodContent = false
-		}
-
-		hasGoodAttachments := true
-		if msg.OriginalHasFields("attachments") && len(msg.Attachments) == 0 {
-			hasGoodAttachments = false
-		}
-
-		intern := hasGoodContent || hasGoodAttachments
-		if intern {
-			msg.InternType = InternTypeImplicit
-		}
-
-		return intern
-	}
-
-	return false
+	return hasGoodContent || hasGoodAttachments
 }
 
 func parseTags(content string) []string {

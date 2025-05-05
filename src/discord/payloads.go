@@ -260,14 +260,6 @@ const (
 	MessageFlagIsVoiceMessage
 )
 
-type InternType int
-
-const (
-	InternTypeNone InternType = iota
-	InternTypeImplicit
-	InternTypeExplicit
-)
-
 // https://discord.com/developers/docs/resources/channel#message-object
 type Message struct {
 	ID        string       `json:"id"`
@@ -282,10 +274,11 @@ type Message struct {
 	Attachments []Attachment `json:"attachments"`
 	Embeds      []Embed      `json:"embeds"`
 
-	InternType InternType
+	// A synthesized property for debugging purposes; true if this message was
+	// received from a scrape instead of from the gateway.
+	Backfilled bool
 
 	originalMap map[string]interface{}
-	Backfilled  bool
 }
 
 func (m *Message) JumpURL() string {

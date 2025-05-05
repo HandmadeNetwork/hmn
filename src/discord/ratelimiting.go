@@ -110,7 +110,7 @@ func createLimiter(headers rateLimitHeaders, routeName string) {
 
 	buckets.Store(routeName, headers.Bucket)
 	ilimiter, loaded := rateLimiters.LoadOrStore(headers.Bucket, &restRateLimiter{
-		requests: make(chan struct{}, 200), // presumably this is big enough to handle bursts
+		requests: make(chan struct{}, 1000), // presumably this is big enough to handle bursts
 		refills:  make(chan rateLimiterRefill),
 	})
 	if !loaded {

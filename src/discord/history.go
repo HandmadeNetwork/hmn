@@ -56,8 +56,7 @@ func RunHistoryWatcher(dbConn *pgxpool.Pool) *jobs.Job {
 				case <-job.Canceled():
 					return true, nil
 				case <-newUserTicker.C:
-					// Get content for messages when a user links their account (but do not create snippets)
-					fetchMissingContent(job.Ctx, dbConn)
+					fetchMissingContentOnLinkAccount(job.Ctx, dbConn)
 				case <-backfillFirstRun:
 					runBackfill()
 				case <-backfillTicker.C:
@@ -76,7 +75,8 @@ func RunHistoryWatcher(dbConn *pgxpool.Pool) *jobs.Job {
 	return job
 }
 
-func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
+// Get content for messages when a user links their account (but do not create snippets)
+func fetchMissingContentOnLinkAccount(ctx context.Context, dbConn *pgxpool.Pool) {
 	log := logging.ExtractLogger(ctx)
 
 	messagesWithoutContent, err := db.Query[InternedMessage](ctx, dbConn,
@@ -110,22 +110,19 @@ func fetchMissingContent(ctx context.Context, dbConn *pgxpool.Pool) {
 			}
 
 			discordMsg, err := GetChannelMessage(ctx, msg.Message.ChannelID, msg.Message.ID)
-			if errors.Is(err, NotFound) {
-				log.Info().Str("ID", msg.Message.ID).Msg("message deleted on discord")
-				err = DeleteInternedMessage(ctx, dbConn, msg)
-			} else if err != nil {
-				log.Error().Err(err).Msg("failed to get message")
-				continue
-			} else {
+			if err == nil {
 				log.Info().Str("msg", discordMsg.ShortString()).Msg("fetched message for content")
 
-				err = HandleInternedMessage(ctx, dbConn, discordMsg, false, false, false)
+				err = UpdateInternedMessage(ctx, dbConn, discordMsg, false, false, false)
 				if err != nil {
 					log.Error().Err(err).Msg("failed to save content for message")
-					continue
 				}
+			} else if errors.Is(err, NotFound) {
+				log.Info().Str("ID", msg.Message.ID).Msg("message deleted on discord")
+				err = DeleteInternedMessage(ctx, dbConn, msg)
+			} else {
+				log.Error().Err(err).Msg("failed to get message")
 			}
-
 		}
 		log.Info().Msgf("Done fetching missing content")
 	}
@@ -215,15 +212,16 @@ func ScrapeAll(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earl
 			log.Info().Str("msg", msg.ShortString()).Msg("")
 
 			if !earliestMessageTime.IsZero() && msg.Time().Before(earliestMessageTime) {
-				logging.ExtractLogger(ctx).Info().Time("earliest", earliestMessageTime).Msg("Saw a message before the specified earliest time; exiting")
+				logging.ExtractLogger(ctx).Info().
+					Time("earliest", earliestMessageTime).
+					Msg("Saw a message before the specified earliest time; exiting")
 				return true
 			}
 
 			msg.Backfilled = true
-			tags := parseTags(msg.Content)
-			interned, err := MaybeInternMessage(ctx, dbConn, &msg, tags)
-			if interned && err == nil {
-				err = HandleInternedMessage(ctx, dbConn, &msg, false, false, false)
+			err := TrackMessage(ctx, dbConn, &msg)
+			if err == nil {
+				err = UpdateInternedMessage(ctx, dbConn, &msg, false, false, false)
 			}
 
 			if err != nil {
