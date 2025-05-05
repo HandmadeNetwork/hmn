@@ -3,10 +3,10 @@ package templates
 import (
 	"fmt"
 	"html/template"
+	"math/rand"
 	"net/netip"
 	"strconv"
 	"strings"
-	"math/rand"
 
 	"git.handmade.network/hmn/hmn/src/calendar"
 	"git.handmade.network/hmn/hmn/src/hmndata"
@@ -77,6 +77,9 @@ func ProjectLogoUrl(p *models.Project, lightAsset *models.Asset, darkAsset *mode
 func ProjectToTemplate(
 	p *models.Project,
 ) Project {
+	src := rand.NewSource(int64(p.ID))
+	rnd := rand.New(src)
+
 	return Project{
 		ID:                p.ID,
 		Name:              p.Name,
@@ -86,6 +89,10 @@ func ProjectToTemplate(
 		Url:               hmndata.UrlContextForProject(p).BuildHomepage(),
 		Blurb:             p.Blurb,
 		ParsedDescription: template.HTML(p.ParsedDescription),
+
+		PlaceholderImageAngle: rnd.Int31n(16),
+		PlaceholderImageHue:   rnd.Int31n(360),
+		PlaceholderImageSize:  rnd.Int31n(1500) + 1000,
 
 		LifecycleBadgeClass: LifecycleBadgeClasses[p.Lifecycle],
 		LifecycleString:     LifecycleBadgeStrings[p.Lifecycle],
@@ -107,12 +114,6 @@ func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff) Project {
 	}
 	if p.HeaderImage != nil {
 		res.HeaderImage = hmnurl.BuildS3Asset(p.HeaderImage.S3Key)
-	} else {
-		src := rand.NewSource(int64(p.Project.ID))
-		rnd := rand.New(src)
-		res.PlaceholderImageAngle = rnd.Int31n(16)
-		res.PlaceholderImageHue   = rnd.Int31n(360)
-		res.PlaceholderImageSize  = rnd.Int31n(1500) + 1000
 	}
 	return res
 }
