@@ -423,7 +423,7 @@ func PodcastToTemplate(podcast *models.Podcast, imageFilename string) Podcast {
 		RSSUrl: hmnurl.BuildPodcastRSS(),
 		// TODO(asaf): Move this to the db if we want to support user podcasts
 		AppleUrl:   "https://podcasts.apple.com/us/podcast/the-handmade-network-podcast/id1507790631",
-		GoogleUrl:  "https://www.google.com/podcasts?feed=aHR0cHM6Ly9oYW5kbWFkZS5uZXR3b3JrL3BvZGNhc3QvcG9kY2FzdC54bWw%3D",
+		YouTubeUrl: "https://www.youtube.com/playlist?list=PL-IPpPzBYXBGsAd9-c2__x6LJG4Zszs0T",
 		SpotifyUrl: "https://open.spotify.com/show/2Nd9NjXscrBbQwYULiYKiU",
 	}
 }

@@ -258,7 +258,7 @@ type Podcast struct {
 
 	RSSUrl     string
 	AppleUrl   string
-	GoogleUrl  string
+	YouTubeUrl string
 	SpotifyUrl string
 }
 
