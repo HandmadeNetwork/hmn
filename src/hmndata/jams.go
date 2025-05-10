@@ -133,7 +133,7 @@ var WRJ2024 = Jam{
 
 var XRay2025 = Jam{
 	Event: Event{
-		StartTime: time.Date(2025, 6,  9, 13, 0, 0, 0, time.UTC),
+		StartTime: time.Date(2025, 6, 9, 13, 0, 0, 0, time.UTC),
 		EndTime:   time.Date(2025, 6, 15, 5, 0, 0, 0, time.UTC),
 	},
 	Name:    "X-Ray Jam 2025",
@@ -167,7 +167,7 @@ var HMBoston2024 = Event{
 	EndTime:   time.Date(2024, 8, 10, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 }
 
-var AllJams = []Jam{WRJ2021, WRJ2022, VJ2023, WRJ2023, LJ2024, VJ2024, WRJ2024}
+var AllJams = []Jam{WRJ2021, WRJ2022, VJ2023, WRJ2023, LJ2024, VJ2024, WRJ2024, XRay2025}
 
 func CurrentJam() *Jam {
 	now := time.Now()
