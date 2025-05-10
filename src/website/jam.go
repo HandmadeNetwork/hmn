@@ -96,7 +96,7 @@ var opengraphXRay2025 = []templates.OpenGraphItem{
 	{Property: "og:site_name", Value: "Handmade Network"},
 	{Property: "og:type", Value: "website"},
 	{Property: "og:image", Value: hmnurl.BuildPublic("xrayjam2025/TwitterCard.png", true)},
-	{Property: "og:description", Value: "A one-week jam where we peek at black boxes and see what's inside. June 9 - 15 on the Handmade Network."},
+	{Property: "og:description", Value: "A jam to find out how software works on the inside. June 9 - 15 on the Handmade Network."},
 	{Property: "og:url", Value: hmnurl.BuildJamIndex2025_XRay()},
 	{Name: "twitter:card", Value: "summary_large_image"},
 	{Name: "twitter:image", Value: hmnurl.BuildPublic("xrayjam2025/TwitterCard.png", true)},
@@ -149,12 +149,12 @@ func JamIndex2025_XRay(c *RequestContext) ResponseData {
 	}
 
 	res.MustWriteTemplate("jam_2025_xray_index.html", JamPageDataXRay2025{
-		BaseData:           baseData,
+		BaseData:            baseData,
 		JamBaseDataXRay2025: jamBaseData,
-		JamProjects:        pageProjects,
-		TimelineItems:      timelineItems,
-		ShortFeed:          true,
-		TwitchEmbedUrl:     twitchEmbedUrl,
+		JamProjects:         pageProjects,
+		TimelineItems:       timelineItems,
+		ShortFeed:           true,
+		TwitchEmbedUrl:      twitchEmbedUrl,
 	}, c.Perf)
 	return res
 }
@@ -199,10 +199,10 @@ func JamFeed2025_XRay(c *RequestContext) ResponseData {
 	}
 
 	res.MustWriteTemplate("jam_2025_xray_feed.html", JamPageDataXRay2025{
-		BaseData:           baseData,
+		BaseData:            baseData,
 		JamBaseDataXRay2025: jamBaseData,
-		JamProjects:        pageProjects,
-		TimelineItems:      timelineItems,
+		JamProjects:         pageProjects,
+		TimelineItems:       timelineItems,
 	}, c.Perf)
 	return res
 }
@@ -224,7 +224,7 @@ func JamGuidelines2025_XRay(c *RequestContext) ResponseData {
 	baseData.Header.SuppressBanners = true
 
 	res.MustWriteTemplate("jam_2025_xray_guidelines.html", JamPageDataXRay2025{
-		BaseData:           baseData,
+		BaseData:            baseData,
 		JamBaseDataXRay2025: jamBaseData,
 	}, c.Perf)
 	return res
