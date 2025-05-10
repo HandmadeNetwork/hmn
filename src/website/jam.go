@@ -116,6 +116,7 @@ func JamIndex2025_XRay(c *RequestContext) ResponseData {
 	baseData := getBaseDataAutocrumb(c, jam.Name)
 	baseData.OpenGraphItems = opengraphXRay2025
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.ForceDark = true
 	baseData.Header.SuppressBanners = true
 
 	pageProjects := []templates.Project{}
@@ -173,6 +174,7 @@ func JamFeed2025_XRay(c *RequestContext) ResponseData {
 	baseData := getBaseDataAutocrumb(c, jam.Name)
 	baseData.OpenGraphItems = opengraphXRay2025
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.ForceDark = true
 	baseData.Header.SuppressBanners = true
 
 	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
@@ -221,6 +223,7 @@ func JamGuidelines2025_XRay(c *RequestContext) ResponseData {
 	baseData := getBaseDataAutocrumb(c, jam.Name)
 	baseData.OpenGraphItems = opengraphXRay2025
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.ForceDark = true
 	baseData.Header.SuppressBanners = true
 
 	res.MustWriteTemplate("jam_2025_xray_guidelines.html", JamPageDataXRay2025{

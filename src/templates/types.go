@@ -6,14 +6,15 @@ import (
 )
 
 type BaseData struct {
-	Title            string
-	CanonicalLink    string
-	OpenGraphItems   []OpenGraphItem
-	BackgroundImage  BackgroundImage
-	BodyClasses      []string
-	Breadcrumbs      []Breadcrumb
-	Notices          []Notice
-	ReportIssueEmail string
+	Title                 string
+	CanonicalLink         string
+	OpenGraphItems        []OpenGraphItem
+	BackgroundImage       BackgroundImage
+	BodyClasses           []string
+	ForceLight, ForceDark bool
+	Breadcrumbs           []Breadcrumb
+	Notices               []Notice
+	ReportIssueEmail      string
 
 	CurrentUrl          string
 	CurrentProjectUrl   string
@@ -143,8 +144,8 @@ type Project struct {
 	ParsedDescription template.HTML
 	Owners            []User
 
-	Logo        string
-	HeaderImage string
+	Logo                  string
+	HeaderImage           string
 	PlaceholderImageAngle int32
 	PlaceholderImageHue   int32
 	PlaceholderImageSize  int32
