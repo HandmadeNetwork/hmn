@@ -197,6 +197,11 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexUserSettings, needsAuth(UserSettings))
 	hmnOnly.POST(hmnurl.RegexUserSettings, needsAuth(csrfMiddleware(UserSettingsSave)))
 
+	hmnOnly.GET(hmnurl.RegexPersonalBlog, BlogPersonalIndex)
+	hmnOnly.GET(hmnurl.RegexPersonalBlogThread, BlogPersonalThread)
+	hmnOnly.GET(hmnurl.RegexPersonalBlogNewThread, needsAuth(BlogPersonalNewThread))
+	hmnOnly.POST(hmnurl.RegexPersonalBlogNewThread, needsAuth(csrfMiddleware(BlogPersonalNewThreadSubmit)))
+
 	hmnOnly.GET(hmnurl.RegexPodcast, PodcastIndex)
 	hmnOnly.GET(hmnurl.RegexPodcastEdit, PodcastEdit)
 	hmnOnly.POST(hmnurl.RegexPodcastEdit, PodcastEditSubmit)

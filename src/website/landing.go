@@ -69,8 +69,9 @@ func Index(c *RequestContext) ResponseData {
 		`
 		SELECT id
 		FROM project
-		WHERE featured = true
+		WHERE featured = true OR id = $1
 		`,
+		models.HMNProjectID,
 	)
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to fetch featured projects")
@@ -111,7 +112,8 @@ func Index(c *RequestContext) ResponseData {
 		OwnerIDs:   featuredUserIDs,
 		Limit:      maxPostsPerTab,
 
-		SkipPosts: true,
+		ThreadTypes:   []models.ThreadType{models.ThreadTypePersonalBlogPost},
+		FirstPostOnly: true,
 	})
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to fetch featured feed")
@@ -134,7 +136,7 @@ func Index(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch news threads"))
 	}
 	for _, t := range newsThreads {
-		item := PostToTimelineItem(c.UrlContext, lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor)
+		item := PostToTimelineItem(c.UrlContext, lineageBuilder, &t.FirstPost, &t.Thread, t.ThreadOwner, t.FirstPostAuthor)
 		item.Breadcrumbs = nil
 		item.TypeTitle = ""
 		item.Description = template.HTML(t.FirstPostCurrentVersion.TextParsed)
@@ -166,7 +168,7 @@ func Index(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, "", nil)
+	baseData := getBaseData(c, "")
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    "A community of low-level programmers with high-level goals, working to correct the course of the software industry.",

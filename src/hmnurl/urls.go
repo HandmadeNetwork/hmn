@@ -875,6 +875,51 @@ func (c *UrlContext) BuildBlogPostReply(threadId int, postId int) string {
 }
 
 /*
+* Personal blog
+ */
+
+var RegexPersonalBlog = regexp.MustCompile(`^/m/(?P<username>[^/]+)/blog(/(?P<page>\d+))?$`)
+
+func BuildPersonalBlog(username string, page int) string {
+	defer CatchPanic()
+
+	if page < 1 {
+		panic(oops.New(nil, "Invalid blog page (%d), must be >= 1", page))
+	}
+
+	path := fmt.Sprintf("/m/%s/blog", username)
+
+	if page > 1 {
+		path += "/" + strconv.Itoa(page)
+	}
+
+	return Url(path, nil)
+}
+
+var RegexPersonalBlogThread = regexp.MustCompile(`^/m/(?P<username>[^/]+)/blog/p/(?P<threadid>\d+)(-([^/]+))?$`)
+
+func BuildPersonalBlogThread(username string, threadId int, title string) string {
+	defer CatchPanic()
+	builder := buildBlogThreadPath(threadId, title)
+	path := fmt.Sprintf("/m/%s%s", username, builder.String())
+	return Url(path, nil)
+}
+
+func BuildPersonalBlogThreadWithPostHash(username string, threadId int, title string, postId int) string {
+	defer CatchPanic()
+	builder := buildBlogThreadPath(threadId, title)
+	path := fmt.Sprintf("/m/%s%s", username, builder.String())
+	return UrlWithFragment(path, nil, strconv.Itoa(postId))
+}
+
+var RegexPersonalBlogNewThread = regexp.MustCompile(`^/m/(?P<username>[^/]+)/blog/new$`)
+
+func BuildPersonalBlogNewThread(username string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/m/%s/blog/new", username), nil)
+}
+
+/*
 * Library (old)
  */
 

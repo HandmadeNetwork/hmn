@@ -3,6 +3,7 @@ package website
 import (
 	"encoding/json"
 	"errors"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -26,15 +27,18 @@ import (
 
 type UserProfileTemplateData struct {
 	templates.BaseData
-	ProfileUser         templates.User
-	ProfileUserLinks    []templates.Link
-	ProfileUserProjects []templates.Project
-	TimelineItems       []templates.TimelineItem
-	OwnProfile          bool
-	ShowcaseUrl         string
+	ProfileUser          templates.User
+	ProfileUserLinks     []templates.Link
+	ProfileUserProjects  []templates.Project
+	ProfileUserBlogPosts []templates.BlogIndexEntry
+	TimelineItems        []templates.TimelineItem
+	OwnProfile           bool
+	ShowcaseUrl          string
 
-	CanAddProject bool
-	NewProjectUrl string
+	CanAddProject  bool
+	NewProjectUrl  string
+	NewBlogPostUrl string
+	MoreBlogsUrl   string
 
 	FollowUrl string
 	Following bool
@@ -46,35 +50,16 @@ type UserProfileTemplateData struct {
 }
 
 func UserProfile(c *RequestContext) ResponseData {
-	username, hasUsername := c.PathParams["username"]
+	maxBlogPosts := 5
 
-	if !hasUsername || len(strings.TrimSpace(username)) == 0 {
+	profileUser, viewable, err := userData(c)
+
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	if !viewable || profileUser == nil {
 		return FourOhFour(c)
-	}
-
-	username = strings.ToLower(username)
-
-	var profileUser *models.User
-	if c.CurrentUser != nil && strings.ToLower(c.CurrentUser.Username) == username {
-		profileUser = c.CurrentUser
-	} else {
-		user, err := hmndata.FetchUserByUsername(c, c.Conn, c.CurrentUser, username, hmndata.UsersQuery{})
-		if err != nil {
-			if errors.Is(err, db.NotFound) {
-				return FourOhFour(c)
-			} else {
-				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user: %s", username))
-			}
-		}
-		profileUser = user
-	}
-
-	{
-		userIsUnapproved := profileUser.Status != models.UserStatusApproved
-		canViewUnapprovedUser := c.CurrentUser != nil && (c.CurrentUser.ID == profileUser.ID || c.CurrentUser.IsStaff)
-		if userIsUnapproved && !canViewUnapprovedUser {
-			return FourOhFour(c)
-		}
 	}
 
 	userLinks, err := db.Query[models.Link](c, c.Conn,
@@ -90,7 +75,7 @@ func UserProfile(c *RequestContext) ResponseData {
 		profileUser.ID,
 	)
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch links for user: %s", username))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch links for user: %s", profileUser.Username))
 	}
 	profileUserLinks := make([]templates.Link, 0, len(userLinks))
 	for _, l := range userLinks {
@@ -124,6 +109,33 @@ func UserProfile(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
+	blogThreads, err := hmndata.FetchThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+		AuthorIDs:      []int{profileUser.ID},
+		ThreadTypes:    []models.ThreadType{models.ThreadTypePersonalBlogPost},
+		Limit:          maxBlogPosts + 1,
+		OrderByCreated: true,
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for user profile"))
+	}
+
+	moreBlogsUrl := ""
+	if len(blogThreads) > maxBlogPosts {
+		moreBlogsUrl = hmnurl.BuildPersonalBlog(profileUser.Username, 2)
+		blogThreads = blogThreads[:maxBlogPosts]
+	}
+
+	var templateBlogPosts []templates.BlogIndexEntry
+	for _, thread := range blogThreads {
+		templateBlogPosts = append(templateBlogPosts, templates.BlogIndexEntry{
+			Title:   thread.Thread.Title,
+			Url:     hmnurl.BuildPersonalBlogThread(profileUser.Username, thread.Thread.ID, thread.Thread.Title),
+			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
+			Date:    thread.FirstPost.PostDate,
+			Content: template.HTML(thread.FirstPostCurrentVersion.TextParsed),
+		})
+	}
+
 	templateUser := templates.UserToTemplate(profileUser)
 
 	baseData := getBaseData(c, templateUser.Name, nil)
@@ -155,15 +167,18 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("user_profile.html", UserProfileTemplateData{
-		BaseData:            baseData,
-		ProfileUser:         templateUser,
-		ProfileUserLinks:    profileUserLinks,
-		ProfileUserProjects: templateProjects,
-		TimelineItems:       timelineItems,
-		OwnProfile:          ownProfile,
+		BaseData:             baseData,
+		ProfileUser:          templateUser,
+		ProfileUserLinks:     profileUserLinks,
+		ProfileUserProjects:  templateProjects,
+		ProfileUserBlogPosts: templateBlogPosts,
+		TimelineItems:        timelineItems,
+		OwnProfile:           ownProfile,
 
-		CanAddProject: numPersonalProjects < maxPersonalProjects,
-		NewProjectUrl: hmnurl.BuildProjectNew(),
+		CanAddProject:  numPersonalProjects < maxPersonalProjects,
+		NewProjectUrl:  hmnurl.BuildProjectNew(),
+		NewBlogPostUrl: hmnurl.BuildPersonalBlogNewThread(profileUser.Username),
+		MoreBlogsUrl:   moreBlogsUrl,
 
 		FollowUrl: followUrl,
 		Following: following,
@@ -569,4 +584,39 @@ func updatePassword(c *RequestContext, tx pgx.Tx, old, new string) *ResponseData
 	}
 
 	return nil
+}
+
+func userData(c *RequestContext) (user *models.User, viewable bool, err error) {
+	username, hasUsername := c.PathParams["username"]
+
+	if !hasUsername || len(strings.TrimSpace(username)) == 0 {
+		return nil, false, nil
+	}
+
+	username = strings.ToLower(username)
+
+	var profileUser *models.User
+	if c.CurrentUser != nil && strings.ToLower(c.CurrentUser.Username) == username {
+		profileUser = c.CurrentUser
+	} else {
+		user, err := hmndata.FetchUserByUsername(c, c.Conn, c.CurrentUser, username, hmndata.UsersQuery{})
+		if err != nil {
+			if errors.Is(err, db.NotFound) {
+				return nil, false, nil
+			} else {
+				return nil, false, oops.New(err, "failed to fetch user: %s", username)
+			}
+		}
+		profileUser = user
+	}
+
+	{
+		userIsUnapproved := profileUser.Status != models.UserStatusApproved
+		canViewUnapprovedUser := c.CurrentUser != nil && (c.CurrentUser.ID == profileUser.ID || c.CurrentUser.IsStaff)
+		if userIsUnapproved && !canViewUnapprovedUser {
+			return profileUser, false, nil
+		}
+	}
+
+	return profileUser, true, nil
 }

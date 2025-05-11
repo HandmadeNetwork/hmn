@@ -160,8 +160,9 @@ type TimelineTypeTitles struct {
 }
 
 var TimelineTypeTitleMap = map[models.ThreadType]TimelineTypeTitles{
-	models.ThreadTypeProjectBlogPost: {"New blog post", "Blog comment", "Blogs"},
-	models.ThreadTypeForumPost:       {"New forum thread", "Forum reply", "Forums"},
+	models.ThreadTypeProjectBlogPost:  {"Project blog post", "Blog comment", "Blogs"},
+	models.ThreadTypePersonalBlogPost: {"Personal blog post", "Blog comment", "Blogs"},
+	models.ThreadTypeForumPost:        {"New forum thread", "Forum reply", "Forums"},
 }
 
 func PostToTimelineItem(
@@ -169,16 +170,19 @@ func PostToTimelineItem(
 	lineageBuilder *models.SubforumLineageBuilder,
 	post *models.Post,
 	thread *models.Thread,
+	threadOwner *models.User,
 	owner *models.User,
 ) templates.TimelineItem {
 	ownerTmpl := templates.UserToTemplate(owner)
 
+	var breadcrumbs []templates.Breadcrumb
+	breadcrumbs = GenericThreadBreadcrumbs(urlContext, lineageBuilder, thread, threadOwner)
 	item := templates.TimelineItem{
 		ID:          strconv.Itoa(post.ID),
 		Date:        post.PostDate,
 		Title:       thread.Title,
-		Breadcrumbs: GenericThreadBreadcrumbs(urlContext, lineageBuilder, thread),
-		Url:         UrlForGenericPost(urlContext, thread, post, lineageBuilder),
+		Breadcrumbs: breadcrumbs,
+		Url:         UrlForGenericPost(urlContext, thread, threadOwner, post, lineageBuilder),
 
 		OwnerAvatarUrl: ownerTmpl.AvatarUrl,
 		OwnerName:      ownerTmpl.Name,
@@ -405,7 +409,7 @@ func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *
 		if item.Item.ThreadType == models.ThreadTypeProjectBlogPost {
 			filterTitle = "Blogs"
 			if item.Item.FirstPost {
-				typeTitle = "New blog post"
+				typeTitle = "Project blog post"
 			} else {
 				typeTitle = "Blog comment"
 			}
@@ -418,6 +422,24 @@ func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *
 				{
 					Name: "Blog",
 					Url:  urlContext.BuildBlog(1),
+				},
+			}
+		} else if item.Item.ThreadType == models.ThreadTypePersonalBlogPost {
+			filterTitle = "Blogs"
+			if item.Item.FirstPost {
+				typeTitle = "Personal blog post"
+			} else {
+				typeTitle = "Blog comment"
+			}
+			url = hmnurl.BuildPersonalBlogThreadWithPostHash(item.ThreadOwner.Username, item.Item.ThreadID, item.Item.Title, item.Item.ID)
+			breadcrumbs = []templates.Breadcrumb{
+				{
+					Name: item.ThreadOwner.BestName(),
+					Url:  hmnurl.BuildUserProfile(item.ThreadOwner.Username),
+				},
+				{
+					Name: "Personal blog",
+					Url:  hmnurl.BuildPersonalBlog(item.ThreadOwner.Username, 1),
 				},
 			}
 		} else if item.Item.ThreadType == models.ThreadTypeForumPost {

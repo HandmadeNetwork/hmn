@@ -30,6 +30,7 @@ const feedPostsPerPage = 30
 var feedThreadTypes = []models.ThreadType{
 	models.ThreadTypeForumPost,
 	models.ThreadTypeProjectBlogPost,
+	models.ThreadTypePersonalBlogPost,
 }
 
 func Feed(c *RequestContext) ResponseData {
@@ -208,6 +209,7 @@ func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostLi
 			lineageBuilder,
 			&postAndStuff.Project,
 			&postAndStuff.Thread,
+			postAndStuff.ThreadOwner,
 			&postAndStuff.Post,
 			postAndStuff.Author,
 			postAndStuff.Unread,

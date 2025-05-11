@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
@@ -18,19 +19,11 @@ import (
 )
 
 func BlogIndex(c *RequestContext) ResponseData {
-	type blogIndexEntry struct {
-		Title   string
-		Url     string
-		Author  templates.User
-		Date    time.Time
-		Content template.HTML
-	}
 	type blogIndexData struct {
 		templates.BaseData
-		Posts      []blogIndexEntry
+		Posts      []templates.BlogIndexEntry
 		Pagination templates.Pagination
 
-		ShowContent   bool
 		CanCreatePost bool
 		NewPostUrl    string
 	}
@@ -62,18 +55,23 @@ func BlogIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
 	}
 
-	var entries []blogIndexEntry
+	showContent := len(threads) <= 5
+	var entries []templates.BlogIndexEntry
 	for _, thread := range threads {
-		entries = append(entries, blogIndexEntry{
+		content := template.HTML("")
+		if showContent {
+			content = template.HTML(thread.FirstPostCurrentVersion.TextParsed)
+		}
+		entries = append(entries, templates.BlogIndexEntry{
 			Title:   thread.Thread.Title,
 			Url:     c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title),
 			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
 			Date:    thread.FirstPost.PostDate,
-			Content: template.HTML(thread.FirstPostCurrentVersion.TextParsed),
+			Content: content,
 		})
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)})
+	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name))
 
 	canCreate := false
 	if c.CurrentProject.HasBlog() && c.CurrentUser != nil {
@@ -106,7 +104,6 @@ func BlogIndex(c *RequestContext) ResponseData {
 			NextUrl:     c.UrlContext.BuildBlog(utils.Clamp(1, page+1, numPages)),
 		},
 
-		ShowContent:   len(entries) <= 5,
 		CanCreatePost: canCreate,
 		NewPostUrl:    c.UrlContext.BuildBlogNewThread(),
 	}, c.Perf)
@@ -171,7 +168,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title, []templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)})
+	baseData := getBaseData(c, thread.Title)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    posts[0].Post.Preview,
@@ -197,7 +194,7 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 
 	thread, err := hmndata.FetchThread(c, c.Conn, c.CurrentUser, cd.ThreadID, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
-		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypePersonalBlogPost},
 	})
 	if errors.Is(err, db.NotFound) {
 		return FourOhFour(c)
@@ -205,16 +202,17 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread for blog redirect"))
 	}
 
-	threadUrl := c.UrlContext.BuildBlogThreadWithPostHash(cd.ThreadID, thread.Thread.Title, cd.PostID)
+	threadUrl := ""
+	if thread.Thread.Type == models.ThreadTypeProjectBlogPost {
+		threadUrl = c.UrlContext.BuildBlogThreadWithPostHash(cd.ThreadID, thread.Thread.Title, cd.PostID)
+	} else {
+		threadUrl = hmnurl.BuildPersonalBlogThreadWithPostHash(thread.ThreadOwner.Username, cd.ThreadID, thread.Thread.Title, cd.PostID)
+	}
 	return c.Redirect(threadUrl, http.StatusFound)
 }
 
 func BlogNewThread(c *RequestContext) ResponseData {
-	baseData := getBaseData(
-		c,
-		fmt.Sprintf("Create New Post | %s", c.CurrentProject.Name),
-		[]templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)},
-	)
+	baseData := getBaseData(c, fmt.Sprintf("Create New Post | %s", c.CurrentProject.Name))
 
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
 	editData.SubmitUrl = c.UrlContext.BuildBlogNewThread()
@@ -276,6 +274,246 @@ func BlogNewThreadSubmit(c *RequestContext) ResponseData {
 	return c.Redirect(newThreadUrl, http.StatusSeeOther)
 }
 
+func BlogPersonalIndex(c *RequestContext) ResponseData {
+	profileUser, viewable, err := userData(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	if !viewable || profileUser == nil {
+		return FourOhFour(c)
+	}
+	type blogIndexData struct {
+		templates.BaseData
+		Posts      []templates.BlogIndexEntry
+		Pagination templates.Pagination
+
+		CanCreatePost bool
+		NewPostUrl    string
+	}
+
+	const postsPerPage = 20
+
+	numThreads, err := hmndata.CountThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+		AuthorIDs:   []int{profileUser.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypePersonalBlogPost},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch total number of blog posts"))
+	}
+
+	numPages := utils.NumPages(numThreads, postsPerPage)
+	page, ok := ParsePageNumber(c, "page", numPages)
+	if !ok {
+		return c.Redirect(hmnurl.BuildPersonalBlog(profileUser.Username, page), http.StatusSeeOther)
+	}
+
+	threads, err := hmndata.FetchThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
+		AuthorIDs:      []int{profileUser.ID},
+		ThreadTypes:    []models.ThreadType{models.ThreadTypePersonalBlogPost},
+		Limit:          postsPerPage,
+		Offset:         (page - 1) * postsPerPage,
+		OrderByCreated: true,
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
+	}
+
+	var entries []templates.BlogIndexEntry
+	for _, thread := range threads {
+		entries = append(entries, templates.BlogIndexEntry{
+			Title:   thread.Thread.Title,
+			Url:     hmnurl.BuildPersonalBlogThread(profileUser.Username, thread.Thread.ID, thread.Thread.Title),
+			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
+			Date:    thread.FirstPost.PostDate,
+			Content: template.HTML(thread.FirstPostCurrentVersion.TextParsed),
+		})
+	}
+
+	baseData := getBaseData(c, fmt.Sprintf("%s's Blog", profileUser.Username))
+
+	canCreate := (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID)
+
+	var res ResponseData
+	res.MustWriteTemplate("blog_index.html", blogIndexData{
+		BaseData: baseData,
+		Posts:    entries,
+		Pagination: templates.Pagination{
+			Current: page,
+			Total:   numPages,
+
+			FirstUrl:    hmnurl.BuildPersonalBlog(profileUser.Username, 1),
+			LastUrl:     hmnurl.BuildPersonalBlog(profileUser.Username, numPages),
+			PreviousUrl: hmnurl.BuildPersonalBlog(profileUser.Username, utils.Clamp(1, page-1, numPages)),
+			NextUrl:     hmnurl.BuildPersonalBlog(profileUser.Username, utils.Clamp(1, page+1, numPages)),
+		},
+
+		CanCreatePost: canCreate,
+		NewPostUrl:    hmnurl.BuildPersonalBlogNewThread(profileUser.Username),
+	}, c.Perf)
+	return res
+}
+
+func BlogPersonalThread(c *RequestContext) ResponseData {
+	profileUser, viewable, err := userData(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	if !viewable || profileUser == nil {
+		return FourOhFour(c)
+	}
+
+	type blogPostData struct {
+		templates.BaseData
+		Thread    templates.Thread
+		MainPost  templates.Post
+		Comments  []templates.Post
+		ReplyLink string
+		LoginLink string
+	}
+
+	cd, ok := getCommonBlogData(c)
+	if !ok {
+		return FourOhFour(c)
+	}
+
+	thread, posts, err := hmndata.FetchThreadPosts(c, c.Conn, c.CurrentUser, cd.ThreadID, hmndata.PostsQuery{})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch posts for blog thread"))
+	}
+
+	if len(posts) == 0 {
+		return FourOhFour(c)
+	}
+
+	if strings.ToLower(posts[0].Author.Username) != strings.ToLower(profileUser.Username) {
+		return c.Redirect(hmnurl.BuildPersonalBlogThread(profileUser.Username, thread.ID, thread.Title), http.StatusSeeOther)
+	}
+
+	var templatePosts []templates.Post
+	for _, p := range posts {
+		post := templates.PostToTemplate(&p.Post, p.Author)
+		post.AddContentVersion(p.CurrentVersion, p.Editor)
+		addPersonalBlogUrlsToPost(profileUser.Username, c.UrlContext, &post, &p.Thread, p.Post.ID)
+
+		if p.ReplyPost != nil {
+			reply := templates.PostToTemplate(p.ReplyPost, p.ReplyAuthor)
+			addPersonalBlogUrlsToPost(profileUser.Username, c.UrlContext, &reply, &p.Thread, p.Post.ID)
+			post.ReplyPost = &reply
+		}
+
+		templatePosts = append(templatePosts, post)
+	}
+	// Update thread last read info
+	if c.CurrentUser != nil {
+		_, err := c.Conn.Exec(c,
+			`
+			---- Update TLRI
+			INSERT INTO thread_last_read_info (thread_id, user_id, lastread)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (thread_id, user_id) DO UPDATE
+				SET lastread = EXCLUDED.lastread
+			`,
+			cd.ThreadID,
+			c.CurrentUser.ID,
+			time.Now(),
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update blog tlri"))
+		}
+	}
+
+	baseData := getBaseData(c, thread.Title)
+	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description",
+		Value:    posts[0].Post.Preview,
+	})
+
+	var res ResponseData
+	res.MustWriteTemplate("blog_post.html", blogPostData{
+		BaseData:  baseData,
+		Thread:    templates.ThreadToTemplate(&thread),
+		MainPost:  templatePosts[0],
+		Comments:  templatePosts[1:],
+		ReplyLink: c.UrlContext.BuildBlogPostReply(cd.ThreadID, posts[0].Post.ID),
+		LoginLink: hmnurl.BuildLoginPage(c.FullUrl()),
+	}, c.Perf)
+	return res
+}
+
+func BlogPersonalNewThread(c *RequestContext) ResponseData {
+	username, _ := c.PathParams["username"]
+
+	if strings.ToLower(username) != strings.ToLower(c.CurrentUser.Username) {
+		return c.Redirect(hmnurl.BuildPersonalBlogNewThread(c.CurrentUser.Username), http.StatusSeeOther)
+	}
+
+	baseData := getBaseData(c, "Create New Personal Post")
+
+	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
+	editData.SubmitUrl = hmnurl.BuildPersonalBlogNewThread(c.CurrentUser.Username)
+	editData.SubmitLabel = "Create Post"
+
+	var res ResponseData
+	res.MustWriteTemplate("editor.html", editData, c.Perf)
+	return res
+}
+
+func BlogPersonalNewThreadSubmit(c *RequestContext) ResponseData {
+	tx, err := c.Conn.Begin(c)
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback(c)
+
+	err = c.Req.ParseForm()
+	if err != nil {
+		return c.ErrorResponse(http.StatusBadRequest, oops.New(err, "the form data was invalid"))
+	}
+	title := c.Req.Form.Get("title")
+	unparsed := c.Req.Form.Get("body")
+	if title == "" {
+		return c.RejectRequest("You must provide a title for your post.")
+	}
+	if unparsed == "" {
+		return c.RejectRequest("You must provide a body for your post.")
+	}
+
+	// Create thread
+	var threadId int
+	err = tx.QueryRow(c,
+		`
+		---- Create thread
+		INSERT INTO thread (title, type, project_id, first_id, last_id, personal_article_user_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
+		`,
+		title,
+		models.ThreadTypePersonalBlogPost,
+		models.HMNProjectID,
+		-1,
+		-1,
+		c.CurrentUser.ID,
+	).Scan(&threadId)
+	if err != nil {
+		panic(oops.New(err, "failed to create thread"))
+	}
+
+	// Create everything else
+	hmndata.CreateNewPost(c, tx, models.HMNProjectID, threadId, models.ThreadTypePersonalBlogPost, c.CurrentUser.ID, nil, unparsed, c.Req.Host)
+
+	err = tx.Commit(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create new blog post"))
+	}
+
+	newThreadUrl := hmnurl.BuildPersonalBlogThread(c.CurrentUser.Username, threadId, title)
+	return c.Redirect(newThreadUrl, http.StatusSeeOther)
+}
+
 func BlogPostEdit(c *RequestContext) ResponseData {
 	cd, ok := getCommonBlogData(c)
 	if !ok {
@@ -288,7 +526,7 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 
 	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
-		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypePersonalBlogPost},
 	})
 	if errors.Is(err, db.NotFound) {
 		return FourOhFour(c)
@@ -298,15 +536,17 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 
 	title := ""
 	if post.Thread.FirstID == post.Post.ID {
-		title = fmt.Sprintf("Editing \"%s\" | %s", post.Thread.Title, c.CurrentProject.Name)
+		title = fmt.Sprintf(`Editing "%s"`, post.Thread.Title)
 	} else {
-		title = fmt.Sprintf("Editing Post | %s", c.CurrentProject.Name)
+		title = fmt.Sprintf("Editing Post")
 	}
-	baseData := getBaseData(
-		c,
-		title,
-		BlogThreadBreadcrumbs(c.UrlContext, &post.Thread),
-	)
+	if post.Thread.Type == models.ThreadTypeProjectBlogPost {
+		title += fmt.Sprintf(" | %s", c.CurrentProject.Name)
+	} else {
+		title += fmt.Sprintf(" | %s's personal blog", post.ThreadOwner.BestName())
+	}
+
+	baseData := getBaseData(c, title)
 
 	editData := getEditorDataForEdit(c.UrlContext, c.CurrentUser, baseData, post)
 	editData.SubmitUrl = c.UrlContext.BuildBlogPostEdit(cd.ThreadID, cd.PostID)
@@ -338,7 +578,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 
 	post, err := hmndata.FetchThreadPost(c, tx, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
-		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypePersonalBlogPost},
 	})
 	if errors.Is(err, db.NotFound) {
 		return FourOhFour(c)
@@ -378,7 +618,7 @@ func BlogPostEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to edit blog post"))
 	}
 
-	postUrl := c.UrlContext.BuildBlogThreadWithPostHash(cd.ThreadID, post.Thread.Title, cd.PostID)
+	postUrl := c.UrlContext.BuildBlogPost(cd.ThreadID, cd.PostID)
 	return c.Redirect(postUrl, http.StatusSeeOther)
 }
 
@@ -390,7 +630,7 @@ func BlogPostReply(c *RequestContext) ResponseData {
 
 	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
-		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypePersonalBlogPost},
 	})
 	if errors.Is(err, db.NotFound) {
 		return FourOhFour(c)
@@ -398,11 +638,13 @@ func BlogPostReply(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get blog post for reply"))
 	}
 
-	baseData := getBaseData(
-		c,
-		fmt.Sprintf("Replying to comment in \"%s\" | %s", post.Thread.Title, c.CurrentProject.Name),
-		BlogThreadBreadcrumbs(c.UrlContext, &post.Thread),
-	)
+	title := fmt.Sprintf("Replying to comment in \"%s\"", post.Thread.Title)
+	if post.Thread.Type == models.ThreadTypePersonalBlogPost {
+		title = fmt.Sprintf("%s | %s's personal blog", title, post.ThreadOwner.BestName())
+	} else {
+		title = fmt.Sprintf("%s | %s", title, c.CurrentProject.Name)
+	}
+	baseData := getBaseData(c, title)
 
 	replyPost := templates.PostToTemplate(&post.Post, post.Author)
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
@@ -428,6 +670,20 @@ func BlogPostReplySubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c)
 
+	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+		ProjectIDs:  []int{c.CurrentProject.ID},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypePersonalBlogPost},
+	})
+	if errors.Is(err, db.NotFound) {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get blog post for reply"))
+	}
+
+	if post.Thread.Locked && !c.CurrentUser.IsStaff {
+		return c.RejectRequest("This thread is locked.")
+	}
+
 	err = c.Req.ParseForm()
 	if err != nil {
 		return c.ErrorResponse(http.StatusBadRequest, oops.New(nil, "the form data was invalid"))
@@ -437,7 +693,7 @@ func BlogPostReplySubmit(c *RequestContext) ResponseData {
 		return c.RejectRequest("Your reply cannot be empty.")
 	}
 
-	newPostId, _ := hmndata.CreateNewPost(c, tx, c.CurrentProject.ID, cd.ThreadID, models.ThreadTypeProjectBlogPost, c.CurrentUser.ID, &cd.PostID, unparsed, c.Req.Host)
+	newPostId, _ := hmndata.CreateNewPost(c, tx, c.CurrentProject.ID, cd.ThreadID, post.Thread.Type, c.CurrentUser.ID, &cd.PostID, unparsed, c.Req.Host)
 
 	err = tx.Commit(c)
 	if err != nil {
@@ -460,7 +716,7 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 
 	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
-		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypePersonalBlogPost},
 	})
 	if errors.Is(err, db.NotFound) {
 		return FourOhFour(c)
@@ -470,15 +726,16 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 
 	title := ""
 	if post.Thread.FirstID == post.Post.ID {
-		title = fmt.Sprintf("Deleting \"%s\" | %s", post.Thread.Title, c.CurrentProject.Name)
+		title = fmt.Sprintf("Deleting \"%s\"", post.Thread.Title)
 	} else {
-		title = fmt.Sprintf("Deleting comment in \"%s\" | %s", post.Thread.Title, c.CurrentProject.Name)
+		title = fmt.Sprintf("Deleting comment in \"%s\"", post.Thread.Title)
 	}
-	baseData := getBaseData(
-		c,
-		title,
-		BlogThreadBreadcrumbs(c.UrlContext, &post.Thread),
-	)
+	if post.Thread.Type == models.ThreadTypePersonalBlogPost {
+		title = fmt.Sprintf("%s | %s's personal blog", title, post.ThreadOwner.BestName())
+	} else {
+		title = fmt.Sprintf("%s | %s", title, c.CurrentProject.Name)
+	}
+	baseData := getBaseData(c, title)
 
 	templatePost := templates.PostToTemplate(&post.Post, post.Author)
 	templatePost.AddContentVersion(post.CurrentVersion, post.Editor)
@@ -516,6 +773,13 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c)
 
+	post, err := hmndata.FetchThreadPost(c, c.Conn, c.CurrentUser, cd.ThreadID, cd.PostID, hmndata.PostsQuery{
+		ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost, models.ThreadTypePersonalBlogPost},
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread after blog post delete"))
+	}
+
 	threadDeleted := hmndata.DeletePost(c, tx, cd.ThreadID, cd.PostID)
 
 	err = tx.Commit(c)
@@ -524,18 +788,18 @@ func BlogPostDeleteSubmit(c *RequestContext) ResponseData {
 	}
 
 	if threadDeleted {
-		return c.Redirect(c.UrlContext.BuildHomepage(), http.StatusSeeOther)
-	} else {
-		thread, err := hmndata.FetchThread(c, c.Conn, c.CurrentUser, cd.ThreadID, hmndata.ThreadsQuery{
-			ProjectIDs:  []int{c.CurrentProject.ID},
-			ThreadTypes: []models.ThreadType{models.ThreadTypeProjectBlogPost},
-		})
-		if errors.Is(err, db.NotFound) {
-			panic(oops.New(err, "the thread was supposedly not deleted after deleting a post in a blog, but the thread was not found afterwards"))
-		} else if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch thread after blog post delete"))
+		if post.Thread.Type == models.ThreadTypePersonalBlogPost {
+			return c.Redirect(hmnurl.BuildUserProfile(post.ThreadOwner.Username), http.StatusSeeOther)
+		} else {
+			return c.Redirect(c.UrlContext.BuildHomepage(), http.StatusSeeOther)
 		}
-		threadUrl := c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title)
+	} else {
+		threadUrl := ""
+		if post.Thread.Type == models.ThreadTypePersonalBlogPost {
+			threadUrl = hmnurl.BuildPersonalBlogThread(post.ThreadOwner.Username, post.Thread.ID, post.Thread.Title)
+		} else {
+			threadUrl = c.UrlContext.BuildBlogThread(post.Thread.ID, post.Thread.Title)
+		}
 		return c.Redirect(threadUrl, http.StatusSeeOther)
 	}
 }
@@ -613,6 +877,13 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 
 func addBlogUrlsToPost(urlContext *hmnurl.UrlContext, p *templates.Post, thread *models.Thread, postId int) {
 	p.Url = urlContext.BuildBlogThreadWithPostHash(thread.ID, thread.Title, postId)
+	p.DeleteUrl = urlContext.BuildBlogPostDelete(thread.ID, postId)
+	p.EditUrl = urlContext.BuildBlogPostEdit(thread.ID, postId)
+	p.ReplyUrl = urlContext.BuildBlogPostReply(thread.ID, postId)
+}
+
+func addPersonalBlogUrlsToPost(username string, urlContext *hmnurl.UrlContext, p *templates.Post, thread *models.Thread, postId int) {
+	p.Url = hmnurl.BuildPersonalBlogThreadWithPostHash(username, thread.ID, thread.Title, postId)
 	p.DeleteUrl = urlContext.BuildBlogPostDelete(thread.ID, postId)
 	p.EditUrl = urlContext.BuildBlogPostEdit(thread.ID, postId)
 	p.ReplyUrl = urlContext.BuildBlogPostReply(thread.ID, postId)
