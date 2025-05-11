@@ -180,11 +180,7 @@ func Forum(c *RequestContext) ResponseData {
 	// Template assembly
 	// ---------------------
 
-	baseData := getBaseData(
-		c,
-		fmt.Sprintf("%s Forums", c.CurrentProject.Name),
-		SubforumBreadcrumbs(c.UrlContext, cd.LineageBuilder, cd.SubforumID),
-	)
+	baseData := getBaseData(c, fmt.Sprintf("%s Forums", c.CurrentProject.Name))
 
 	var res ResponseData
 	res.MustWriteTemplate("forum.html", forumData{
@@ -423,7 +419,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title, SubforumBreadcrumbs(c.UrlContext, cd.LineageBuilder, cd.SubforumID))
+	baseData := getBaseData(c, thread.Title)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    threadResult.FirstPost.Preview,
@@ -486,7 +482,7 @@ func ForumNewThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	baseData := getBaseData(c, "Create New Thread", SubforumBreadcrumbs(c.UrlContext, cd.LineageBuilder, cd.SubforumID))
+	baseData := getBaseData(c, "Create New Thread")
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
 	editData.SubmitUrl = c.UrlContext.BuildForumNewThread(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), true)
 	editData.SubmitLabel = "Post New Thread"
@@ -578,11 +574,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 		return c.Redirect(correctUrl, http.StatusSeeOther)
 	}
 
-	baseData := getBaseData(
-		c,
-		fmt.Sprintf("Replying to post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name),
-		ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread),
-	)
+	baseData := getBaseData(c, fmt.Sprintf("Replying to post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name))
 
 	replyPost := templates.PostToTemplate(&post.Post, post.Author)
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
@@ -673,7 +665,7 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 	} else {
 		title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name)
 	}
-	baseData := getBaseData(c, title, ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread))
+	baseData := getBaseData(c, title)
 
 	editData := getEditorDataForEdit(c.UrlContext, c.CurrentUser, baseData, post)
 	editData.SubmitUrl = c.UrlContext.BuildForumPostEdit(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID)
@@ -770,11 +762,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 		return c.Redirect(correctUrl, http.StatusSeeOther)
 	}
 
-	baseData := getBaseData(
-		c,
-		fmt.Sprintf("Deleting post in \"%s\" | %s", post.Thread.Title, cd.SubforumTree[*post.Thread.SubforumID].Name),
-		ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &post.Thread),
-	)
+	baseData := getBaseData(c, fmt.Sprintf("Deleting post in \"%s\" | %s", post.Thread.Title, cd.SubforumTree[*post.Thread.SubforumID].Name))
 
 	templatePost := templates.PostToTemplate(&post.Post, post.Author)
 	templatePost.AddContentVersion(post.CurrentVersion, post.Editor)

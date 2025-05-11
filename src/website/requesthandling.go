@@ -382,7 +382,7 @@ func (c *RequestContext) ErrorResponse(status int, errs ...error) ResponseData {
 		StatusCode: status,
 		Errors:     errs,
 	}
-	res.MustWriteTemplate("error.html", getBaseData(c, "", nil), c.Perf)
+	res.MustWriteTemplate("error.html", getBaseData(c, ""), c.Perf)
 	return res
 }
 
@@ -394,7 +394,7 @@ func (c *RequestContext) RejectRequest(reason string) ResponseData {
 
 	var res ResponseData
 	err := res.WriteTemplate("reject.html", RejectData{
-		BaseData:     getBaseData(c, "Rejected", nil),
+		BaseData:     getBaseData(c, "Rejected"),
 		RejectReason: reason,
 	}, c.Perf)
 	if err != nil {

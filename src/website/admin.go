@@ -77,6 +77,7 @@ func AdminAtomFeed(c *RequestContext) ResponseData {
 			lineageBuilder,
 			&post.Project,
 			&post.Thread,
+			post.ThreadOwner,
 			&post.Post,
 			&post.Author,
 			false,
@@ -203,7 +204,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		if p.Post.PostDate.After(userData.Date) {
 			userData.Date = p.Post.PostDate
 		}
-		timelineItem := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, &p.Author)
+		timelineItem := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, p.ThreadOwner, &p.Author)
 		timelineItem.OwnerAvatarUrl = ""
 		timelineItem.Description = template.HTML(p.CurrentVersion.TextParsed)
 		userData.Timeline = append(userData.Timeline, timelineItem)
@@ -265,7 +266,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 	})
 
 	data := adminApprovalQueueData{
-		BaseData:        getBaseDataAutocrumb(c, "Admin approval queue"),
+		BaseData:        getBaseData(c, "Admin approval queue"),
 		UnapprovedUsers: unapprovedUsers,
 		SubmitUrl:       hmnurl.BuildAdminApprovalQueue(),
 		ApprovalAction:  ApprovalQueueActionApprove,
@@ -360,6 +361,7 @@ type UnapprovedPost struct {
 	Post           models.Post        `db:"post"`
 	CurrentVersion models.PostVersion `db:"ver"`
 	Author         models.User        `db:"author"`
+	ThreadOwner    *models.User       `db:"thread_owner"`
 }
 
 func fetchUnapprovedPosts(c *RequestContext) ([]*UnapprovedPost, error) {
@@ -373,6 +375,7 @@ func fetchUnapprovedPosts(c *RequestContext) ([]*UnapprovedPost, error) {
 			JOIN post_version AS ver ON ver.id = post.current_id
 			JOIN hmn_user AS author ON author.id = post.author_id
 			LEFT JOIN asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
+			LEFT JOIN hmn_user AS thread_owner ON thread_owner.id = thread.personal_article_user_id
 		WHERE
 			NOT thread.deleted
 			AND NOT post.deleted

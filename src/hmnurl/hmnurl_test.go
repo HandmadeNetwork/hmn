@@ -303,6 +303,16 @@ func TestBlogPostReply(t *testing.T) {
 	AssertSubdomain(t, hero.BuildBlogPostReply(1, 2), "hero")
 }
 
+func TestPersonalBlog(t *testing.T) {
+	AssertRegexMatch(t, BuildPersonalBlog("testuser", 1), RegexPersonalBlog, map[string]string{"username": "testuser"})
+	AssertRegexMatch(t, BuildPersonalBlog("testuser", 2), RegexPersonalBlog, map[string]string{"username": "testuser", "page": "2"})
+
+	AssertRegexMatch(t, BuildPersonalBlogThread("testuser", 1, "title"), RegexPersonalBlogThread, map[string]string{"username": "testuser", "threadid": "1"})
+	AssertRegexMatch(t, BuildPersonalBlogThreadWithPostHash("testuser", 1, "title", 5), RegexPersonalBlogThread, map[string]string{"username": "testuser", "threadid": "1"})
+
+	AssertRegexMatch(t, BuildPersonalBlogNewThread("testuser"), RegexPersonalBlogNewThread, map[string]string{"username": "testuser"})
+}
+
 func TestEpisodeGuide(t *testing.T) {
 	AssertRegexMatch(t, hero.BuildEpisodeList(""), RegexEpisodeList, map[string]string{"topic": ""})
 	AssertRegexMatch(t, hero.BuildEpisodeList("code"), RegexEpisodeList, map[string]string{"topic": "code"})

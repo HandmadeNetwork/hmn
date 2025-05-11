@@ -86,7 +86,7 @@ func Perfmon(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("perfmon.html", PerfmonData{
-		BaseData:        getBaseDataAutocrumb(c, "Perfmon"),
+		BaseData:        getBaseData(c, "Perfmon"),
 		PerfRecordsJSON: string(perfJSON),
 	}, c.Perf)
 	return res

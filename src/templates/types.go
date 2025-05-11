@@ -132,6 +132,14 @@ type Post struct {
 	ReplyPost *Post
 }
 
+type BlogIndexEntry struct {
+	Title   string
+	Url     string
+	Author  User
+	Date    time.Time
+	Content template.HTML
+}
+
 type Project struct {
 	ID                int
 	Name              string
@@ -306,6 +314,8 @@ const (
 	PostTypeBlogComment
 	PostTypeForumThread
 	PostTypeForumReply
+	PostTypePersonalBlogPost
+	PostTypePersonalBlogComment
 )
 
 // Data from post_list_item.html

@@ -55,7 +55,7 @@ func EducationIndex(c *RequestContext) ResponseData {
 	}
 
 	tmpl := indexData{
-		BaseData: getBaseData(c, "Handmade Education", nil),
+		BaseData: getBaseData(c, "Handmade Education"),
 		Courses: []templates.EduCourse{
 			{
 				Name: "Compilers",
@@ -106,7 +106,7 @@ func EducationGlossary(c *RequestContext) ResponseData {
 	}
 
 	tmpl := glossaryData{
-		BaseData: getBaseData(c, "Handmade Education", nil),
+		BaseData: getBaseData(c, "Handmade Education"),
 	}
 
 	var res ResponseData
@@ -135,7 +135,7 @@ func EducationArticle(c *RequestContext) ResponseData {
 	}
 
 	tmpl := articleData{
-		BaseData:  getBaseData(c, article.Title, nil),
+		BaseData:  getBaseData(c, article.Title),
 		Article:   templates.EducationArticleToTemplate(article),
 		EditUrl:   hmnurl.BuildEducationArticleEdit(article.Slug),
 		DeleteUrl: hmnurl.BuildEducationArticleDelete(article.Slug),
@@ -182,7 +182,7 @@ func EducationArticleNew(c *RequestContext) ResponseData {
 	}
 
 	tmpl := adminData{
-		editorData: getEditorDataForEduArticle(c.UrlContext, c.CurrentUser, getBaseData(c, "New Education Article", nil), nil),
+		editorData: getEditorDataForEduArticle(c.UrlContext, c.CurrentUser, getBaseData(c, "New Education Article"), nil),
 	}
 	tmpl.editorData.SubmitUrl = hmnurl.BuildEducationArticleNew()
 
@@ -231,7 +231,7 @@ func EducationArticleEdit(c *RequestContext) ResponseData {
 	}
 
 	tmpl := adminData{
-		editorData: getEditorDataForEduArticle(c.UrlContext, c.CurrentUser, getBaseData(c, "Edit Education Article", nil), article),
+		editorData: getEditorDataForEduArticle(c.UrlContext, c.CurrentUser, getBaseData(c, "Edit Education Article"), article),
 		Article:    templates.EducationArticleToTemplate(article),
 	}
 	tmpl.editorData.SubmitUrl = hmnurl.BuildEducationArticleEdit(c.PathParams["slug"])
@@ -276,7 +276,7 @@ func EducationArticleDelete(c *RequestContext) ResponseData {
 		SubmitUrl string
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("Deleting \"%s\"", article.Title), nil)
+	baseData := getBaseData(c, fmt.Sprintf("Deleting \"%s\"", article.Title))
 
 	var res ResponseData
 	res.MustWriteTemplate("education_article_delete.html", deleteData{

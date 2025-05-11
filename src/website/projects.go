@@ -43,7 +43,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseDataAutocrumb(c, "Projects")
+	baseData := getBaseData(c, "Projects")
 	tmpl := ProjectTemplateData{
 		BaseData: baseData,
 
@@ -226,7 +226,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	var templateData ProjectHomepageData
 
-	templateData.BaseData = getBaseData(c, c.CurrentProject.Name, nil)
+	templateData.BaseData = getBaseData(c, c.CurrentProject.Name)
 	templateData.BaseData.OpenGraphItems = append(templateData.BaseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    c.CurrentProject.Blurb,
@@ -405,7 +405,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
-		BaseData:        getBaseDataAutocrumb(c, "New Project"),
+		BaseData:        getBaseData(c, "New Project"),
 		Editing:         false,
 		ProjectSettings: project,
 		MaxOwners:       maxProjectOwners,
@@ -548,7 +548,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
-		BaseData:        getBaseDataAutocrumb(c, "Edit Project"),
+		BaseData:        getBaseData(c, "Edit Project"),
 		Editing:         true,
 		ProjectSettings: projectSettings,
 		MaxOwners:       maxProjectOwners,

@@ -30,6 +30,7 @@ const feedPostsPerPage = 30
 var feedThreadTypes = []models.ThreadType{
 	models.ThreadTypeForumPost,
 	models.ThreadTypeProjectBlogPost,
+	models.ThreadTypePersonalBlogPost,
 }
 
 func Feed(c *RequestContext) ResponseData {
@@ -62,7 +63,7 @@ func Feed(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
 	}
 
-	baseData := getBaseDataAutocrumb(c, "Feed")
+	baseData := getBaseData(c, "Feed")
 	baseData.BodyClasses = append(baseData.BodyClasses, "feed")
 
 	var res ResponseData
@@ -208,6 +209,7 @@ func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostLi
 			lineageBuilder,
 			&postAndStuff.Project,
 			&postAndStuff.Thread,
+			postAndStuff.ThreadOwner,
 			&postAndStuff.Post,
 			postAndStuff.Author,
 			postAndStuff.Unread,

@@ -17,6 +17,9 @@ type TimelineQuery struct {
 	SkipSnippets bool
 	SkipPosts    bool
 
+	ThreadTypes   []models.ThreadType
+	FirstPostOnly bool
+
 	IncludePostDescription bool
 
 	Limit, Offset int
@@ -25,6 +28,7 @@ type TimelineQuery struct {
 type TimelineItemAndStuff struct {
 	Item           models.TimelineItem    `db:"item"`
 	Owner          *models.User           `db:"owner"`
+	ThreadOwner    *models.User           `db:"thread_owner"`
 	AvatarAsset    *models.Asset          `db:"avatar"`
 	Asset          *models.Asset          `db:"asset"`
 	DiscordMessage *models.DiscordMessage `db:"discord_message"`
@@ -199,6 +203,12 @@ func FetchTimeline(
 		}
 		qb.Add(`)`)
 	}
+	if len(q.ThreadTypes) > 0 {
+		qb.Add(`AND thread.type = ANY($?)`, q.ThreadTypes)
+	}
+	if q.FirstPostOnly {
+		qb.Add(`AND thread.first_id = post.id`)
+	}
 	qb.Add(
 		`
 		),
@@ -212,6 +222,7 @@ func FetchTimeline(
 		SELECT $columns FROM item
 		LEFT JOIN thread ON thread.id = thread_id
 		LEFT JOIN hmn_user AS owner ON owner_id = owner.id
+		LEFT JOIN hmn_user AS thread_owner ON thread.personal_article_user_id = thread_owner.id
 		LEFT JOIN asset AS avatar ON avatar.id = owner.avatar_asset_id
 		LEFT JOIN asset ON asset_id = asset.id
 		LEFT JOIN discord_message ON discord_message_id = discord_message.id

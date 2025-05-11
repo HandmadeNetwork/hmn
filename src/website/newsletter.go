@@ -22,7 +22,7 @@ func NewsletterSignup(c *RequestContext) ResponseData {
 	}
 
 	tmpl := TemplateData{
-		BaseData:            getBaseDataAutocrumb(c, "Newsletter Signup"),
+		BaseData:            getBaseData(c, "Newsletter Signup"),
 		NewsletterSignupUrl: hmnurl.BuildAPINewsletterSignup(),
 	}
 	tmpl.OpenGraphItems = []templates.OpenGraphItem{
@@ -42,7 +42,7 @@ func NewsletterSignup(c *RequestContext) ResponseData {
 	if err == nil {
 		if len(newsThreads) > 0 {
 			t := newsThreads[0]
-			item := PostToTimelineItem(c.UrlContext, lineageBuilder, &t.FirstPost, &t.Thread, t.FirstPostAuthor)
+			item := PostToTimelineItem(c.UrlContext, lineageBuilder, &t.FirstPost, &t.Thread, t.ThreadOwner, t.FirstPostAuthor)
 			item.Breadcrumbs = nil
 			item.TypeTitle = ""
 			item.Description = template.HTML(t.FirstPostCurrentVersion.TextParsed)

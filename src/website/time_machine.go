@@ -13,7 +13,7 @@ import (
 )
 
 func TimeMachine(c *RequestContext) ResponseData {
-	baseData := getBaseData(c, "Time Machine", nil)
+	baseData := getBaseData(c, "Time Machine")
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Time Machine"},
 		{Property: "og:site_name", Value: "Handmade Network"},
@@ -50,10 +50,7 @@ func TimeMachine(c *RequestContext) ResponseData {
 }
 
 func TimeMachineSubmissions(c *RequestContext) ResponseData {
-	baseData := getBaseData(c, "Time Machine - Submissions", []templates.Breadcrumb{
-		{"Time Machine", hmnurl.BuildTimeMachine()},
-		{"Submissions", hmnurl.BuildTimeMachineSubmissions()},
-	})
+	baseData := getBaseData(c, "Time Machine - Submissions")
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Time Machine"},
 		{Property: "og:site_name", Value: "Handmade Network"},
@@ -89,7 +86,7 @@ func TimeMachineForm(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate(
 		"timemachine_submit.html",
-		getBaseDataAutocrumb(c, "Time Machine"),
+		getBaseData(c, "Time Machine"),
 		c.Perf,
 	)
 	return res
@@ -134,7 +131,7 @@ func TimeMachineFormDone(c *RequestContext) ResponseData {
 		TimeMachineUrl string
 	}
 	tmpl := TemplateData{
-		BaseData:       getBaseDataAutocrumb(c, "Time Machine"),
+		BaseData:       getBaseData(c, "Time Machine"),
 		TimeMachineUrl: hmnurl.BuildTimeMachine(),
 	}
 

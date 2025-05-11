@@ -41,7 +41,7 @@ func PodcastIndex(c *RequestContext) ResponseData {
 
 	canEdit := c.CurrentUserCanEditCurrentProject
 
-	baseData := getBaseDataAutocrumb(c, podcastResult.Podcast.Title)
+	baseData := getBaseData(c, podcastResult.Podcast.Title)
 
 	podcastIndexData := PodcastIndexData{
 		BaseData: baseData,
@@ -82,11 +82,7 @@ func PodcastEdit(c *RequestContext) ResponseData {
 	}
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile)
-	baseData := getBaseData(
-		c,
-		fmt.Sprintf("Edit %s", podcast.Title),
-		[]templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}},
-	)
+	baseData := getBaseData(c, fmt.Sprintf("Edit %s", podcast.Title))
 	podcastEditData := PodcastEditData{
 		BaseData: baseData,
 		Podcast:  podcast,
@@ -225,11 +221,7 @@ func PodcastEpisode(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile)
 	episode := templates.PodcastEpisodeToTemplate(podcastResult.Episodes[0], 0, podcastResult.ImageFile)
-	baseData := getBaseData(
-		c,
-		fmt.Sprintf("%s | %s", episode.Title, podcast.Title),
-		[]templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}},
-	)
+	baseData := getBaseData(c, fmt.Sprintf("%s | %s", episode.Title, podcast.Title))
 
 	podcastEpisodeData := PodcastEpisodeData{
 		BaseData: baseData,
@@ -276,11 +268,7 @@ func PodcastEpisodeNew(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, "")
 	var res ResponseData
-	baseData := getBaseData(
-		c,
-		fmt.Sprintf("New episode | %s", podcast.Title),
-		[]templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}},
-	)
+	baseData := getBaseData(c, fmt.Sprintf("New episode | %s", podcast.Title))
 	err = res.WriteTemplate("podcast_episode_edit.html", PodcastEpisodeEditData{
 		BaseData:     baseData,
 		IsEdit:       false,
@@ -317,11 +305,7 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, "")
 	podcastEpisode := templates.PodcastEpisodeToTemplate(episode, 0, "")
-	baseData := getBaseData(
-		c,
-		fmt.Sprintf("Edit episode %s | %s", podcastEpisode.Title, podcast.Title),
-		[]templates.Breadcrumb{{Name: podcast.Title, Url: podcast.Url}, {Name: podcastEpisode.Title, Url: podcastEpisode.Url}},
-	)
+	baseData := getBaseData(c, fmt.Sprintf("Edit episode %s | %s", podcastEpisode.Title, podcast.Title))
 	podcastEpisodeEditData := PodcastEpisodeEditData{
 		BaseData:      baseData,
 		IsEdit:        true,

@@ -12,14 +12,8 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-func getBaseDataAutocrumb(c *RequestContext, title string) templates.BaseData {
-	return getBaseData(c, title, []templates.Breadcrumb{{Name: title, Url: ""}})
-}
-
-// NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
-//
-//	If you pass nil, no breadcrumbs will be created.
-func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadcrumb) templates.BaseData {
+func getBaseData(c *RequestContext, title string) templates.BaseData {
+	var breadcrumbs []templates.Breadcrumb // NOTE(asaf): We no longer use page breadcrumbs in the new design
 	var project models.Project
 	if c.CurrentProject != nil {
 		project = *c.CurrentProject
@@ -36,16 +30,18 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 	notices := getNoticesFromCookie(c)
 
-	if len(breadcrumbs) > 0 {
-		projectUrl := c.UrlContext.BuildHomepage()
-		if breadcrumbs[0].Url != projectUrl {
-			rootBreadcrumb := templates.Breadcrumb{
-				Name: project.Name,
-				Url:  projectUrl,
+	/*
+		if len(breadcrumbs) > 0 {
+			projectUrl := c.UrlContext.BuildHomepage()
+			if breadcrumbs[0].Url != projectUrl {
+				rootBreadcrumb := templates.Breadcrumb{
+					Name: project.Name,
+					Url:  projectUrl,
+				}
+				breadcrumbs = append([]templates.Breadcrumb{rootBreadcrumb}, breadcrumbs...)
 			}
-			breadcrumbs = append([]templates.Breadcrumb{rootBreadcrumb}, breadcrumbs...)
 		}
-	}
+	*/
 
 	var bannerEvent *templates.BannerEvent
 	for _, jam := range hmndata.AllJams {

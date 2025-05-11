@@ -55,7 +55,7 @@ func JamsIndex(c *RequestContext) ResponseData {
 	}
 
 	res.MustWriteTemplate("jams_index.html", TemplateData{
-		BaseData: getBaseDataAutocrumb(c, "Jams"),
+		BaseData: getBaseData(c, "Jams"),
 
 		LispJamUrl: hmnurl.BuildFishbowl("lisp-jam"),
 		WRJ2021Url: hmnurl.BuildJamIndex2021(),
@@ -111,7 +111,7 @@ func JamIndex2024_WRJ(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData := getBaseData(c, jam.Name)
 	baseData.OpenGraphItems = opengraphWRJ2024
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
 	baseData.Header.SuppressBanners = true
@@ -168,7 +168,7 @@ func JamFeed2024_WRJ(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData := getBaseData(c, jam.Name)
 	baseData.OpenGraphItems = opengraphWRJ2024
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
 	baseData.Header.SuppressBanners = true
@@ -216,7 +216,7 @@ func JamGuidelines2024_WRJ(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData := getBaseData(c, jam.Name)
 	baseData.OpenGraphItems = opengraphWRJ2024
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
 	baseData.Header.SuppressBanners = true
@@ -295,7 +295,7 @@ func JamIndex2024_Visibility(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData := getBaseData(c, jam.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Visibility Jam"},
 		{Property: "og:site_name", Value: "Handmade Network"},
@@ -361,7 +361,7 @@ func JamFeed2024_Visibility(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData := getBaseData(c, jam.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Visibility Jam"},
 		{Property: "og:site_name", Value: "Handmade Network"},
@@ -418,7 +418,7 @@ func JamGuidelines2024_Visibility(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseDataAutocrumb(c, jam.Name)
+	baseData := getBaseData(c, jam.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Visibility Jam"},
 		{Property: "og:site_name", Value: "Handmade Network"},
@@ -473,7 +473,7 @@ func getVJ2024BaseData(c *RequestContext, now time.Time) (JamBaseDataVJ2024, err
 func JamIndex2024_Learning(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	baseData := getBaseDataAutocrumb(c, hmndata.LJ2024.Name)
+	baseData := getBaseData(c, hmndata.LJ2024.Name)
 	baseData.OpenGraphItems = opengraphLJ2024
 
 	jamBaseData, err := getLJ2024BaseData(c)
@@ -509,7 +509,7 @@ func JamIndex2024_Learning(c *RequestContext) ResponseData {
 }
 
 func JamFeed2024_Learning(c *RequestContext) ResponseData {
-	baseData := getBaseDataAutocrumb(c, hmndata.LJ2024.Name)
+	baseData := getBaseData(c, hmndata.LJ2024.Name)
 	baseData.OpenGraphItems = opengraphLJ2024
 
 	jamBaseData, err := getLJ2024BaseData(c)
@@ -544,7 +544,7 @@ func JamFeed2024_Learning(c *RequestContext) ResponseData {
 }
 
 func JamGuidelines2024_Learning(c *RequestContext) ResponseData {
-	baseData := getBaseDataAutocrumb(c, hmndata.LJ2024.Name)
+	baseData := getBaseData(c, hmndata.LJ2024.Name)
 	baseData.OpenGraphItems = opengraphLJ2024
 
 	jamBaseData, err := getLJ2024BaseData(c)
@@ -708,7 +708,7 @@ func JamIndex2023(c *RequestContext) ResponseData {
 	daysUntilStart := utils.DaysUntil(hmndata.WRJ2023.StartTime)
 	daysUntilEnd := utils.DaysUntil(hmndata.WRJ2023.EndTime)
 
-	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2023.Name)
+	baseData := getBaseData(c, hmndata.WRJ2023.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
@@ -864,7 +864,7 @@ func JamFeed2023(c *RequestContext) ResponseData {
 	daysUntilStart := utils.DaysUntil(hmndata.WRJ2023.StartTime)
 	daysUntilEnd := utils.DaysUntil(hmndata.WRJ2023.EndTime)
 
-	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2023.Name)
+	baseData := getBaseData(c, hmndata.WRJ2023.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
@@ -890,7 +890,7 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 	daysUntilStart := utils.DaysUntil(hmndata.VJ2023.StartTime)
 	daysUntilEnd := utils.DaysUntil(hmndata.VJ2023.EndTime)
 
-	baseData := getBaseDataAutocrumb(c, hmndata.VJ2023.Name)
+	baseData := getBaseData(c, hmndata.VJ2023.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Visibility Jam"},
 		{Property: "og:site_name", Value: "Handmade Network"},
@@ -1032,7 +1032,7 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 	daysUntilStart := utils.DaysUntil(hmndata.VJ2023.StartTime)
 	daysUntilEnd := utils.DaysUntil(hmndata.VJ2023.EndTime)
 
-	baseData := getBaseDataAutocrumb(c, hmndata.VJ2023.Name)
+	baseData := getBaseData(c, hmndata.VJ2023.Name)
 
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Visibility Jam"},
@@ -1077,7 +1077,7 @@ func JamRecap2023_Visibility(c *RequestContext) ResponseData {
 		panic("where ben ???")
 	}
 
-	baseData := getBaseDataAutocrumb(c, hmndata.VJ2023.Name)
+	baseData := getBaseData(c, hmndata.VJ2023.Name)
 
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Visibility Jam"},
@@ -1107,7 +1107,7 @@ func JamIndex2022(c *RequestContext) ResponseData {
 	daysUntilStart := utils.DaysUntil(hmndata.WRJ2022.StartTime)
 	daysUntilEnd := utils.DaysUntil(hmndata.WRJ2022.EndTime)
 
-	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2022.Name)
+	baseData := getBaseData(c, hmndata.WRJ2022.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
@@ -1243,7 +1243,7 @@ func JamFeed2022(c *RequestContext) ResponseData {
 	daysUntilStart := utils.DaysUntil(hmndata.WRJ2022.StartTime)
 	daysUntilEnd := utils.DaysUntil(hmndata.WRJ2022.EndTime)
 
-	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2022.Name)
+	baseData := getBaseData(c, hmndata.WRJ2022.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
@@ -1299,7 +1299,7 @@ func JamIndex2021(c *RequestContext) ResponseData {
 	showcaseJson := templates.TimelineItemsToJSON(showcaseItems)
 	b.End()
 
-	baseData := getBaseDataAutocrumb(c, hmndata.WRJ2021.Name)
+	baseData := getBaseData(c, hmndata.WRJ2021.Name)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},

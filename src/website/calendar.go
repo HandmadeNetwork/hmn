@@ -29,7 +29,7 @@ func CalendarIndex(c *RequestContext) ResponseData {
 	}
 
 	calendarData := CalData{
-		BaseData:    getBaseDataAutocrumb(c, "Calendar"),
+		BaseData:    getBaseData(c, "Calendar"),
 		Calendars:   calNames,
 		Events:      templateEvents,
 		BaseICalUrl: hmnurl.BuildCalendarICal(),

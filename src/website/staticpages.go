@@ -10,7 +10,7 @@ func Manifesto(c *RequestContext) ResponseData {
 		templates.BaseData
 		AboutUrl string
 	}
-	baseData := getBaseDataAutocrumb(c, "Handmade Manifesto")
+	baseData := getBaseData(c, "Handmade Manifesto")
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    "Computers are amazing. So why is software so terrible?",
@@ -32,14 +32,14 @@ func About(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("about.html", TemplateData{
-		BaseData:      getBaseDataAutocrumb(c, "About"),
+		BaseData:      getBaseData(c, "About"),
 		FoundationUrl: hmnurl.BuildFoundation(),
 	}, c.Perf)
 	return res
 }
 
 func CommunicationGuidelines(c *RequestContext) ResponseData {
-	baseData := getBaseDataAutocrumb(c, "Communication Guidelines")
+	baseData := getBaseData(c, "Communication Guidelines")
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    "The Handmade community strives to create an environment conducive to innovation, education, and constructive discussion. These are the principles we expect members to respect.",
@@ -52,24 +52,24 @@ func CommunicationGuidelines(c *RequestContext) ResponseData {
 
 func ContactPage(c *RequestContext) ResponseData {
 	var res ResponseData
-	res.MustWriteTemplate("contact.html", getBaseDataAutocrumb(c, "Contact Us"), c.Perf)
+	res.MustWriteTemplate("contact.html", getBaseData(c, "Contact Us"), c.Perf)
 	return res
 }
 
 func MonthlyUpdatePolicy(c *RequestContext) ResponseData {
 	var res ResponseData
-	res.MustWriteTemplate("monthly_update_policy.html", getBaseDataAutocrumb(c, "Monthly Update Policy"), c.Perf)
+	res.MustWriteTemplate("monthly_update_policy.html", getBaseData(c, "Monthly Update Policy"), c.Perf)
 	return res
 }
 
 func ProjectSubmissionGuidelines(c *RequestContext) ResponseData {
 	var res ResponseData
-	res.MustWriteTemplate("project_submission_guidelines.html", getBaseDataAutocrumb(c, "Project Submission Guidelines"), c.Perf)
+	res.MustWriteTemplate("project_submission_guidelines.html", getBaseData(c, "Project Submission Guidelines"), c.Perf)
 	return res
 }
 
 func Conferences(c *RequestContext) ResponseData {
 	var res ResponseData
-	res.MustWriteTemplate("conferences.html", getBaseDataAutocrumb(c, "Conferences"), c.Perf)
+	res.MustWriteTemplate("conferences.html", getBaseData(c, "Conferences"), c.Perf)
 	return res
 }

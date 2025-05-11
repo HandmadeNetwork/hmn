@@ -24,6 +24,7 @@ type ThreadsQuery struct {
 	ProjectIDs  []int               // if empty, all projects
 	ThreadTypes []models.ThreadType // if empty, all types (you do not want to do this)
 	SubforumIDs []int               // if empty, all subforums
+	AuthorIDs   []int               // if empty, all authors
 
 	// Ignored when using FetchThread.
 	ThreadIDs []int
@@ -36,6 +37,7 @@ type ThreadsQuery struct {
 type ThreadAndStuff struct {
 	Project                 models.Project     `db:"project"`
 	Thread                  models.Thread      `db:"thread"`
+	ThreadOwner             *models.User       `db:"thread_owner"`
 	FirstPost               models.Post        `db:"first_post"`
 	LastPost                models.Post        `db:"last_post"`
 	FirstPostCurrentVersion models.PostVersion `db:"first_version"`
@@ -76,6 +78,7 @@ func FetchThreads(
 			JOIN post AS last_post ON last_post.id = thread.last_id
 			JOIN post_version AS first_version ON first_version.id = first_post.current_id
 			JOIN post_version AS last_version ON last_version.id = last_post.current_id
+			LEFT JOIN hmn_user AS thread_owner ON thread_owner.id = thread.personal_article_user_id
 			LEFT JOIN hmn_user AS first_author ON first_author.id = first_post.author_id
 			LEFT JOIN asset AS first_author_avatar ON first_author_avatar.id = first_author.avatar_asset_id
 			LEFT JOIN hmn_user AS last_author ON last_author.id = last_post.author_id
@@ -111,6 +114,9 @@ func FetchThreads(
 	}
 	if len(q.ThreadIDs) > 0 {
 		qb.Add(`AND thread.id = ANY ($?)`, q.ThreadIDs)
+	}
+	if len(q.AuthorIDs) > 0 {
+		qb.Add(`AND first_post.author_id = ANY ($?)`, q.AuthorIDs)
 	}
 	if currentUser == nil {
 		qb.Add(
@@ -252,6 +258,9 @@ func CountThreads(
 	if len(q.SubforumIDs) > 0 {
 		qb.Add(`AND thread.subforum_id = ANY ($?)`, q.SubforumIDs)
 	}
+	if len(q.AuthorIDs) > 0 {
+		qb.Add(`AND first_post.author_id = ANY ($?)`, q.AuthorIDs)
+	}
 	if currentUser == nil {
 		qb.Add(
 			`AND first_author.status = $? -- thread author is Approved`,
@@ -296,6 +305,7 @@ type PostsQuery struct {
 type PostAndStuff struct {
 	Project        models.Project `db:"project"`
 	Thread         models.Thread  `db:"thread"`
+	ThreadOwner    *models.User   `db:"thread_owner"`
 	Unread         bool
 	Post           models.Post        `db:"post"`
 	CurrentVersion models.PostVersion `db:"ver"`
@@ -343,6 +353,7 @@ func FetchPosts(
 			JOIN thread ON post.thread_id = thread.id
 			JOIN project ON post.project_id = project.id
 			JOIN post_version AS ver ON ver.id = post.current_id
+			LEFT JOIN hmn_user AS thread_owner ON thread_owner.id = thread.personal_article_user_id
 			LEFT JOIN hmn_user AS author ON author.id = post.author_id
 			LEFT JOIN asset AS author_avatar ON author_avatar.id = author.avatar_asset_id
 			LEFT JOIN hmn_user AS editor ON ver.editor_id = editor.id
