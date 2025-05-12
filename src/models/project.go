@@ -109,7 +109,8 @@ func (p *Project) HasForums() bool {
 
 // Same as HasForums, but for blogs.
 func (p *Project) HasBlog() bool {
-	return !p.Personal && p.BlogEnabled
+	// return !p.Personal && p.BlogEnabled
+	return true // NOTE(asaf): Blogs enabled for everyone now!
 }
 
 var slugUnsafeChars = regexp.MustCompile(`[^a-zA-Z0-9-]`)

@@ -290,6 +290,49 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		templateData.Screenshots = append(templateData.Screenshots, hmnurl.BuildUserFile(screenshotFilename))
 	}
 
+	if c.CurrentProject.HasBlog() {
+		canSeeBlogLink := false
+		if c.CurrentUser != nil {
+			if c.CurrentUser.IsStaff {
+				canSeeBlogLink = true
+			} else {
+				for _, owner := range owners {
+					if owner.ID == c.CurrentUser.ID {
+						canSeeBlogLink = true
+						break
+					}
+				}
+			}
+		}
+
+		if !canSeeBlogLink {
+			hasBlogPosts, err := db.QueryOneScalar[bool](c, c.Conn,
+				`
+					SELECT COUNT(*) > 0
+					FROM thread
+					WHERE
+						type = $1
+						AND project_id = $2
+						AND deleted = false
+				`,
+				models.ThreadTypeProjectBlogPost,
+				c.CurrentProject.ID,
+			)
+			if err != nil {
+				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project blogs"))
+			}
+
+			canSeeBlogLink = hasBlogPosts
+		}
+
+		if canSeeBlogLink {
+			templateData.PrimaryLinks = append(templateData.PrimaryLinks, templates.Link{
+				Name: "Project blog",
+				Url:  c.UrlContext.BuildBlog(1),
+			})
+		}
+	}
+
 	for _, link := range templates.LinksToTemplate(projectLinks) {
 		if link.Primary {
 			templateData.PrimaryLinks = append(templateData.PrimaryLinks, link)
