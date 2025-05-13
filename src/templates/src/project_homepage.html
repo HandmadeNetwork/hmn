@@ -7,8 +7,18 @@
 {{ define "content" }}
 <div class="flex justify-center">
 	<div class="flex-grow-1 flex flex-column items-center mw-site pt4-ns">
-		<div class="project-header-img" style="background-image: url('{{ .Project.HeaderImage }}')">
-			<div class="flex flex-column flex-row-ns pa2 pa3-ns">
+		<div
+			class="project-header-img"
+			{{ with .Project.HeaderImage }}
+				style="background-image: url('{{ . }}')"
+			{{ end }}
+		>
+			<div class="flowsnake {{ if .Project.HeaderImage }}dn{{ end }}" style="
+				--hue: {{ .Project.PlaceholderImageHue }}deg; 
+				--size: {{ .Project.PlaceholderImageSize }}px;
+				--angle: {{ .Project.PlaceholderImageAngle }}deg;
+			"></div>
+			<div class="flex flex-column flex-row-ns pa2 pa3-ns relative">
 				<div class="flex g3">
 					{{ if .CanEdit }}
 						<div class="project-links">
@@ -176,29 +186,32 @@
 {{ end }}
 <script>
 	const longdesc = document.querySelector("#longdesc");
-	const longdescLink = longdesc.querySelector(".longdesc-link");
-	const longdescContent = longdesc.querySelector(".longdesc-content");
 
-	longdescLink.addEventListener("click", e => {
-		e.preventDefault();
-	
-		const expandText = longdesc.querySelector(".longdesc-text");
-		const chevron = longdesc.querySelector(".svgicon");
-	
-		const expanding = longdescContent.classList.contains("maxh-5");
-		longdescContent.classList.toggle("maxh-5", !expanding);
-		expandText.innerText = expanding ? "Read less" : "Read more";
-		chevron.classList.toggle("rot-180", expanding);
-	});
+	if (longdesc !== null) {
+		const longdescLink = longdesc.querySelector(".longdesc-link");
+		const longdescContent = longdesc.querySelector(".longdesc-content");
 
-	function showOrHideLongdescLink() {
-		// The content has maxh-5, which is max-height: 16rem
-		const hide = longdescContent.clientHeight < rem2px(16);
-		longdescLink.classList.toggle("dn", hide);
-		longdescLink.classList.toggle("db", !hide);
+		longdescLink.addEventListener("click", e => {
+			e.preventDefault();
+		
+			const expandText = longdesc.querySelector(".longdesc-text");
+			const chevron = longdesc.querySelector(".svgicon");
+		
+			const expanding = longdescContent.classList.contains("maxh-5");
+			longdescContent.classList.toggle("maxh-5", !expanding);
+			expandText.innerText = expanding ? "Read less" : "Read more";
+			chevron.classList.toggle("rot-180", expanding);
+		});
+
+		function showOrHideLongdescLink() {
+			// The content has maxh-5, which is max-height: 16rem
+			const hide = longdescContent.clientHeight < rem2px(16);
+			longdescLink.classList.toggle("dn", hide);
+			longdescLink.classList.toggle("db", !hide);
+		}
+		showOrHideLongdescLink();
+		window.addEventListener("resize", showOrHideLongdescLink);
 	}
-	showOrHideLongdescLink();
-	window.addEventListener("resize", showOrHideLongdescLink);
 </script>
 
 <script>

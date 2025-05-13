@@ -161,6 +161,27 @@ func BuildJamGuidelines2024_WRJ() string {
 	return Url("/jam/wheel-reinvention-2024/guidelines", nil)
 }
 
+var RegexJamIndex2025_XRay = regexp.MustCompile("^/jam/x-ray-2025$")
+
+func BuildJamIndex2025_XRay() string {
+	defer CatchPanic()
+	return Url("/jam/x-ray-2025", nil)
+}
+
+var RegexJamFeed2025_XRay = regexp.MustCompile("^/jam/x-ray-2025/feed$")
+
+func BuildJamFeed2025_XRay() string {
+	defer CatchPanic()
+	return Url("/jam/x-ray-2025/feed", nil)
+}
+
+var RegexJamGuidelines2025_XRay = regexp.MustCompile("^/jam/x-ray-2025/guidelines$")
+
+func BuildJamGuidelines2025_XRay() string {
+	defer CatchPanic()
+	return Url("/jam/x-ray-2025/guidelines", nil)
+}
+
 func BuildJamIndexAny(slug string) string {
 	defer CatchPanic()
 	return Url(fmt.Sprintf("/jam/%s", slug), nil)
@@ -326,13 +347,6 @@ func BuildAbout() string {
 	return Url("/about", nil)
 }
 
-var RegexFoundation = regexp.MustCompile("^/foundation$")
-
-func BuildFoundation() string {
-	defer CatchPanic()
-	return Url("/foundation", nil)
-}
-
 var RegexCommunicationGuidelines = regexp.MustCompile("^/communication-guidelines$")
 
 func BuildCommunicationGuidelines() string {
@@ -366,13 +380,6 @@ var RegexProjectSubmissionGuidelines = regexp.MustCompile("^/project-guidelines$
 func BuildProjectSubmissionGuidelines() string {
 	defer CatchPanic()
 	return Url("/project-guidelines", nil)
-}
-
-var RegexConferences = regexp.MustCompile("^/conferences$")
-
-func BuildConferences() string {
-	defer CatchPanic()
-	return Url("/conferences", nil)
 }
 
 /*

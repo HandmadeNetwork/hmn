@@ -107,7 +107,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexContactPage, ContactPage)
 	hmnOnly.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
 	hmnOnly.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
-	hmnOnly.GET(hmnurl.RegexConferences, Conferences)
 	hmnOnly.GET(hmnurl.RegexNewsletterSignup, NewsletterSignup)
 
 	hmnOnly.GET(hmnurl.RegexJamsIndex, JamsIndex)
@@ -131,6 +130,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexJamIndex2024_WRJ, JamIndex2024_WRJ)
 	hmnOnly.GET(hmnurl.RegexJamFeed2024_WRJ, JamFeed2024_WRJ)
 	hmnOnly.GET(hmnurl.RegexJamGuidelines2024_WRJ, JamGuidelines2024_WRJ)
+	hmnOnly.GET(hmnurl.RegexJamIndex2025_XRay, JamIndex2025_XRay)
+	hmnOnly.GET(hmnurl.RegexJamFeed2025_XRay, JamFeed2025_XRay)
+	hmnOnly.GET(hmnurl.RegexJamGuidelines2025_XRay, JamGuidelines2025_XRay)
 
 	hmnOnly.GET(hmnurl.RegexTimeMachine, TimeMachine)
 	hmnOnly.GET(hmnurl.RegexTimeMachineSubmissions, TimeMachineSubmissions)

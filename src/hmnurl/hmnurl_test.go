@@ -87,7 +87,6 @@ func TestPasswordReset(t *testing.T) {
 func TestStaticPages(t *testing.T) {
 	AssertRegexMatch(t, BuildManifesto(), RegexManifesto, nil)
 	AssertRegexMatch(t, BuildAbout(), RegexAbout, nil)
-	AssertRegexMatch(t, BuildFoundation(), RegexFoundation, nil)
 	AssertRegexMatch(t, BuildCommunicationGuidelines(), RegexCommunicationGuidelines, nil)
 	AssertRegexMatch(t, BuildContactPage(), RegexContactPage, nil)
 	AssertRegexMatch(t, BuildMonthlyUpdatePolicy(), RegexMonthlyUpdatePolicy, nil)

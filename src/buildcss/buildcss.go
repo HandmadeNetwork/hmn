@@ -48,6 +48,8 @@ func BuildContext() (api.BuildContext, *api.ContextError) {
 	return api.Context(api.BuildOptions{
 		EntryPoints: []string{
 			"src/rawdata/css/style.css",
+			"src/rawdata/css/force-light.css",
+			"src/rawdata/css/force-dark.css",
 		},
 		Outbase:  "src/rawdata/css",
 		Outdir:   "public",
