@@ -87,7 +87,6 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			NewsletterUrl:   hmnurl.BuildNewsletterSignup(),
 			FishbowlUrl:     hmnurl.BuildFishbowlIndex(),
 			ForumsUrl:       hmnurl.HMNProjectContext.BuildForum(nil, 1),
-			ConferencesUrl:  hmnurl.BuildConferences(),
 			JamsUrl:         hmnurl.BuildJamsIndex(),
 			EducationUrl:    hmnurl.BuildEducationIndex(),
 			CalendarUrl:     hmnurl.BuildCalendarIndex(),

@@ -55,7 +55,6 @@ type Header struct {
 	NewsletterUrl   string
 	FishbowlUrl     string
 	ForumsUrl       string
-	ConferencesUrl  string
 	JamsUrl         string
 	EducationUrl    string
 	CalendarUrl     string

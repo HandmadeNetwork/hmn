@@ -347,13 +347,6 @@ func BuildAbout() string {
 	return Url("/about", nil)
 }
 
-var RegexFoundation = regexp.MustCompile("^/foundation$")
-
-func BuildFoundation() string {
-	defer CatchPanic()
-	return Url("/foundation", nil)
-}
-
 var RegexCommunicationGuidelines = regexp.MustCompile("^/communication-guidelines$")
 
 func BuildCommunicationGuidelines() string {
@@ -387,13 +380,6 @@ var RegexProjectSubmissionGuidelines = regexp.MustCompile("^/project-guidelines$
 func BuildProjectSubmissionGuidelines() string {
 	defer CatchPanic()
 	return Url("/project-guidelines", nil)
-}
-
-var RegexConferences = regexp.MustCompile("^/conferences$")
-
-func BuildConferences() string {
-	defer CatchPanic()
-	return Url("/conferences", nil)
 }
 
 /*

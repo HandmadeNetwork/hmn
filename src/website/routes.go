@@ -107,7 +107,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexContactPage, ContactPage)
 	hmnOnly.GET(hmnurl.RegexMonthlyUpdatePolicy, MonthlyUpdatePolicy)
 	hmnOnly.GET(hmnurl.RegexProjectSubmissionGuidelines, ProjectSubmissionGuidelines)
-	hmnOnly.GET(hmnurl.RegexConferences, Conferences)
 	hmnOnly.GET(hmnurl.RegexNewsletterSignup, NewsletterSignup)
 
 	hmnOnly.GET(hmnurl.RegexJamsIndex, JamsIndex)

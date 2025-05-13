@@ -25,16 +25,8 @@ func Manifesto(c *RequestContext) ResponseData {
 }
 
 func About(c *RequestContext) ResponseData {
-	type TemplateData struct {
-		templates.BaseData
-		FoundationUrl string
-	}
-
 	var res ResponseData
-	res.MustWriteTemplate("about.html", TemplateData{
-		BaseData:      getBaseDataAutocrumb(c, "About"),
-		FoundationUrl: hmnurl.BuildFoundation(),
-	}, c.Perf)
+	res.MustWriteTemplate("about.html", getBaseDataAutocrumb(c, "About"), c.Perf)
 	return res
 }
 
@@ -65,11 +57,5 @@ func MonthlyUpdatePolicy(c *RequestContext) ResponseData {
 func ProjectSubmissionGuidelines(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("project_submission_guidelines.html", getBaseDataAutocrumb(c, "Project Submission Guidelines"), c.Perf)
-	return res
-}
-
-func Conferences(c *RequestContext) ResponseData {
-	var res ResponseData
-	res.MustWriteTemplate("conferences.html", getBaseDataAutocrumb(c, "Conferences"), c.Perf)
 	return res
 }
