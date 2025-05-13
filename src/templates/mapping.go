@@ -92,7 +92,7 @@ func ProjectToTemplate(
 
 		PlaceholderImageAngle: rnd.Int31n(16),
 		PlaceholderImageHue:   rnd.Int31n(360),
-		PlaceholderImageSize:  rnd.Int31n(1500) + 1000,
+		PlaceholderImageSize:  rnd.Int31n(1000) + 1500,
 
 		LifecycleBadgeClass: LifecycleBadgeClasses[p.Lifecycle],
 		LifecycleString:     LifecycleBadgeStrings[p.Lifecycle],
