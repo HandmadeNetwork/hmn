@@ -462,10 +462,6 @@ func TestDiscordShowcaseBacklog(t *testing.T) {
 	AssertRegexMatch(t, BuildDiscordShowcaseBacklog(), RegexDiscordShowcaseBacklog, nil)
 }
 
-func TestConferences(t *testing.T) {
-	AssertRegexMatch(t, BuildConferences(), RegexConferences, nil)
-}
-
 func AssertSubdomain(t *testing.T, fullUrl string, expectedSubdomain string) {
 	t.Helper()
 
