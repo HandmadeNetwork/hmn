@@ -51,8 +51,8 @@ func TimeMachine(c *RequestContext) ResponseData {
 
 func TimeMachineSubmissions(c *RequestContext) ResponseData {
 	baseData := getBaseData(c, "Time Machine - Submissions", []templates.Breadcrumb{
-		{"Time Machine", hmnurl.BuildTimeMachine()},
-		{"Submissions", hmnurl.BuildTimeMachineSubmissions()},
+		{"Time Machine", hmnurl.BuildTimeMachine(), nil},
+		{"Submissions", hmnurl.BuildTimeMachineSubmissions(), nil},
 	})
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Time Machine"},

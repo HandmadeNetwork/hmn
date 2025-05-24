@@ -48,7 +48,7 @@ func loadCommonData(h Handler) Handler {
 					})
 					if err == nil {
 						c.CurrentProject = &dbProject.Project
-						c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(&dbProject.Project, dbProject.LogoLightAsset, dbProject.LogoDarkAsset)
+						c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(dbProject.LogoAsset)
 						owners = dbProject.Owners
 					} else {
 						if errors.Is(err, db.NotFound) {
@@ -68,7 +68,7 @@ func loadCommonData(h Handler) Handler {
 						panic(oops.New(err, "failed to fetch HMN project"))
 					}
 					c.CurrentProject = &dbProject.Project
-					c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(&dbProject.Project, dbProject.LogoLightAsset, dbProject.LogoDarkAsset)
+					c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(dbProject.LogoAsset)
 				}
 
 				if c.CurrentProject == nil {

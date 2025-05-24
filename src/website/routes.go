@@ -20,6 +20,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
+	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -382,6 +383,7 @@ func personalProjectMiddleware(h Handler) Handler {
 		}
 
 		c.CurrentProject = &p.Project
+		c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(p.LogoAsset)
 		c.CurrentProject.Color1 = hmnProject.Color1
 		c.CurrentProject.Color2 = hmnProject.Color2
 

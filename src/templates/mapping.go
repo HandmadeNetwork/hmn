@@ -63,13 +63,9 @@ var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
 	models.ProjectLifecycleLTS:              "Complete",
 }
 
-// TODO(redesign): Remove one or the other of these from the database entirely.
-func ProjectLogoUrl(p *models.Project, lightAsset *models.Asset, darkAsset *models.Asset) string {
-	if lightAsset != nil {
-		return hmnurl.BuildS3Asset(lightAsset.S3Key)
-	}
-	if darkAsset != nil {
-		return hmnurl.BuildS3Asset(darkAsset.S3Key)
+func ProjectLogoUrl(asset *models.Asset) string {
+	if asset != nil {
+		return hmnurl.BuildS3Asset(asset.S3Key)
 	}
 	return ""
 }
@@ -110,7 +106,7 @@ func ProjectToTemplate(
 
 func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff) Project {
 	res := ProjectToTemplate(&p.Project)
-	res.Logo = ProjectLogoUrl(&p.Project, p.LogoLightAsset, p.LogoDarkAsset)
+	res.Logo = ProjectLogoUrl(p.LogoAsset)
 	for _, o := range p.Owners {
 		res.Owners = append(res.Owners, UserToTemplate(o))
 	}
@@ -140,7 +136,7 @@ func ProjectToProjectSettings(
 	p *models.Project,
 	owners []*models.User,
 	tag string,
-	lightLogo, darkLogo, headerImage *models.Asset,
+	logo, headerImage *models.Asset,
 ) ProjectSettings {
 	ownerUsers := make([]User, 0, len(owners))
 	for _, owner := range owners {
@@ -158,8 +154,7 @@ func ProjectToProjectSettings(
 		Blurb:       p.Blurb,
 		Description: p.Description,
 		Owners:      ownerUsers,
-		LightLogo:   AssetToTemplate(lightLogo),
-		DarkLogo:    AssetToTemplate(darkLogo),
+		Logo:        AssetToTemplate(logo),
 		HeaderImage: AssetToTemplate(headerImage),
 	}
 }

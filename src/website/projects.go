@@ -532,7 +532,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		&p.Project,
 		p.Owners,
 		p.TagText(),
-		p.LogoLightAsset, p.LogoDarkAsset, p.HeaderImage,
+		p.LogoAsset, p.HeaderImage,
 	)
 
 	projectSettings.LinksJSON = string(utils.Must1(json.Marshal(templates.LinksToTemplate(projectLinks))))
@@ -616,8 +616,7 @@ type ProjectPayload struct {
 	Lifecycle             models.ProjectLifecycle
 	Hidden                bool
 	OwnerUsernames        []string
-	LightLogo             FormImage
-	DarkLogo              FormImage
+	Logo                  FormImage
 	HeaderImage           FormImage
 	Tag                   string
 	JamParticipationSlugs []string
@@ -676,12 +675,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	hiddenStr := c.Req.Form.Get("hidden")
 	hidden := len(hiddenStr) > 0
 
-	lightLogo, err := GetFormImage(c, "light_logo")
-	if err != nil {
-		res.Error = oops.New(err, "Failed to read image from form")
-		return res
-	}
-	darkLogo, err := GetFormImage(c, "dark_logo")
+	logo, err := GetFormImage(c, "logo")
 	if err != nil {
 		res.Error = oops.New(err, "Failed to read image from form")
 		return res
@@ -721,8 +715,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		Lifecycle:             lifecycle,
 		Hidden:                hidden,
 		OwnerUsernames:        owners,
-		LightLogo:             lightLogo,
-		DarkLogo:              darkLogo,
+		Logo:                  logo,
 		HeaderImage:           headerImage,
 		Tag:                   tag,
 		JamParticipationSlugs: jamParticipationSlugs,
@@ -736,38 +729,21 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 }
 
 func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *ProjectPayload) error {
-	var lightLogoUUID *uuid.UUID
-	if payload.LightLogo.Exists {
-		lightLogo := &payload.LightLogo
-		lightLogoAsset, err := assets.Create(ctx, tx, assets.CreateInput{
-			Content:     lightLogo.Content,
-			Filename:    lightLogo.Filename,
-			ContentType: lightLogo.Mime,
+	var logoUUID *uuid.UUID
+	if payload.Logo.Exists {
+		logo := &payload.Logo
+		logoAsset, err := assets.Create(ctx, tx, assets.CreateInput{
+			Content:     logo.Content,
+			Filename:    logo.Filename,
+			ContentType: logo.Mime,
 			UploaderID:  &user.ID,
-			Width:       lightLogo.Width,
-			Height:      lightLogo.Height,
+			Width:       logo.Width,
+			Height:      logo.Height,
 		})
 		if err != nil {
 			return oops.New(err, "Failed to save asset")
 		}
-		lightLogoUUID = &lightLogoAsset.ID
-	}
-
-	var darkLogoUUID *uuid.UUID
-	if payload.DarkLogo.Exists {
-		darkLogo := &payload.DarkLogo
-		darkLogoAsset, err := assets.Create(ctx, tx, assets.CreateInput{
-			Content:     darkLogo.Content,
-			Filename:    darkLogo.Filename,
-			ContentType: darkLogo.Mime,
-			UploaderID:  &user.ID,
-			Width:       darkLogo.Width,
-			Height:      darkLogo.Height,
-		})
-		if err != nil {
-			return oops.New(err, "Failed to save asset")
-		}
-		darkLogoUUID = &darkLogoAsset.ID
+		logoUUID = &logoAsset.ID
 	}
 
 	var headerImageUUID *uuid.UUID
@@ -855,37 +831,20 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 	}
 
-	if payload.LightLogo.Exists || payload.LightLogo.Remove {
+	if payload.Logo.Exists || payload.Logo.Remove {
 		_, err = tx.Exec(ctx,
 			`
 			UPDATE project
 			SET
-				logolight_asset_id = $2
+				logo_asset_id = $2
 			WHERE
 				id = $1
 			`,
 			payload.ProjectID,
-			lightLogoUUID,
+			logoUUID,
 		)
 		if err != nil {
-			return oops.New(err, "Failed to update project's light logo")
-		}
-	}
-
-	if payload.DarkLogo.Exists || payload.DarkLogo.Remove {
-		_, err = tx.Exec(ctx,
-			`
-			UPDATE project
-			SET
-				logodark_asset_id = $2
-			WHERE
-				id = $1
-			`,
-			payload.ProjectID,
-			darkLogoUUID,
-		)
-		if err != nil {
-			return oops.New(err, "Failed to update project's dark logo")
+			return oops.New(err, "Failed to update project's logo")
 		}
 	}
 

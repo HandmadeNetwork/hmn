@@ -12,7 +12,6 @@ type BaseData struct {
 	BackgroundImage       BackgroundImage
 	BodyClasses           []string
 	ForceLight, ForceDark bool
-	Breadcrumbs           []Breadcrumb
 	Notices               []Notice
 	ReportIssueEmail      string
 
@@ -62,6 +61,9 @@ type Header struct {
 	AboutUrl        string
 
 	Project *ProjectHeader
+
+	Breadcrumbs         []Breadcrumb
+	SuppressBreadcrumbs bool
 
 	BannerEvent     *BannerEvent
 	SuppressBanners bool
@@ -175,8 +177,7 @@ type ProjectSettings struct {
 	LinksJSON   string
 	Owners      []User
 
-	LightLogo   *Asset
-	DarkLogo    *Asset
+	Logo        *Asset
 	HeaderImage *Asset
 }
 
@@ -415,6 +416,7 @@ type ImageSelectorData struct {
 
 type Breadcrumb struct {
 	Name, Url string
+	Project   *Project
 }
 
 type Pagination struct {

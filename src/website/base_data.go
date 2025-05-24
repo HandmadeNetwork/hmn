@@ -33,17 +33,22 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		templateUser = &u
 		templateSession = &s
 	}
+	templateProject := templates.ProjectToTemplate(&project)
+	templateProject.Logo = c.CurrentProjectLogoUrl
 
 	notices := getNoticesFromCookie(c)
 
-	if len(breadcrumbs) > 0 {
+	if !c.UrlContext.IsHMN() {
 		projectUrl := c.UrlContext.BuildHomepage()
-		if breadcrumbs[0].Url != projectUrl {
-			rootBreadcrumb := templates.Breadcrumb{
-				Name: project.Name,
-				Url:  projectUrl,
-			}
-			breadcrumbs = append([]templates.Breadcrumb{rootBreadcrumb}, breadcrumbs...)
+		rootBreadcrumb := templates.Breadcrumb{
+			Name:    project.Name,
+			Url:     projectUrl,
+			Project: &templateProject,
+		}
+		breadcrumbs = append([]templates.Breadcrumb{rootBreadcrumb}, breadcrumbs...)
+
+		if len(breadcrumbs) > 1 && breadcrumbs[1].Url == projectUrl {
+			c.Logger.Warn().Msg("duplicate root breadcrumb")
 		}
 	}
 
@@ -55,8 +60,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	}
 
 	baseData := templates.BaseData{
-		Title:       title,
-		Breadcrumbs: breadcrumbs,
+		Title: title,
 
 		CurrentUrl:          c.FullUrl(),
 		CurrentProjectUrl:   c.UrlContext.BuildHomepage(),
@@ -64,7 +68,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		DiscordInviteUrl:    "https://discord.gg/hmn",
 		NewsletterSignupUrl: hmnurl.BuildAPINewsletterSignup(),
 
-		Project: templates.ProjectToTemplate(&project),
+		Project: templateProject,
 		User:    templateUser,
 		Session: templateSession,
 		Notices: notices,
@@ -92,6 +96,8 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			CalendarUrl:     hmnurl.BuildCalendarIndex(),
 			ManifestoUrl:    hmnurl.BuildManifesto(),
 			AboutUrl:        hmnurl.BuildAbout(),
+
+			Breadcrumbs: breadcrumbs,
 
 			BannerEvent: bannerEvent,
 		},

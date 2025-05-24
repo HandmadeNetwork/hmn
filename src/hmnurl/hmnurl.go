@@ -83,6 +83,10 @@ var HMNProjectContext = UrlContext{
 	ProjectSlug:     models.HMNProjectSlug,
 }
 
+func (c *UrlContext) IsHMN() bool {
+	return c.ProjectID == models.HMNProjectID
+}
+
 func Url(path string, query []Q) string {
 	return UrlWithFragment(path, query, "")
 }

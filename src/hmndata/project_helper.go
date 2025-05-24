@@ -38,12 +38,11 @@ type ProjectsQuery struct {
 }
 
 type ProjectAndStuff struct {
-	Project        models.Project
-	LogoLightAsset *models.Asset
-	LogoDarkAsset  *models.Asset
-	HeaderImage    *models.Asset
-	Owners         []*models.User
-	Tag            *models.Tag
+	Project     models.Project
+	LogoAsset   *models.Asset
+	HeaderImage *models.Asset
+	Owners      []*models.User
+	Tag         *models.Tag
 }
 
 func (p *ProjectAndStuff) TagText() string {
@@ -69,11 +68,10 @@ func FetchProjects(
 	defer tx.Rollback(ctx)
 
 	type projectRow struct {
-		Project        models.Project `db:"project"`
-		LogoLightAsset *models.Asset  `db:"logolight_asset"`
-		LogoDarkAsset  *models.Asset  `db:"logodark_asset"`
-		HeaderAsset    *models.Asset  `db:"header_asset"`
-		Tag            *models.Tag    `db:"tag"`
+		Project     models.Project `db:"project"`
+		LogoAsset   *models.Asset  `db:"logo_asset"`
+		HeaderAsset *models.Asset  `db:"header_asset"`
+		Tag         *models.Tag    `db:"tag"`
 	}
 
 	// Fetch all valid projects (not yet subject to user permission checks)
@@ -86,8 +84,7 @@ func FetchProjects(
 		SELECT DISTINCT ON (project.id) $columns
 		FROM
 			project
-			LEFT JOIN asset AS logolight_asset ON logolight_asset.id = project.logolight_asset_id
-			LEFT JOIN asset AS logodark_asset ON logodark_asset.id = project.logodark_asset_id
+			LEFT JOIN asset AS logo_asset ON logo_asset.id = project.logo_asset_id
 			LEFT JOIN asset AS header_asset ON header_asset.id = project.header_asset_id
 			LEFT JOIN tag ON project.tag = tag.id
 	`)
@@ -223,12 +220,11 @@ func FetchProjects(
 
 		if projectVisible {
 			res = append(res, ProjectAndStuff{
-				Project:        p.Project,
-				LogoLightAsset: p.LogoLightAsset,
-				LogoDarkAsset:  p.LogoDarkAsset,
-				HeaderImage:    p.HeaderAsset,
-				Owners:         owners,
-				Tag:            p.Tag,
+				Project:     p.Project,
+				LogoAsset:   p.LogoAsset,
+				HeaderImage: p.HeaderAsset,
+				Owners:      owners,
+				Tag:         p.Tag,
 			})
 		}
 	}

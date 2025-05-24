@@ -22,10 +22,10 @@ func ForumBreadcrumb(projectUrlContext *hmnurl.UrlContext) templates.Breadcrumb 
 
 func SubforumBreadcrumbs(projectUrlContext *hmnurl.UrlContext, lineageBuilder *models.SubforumLineageBuilder, subforumID int) []templates.Breadcrumb {
 	var result []templates.Breadcrumb
-	result = []templates.Breadcrumb{
-		ProjectBreadcrumb(projectUrlContext),
-		ForumBreadcrumb(projectUrlContext),
+	if projectUrlContext.ProjectID != models.HMNProjectID {
+		result = append(result, ProjectBreadcrumb(projectUrlContext))
 	}
+	result = append(result, ForumBreadcrumb(projectUrlContext))
 	subforums := lineageBuilder.GetSubforumLineage(subforumID)
 	slugs := lineageBuilder.GetSubforumLineageSlugs(subforumID)
 	for i, subforum := range subforums {
