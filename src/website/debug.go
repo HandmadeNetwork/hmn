@@ -9,6 +9,7 @@ import (
 func StyleTest(c *RequestContext) ResponseData {
 	type tmpl struct {
 		TestTimelineItems []templates.TimelineItem
+		Flowsnakes        []templates.Flowsnake
 	}
 
 	var res ResponseData
@@ -132,6 +133,23 @@ func StyleTest(c *RequestContext) ResponseData {
 				},
 			},
 			// Snippet with every type of embed at once
+		},
+		Flowsnakes: []templates.Flowsnake{
+			{
+				Hue:   0,
+				Size:  templates.FlowsnakeMinSize,
+				Angle: -templates.FlowsnakeMaxAngle,
+			},
+			{
+				Hue:   120,
+				Size:  templates.FlowsnakeMinSize + templates.FlowsnakeSizeRange/2,
+				Angle: 0,
+			},
+			{
+				Hue:   240,
+				Size:  templates.FlowsnakeMinSize + templates.FlowsnakeSizeRange,
+				Angle: templates.FlowsnakeMaxAngle,
+			},
 		},
 	}, c.Perf)
 	return res

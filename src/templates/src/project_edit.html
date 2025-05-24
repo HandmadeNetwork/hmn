@@ -16,7 +16,7 @@
 			});
 		window.parseKnownServicesForUrl = null; // will be set by the Go code
 	</script>
-	
+
 	<style>
 		#desc_preview:empty::after {
 			content: 'A preview of your description will appear here.';
@@ -31,8 +31,8 @@
 {{ end }}
 
 {{ define "content" }}
-	<div class="flex bb">
-		<form id="project_form" class="hmn-form bg1 pa3 pa4-ns flex-fair" method="POST" enctype="multipart/form-data">
+	<div class="flex bg1">
+		<form id="project_form" class="hmn-form pa3 pa4-ns flex-fair" method="POST" enctype="multipart/form-data">
 			{{ csrftoken .Session }}
 
 			<h1 class="f3">
@@ -242,8 +242,8 @@
 				</div>
 			</div>
 		</form>
-		<div class="dn flex-l flex-fair bl pa4 justify-center">
-			<div class="w-100 mw-site">
+		<div class="dn flex-l flex-fair pv4 pr4 overflow-hidden">
+			<div class="w-100 ba bg2 pa4 overflow-y-scroll sticky t4" style="height: calc(100vh - 2 * var(--spacing-4))">
 				<!-- Link / card templates -->
 				<template id="primary_link">
 					<!-- need href -->
@@ -274,11 +274,13 @@
 				<div class="flex flex-column items-center">
 					<!-- Header image / links -->
 					<div id="header_img_preview" class="project-header-img"><!-- Needs background-image -->
-						<div id="flowsnake" class="flowsnake" style="
-							--hue: {{ .Project.PlaceholderImageHue }}deg;
-							--size: {{ .Project.PlaceholderImageSize }}px;
-							--angle: {{ .Project.PlaceholderImageAngle }}deg;
-						"></div>
+						{{ with .Project.Flowsnake }}
+							<div id="flowsnake" class="flowsnake" style="
+								--hue: {{ .Hue }}deg;
+								--size: {{ .Size }}px;
+								--angle: {{ .Angle }}deg;
+							"></div>
+						{{ end }}
 						<div class="flex justify-end pa3 relative">
 							<div class="flex g3">
 								<div id="primary_links_preview" class="project-links hide-if-empty"></div>
@@ -289,8 +291,13 @@
 
 					<!-- Card -->
 					<div class="project-homepage-card">
-						<div id="logo_preview" class="flex-shrink-0 flex">
-							<img class="project-card-logo" alt="Project Logo">
+						<div class="project-card-logo">
+							<div id="logo_preview" class="project-logo" style="--hue: {{ .Project.Flowsnake.Hue }}deg">
+								<img src="{{ .Project.Logo }}" class="aspect-ratio--object" alt="{{ .Project.Name }} logo">
+								<div id="logo_placeholder" class="project-logo-placeholder aspect-ratio--object">
+									{{ cat .Project.Name " " | trunc 1 | upper }}
+								</div>
+							</div>
 						</div>
 						<div class="details flex-grow-1">
 							<h3 id="name_preview" class="b mb2 f4"></h3>
@@ -518,12 +525,14 @@
 	}
 
 	function updateCardPreview() {
-		document.querySelector("#logo_preview").hidden = !logoSelector.url;
+		const title = document.querySelector("#project_name").value || "Project Title";
+
 		document.querySelector("#logo_preview img").src = logoSelector.url;
+		document.querySelector("#logo_placeholder").innerText = title[0].toUpperCase();
 		document.querySelector("#header_img_preview").style.backgroundImage = `url(${headerSelector.url})`;
 		document.querySelector("#flowsnake").classList.toggle("dn", headerSelector.url);
-		document.querySelector("#name_preview").innerText = document.querySelector("#project_name").value || "Project Title";
-		document.querySelector("#longdesc_title").innerText = document.querySelector("#project_name").value || "Project Title";
+		document.querySelector("#name_preview").innerText = title;
+		document.querySelector("#longdesc_title").innerText = title;
 		document.querySelector("#blurb_preview").innerText = document.querySelector("#description").value || "Project summary";
 	}
 	updateCardPreview();

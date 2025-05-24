@@ -90,9 +90,11 @@ func ProjectToTemplate(
 		Blurb:             p.Blurb,
 		ParsedDescription: template.HTML(p.ParsedDescription),
 
-		PlaceholderImageAngle: rnd.Int31n(16),
-		PlaceholderImageHue:   rnd.Int31n(360),
-		PlaceholderImageSize:  rnd.Int31n(1000) + 1500,
+		Flowsnake: Flowsnake{
+			Angle: rnd.Intn(FlowsnakeMaxAngle),
+			Hue:   rnd.Intn(360),
+			Size:  FlowsnakeMinSize + rnd.Intn(FlowsnakeSizeRange),
+		},
 
 		LifecycleBadgeClass: LifecycleBadgeClasses[p.Lifecycle],
 		LifecycleString:     LifecycleBadgeStrings[p.Lifecycle],

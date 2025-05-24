@@ -143,11 +143,9 @@ type Project struct {
 	ParsedDescription template.HTML
 	Owners            []User
 
-	Logo                  string
-	HeaderImage           string
-	PlaceholderImageAngle int32
-	PlaceholderImageHue   int32
-	PlaceholderImageSize  int32
+	Logo        string
+	HeaderImage string
+	Flowsnake   Flowsnake
 
 	LifecycleBadgeClass string
 	LifecycleString     string
@@ -181,6 +179,14 @@ type ProjectSettings struct {
 	DarkLogo    *Asset
 	HeaderImage *Asset
 }
+
+type Flowsnake struct {
+	Angle, Hue, Size int
+}
+
+const FlowsnakeMaxAngle = 25    // deg
+const FlowsnakeMinSize = 1000   // px
+const FlowsnakeSizeRange = 2500 // px
 
 type Asset struct {
 	Url string
