@@ -180,7 +180,7 @@ func Forum(c *RequestContext) ResponseData {
 	// Template assembly
 	// ---------------------
 
-	baseData := getBaseData(c, fmt.Sprintf("%s Forums", c.CurrentProject.Name))
+	baseData := getBaseData(c, fmt.Sprintf("%s Forums", c.CurrentProject.Name), nil)
 
 	var res ResponseData
 	res.MustWriteTemplate("forum.html", forumData{
@@ -482,7 +482,7 @@ func ForumNewThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	baseData := getBaseData(c, "Create New Thread")
+	baseData := getBaseData(c, "Create New Thread", nil)
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
 	editData.SubmitUrl = c.UrlContext.BuildForumNewThread(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), true)
 	editData.SubmitLabel = "Post New Thread"
@@ -574,7 +574,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 		return c.Redirect(correctUrl, http.StatusSeeOther)
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("Replying to post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name))
+	baseData := getBaseData(c, fmt.Sprintf("Replying to post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name), nil)
 
 	replyPost := templates.PostToTemplate(&post.Post, post.Author)
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
@@ -665,7 +665,7 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 	} else {
 		title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name)
 	}
-	baseData := getBaseData(c, title)
+	baseData := getBaseData(c, title, nil)
 
 	editData := getEditorDataForEdit(c.UrlContext, c.CurrentUser, baseData, post)
 	editData.SubmitUrl = c.UrlContext.BuildForumPostEdit(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID)
@@ -762,7 +762,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 		return c.Redirect(correctUrl, http.StatusSeeOther)
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("Deleting post in \"%s\" | %s", post.Thread.Title, cd.SubforumTree[*post.Thread.SubforumID].Name))
+	baseData := getBaseData(c, fmt.Sprintf("Deleting post in \"%s\" | %s", post.Thread.Title, cd.SubforumTree[*post.Thread.SubforumID].Name), nil)
 
 	templatePost := templates.PostToTemplate(&post.Post, post.Author)
 	templatePost.AddContentVersion(post.CurrentVersion, post.Editor)

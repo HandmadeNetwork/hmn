@@ -226,7 +226,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	var templateData ProjectHomepageData
 
-	templateData.BaseData = getBaseData(c, c.CurrentProject.Name)
+	templateData.BaseData = getBaseData(c, c.CurrentProject.Name, nil)
 	templateData.BaseData.OpenGraphItems = append(templateData.BaseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    c.CurrentProject.Blurb,

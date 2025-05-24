@@ -204,7 +204,7 @@ func Fishbowl(c *RequestContext) ResponseData {
 	}
 
 	tmpl := FishbowlData{
-		BaseData: getBaseData(c, info.Title),
+		BaseData: getBaseData(c, info.Title, nil),
 		Slug:     slug,
 		Info:     info,
 		Contents: template.HTML(contents),

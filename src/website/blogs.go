@@ -71,7 +71,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		})
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name))
+	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), nil)
 
 	canCreate := false
 	if c.CurrentProject.HasBlog() && c.CurrentUser != nil {
@@ -168,7 +168,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title)
+	baseData := getBaseData(c, thread.Title, nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    posts[0].Post.Preview,
@@ -212,7 +212,7 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 }
 
 func BlogNewThread(c *RequestContext) ResponseData {
-	baseData := getBaseData(c, fmt.Sprintf("Create New Post | %s", c.CurrentProject.Name))
+	baseData := getBaseData(c, fmt.Sprintf("Create New Post | %s", c.CurrentProject.Name), nil)
 
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
 	editData.SubmitUrl = c.UrlContext.BuildBlogNewThread()
@@ -330,7 +330,7 @@ func BlogPersonalIndex(c *RequestContext) ResponseData {
 		})
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("%s's Blog", profileUser.Username))
+	baseData := getBaseData(c, fmt.Sprintf("%s's Blog", profileUser.Username), nil)
 
 	canCreate := (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID)
 
@@ -426,7 +426,7 @@ func BlogPersonalThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title)
+	baseData := getBaseData(c, thread.Title, nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    posts[0].Post.Preview,
@@ -451,7 +451,7 @@ func BlogPersonalNewThread(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.BuildPersonalBlogNewThread(c.CurrentUser.Username), http.StatusSeeOther)
 	}
 
-	baseData := getBaseData(c, "Create New Personal Post")
+	baseData := getBaseData(c, "Create New Personal Post", nil)
 
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
 	editData.SubmitUrl = hmnurl.BuildPersonalBlogNewThread(c.CurrentUser.Username)
@@ -546,7 +546,7 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 		title += fmt.Sprintf(" | %s's personal blog", post.ThreadOwner.BestName())
 	}
 
-	baseData := getBaseData(c, title)
+	baseData := getBaseData(c, title, nil)
 
 	editData := getEditorDataForEdit(c.UrlContext, c.CurrentUser, baseData, post)
 	editData.SubmitUrl = c.UrlContext.BuildBlogPostEdit(cd.ThreadID, cd.PostID)
@@ -644,7 +644,7 @@ func BlogPostReply(c *RequestContext) ResponseData {
 	} else {
 		title = fmt.Sprintf("%s | %s", title, c.CurrentProject.Name)
 	}
-	baseData := getBaseData(c, title)
+	baseData := getBaseData(c, title, nil)
 
 	replyPost := templates.PostToTemplate(&post.Post, post.Author)
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
@@ -735,7 +735,7 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 	} else {
 		title = fmt.Sprintf("%s | %s", title, c.CurrentProject.Name)
 	}
-	baseData := getBaseData(c, title)
+	baseData := getBaseData(c, title, nil)
 
 	templatePost := templates.PostToTemplate(&post.Post, post.Author)
 	templatePost.AddContentVersion(post.CurrentVersion, post.Editor)

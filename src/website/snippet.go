@@ -95,7 +95,7 @@ func Snippet(c *RequestContext) ResponseData {
 		opengraph = append(opengraph, media.ExtraOpenGraphItems...)
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("Snippet by %s", snippet.OwnerName))
+	baseData := getBaseData(c, fmt.Sprintf("Snippet by %s", snippet.OwnerName), nil)
 	baseData.OpenGraphItems = opengraph // NOTE(asaf): We're overriding the defaults on purpose.
 	snippetEdit := templates.SnippetEdit{}
 	if c.CurrentUser != nil {

@@ -17,7 +17,7 @@ func FourOhFour(c *RequestContext) ResponseData {
 			templates.BaseData
 			Wanted string
 		}{
-			BaseData: getBaseData(c, "Page not found"),
+			BaseData: getBaseData(c, "Page not found", nil),
 			Wanted:   c.FullUrl(),
 		}
 		res.MustWriteTemplate("404.html", templateData, c.Perf)

@@ -168,7 +168,7 @@ func Index(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, "")
+	baseData := getBaseData(c, "", nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    "A community of low-level programmers with high-level goals, working to correct the course of the software industry.",

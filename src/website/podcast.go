@@ -82,7 +82,7 @@ func PodcastEdit(c *RequestContext) ResponseData {
 	}
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile)
-	baseData := getBaseData(c, fmt.Sprintf("Edit %s", podcast.Title))
+	baseData := getBaseData(c, fmt.Sprintf("Edit %s", podcast.Title), nil)
 	podcastEditData := PodcastEditData{
 		BaseData: baseData,
 		Podcast:  podcast,
@@ -221,7 +221,7 @@ func PodcastEpisode(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile)
 	episode := templates.PodcastEpisodeToTemplate(podcastResult.Episodes[0], 0, podcastResult.ImageFile)
-	baseData := getBaseData(c, fmt.Sprintf("%s | %s", episode.Title, podcast.Title))
+	baseData := getBaseData(c, fmt.Sprintf("%s | %s", episode.Title, podcast.Title), nil)
 
 	podcastEpisodeData := PodcastEpisodeData{
 		BaseData: baseData,
@@ -268,7 +268,7 @@ func PodcastEpisodeNew(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, "")
 	var res ResponseData
-	baseData := getBaseData(c, fmt.Sprintf("New episode | %s", podcast.Title))
+	baseData := getBaseData(c, fmt.Sprintf("New episode | %s", podcast.Title), nil)
 	err = res.WriteTemplate("podcast_episode_edit.html", PodcastEpisodeEditData{
 		BaseData:     baseData,
 		IsEdit:       false,
@@ -305,7 +305,7 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, "")
 	podcastEpisode := templates.PodcastEpisodeToTemplate(episode, 0, "")
-	baseData := getBaseData(c, fmt.Sprintf("Edit episode %s | %s", podcastEpisode.Title, podcast.Title))
+	baseData := getBaseData(c, fmt.Sprintf("Edit episode %s | %s", podcastEpisode.Title, podcast.Title), nil)
 	podcastEpisodeEditData := PodcastEpisodeEditData{
 		BaseData:      baseData,
 		IsEdit:        true,

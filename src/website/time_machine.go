@@ -13,7 +13,7 @@ import (
 )
 
 func TimeMachine(c *RequestContext) ResponseData {
-	baseData := getBaseData(c, "Time Machine")
+	baseData := getBaseData(c, "Time Machine", nil)
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Time Machine"},
 		{Property: "og:site_name", Value: "Handmade Network"},

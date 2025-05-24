@@ -156,7 +156,7 @@ func Episode(c *RequestContext) ResponseData {
 	content := contentMatches[episodeContentRegex.SubexpIndex("content")]
 
 	var res ResponseData
-	baseData := getBaseData(c, title)
+	baseData := getBaseData(c, title, nil)
 	res.MustWriteTemplate("episode.html", EpisodeData{
 		BaseData: baseData,
 		Content:  template.HTML(content),
