@@ -92,7 +92,7 @@ func EpisodeList(c *RequestContext) ResponseData {
 	}
 
 	var res ResponseData
-	baseData := getBaseDataAutocrumb(c, fmt.Sprintf("Episode Guide"))
+	baseData := getBaseData(c, "Episode Guide", nil)
 	res.MustWriteTemplate("episode_list.html", EpisodeListData{
 		BaseData:     baseData,
 		Content:      template.HTML(guide),

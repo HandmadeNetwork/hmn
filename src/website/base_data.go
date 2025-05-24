@@ -12,10 +12,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-func getBaseDataAutocrumb(c *RequestContext, title string) templates.BaseData {
-	return getBaseData(c, title, []templates.Breadcrumb{{Name: title, Url: ""}})
-}
-
 // NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
 //
 //	If you pass nil, no breadcrumbs will be created.

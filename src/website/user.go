@@ -126,7 +126,7 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	templateUser := templates.UserToTemplate(profileUser)
 
-	baseData := getBaseDataAutocrumb(c, templateUser.Name)
+	baseData := getBaseData(c, templateUser.Name, nil)
 
 	ownProfile := (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID)
 	followUrl := ""
@@ -257,7 +257,7 @@ func UserSettings(c *RequestContext) ResponseData {
 
 	templateUser := templates.UserToTemplate(c.CurrentUser)
 
-	baseData := getBaseDataAutocrumb(c, templateUser.Name)
+	baseData := getBaseData(c, templateUser.Name, nil)
 
 	res.MustWriteTemplate("user_settings.html", UserSettingsTemplateData{
 		BaseData:          baseData,

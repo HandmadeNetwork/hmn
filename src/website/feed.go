@@ -62,7 +62,7 @@ func Feed(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
 	}
 
-	baseData := getBaseDataAutocrumb(c, "Feed")
+	baseData := getBaseData(c, "Feed", nil)
 	baseData.BodyClasses = append(baseData.BodyClasses, "feed")
 
 	var res ResponseData

@@ -22,7 +22,7 @@ func NewsletterSignup(c *RequestContext) ResponseData {
 	}
 
 	tmpl := TemplateData{
-		BaseData:            getBaseDataAutocrumb(c, "Newsletter Signup"),
+		BaseData:            getBaseData(c, "Newsletter Signup", nil),
 		NewsletterSignupUrl: hmnurl.BuildAPINewsletterSignup(),
 	}
 	tmpl.OpenGraphItems = []templates.OpenGraphItem{

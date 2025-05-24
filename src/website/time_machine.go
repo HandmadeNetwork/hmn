@@ -89,7 +89,7 @@ func TimeMachineForm(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate(
 		"timemachine_submit.html",
-		getBaseDataAutocrumb(c, "Time Machine"),
+		getBaseData(c, "Time Machine", nil),
 		c.Perf,
 	)
 	return res
@@ -134,7 +134,7 @@ func TimeMachineFormDone(c *RequestContext) ResponseData {
 		TimeMachineUrl string
 	}
 	tmpl := TemplateData{
-		BaseData:       getBaseDataAutocrumb(c, "Time Machine"),
+		BaseData:       getBaseData(c, "Time Machine", nil),
 		TimeMachineUrl: hmnurl.BuildTimeMachine(),
 	}
 

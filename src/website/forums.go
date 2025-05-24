@@ -423,7 +423,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title, SubforumBreadcrumbs(c.UrlContext, cd.LineageBuilder, cd.SubforumID))
+	baseData := getBaseData(c, thread.Title, ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &thread))
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    threadResult.FirstPost.Preview,

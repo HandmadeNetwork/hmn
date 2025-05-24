@@ -156,7 +156,7 @@ func TwitchDebugPage(c *RequestContext) ResponseData {
 	}
 	var res ResponseData
 	res.MustWriteTemplate("twitch_debug.html", TwitchDebugData{
-		BaseData: getBaseDataAutocrumb(c, "Twitch Debug"),
+		BaseData: getBaseData(c, "Twitch Debug", nil),
 		DataJson: string(jsonStr),
 	}, c.Perf)
 	return res

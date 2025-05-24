@@ -31,7 +31,7 @@ func FollowingTest(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("following_test.html", FollowingTestData{
-		BaseData:      getBaseDataAutocrumb(c, "Following test"),
+		BaseData:      getBaseData(c, "Following test", nil),
 		TimelineItems: timelineItems,
 	}, c.Perf)
 	return res

@@ -142,9 +142,7 @@ func FishbowlIndex(c *RequestContext) ResponseData {
 	}
 
 	tmplData := tmpl{
-		BaseData: getBaseData(c, "Fishbowls", []templates.Breadcrumb{
-			{Name: "Fishbowls", Url: hmnurl.BuildFishbowlIndex()},
-		}),
+		BaseData: getBaseData(c, "Fishbowls", nil),
 	}
 
 	var fishbowlTmpls []fishbowlTmpl

@@ -41,7 +41,7 @@ func PodcastIndex(c *RequestContext) ResponseData {
 
 	canEdit := c.CurrentUserCanEditCurrentProject
 
-	baseData := getBaseDataAutocrumb(c, podcastResult.Podcast.Title)
+	baseData := getBaseData(c, podcastResult.Podcast.Title, nil)
 
 	podcastIndexData := PodcastIndexData{
 		BaseData: baseData,
