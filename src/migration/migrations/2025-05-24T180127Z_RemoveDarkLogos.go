@@ -45,8 +45,9 @@ func (m RemoveDarkLogos) Down(ctx context.Context, tx pgx.Tx) error {
 		ALTER TABLE project
 			RENAME logo_asset_id TO logolight_asset_id;
 		ALTER TABLE project
-			ADD COLUMN logodark_asset_id UUID REFERENCES handmade_asset (id) ON DELETE SET NULL,
+			ADD COLUMN logodark_asset_id UUID REFERENCES asset (id) ON DELETE SET NULL;
 		`,
 	))
-	panic("noerp")
+
+	return nil
 }
