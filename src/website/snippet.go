@@ -117,6 +117,7 @@ func Snippet(c *RequestContext) ResponseData {
 		snippetEdit = templates.SnippetEdit{
 			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
 			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
+			OnDeleteRedirectUrl:   hmnurl.BuildUserProfile(s.Owner.Username),
 			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
 		}
 	}
