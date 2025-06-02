@@ -11,7 +11,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-const JamProjectCreateGracePeriod = 3 * 24 * time.Hour
+const JamProjectCreateGracePeriod = 7 * 24 * time.Hour
 
 type Event struct {
 	StartTime, EndTime time.Time
