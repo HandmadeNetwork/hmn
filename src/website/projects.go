@@ -993,7 +993,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		if err != nil {
 			return oops.New(err, "Failed to fetch jam participation for project")
 		}
-		currentJam := hmndata.CurrentJam()
+		currentJam := hmndata.UpcomingJam(hmndata.JamProjectCreateGracePeriod)
 		if currentJam != nil {
 			possibleJamSlugs = append(possibleJamSlugs, currentJam.Slug)
 		}

@@ -221,6 +221,7 @@ type ProjectJamParticipation struct {
 type SnippetEdit struct {
 	AvailableProjectsJSON string
 	SubmitUrl             string
+	OnDeleteRedirectUrl   string
 	AssetMaxSize          int
 }
 

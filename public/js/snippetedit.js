@@ -16,14 +16,14 @@ function readableByteSize(numBytes) {
 	return new Intl.NumberFormat([], { maximumFractionDigits: (scale > 0 ? 2 : 0) }).format(numBytes) + scales[scale];
 }
 
-function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmentElement, projectIds, stickyProjectId, snippetId, originalSnippetEl) {
+function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmentElement, projectIds, stickyProjectId, onDeleteRedirectUrl, snippetId, originalSnippetEl) {
 	let snippetEdit = snippetEditTemplate();
 	let projectSelector = null;
 	let originalAttachment = null;
 	let originalText = text;
 	let attachmentChanged = false;
 	let hasAttachment = false;
-	snippetEdit.redirect.value = location.href;
+    snippetEdit.redirect.value = location.href;
 	if (ownerAvatar) {
 		snippetEdit.avatarImg.src = ownerAvatar;
 		snippetEdit.avatarLink.href = ownerUrl;
@@ -361,6 +361,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 			return;
 		}
 
+        snippetEdit.redirect.value = onDeleteRedirectUrl;
 		snippetEdit.file.value = "";
 	});
 
@@ -369,7 +370,7 @@ function makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, date, text, attachmen
 	return snippetEdit;
 }
 
-function editTimelineSnippet(timelineItemEl, stickyProjectId) {
+function editTimelineSnippet(timelineItemEl, stickyProjectId, onDeleteRedirectUrl) {
 	let ownerName = timelineItemEl.querySelector(".user")?.textContent;
 	let ownerUrl = timelineItemEl.querySelector(".user")?.href;
 	let ownerAvatar = timelineItemEl.querySelector(".avatar")?.src;
@@ -377,14 +378,26 @@ function editTimelineSnippet(timelineItemEl, stickyProjectId) {
 	let rawDesc = timelineItemEl.querySelector(".rawdesc").textContent;
 	let attachment = timelineItemEl.querySelector(".timeline-media")?.children?.[0];
 	let projectIds = [];
-	let projectEls = timelineItemEl.querySelectorAll(".projects > a");
+	let projectEls = timelineItemEl.querySelectorAll(".project-id-list > input");
 	for (let i = 0; i < projectEls.length; ++i) {
-		let projid = projectEls[i].getAttribute("data-projid");
+		let projid = parseInt(projectEls[i].value, 10);
 		if (projid) {
 			projectIds.push(projid);
 		}
 	}
-	let snippetEdit = makeSnippetEdit(ownerName, ownerAvatar, ownerUrl, creationDate, rawDesc, attachment, projectIds, stickyProjectId, timelineItemEl.getAttribute("data-id"), timelineItemEl);
+	let snippetEdit = makeSnippetEdit(
+        ownerName,
+        ownerAvatar,
+        ownerUrl,
+        creationDate,
+        rawDesc,
+        attachment,
+        projectIds,
+        stickyProjectId,
+        onDeleteRedirectUrl,
+        timelineItemEl.getAttribute("data-id"),
+        timelineItemEl
+    );
 	timelineItemEl.parentElement.insertBefore(snippetEdit.root, timelineItemEl);
 	timelineItemEl.remove();
 }
