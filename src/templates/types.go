@@ -194,8 +194,8 @@ type Flowsnake struct {
 }
 
 const FlowsnakeMaxAngle = 25    // deg
-const FlowsnakeMinSize = 1000   // px
-const FlowsnakeSizeRange = 2500 // px
+const FlowsnakeMinSize = 2500   // px
+const FlowsnakeSizeRange = 1000 // px
 
 type Asset struct {
 	Url string
