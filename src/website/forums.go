@@ -180,7 +180,7 @@ func Forum(c *RequestContext) ResponseData {
 	// Template assembly
 	// ---------------------
 
-	baseData := getBaseData(c, fmt.Sprintf("%s Forums", c.CurrentProject.Name), nil)
+	baseData := getBaseData(c, fmt.Sprintf("%s Forums", c.CurrentProject.Name), SubforumBreadcrumbs(c.UrlContext, cd.LineageBuilder, cd.SubforumID))
 
 	var res ResponseData
 	res.MustWriteTemplate("forum.html", forumData{
