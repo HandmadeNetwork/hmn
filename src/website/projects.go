@@ -342,6 +342,16 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
 		}
+
+		if c.CurrentUserCanEditCurrentProject {
+			templateData.Header.Actions = []templates.Action{
+				{
+					Name: "Edit Project",
+					Url:  c.UrlContext.BuildProjectEdit(""),
+					Icon: "edit-line",
+				},
+			}
+		}
 	}
 	templateData.FollowUrl = followUrl
 	templateData.Following = following

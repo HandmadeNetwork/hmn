@@ -63,6 +63,7 @@ type Header struct {
 	Project *ProjectHeader
 
 	Breadcrumbs         []Breadcrumb
+	Actions             []Action
 	SuppressBreadcrumbs bool
 
 	BannerEvent     *BannerEvent
@@ -417,6 +418,11 @@ type ImageSelectorData struct {
 type Breadcrumb struct {
 	Name, Url string
 	Project   *Project
+}
+
+type Action struct {
+	Name, Url string
+	Icon      string
 }
 
 type Pagination struct {

@@ -64,17 +64,27 @@
     </div>
 </header>
 
-{{ if and .Header.Breadcrumbs (not .Header.SuppressBreadcrumbs) }}
-    <div class="bg1 bb pv2 pr3 link-normal flex items-center" style="padding-left: 0.72rem">
-        {{ range $i, $breadcrumb := .Header.Breadcrumbs }}
-            {{ if gt $i 0 }}<span class="ph2">/</span>{{ end }}
-            <div class="flex g2 items-center">
-                {{ if $breadcrumb.Project }}
-                    <div class="avatar-small">{{ template "project_logo.html" $breadcrumb.Project }}</div>
-                {{ end }}
-                <a href="{{ $breadcrumb.Url }}">{{ $breadcrumb.Name }}</a>
-            </div>
-        {{ end }}
+{{ if and (or .Header.Breadcrumbs .Header.Actions) (not .Header.SuppressBreadcrumbs) }}
+    <div class="f6 bg1 bb pr3 link-normal link-underline flex items-center justify-between" style="padding-left: 0.72rem">
+        <div class="flex items-center">
+            {{ range $i, $breadcrumb := .Header.Breadcrumbs }}
+                {{ if gt $i 0 }}<span class="ph2">/</span>{{ end }}
+                <div class="flex g2 items-center">
+                    {{ if $breadcrumb.Project }}
+                        <div class="avatar-small">{{ template "project_logo.html" $breadcrumb.Project }}</div>
+                    {{ end }}
+                    <a class="pv2 lh-copy truncate" href="{{ $breadcrumb.Url }}">{{ $breadcrumb.Name }}</a>
+                </div>
+            {{ end }}
+        </div>
+        <div>
+            {{ range .Header.Actions }}
+                <a class="flex items-center pv2 lh-copy" href="{{ .Url }}">
+                    <span class="f5 svgicon mr1">{{ svg .Icon }}</span>
+                    {{ .Name }}
+                </a>
+            {{ end }}
+        </div>
     </div>
 {{ else if and .Header.BannerEvent (not .Header.SuppressBanners) }}
     {{ with .Header.BannerEvent }}
