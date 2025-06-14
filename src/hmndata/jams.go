@@ -134,7 +134,7 @@ var WRJ2024 = Jam{
 var XRay2025 = Jam{
 	Event: Event{
 		StartTime: time.Date(2025, 6, 9, 13, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(2025, 6, 15, 5, 0, 0, 0, time.UTC),
+		EndTime:   time.Date(2025, 6, 16, 5, 0, 0, 0, time.UTC),
 	},
 	Name:    "X-Ray Jam 2025",
 	Slug:    "XRay2025",
