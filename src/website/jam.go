@@ -101,7 +101,7 @@ func JamIndex2025_XRay(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jam := hmndata.XRay2025
-	baseData, err := getXRay2025BaseData(c, getBaseData(c, jam.Name, nil))
+	baseData, err := getXRay2025BaseData(c, getBaseData(c, jam.Name, nil), 10)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -115,7 +115,7 @@ func JamFeed2025_XRay(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jam := hmndata.XRay2025
-	baseData, err := getXRay2025BaseData(c, getBaseData(c, jam.Name, nil))
+	baseData, err := getXRay2025BaseData(c, getBaseData(c, jam.Name, nil), 0)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -128,7 +128,7 @@ func JamGuidelines2025_XRay(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jam := hmndata.XRay2025
-	baseData, err := getXRay2025BaseData(c, getBaseData(c, jam.Name, nil))
+	baseData, err := getXRay2025BaseData(c, getBaseData(c, jam.Name, nil), 10)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -137,7 +137,7 @@ func JamGuidelines2025_XRay(c *RequestContext) ResponseData {
 	return res
 }
 
-func getXRay2025BaseData(c *RequestContext, baseData templates.BaseData) (JamBaseDataXRay2025, error) {
+func getXRay2025BaseData(c *RequestContext, baseData templates.BaseData, numTimelineItems int) (JamBaseDataXRay2025, error) {
 	jam := hmndata.XRay2025
 	now := JamCurrentTime(c, jam.Event)
 
@@ -187,7 +187,7 @@ func getXRay2025BaseData(c *RequestContext, baseData templates.BaseData) (JamBas
 		timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
 			ProjectIDs: projectIDs,
 			SkipPosts:  true,
-			Limit:      10,
+			Limit:      numTimelineItems,
 		})
 	}
 
