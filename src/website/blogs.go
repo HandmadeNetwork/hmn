@@ -71,7 +71,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		})
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), nil)
+	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)})
 
 	canCreate := false
 	if c.CurrentProject.HasBlog() && c.CurrentUser != nil {
@@ -168,7 +168,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title, nil)
+	baseData := getBaseData(c, thread.Title, BlogThreadBreadcrumbs(c.UrlContext, &thread))
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    posts[0].Post.Preview,

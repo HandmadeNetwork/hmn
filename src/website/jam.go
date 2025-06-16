@@ -72,6 +72,8 @@ func JamsIndex(c *RequestContext) ResponseData {
 }
 
 type JamBaseDataXRay2025 struct {
+	templates.BaseData
+
 	Timespans                  hmndata.EventTimespans
 	StartTimeUnix, EndTimeUnix int64
 	JamUrl                     string
@@ -79,16 +81,9 @@ type JamBaseDataXRay2025 struct {
 	NewProjectUrl              string
 	GuidelinesUrl              string
 	SubmittedProject           *templates.Project
-}
-
-type JamPageDataXRay2025 struct {
-	templates.BaseData
-	JamBaseDataXRay2025
-
-	TwitchEmbedUrl string
-	JamProjects    []templates.Project
-	TimelineItems  []templates.TimelineItem
-	ShortFeed      bool
+	JamProjects                []templates.Project
+	TimelineItems              []templates.TimelineItem
+	ShortFeed                  bool
 }
 
 var opengraphXRay2025 = []templates.OpenGraphItem{
@@ -106,57 +101,13 @@ func JamIndex2025_XRay(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jam := hmndata.XRay2025
-	now := JamCurrentTime(c, jam.Event)
-
-	jamBaseData, err := getXRay2025BaseData(c, now)
+	baseData, err := getXRay2025BaseData(c, getBaseData(c, jam.Name, nil))
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
+	baseData.ShortFeed = true
 
-	baseData := getBaseData(c, jam.Name, nil)
-	baseData.OpenGraphItems = opengraphXRay2025
-	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
-	baseData.ForceDark = true
-	baseData.Header.SuppressBanners = true
-
-	pageProjects := []templates.Project{}
-	timelineItems := []templates.TimelineItem{}
-	twitchEmbedUrl := ""
-
-	if jamBaseData.Timespans.AfterStart {
-		jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-			JamSlugs: []string{jam.Slug},
-		})
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
-		}
-
-		projectIDs := make([]int, 0, len(jamProjects))
-		pageProjects = make([]templates.Project, 0, len(jamProjects))
-		for _, p := range jamProjects {
-			pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
-			projectIDs = append(projectIDs, p.Project.ID)
-		}
-
-		if len(jamProjects) > 0 {
-			timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
-				ProjectIDs: projectIDs,
-				SkipPosts:  true,
-				Limit:      10,
-			})
-		}
-
-		twitchEmbedUrl = getTwitchEmbedUrl(c)
-	}
-
-	res.MustWriteTemplate("jam_2025_xray_index.html", JamPageDataXRay2025{
-		BaseData:            baseData,
-		JamBaseDataXRay2025: jamBaseData,
-		JamProjects:         pageProjects,
-		TimelineItems:       timelineItems,
-		ShortFeed:           true,
-		TwitchEmbedUrl:      twitchEmbedUrl,
-	}, c.Perf)
+	res.MustWriteTemplate("jam_2025_xray_index.html", baseData, c.Perf)
 	return res
 }
 
@@ -164,48 +115,12 @@ func JamFeed2025_XRay(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jam := hmndata.XRay2025
-	now := JamCurrentTime(c, jam.Event)
-
-	jamBaseData, err := getXRay2025BaseData(c, now)
+	baseData, err := getXRay2025BaseData(c, getBaseData(c, jam.Name, nil))
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseData(c, jam.Name, nil)
-	baseData.OpenGraphItems = opengraphXRay2025
-	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
-	baseData.ForceDark = true
-	baseData.Header.SuppressBanners = true
-
-	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		JamSlugs: []string{jam.Slug},
-	})
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
-	}
-
-	pageProjects := make([]templates.Project, 0, len(jamProjects))
-	projectIDs := make([]int, 0, len(jamProjects))
-	for _, p := range jamProjects {
-		projectIDs = append(projectIDs, p.Project.ID)
-		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
-	}
-
-	timelineItems := []templates.TimelineItem{}
-
-	if len(projectIDs) > 0 {
-		timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
-			ProjectIDs: projectIDs,
-			SkipPosts:  true,
-		})
-	}
-
-	res.MustWriteTemplate("jam_2025_xray_feed.html", JamPageDataXRay2025{
-		BaseData:            baseData,
-		JamBaseDataXRay2025: jamBaseData,
-		JamProjects:         pageProjects,
-		TimelineItems:       timelineItems,
-	}, c.Perf)
+	res.MustWriteTemplate("jam_2025_xray_feed.html", baseData, c.Perf)
 	return res
 }
 
@@ -213,28 +128,23 @@ func JamGuidelines2025_XRay(c *RequestContext) ResponseData {
 	var res ResponseData
 
 	jam := hmndata.XRay2025
-	now := JamCurrentTime(c, jam.Event)
-
-	jamBaseData, err := getXRay2025BaseData(c, now)
+	baseData, err := getXRay2025BaseData(c, getBaseData(c, jam.Name, nil))
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseData(c, jam.Name, nil)
+	res.MustWriteTemplate("jam_2025_xray_guidelines.html", baseData, c.Perf)
+	return res
+}
+
+func getXRay2025BaseData(c *RequestContext, baseData templates.BaseData) (JamBaseDataXRay2025, error) {
+	jam := hmndata.XRay2025
+	now := JamCurrentTime(c, jam.Event)
+
 	baseData.OpenGraphItems = opengraphXRay2025
 	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
 	baseData.ForceDark = true
 	baseData.Header.SuppressBanners = true
-
-	res.MustWriteTemplate("jam_2025_xray_guidelines.html", JamPageDataXRay2025{
-		BaseData:            baseData,
-		JamBaseDataXRay2025: jamBaseData,
-	}, c.Perf)
-	return res
-}
-
-func getXRay2025BaseData(c *RequestContext, now time.Time) (JamBaseDataXRay2025, error) {
-	jam := hmndata.XRay2025
 
 	var submittedProject *templates.Project
 	if c.CurrentUser != nil {
@@ -244,7 +154,7 @@ func getXRay2025BaseData(c *RequestContext, now time.Time) (JamBaseDataXRay2025,
 			Limit:    1,
 		})
 		if err != nil {
-			return JamBaseDataXRay2025{}, oops.New(err, "failed to fetch jam projects for current user")
+			return JamBaseDataXRay2025{}, oops.New(err, "failed to fetch current user's jam project")
 		}
 		if len(projects) > 0 {
 			submittedProject = utils.P(templates.ProjectAndStuffToTemplate(&projects[0]))
@@ -256,7 +166,34 @@ func getXRay2025BaseData(c *RequestContext, now time.Time) (JamBaseDataXRay2025,
 		newProjectUrl = hmnurl.BuildProjectNewJam()
 	}
 
+	pageProjects := []templates.Project{}
+	timelineItems := []templates.TimelineItem{}
+
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		JamSlugs: []string{jam.Slug},
+	})
+	if err != nil {
+		return JamBaseDataXRay2025{}, oops.New(err, "failed to fetch jam projects")
+	}
+
+	projectIDs := make([]int, 0, len(jamProjects))
+	pageProjects = make([]templates.Project, 0, len(jamProjects))
+	for _, p := range jamProjects {
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
+		projectIDs = append(projectIDs, p.Project.ID)
+	}
+
+	if len(jamProjects) > 0 {
+		timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
+			ProjectIDs: projectIDs,
+			SkipPosts:  true,
+			Limit:      10,
+		})
+	}
+
 	return JamBaseDataXRay2025{
+		BaseData: baseData,
+
 		StartTimeUnix: jam.StartTime.Unix(),
 		EndTimeUnix:   jam.EndTime.Unix(),
 		Timespans:     hmndata.CalcTimespans(jam.Event, now),
@@ -266,6 +203,8 @@ func getXRay2025BaseData(c *RequestContext, now time.Time) (JamBaseDataXRay2025,
 		NewProjectUrl:    newProjectUrl,
 		GuidelinesUrl:    hmnurl.BuildJamGuidelines2025_XRay(),
 		SubmittedProject: submittedProject,
+		JamProjects:      pageProjects,
+		TimelineItems:    timelineItems,
 	}, nil
 }
 
