@@ -78,6 +78,17 @@ func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx, q TwitchStrea
 		return nil, oops.New(err, "failed to fetch twitch links")
 	}
 
+	ignoredStreamers, err := db.QueryScalar[string](ctx, dbConn,
+		`
+		SELECT twitch_login
+		FROM twitch_ignore_list
+		WHERE banned = TRUE
+		`,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch ignored twitch logins")
+	}
+
 	result := make([]TwitchStreamer, 0, len(dbStreamers))
 	for _, dbStreamer := range dbStreamers {
 		streamer := TwitchStreamer{
@@ -98,7 +109,14 @@ func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx, q TwitchStrea
 					break
 				}
 			}
-			if !duplicate {
+			ignored := false
+			for _, ignoredStreamer := range ignoredStreamers {
+				if ignoredStreamer == streamer.TwitchLogin {
+					ignored = true
+					break
+				}
+			}
+			if !duplicate && !ignored {
 				result = append(result, streamer)
 			}
 		}
