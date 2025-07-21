@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/auth"
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -141,6 +142,16 @@ func logContextErrorsMiddleware(h Handler) Handler {
 	return func(c *RequestContext) ResponseData {
 		res := h(c)
 		logContextErrors(c, res.Errors...)
+		return res
+	}
+}
+
+func preventSearchEngineIndexingOfBeta(h Handler) Handler {
+	return func(c *RequestContext) ResponseData {
+		res := h(c)
+		if config.Config.Env != config.Live {
+			res.Header().Set("X-Robots-Tag", "noindex")
+		}
 		return res
 	}
 }

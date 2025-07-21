@@ -33,6 +33,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			setDBConn(conn),
 			trackRequestPerf(perfCollector),
 			logContextErrorsMiddleware,
+			preventSearchEngineIndexingOfBeta,
 			panicCatcherMiddleware,
 		},
 	}
