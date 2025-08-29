@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
@@ -68,6 +69,199 @@ func JamsIndex(c *RequestContext) ResponseData {
 		WRJ2024Url:  hmnurl.BuildJamIndex2024_WRJ(),
 		XRay2025Url: hmnurl.BuildJamIndex2025_XRay(),
 	}, c.Perf)
+	return res
+}
+
+type JamAssets struct {
+	TwitterCard string
+	Logo        string
+}
+
+type JamGenericTemplateData struct {
+	templates.BaseData
+	Assets JamAssets
+
+	Timespans                  hmndata.EventTimespans
+	StartTimeUnix, EndTimeUnix int64
+	JamUrl                     string
+	JamFeedUrl                 string
+	NewProjectUrl              string
+	GuidelinesUrl              string
+	TwitchEmbedUrl             string
+	RecapStreamEmbedUrl        string
+	SubmittedProject           *templates.Project
+	JamProjects                []templates.Project
+	TimelineItems              []templates.TimelineItem
+	ShortFeed                  bool
+}
+
+func getJamAssets(jam hmndata.Jam) JamAssets {
+	return JamAssets{
+		TwitterCard: fmt.Sprintf("jams/%s/TwitterCard.png", jam.UrlSlug),
+		Logo:        fmt.Sprintf("jams/%s/logo.svg", jam.UrlSlug),
+	}
+}
+
+func getJamGenericTemplateData(c *RequestContext, jam hmndata.Jam, baseData templates.BaseData, numTimelineItems int) (JamGenericTemplateData, error) {
+	now := JamCurrentTime(c, jam.Event)
+
+	assets := getJamAssets(jam)
+
+	opengraph := []templates.OpenGraphItem{
+		{Property: "og:title", Value: jam.Name},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:image", Value: hmnurl.BuildPublic(assets.TwitterCard, true)},
+		{Property: "og:description", Value: jam.Description},
+		{Property: "og:url", Value: hmnurl.BuildJamGenericIndex(jam.UrlSlug)},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic(assets.TwitterCard, true)},
+	}
+
+	baseData.OpenGraphItems = opengraph
+	baseData.BodyClasses = append(baseData.BodyClasses, "header-transparent")
+	baseData.ForceDark = true
+	baseData.Header.SuppressBanners = true
+
+	var submittedProject *templates.Project
+	if c.CurrentUser != nil {
+		projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+			JamSlugs: []string{jam.Slug},
+			Limit:    1,
+		})
+		if err != nil {
+			return JamGenericTemplateData{}, oops.New(err, "failed to fetch current user's jam project")
+		}
+		if len(projects) > 0 {
+			submittedProject = utils.P(templates.ProjectAndStuffToTemplate(&projects[0]))
+		}
+	}
+
+	var newProjectUrl string
+	if jam.Event.WithinGrace(JamCurrentTime(c, jam.Event), hmndata.JamProjectCreateGracePeriod, 0) {
+		newProjectUrl = hmnurl.BuildProjectNewJam()
+	}
+
+	pageProjects := []templates.Project{}
+	timelineItems := []templates.TimelineItem{}
+
+	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		JamSlugs: []string{jam.Slug},
+	})
+	if err != nil {
+		return JamGenericTemplateData{}, oops.New(err, "failed to fetch jam projects")
+	}
+
+	projectIDs := make([]int, 0, len(jamProjects))
+	pageProjects = make([]templates.Project, 0, len(jamProjects))
+	for _, p := range jamProjects {
+		pageProjects = append(pageProjects, templates.ProjectAndStuffToTemplate(&p))
+		projectIDs = append(projectIDs, p.Project.ID)
+	}
+
+	if len(jamProjects) > 0 {
+		timelineItems, err = FetchTimeline(c, c.Conn, c.CurrentUser, nil, hmndata.TimelineQuery{
+			ProjectIDs: projectIDs,
+			SkipPosts:  true,
+			Limit:      numTimelineItems,
+		})
+	}
+
+	twitchEmbedUrl := getTwitchEmbedUrl(c)
+
+	templateData := JamGenericTemplateData{
+		BaseData: baseData,
+		Assets:   assets,
+
+		StartTimeUnix: jam.StartTime.Unix(),
+		EndTimeUnix:   jam.EndTime.Unix(),
+		Timespans:     hmndata.CalcTimespans(jam.Event, now),
+
+		JamUrl:              hmnurl.BuildJamGenericIndex(jam.UrlSlug),
+		JamFeedUrl:          hmnurl.BuildJamGenericFeed(jam.UrlSlug),
+		NewProjectUrl:       newProjectUrl,
+		GuidelinesUrl:       hmnurl.BuildJamGenericGuidelines(jam.UrlSlug),
+		TwitchEmbedUrl:      twitchEmbedUrl,
+		RecapStreamEmbedUrl: jam.RecapStreamEmbedUrl,
+		SubmittedProject:    submittedProject,
+		JamProjects:         pageProjects,
+		TimelineItems:       timelineItems,
+	}
+
+	return templateData, nil
+}
+
+func findJamByUrlSlug(urlSlug string) (hmndata.Jam, bool) {
+	for _, j := range hmndata.AllJams {
+		if strings.ToLower(j.UrlSlug) == urlSlug {
+			return j, true
+		}
+	}
+
+	return hmndata.Jam{}, false
+}
+
+func JamGenericIndex(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	urlSlug := strings.ToLower(c.PathParams["urlslug"])
+
+	jam, found := findJamByUrlSlug(urlSlug)
+	if !found {
+		return FourOhFour(c)
+	}
+
+	templateData, err := getJamGenericTemplateData(c, jam, getBaseData(c, jam.Name, nil), 10)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	templateName := fmt.Sprintf("jam_%s_index.html", jam.TemplateName)
+
+	res.MustWriteTemplate(templateName, templateData, c.Perf)
+	return res
+}
+
+func JamGenericFeed(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	urlSlug := strings.ToLower(c.PathParams["urlslug"])
+
+	jam, found := findJamByUrlSlug(urlSlug)
+	if !found {
+		return FourOhFour(c)
+	}
+
+	templateData, err := getJamGenericTemplateData(c, jam, getBaseData(c, jam.Name, nil), 10)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	templateName := fmt.Sprintf("jam_%s_feed.html", jam.TemplateName)
+
+	res.MustWriteTemplate(templateName, templateData, c.Perf)
+	return res
+}
+
+func JamGenericGuidelines(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	urlSlug := strings.ToLower(c.PathParams["urlslug"])
+
+	jam, found := findJamByUrlSlug(urlSlug)
+	if !found {
+		return FourOhFour(c)
+	}
+
+	templateData, err := getJamGenericTemplateData(c, jam, getBaseData(c, jam.Name, nil), 10)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	templateName := fmt.Sprintf("jam_%s_guidelines.html", jam.TemplateName)
+
+	res.MustWriteTemplate(templateName, templateData, c.Perf)
 	return res
 }
 

@@ -518,7 +518,7 @@ func JamToBannerEvent(jam hmndata.Jam) BannerEvent {
 		DaysUntilEnd:   utils.DaysUntil(jam.EndTime),
 		StartTimeUnix:  jam.StartTime.Unix(),
 		EndTimeUnix:    jam.EndTime.Unix(),
-		Url:            hmnurl.BuildJamIndexAny(jam.UrlSlug),
+		Url:            hmnurl.BuildJamGenericIndex(jam.UrlSlug),
 	}
 }
 

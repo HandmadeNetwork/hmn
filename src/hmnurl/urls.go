@@ -182,9 +182,25 @@ func BuildJamGuidelines2025_XRay() string {
 	return Url("/jam/x-ray-2025/guidelines", nil)
 }
 
-func BuildJamIndexAny(slug string) string {
+var RegexJamGenericIndex = regexp.MustCompile("^/jam/(?P<urlslug>[^/]+)$")
+
+func BuildJamGenericIndex(urlSlug string) string {
 	defer CatchPanic()
-	return Url(fmt.Sprintf("/jam/%s", slug), nil)
+	return Url(fmt.Sprintf("/jam/%s", urlSlug), nil)
+}
+
+var RegexJamGenericFeed = regexp.MustCompile("^/jam/(?P<urlslug>[^/]+)/feed$")
+
+func BuildJamGenericFeed(urlSlug string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/jam/%s/feed", urlSlug), nil)
+}
+
+var RegexJamGenericGuidelines = regexp.MustCompile("^/jam/(?P<urlslug>[^/]+)/guidelines$")
+
+func BuildJamGenericGuidelines(urlSlug string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/jam/%s/guidelines", urlSlug), nil)
 }
 
 var RegexTimeMachine = regexp.MustCompile("^/timemachine$")
