@@ -84,9 +84,11 @@ var VJ2024 = Jam{
 		StartTime: time.Date(2024, 7, 19, 13, 0, 0, 0, time.UTC),
 		EndTime:   time.Date(2024, 7, 22, 5, 0, 0, 0, time.UTC),
 	},
-	Name:    "Visibility Jam 2024",
-	Slug:    "VJ2024",
-	UrlSlug: "visibility-2024",
+	Name:         "Visibility Jam 2024",
+	Description:  "See things in a new way. July 19 - 21.",
+	Slug:         "VJ2024",
+	UrlSlug:      "visibility-2024",
+	TemplateName: "2024_vj",
 }
 
 var WRJ2024 = Jam{
