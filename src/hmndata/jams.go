@@ -125,7 +125,7 @@ var WRJ2025 = Jam{
 		EndTime:   time.Date(2025, 9, 29, 5, 0, 0, 0, time.UTC),
 	},
 	Name:         "Wheel Reinvention Jam 2025",
-	Description:  "A one-week jam where we build software from scratch. September 22 - 28 on the Handmade Network.",
+	Description:  "A one-week jam to build software from scratch. September 22 - 28 on the Handmade Network.",
 	Slug:         "WRJ2025",
 	UrlSlug:      "wheel-reinvention-2025",
 	TemplateName: "2025_wrj",
