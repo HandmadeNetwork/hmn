@@ -54,6 +54,7 @@ func JamsIndex(c *RequestContext) ResponseData {
 		VJ2024Url   string
 		WRJ2024Url  string
 		XRay2025Url string
+		WRJ2025Url  string
 	}
 
 	res.MustWriteTemplate("jams_index.html", TemplateData{
@@ -68,6 +69,7 @@ func JamsIndex(c *RequestContext) ResponseData {
 		VJ2024Url:   hmnurl.BuildJamGenericIndex(hmndata.VJ2024.UrlSlug),
 		WRJ2024Url:  hmnurl.BuildJamGenericIndex(hmndata.WRJ2024.UrlSlug),
 		XRay2025Url: hmnurl.BuildJamGenericIndex(hmndata.XRay2025.UrlSlug),
+		WRJ2025Url:  hmnurl.BuildJamGenericIndex(hmndata.WRJ2025.UrlSlug),
 	}, c.Perf)
 	return res
 }
