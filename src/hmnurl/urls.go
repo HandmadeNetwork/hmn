@@ -140,27 +140,6 @@ func BuildJamGuidelines2024_Visibility() string {
 	return Url("/jam/visibility-2024/guidelines", nil)
 }
 
-var RegexJamIndex2024_WRJ = regexp.MustCompile("^/jam/wheel-reinvention-2024$")
-
-func BuildJamIndex2024_WRJ() string {
-	defer CatchPanic()
-	return Url("/jam/wheel-reinvention-2024", nil)
-}
-
-var RegexJamFeed2024_WRJ = regexp.MustCompile("^/jam/wheel-reinvention-2024/feed$")
-
-func BuildJamFeed2024_WRJ() string {
-	defer CatchPanic()
-	return Url("/jam/wheel-reinvention-2024/feed", nil)
-}
-
-var RegexJamGuidelines2024_WRJ = regexp.MustCompile("^/jam/wheel-reinvention-2024/guidelines$")
-
-func BuildJamGuidelines2024_WRJ() string {
-	defer CatchPanic()
-	return Url("/jam/wheel-reinvention-2024/guidelines", nil)
-}
-
 var RegexJamGenericIndex = regexp.MustCompile("^/jam/(?P<urlslug>[^/]+)$")
 
 func BuildJamGenericIndex(urlSlug string) string {

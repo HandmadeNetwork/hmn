@@ -15,11 +15,14 @@ const JamProjectCreateGracePeriod = 7 * 24 * time.Hour
 
 type Jam struct {
 	Event
-	Name                string
-	Description         string // NOTE(asaf): Used by opengraph
-	Slug                string
-	UrlSlug             string
-	TemplateName        string
+	Name        string
+	Description string // NOTE(asaf): Used by opengraph
+	Slug        string
+	UrlSlug     string
+
+	TemplateName string
+	ForceDark    bool
+
 	RecapStreamEmbedUrl string // NOTE(asaf): Youtube video, not twitch
 }
 
@@ -91,9 +94,11 @@ var WRJ2024 = Jam{
 		StartTime: time.Date(2024, 9, 23, 13, 0, 0, 0, time.UTC),
 		EndTime:   time.Date(2024, 9, 30, 5, 0, 0, 0, time.UTC),
 	},
-	Name:    "Wheel Reinvention Jam 2024",
-	Slug:    "WRJ2024",
-	UrlSlug: "wheel-reinvention-2024",
+	Name:         "Wheel Reinvention Jam 2024",
+	Description:  "A one-week jam where we build software from scratch. September 23 - 29 on the Handmade Network.",
+	Slug:         "WRJ2024",
+	UrlSlug:      "wheel-reinvention-2024",
+	TemplateName: "2024_wrj",
 }
 
 var XRay2025 = Jam{
@@ -106,6 +111,7 @@ var XRay2025 = Jam{
 	Slug:         "XRay2025",
 	UrlSlug:      "x-ray-2025",
 	TemplateName: "2025_xray",
+	ForceDark:    true,
 }
 
 var WRJ2025 = Jam{
