@@ -98,27 +98,6 @@ func BuildJamRecap2023_Visibility() string {
 	return Url("/jam/visibility-2023/recap", nil)
 }
 
-var RegexJamIndex2024_Learning = regexp.MustCompile("^/jam/learning-2024$")
-
-func BuildJamIndex2024_Learning() string {
-	defer CatchPanic()
-	return Url("/jam/learning-2024", nil)
-}
-
-var RegexJamFeed2024_Learning = regexp.MustCompile("^/jam/learning-2024/feed$")
-
-func BuildJamFeed2024_Learning() string {
-	defer CatchPanic()
-	return Url("/jam/learning-2024/feed", nil)
-}
-
-var RegexJamGuidelines2024_Learning = regexp.MustCompile("^/jam/learning-2024/guidelines$")
-
-func BuildJamGuidelines2024_Learning() string {
-	defer CatchPanic()
-	return Url("/jam/learning-2024/guidelines", nil)
-}
-
 var RegexJamGenericIndex = regexp.MustCompile("^/jam/(?P<urlslug>[^/]+)$")
 
 func BuildJamGenericIndex(urlSlug string) string {

@@ -414,16 +414,6 @@ func TestJamFeed2023(t *testing.T) {
 	AssertSubdomain(t, BuildJamFeed2023(), "")
 }
 
-func TestJamIndex2024_Learning(t *testing.T) {
-	AssertRegexMatch(t, BuildJamIndex2024_Learning(), RegexJamIndex2024_Learning, nil)
-	AssertSubdomain(t, BuildJamIndex2024_Learning(), "")
-}
-
-func TestJamFeed2024_Learning(t *testing.T) {
-	AssertRegexMatch(t, BuildJamFeed2024_Learning(), RegexJamFeed2024_Learning, nil)
-	AssertSubdomain(t, BuildJamFeed2024_Learning(), "")
-}
-
 func TestTimeMachine(t *testing.T) {
 	AssertRegexMatch(t, BuildTimeMachine(), RegexTimeMachine, nil)
 	AssertSubdomain(t, BuildTimeMachine(), "")

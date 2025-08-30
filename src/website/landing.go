@@ -10,7 +10,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
-	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 func Index(c *RequestContext) ResponseData {
@@ -37,12 +36,6 @@ func Index(c *RequestContext) ResponseData {
 		AtomFeedUrl    string
 		MarkAllReadUrl string
 		NewProjectUrl  string
-
-		JamUrl                             string
-		JamDaysUntilStart, JamDaysUntilEnd int
-
-		HMSDaysUntilStart, HMSDaysUntilEnd           int
-		HMBostonDaysUntilStart, HMBostonDaysUntilEnd int
 	}
 
 	var err error
@@ -192,16 +185,6 @@ func Index(c *RequestContext) ResponseData {
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
 		MarkAllReadUrl: hmnurl.HMNProjectContext.BuildForumMarkRead(0),
 		NewProjectUrl:  hmnurl.BuildProjectNew(),
-
-		JamUrl:            hmnurl.BuildJamIndex2024_Learning(),
-		JamDaysUntilStart: utils.DaysUntil(hmndata.LJ2024.StartTime),
-		JamDaysUntilEnd:   utils.DaysUntil(hmndata.LJ2024.EndTime),
-
-		HMSDaysUntilStart: utils.DaysUntil(hmndata.HMS2024.StartTime),
-		HMSDaysUntilEnd:   utils.DaysUntil(hmndata.HMS2024.EndTime),
-
-		HMBostonDaysUntilStart: utils.DaysUntil(hmndata.HMBoston2024.StartTime),
-		HMBostonDaysUntilEnd:   utils.DaysUntil(hmndata.HMBoston2024.EndTime),
 	}, c.Perf)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render landing page template"))

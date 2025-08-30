@@ -71,9 +71,12 @@ var LJ2024 = Jam{
 		StartTime: time.Date(2024, 3, 15, 17, 0, 0, 0, time.UTC),
 		EndTime:   time.Date(2024, 3, 25, 0, 0, 0, 0, time.UTC),
 	},
-	Name:    "Learning Jam 2024",
-	Slug:    "LJ2024",
-	UrlSlug: "learning-2024",
+	Name:         "Learning Jam 2024",
+	Description:  "A two-weekend jam where you dive deep into a topic, then share it with the rest of the community.",
+	Slug:         "LJ2024",
+	UrlSlug:      "learning-2024",
+	TemplateName: "2024_lj",
+	ForceDark:    true,
 }
 
 var VJ2024 = Jam{
