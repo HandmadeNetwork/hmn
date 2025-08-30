@@ -101,9 +101,11 @@ var XRay2025 = Jam{
 		StartTime: time.Date(2025, 6, 9, 13, 0, 0, 0, time.UTC),
 		EndTime:   time.Date(2025, 6, 16, 5, 0, 0, 0, time.UTC),
 	},
-	Name:    "X-Ray Jam 2025",
-	Slug:    "XRay2025",
-	UrlSlug: "x-ray-2025",
+	Name:         "X-Ray Jam 2025",
+	Description:  "A jam to find out how software works on the inside. June 9 - 15 on the Handmade Network.",
+	Slug:         "XRay2025",
+	UrlSlug:      "x-ray-2025",
+	TemplateName: "2025_xray",
 }
 
 var WRJ2025 = Jam{

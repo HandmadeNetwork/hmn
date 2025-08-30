@@ -113,7 +113,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	hmnOnly.GET(hmnurl.RegexJamsIndex, JamsIndex)
 	hmnOnly.GET(hmnurl.RegexJamIndex, func(c *RequestContext) ResponseData {
-		return c.Redirect(hmnurl.BuildJamIndex2025_XRay(), http.StatusFound)
+		return c.Redirect(hmnurl.BuildJamGenericIndex(hmndata.XRay2025.UrlSlug), http.StatusFound)
 	})
 	hmnOnly.GET(hmnurl.RegexJamIndex2021, JamIndex2021)
 	hmnOnly.GET(hmnurl.RegexJamIndex2022, JamIndex2022)
@@ -132,9 +132,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexJamIndex2024_WRJ, JamIndex2024_WRJ)
 	hmnOnly.GET(hmnurl.RegexJamFeed2024_WRJ, JamFeed2024_WRJ)
 	hmnOnly.GET(hmnurl.RegexJamGuidelines2024_WRJ, JamGuidelines2024_WRJ)
-	hmnOnly.GET(hmnurl.RegexJamIndex2025_XRay, JamIndex2025_XRay)
-	hmnOnly.GET(hmnurl.RegexJamFeed2025_XRay, JamFeed2025_XRay)
-	hmnOnly.GET(hmnurl.RegexJamGuidelines2025_XRay, JamGuidelines2025_XRay)
 
 	hmnOnly.GET(hmnurl.RegexJamGenericIndex, JamGenericIndex)
 	hmnOnly.GET(hmnurl.RegexJamGenericFeed, JamGenericFeed)

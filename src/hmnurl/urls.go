@@ -161,27 +161,6 @@ func BuildJamGuidelines2024_WRJ() string {
 	return Url("/jam/wheel-reinvention-2024/guidelines", nil)
 }
 
-var RegexJamIndex2025_XRay = regexp.MustCompile("^/jam/x-ray-2025$")
-
-func BuildJamIndex2025_XRay() string {
-	defer CatchPanic()
-	return Url("/jam/x-ray-2025", nil)
-}
-
-var RegexJamFeed2025_XRay = regexp.MustCompile("^/jam/x-ray-2025/feed$")
-
-func BuildJamFeed2025_XRay() string {
-	defer CatchPanic()
-	return Url("/jam/x-ray-2025/feed", nil)
-}
-
-var RegexJamGuidelines2025_XRay = regexp.MustCompile("^/jam/x-ray-2025/guidelines$")
-
-func BuildJamGuidelines2025_XRay() string {
-	defer CatchPanic()
-	return Url("/jam/x-ray-2025/guidelines", nil)
-}
-
 var RegexJamGenericIndex = regexp.MustCompile("^/jam/(?P<urlslug>[^/]+)$")
 
 func BuildJamGenericIndex(urlSlug string) string {
