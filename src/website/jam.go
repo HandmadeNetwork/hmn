@@ -243,6 +243,9 @@ func JamGenericFeed(c *RequestContext) ResponseData {
 	}
 
 	templateName := fmt.Sprintf("jam_%s_feed.html", jam.TemplateName)
+	if _, hasTemplate := templates.GetTemplate(templateName); !hasTemplate {
+		return FourOhFour(c)
+	}
 
 	res.MustWriteTemplate(templateName, templateData, c.Perf)
 	return res
@@ -264,6 +267,9 @@ func JamGenericGuidelines(c *RequestContext) ResponseData {
 	}
 
 	templateName := fmt.Sprintf("jam_%s_guidelines.html", jam.TemplateName)
+	if _, hasTemplate := templates.GetTemplate(templateName); !hasTemplate {
+		return FourOhFour(c)
+	}
 
 	res.MustWriteTemplate(templateName, templateData, c.Perf)
 	return res
@@ -301,10 +307,11 @@ func JamIndex2023(c *RequestContext) ResponseData {
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2023/opengraph.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("jams/wheel-reinvention-2023/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam where we build software from scratch. September 25 - October 1 on Handmade Network."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex2023()},
 	}
+	baseData.ForceDark = true
 
 	type JamPageData struct {
 		templates.BaseData
@@ -457,10 +464,11 @@ func JamFeed2023(c *RequestContext) ResponseData {
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2023/opengraph.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("jams/wheel-reinvention-2023/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to change the status quo. September 25 - October 1 on Handmade Network."},
 		{Property: "og:url", Value: hmnurl.BuildJamFeed2023()},
 	}
+	baseData.ForceDark = true
 
 	var res ResponseData
 	res.MustWriteTemplate("jam_2023_wrj_feed.html", JamFeedData{
@@ -484,12 +492,13 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 		{Property: "og:title", Value: "Visibility Jam"},
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2023/opengraph.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("jams/visibility-2023/opengraph.png", true)},
 		{Property: "og:description", Value: "See things in a new way. April 14 - 16."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex2023_Visibility()},
 		{Name: "twitter:card", Value: "summary_large_image"},
-		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2023/TwitterCard.png", true)},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("jams/visibility-2023/TwitterCard.png", true)},
 	}
+	baseData.ForceDark = true
 
 	type JamPageData struct {
 		templates.BaseData
@@ -622,17 +631,17 @@ func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 	daysUntilEnd := utils.DaysUntil(hmndata.VJ2023.EndTime)
 
 	baseData := getBaseData(c, hmndata.VJ2023.Name, nil)
-
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Visibility Jam"},
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2023/opengraph.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("jams/visibility-2023/opengraph.png", true)},
 		{Property: "og:description", Value: "See things in a new way. April 14 - 16."},
 		{Property: "og:url", Value: hmnurl.BuildJamFeed2023_Visibility()},
 		{Name: "twitter:card", Value: "summary_large_image"},
-		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2023/TwitterCard.png", true)},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("jams/visibility-2023/TwitterCard.png", true)},
 	}
+	baseData.ForceDark = true
 
 	var res ResponseData
 	res.MustWriteTemplate("jam_2023_vj_feed.html", JamFeedData{
@@ -667,17 +676,17 @@ func JamRecap2023_Visibility(c *RequestContext) ResponseData {
 	}
 
 	baseData := getBaseData(c, hmndata.VJ2023.Name, nil)
-
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:title", Value: "Visibility Jam"},
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("visjam2023/opengraph.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("jams/visibility-2023/opengraph.png", true)},
 		// {Property: "og:description", Value: "See things in a new way. April 14 - 16."},
 		{Property: "og:url", Value: hmnurl.BuildJamRecap2023_Visibility()},
 		{Name: "twitter:card", Value: "summary_large_image"},
-		{Name: "twitter:image", Value: hmnurl.BuildPublic("visjam2023/TwitterCard.png", true)},
+		{Name: "twitter:image", Value: hmnurl.BuildPublic("jams/visibility-2023/TwitterCard.png", true)},
 	}
+	baseData.ForceDark = true
 
 	var res ResponseData
 	res.MustWriteTemplate("jam_2023_vj_recap.html", JamRecapData{
@@ -700,10 +709,11 @@ func JamIndex2022(c *RequestContext) ResponseData {
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2022/opengraph.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("jams/wheel-reinvention-2022/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to change the status quo. August 15 - 21 on Handmade Network."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex2022()},
 	}
+	baseData.ForceDark = true
 
 	type JamPageData struct {
 		templates.BaseData
@@ -836,10 +846,11 @@ func JamFeed2022(c *RequestContext) ResponseData {
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2022/opengraph.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("jams/wheel-reinvention-2022/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to change the status quo. August 15 - 21 on Handmade Network."},
 		{Property: "og:url", Value: hmnurl.BuildJamFeed2022()},
 	}
+	baseData.ForceDark = true
 
 	var res ResponseData
 	res.MustWriteTemplate("jam_2022_wrj_feed.html", JamFeedData{
@@ -892,10 +903,11 @@ func JamIndex2021(c *RequestContext) ResponseData {
 	baseData.OpenGraphItems = []templates.OpenGraphItem{
 		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:type", Value: "website"},
-		{Property: "og:image", Value: hmnurl.BuildPublic("wheeljam2021/opengraph.png", true)},
+		{Property: "og:image", Value: hmnurl.BuildPublic("jams/wheel-reinvention-2021/opengraph.png", true)},
 		{Property: "og:description", Value: "A one-week jam to bring a fresh perspective to old ideas. September 27 - October 3 on Handmade Network."},
 		{Property: "og:url", Value: hmnurl.BuildJamIndex2021()},
 	}
+	baseData.ForceDark = true
 
 	type JamPageData struct {
 		templates.BaseData

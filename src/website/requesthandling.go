@@ -449,7 +449,11 @@ func (rd *ResponseData) WriteTemplate(name string, data interface{}, rp *perf.Re
 		b := rp.StartBlock("TEMPLATE", name)
 		defer b.End()
 	}
-	return templates.GetTemplate(name).Execute(rd, data)
+	template, hasTemplate := templates.GetTemplate(name)
+	if !hasTemplate {
+		return oops.New(nil, "template not found: %s", name)
+	}
+	return template.Execute(rd, data)
 }
 
 func (rd *ResponseData) MustWriteTemplate(name string, data interface{}, rp *perf.RequestPerf) {

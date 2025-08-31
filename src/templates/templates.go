@@ -99,7 +99,7 @@ func Init() {
 	}
 }
 
-func GetTemplate(name string) *template.Template {
+func GetTemplate(name string) (*template.Template, bool) {
 	var templates map[string]*template.Template
 	if config.Config.DevConfig.LiveTemplates {
 		var errs map[string]error
@@ -112,10 +112,7 @@ func GetTemplate(name string) *template.Template {
 	}
 
 	template, hasTemplate := templates[name]
-	if !hasTemplate {
-		panic(oops.New(nil, "Template not found: %s", name))
-	}
-	return template
+	return template, hasTemplate
 }
 
 func hasSuffix(s string, suffixes ...string) bool {

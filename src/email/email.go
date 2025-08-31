@@ -173,7 +173,10 @@ func IsEmail(address string) bool {
 
 func renderTemplate(name string, data interface{}) (string, error) {
 	var buffer bytes.Buffer
-	template := templates.GetTemplate(name)
+	template, hasTemplate := templates.GetTemplate(name)
+	if !hasTemplate {
+		return "", oops.New(nil, "template not found: %s", name)
+	}
 	err := template.Execute(&buffer, data)
 	if err != nil {
 		return "", oops.New(err, "Failed to render template for email")
