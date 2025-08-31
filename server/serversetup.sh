@@ -46,13 +46,6 @@ if [ $checkpoint -lt 20 ]; then
         --shell /bin/bash \
         --create-home --home-dir /home/hmn \
         hmn
-    groupadd --system annotations
-    useradd --system \
-        --gid annotations \
-        --shell /bin/bash \
-        --create-home --home-dir /home/annotations \
-        annotations
-	usermod -a -G annotations hmn
     
     savecheckpoint 20
 fi
@@ -79,6 +72,7 @@ if [ $checkpoint -lt 40 ]; then
 
     do_as hmn <<'SCRIPT'
         set -euxo pipefail
+        cd ~
         echo 'export PATH=$PATH:/usr/local/go/bin:/home/hmn/go/bin' >> ~/.bashrc
         go version
 SCRIPT
@@ -142,26 +136,15 @@ if [ $checkpoint -lt 81 ]; then
     set +x
 
     do_as hmn <<'SCRIPT'
-        ssh-keygen -t ed25519 -C "beta-server" -N "" -f ~/.ssh/gitlab-hmn
-        git config --global core.sshCommand "ssh -i ~/.ssh/gitlab-hmn"
-SCRIPT
-
-    do_as annotations <<'SCRIPT'
-        ssh-keygen -t ed25519 -C "beta-server" -N "" -f ~/.ssh/gitlab-annotation-system
-        ssh-keygen -t ed25519 -C "beta-server" -N "" -f ~/.ssh/gitlab-hmml
+        ssh-keygen -t ed25519 -C "hmn-server" -N "" -f ~/.ssh/github-hmn
+        git config --global core.sshCommand "ssh -i ~/.ssh/github-hmn"
 SCRIPT
 
     echo ""
-    echo "Add the following keys as Deploy Keys to the following projects:"
+    echo "Add the following key as a deploy key to the GitHub repo:"
     echo ""
-    cat /home/hmn/.ssh/gitlab-hmn.pub
-    echo "https://git.handmade.network/hmn/hmn/-/settings/ci_cd#js-deploy-keys-settings"
-    echo ""
-    cat /home/annotations/.ssh/gitlab-annotation-system.pub
-    echo "https://git.handmade.network/Annotation-Pushers/Annotation-System/-/settings/ci_cd#js-deploy-keys-settings"
-    echo ""
-    cat /home/annotations/.ssh/gitlab-hmml.pub
-    echo "https://git.handmade.network/Annotation-Pushers/cinera_handmade.network/-/settings/ci_cd#js-deploy-keys-settings"
+    cat /home/hmn/.ssh/github-hmn.pub
+    echo "https://github.com/HandmadeNetwork/hmn/settings/keys/new"
     echo ""
     echo "Run this script again when you're done - it will continue where it left off."
 
@@ -176,47 +159,19 @@ fi
 if [ $checkpoint -lt 82 ]; then
     do_as hmn <<'SCRIPT'
         set -euxo pipefail
+
+        output=$(ssh -T -i ~/.ssh/github-hmn git@github.com 2>&1 || true)
         
-        if ! ssh -T -i ~/.ssh/gitlab-hmn git@git.handmade.network; then
+        if ! echo "$output" | grep -q "successfully authenticated"; then
             set +x
             
             echo "Copy the following key:"
             echo ""
-            cat ~/.ssh/gitlab-hmn
+            cat ~/.ssh/github-hmn.pub
             echo ""
-            echo "Add it as a Deploy Key to the HMN project in GitLab:"
+            echo "Add it as a deploy key in the GitHub repo:"
             echo ""
-            echo "    https://git.handmade.network/hmn/hmn/-/settings/ci_cd#js-deploy-keys-settings"
-            echo ""
-            exit 1
-        fi
-SCRIPT
-
-    do_as annotations <<'SCRIPT'
-        if ! ssh -T -i ~/.ssh/gitlab-annotation-system git@git.handmade.network; then
-            set +x
-
-            echo "Copy the following key:"
-            echo ""
-            cat ~/.ssh/gitlab-annotation-system
-            echo ""
-            echo "Add it as a Deploy Key to this project in GitLab:"
-            echo ""
-            echo "    https://git.handmade.network/Annotation-Pushers/Annotation-System/-/settings/ci_cd#js-deploy-keys-settings"
-            echo ""
-            exit 1
-        fi
-
-        if ! ssh -T -i ~/.ssh/gitlab-hmml git@git.handmade.network; then
-            set +x
-
-            echo "Copy the following key:"
-            echo ""
-            cat ~/.ssh/gitlab-hmml
-            echo ""
-            echo "Add it as a Deploy Key to this project in GitLab:"
-            echo ""
-            echo "    https://git.handmade.network/Annotation-Pushers/cinera_handmade.network/-/settings/ci_cd#js-deploy-keys-settings"
+            echo "    https://github.com/HandmadeNetwork/hmn/settings/keys/new"
             echo ""
             exit 1
         fi
@@ -231,7 +186,7 @@ if [ $checkpoint -lt 90 ]; then
         set -euxo pipefail
 
         cd ~
-        git clone git@git.handmade.network:hmn/hmn.git
+        git clone git@github.com:HandmadeNetwork/hmn.git
 SCRIPT
     
     savecheckpoint 90
@@ -243,20 +198,16 @@ if [ $checkpoint -lt 100 ]; then
 
     cp /home/hmn/hmn/server/caddy.service /etc/systemd/system/caddy.service
     cp /home/hmn/hmn/server/hmn.service /etc/systemd/system/hmn.service
-    cp /home/hmn/hmn/server/cinera.service /etc/systemd/system/cinera.service
     chmod 644 /etc/systemd/system/caddy.service
     chmod 644 /etc/systemd/system/hmn.service
-    chmod 644 /etc/systemd/system/cinera.service
 
     cp /home/hmn/hmn/server/logrotate /etc/logrotate.d/hmn
     
     cp /home/hmn/hmn/src/config/config.go.example /home/hmn/hmn/src/config/config.go
     cp /home/hmn/hmn/server/hmn.conf.example /home/hmn/hmn/server/hmn.conf
     cp /home/hmn/hmn/adminmailer/config.go.example /home/hmn/hmn/adminmailer/config.go
-    cp /home/hmn/hmn/cinera/cinera.conf.sample /home/hmn/hmn/cinera/cinera.conf
     chown hmn:hmn /home/hmn/hmn/src/config/config.go
     chown hmn:hmn /home/hmn/hmn/server/hmn.conf
-    chown hmn:hmn /home/hmn/hmn/cinera/cinera.conf
 
     cp /home/hmn/hmn/server/.s3cfg /home/hmn/.s3cfg
     chown hmn:hmn /home/hmn/.s3cfg
@@ -267,7 +218,6 @@ if [ $checkpoint -lt 100 ]; then
     systemctl daemon-reload
     systemctl enable caddy
     systemctl enable hmn
-    systemctl enable cinera
     
     savecheckpoint 100
 fi
@@ -275,10 +225,7 @@ fi
 # Set up crons
 if [ $checkpoint -lt 105 ]; then
     # See https://stackoverflow.com/a/9625233/1177139
-    (crontab -l 2>/dev/null; echo "50 4 * * * /home/hmn/hmn/server/backup.sh") | crontab -
-
-    # TODO: This seems to fail the first time you run it? But then works fine afterward, thanks
-    # to checkpoints. Probably should fix this someday.
+    (crontab -l 2>/dev/null || true; echo "50 4 * * * /home/hmn/hmn/server/backup.sh") | crontab -
 
     savecheckpoint 105
 fi
@@ -366,12 +313,6 @@ Edit the following file:
 Add the DigitalOcean Spaces credentials, and ensure that the bucket info is
 correct.
 
-${BLUE_BOLD}Configure Cinera${RESET}
-
-Edit the following file, adding the correct domain:
-
-    /home/hmn/hmn/cinera/cinera.conf
-
 ${BLUE_BOLD}Configure the admin mailer${RESET}
 
 Fill in the config file and build the mailer:
@@ -392,11 +333,6 @@ ${BLUE_BOLD}Download and restore a database backup${RESET}
 ${BLUE_BOLD}Restore static files${RESET}
 
     make restore-static-files
-
-${BLUE_BOLD}Set up Cinera${RESET}
-
-    cd /home/hmn/hmn/cinera
-    ./setup.sh
 
 ${BLUE_BOLD}Start up Caddy${RESET}
 
