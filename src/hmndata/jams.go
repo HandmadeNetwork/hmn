@@ -143,6 +143,8 @@ var AllJams = []Jam{
 	WRJ2025,
 }
 
+var LatestJam = WRJ2025 // NOTE(asaf): The /jam route will redirect here
+
 func CurrentJam() *Jam {
 	now := time.Now()
 	for i, jam := range AllJams {
