@@ -37,7 +37,7 @@ if [ $checkpoint -lt 20 ]; then
     groupadd --system caddy
     useradd --system \
         --gid caddy \
-        --shell /bin/bash \
+        --shell /usr/sbin/nologin \
         --create-home --home-dir /home/caddy \
         caddy
     groupadd --system hmn
@@ -70,8 +70,8 @@ fi
 
 # Install Go
 if [ $checkpoint -lt 40 ]; then
-	wget https://go.dev/dl/go1.18.2.linux-amd64.tar.gz
-    tar -C /usr/local -xzf go1.18.2.linux-amd64.tar.gz
+	wget https://go.dev/dl/go1.24.6.linux-amd64.tar.gz
+    tar -C /usr/local -xzf go1.24.6.linux-amd64.tar.gz
     
     export PATH=$PATH:/usr/local/go/bin:/root/go/bin
     echo 'export PATH=$PATH:/usr/local/go/bin:/root/go/bin' >> ~/.bashrc
@@ -89,9 +89,9 @@ fi
 export PATH=$PATH:/usr/local/go/bin:/root/go/bin
 
 # Install Caddy
-# https://www.digitalocean.com/community/tutorials/how-to-host-a-website-with-caddy-on-ubuntu-18-04
+# https://www.digitalocean.com/community/tutorials/how-to-host-a-website-with-caddy-on-ubuntu-22-04
 if [ $checkpoint -lt 50 ]; then
-    go install github.com/caddyserver/xcaddy/cmd/xcaddy@v0.1.9
+    go install github.com/caddyserver/xcaddy/cmd/xcaddy@v0.4.5
     xcaddy build \
         --with github.com/caddy-dns/cloudflare \
         --with github.com/aksdb/caddy-cgi/v2
@@ -105,10 +105,11 @@ fi
 # Install Postgres
 # (instructions at https://www.postgresql.org/download/linux/ubuntu/)
 if [ $checkpoint -lt 60 ]; then
-    sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-    sudo apt-get update
-    sudo apt-get -y install postgresql
+    sudo apt install -y postgresql-common
+    sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+
+    sudo apt update
+    sudo apt -y install postgresql
     
     savecheckpoint 60
 fi
@@ -319,8 +320,8 @@ First, make sure you have everything on your path:
 
 ${BLUE_BOLD}Edit the Caddy config${RESET}
 
-Get an API token from Cloudflare. The token must have the Zone / Zone / Read and
-Zone / DNS / Edit permissions (as laid out in the following links).
+Get an API token from Cloudflare. The token must have the Zone / Zone / Read
+and Zone / DNS / Edit permissions (as laid out in the following links).
 
     https://github.com/caddy-dns/cloudflare
     https://github.com/libdns/cloudflare
@@ -352,13 +353,7 @@ configured everything.
 
 ${BLUE_BOLD}Edit HMN environment vars${RESET}
 
-First, go to GitLab and add a webhook with a secret. Set it to trigger on
-push events for the branch you are using for deploys.
-
-    https://git.handmade.network/hmn/hmn/hooks
-
-Then, edit the following file and fill in all the environment vars, including
-the secret value from the GitLab webhook:
+Edit the following file and fill in all the environment vars:
 
     /home/hmn/hmn/server/hmn.conf
 
@@ -368,7 +363,8 @@ Edit the following file:
 
     /home/hmn/.s3cfg
 
-Add the DigitalOcean Spaces credentials, and ensure that the bucket info is correct.
+Add the DigitalOcean Spaces credentials, and ensure that the bucket info is
+correct.
 
 ${BLUE_BOLD}Configure Cinera${RESET}
 
