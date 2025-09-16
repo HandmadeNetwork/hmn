@@ -433,16 +433,14 @@ func ProjectNew(c *RequestContext) ResponseData {
 	project.Owners = append(project.Owners, templates.UserToTemplate(c.CurrentUser))
 	project.Personal = true
 
-	if c.Req.URL.Query().Has("jam") {
-		currentJam := hmndata.UpcomingJam(hmndata.JamProjectCreateGracePeriod)
-		if currentJam != nil {
-			project.JamParticipation = []templates.ProjectJamParticipation{
-				{
-					JamName:       currentJam.Name,
-					JamSlug:       currentJam.Slug,
-					Participating: true,
-				},
-			}
+	currentJam := hmndata.UpcomingJam(hmndata.JamProjectCreateGracePeriod)
+	if currentJam != nil {
+		project.JamParticipation = []templates.ProjectJamParticipation{
+			{
+				JamName:       currentJam.Name,
+				JamSlug:       currentJam.Slug,
+				Participating: c.Req.URL.Query().Has("jam"),
+			},
 		}
 	}
 
