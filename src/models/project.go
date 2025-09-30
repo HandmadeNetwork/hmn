@@ -74,6 +74,7 @@ type Project struct {
 	Personal              bool      `db:"personal"`
 	Hidden                bool      `db:"hidden"`
 	Featured              bool      `db:"featured"`
+	JamHidden             bool      `db:"jam_hidden"`
 	DateApproved          time.Time `db:"date_approved"`
 	DateCreated           time.Time `db:"date_created"`
 	AllLastUpdated        time.Time `db:"all_last_updated"`

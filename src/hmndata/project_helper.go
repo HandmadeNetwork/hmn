@@ -27,10 +27,11 @@ type ProjectsQuery struct {
 	IncludeHidden bool
 
 	// Ignored when using FetchProject
-	ProjectIDs []int    // if empty, all projects
-	Slugs      []string // if empty, all projects
-	OwnerIDs   []int    // if empty, all projects
-	JamSlugs   []string // if empty, all projects
+	ProjectIDs    []int    // if empty, all projects
+	Slugs         []string // if empty, all projects
+	OwnerIDs      []int    // if empty, all projects
+	JamSlugs      []string // if empty, all projects
+	ShowJamHidden bool
 
 	// Ignored when using CountProjects
 	Limit, Offset int // if empty, no pagination
@@ -143,7 +144,7 @@ func FetchProjects(
 		qb.Add(`AND (project.slug != '' AND (project.slug = ANY ($?) OR $? && project.slug_aliases))`, q.Slugs, q.Slugs)
 	}
 	if len(q.JamSlugs) > 0 {
-		qb.Add(`AND (jam_project.jam_slug = ANY ($?) AND jam_project.participating = TRUE)`, q.JamSlugs)
+		qb.Add(`AND (jam_project.jam_slug = ANY ($?) AND jam_project.participating = TRUE AND (project.jam_hidden = FALSE OR $?))`, q.JamSlugs, q.ShowJamHidden)
 	}
 
 	// Output

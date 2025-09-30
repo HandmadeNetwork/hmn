@@ -156,6 +156,7 @@ func ProjectToProjectSettings(
 		Owners:      ownerUsers,
 		Logo:        AssetToTemplate(logo),
 		HeaderImage: AssetToTemplate(headerImage),
+		JamHidden:   p.JamHidden,
 	}
 }
 

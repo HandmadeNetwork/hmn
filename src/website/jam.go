@@ -151,7 +151,8 @@ func getJamGenericTemplateData(c *RequestContext, jam hmndata.Jam, baseData temp
 	timelineItems := []templates.TimelineItem{}
 
 	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		JamSlugs: []string{jam.Slug},
+		JamSlugs:      []string{jam.Slug},
+		ShowJamHidden: c.Req.URL.Query().Has("showhidden") && c.CurrentUser.IsStaff,
 	})
 	if err != nil {
 		return JamGenericTemplateData{}, oops.New(err, "failed to fetch jam projects")
@@ -346,7 +347,8 @@ func JamIndex2023(c *RequestContext) ResponseData {
 	}
 
 	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		JamSlugs: []string{hmndata.WRJ2023.Slug},
+		JamSlugs:      []string{hmndata.WRJ2023.Slug},
+		ShowJamHidden: c.Req.URL.Query().Has("showhidden") && c.CurrentUser.IsStaff,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
@@ -417,7 +419,8 @@ func JamIndex2023(c *RequestContext) ResponseData {
 
 func JamFeed2023(c *RequestContext) ResponseData {
 	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		JamSlugs: []string{hmndata.WRJ2023.Slug},
+		JamSlugs:      []string{hmndata.WRJ2023.Slug},
+		ShowJamHidden: c.Req.URL.Query().Has("showhidden") && c.CurrentUser.IsStaff,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
@@ -533,7 +536,8 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 	}
 
 	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		JamSlugs: []string{hmndata.VJ2023.Slug},
+		JamSlugs:      []string{hmndata.VJ2023.Slug},
+		ShowJamHidden: c.Req.URL.Query().Has("showhidden") && c.CurrentUser.IsStaff,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
@@ -586,7 +590,8 @@ func JamIndex2023_Visibility(c *RequestContext) ResponseData {
 
 func JamFeed2023_Visibility(c *RequestContext) ResponseData {
 	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		JamSlugs: []string{hmndata.VJ2023.Slug},
+		JamSlugs:      []string{hmndata.VJ2023.Slug},
+		ShowJamHidden: c.Req.URL.Query().Has("showhidden") && c.CurrentUser.IsStaff,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
@@ -747,7 +752,8 @@ func JamIndex2022(c *RequestContext) ResponseData {
 	}
 
 	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		JamSlugs: []string{hmndata.WRJ2022.Slug},
+		JamSlugs:      []string{hmndata.WRJ2022.Slug},
+		ShowJamHidden: c.Req.URL.Query().Has("showhidden") && c.CurrentUser.IsStaff,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))
@@ -799,7 +805,8 @@ func JamIndex2022(c *RequestContext) ResponseData {
 
 func JamFeed2022(c *RequestContext) ResponseData {
 	jamProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		JamSlugs: []string{hmndata.WRJ2022.Slug},
+		JamSlugs:      []string{hmndata.WRJ2022.Slug},
+		ShowJamHidden: c.Req.URL.Query().Has("showhidden") && c.CurrentUser.IsStaff,
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jam projects for current user"))

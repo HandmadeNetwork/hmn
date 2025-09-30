@@ -661,6 +661,7 @@ type ProjectPayload struct {
 	HeaderImage           FormImage
 	Tag                   string
 	JamParticipationSlugs []string
+	JamHidden             bool
 
 	Slug        string
 	SlugAliases string // comma-separated
@@ -746,6 +747,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	}
 
 	jamParticipationSlugs := c.Req.Form["jam_participation"]
+	jamHidden := c.Req.Form.Has("jam_hidden")
 
 	res.Payload = ProjectPayload{
 		Name:                  projectName,
@@ -760,6 +762,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		HeaderImage:           headerImage,
 		Tag:                   tag,
 		JamParticipationSlugs: jamParticipationSlugs,
+		JamHidden:             jamHidden,
 		Slug:                  slug,
 		SlugAliases:           slugAliases,
 		Personal:              !official,
@@ -856,7 +859,8 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 				featured = $3,
 				personal = $4,
 				hidden = $5,
-				slug_aliases = $6
+				slug_aliases = $6,
+				jam_hidden = $7
 			WHERE
 				id = $1
 			`,
@@ -866,6 +870,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			payload.Personal,
 			payload.Hidden,
 			slugAliases,
+			payload.JamHidden,
 		)
 		if err != nil {
 			return oops.New(err, "Failed to update project with admin fields")

@@ -179,6 +179,7 @@ type ProjectSettings struct {
 	Lifecycle        string
 	Tag              string
 	JamParticipation []ProjectJamParticipation
+	JamHidden        bool
 
 	Blurb       string
 	Description string
