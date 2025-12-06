@@ -143,7 +143,8 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		// The user deleted part of the upload string during the upload.
 		// Paste the newString at the end and don't alter the cursor position.
 		if (insertIndex === -1) {
-			eText.value = eText.value + newString;
+			const newLines = newString.startsWith('\n\n') ? '' : '\n\n';
+			eText.value = eText.value + newLines + newString;
 			return;
 		}
 
@@ -165,7 +166,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		if ( (fullyInside && cursorStart === cursorEnd) || (intersects && !fullyInside) ) {
 			eText.selectionStart = eText.selectionEnd = insertIndex + newString.length;
 		}
-		
+
 		doMarkdown();
 	}
 
