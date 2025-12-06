@@ -141,30 +141,33 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		let insertIndex = eText.value.indexOf(uploadString)
 		
 		// The user deleted part of the upload string during the upload.
-		// Paste the newString at the end and don't alter the cursor position.
+		// Paste the newString at the end.
 		if (insertIndex === -1) {
+			insertIndex = eText.value.length;
 			const newLines = newString.startsWith('\n\n') ? '' : '\n\n';
 			eText.value = eText.value + newLines + newString;
-			return;
+		}
+		else {
+			eText.value = eText.value.replace(uploadString, newString);
 		}
 
-		eText.value = eText.value.replace(uploadString, newString);
-
-		// Common case: The user's cursor / selection is outside the placeholder.
-		const difference = newString.length - uploadString.length;
-		if (cursorStart >= insertIndex + uploadString.length) {
-			eText.selectionStart = cursorStart + difference;
-		}
-		if (cursorEnd >= insertIndex + uploadString.length) {
-			eText.selectionEnd = cursorEnd + difference;
-		}
-
-		// The user's cursor is inside the placeholder string, or some but not all of the placeholder is selected
-		// the cursor should be moved to the end of the replaced string
 		const intersects = cursorStart < insertIndex + uploadString.length && insertIndex < cursorEnd;
 		const fullyInside = insertIndex <= cursorStart && cursorEnd <= insertIndex + uploadString.length;
 		if ( (fullyInside && cursorStart === cursorEnd) || (intersects && !fullyInside) ) {
+			// The user's cursor is inside the placeholder string, or some but not all of the placeholder is selected
+			// the cursor should be moved to the end of the replaced string
 			eText.selectionStart = eText.selectionEnd = insertIndex + newString.length;
+		}
+		else {
+			// Common case: The user's cursor / selection is outside the placeholder.
+			const difference = newString.length - uploadString.length;
+			eText.selectionStart = cursorStart >= insertIndex + uploadString.length
+				? cursorStart + difference
+				: cursorStart;
+
+			eText.selectionEnd = cursorEnd >= insertIndex + uploadString.length
+				? cursorEnd + difference
+				: cursorEnd;
 		}
 
 		doMarkdown();
