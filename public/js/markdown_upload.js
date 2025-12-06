@@ -139,17 +139,33 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		let cursorEnd = eText.selectionEnd;
 		let uploadString = makeUploadString(upload.uploadNumber, upload.file.name);
 		let insertIndex = eText.value.indexOf(uploadString)
+		
+		// The user deleted part of the upload string during the upload.
+		// Paste the newString at the end and don't alter the cursor position.
+		if (insertIndex === -1) {
+			eText.value = eText.value + newString;
+			return;
+		}
+
 		eText.value = eText.value.replace(uploadString, newString);
-		if (cursorStart <= insertIndex + uploadString.length) {
-			eText.selectionStart = cursorStart;
-		} else {
-			eText.selectionStart = cursorStart - uploadString.length + newString.length;
+
+		// Common case: The user's cursor / selection is outside the placeholder.
+		const difference = newString.length - uploadString.length;
+		if (cursorStart >= insertIndex + uploadString.length) {
+			eText.selectionStart = cursorStart + difference;
 		}
-		if (cursorEnd <= insertIndex + uploadString.length) {
-			eText.selectionEnd = cursorEnd;
-		} else {
-			eText.selectionEnd = cursorEnd - uploadString.length + newString.length;
+		if (cursorEnd >= insertIndex + uploadString.length) {
+			eText.selectionEnd = cursorEnd + difference;
 		}
+
+		// The user's cursor is inside the placeholder string, or some but not all of the placeholder is selected
+		// the cursor should be moved to the end of the replaced string
+		const intersects = cursorStart < insertIndex + uploadString.length && insertIndex < cursorEnd;
+		const fullyInside = insertIndex <= cursorStart && cursorEnd <= insertIndex + uploadString.length;
+		if ( (fullyInside && cursorStart === cursorEnd) || (intersects && !fullyInside) ) {
+			eText.selectionStart = eText.selectionEnd = insertIndex + newString.length;
+		}
+		
 		doMarkdown();
 	}
 
