@@ -32,6 +32,11 @@ var autostoreChannels = []string{
 	config.Config.Discord.JamChannelID,
 }
 
+var trackedTypes = []MessageType{
+	MessageTypeDefault,
+	MessageTypeReply,
+}
+
 func shouldAutomaticallyCreateSnippet(interned *InternedMessage) bool {
 	// Never create snippets for unlinked users, or users who have turned off the snippet pref.
 	if interned.HMNUser == nil || !interned.HMNUser.DiscordSaveShowcase {
@@ -73,7 +78,8 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	}
 
 	autostore := slices.Contains(autostoreChannels, msg.ChannelID)
-	if !deleted && autostore {
+	validType := slices.Contains(trackedTypes, msg.Type)
+	if !deleted && autostore && validType {
 		if err := TrackMessage(ctx, dbConn, msg); err != nil {
 			return err
 		}
