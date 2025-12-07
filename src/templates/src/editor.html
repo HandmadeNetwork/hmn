@@ -178,5 +178,106 @@
             maxFileSize,
             uploadUrl
         );
+
+        textField.addEventListener("keydown", function (ev) {
+            if (ev.ctrlKey) {
+                const key = ev.key.toLowerCase();
+                const start = textField.selectionStart;
+                const end = textField.selectionEnd;
+                const selected = textField.value.substring(start, end);
+
+                if (key === 'k') {
+                    ev.preventDefault();
+
+                    if (selected.length) {
+                        textField.value = 
+                            textField.value.substring(0, start) + '[' +
+                            selected + ']()' + 
+                            textField.value.substring(end);
+
+                        textField.selectionStart = textField.selectionEnd = end + 3;
+                    }
+                    else {
+                        textField.value =
+                            textField.value.substring(0, start) +
+                            "[](url)" +
+                            textField.value.substring(end);
+
+                        textField.selectionStart = textField.selectionEnd = start + 1;
+                    }
+                    textField.focus();
+                    doMarkdown();
+                }
+                else if (key === 'b') {
+                    ev.preventDefault();
+
+                    if (selected.length) {
+                        textField.value = 
+                            textField.value.substring(0, start) + '**' +
+                            selected + '**' + 
+                            textField.value.substring(end);
+
+                        textField.selectionStart = textField.selectionEnd = end + 2;
+                    }
+                    else {
+                        textField.value =
+                            textField.value.substring(0, start) +
+                            "****" +
+                            textField.value.substring(end);
+
+                        textField.selectionStart = textField.selectionEnd = start + 2;
+                    }
+                    textField.focus();
+                    doMarkdown();
+                }
+                else if (key === 'i') {
+                    ev.preventDefault();
+
+                    if (selected.length) {
+                        textField.value = 
+                            textField.value.substring(0, start) + '*' +
+                            selected + '*' + 
+                            textField.value.substring(end);
+
+                        textField.selectionStart = textField.selectionEnd = end + 1;
+                    }
+                    else {
+                        textField.value =
+                            textField.value.substring(0, start) +
+                            "**" +
+                            textField.value.substring(end);
+
+                        textField.selectionStart = textField.selectionEnd = start + 1;
+                    }
+                    textField.focus();
+                    doMarkdown();
+                }
+                else if (key === 's') {
+                    ev.preventDefault();
+                }
+            }
+        });
+
+        textField.addEventListener("paste", (ev) => {
+            const clipboard = ev.clipboardData || window.clipboardData;
+            const pastedText = clipboard.getData("text");
+            const start = textField.selectionStart;
+            const end = textField.selectionEnd;
+
+            if (pastedText && (pastedText.startsWith('https://') || pastedText.startsWith('http://')) && start !== end) {
+                ev.preventDefault();
+
+                textField.value =
+                    textField.value.substring(0, start) + '[' +
+                    textField.value.substring(start, end) + '](' +
+                    pastedText + ')' +
+                    textField.value.substring(end);
+
+                textField.selectionStart = textField.selectionEnd = end + 4 + pastedText.length;
+
+                textField.focus();
+                doMarkdown();
+            }
+        });
     </script>
 {{ end }}

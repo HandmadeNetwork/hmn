@@ -139,17 +139,37 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		let cursorEnd = eText.selectionEnd;
 		let uploadString = makeUploadString(upload.uploadNumber, upload.file.name);
 		let insertIndex = eText.value.indexOf(uploadString)
-		eText.value = eText.value.replace(uploadString, newString);
-		if (cursorStart <= insertIndex + uploadString.length) {
-			eText.selectionStart = cursorStart;
-		} else {
-			eText.selectionStart = cursorStart - uploadString.length + newString.length;
+		
+		// The user deleted part of the upload string during the upload.
+		// Paste the newString at the end.
+		if (insertIndex === -1) {
+			insertIndex = eText.value.length;
+			const newLines = newString.startsWith('\n\n') ? '' : '\n\n';
+			eText.value = eText.value + newLines + newString;
 		}
-		if (cursorEnd <= insertIndex + uploadString.length) {
-			eText.selectionEnd = cursorEnd;
-		} else {
-			eText.selectionEnd = cursorEnd - uploadString.length + newString.length;
+		else {
+			eText.value = eText.value.replace(uploadString, newString);
 		}
+
+		const intersects = cursorStart < insertIndex + uploadString.length && insertIndex < cursorEnd;
+		const fullyInside = insertIndex <= cursorStart && cursorEnd <= insertIndex + uploadString.length;
+		if ( (fullyInside && cursorStart === cursorEnd) || (intersects && !fullyInside) ) {
+			// The user's cursor is inside the placeholder string, or some but not all of the placeholder is selected
+			// the cursor should be moved to the end of the replaced string
+			eText.selectionStart = eText.selectionEnd = insertIndex + newString.length;
+		}
+		else {
+			// Common case: The user's cursor / selection is outside the placeholder.
+			const difference = newString.length - uploadString.length;
+			eText.selectionStart = cursorStart >= insertIndex + uploadString.length
+				? cursorStart + difference
+				: cursorStart;
+
+			eText.selectionEnd = cursorEnd >= insertIndex + uploadString.length
+				? cursorEnd + difference
+				: cursorEnd;
+		}
+
 		doMarkdown();
 	}
 
