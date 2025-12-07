@@ -96,6 +96,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		const files = ev.clipboardData?.files ?? [];
 		if (files.length > 0) {
 			importUserFiles(files)
+            ev.preventDefault();
 		}
 	});
 
@@ -130,6 +131,8 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		}
 
 		eText.value = eText.value.substring(0, cursorStart) + toInsert + eText.value.substring(cursorEnd, eText.value.length);
+        eText.selectionStart = cursorStart + toInsert.length;
+        eText.selectionEnd = eText.selectionStart;
 		doMarkdown();
 		uploadNext();
 	}
