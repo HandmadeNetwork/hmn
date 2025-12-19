@@ -330,9 +330,9 @@ ${BLUE_BOLD}Restore static files${RESET}
 
     make restore-static-files
 
-${BLUE_BOLD}Start up Caddy${RESET}
+${BLUE_BOLD}Restart Caddy${RESET}
 
-    systemctl start caddy
+    systemctl restart caddy
 
 ${BLUE_BOLD}Deploy the site!${RESET}
 

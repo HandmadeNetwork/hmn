@@ -9,4 +9,6 @@ if [ "$(whoami)" != "hmn" ]; then
   read
 fi
 
-s3cmd sync s3://hmn-backup/static/media/ /home/hmn/hmn/public/media/
+# The --no-preserve flag prevents it from attempting to restore user/group, which we don't care
+# about as these all should be owned by hmn/hmn anyway.
+s3cmd sync --no-preserve s3://hmn-backup/static/media/ /home/hmn/hmn/public/media/
