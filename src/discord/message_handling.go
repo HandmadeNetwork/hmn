@@ -112,7 +112,7 @@ func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 
 		if !msg.Author.IsBot {
 			err = SendDM(ctx, dbConn, msg.Author.ID,
-				"Posts in #project-showcase are required to have an image, video, or link. Please discuss showcase content in #project-discussion.",
+				"Posts in #project-showcase are required to have an image, video, or link. Please create a thread if you wish to discuss a #project-showcase post.",
 			)
 
 			if err != nil {
