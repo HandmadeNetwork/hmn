@@ -55,43 +55,53 @@ if [ $checkpoint -lt 30 ]; then
     apt update
     apt install -y \
         build-essential \
-        libcurl4-openssl-dev byacc flex \
-        s3cmd
+        s3cmd \
+        ffmpeg \
+        cpulimit
     
     savecheckpoint 30
 fi
 
 # Install Go
 if [ $checkpoint -lt 40 ]; then
-	wget https://go.dev/dl/go1.24.6.linux-amd64.tar.gz
-    tar -C /usr/local -xzf go1.24.6.linux-amd64.tar.gz
+	wget https://go.dev/dl/go1.25.5.linux-amd64.tar.gz
+    tar -C /usr/local -xzf go1.25.5.linux-amd64.tar.gz
     
-    export PATH=$PATH:/usr/local/go/bin:/root/go/bin
-    echo 'export PATH=$PATH:/usr/local/go/bin:/root/go/bin' >> ~/.bashrc
+    export PATH=$PATH:/usr/local/go/bin
+    echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
     go version
 
     do_as hmn <<'SCRIPT'
         set -euxo pipefail
         cd ~
-        echo 'export PATH=$PATH:/usr/local/go/bin:/home/hmn/go/bin' >> ~/.bashrc
+        echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
         go version
 SCRIPT
     
     savecheckpoint 40
 fi
 
-export PATH=$PATH:/usr/local/go/bin:/root/go/bin
+export PATH=$PATH:/usr/local/go/bin
 
 # Install Caddy
-# https://www.digitalocean.com/community/tutorials/how-to-host-a-website-with-caddy-on-ubuntu-22-04
+# https://caddyserver.com/docs/install#debian-ubuntu-raspbian
 if [ $checkpoint -lt 50 ]; then
-    go install github.com/caddyserver/xcaddy/cmd/xcaddy@v0.4.5
-    xcaddy build \
-        --with github.com/caddy-dns/cloudflare \
-        --with github.com/aksdb/caddy-cgi/v2
-    mv caddy /usr/bin
-    chown root:root /usr/bin/caddy
-    chmod 755 /usr/bin/caddy
+    apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+    chmod o+r /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    chmod o+r /etc/apt/sources.list.d/caddy-stable.list
+    apt update
+    apt install -y caddy
+
+    caddy --version
+
+    # This is currently marked "experimental", so it may eventually stop
+    # working. If so, I will be sad. But for now it works and is much easier
+    # and faster than xcaddy, and allows us to use the default apt approach for
+    # installing caddy.
+    caddy add-package github.com/caddy-dns/cloudflare
+    caddy list-modules --packages --skip-standard
     
     savecheckpoint 50
 fi
@@ -99,11 +109,11 @@ fi
 # Install Postgres
 # (instructions at https://www.postgresql.org/download/linux/ubuntu/)
 if [ $checkpoint -lt 60 ]; then
-    sudo apt install -y postgresql-common
-    sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+    apt install -y postgresql-common
+    /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
 
-    sudo apt update
-    sudo apt -y install postgresql
+    apt update
+    apt -y install postgresql
     
     savecheckpoint 60
 fi
@@ -194,11 +204,11 @@ fi
 
 # Copy config files to the right places
 if [ $checkpoint -lt 100 ]; then
-    cp /home/hmn/hmn/server/Caddyfile /home/caddy/Caddyfile
+    cp /home/hmn/hmn/server/Caddyfile /etc/caddy/Caddyfile
 
-    cp /home/hmn/hmn/server/caddy.service /etc/systemd/system/caddy.service
+    cp /home/hmn/hmn/server/caddy.service.override /etc/systemd/system/caddy.service.d/override.conf
     cp /home/hmn/hmn/server/hmn.service /etc/systemd/system/hmn.service
-    chmod 644 /etc/systemd/system/caddy.service
+    chmod 644 /etc/systemd/system/caddy.service.d/override.conf
     chmod 644 /etc/systemd/system/hmn.service
 
     cp /home/hmn/hmn/server/logrotate /etc/logrotate.d/hmn
@@ -246,16 +256,6 @@ SCRIPT
     savecheckpoint 110
 fi
 
-# Install ffmpeg and cpulimit
-if [ $checkpoint -lt 120 ]; then    
-    apt update
-    apt install -y \
-        ffmpeg \
-        cpulimit
-
-    savecheckpoint 120
-fi
-
 cat <<HELP
 Everything has been successfully installed!
 
@@ -275,15 +275,11 @@ and Zone / DNS / Edit permissions (as laid out in the following links).
 
 Then edit the Caddyfile:
 
-    vim /home/caddy/Caddyfile
+    vim /etc/caddy/Caddyfile
 
 Add the Cloudflare token to allow the ACME challenge to succeed, and add
 the correct domains. (Don't forget to include both the normal and wildcard
 domains.)
-
-Also, in the CGI config, add the name of the Git branch you would like to
-use when deploying. For example, a deployment of the beta site should use
-the 'beta' branch.
 
 ${BLUE_BOLD}Edit the website config${RESET}
 

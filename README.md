@@ -32,7 +32,7 @@ You will need the following software installed:
 
     Depending on your installation of Postgres, you may need to modify the hostname and port in the Postgres section of the config.
 
-- **Set up the database.** Run `go run . db seed` to initialize the database and fill it with sample data.
+- **Set up the database.** Run `go run . db seed --create-user` to initialize the database and fill it with sample data.
 
 - **Update your hosts file.** The website uses subdomains for official projects, so the site cannot simply be run off `localhost`. Add the following
 line to your hosts file:

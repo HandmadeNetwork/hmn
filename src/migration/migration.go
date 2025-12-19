@@ -15,6 +15,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/migration/migrations"
 	"git.handmade.network/hmn/hmn/src/migration/types"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -82,6 +83,9 @@ func init() {
 		Use:   "seed",
 		Short: "Resets the db and populates it with sample data.",
 		Run: func(cmd *cobra.Command, args []string) {
+			if utils.Must1(cmd.Flags().GetBool("create-user")) {
+				CreateHMNUser()
+			}
 			ResetDB()
 			SampleSeed()
 		},
@@ -97,9 +101,16 @@ func init() {
 				os.Exit(1)
 			}
 
+			if utils.Must1(cmd.Flags().GetBool("create-user")) {
+				CreateHMNUser()
+			}
 			ResetDB()
 			SeedFromFile(args[0])
 		},
+	}
+
+	for _, cmd := range []*cobra.Command{seedCommand, seedFromFileCommand} {
+		cmd.Flags().Bool("create-user", false, "Create the HMN database user as well. (For local development only; requires the superuser role to be available under default credentials with password authentication.)")
 	}
 
 	website.WebsiteCommand.AddCommand(dbCommand)
@@ -359,12 +370,17 @@ func MakeMigration(name, description string) {
 	fmt.Println(path)
 }
 
-func ResetDB() {
-	fmt.Println("Resetting database...")
-
+// Creates the Postgres user for the website. This is intended for local development only; in real
+// environments, the user should be created manually.
+//
+// This function will attempt to log into the default Postgres superuser account found in local
+// installations. This will probably not be possible in server environments as the superuser role
+// will not have password login enabled (e.g. the `postgres` account on Ubuntu).
+func CreateHMNUser() {
 	ctx := context.Background()
 
-	// Create the HMN database user
+	fmt.Println("Guessing superuser credentials...")
+
 	credentials := append(
 		[]pgCredentials{
 			{getSystemUsername(), "", true}, // Postgres.app on Mac
@@ -410,13 +426,15 @@ func ResetDB() {
 	}
 	defer superuserConn.Close(ctx)
 
+	fmt.Println("Creating HMN user...")
+
 	// Create the HMN user
 	{
 		result := superuserConn.ExecParams(ctx, fmt.Sprintf(`
-				CREATE USER %s WITH
-					ENCRYPTED PASSWORD '%s'
-					CREATEDB
-			`, config.Config.Postgres.User, config.Config.Postgres.Password), nil, nil, nil, nil)
+					CREATE USER %s WITH
+						ENCRYPTED PASSWORD '%s'
+						CREATEDB
+				`, config.Config.Postgres.User, config.Config.Postgres.Password), nil, nil, nil, nil)
 		_, err := result.Close()
 		pgErr, isPgError := err.(*pgconn.PgError)
 		if err != nil {
@@ -429,16 +447,23 @@ func ResetDB() {
 	// Disconnect all other users
 	{
 		result := superuserConn.ExecParams(ctx, fmt.Sprintf(`
-				SELECT pg_terminate_backend(pid)
-				FROM pg_stat_activity
-				WHERE datname IN ('%s', 'template1') AND pid <> pg_backend_pid()
-			`, config.Config.Postgres.DbName), nil, nil, nil, nil)
+					SELECT pg_terminate_backend(pid)
+					FROM pg_stat_activity
+					WHERE datname IN ('%s', 'template1') AND pid <> pg_backend_pid()
+				`, config.Config.Postgres.DbName), nil, nil, nil, nil)
 		_, err := result.Close()
 		if err != nil {
 			panic(fmt.Errorf("failed to disconnect other users: %w", err))
 		}
 	}
-	superuserConn.Close(ctx)
+}
+
+// Drops and recreates the database for the website. This action will be performed as the HMN
+// database role, not the superuser role, so the HMN Postgres user must already exist.
+func ResetDB() {
+	fmt.Println("Resetting database...")
+
+	ctx := context.Background()
 
 	// Connect as the HMN user
 	conn, err := connectLowLevel(ctx, config.Config.Postgres.User, config.Config.Postgres.Password)
