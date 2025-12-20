@@ -47,6 +47,9 @@ if [ $checkpoint -lt 20 ]; then
         --create-home --home-dir /home/hmn \
         hmn
     
+    # Allows other users (e.g. caddy) to list files within the HMN account.
+    chmod +rX /home/hmn
+
     savecheckpoint 20
 fi
 
