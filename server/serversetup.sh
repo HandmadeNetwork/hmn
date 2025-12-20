@@ -201,6 +201,8 @@ if [ $checkpoint -lt 90 ]; then
         cd ~
         git clone git@github.com:HandmadeNetwork/hmn.git
 SCRIPT
+
+    git config --global --add safe.directory /home/hmn/hmn
     
     savecheckpoint 90
 fi
@@ -319,7 +321,7 @@ Fill in the config file and build the mailer:
 
     cd /home/hmn/hmn/adminmailer
     vim config.go
-    go build -o /usr/bin/adminmailer .
+    go build -o /usr/local/bin/adminmailer .
 
 ${BLUE_BOLD}Download and restore a database backup${RESET}
 
