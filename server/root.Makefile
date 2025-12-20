@@ -25,7 +25,7 @@ edit-config: ## Edit the website config
 	@echo ''
 
 edit-caddyfile: ## Edit the Caddyfile
-	vim /home/caddy/Caddyfile
+	vim /etc/caddy/Caddyfile
 	@echo 'Now that you have edited the Caddyfile, you probably want to restart Caddy:'
 	@echo ''
 	@echo '    systemctl restart caddy'

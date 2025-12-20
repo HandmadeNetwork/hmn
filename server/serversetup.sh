@@ -206,6 +206,7 @@ fi
 if [ $checkpoint -lt 100 ]; then
     cp /home/hmn/hmn/server/Caddyfile /etc/caddy/Caddyfile
 
+    mkdir -p /etc/systemd/system/caddy.service.d
     cp /home/hmn/hmn/server/caddy.service.override /etc/systemd/system/caddy.service.d/override.conf
     cp /home/hmn/hmn/server/hmn.service /etc/systemd/system/hmn.service
     chmod 644 /etc/systemd/system/caddy.service.d/override.conf
