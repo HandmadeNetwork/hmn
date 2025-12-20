@@ -1,0 +1,829 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="debug visualisation, entity system, lighting, memory, optimisation, performance, platform layer, rendering, Blackboard, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Entity-based Lighting Storage</span>
+            <div class="menu quotes">
+                <span>Quotes &#9660;</span>
+                <div class="refs quotes_container">
+                    <a target="_blank" class="ref" href="https://dev.abaines.me.uk/quotes/handmade_hero/611">
+                        <span data-id="&#945;">
+                            <span class="ref_content">
+                                <div class="source">Quote 611</div>
+                                <div class="ref_title">&quot;NOTE(casey): 148million&quot; Okay, that&#39;s a great note, Casey, thanks for keeping that in there</div>
+                                <div class="quote_byline">&mdash;handmade_hero, 4th February, 2018</div>
+                            </span>
+                            <div class="ref_indices">
+                                <span data-timestamp="6922" class="timecode"><span class="ref_index">[&#945;]</span><span class="time">1:55:22</span></span>
+                            </div>
+                        </span>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content debug-visualisation">
+                                <span class="icon category debug-visualisation"></span><span class="cineraText">debug visualisation</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content optimisation">
+                                <span class="icon category optimisation"></span><span class="cineraText">optimisation</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content platform-layer">
+                                <span class="icon category platform-layer"></span><span class="cineraText">platform layer</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key">q</span> <span class="help_text">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2>Quotes <span class="unavailable">and References</span> Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2>Quotes<span class="unavailable">, References </span>and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="NX-tdvLd0RA"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day424/"><div>&#9195;</div><div>Previous: 'Modifying Lighting to Use a Spatial Hierarchy'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="7" class="marker cat_lighting cat_optimisation cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day, improving the runtime performance of the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day, improving the runtime performance of the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day, improving the runtime performance of the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="56" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">0:56</span>Run the game to show our whole world, only excepting the trees, lit<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:56</span>Run the game to show our whole world, only excepting the trees, lit<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:56</span>Run the game to show our whole world, only excepting the trees, lit<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="283" class="marker cat_lighting cat_optimisation cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">4:43</span>Consider the two ways of optimising the lighting solution to only process the necessary elements<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:43</span>Consider the two ways of optimising the lighting solution to only process the necessary elements<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:43</span>Consider the two ways of optimising the lighting solution to only process the necessary elements<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="371" class="marker cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">6:11</span>Prevent PushCube() from pushing on elements outside the bounds of the lighting solution, using a new LightBounds in render_group<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:11</span>Prevent PushCube() from pushing on elements outside the bounds of the lighting solution, using a new LightBounds in render_group<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:11</span>Prevent PushCube() from pushing on elements outside the bounds of the lighting solution, using a new LightBounds in render_group<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="658" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">10:58</span>Run the game and hit the assert in GetHashFromID()<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:58</span>Run the game and hit the assert in GetHashFromID()<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:58</span>Run the game and hit the assert in GetHashFromID()<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="678" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">11:18</span>Make PushCube() clear the first LightIndexStore<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:18</span>Make PushCube() clear the first LightIndexStore<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:18</span>Make PushCube() clear the first LightIndexStore<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="693" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">11:33</span>Run the game to see no lighting on anything<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:33</span>Run the game to see no lighting on anything<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:33</span>Run the game to see no lighting on anything<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="726" class="marker cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">12:06</span>Make EnableLighting() take a rectangle3 LightingBounds, and UpdateAndRenderWorld() pass the entire SimBounds to it<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:06</span>Make EnableLighting() take a rectangle3 LightingBounds, and UpdateAndRenderWorld() pass the entire SimBounds to it<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:06</span>Make EnableLighting() take a rectangle3 LightingBounds, and UpdateAndRenderWorld() pass the entire SimBounds to it<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="804" class="marker cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">13:24</span>Run the game to see the whole world lit<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:24</span>Run the game to see the whole world lit<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:24</span>Run the game to see the whole world lit<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="829" class="marker cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">13:49</span>Introduce smaller LightBounds in UpdateAndRenderWorld() to pass to EnableLighting()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:49</span>Introduce smaller LightBounds in UpdateAndRenderWorld() to pass to EnableLighting()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:49</span>Introduce smaller LightBounds in UpdateAndRenderWorld() to pass to EnableLighting()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="900" class="marker cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">15:00</span>Run the game to see a speed increase because some of the world is not participating in the lighting solution<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:00</span>Run the game to see a speed increase because some of the world is not participating in the lighting solution<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:00</span>Run the game to see a speed increase because some of the world is not participating in the lighting solution<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="926" class="marker cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">15:26</span>Further shrink the LightBounds in UpdateAndRenderWorld()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:26</span>Further shrink the LightBounds in UpdateAndRenderWorld()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:26</span>Further shrink the LightBounds in UpdateAndRenderWorld()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="938" class="marker cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">15:38</span>Run the game to see yet more speedup, but buggy behaviour with the light apparently wrapping<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:38</span>Run the game to see yet more speedup, but buggy behaviour with the light apparently wrapping<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:38</span>Run the game to see yet more speedup, but buggy behaviour with the light apparently wrapping<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1201" class="marker cat_debug-visualisation cat_lighting cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">20:01</span>Consider how to visualise the lighting solution<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:01</span>Consider how to visualise the lighting solution<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:01</span>Consider how to visualise the lighting solution<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1421" class="marker cat_lighting cat_performance cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">23:41</span>Potential bugs - correctness and performance - in the lighting solution<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:41</span>Potential bugs - correctness and performance - in the lighting solution<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:41</span>Potential bugs - correctness and performance - in the lighting solution<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1928" class="marker cat_debug-visualisation cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">32:08</span>Run the game and note the impossibility of diagnosing our lighting bug without visualising lighting elements<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:08</span>Run the game and note the impossibility of diagnosing our lighting bug without visualising lighting elements<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:08</span>Run the game and note the impossibility of diagnosing our lighting bug without visualising lighting elements<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2098" class="marker cat_lighting cat_rendering research">
+                    <div class="cineraContent"><span class="timecode">34:58</span>Read carefully through PushCube() for potential bugs<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:58</span>Read carefully through PushCube() for potential bugs<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:58</span>Read carefully through PushCube() for potential bugs<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2174" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">36:14</span>Determine to allocate lighting elements responsibly<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:14</span>Determine to allocate lighting elements responsibly<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:14</span>Determine to allocate lighting elements responsibly<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2282" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">38:02</span>Introduce a free list for the lighting solution, replacing LightPointCount in game_render_commands with a u16 FirstFreeLightingChunk, adding NextFree to lighting_point and making PushCube() free and reuse light chunks<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:02</span>Introduce a free list for the lighting solution, replacing LightPointCount in game_render_commands with a u16 FirstFreeLightingChunk, adding NextFree to lighting_point and making PushCube() free and reuse light chunks<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:02</span>Introduce a free list for the lighting solution, replacing LightPointCount in game_render_commands with a u16 FirstFreeLightingChunk, adding NextFree to lighting_point and making PushCube() free and reuse light chunks<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3216" class="marker cat_lighting cat_memory cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">53:36</span>Consider how to determine when an entity holding light indices no longer needs them<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:36</span>Consider how to determine when an entity holding light indices no longer needs them<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:36</span>Consider how to determine when an entity holding light indices no longer needs them<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3264" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">54:24</span>Add a LightPointUsed array to game_render_commands for PushCube() to store light point usage<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:24</span>Add a LightPointUsed array to game_render_commands for PushCube() to store light point usage<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:24</span>Add a LightPointUsed array to game_render_commands for PushCube() to store light point usage<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3353" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">55:53</span>Implement FreeLightChunk() and LightChunkFrameSweep()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:53</span>Implement FreeLightChunk() and LightChunkFrameSweep()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:53</span>Implement FreeLightChunk() and LightChunkFrameSweep()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3617" class="marker cat_lighting cat_memory cat_platform-layer cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:00:17</span>Make WinMain() clear the lighting memory every frame before rendering, and fix compile errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="platform layer" class="category platform-layer"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:17</span>Make WinMain() clear the lighting memory every frame before rendering, and fix compile errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="platform layer" class="category platform-layer"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:17</span>Make WinMain() clear the lighting memory every frame before rendering, and fix compile errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="platform layer" class="category platform-layer"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3838" class="marker cat_lighting cat_optimisation cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:03:58</span>Encounter the problem of handling lights scattered about the array, and avoiding processing stuff that doesn&#39;t exist<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:58</span>Encounter the problem of handling lights scattered about the array, and avoiding processing stuff that doesn&#39;t exist<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:58</span>Encounter the problem of handling lights scattered about the array, and avoiding processing stuff that doesn&#39;t exist<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4237" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:10:37</span>Replace Solution-&gt;PointCount with LIGHT_POINTS_PER_CHUNK in OutputLightingPoints() and OutputLightingTextures()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:37</span>Replace Solution-&gt;PointCount with LIGHT_POINTS_PER_CHUNK in OutputLightingPoints() and OutputLightingTextures()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:37</span>Replace Solution-&gt;PointCount with LIGHT_POINTS_PER_CHUNK in OutputLightingPoints() and OutputLightingTextures()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4425" class="marker cat_lighting cat_memory cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:13:45</span>Prevent LightingTest() from setting the PointCount, and make it copy the whole set of lighting indices<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:45</span>Prevent LightingTest() from setting the PointCount, and make it copy the whole set of lighting indices<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:45</span>Prevent LightingTest() from setting the PointCount, and make it copy the whole set of lighting indices<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4528" class="marker cat_lighting cat_memory cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:15:28</span>Note that we are doing everything on an allocation basis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:28</span>Note that we are doing everything on an allocation basis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:28</span>Note that we are doing everything on an allocation basis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4565" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:16:05</span>Make DefaultRenderCommands() take and initialise LightChunkUsed<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:05</span>Make DefaultRenderCommands() take and initialise LightChunkUsed<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:05</span>Make DefaultRenderCommands() take and initialise LightChunkUsed<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4645" class="marker cat_lighting cat_memory cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:17:25</span>Note that LightChunkFrameSweep() skips Chunk 0 and builds the free list backwards<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:25</span>Note that LightChunkFrameSweep() skips Chunk 0 and builds the free list backwards<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:25</span>Note that LightChunkFrameSweep() skips Chunk 0 and builds the free list backwards<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4784" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:19:44</span>Replace Solution-&gt;PointCount with LIGHT_POINTS_PER_CHUNK in ComputeLightPropagation()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:44</span>Replace Solution-&gt;PointCount with LIGHT_POINTS_PER_CHUNK in ComputeLightPropagation()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:44</span>Replace Solution-&gt;PointCount with LIGHT_POINTS_PER_CHUNK in ComputeLightPropagation()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5063" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:24:23</span>Add u8 *LightChunkUsed to lighting_solution<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:23</span>Add u8 *LightChunkUsed to lighting_solution<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:23</span>Add u8 *LightChunkUsed to lighting_solution<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5103" class="marker cat_lighting cat_memory cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:25:03</span>Run the game and hit the assert in FreeLightChunk()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:03</span>Run the game and hit the assert in FreeLightChunk()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:03</span>Run the game and hit the assert in FreeLightChunk()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5188" class="marker cat_lighting cat_memory cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:26:28</span>Consider how to confirm which entity occupied a light chunk<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:28</span>Consider how to confirm which entity occupied a light chunk<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:28</span>Consider how to confirm which entity occupied a light chunk<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5328" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:28:48</span>Temporarily make PushCube() take a u32 EntityID<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:48</span>Temporarily make PushCube() take a u32 EntityID<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:48</span>Temporarily make PushCube() take a u32 EntityID<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5420" class="marker cat_entity-system cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:30:20</span>Consider making entities store their previous lighting information, and use a hot list of regions rather than a free list<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:20</span>Consider making entities store their previous lighting information, and use a hot list of regions rather than a free list<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:20</span>Consider making entities store their previous lighting information, and use a hot list of regions rather than a free list<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5521" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:32:01</span>Make PushCube() instead take a lighting_point *LightStore and u32 LightCount</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:01</span>Make PushCube() instead take a lighting_point *LightStore and u32 LightCount</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:01</span>Make PushCube() instead take a lighting_point *LightStore and u32 LightCount</div>
+                    </div>
+                </div>
+                <div data-timestamp="5669" class="marker cat_entity-system cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:34:29</span>Add an array of lighting_point Points to the entity struct<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:29</span>Add an array of lighting_point Points to the entity struct<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:29</span>Add an array of lighting_point Points to the entity struct<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5860" class="marker cat_entity-system cat_lighting cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">1:37:40</span>The problem of sharing lighting points between entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:40</span>The problem of sharing lighting points between entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:40</span>The problem of sharing lighting points between entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6103" class="marker cat_entity-system cat_lighting cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">1:41:43</span>Large sets of lighting points<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:43</span>Large sets of lighting points<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:43</span>Large sets of lighting points<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6355" class="marker cat_entity-system cat_lighting cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">1:45:55</span>Spatially merging lighting points<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:55</span>Spatially merging lighting points<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:55</span>Spatially merging lighting points<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6475" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:47:55</span>Prevent PushCube() from taking LightCount and managing a free list<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:55</span>Prevent PushCube() from taking LightCount and managing a free list<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:55</span>Prevent PushCube() from taking LightCount and managing a free list<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6532" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:48:52</span>Replace EmitC0 from game_render_commands with Emission in lighting_box, and add lighting_point *Storage to lighting_box<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:52</span>Replace EmitC0 from game_render_commands with Emission in lighting_box, and add lighting_point *Storage to lighting_box<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:52</span>Replace EmitC0 from game_render_commands with Emission in lighting_box, and add lighting_point *Storage to lighting_box<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6922" class="marker cat_lighting cat_memory cat_rendering programming" data-ref="&#945;">
+                    <div class="cineraContent"><span class="timecode">1:55:22</span>Remove FreeLightChunk() and LightChunkFrameSweep()<sup>&#945;</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:22</span>Remove FreeLightChunk() and LightChunkFrameSweep()<sup>&#945;</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:22</span>Remove FreeLightChunk() and LightChunkFrameSweep()<sup>&#945;</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6955" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:55:55</span>Restore PointCount to lighting_solution and move the light point generation code from PushCube() into LightingTest()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:55</span>Restore PointCount to lighting_solution and move the light point generation code from PushCube() into LightingTest()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:55</span>Restore PointCount to lighting_solution and move the light point generation code from PushCube() into LightingTest()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7158" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:59:18</span>Store full arrays rather than pointers in lighting_solution, and introduce lighting_point_state for lighting_box to store<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:18</span>Store full arrays rather than pointers in lighting_solution, and introduce lighting_point_state for lighting_box to store<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:18</span>Store full arrays rather than pointers in lighting_solution, and introduce lighting_point_state for lighting_box to store<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7307" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:01:47</span>Make LightingTest() copy out the lighting solution per element<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:47</span>Make LightingTest() copy out the lighting solution per element<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:47</span>Make LightingTest() copy out the lighting solution per element<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7394" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:03:14</span>Replace LastIsValid in lighting_solution with StorageContentsAreValid in lighting_box and propagate this change to LightingTest()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:14</span>Replace LastIsValid in lighting_solution with StorageContentsAreValid in lighting_box and propagate this change to LightingTest()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:14</span>Replace LastIsValid in lighting_solution with StorageContentsAreValid in lighting_box and propagate this change to LightingTest()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7897" class="marker cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:11:37</span>Move the finalisation code from ComputeLightPropagation() to LightingTest()<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:37</span>Move the finalisation code from ComputeLightPropagation() to LightingTest()<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:37</span>Move the finalisation code from ComputeLightPropagation() to LightingTest()<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7988" class="marker cat_lighting cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">2:13:08</span>Consider a better way to solve the lighting across frames<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:08</span>Consider a better way to solve the lighting across frames<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:08</span>Consider a better way to solve the lighting across frames<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8178" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:16:18</span>Begin to enable LightingTest() to handle both cases of storage contents validity<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:18</span>Begin to enable LightingTest() to handle both cases of storage contents validity<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:18</span>Begin to enable LightingTest() to handle both cases of storage contents validity<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8319" class="marker cat_lighting cat_memory cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">2:18:39</span>Consider packing the lighting data tighter<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:39</span>Consider packing the lighting data tighter<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:39</span>Consider packing the lighting data tighter<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8557" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:22:37</span>Make LightingTest() use alternate storage if the storage contents are not valid, and prevent OutputLightingTextures() from looping over the chunks<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:37</span>Make LightingTest() use alternate storage if the storage contents are not valid, and prevent OutputLightingTextures() from looping over the chunks<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:37</span>Make LightingTest() use alternate storage if the storage contents are not valid, and prevent OutputLightingTextures() from looping over the chunks<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8765" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:26:05</span>Finish enabling LightingTest() to blend the lighting if the storage contents are valid, and fix compile errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:26:05</span>Finish enabling LightingTest() to blend the lighting if the storage contents are valid, and fix compile errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:26:05</span>Finish enabling LightingTest() to blend the lighting if the storage contents are valid, and fix compile errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9445" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:37:25</span>Remove StorageContentsAreValid from lighting_box and instead make LightingTest() check if the normal of the first lighting point is valid<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:37:25</span>Remove StorageContentsAreValid from lighting_box and instead make LightingTest() check if the normal of the first lighting point is valid<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:37:25</span>Remove StorageContentsAreValid from lighting_box and instead make LightingTest() check if the normal of the first lighting point is valid<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9574" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:39:34</span>Run the game and crash in LightingTest()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:39:34</span>Run the game and crash in LightingTest()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:39:34</span>Run the game and crash in LightingTest()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9597" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:39:57</span>Try to make LightingTest() correctly set the FirstPoint<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:39:57</span>Try to make LightingTest() correctly set the FirstPoint<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:39:57</span>Try to make LightingTest() correctly set the FirstPoint<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9629" class="marker cat_lighting cat_memory cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:40:29</span>Run the game, crash in LightingTest() and inspect the values to find that Box-&gt;Storage is not valid<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:40:29</span>Run the game, crash in LightingTest() and inspect the values to find that Box-&gt;Storage is not valid<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:40:29</span>Run the game, crash in LightingTest() and inspect the values to find that Box-&gt;Storage is not valid<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9696" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:41:36</span>Assert in LightingTest() that LightPointIndex &lt;= LIGHT_DATA_WIDTH, and temporarily try hard setting the LightStore-&gt;Direction to 1, 1, 1<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:41:36</span>Assert in LightingTest() that LightPointIndex &lt;= LIGHT_DATA_WIDTH, and temporarily try hard setting the LightStore-&gt;Direction to 1, 1, 1<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:41:36</span>Assert in LightingTest() that LightPointIndex &lt;= LIGHT_DATA_WIDTH, and temporarily try hard setting the LightStore-&gt;Direction to 1, 1, 1<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9734" class="marker cat_lighting cat_memory cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:42:14</span>Run the game to determine that the pulling out, rather than pushing on, of boxes is the problem<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:42:14</span>Run the game to determine that the pulling out, rather than pushing on, of boxes is the problem<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:42:14</span>Run the game to determine that the pulling out, rather than pushing on, of boxes is the problem<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9775" class="marker cat_lighting cat_memory cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:42:55</span>Step in to LightingTest() and inspect the Solution-&gt;Boxes to find that they are all garbage<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:42:55</span>Step in to LightingTest() and inspect the Solution-&gt;Boxes to find that they are all garbage<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:42:55</span>Step in to LightingTest() and inspect the Solution-&gt;Boxes to find that they are all garbage<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9809" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:43:29</span>Make UpdateAndRenderWorld() run the lighting solution before EndSim()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:43:29</span>Make UpdateAndRenderWorld() run the lighting solution before EndSim()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:43:29</span>Make UpdateAndRenderWorld() run the lighting solution before EndSim()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9859" class="marker cat_lighting cat_memory cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:44:19</span>Run the game to see that the Boxes look valid, but that the LightBoxCount is greater than expected, and investigate why<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:44:19</span>Run the game to see that the Boxes look valid, but that the LightBoxCount is greater than expected, and investigate why<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:44:19</span>Run the game to see that the Boxes look valid, but that the LightBoxCount is greater than expected, and investigate why<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9969" class="marker cat_lighting cat_memory cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:46:09</span>Step in to LightingTest() and realise that it is erroneously operating on the new set of boxes<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:46:09</span>Step in to LightingTest() and realise that it is erroneously operating on the new set of boxes<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:46:09</span>Step in to LightingTest() and realise that it is erroneously operating on the new set of boxes<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10006" class="marker cat_lighting cat_memory cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:46:46</span>Make LightingTest() store and iterate over the OriginalBoxCount<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:46:46</span>Make LightingTest() store and iterate over the OriginalBoxCount<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:46:46</span>Make LightingTest() store and iterate over the OriginalBoxCount<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10024" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:47:04</span>Run the game to see that we&#39;re at least running but totally wrong<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:47:04</span>Run the game to see that we&#39;re at least running but totally wrong<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:47:04</span>Run the game to see that we&#39;re at least running but totally wrong<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10096" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:48:16</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:48:16</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:48:16</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10198" class="marker cat_lighting cat_performance cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:49:58</span><span class="author" data-hue="298" data-saturation="85%">billdstrong</span> Q: The 148 Mil was the number of cycles the lighting took<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:49:58</span><span class="author" data-hue="298" data-saturation="85%">billdstrong</span> Q: The 148 Mil was the number of cycles the lighting took<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:49:58</span><span class="author" data-hue="298" data-saturation="85%">billdstrong</span> Q: The 148 Mil was the number of cycles the lighting took<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10218" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:50:18</span><span class="author" data-hue="356" data-saturation="90%">mallesbixie</span> Q: Is this your usual design process, a bit ad hoc?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:50:18</span><span class="author" data-hue="356" data-saturation="90%">mallesbixie</span> Q: Is this your usual design process, a bit ad hoc?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:50:18</span><span class="author" data-hue="356" data-saturation="90%">mallesbixie</span> Q: Is this your usual design process, a bit ad hoc?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10334" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:52:14</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:52:14</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:52:14</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day426/"><div>&#9196;</div><div>Next: 'Debugging Lighting Persistence'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

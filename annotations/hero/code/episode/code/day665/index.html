@@ -1,0 +1,694 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="camera, collision, compression, data structure, entity system, input handling, lighting, memory, movement, threading, Administrivia, Chat Comment, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Changing How Entities are Packed and Unpacked</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://www.youtube.com/watch?v=HI0IALE2g-M" href="https://www.youtube.com/watch?v=HI0IALE2g-M" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Molly Rocket (YouTube)</div>
+                            <div class="ref_title">Holiday Sale: 25% Off Everything We Make!</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="5716" class="timecode"><span class="ref_index">[1]</span><span class="time">1:35:16</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content camera">
+                                <span class="icon category camera"></span><span class="cineraText">camera</span>
+                            </div>
+                            <div class="filter_content collision">
+                                <span class="icon category collision"></span><span class="cineraText">collision</span>
+                            </div>
+                            <div class="filter_content compression">
+                                <span class="icon category compression"></span><span class="cineraText">compression</span>
+                            </div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content input-handling">
+                                <span class="icon category input-handling"></span><span class="cineraText">input handling</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content movement">
+                                <span class="icon category movement"></span><span class="cineraText">movement</span>
+                            </div>
+                            <div class="filter_content threading">
+                                <span class="icon category threading"></span><span class="cineraText">threading</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="jcEMRyqJHEg"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day664/"><div>&#9195;</div><div>Previous: 'Simplifying Entity Storage Part II'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_entity-system speech">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="69" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:09</span>Describe our storage of the world as geographic / geometric chunks<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09</span>Describe our storage of the world as geographic / geometric chunks<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09</span>Describe our storage of the world as geographic / geometric chunks<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="326" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">5:26</span>Consider removing sim_region<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:26</span>Consider removing sim_region<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:26</span>Consider removing sim_region<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="394" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">6:34</span>Note our need for entity lookup tables by ID<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:34</span>Note our need for entity lookup tables by ID<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:34</span>Note our need for entity lookup tables by ID<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="439" class="marker cat_collision cat_data-structure cat_entity-system cat_lighting cat_movement research">
+                    <div class="cineraContent"><span class="timecode">7:19</span>Geometric / spatial query entity operations: collision, movement or lighting gather<span class="cineraCategories"><div title="collision" class="category collision"></div><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:19</span>Geometric / spatial query entity operations: collision, movement or lighting gather<span class="cineraCategories"><div title="collision" class="category collision"></div><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:19</span>Geometric / spatial query entity operations: collision, movement or lighting gather<span class="cineraCategories"><div title="collision" class="category collision"></div><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="474" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">7:54</span>Non-geometric entity operations<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:54</span>Non-geometric entity operations<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:54</span>Non-geometric entity operations<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="493" class="marker cat_entity-system cat_input-handling research">
+                    <div class="cineraContent"><span class="timecode">8:13</span>Non-geometric entity operations: 1) Matching gamepad with entity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="input handling" class="category input-handling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:13</span>Non-geometric entity operations: 1) Matching gamepad with entity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="input handling" class="category input-handling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:13</span>Non-geometric entity operations: 1) Matching gamepad with entity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="input handling" class="category input-handling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="523" class="marker cat_camera cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">8:43</span>Non-geometric entity operations: 2) Focusing camera on player&#39;s entity<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:43</span>Non-geometric entity operations: 2) Focusing camera on player&#39;s entity<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:43</span>Non-geometric entity operations: 2) Focusing camera on player&#39;s entity<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="594" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">9:54</span>Non-geometric entity operations: 3) Grouping entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:54</span>Non-geometric entity operations: 3) Grouping entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:54</span>Non-geometric entity operations: 3) Grouping entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="695" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">11:35</span>Consider the need for entity identification irrespective of world location<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:35</span>Consider the need for entity identification irrespective of world location<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:35</span>Consider the need for entity identification irrespective of world location<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="744" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">12:24</span>Non-positional entity identification<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:24</span>Non-positional entity identification<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:24</span>Non-positional entity identification<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="758" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">12:38</span>Non-positional entity identification: 1) Giant direct addressing table<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:38</span>Non-positional entity identification: 1) Giant direct addressing table<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:38</span>Non-positional entity identification: 1) Giant direct addressing table<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="803" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">13:23</span>Non-positional entity identification: 2) Localised direct addressing table<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:23</span>Non-positional entity identification: 2) Localised direct addressing table<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:23</span>Non-positional entity identification: 2) Localised direct addressing table<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="853" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">14:13</span>Non-positional entity identification: 3) Disallowed, everything is a spatial query<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:13</span>Non-positional entity identification: 3) Disallowed, everything is a spatial query<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:13</span>Non-positional entity identification: 3) Disallowed, everything is a spatial query<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1020" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">17:00</span>Consider storing moving and static entities separately<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:00</span>Consider storing moving and static entities separately<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:00</span>Consider storing moving and static entities separately<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1082" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">18:02</span>Consider augmenting world_chunk with a table of movable entities, or unpacked_entity_block with a movable / skippable signifier<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:02</span>Consider augmenting world_chunk with a table of movable entities, or unpacked_entity_block with a movable / skippable signifier<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:02</span>Consider augmenting world_chunk with a table of movable entities, or unpacked_entity_block with a movable / skippable signifier<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1206" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">20:06</span>Remove the #if 0 from unpacked_entity_block and fix the order of declarations<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:06</span>Remove the #if 0 from unpacked_entity_block and fix the order of declarations<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:06</span>Remove the #if 0 from unpacked_entity_block and fix the order of declarations<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1283" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">21:23</span>Determine to store moving and static entities separately, with everything as a spatial query<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:23</span>Determine to store moving and static entities separately, with everything as a spatial query<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:23</span>Determine to store moving and static entities separately, with everything as a spatial query<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1310" class="marker cat_compression cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">21:50</span>Determine to implement world_chunk (un)compressing<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:50</span>Determine to implement world_chunk (un)compressing<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:50</span>Determine to implement world_chunk (un)compressing<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1424" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">23:44</span>world_chunk: TODO(casey): Probably need to track access patterns here so we know what to repack for lack of use<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:44</span>world_chunk: TODO(casey): Probably need to track access patterns here so we know what to repack for lack of use<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:44</span>world_chunk: TODO(casey): Probably need to track access patterns here so we know what to repack for lack of use<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1458" class="marker cat_entity-system cat_threading research">
+                    <div class="cineraContent"><span class="timecode">24:18</span>Consider changing the entity management threading scheme<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="threading" class="category threading"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:18</span>Consider changing the entity management threading scheme<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="threading" class="category threading"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:18</span>Consider changing the entity management threading scheme<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="threading" class="category threading"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1579" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">26:19</span>Describe EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:19</span>Describe EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:19</span>Describe EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1691" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">28:11</span>Determine to enable interleaving of entity unpacking and updating for cache-friendliness<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:11</span>Determine to enable interleaving of entity unpacking and updating for cache-friendliness<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:11</span>Determine to enable interleaving of entity unpacking and updating for cache-friendliness<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1764" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">29:24</span><span class="author" data-hue="65" data-saturation="86%">rct33</span> I just got here, so no<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:24</span><span class="author" data-hue="65" data-saturation="86%">rct33</span> I just got here, so no<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:24</span><span class="author" data-hue="65" data-saturation="86%">rct33</span> I just got here, so no<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1774" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">29:34</span><span class="author" data-hue="143" data-saturation="88%">frizzku</span> Yeah<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:34</span><span class="author" data-hue="143" data-saturation="88%">frizzku</span> Yeah<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:34</span><span class="author" data-hue="143" data-saturation="88%">frizzku</span> Yeah<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1779" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">29:39</span><span class="author" data-hue="62" data-saturation="84%">fat_dratini</span> Yes, you gotta eat your food while it&#39;s hot<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:39</span><span class="author" data-hue="62" data-saturation="84%">fat_dratini</span> Yes, you gotta eat your food while it&#39;s hot<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:39</span><span class="author" data-hue="62" data-saturation="84%">fat_dratini</span> Yes, you gotta eat your food while it&#39;s hot<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1786" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">29:46</span>Respecify EnsureRegionIsUnpacked() to support unpack and update interleaving, introducing world_chunk_iterator, IterateChunks(), IsValid() and Next()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:46</span>Respecify EnsureRegionIsUnpacked() to support unpack and update interleaving, introducing world_chunk_iterator, IterateChunks(), IsValid() and Next()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:46</span>Respecify EnsureRegionIsUnpacked() to support unpack and update interleaving, introducing world_chunk_iterator, IterateChunks(), IsValid() and Next()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2236" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">37:16</span>Implement our world chunk iterator: IterateChunks(), IsValid() and Next(), introducing EnsureValidChunk()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:16</span>Implement our world chunk iterator: IterateChunks(), IsValid() and Next(), introducing EnsureValidChunk()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:16</span>Implement our world chunk iterator: IterateChunks(), IsValid() and Next(), introducing EnsureValidChunk()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3290" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">54:50</span>Fix compile errors in the world chunk iterator<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:50</span>Fix compile errors in the world chunk iterator<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:50</span>Fix compile errors in the world chunk iterator<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3403" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">56:43</span>Consider making the caller unpack the entity block<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:43</span>Consider making the caller unpack the entity block<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:43</span>Consider making the caller unpack the entity block<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3441" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">57:21</span>Change world_chunk_iterator to contain a world_chunk for the caller to unpack as required<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:21</span>Change world_chunk_iterator to contain a world_chunk for the caller to unpack as required<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:21</span>Change world_chunk_iterator to contain a world_chunk for the caller to unpack as required<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3596" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">59:56</span>Introduce EnsureChunkIsUnpacked() and EnsureChunkIsPacked()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:56</span>Introduce EnsureChunkIsUnpacked() and EnsureChunkIsPacked()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:56</span>Introduce EnsureChunkIsUnpacked() and EnsureChunkIsPacked()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3649" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:00:49</span>Consider not having a lookup table for unpacked entities in the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:49</span>Consider not having a lookup table for unpacked entities in the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:49</span>Consider not having a lookup table for unpacked entities in the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3841" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:04:01</span>Implement EnsureChunkIsPacked() based on PackEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:01</span>Implement EnsureChunkIsPacked() based on PackEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:01</span>Implement EnsureChunkIsPacked() based on PackEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3960" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:06:00</span>Consider who is responsible for moving entities between chunks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:00</span>Consider who is responsible for moving entities between chunks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:00</span>Consider who is responsible for moving entities between chunks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4067" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:07:47</span>Temporarily introduce MoveEntityToNewChunk()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:47</span>Temporarily introduce MoveEntityToNewChunk()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:47</span>Temporarily introduce MoveEntityToNewChunk()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4096" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:08:16</span>Determine to move entities between chunks immediately<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:16</span>Determine to move entities between chunks immediately<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:16</span>Determine to move entities between chunks immediately<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4158" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:09:18</span>Introduce MoveEntityToNewPosition()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:18</span>Introduce MoveEntityToNewPosition()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:18</span>Introduce MoveEntityToNewPosition()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4274" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:11:14</span>Simplify EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:14</span>Simplify EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:14</span>Simplify EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4480" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:14:40</span>Implement EnsureChunkIsUnpacked() based on EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:40</span>Implement EnsureChunkIsUnpacked() based on EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:40</span>Implement EnsureChunkIsUnpacked() based on EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4490" class="marker cat_entity-system cat_memory research">
+                    <div class="cineraContent"><span class="timecode">1:14:50</span>Plan our memory strategy for entity chunk unpacking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:50</span>Plan our memory strategy for entity chunk unpacking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:50</span>Plan our memory strategy for entity chunk unpacking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4539" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:15:39</span>Make EnsureChunkIsPacked() call AddToFreeList()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:39</span>Make EnsureChunkIsPacked() call AddToFreeList()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:39</span>Make EnsureChunkIsPacked() call AddToFreeList()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4580" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:16:20</span>Remove EnsureRegionIsUnpacked(), RepackEntitiesAsRequired(), ClearUnpackedEntityCache() and AcquireUnpackedEntitySlot()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:20</span>Remove EnsureRegionIsUnpacked(), RepackEntitiesAsRequired(), ClearUnpackedEntityCache() and AcquireUnpackedEntitySlot()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:20</span>Remove EnsureRegionIsUnpacked(), RepackEntitiesAsRequired(), ClearUnpackedEntityCache() and AcquireUnpackedEntitySlot()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4736" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:18:56</span>Note the orientation chunk dimensions around their centre<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:56</span>Note the orientation chunk dimensions around their centre<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:56</span>Note the orientation chunk dimensions around their centre<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4809" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">1:20:09</span>Check the time<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:09</span>Check the time<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:09</span>Check the time<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4839" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:20:39</span>Remove MAX_SIM_REGION_ENTITY_COUNT<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:39</span>Remove MAX_SIM_REGION_ENTITY_COUNT<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:39</span>Remove MAX_SIM_REGION_ENTITY_COUNT<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4849" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:20:49</span>Introduce entity_block_storage to contain packed_entity_block and unpacked_entity_block, making them roughly the same size<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:49</span>Introduce entity_block_storage to contain packed_entity_block and unpacked_entity_block, making them roughly the same size<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:49</span>Introduce entity_block_storage to contain packed_entity_block and unpacked_entity_block, making them roughly the same size<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5161" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:26:01</span>Remove entity packing data from world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:01</span>Remove entity packing data from world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:01</span>Remove entity packing data from world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5202" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:26:42</span>Finish implementing EnsureChunkIsUnpacked(), renaming FirstBlock to FirstPacked in world_chunk<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:42</span>Finish implementing EnsureChunkIsUnpacked(), renaming FirstBlock to FirstPacked in world_chunk<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:42</span>Finish implementing EnsureChunkIsUnpacked(), renaming FirstBlock to FirstPacked in world_chunk<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5454" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:30:54</span>Reacquaint ourselves with FillUnpackedEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:54</span>Reacquaint ourselves with FillUnpackedEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:54</span>Reacquaint ourselves with FillUnpackedEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5489" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:31:29</span>Relieve FillUnpackedEntity() of taking the SimRegion<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:29</span>Relieve FillUnpackedEntity() of taking the SimRegion<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:29</span>Relieve FillUnpackedEntity() of taking the SimRegion<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5502" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:31:42</span>Reacquaint ourselves with FillUnpackedEntity() (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:42</span>Reacquaint ourselves with FillUnpackedEntity() (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:42</span>Reacquaint ourselves with FillUnpackedEntity() (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5529" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:32:09</span>Change UpdateAndRenderEntities(), not EnsureChunkIsUnpacked(), to call FillUnpackedEntity(), adding EntityFlag_Unpacked<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:09</span>Change UpdateAndRenderEntities(), not EnsureChunkIsUnpacked(), to call FillUnpackedEntity(), adding EntityFlag_Unpacked<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:09</span>Change UpdateAndRenderEntities(), not EnsureChunkIsUnpacked(), to call FillUnpackedEntity(), adding EntityFlag_Unpacked<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5716" class="marker cat_nullTopic research" data-ref="https://www.youtube.com/watch?v=HI0IALE2g-M">
+                    <div class="cineraContent"><span class="timecode">1:35:16</span>End our streaming with a plug of Molly Rocket&#39;s 25% Off Everything sale<sup>1</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:16</span>End our streaming with a plug of Molly Rocket&#39;s 25% Off Everything sale<sup>1</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:16</span>End our streaming with a plug of Molly Rocket&#39;s 25% Off Everything sale<sup>1</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day666/"><div>&#9196;</div><div>Next: 'Entity Packing and Unpacking'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

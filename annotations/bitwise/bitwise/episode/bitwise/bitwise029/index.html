@@ -1,0 +1,942 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asm, code generation, emulation, error handling, input handling, isa, parsing, Chat Comment, In-Game, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__bitwise.css?r=c4e77686">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus bitwise">
+            <span class="episode_name">More Assembler Hacking</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://sourceware.org/binutils/docs-2.28/as/Fill.html" href="https://sourceware.org/binutils/docs-2.28/as/Fill.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">GNU Binutils</div>
+                            <div class="ref_title">7.33 .fill repeat , size , value</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="597" class="timecode"><span class="ref_index">[1]</span><span class="time">9:57</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf" href="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Andrew Waterman and Krste Asanović</div>
+                            <div class="ref_title">The RISC-V Instruction Set Manual - Volume 1: User-Level ISA</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1384" class="timecode"><span class="ref_index">[2]</span><span class="time">23:04</span></span><span data-timestamp="3717" class="timecode"><span class="ref_index">[3]</span><span class="time">1:01:57</span></span><span data-timestamp="5317" class="timecode"><span class="ref_index">[4]</span><span class="time">1:28:37</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content code-generation">
+                                <span class="icon category code-generation"></span><span class="cineraText">code generation</span>
+                            </div>
+                            <div class="filter_content emulation">
+                                <span class="icon category emulation"></span><span class="cineraText">emulation</span>
+                            </div>
+                            <div class="filter_content error-handling">
+                                <span class="icon category error-handling"></span><span class="cineraText">error handling</span>
+                            </div>
+                            <div class="filter_content input-handling">
+                                <span class="icon category input-handling"></span><span class="cineraText">input handling</span>
+                            </div>
+                            <div class="filter_content isa">
+                                <span class="icon category isa"></span><span class="cineraText">isa</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://github.com/pervognsen/bitwise/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Per Vognsen</div>
+                        </a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="_6zAlm0Edrw"></div>
+            <div class="markers_container bitwise">
+                <a class="episodeMarker prev" href="https://bitwise.handmade.network/episode/bitwise/bitwise028/"><div>&#9195;</div><div>Previous: 'RISC-V Static Assembler, Part 3'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day, with a mention of the pacing of the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day, with a mention of the pacing of the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day, with a mention of the pacing of the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="118" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">1:58</span>Pull our test asm out into a multi-line string<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58</span>Pull our test asm out into a multi-line string<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58</span>Pull our test asm out into a multi-line string<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="174" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">2:54</span>Run it to see that it didn&#39;t work<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:54</span>Run it to see that it didn&#39;t work<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:54</span>Run it to see that it didn&#39;t work<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="198" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">3:18</span>Allow parse_line() to optionally match a \n at the beginning<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:18</span>Allow parse_line() to optionally match a \n at the beginning<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:18</span>Allow parse_line() to optionally match a \n at the beginning<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="226" class="marker cat_asm cat_emulation cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">3:46</span>Run it and show the emulation in action<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:46</span>Run it and show the emulation in action<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:46</span>Run it and show the emulation in action<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="245" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">4:05</span>Define other data types and helper commands in the cmd_defs table, introducing cmd_org() and cmd_align()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:05</span>Define other data types and helper commands in the cmd_defs table, introducing cmd_org() and cmd_align()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:05</span>Define other data types and helper commands in the cmd_defs table, introducing cmd_org() and cmd_align()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="439" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">7:19</span>Test creation of a uint8<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:19</span>Test creation of a uint8<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:19</span>Test creation of a uint8<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="524" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">8:44</span>Run it to see how the emulator handles our uint8<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:44</span>Run it to see how the emulator handles our uint8<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:44</span>Run it to see how the emulator handles our uint8<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="597" class="marker cat_asm cat_code-generation programming" data-ref="https://sourceware.org/binutils/docs-2.28/as/Fill.html">
+                    <div class="cineraContent"><span class="timecode">9:57</span>Introduce cmd_fill()<sup>1</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:57</span>Introduce cmd_fill()<sup>1</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:57</span>Introduce cmd_fill()<sup>1</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="926" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">15:26</span>Test our fill command, enabling cmd_fill() to handle commas<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:26</span>Test our fill command, enabling cmd_fill() to handle commas<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:26</span>Test our fill command, enabling cmd_fill() to handle commas<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1047" class="marker cat_asm cat_code-generation run">
+                    <div class="cineraContent"><span class="timecode">17:27</span>Run it and hit an &quot;Expected instruction&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:27</span>Run it and hit an &quot;Expected instruction&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:27</span>Run it and hit an &quot;Expected instruction&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1087" class="marker cat_asm cat_code-generation cat_error-handling programming">
+                    <div class="cineraContent"><span class="timecode">18:07</span>Add fill to the cmd_defs table, and add error handling to cmd_fill()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="error handling" class="category error-handling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:07</span>Add fill to the cmd_defs table, and add error handling to cmd_fill()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="error handling" class="category error-handling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:07</span>Add fill to the cmd_defs table, and add error handling to cmd_fill()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="error handling" class="category error-handling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1240" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">20:40</span>Run it to see our fill in action<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:40</span>Run it to see our fill in action<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:40</span>Run it to see our fill in action<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1264" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">21:04</span>Do a test of placing a variable at a specific position using org rather than fill<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:04</span>Do a test of placing a variable at a specific position using org rather than fill<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:04</span>Do a test of placing a variable at a specific position using org rather than fill<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1337" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">22:17</span>Run it to see this in action, and explain why it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:17</span>Run it to see this in action, and explain why it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:17</span>Run it to see this in action, and explain why it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1365" class="marker cat_asm cat_code-generation authored">
+                    <div class="cineraContent"><span class="timecode">22:45</span><span class="author" data-hue="68" data-saturation="76%">rygorous</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Your cmd_uint16() is buggy (it does uint8 only)<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:45</span><span class="author" data-hue="68" data-saturation="76%">rygorous</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Your cmd_uint16() is buggy (it does uint8 only)<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:45</span><span class="author" data-hue="68" data-saturation="76%">rygorous</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Your cmd_uint16() is buggy (it does uint8 only)<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1370" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">22:50</span>Fix cmd_uint16() to call asm_uint16()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:50</span>Fix cmd_uint16() to call asm_uint16()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:50</span>Fix cmd_uint16() to call asm_uint16()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1384" class="marker cat_asm cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">23:04</span>Begin to enable parse_instr() to handle store instructions<sup>2</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:04</span>Begin to enable parse_instr() to handle store instructions<sup>2</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:04</span>Begin to enable parse_instr() to handle store instructions<sup>2</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1485" class="marker cat_asm cat_isa speech">
+                    <div class="cineraContent"><span class="timecode">24:45</span>Two variants of load<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="isa" class="category isa"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:45</span>Two variants of load<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="isa" class="category isa"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:45</span>Two variants of load<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="isa" class="category isa"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1569" class="marker cat_isa authored">
+                    <div class="cineraContent"><span class="timecode">26:09</span><span class="author" data-hue="68" data-saturation="76%">rygorous</span> Most RISCs do have &quot;store &lt;value&gt;, (&lt;effective_addr&gt;)&quot; though<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:09</span><span class="author" data-hue="68" data-saturation="76%">rygorous</span> Most RISCs do have &quot;store &lt;value&gt;, (&lt;effective_addr&gt;)&quot; though<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:09</span><span class="author" data-hue="68" data-saturation="76%">rygorous</span> Most RISCs do have &quot;store &lt;value&gt;, (&lt;effective_addr&gt;)&quot; though<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1590" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">26:30</span>Enable parse_instr() to handle both the register- and label-based load instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:30</span>Enable parse_instr() to handle both the register- and label-based load instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:30</span>Enable parse_instr() to handle both the register- and label-based load instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1865" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">31:05</span>Test a register-based load<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:05</span>Test a register-based load<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:05</span>Test a register-based load<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1919" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">31:59</span>Run it and hit an &quot;Immediate is out of range&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:59</span>Run it and hit an &quot;Immediate is out of range&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:59</span>Run it and hit an &quot;Immediate is out of range&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1975" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">32:55</span>Reduce the offset in our addi instruction<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:55</span>Reduce the offset in our addi instruction<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:55</span>Reduce the offset in our addi instruction<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1980" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">33:00</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:00</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:00</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1987" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">33:07</span>Test parenthesised offset in our lw instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:07</span>Test parenthesised offset in our lw instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:07</span>Test parenthesised offset in our lw instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1993" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">33:13</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:13</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:13</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1996" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">33:16</span>Try changing that offset to our lw instruction, also editing the org instruction to match<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:16</span>Try changing that offset to our lw instruction, also editing the org instruction to match<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:16</span>Try changing that offset to our lw instruction, also editing the org instruction to match<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2003" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">33:23</span>Run it to see that this works too<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:23</span>Run it to see that this works too<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:23</span>Run it to see that this works too<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2020" class="marker cat_asm authored">
+                    <div class="cineraContent"><span class="timecode">33:40</span><span class="author" data-hue="141" data-saturation="82%">miotatsu</span> I wasn&#39;t a fan of the store syntax when I first encountered it in RISC-V asm either<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:40</span><span class="author" data-hue="141" data-saturation="82%">miotatsu</span> I wasn&#39;t a fan of the store syntax when I first encountered it in RISC-V asm either<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:40</span><span class="author" data-hue="141" data-saturation="82%">miotatsu</span> I wasn&#39;t a fan of the store syntax when I first encountered it in RISC-V asm either<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2058" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">34:18</span>Introduce cmd_li() adding li to the cmd_defs table<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:18</span>Introduce cmd_li() adding li to the cmd_defs table<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:18</span>Introduce cmd_li() adding li to the cmd_defs table<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2203" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">36:43</span>Test an li instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:43</span>Test an li instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:43</span>Test an li instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2210" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">36:50</span>Run it and hit an &quot;Immediate is out of range&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:50</span>Run it and hit an &quot;Immediate is out of range&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:50</span>Run it and hit an &quot;Immediate is out of range&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2233" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">37:13</span>Fix cmd_li() to correctly emit our immediate<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:13</span>Fix cmd_li() to correctly emit our immediate<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:13</span>Fix cmd_li() to correctly emit our immediate<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2263" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">37:43</span>Run it to see that li works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:43</span>Run it to see that li works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:43</span>Run it to see that li works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2269" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">37:49</span>Enable cmd_li() to handle full-width immediates<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:49</span>Enable cmd_li() to handle full-width immediates<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:49</span>Enable cmd_li() to handle full-width immediates<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2321" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">38:41</span>Test loading a big immediate<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:41</span>Test loading a big immediate<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:41</span>Test loading a big immediate<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2340" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">39:00</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:00</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:00</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2388" class="marker cat_asm cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">39:48</span>Enable parse_instr() to handle store instructions<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:48</span>Enable parse_instr() to handle store instructions<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:48</span>Enable parse_instr() to handle store instructions<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2617" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">43:37</span>Test a sw instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:37</span>Test a sw instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:37</span>Test a sw instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2674" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">44:34</span>Run it to see that the sw instruction works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:34</span>Run it to see that the sw instruction works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:34</span>Run it to see that the sw instruction works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2720" class="marker cat_isa speech">
+                    <div class="cineraContent"><span class="timecode">45:20</span>A few thoughts on x86 deference syntax<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:20</span>A few thoughts on x86 deference syntax<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:20</span>A few thoughts on x86 deference syntax<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2810" class="marker cat_asm cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">46:50</span>Introduce parse_addr() for parse_instr() to call, changing our load instruction to use the &#39;[&#39; and &#39;]&#39; syntax<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:50</span>Introduce parse_addr() for parse_instr() to call, changing our load instruction to use the &#39;[&#39; and &#39;]&#39; syntax<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:50</span>Introduce parse_addr() for parse_instr() to call, changing our load instruction to use the &#39;[&#39; and &#39;]&#39; syntax<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3256" class="marker cat_asm cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">54:16</span>Test our [ / ] syntax<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:16</span>Test our [ / ] syntax<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:16</span>Test our [ / ] syntax<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3271" class="marker cat_asm cat_emulation cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">54:31</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:31</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:31</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3278" class="marker cat_asm cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">54:38</span>Switch the store handling to use &#39;[&#39; and &#39;]&#39;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:38</span>Switch the store handling to use &#39;[&#39; and &#39;]&#39;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:38</span>Switch the store handling to use &#39;[&#39; and &#39;]&#39;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3366" class="marker cat_asm cat_emulation cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">56:06</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:06</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:06</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3401" class="marker cat_asm cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">56:41</span>Further test our notation<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:41</span>Further test our notation<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:41</span>Further test our notation<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3420" class="marker cat_asm cat_emulation cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">57:00</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:00</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:00</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="emulation" class="category emulation"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3462" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">57:42</span>Enable parse_instr() to handle the label-based store instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:42</span>Enable parse_instr() to handle the label-based store instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:42</span>Enable parse_instr() to handle the label-based store instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3584" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">59:44</span>Test a label-based store<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:44</span>Test a label-based store<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:44</span>Test a label-based store<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3613" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">1:00:13</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:13</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:13</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3631" class="marker cat_isa authored">
+                    <div class="cineraContent"><span class="timecode">1:00:31</span><span class="author" data-hue="68" data-saturation="76%">rygorous</span> Looking SPARC-y now! Well, halfway between SPARC and ARM. (This is why MIPS has the &quot;at&quot; register, &quot;assembler temporary&quot;)<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:31</span><span class="author" data-hue="68" data-saturation="76%">rygorous</span> Looking SPARC-y now! Well, halfway between SPARC and ARM. (This is why MIPS has the &quot;at&quot; register, &quot;assembler temporary&quot;)<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:31</span><span class="author" data-hue="68" data-saturation="76%">rygorous</span> Looking SPARC-y now! Well, halfway between SPARC and ARM. (This is why MIPS has the &quot;at&quot; register, &quot;assembler temporary&quot;)<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3717" class="marker cat_asm cat_code-generation cat_parsing programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">1:01:57</span>Enable parse_instr() to handle branches,<sup>3</sup> introducing parse_label()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:57</span>Enable parse_instr() to handle branches,<sup>3</sup> introducing parse_label()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:57</span>Enable parse_instr() to handle branches,<sup>3</sup> introducing parse_label()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4046" class="marker cat_asm cat_code-generation cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:07:26</span>Enable parse_instr() to handle jump and link, introducing cmd_jmp()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:26</span>Enable parse_instr() to handle jump and link, introducing cmd_jmp()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:26</span>Enable parse_instr() to handle jump and link, introducing cmd_jmp()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4347" class="marker cat_asm cat_code-generation cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:12:27</span>Test branching and jumping<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:27</span>Test branching and jumping<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:27</span>Test branching and jumping<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4395" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:13:15</span>Enable scan_int() to handle negative numbers<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:15</span>Enable scan_int() to handle negative numbers<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:15</span>Enable scan_int() to handle negative numbers<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4523" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">1:15:23</span>Run it to see that it all works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:23</span>Run it to see that it all works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:23</span>Run it to see that it all works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4577" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:16:17</span>Test the j instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:17</span>Test the j instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:17</span>Test the j instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4601" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">1:16:41</span>Run it and hit a &quot;Jump target is out of range&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:41</span>Run it and hit a &quot;Jump target is out of range&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:41</span>Run it and hit a &quot;Jump target is out of range&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4696" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:18:16</span>Fix cmd_jump() to use the offset<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:16</span>Fix cmd_jump() to use the offset<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:16</span>Fix cmd_jump() to use the offset<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4703" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">1:18:23</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:23</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:23</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4710" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:18:30</span>Rewrite the asm test to perform the check after one iteration<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:30</span>Rewrite the asm test to perform the check after one iteration<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:30</span>Rewrite the asm test to perform the check after one iteration<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4793" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">1:19:53</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:53</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:53</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4825" class="marker cat_asm authored">
+                    <div class="cineraContent"><span class="timecode">1:20:25</span><span class="author" data-hue="315" data-saturation="75%">elavid</span> But you know statically that the first check will go the loop since you just loaded x1 and x2<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:25</span><span class="author" data-hue="315" data-saturation="75%">elavid</span> But you know statically that the first check will go the loop since you just loaded x1 and x2<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:25</span><span class="author" data-hue="315" data-saturation="75%">elavid</span> But you know statically that the first check will go the loop since you just loaded x1 and x2<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4842" class="marker cat_asm cat_code-generation cat_input-handling programming">
+                    <div class="cineraContent"><span class="timecode">1:20:42</span>Try an addi based on user input<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="input handling" class="category input-handling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:42</span>Try an addi based on user input<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:42</span>Try an addi based on user input<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5006" class="marker cat_asm cat_code-generation cat_emulation cat_input-handling run">
+                    <div class="cineraContent"><span class="timecode">1:23:26</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:26</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:26</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5087" class="marker cat_asm cat_code-generation cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:24:47</span>Enable parse_instr() to handle the jalr instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:47</span>Enable parse_instr() to handle the jalr instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:47</span>Enable parse_instr() to handle the jalr instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5317" class="marker cat_asm cat_code-generation programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">1:28:37</span>Introduce cmd_jmp_reg(), cmd_call() and cmd_ret() to handle the jr, call and ret instructions<sup>4</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:37</span>Introduce cmd_jmp_reg(), cmd_call() and cmd_ret() to handle the jr, call and ret instructions<sup>4</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:37</span>Introduce cmd_jmp_reg(), cmd_call() and cmd_ret() to handle the jr, call and ret instructions<sup>4</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5687" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:34:47</span><span class="author" data-hue="264" data-saturation="92%">jgomes83</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Line 985: &amp;&amp; instead of &lt;=<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:47</span><span class="author" data-hue="264" data-saturation="92%">jgomes83</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Line 985: &amp;&amp; instead of &lt;=<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:47</span><span class="author" data-hue="264" data-saturation="92%">jgomes83</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Line 985: &amp;&amp; instead of &lt;=<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5695" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:34:55</span>Finish implementing cmd_ret()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:55</span>Finish implementing cmd_ret()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:55</span>Finish implementing cmd_ret()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5738" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:35:38</span>Test our call and return capabilities, doing a mul routine<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:38</span>Test our call and return capabilities, doing a mul routine<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:38</span>Test our call and return capabilities, doing a mul routine<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5929" class="marker cat_asm cat_code-generation run">
+                    <div class="cineraContent"><span class="timecode">1:38:49</span>Run it and hit an &quot;Expected name, got newline&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:49</span>Run it and hit an &quot;Expected name, got newline&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:49</span>Run it and hit an &quot;Expected name, got newline&quot; error<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6005" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">1:40:05</span>Remove a comment from our test asm<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:05</span>Remove a comment from our test asm<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:05</span>Remove a comment from our test asm<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6011" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:40:11</span>Run it to determine that there&#39;s a lexer bug in comment parsing<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:11</span>Run it to determine that there&#39;s a lexer bug in comment parsing<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:11</span>Run it to determine that there&#39;s a lexer bug in comment parsing<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6020" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:40:20</span>Test multiplication of user-input values<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:20</span>Test multiplication of user-input values<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:20</span>Test multiplication of user-input values<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6099" class="marker cat_asm cat_code-generation cat_emulation cat_input-handling run">
+                    <div class="cineraContent"><span class="timecode">1:41:39</span>Run it and try our user-input multiplication<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:39</span>Run it and try our user-input multiplication<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:39</span>Run it and try our user-input multiplication<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6289" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:44:49</span>Enable parse_instr() to handle lui (load upper immediate)<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:49</span>Enable parse_instr() to handle lui (load upper immediate)<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:49</span>Enable parse_instr() to handle lui (load upper immediate)<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6332" class="marker cat_asm cat_code-generation cat_emulation run">
+                    <div class="cineraContent"><span class="timecode">1:45:32</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:32</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:32</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="emulation" class="category emulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6374" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:46:14</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:14</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:14</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6409" class="marker cat_asm speech">
+                    <div class="cineraContent"><span class="timecode">1:46:49</span>Reflect on our assembler, with a glimpse into the future of supporting constant expressions and local labels<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:49</span>Reflect on our assembler, with a glimpse into the future of supporting constant expressions and local labels<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:49</span>Reflect on our assembler, with a glimpse into the future of supporting constant expressions and local labels<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6692" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:51:32</span>That&#39;s it for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:32</span>That&#39;s it for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:32</span>That&#39;s it for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://bitwise.handmade.network/episode/bitwise/bitwise030/"><div>&#9196;</div><div>Next: 'Assembler Macro Expansion'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

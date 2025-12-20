@@ -1,0 +1,673 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="ai, asset system, entity system, file io, game design, hashing, language, procedural generation, rendering, security, statistics, threading, ui, Chat Comment, In-Game, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Adding Entity Placement to the World Generator</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://handmadehero.org/fund" href="https://handmadehero.org/fund" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Handmade Hero</div>
+                            <div class="ref_title">Fund</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7706" class="timecode"><span class="ref_index">[1]</span><span class="time">2:08:26</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/aappleby/smhasher" href="https://github.com/aappleby/smhasher" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">GitHub</div>
+                            <div class="ref_title">aappleby /&#8203; smhasher</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8154" class="timecode"><span class="ref_index">[2]</span><span class="time">2:15:54</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content ai">
+                                <span class="icon category ai"></span><span class="cineraText">ai</span>
+                            </div>
+                            <div class="filter_content asset-system">
+                                <span class="icon category asset-system"></span><span class="cineraText">asset system</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content file-io">
+                                <span class="icon category file-io"></span><span class="cineraText">file io</span>
+                            </div>
+                            <div class="filter_content game-design">
+                                <span class="icon category game-design"></span><span class="cineraText">game design</span>
+                            </div>
+                            <div class="filter_content hashing">
+                                <span class="icon category hashing"></span><span class="cineraText">hashing</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content procedural-generation">
+                                <span class="icon category procedural-generation"></span><span class="cineraText">procedural generation</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content security">
+                                <span class="icon category security"></span><span class="cineraText">security</span>
+                            </div>
+                            <div class="filter_content statistics">
+                                <span class="icon category statistics"></span><span class="cineraText">statistics</span>
+                            </div>
+                            <div class="filter_content threading">
+                                <span class="icon category threading"></span><span class="cineraText">threading</span>
+                            </div>
+                            <div class="filter_content ui">
+                                <span class="icon category ui"></span><span class="cineraText">ui</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="2KeNcUTvVcs"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day484/"><div>&#9195;</div><div>Previous: 'Debugging Multi-tile Import'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="4" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:04</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:04</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:04</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="40" class="marker cat_asset-system cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">0:40</span>Run the game as a giant, misaligned cat, with a view to implementing the ability to place cats in the world<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:40</span>Run the game as a giant, misaligned cat, with a view to implementing the ability to place cats in the world<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:40</span>Run the game as a giant, misaligned cat, with a view to implementing the ability to place cats in the world<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="480" class="marker cat_procedural-generation speech">
+                    <div class="cineraContent"><span class="timecode">8:00</span>Separating the world generation into room-generation and character-placement phases<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:00</span>Separating the world generation into room-generation and character-placement phases<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:00</span>Separating the world generation into room-generation and character-placement phases<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="812" class="marker cat_procedural-generation speech">
+                    <div class="cineraContent"><span class="timecode">13:32</span>Consider how to approach character-placement<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:32</span>Consider how to approach character-placement<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:32</span>Consider how to approach character-placement<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1040" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">17:20</span>Change the gen_orphanage struct to contain a single array of pointers to gen_room structs, and introduce PlaceCat()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:20</span>Change the gen_orphanage struct to contain a single array of pointers to gen_room structs, and introduce PlaceCat()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:20</span>Change the gen_orphanage struct to contain a single array of pointers to gen_room structs, and introduce PlaceCat()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1544" class="marker cat_procedural-generation speech">
+                    <div class="cineraContent"><span class="timecode">25:44</span>Thoughts on randomly picking a room from a list<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:44</span>Thoughts on randomly picking a room from a list<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:44</span>Thoughts on randomly picking a room from a list<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1690" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">28:10</span>Introduce gen_option struct as a store of character-placement criteria in rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:10</span>Introduce gen_option struct as a store of character-placement criteria in rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:10</span>Introduce gen_option struct as a store of character-placement criteria in rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2067" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">34:27</span>Introduce PushOption(), IterateOptions() and related functions for PlaceCat() to locate a room to place a cat<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:27</span>Introduce PushOption(), IterateOptions() and related functions for PlaceCat() to locate a room to place a cat<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:27</span>Introduce PushOption(), IterateOptions() and related functions for PlaceCat() to locate a room to place a cat<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2995" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">49:55</span>Revert gen_orphanage to its original state, and introduce gen_entity, AddEntity(), PlaceEntity() and AddTag()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">49:55</span>Revert gen_orphanage to its original state, and introduce gen_entity, AddEntity(), PlaceEntity() and AddTag()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">49:55</span>Revert gen_orphanage to its original state, and introduce gen_entity, AddEntity(), PlaceEntity() and AddTag()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3514" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">58:34</span>Rename PushOption() and AddOption() and make CreateOrphanage() call it on various rooms we&#39;d like cats to reside<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:34</span>Rename PushOption() and AddOption() and make CreateOrphanage() call it on various rooms we&#39;d like cats to reside<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:34</span>Rename PushOption() and AddOption() and make CreateOrphanage() call it on various rooms we&#39;d like cats to reside<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3705" class="marker cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:01:45</span>Run the game and crash on the AddTag() call in CreateWorld()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:45</span>Run the game and crash on the AddTag() call in CreateWorld()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:45</span>Run the game and crash on the AddTag() call in CreateWorld()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3752" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:02:32</span>Fix AddOption() to put the option in the array<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:32</span>Fix AddOption() to put the option in the array<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:32</span>Fix AddOption() to put the option in the array<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3802" class="marker cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:03:22</span>Run the game with our cats requested, but unplaced<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:22</span>Run the game with our cats requested, but unplaced<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:22</span>Run the game with our cats requested, but unplaced<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3824" class="marker cat_entity-system cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:03:44</span>Introduce AddCat() based on AddMonstar() for GenerateRoom() to place requested cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:44</span>Introduce AddCat() based on AddMonstar() for GenerateRoom() to place requested cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:44</span>Introduce AddCat() based on AddMonstar() for GenerateRoom() to place requested cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4620" class="marker cat_entity-system cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:17:00</span>Run the game to see that cats are getting placed<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:00</span>Run the game to see that cats are getting placed<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:00</span>Run the game to see that cats are getting placed<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4713" class="marker cat_entity-system cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:18:33</span>Make CreateWorld() place and tag each cat, Hannah, Fred and Molly<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:33</span>Make CreateWorld() place and tag each cat, Hannah, Fred and Molly<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:33</span>Make CreateWorld() place and tag each cat, Hannah, Fred and Molly<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4832" class="marker cat_entity-system cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:20:32</span>Run the game to see all three cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:32</span>Run the game to see all three cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:32</span>Run the game to see all three cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4845" class="marker cat_entity-system cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:20:45</span>Add to the gen_entity struct a gen_create_entity function pointer for the Creator function<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:45</span>Add to the gen_entity struct a gen_create_entity function pointer for the Creator function<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:45</span>Add to the gen_entity struct a gen_create_entity function pointer for the Creator function<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5040" class="marker cat_entity-system cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:24:00</span>Create handmade_entity_gen.cpp and .h to contain the entity generation code<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:00</span>Create handmade_entity_gen.cpp and .h to contain the entity generation code<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:00</span>Create handmade_entity_gen.cpp and .h to contain the entity generation code<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5139" class="marker cat_entity-system cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:25:39</span>Run the game with the placement phase in place<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:39</span>Run the game with the placement phase in place<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:39</span>Run the game with the placement phase in place<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5166" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:26:06</span>Pop over to the entity construction phase, making AddCat() resize and elevate the cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:06</span>Pop over to the entity construction phase, making AddCat() resize and elevate the cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:06</span>Pop over to the entity construction phase, making AddCat() resize and elevate the cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5247" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:27:27</span>Run the game to see the more reasonably sized and positioned cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:27</span>Run the game to see the more reasonably sized and positioned cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:27</span>Run the game to see the more reasonably sized and positioned cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5301" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:28:21</span>Make AddCat() elevate and shrink the head in comparison to the body<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:21</span>Make AddCat() elevate and shrink the head in comparison to the body<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:21</span>Make AddCat() elevate and shrink the head in comparison to the body<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5400" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:30:00</span>Run the game to see the more correctly placed cat<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:00</span>Run the game to see the more correctly placed cat<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:00</span>Run the game to see the more correctly placed cat<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5485" class="marker cat_entity-system cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:31:25</span>Enable UpdateAndRenderEntities() to render ghosts with some transparency<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:25</span>Enable UpdateAndRenderEntities() to render ghosts with some transparency<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:25</span>Enable UpdateAndRenderEntities() to render ghosts with some transparency<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5601" class="marker cat_entity-system cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:33:21</span>Run the game to see translucent cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:21</span>Run the game to see translucent cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:21</span>Run the game to see translucent cats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5644" class="marker cat_asset-system cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:34:04</span>Set up to correlate incoming asset sizes with their resultant rendering<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:04</span>Set up to correlate incoming asset sizes with their resultant rendering<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:04</span>Set up to correlate incoming asset sizes with their resultant rendering<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5987" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:39:47</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:47</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:47</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6021" class="marker cat_asset-system authored">
+                    <div class="cineraContent"><span class="timecode">1:40:21</span><span class="author" data-hue="77" data-saturation="99%">Jim0_o</span> Q: Would / could you add the values of the cat pieces into the debug-data-list and from there drag the values to live edit the cats? (I think you already made those features long ago)<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:21</span><span class="author" data-hue="77" data-saturation="99%">Jim0_o</span> Q: Would / could you add the values of the cat pieces into the debug-data-list and from there drag the values to live edit the cats? (I think you already made those features long ago)<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:21</span><span class="author" data-hue="77" data-saturation="99%">Jim0_o</span> Q: Would / could you add the values of the cat pieces into the debug-data-list and from there drag the values to live edit the cats? (I think you already made those features long ago)<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6037" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:40:37</span><span class="author" data-hue="106" data-saturation="90%">pulp_user</span> Q: Do you have a video where you talk in depth about the construction of Meow hash? I didn&#39;t find anything on YouTube<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:37</span><span class="author" data-hue="106" data-saturation="90%">pulp_user</span> Q: Do you have a video where you talk in depth about the construction of Meow hash? I didn&#39;t find anything on YouTube<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:37</span><span class="author" data-hue="106" data-saturation="90%">pulp_user</span> Q: Do you have a video where you talk in depth about the construction of Meow hash? I didn&#39;t find anything on YouTube<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6061" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:41:01</span><span class="author" data-hue="224" data-saturation="89%">bouke285</span> Q: Are you offended that we named our cat Muratori?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:01</span><span class="author" data-hue="224" data-saturation="89%">bouke285</span> Q: Are you offended that we named our cat Muratori?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:01</span><span class="author" data-hue="224" data-saturation="89%">bouke285</span> Q: Are you offended that we named our cat Muratori?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6105" class="marker cat_ai cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">1:41:45</span><span class="author" data-hue="113" data-saturation="86%">jessef</span> Q: Could you talk about some of your plans on the AI of entities and what options you&#39;re considering?<span class="cineraCategories"><div title="ai" class="category ai"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:45</span><span class="author" data-hue="113" data-saturation="86%">jessef</span> Q: Could you talk about some of your plans on the AI of entities and what options you&#39;re considering?<span class="cineraCategories"><div title="ai" class="category ai"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:45</span><span class="author" data-hue="113" data-saturation="86%">jessef</span> Q: Could you talk about some of your plans on the AI of entities and what options you&#39;re considering?<span class="cineraCategories"><div title="ai" class="category ai"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6186" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:43:06</span><span class="author" data-hue="66" data-saturation="81%">blastofcynicism</span> Q: Are you offended that they missed the opportunity to name the cat Purratori?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:06</span><span class="author" data-hue="66" data-saturation="81%">blastofcynicism</span> Q: Are you offended that they missed the opportunity to name the cat Purratori?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:06</span><span class="author" data-hue="66" data-saturation="81%">blastofcynicism</span> Q: Are you offended that they missed the opportunity to name the cat Purratori?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6203" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:43:23</span><span class="author" data-hue="39" data-saturation="92%">vateferfout</span> Catsey Purratori is a great name<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:23</span><span class="author" data-hue="39" data-saturation="92%">vateferfout</span> Catsey Purratori is a great name<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:23</span><span class="author" data-hue="39" data-saturation="92%">vateferfout</span> Catsey Purratori is a great name<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6230" class="marker cat_ai speech">
+                    <div class="cineraContent"><span class="timecode">1:43:50</span>General thoughts on AI vs arcade-style patterning in games<span class="cineraCategories"><div title="ai" class="category ai"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:50</span>General thoughts on AI vs arcade-style patterning in games<span class="cineraCategories"><div title="ai" class="category ai"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:50</span>General thoughts on AI vs arcade-style patterning in games<span class="cineraCategories"><div title="ai" class="category ai"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6421" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:47:01</span><span class="author" data-hue="225" data-saturation="84%">joesweeney</span> Q: I&#39;m watching from the beginning, and you&#39;re fairly optimistic in your expectations for the series saying you don&#39;t expect to be done for two years. What are some of the topics that have taken longer than you expected?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:01</span><span class="author" data-hue="225" data-saturation="84%">joesweeney</span> Q: I&#39;m watching from the beginning, and you&#39;re fairly optimistic in your expectations for the series saying you don&#39;t expect to be done for two years. What are some of the topics that have taken longer than you expected?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:01</span><span class="author" data-hue="225" data-saturation="84%">joesweeney</span> Q: I&#39;m watching from the beginning, and you&#39;re fairly optimistic in your expectations for the series saying you don&#39;t expect to be done for two years. What are some of the topics that have taken longer than you expected?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6525" class="marker cat_rendering cat_ui authored">
+                    <div class="cineraContent"><span class="timecode">1:48:45</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Sorry if I&#39;m repeating the question from the pre-stream, but how would you approach redrawing of small parts of the screen, without having to redraw the whole thing in a non-immediate-mode GUI application?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="ui" class="category ui"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:45</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Sorry if I&#39;m repeating the question from the pre-stream, but how would you approach redrawing of small parts of the screen, without having to redraw the whole thing in a non-immediate-mode GUI application?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="ui" class="category ui"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:45</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Sorry if I&#39;m repeating the question from the pre-stream, but how would you approach redrawing of small parts of the screen, without having to redraw the whole thing in a non-immediate-mode GUI application?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="ui" class="category ui"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6629" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:50:29</span><span class="author" data-hue="225" data-saturation="84%">joesweeney</span> Q: Follow up, the goals you state are trying to inspire the next generation of game engine programmers. How successful do you feel the series has been on this front?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:29</span><span class="author" data-hue="225" data-saturation="84%">joesweeney</span> Q: Follow up, the goals you state are trying to inspire the next generation of game engine programmers. How successful do you feel the series has been on this front?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:29</span><span class="author" data-hue="225" data-saturation="84%">joesweeney</span> Q: Follow up, the goals you state are trying to inspire the next generation of game engine programmers. How successful do you feel the series has been on this front?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6708" class="marker cat_language cat_threading authored">
+                    <div class="cineraContent"><span class="timecode">1:51:48</span><span class="author" data-hue="68" data-saturation="95%">toxificated</span> Q: Could you please explain again what does volatile do?<span class="cineraCategories"><div title="language" class="category language"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:48</span><span class="author" data-hue="68" data-saturation="95%">toxificated</span> Q: Could you please explain again what does volatile do?<span class="cineraCategories"><div title="language" class="category language"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:48</span><span class="author" data-hue="68" data-saturation="95%">toxificated</span> Q: Could you please explain again what does volatile do?<span class="cineraCategories"><div title="language" class="category language"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7030" class="marker cat_hashing authored">
+                    <div class="cineraContent"><span class="timecode">1:57:10</span><span class="author" data-hue="106" data-saturation="90%">pulp_user</span> Q: With the explaining Meow hash question, I aimed less at the implementation, but the thought process that goes on behind: Do you know a good resource to read up on how hashes are generally constructed, how you design them so they produce low collision rates, how you quality-check them, and so on?<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:10</span><span class="author" data-hue="106" data-saturation="90%">pulp_user</span> Q: With the explaining Meow hash question, I aimed less at the implementation, but the thought process that goes on behind: Do you know a good resource to read up on how hashes are generally constructed, how you design them so they produce low collision rates, how you quality-check them, and so on?<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:10</span><span class="author" data-hue="106" data-saturation="90%">pulp_user</span> Q: With the explaining Meow hash question, I aimed less at the implementation, but the thought process that goes on behind: Do you know a good resource to read up on how hashes are generally constructed, how you design them so they produce low collision rates, how you quality-check them, and so on?<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7627" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:07:07</span><span class="author" data-hue="4" data-saturation="79%">quickshift_</span> Q: Do you happen to know how different is embedded C programming compared to &quot;simple&quot; C programming?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:07</span><span class="author" data-hue="4" data-saturation="79%">quickshift_</span> Q: Do you happen to know how different is embedded C programming compared to &quot;simple&quot; C programming?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:07</span><span class="author" data-hue="4" data-saturation="79%">quickshift_</span> Q: Do you happen to know how different is embedded C programming compared to &quot;simple&quot; C programming?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7706" class="marker cat_nullTopic authored" data-ref="https://handmadehero.org/fund">
+                    <div class="cineraContent"><span class="timecode">2:08:26</span><span class="author" data-hue="113" data-saturation="81%">pajpiart</span> Q: Would adding a fund section on Handmade Network be a viable short-term solution? I for one would really really like to see CDbg get funded<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:26</span><span class="author" data-hue="113" data-saturation="81%">pajpiart</span> Q: Would adding a fund section on Handmade Network be a viable short-term solution? I for one would really really like to see CDbg get funded<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:26</span><span class="author" data-hue="113" data-saturation="81%">pajpiart</span> Q: Would adding a fund section on Handmade Network be a viable short-term solution? I for one would really really like to see CDbg get funded<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7755" class="marker cat_threading authored">
+                    <div class="cineraContent"><span class="timecode">2:09:15</span><span class="author" data-hue="68" data-saturation="95%">toxificated</span> Q: I understand, thanks. I just wasn&#39;t sure because the wiki says: Do not use [volatile] for inter-thread communication<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:15</span><span class="author" data-hue="68" data-saturation="95%">toxificated</span> Q: I understand, thanks. I just wasn&#39;t sure because the wiki says: Do not use [volatile] for inter-thread communication<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:15</span><span class="author" data-hue="68" data-saturation="95%">toxificated</span> Q: I understand, thanks. I just wasn&#39;t sure because the wiki says: Do not use [volatile] for inter-thread communication<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7843" class="marker cat_hashing authored">
+                    <div class="cineraContent"><span class="timecode">2:10:43</span><span class="author" data-hue="153" data-saturation="78%">lorymaster</span> Q: So a really good lossy compressor could be a decent hash function?<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:43</span><span class="author" data-hue="153" data-saturation="78%">lorymaster</span> Q: So a really good lossy compressor could be a decent hash function?<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:43</span><span class="author" data-hue="153" data-saturation="78%">lorymaster</span> Q: So a really good lossy compressor could be a decent hash function?<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7864" class="marker cat_game-design authored">
+                    <div class="cineraContent"><span class="timecode">2:11:04</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: You mention many times that you are not a game designer and that it would be ideal if <span class="member" data-hue="277" data-saturation="88%">Jon Blow</span> would design the game. Do you plan on having him on in an episode or two to talk about gameplay related stuff, specifically related to the design of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>? If he has time, that is. He seems to be a very busy person and I imagine proper game design does not just happen in a day or two<span class="cineraCategories"><div title="game design" class="category game-design"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:04</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: You mention many times that you are not a game designer and that it would be ideal if <span class="member" data-hue="277" data-saturation="88%">Jon Blow</span> would design the game. Do you plan on having him on in an episode or two to talk about gameplay related stuff, specifically related to the design of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>? If he has time, that is. He seems to be a very busy person and I imagine proper game design does not just happen in a day or two<span class="cineraCategories"><div title="game design" class="category game-design"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:04</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: You mention many times that you are not a game designer and that it would be ideal if <span class="member" data-hue="277" data-saturation="88%">Jon Blow</span> would design the game. Do you plan on having him on in an episode or two to talk about gameplay related stuff, specifically related to the design of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>? If he has time, that is. He seems to be a very busy person and I imagine proper game design does not just happen in a day or two<span class="cineraCategories"><div title="game design" class="category game-design"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7979" class="marker cat_hashing cat_security authored">
+                    <div class="cineraContent"><span class="timecode">2:12:59</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> Q: There are attackers for non-crypto hashes: Hash table lookups can lead to denial-of-service attacks when the attacker can control data coming into the system (think web server)<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="security" class="category security"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:12:59</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> Q: There are attackers for non-crypto hashes: Hash table lookups can lead to denial-of-service attacks when the attacker can control data coming into the system (think web server)<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="security" class="category security"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:12:59</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> Q: There are attackers for non-crypto hashes: Hash table lookups can lead to denial-of-service attacks when the attacker can control data coming into the system (think web server)<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="security" class="category security"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8064" class="marker cat_hashing cat_security authored">
+                    <div class="cineraContent"><span class="timecode">2:14:24</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Meow hash is based on AES, right? So in a way it uses crypto-tech<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="security" class="category security"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:24</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Meow hash is based on AES, right? So in a way it uses crypto-tech<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="security" class="category security"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:24</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Meow hash is based on AES, right? So in a way it uses crypto-tech<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="security" class="category security"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8154" class="marker cat_statistics authored" data-ref="https://github.com/aappleby/smhasher">
+                    <div class="cineraContent"><span class="timecode">2:15:54</span><span class="author" data-hue="106" data-saturation="90%">pulp_user</span> Q: The smhasher GitHub repo<sup>2</sup> talks about percentages of bias and distribution for a hash. What do those mean?<span class="cineraCategories"><div title="statistics" class="category statistics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:54</span><span class="author" data-hue="106" data-saturation="90%">pulp_user</span> Q: The smhasher GitHub repo<sup>2</sup> talks about percentages of bias and distribution for a hash. What do those mean?<span class="cineraCategories"><div title="statistics" class="category statistics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:54</span><span class="author" data-hue="106" data-saturation="90%">pulp_user</span> Q: The smhasher GitHub repo<sup>2</sup> talks about percentages of bias and distribution for a hash. What do those mean?<span class="cineraCategories"><div title="statistics" class="category statistics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8325" class="marker cat_file-io authored">
+                    <div class="cineraContent"><span class="timecode">2:18:45</span><span class="author" data-hue="12" data-saturation="79%">iantjac</span> Q: <span class="member" data-hue="277" data-saturation="88%">Jonathan Blow</span> made an offhand remark that one should never use the stdio IO functions, but always use OS-specific IO functions. I do not know why, and I can&#39;t stop thinking about why it could be. Do you know what he could be talking about? Thanks<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:45</span><span class="author" data-hue="12" data-saturation="79%">iantjac</span> Q: <span class="member" data-hue="277" data-saturation="88%">Jonathan Blow</span> made an offhand remark that one should never use the stdio IO functions, but always use OS-specific IO functions. I do not know why, and I can&#39;t stop thinking about why it could be. Do you know what he could be talking about? Thanks<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:45</span><span class="author" data-hue="12" data-saturation="79%">iantjac</span> Q: <span class="member" data-hue="277" data-saturation="88%">Jonathan Blow</span> made an offhand remark that one should never use the stdio IO functions, but always use OS-specific IO functions. I do not know why, and I can&#39;t stop thinking about why it could be. Do you know what he could be talking about? Thanks<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8469" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:21:09</span>Thank you, everyone<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:21:09</span>Thank you, everyone<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:21:09</span>Thank you, everyone<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day486/"><div>&#9196;</div><div>Next: 'Adding Multiple Alignment Points'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

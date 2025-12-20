@@ -1,0 +1,749 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="data structure, entity system, lighting, memory, performance, Chat Comment, In-Game, Owl of Shame, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Moving Unpacked Entities from the Sim Region to World</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content owl">
+                                <span class="icon">&#129417;</span><span class="cineraText">Owl of Shame</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="kWXQTOPy_1o"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day542/"><div>&#9195;</div><div>Previous: 'Drawing Memory Occupancy Accurately'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="70" class="marker cat_entity-system cat_memory run">
+                    <div class="cineraContent"><span class="timecode">1:10</span>Demo our new memory viewer, with a view to working on the storage of our world&#39;s entity data<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10</span>Demo our new memory viewer, with a view to working on the storage of our world&#39;s entity data<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10</span>Demo our new memory viewer, with a view to working on the storage of our world&#39;s entity data<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="365" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">6:05</span>Our entity system, not pre-designed<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:05</span>Our entity system, not pre-designed<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:05</span>Our entity system, not pre-designed<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="490" class="marker cat_entity-system cat_memory run programming">
+                    <div class="cineraContent"><span class="timecode">8:10</span>Compare the memory requirements of our entity system, with and without the ground_cover<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:10</span>Compare the memory requirements of our entity system, with and without the ground_cover<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:10</span>Compare the memory requirements of our entity system, with and without the ground_cover<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="535" class="marker cat_memory speech">
+                    <div class="cineraContent"><span class="timecode">8:55</span>Our concrete problem: visual effects only need to be stored while they are visible<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:55</span>Our concrete problem: visual effects only need to be stored while they are visible<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:55</span>Our concrete problem: visual effects only need to be stored while they are visible<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="856" class="marker cat_entity-system speech">
+                    <div class="cineraContent"><span class="timecode">14:16</span>Alternative, lossy representations of entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:16</span>Alternative, lossy representations of entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:16</span>Alternative, lossy representations of entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1051" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">17:31</span>BeginSim() and the (un)packing of entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:31</span>BeginSim() and the (un)packing of entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:31</span>BeginSim() and the (un)packing of entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1310" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">21:50</span>Changing the sim_region to contain a reference table of entity pointers contained in the world&#39;s cache<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:50</span>Changing the sim_region to contain a reference table of entity pointers contained in the world&#39;s cache<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:50</span>Changing the sim_region to contain a reference table of entity pointers contained in the world&#39;s cache<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1462" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">24:22</span>Start to reacquaint ourselves with all uses of the sim_region&#39;s Entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:22</span>Start to reacquaint ourselves with all uses of the sim_region&#39;s Entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:22</span>Start to reacquaint ourselves with all uses of the sim_region&#39;s Entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1600" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">26:40</span>Reacquaint ourselves with the sim_region&#39;s EntityHashOccupancy<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:40</span>Reacquaint ourselves with the sim_region&#39;s EntityHashOccupancy<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:40</span>Reacquaint ourselves with the sim_region&#39;s EntityHashOccupancy<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1700" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">28:20</span>Continue to reacquaint ourselves with all uses of the sim_region&#39;s Entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:20</span>Continue to reacquaint ourselves with all uses of the sim_region&#39;s Entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:20</span>Continue to reacquaint ourselves with all uses of the sim_region&#39;s Entities<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1769" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">29:29</span>Augment the world struct with UnpackedEntities, into which the sim_region may point<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:29</span>Augment the world struct with UnpackedEntities, into which the sim_region may point<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:29</span>Augment the world struct with UnpackedEntities, into which the sim_region may point<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2224" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">37:04</span>The problem of determining which entities to pack<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:04</span>The problem of determining which entities to pack<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:04</span>The problem of determining which entities to pack<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2432" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">40:32</span>Change all instances of entity array iteration in the sim region to operate as if on a reference table of pointers, introducing entity_iterator and IterateAllEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:32</span>Change all instances of entity array iteration in the sim region to operate as if on a reference table of pointers, introducing entity_iterator and IterateAllEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:32</span>Change all instances of entity array iteration in the sim region to operate as if on a reference table of pointers, introducing entity_iterator and IterateAllEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2745" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">45:45</span>Begin to move all the existing entity storage, packing and unpacking code from the sim region to the world, introducing EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:45</span>Begin to move all the existing entity storage, packing and unpacking code from the sim region to the world, introducing EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:45</span>Begin to move all the existing entity storage, packing and unpacking code from the sim region to the world, introducing EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3411" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">56:51</span>Consider how to correctly set the origin of entities during unpacking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:51</span>Consider how to correctly set the origin of entities during unpacking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:51</span>Consider how to correctly set the origin of entities during unpacking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3762" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:02:42</span>Augment the world with a world_position UnpackOrigin, for EnsureRegionIsUnpacked() to use, and introduce RegisterEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:42</span>Augment the world with a world_position UnpackOrigin, for EnsureRegionIsUnpacked() to use, and introduce RegisterEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:42</span>Augment the world with a world_position UnpackOrigin, for EnsureRegionIsUnpacked() to use, and introduce RegisterEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4255" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:10:55</span>Introduce a version in the world of CreateEntity() that takes a world *<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:55</span>Introduce a version in the world of CreateEntity() that takes a world *<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:55</span>Introduce a version in the world of CreateEntity() that takes a world *<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4511" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:15:11</span>Introduce RepackEntitiesAsNecessary() in the world, for the sim region&#39;s EndWorldChange() to call<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:11</span>Introduce RepackEntitiesAsNecessary() in the world, for the sim region&#39;s EndWorldChange() to call<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:11</span>Introduce RepackEntitiesAsNecessary() in the world, for the sim region&#39;s EndWorldChange() to call<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5097" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:24:57</span>Implement IterateAllEntities() and the entity_iterator version of Advance(), introducing FindNextEntity()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:57</span>Implement IterateAllEntities() and the entity_iterator version of Advance(), introducing FindNextEntity()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:57</span>Implement IterateAllEntities() and the entity_iterator version of Advance(), introducing FindNextEntity()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5458" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:30:58</span>Hit our assertion in GetHashFromID()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:58</span>Hit our assertion in GetHashFromID()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:58</span>Hit our assertion in GetHashFromID()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5490" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:31:30</span>Fix BeginWorldChange() to call EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:30</span>Fix BeginWorldChange() to call EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:30</span>Fix BeginWorldChange() to call EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5541" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:32:21</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:21</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:21</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5562" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:32:42</span>Remove Entities_ from the sim_region, and fix EnsureRegionIsUnpacked() to operate on the entities in the world<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:42</span>Remove Entities_ from the sim_region, and fix EnsureRegionIsUnpacked() to operate on the entities in the world<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:42</span>Remove Entities_ from the sim_region, and fix EnsureRegionIsUnpacked() to operate on the entities in the world<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5608" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:33:28</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked(), and investigate why<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:28</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked(), and investigate why<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:28</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked(), and investigate why<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5775" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:36:15</span>Augment the world with an UnpackIsOpen to prevent multiple concurrent unpacks of the same sim region<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:15</span>Augment the world with an UnpackIsOpen to prevent multiple concurrent unpacks of the same sim region<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:15</span>Augment the world with an UnpackIsOpen to prevent multiple concurrent unpacks of the same sim region<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5870" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:37:50</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked(), noting that entity (un)packing succeeds during world generation, but not during simulation<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:50</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked(), noting that entity (un)packing succeeds during world generation, but not during simulation<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:50</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked(), noting that entity (un)packing succeeds during world generation, but not during simulation<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6069" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:41:09</span>Enable EnsureRegionIsUnpacked() to detect infinite looping<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:09</span>Enable EnsureRegionIsUnpacked() to detect infinite looping<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:09</span>Enable EnsureRegionIsUnpacked() to detect infinite looping<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6411" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:46:51</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked(), assuming that it is not infinite looping<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:51</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked(), assuming that it is not infinite looping<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:51</span>Hit our InvalidCodePath in EnsureRegionIsUnpacked(), assuming that it is not infinite looping<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6437" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:47:17</span>Investigate why we are hitting the InvalidCodePath in EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:17</span>Investigate why we are hitting the InvalidCodePath in EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:17</span>Investigate why we are hitting the InvalidCodePath in EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6717" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:51:57</span>Step through many calls to RepackEntitiesAsNecessary(), watching the EntityP values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:57</span>Step through many calls to RepackEntitiesAsNecessary(), watching the EntityP values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:57</span>Step through many calls to RepackEntitiesAsNecessary(), watching the EntityP values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7008" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:56:48</span>Step through IterateAllEntities() to see that we do find stuff<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:48</span>Step through IterateAllEntities() to see that we do find stuff<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:48</span>Step through IterateAllEntities() to see that we do find stuff<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7116" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:58:36</span>Step through EnsureRegionIsUnpacked(), watching which chunk is responsible for the majority of blocks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:36</span>Step through EnsureRegionIsUnpacked(), watching which chunk is responsible for the majority of blocks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:36</span>Step through EnsureRegionIsUnpacked(), watching which chunk is responsible for the majority of blocks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7293" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:01:33</span>Track our number of packs minus unpacks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:33</span>Track our number of packs minus unpacks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:33</span>Track our number of packs minus unpacks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7468" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:04:28</span>Find that the LastUsedEntityStorageIndex is 31 higher than our TotalEntityPacksMinusUnpacks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:28</span>Find that the LastUsedEntityStorageIndex is 31 higher than our TotalEntityPacksMinusUnpacks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:28</span>Find that the LastUsedEntityStorageIndex is 31 higher than our TotalEntityPacksMinusUnpacks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7592" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:06:32</span>Temporarily set a huge MAX_SIM_REGION_ENTITY_COUNT<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:32</span>Temporarily set a huge MAX_SIM_REGION_ENTITY_COUNT<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:32</span>Temporarily set a huge MAX_SIM_REGION_ENTITY_COUNT<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7721" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:08:41</span>Step over BeginWorldChange() to find that we are trying to unpack 15383 entities, fewer than the LastUsedEntityStorageIndex of 21523<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:41</span>Step over BeginWorldChange() to find that we are trying to unpack 15383 entities, fewer than the LastUsedEntityStorageIndex of 21523<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:41</span>Step over BeginWorldChange() to find that we are trying to unpack 15383 entities, fewer than the LastUsedEntityStorageIndex of 21523<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7762" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">2:09:22</span>Disable lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:22</span>Disable lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:22</span>Disable lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8288" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:18:08</span>Crash in LoadEntityReference()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:08</span>Crash in LoadEntityReference()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:08</span>Crash in LoadEntityReference()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8354" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:19:14</span>Make RepackEntitiesAsNecessary() take a SimRegion to pass to PackTraversableRefernce()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:19:14</span>Make RepackEntitiesAsNecessary() take a SimRegion to pass to PackTraversableRefernce()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:19:14</span>Make RepackEntitiesAsNecessary() take a SimRegion to pass to PackTraversableRefernce()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8408" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:20:08</span>Still crash in LoadEntityReference()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:20:08</span>Still crash in LoadEntityReference()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:20:08</span>Still crash in LoadEntityReference()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8443" class="marker cat_nullTopic owl programming">
+                    <div class="cineraContent"><span class="timecode">2:20:43</span>Fix FindNextEntity() to only find an entity if its occupancy slot is not empty<span class="cineraCategories"><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:20:43</span>Fix FindNextEntity() to only find an entity if its occupancy slot is not empty<span class="cineraCategories"><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:20:43</span>Fix FindNextEntity() to only find an entity if its occupancy slot is not empty<span class="cineraCategories"><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8628" class="marker cat_entity-system run owl">
+                    <div class="cineraContent"><span class="timecode">2:23:48</span>Run without crashing, but see that RepackEntitiesAsNecessary() is happening too often<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:48</span>Run without crashing, but see that RepackEntitiesAsNecessary() is happening too often<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:48</span>Run without crashing, but see that RepackEntitiesAsNecessary() is happening too often<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8723" class="marker cat_entity-system run owl">
+                    <div class="cineraContent"><span class="timecode">2:25:23</span>Step through BeginSim() to see a huge discrepancy between our TotalEntityPacksMinusUnpacks of 6109 and LastUsedEntityStorageIndex of 21523<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:25:23</span>Step through BeginSim() to see a huge discrepancy between our TotalEntityPacksMinusUnpacks of 6109 and LastUsedEntityStorageIndex of 21523<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:25:23</span>Step through BeginSim() to see a huge discrepancy between our TotalEntityPacksMinusUnpacks of 6109 and LastUsedEntityStorageIndex of 21523<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8796" class="marker cat_entity-system owl research">
+                    <div class="cineraContent"><span class="timecode">2:26:36</span>Scrutinise EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:26:36</span>Scrutinise EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:26:36</span>Scrutinise EnsureRegionIsUnpacked()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8878" class="marker cat_entity-system owl programming">
+                    <div class="cineraContent"><span class="timecode">2:27:58</span>Fix EnsureRegionIsUnpacked() to offset the Dest-&gt;P after actually setting the Dest<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:27:58</span>Fix EnsureRegionIsUnpacked() to offset the Dest-&gt;P after actually setting the Dest<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:27:58</span>Fix EnsureRegionIsUnpacked() to offset the Dest-&gt;P after actually setting the Dest<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8893" class="marker cat_entity-system cat_lighting cat_performance run owl">
+                    <div class="cineraContent"><span class="timecode">2:28:13</span>Find that everything now works, noting the performance of the game in debug mode without lighting<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:28:13</span>Find that everything now works, noting the performance of the game in debug mode without lighting<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:28:13</span>Find that everything now works, noting the performance of the game in debug mode without lighting<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8969" class="marker cat_lighting owl programming">
+                    <div class="cineraContent"><span class="timecode">2:29:29</span>Re-enable lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:29:29</span>Re-enable lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:29:29</span>Re-enable lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9001" class="marker cat_nullTopic run owl">
+                    <div class="cineraContent"><span class="timecode">2:30:01</span>Find that we are fully back to normal<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30:01</span>Find that we are fully back to normal<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30:01</span>Find that we are fully back to normal<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Owl of Shame" class="categoryMedium owl">&#129417;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9056" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:30:56</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30:56</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30:56</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9120" class="marker cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">2:32:00</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Will the packed entity be a separate struct, and what is the plan of adding / removing data?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:32:00</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Will the packed entity be a separate struct, and what is the plan of adding / removing data?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:32:00</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Will the packed entity be a separate struct, and what is the plan of adding / removing data?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9247" class="marker cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">2:34:07</span><span class="author" data-hue="200" data-saturation="97%">Brian</span> Q: I had a question regarding the Arena graph in the profiler, though it may have changed this episode, and you may not be able to display it in its current state. It was about why there were separations between the ground chunks (the first group, all were &quot;green&quot;, but every X amount, there was a gray value that separated them). What was this separation?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:34:07</span><span class="author" data-hue="200" data-saturation="97%">Brian</span> Q: I had a question regarding the Arena graph in the profiler, though it may have changed this episode, and you may not be able to display it in its current state. It was about why there were separations between the ground chunks (the first group, all were &quot;green&quot;, but every X amount, there was a gray value that separated them). What was this separation?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:34:07</span><span class="author" data-hue="200" data-saturation="97%">Brian</span> Q: I had a question regarding the Arena graph in the profiler, though it may have changed this episode, and you may not be able to display it in its current state. It was about why there were separations between the ground chunks (the first group, all were &quot;green&quot;, but every X amount, there was a gray value that separated them). What was this separation?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9461" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:37:41</span>Remove the cruft from world_entity_block<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:37:41</span>Remove the cruft from world_entity_block<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:37:41</span>Remove the cruft from world_entity_block<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9555" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:39:15</span>Check out our more closely packed entity blocks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:39:15</span>Check out our more closely packed entity blocks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:39:15</span>Check out our more closely packed entity blocks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9691" class="marker cat_entity-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">2:41:31</span>Change CreateWorld() to put the world in its own memory arena, noting that GetWorldChunk() allocates space for the headers<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:41:31</span>Change CreateWorld() to put the world in its own memory arena, noting that GetWorldChunk() allocates space for the headers<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:41:31</span>Change CreateWorld() to put the world in its own memory arena, noting that GetWorldChunk() allocates space for the headers<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9843" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:44:03</span>See that our entity blocks are packed the same<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:44:03</span>See that our entity blocks are packed the same<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:44:03</span>See that our entity blocks are packed the same<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9864" class="marker cat_entity-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">2:44:24</span>Revert CreateWorld() to put the world in the GameState-&gt;ModeArena<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:44:24</span>Revert CreateWorld() to put the world in the GameState-&gt;ModeArena<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:44:24</span>Revert CreateWorld() to put the world in the GameState-&gt;ModeArena<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9887" class="marker cat_memory run">
+                    <div class="cineraContent"><span class="timecode">2:44:47</span>Note the utility of memory usage visualisation<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:44:47</span>Note the utility of memory usage visualisation<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:44:47</span>Note the utility of memory usage visualisation<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9905" class="marker cat_entity-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">2:45:05</span>Change GetWorldChunk() to allocate space for chunks in bulk<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:45:05</span>Change GetWorldChunk() to allocate space for chunks in bulk<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:45:05</span>Change GetWorldChunk() to allocate space for chunks in bulk<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10169" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:49:29</span>Check out our perfectly packed entity blocks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:49:29</span>Check out our perfectly packed entity blocks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:49:29</span>Check out our perfectly packed entity blocks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10280" class="marker cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">2:51:20</span><span class="author" data-hue="55" data-saturation="75%">sourdust</span> Q: Did you ever figure out MEM_LARGE_PAGES for VirtualAlloc? Is that what you&#39;re talking about?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:51:20</span><span class="author" data-hue="55" data-saturation="75%">sourdust</span> Q: Did you ever figure out MEM_LARGE_PAGES for VirtualAlloc? Is that what you&#39;re talking about?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:51:20</span><span class="author" data-hue="55" data-saturation="75%">sourdust</span> Q: Did you ever figure out MEM_LARGE_PAGES for VirtualAlloc? Is that what you&#39;re talking about?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10295" class="marker cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">2:51:35</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: How did people do memory management in the era of Commodore 64 for writing games? It is so luxurious nowadays with all these amounts of memory we have on our machines<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:51:35</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: How did people do memory management in the era of Commodore 64 for writing games? It is so luxurious nowadays with all these amounts of memory we have on our machines<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:51:35</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: How did people do memory management in the era of Commodore 64 for writing games? It is so luxurious nowadays with all these amounts of memory we have on our machines<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10419" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:53:39</span>Close this down for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:53:39</span>Close this down for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:53:39</span>Close this down for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day544/"><div>&#9196;</div><div>Next: 'Caching Unpacked Entities Across Frames'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

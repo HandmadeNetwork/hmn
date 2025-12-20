@@ -1,0 +1,551 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="Chat Comment, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Adding Normal Maps to the Pipeline</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <div class="person">
+                            <div class="role">Indexer</div>
+                            <div class="name">Dustin Specht</div>
+                        </div>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="oww19zUryVg"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day096/"><div>&#9195;</div><div>Previous: 'Introduction to Lighting'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="137" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:17</span>Recap yesterday and plan for today</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17</span>Recap yesterday and plan for today</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17</span>Recap yesterday and plan for today</div>
+                    </div>
+                </div>
+                <div data-timestamp="175" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:55</span>Blackboard: Normal maps</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:55</span>Blackboard: Normal maps</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:55</span>Blackboard: Normal maps</div>
+                    </div>
+                </div>
+                <div data-timestamp="328" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">5:28</span>Blackboard: The importance of Normal</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:28</span>Blackboard: The importance of Normal</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:28</span>Blackboard: The importance of Normal</div>
+                    </div>
+                </div>
+                <div data-timestamp="414" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">6:54</span>Blackboard: What we need in order to compute lighting based on this Normal</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:54</span>Blackboard: What we need in order to compute lighting based on this Normal</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:54</span>Blackboard: What we need in order to compute lighting based on this Normal</div>
+                    </div>
+                </div>
+                <div data-timestamp="507" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">8:27</span>Blackboard: Where the Normal map fits into the equation</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:27</span>Blackboard: Where the Normal map fits into the equation</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:27</span>Blackboard: Where the Normal map fits into the equation</div>
+                    </div>
+                </div>
+                <div data-timestamp="731" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">12:11</span>Blackboard: Description of the surface</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:11</span>Blackboard: Description of the surface</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:11</span>Blackboard: Description of the surface</div>
+                    </div>
+                </div>
+                <div data-timestamp="872" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">14:32</span>Blackboard: Description of the light</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:32</span>Blackboard: Description of the light</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:32</span>Blackboard: Description of the light</div>
+                    </div>
+                </div>
+                <div data-timestamp="1018" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">16:58</span>Blackboard: Casey&#39;s proposal</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:58</span>Blackboard: Casey&#39;s proposal</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:58</span>Blackboard: Casey&#39;s proposal</div>
+                    </div>
+                </div>
+                <div data-timestamp="1312" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">21:52</span>Blackboard: Blurring based on the surface description</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:52</span>Blackboard: Blurring based on the surface description</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:52</span>Blackboard: Blurring based on the surface description</div>
+                    </div>
+                </div>
+                <div data-timestamp="1528" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">25:28</span>Introduce the concept of a NormalMap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:28</span>Introduce the concept of a NormalMap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:28</span>Introduce the concept of a NormalMap</div>
+                    </div>
+                </div>
+                <div data-timestamp="1614" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">26:54</span>Blackboard: Normals have to be Normal</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:54</span>Blackboard: Normals have to be Normal</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:54</span>Blackboard: Normals have to be Normal</div>
+                    </div>
+                </div>
+                <div data-timestamp="1761" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">29:21</span>Introduce Unpack4x8 and unpack the Texels</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:21</span>Introduce Unpack4x8 and unpack the Texels</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:21</span>Introduce Unpack4x8 and unpack the Texels</div>
+                    </div>
+                </div>
+                <div data-timestamp="1880" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">31:20</span>Similarly unpack the Normals</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:20</span>Similarly unpack the Normals</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:20</span>Similarly unpack the Normals</div>
+                    </div>
+                </div>
+                <div data-timestamp="1936" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">32:16</span>Blackboard: We often bake the description of the surface into the Normal map</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:16</span>Blackboard: We often bake the description of the surface into the Normal map</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:16</span>Blackboard: We often bake the description of the surface into the Normal map</div>
+                    </div>
+                </div>
+                <div data-timestamp="1991" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">33:11</span>Lerp the Normals</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:11</span>Lerp the Normals</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:11</span>Lerp the Normals</div>
+                    </div>
+                </div>
+                <div data-timestamp="2035" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">33:55</span>Introduce environment_map</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:55</span>Introduce environment_map</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:55</span>Introduce environment_map</div>
+                    </div>
+                </div>
+                <div data-timestamp="2242" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">37:22</span>Set tEnvMap from Normal.Z</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:22</span>Set tEnvMap from Normal.Z</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:22</span>Set tEnvMap from Normal.Z</div>
+                    </div>
+                </div>
+                <div data-timestamp="2342" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">39:02</span>Blackboard: We might want to switch nearer to 0.25</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:02</span>Blackboard: We might want to switch nearer to 0.25</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:02</span>Blackboard: We might want to switch nearer to 0.25</div>
+                    </div>
+                </div>
+                <div data-timestamp="2385" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">39:45</span>Setup the environment_map lookups</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:45</span>Setup the environment_map lookups</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:45</span>Setup the environment_map lookups</div>
+                    </div>
+                </div>
+                <div data-timestamp="2656" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">44:16</span>Create ScreenSpaceUV</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:16</span>Create ScreenSpaceUV</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:16</span>Create ScreenSpaceUV</div>
+                    </div>
+                </div>
+                <div data-timestamp="2770" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">46:10</span>Pass that ScreenSpaceUV to SampleEnvironmentMap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:10</span>Pass that ScreenSpaceUV to SampleEnvironmentMap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:10</span>Pass that ScreenSpaceUV to SampleEnvironmentMap</div>
+                    </div>
+                </div>
+                <div data-timestamp="2810" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">46:50</span>Check if there is a NormalMap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:50</span>Check if there is a NormalMap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:50</span>Check if there is a NormalMap</div>
+                    </div>
+                </div>
+                <div data-timestamp="2833" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">47:13</span>Pre-light the Texel</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:13</span>Pre-light the Texel</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:13</span>Pre-light the Texel</div>
+                    </div>
+                </div>
+                <div data-timestamp="2873" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">47:53</span>We haven&#39;t talked too much about how you compute lighting equations, per se</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:53</span>We haven&#39;t talked too much about how you compute lighting equations, per se</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:53</span>We haven&#39;t talked too much about how you compute lighting equations, per se</div>
+                    </div>
+                </div>
+                <div data-timestamp="2912" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">48:32</span>Take SampleEnvironmentMap and return the Normal for now</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:32</span>Take SampleEnvironmentMap and return the Normal for now</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:32</span>Take SampleEnvironmentMap and return the Normal for now</div>
+                    </div>
+                </div>
+                <div data-timestamp="3079" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">51:19</span>Plumbing</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:19</span>Plumbing</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:19</span>Plumbing</div>
+                    </div>
+                </div>
+                <div data-timestamp="3214" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">53:34</span>Check it out in-game and generate a NormalMap to play with</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:34</span>Check it out in-game and generate a NormalMap to play with</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:34</span>Check it out in-game and generate a NormalMap to play with</div>
+                    </div>
+                </div>
+                <div data-timestamp="3288" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">54:48</span>Blackboard: The NormalMap that we&#39;re going to create</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:48</span>Blackboard: The NormalMap that we&#39;re going to create</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:48</span>Blackboard: The NormalMap that we&#39;re going to create</div>
+                    </div>
+                </div>
+                <div data-timestamp="3321" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">55:21</span>Implement MakeSphereNormalMap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:21</span>Implement MakeSphereNormalMap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:21</span>Implement MakeSphereNormalMap</div>
+                    </div>
+                </div>
+                <div data-timestamp="3498" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">58:18</span>Blackboard: Think this through a little more</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:18</span>Blackboard: Think this through a little more</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:18</span>Blackboard: Think this through a little more</div>
+                    </div>
+                </div>
+                <div data-timestamp="3564" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">59:24</span>Throw in a Normal.z calculation for now and finish MakeSphereNormalMap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:24</span>Throw in a Normal.z calculation for now and finish MakeSphereNormalMap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:24</span>Throw in a Normal.z calculation for now and finish MakeSphereNormalMap</div>
+                    </div>
+                </div>
+                <div data-timestamp="3763" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:02:43</span>Add Normalize to handmade_math.h</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:43</span>Add Normalize to handmade_math.h</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:43</span>Add Normalize to handmade_math.h</div>
+                    </div>
+                </div>
+                <div data-timestamp="3829" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:03:49</span>Compile and see it in-game</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:49</span>Compile and see it in-game</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:49</span>Compile and see it in-game</div>
+                    </div>
+                </div>
+                <div data-timestamp="3858" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:04:18</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:18</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:18</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3902" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:05:02</span><span class="author" data-hue="299" data-saturation="91%">dsjimenez</span> Your 2D art already seems to have some shading. Will that just represent ambient lighting when mixed with this dynamic lighting you&#39;re trying to do?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:02</span><span class="author" data-hue="299" data-saturation="91%">dsjimenez</span> Your 2D art already seems to have some shading. Will that just represent ambient lighting when mixed with this dynamic lighting you&#39;re trying to do?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:02</span><span class="author" data-hue="299" data-saturation="91%">dsjimenez</span> Your 2D art already seems to have some shading. Will that just represent ambient lighting when mixed with this dynamic lighting you&#39;re trying to do?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3957" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:05:57</span><span class="author" data-hue="300" data-saturation="78%">miblo</span> In MakeSphereNormalMap, should &#39;Y &lt; Bitmap-&gt;Width;&#39; be &#39;Y &lt; Bitmap-&gt;Height;&#39;?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:57</span><span class="author" data-hue="300" data-saturation="78%">miblo</span> In MakeSphereNormalMap, should &#39;Y &lt; Bitmap-&gt;Width;&#39; be &#39;Y &lt; Bitmap-&gt;Height;&#39;?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:57</span><span class="author" data-hue="300" data-saturation="78%">miblo</span> In MakeSphereNormalMap, should &#39;Y &lt; Bitmap-&gt;Width;&#39; be &#39;Y &lt; Bitmap-&gt;Height;&#39;?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3975" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:06:15</span><span class="author" data-hue="241" data-saturation="90%">tenbroya</span> How far do you think you can increase the capabilities of an engine like this before you start to suffer from performance constraints due to using only the CPU (vs GPU)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:15</span><span class="author" data-hue="241" data-saturation="90%">tenbroya</span> How far do you think you can increase the capabilities of an engine like this before you start to suffer from performance constraints due to using only the CPU (vs GPU)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:15</span><span class="author" data-hue="241" data-saturation="90%">tenbroya</span> How far do you think you can increase the capabilities of an engine like this before you start to suffer from performance constraints due to using only the CPU (vs GPU)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4077" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:07:57</span><span class="author" data-hue="191" data-saturation="91%">stelar7</span> Don&#39;t you need to SRBGToLinear1 the normals or use the normals instead of the texel in the lerp?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:57</span><span class="author" data-hue="191" data-saturation="91%">stelar7</span> Don&#39;t you need to SRBGToLinear1 the normals or use the normals instead of the texel in the lerp?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:57</span><span class="author" data-hue="191" data-saturation="91%">stelar7</span> Don&#39;t you need to SRBGToLinear1 the normals or use the normals instead of the texel in the lerp?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4184" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:09:44</span><span class="author" data-hue="8" data-saturation="89%">pseudonym73</span> Normal.z = Sqrt(1.0f - Normal.x*Normal.x - Normal.y*Normal.y);<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:44</span><span class="author" data-hue="8" data-saturation="89%">pseudonym73</span> Normal.z = Sqrt(1.0f - Normal.x*Normal.x - Normal.y*Normal.y);<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:44</span><span class="author" data-hue="8" data-saturation="89%">pseudonym73</span> Normal.z = Sqrt(1.0f - Normal.x*Normal.x - Normal.y*Normal.y);<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4325" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:12:05</span><span class="author" data-hue="225" data-saturation="84%">timbertoes</span> Is your lighting lookup a similar technique to MatCaps used in other software?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:05</span><span class="author" data-hue="225" data-saturation="84%">timbertoes</span> Is your lighting lookup a similar technique to MatCaps used in other software?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:05</span><span class="author" data-hue="225" data-saturation="84%">timbertoes</span> Is your lighting lookup a similar technique to MatCaps used in other software?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4340" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:12:20</span><span class="author" data-hue="170" data-saturation="84%">lukeultra</span> What benefits do you see from using the extra time it takes to create your own engine from scratch? Is it worth it in your opinion?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:20</span><span class="author" data-hue="170" data-saturation="84%">lukeultra</span> What benefits do you see from using the extra time it takes to create your own engine from scratch? Is it worth it in your opinion?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:20</span><span class="author" data-hue="170" data-saturation="84%">lukeultra</span> What benefits do you see from using the extra time it takes to create your own engine from scratch? Is it worth it in your opinion?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4355" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:12:35</span><span class="author" data-hue="8" data-saturation="89%">pseudonym73</span> The catch is that it&#39;s going to take the Sqrt of a negative number if you&#39;re outside the sphere<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:35</span><span class="author" data-hue="8" data-saturation="89%">pseudonym73</span> The catch is that it&#39;s going to take the Sqrt of a negative number if you&#39;re outside the sphere<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:35</span><span class="author" data-hue="8" data-saturation="89%">pseudonym73</span> The catch is that it&#39;s going to take the Sqrt of a negative number if you&#39;re outside the sphere<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4443" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:14:03</span>We have come to the end of the questions<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:03</span>We have come to the end of the questions<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:03</span>We have come to the end of the questions<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day098/"><div>&#9196;</div><div>Next: 'Normal Map Code Cleanup'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

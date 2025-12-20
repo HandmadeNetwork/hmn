@@ -1,0 +1,599 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="Chat Comment, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Passing Rotation and Shear to the Renderer</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="kizKx0bdr3Q"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day274/"><div>&#9195;</div><div>Previous: 'Dynamic Animation with Springs'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="92" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:32</span>Recap and set the stage for the day</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32</span>Recap and set the stage for the day</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32</span>Recap and set the stage for the day</div>
+                    </div>
+                </div>
+                <div data-timestamp="161" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:41</span>A few words on responsiveness vs aesthetics</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:41</span>A few words on responsiveness vs aesthetics</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:41</span>A few words on responsiveness vs aesthetics</div>
+                    </div>
+                </div>
+                <div data-timestamp="361" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">6:01</span>handmade_world_mode.cpp: Introduce GetClosestTraversable to enable the HeroHead as well as the HeroBody to search for and snap to the closest point</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:01</span>handmade_world_mode.cpp: Introduce GetClosestTraversable to enable the HeroHead as well as the HeroBody to search for and snap to the closest point</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:01</span>handmade_world_mode.cpp: Introduce GetClosestTraversable to enable the HeroHead as well as the HeroBody to search for and snap to the closest point</div>
+                    </div>
+                </div>
+                <div data-timestamp="700" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">11:40</span>Run the game and see the head snap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:40</span>Run the game and see the head snap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:40</span>Run the game and see the head snap</div>
+                    </div>
+                </div>
+                <div data-timestamp="733" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">12:13</span>handmade_sim_region.cpp: Make the head keep facing in the direction is was going</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:13</span>handmade_sim_region.cpp: Make the head keep facing in the direction is was going</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:13</span>handmade_sim_region.cpp: Make the head keep facing in the direction is was going</div>
+                    </div>
+                </div>
+                <div data-timestamp="799" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">13:19</span>Run the game and watch the head&#39;s facing direction</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:19</span>Run the game and watch the head&#39;s facing direction</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:19</span>Run the game and watch the head&#39;s facing direction</div>
+                    </div>
+                </div>
+                <div data-timestamp="882" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">14:42</span>handmade_world_mode.cpp: Disable the sword in favour of implementating strafe hop</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:42</span>handmade_world_mode.cpp: Disable the sword in favour of implementating strafe hop</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:42</span>handmade_world_mode.cpp: Disable the sword in favour of implementating strafe hop</div>
+                    </div>
+                </div>
+                <div data-timestamp="943" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">15:43</span>Run the game and try out the strafing</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:43</span>Run the game and try out the strafing</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:43</span>Run the game and try out the strafing</div>
+                    </div>
+                </div>
+                <div data-timestamp="995" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">16:35</span>handmade_world_mode.cpp: Make the head not recentre</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:35</span>handmade_world_mode.cpp: Make the head not recentre</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:35</span>handmade_world_mode.cpp: Make the head not recentre</div>
+                    </div>
+                </div>
+                <div data-timestamp="1039" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">17:19</span>Run the game and try the movement</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:19</span>Run the game and try the movement</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:19</span>Run the game and try the movement</div>
+                    </div>
+                </div>
+                <div data-timestamp="1056" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">17:36</span>handmade_world_mode.cpp: Use a weaker spring to recentre the head</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:36</span>handmade_world_mode.cpp: Use a weaker spring to recentre the head</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:36</span>handmade_world_mode.cpp: Use a weaker spring to recentre the head</div>
+                    </div>
+                </div>
+                <div data-timestamp="1112" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">18:32</span>Run the game and try out the recentering</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:32</span>Run the game and try out the recentering</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:32</span>Run the game and try out the recentering</div>
+                    </div>
+                </div>
+                <div data-timestamp="1143" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">19:03</span>handmade_world_mode.cpp: Make the head not recentre</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:03</span>handmade_world_mode.cpp: Make the head not recentre</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:03</span>handmade_world_mode.cpp: Make the head not recentre</div>
+                    </div>
+                </div>
+                <div data-timestamp="1189" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">19:49</span>Run the game and try out the movement</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:49</span>Run the game and try out the movement</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:49</span>Run the game and try out the movement</div>
+                    </div>
+                </div>
+                <div data-timestamp="1387" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">23:07</span>handmade_render_group.h: Add XAxis and YAxis to render_entry_bitmap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:07</span>handmade_render_group.h: Add XAxis and YAxis to render_entry_bitmap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:07</span>handmade_render_group.h: Add XAxis and YAxis to render_entry_bitmap</div>
+                    </div>
+                </div>
+                <div data-timestamp="1519" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">25:19</span>handmade_opengl.cpp: Make OpenGLRenderCommands work with render_entry_bitmap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:19</span>handmade_opengl.cpp: Make OpenGLRenderCommands work with render_entry_bitmap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:19</span>handmade_opengl.cpp: Make OpenGLRenderCommands work with render_entry_bitmap</div>
+                    </div>
+                </div>
+                <div data-timestamp="1636" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">27:16</span>Blackboard: Handling parallelograms</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:16</span>Blackboard: Handling parallelograms</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:16</span>Blackboard: Handling parallelograms</div>
+                    </div>
+                </div>
+                <div data-timestamp="1749" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">29:09</span>handmade_opengl.cpp: Calculate the four points</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:09</span>handmade_opengl.cpp: Calculate the four points</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:09</span>handmade_opengl.cpp: Calculate the four points</div>
+                    </div>
+                </div>
+                <div data-timestamp="1971" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">32:51</span>handmade_render.cpp and handmade_render_group.cpp: Make DrawRectangleQuickly and PushBitmap work with render_entry_bitmap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:51</span>handmade_render.cpp and handmade_render_group.cpp: Make DrawRectangleQuickly and PushBitmap work with render_entry_bitmap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:51</span>handmade_render.cpp and handmade_render_group.cpp: Make DrawRectangleQuickly and PushBitmap work with render_entry_bitmap</div>
+                    </div>
+                </div>
+                <div data-timestamp="2069" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">34:29</span>Run the game and see that everything is messed up</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:29</span>Run the game and see that everything is messed up</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:29</span>Run the game and see that everything is messed up</div>
+                    </div>
+                </div>
+                <div data-timestamp="2101" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">35:01</span>handmade_open.cpp: Correct the point calculation</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:01</span>handmade_open.cpp: Correct the point calculation</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:01</span>handmade_open.cpp: Correct the point calculation</div>
+                    </div>
+                </div>
+                <div data-timestamp="2116" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">35:16</span>Blackboard: How we are calculating the points</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:16</span>Blackboard: How we are calculating the points</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:16</span>Blackboard: How we are calculating the points</div>
+                    </div>
+                </div>
+                <div data-timestamp="2155" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">35:55</span>Run the game and see that we&#39;re good</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:55</span>Run the game and see that we&#39;re good</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:55</span>Run the game and see that we&#39;re good</div>
+                    </div>
+                </div>
+                <div data-timestamp="2166" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">36:06</span>handmade_render_group.cpp: Consider how best to specify the axes</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:06</span>handmade_render_group.cpp: Consider how best to specify the axes</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:06</span>handmade_render_group.cpp: Consider how best to specify the axes</div>
+                    </div>
+                </div>
+                <div data-timestamp="2512" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">41:52</span>Blackboard: Rotating the body&#39;s YAxis to point to the head</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:52</span>Blackboard: Rotating the body&#39;s YAxis to point to the head</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:52</span>Blackboard: Rotating the body&#39;s YAxis to point to the head</div>
+                    </div>
+                </div>
+                <div data-timestamp="2825" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">47:05</span>handmade_render_group.cpp: Make PushBitmap and GetBitmapDim take XAxis and YAxis</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:05</span>handmade_render_group.cpp: Make PushBitmap and GetBitmapDim take XAxis and YAxis</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:05</span>handmade_render_group.cpp: Make PushBitmap and GetBitmapDim take XAxis and YAxis</div>
+                    </div>
+                </div>
+                <div data-timestamp="3057" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">50:57</span>handmade_world_mode.cpp: Make the body&#39;s YAxis point towards the head</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:57</span>handmade_world_mode.cpp: Make the body&#39;s YAxis point towards the head</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:57</span>handmade_world_mode.cpp: Make the body&#39;s YAxis point towards the head</div>
+                    </div>
+                </div>
+                <div data-timestamp="3531" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">58:51</span>Run the game and admire the stretching</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:51</span>Run the game and admire the stretching</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:51</span>Run the game and admire the stretching</div>
+                    </div>
+                </div>
+                <div data-timestamp="3582" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">59:42</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:42</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:42</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3619" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:00:19</span><span class="author" data-hue="9" data-saturation="81%">soysaucethekid</span> Zircon encrusted tweezers? Are you moving to Montana soon?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:19</span><span class="author" data-hue="9" data-saturation="81%">soysaucethekid</span> Zircon encrusted tweezers? Are you moving to Montana soon?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:19</span><span class="author" data-hue="9" data-saturation="81%">soysaucethekid</span> Zircon encrusted tweezers? Are you moving to Montana soon?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3633" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:00:33</span><span class="author" data-hue="11" data-saturation="90%">fr0styninja</span> Why does our limbless hero need suffer in such gruesome ways<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:33</span><span class="author" data-hue="11" data-saturation="90%">fr0styninja</span> Why does our limbless hero need suffer in such gruesome ways<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:33</span><span class="author" data-hue="11" data-saturation="90%">fr0styninja</span> Why does our limbless hero need suffer in such gruesome ways<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3659" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:00:59</span><span class="author" data-hue="142" data-saturation="93%">twitch_makes_me_itch</span> Do I need the payed version of Mischief to change the background color?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:59</span><span class="author" data-hue="142" data-saturation="93%">twitch_makes_me_itch</span> Do I need the payed version of Mischief to change the background color?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:59</span><span class="author" data-hue="142" data-saturation="93%">twitch_makes_me_itch</span> Do I need the payed version of Mischief to change the background color?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3689" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:01:29</span><span class="author" data-hue="299" data-saturation="99%">evraire</span> Will you try rotation to visually compare against shearing before deciding?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:29</span><span class="author" data-hue="299" data-saturation="99%">evraire</span> Will you try rotation to visually compare against shearing before deciding?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:29</span><span class="author" data-hue="299" data-saturation="99%">evraire</span> Will you try rotation to visually compare against shearing before deciding?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3746" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:02:26</span><span class="author" data-hue="327" data-saturation="97%">cvaucher</span> You wrote the scale / shear this way because it&#39;s already done in the software renderer but these transformations would usually be done in a vertex shader, right?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:26</span><span class="author" data-hue="327" data-saturation="97%">cvaucher</span> You wrote the scale / shear this way because it&#39;s already done in the software renderer but these transformations would usually be done in a vertex shader, right?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:26</span><span class="author" data-hue="327" data-saturation="97%">cvaucher</span> You wrote the scale / shear this way because it&#39;s already done in the software renderer but these transformations would usually be done in a vertex shader, right?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3832" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:03:52</span><span class="author" data-hue="329" data-saturation="78%">novynn</span> Some other games have done similar move styles, but they use a floating indicator instead of separating the head from the body. Your thoughts?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:52</span><span class="author" data-hue="329" data-saturation="78%">novynn</span> Some other games have done similar move styles, but they use a floating indicator instead of separating the head from the body. Your thoughts?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:52</span><span class="author" data-hue="329" data-saturation="78%">novynn</span> Some other games have done similar move styles, but they use a floating indicator instead of separating the head from the body. Your thoughts?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3846" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:04:06</span><span class="author" data-hue="9" data-saturation="81%">soysaucethekid</span> For collision detection will there be skewed boxes as well or will it just be AABB?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:06</span><span class="author" data-hue="9" data-saturation="81%">soysaucethekid</span> For collision detection will there be skewed boxes as well or will it just be AABB?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:06</span><span class="author" data-hue="9" data-saturation="81%">soysaucethekid</span> For collision detection will there be skewed boxes as well or will it just be AABB?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3875" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:04:35</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> So we move tile to tile? Haven&#39;t seen the new movement<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:35</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> So we move tile to tile? Haven&#39;t seen the new movement<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:35</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> So we move tile to tile? Haven&#39;t seen the new movement<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3886" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:04:46</span><span class="author" data-hue="299" data-saturation="95%">erdomina</span> Are we eventually going to move these over to shaders?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:46</span><span class="author" data-hue="299" data-saturation="95%">erdomina</span> Are we eventually going to move these over to shaders?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:46</span><span class="author" data-hue="299" data-saturation="95%">erdomina</span> Are we eventually going to move these over to shaders?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3983" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:06:23</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Any word on the new debugger?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:23</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Any word on the new debugger?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:23</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Any word on the new debugger?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4029" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:07:09</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> You had a stream about someone contacting you about making a debugger<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:09</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> You had a stream about someone contacting you about making a debugger<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:09</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> You had a stream about someone contacting you about making a debugger<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4130" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:08:50</span><span class="author" data-hue="257" data-saturation="87%">insofaras</span> I doubt the concept of shaders is going anywhere soon<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:50</span><span class="author" data-hue="257" data-saturation="87%">insofaras</span> I doubt the concept of shaders is going anywhere soon<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:50</span><span class="author" data-hue="257" data-saturation="87%">insofaras</span> I doubt the concept of shaders is going anywhere soon<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4377" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:12:57</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Do you think you&#39;ll use the spring code from the other day on the camera movement? I&#39;m imagining a critically damped spring would be the thing to use for that<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:57</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Do you think you&#39;ll use the spring code from the other day on the camera movement? I&#39;m imagining a critically damped spring would be the thing to use for that<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:57</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Do you think you&#39;ll use the spring code from the other day on the camera movement? I&#39;m imagining a critically damped spring would be the thing to use for that<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4526" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:15:26</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> For camera stuff I just do x += (x - dest) / 10 or something like that. What would that be?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:26</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> For camera stuff I just do x += (x - dest) / 10 or something like that. What would that be?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:26</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> For camera stuff I just do x += (x - dest) / 10 or something like that. What would that be?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4580" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:16:20</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> That&#39;s not accounting for t, that&#39;s if it was instantaneous<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:20</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> That&#39;s not accounting for t, that&#39;s if it was instantaneous<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:20</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> That&#39;s not accounting for t, that&#39;s if it was instantaneous<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4648" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:17:28</span><span class="author" data-hue="139" data-saturation="90%">Mr4thDimention</span> Should be (dest - x) I&#39;m assuming<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:28</span><span class="author" data-hue="139" data-saturation="90%">Mr4thDimention</span> Should be (dest - x) I&#39;m assuming<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:28</span><span class="author" data-hue="139" data-saturation="90%">Mr4thDimention</span> Should be (dest - x) I&#39;m assuming<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4662" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:17:42</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> I used to do like fixed FPS, so it was fine, but I&#39;ve changed. Hold on I&#39;ll look it up<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:42</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> I used to do like fixed FPS, so it was fine, but I&#39;ve changed. Hold on I&#39;ll look it up<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:42</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> I used to do like fixed FPS, so it was fine, but I&#39;ve changed. Hold on I&#39;ll look it up<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4684" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:18:04</span>Blackboard: GarlandoBloom&#39;s camera movement</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:04</span>Blackboard: GarlandoBloom&#39;s camera movement</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:04</span>Blackboard: GarlandoBloom&#39;s camera movement</div>
+                    </div>
+                </div>
+                <div data-timestamp="4866" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:21:06</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Plans on adding camera shake or blur or similar if the hero gets hit or a bolder hits the ground near the hero?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:06</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Plans on adding camera shake or blur or similar if the hero gets hit or a bolder hits the ground near the hero?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:06</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Plans on adding camera shake or blur or similar if the hero gets hit or a bolder hits the ground near the hero?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4924" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:22:04</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:04</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:04</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day276/"><div>&#9196;</div><div>Next: 'Tuning the Body Animation'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

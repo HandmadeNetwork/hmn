@@ -1,0 +1,816 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asset system, file format, font, hashing, parsing, platform layer, rendering, Administrivia, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Writing Large PNGs and Supersampling Fonts</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://github.com/HandmadeHero/cpp/issues/92" href="https://github.com/HandmadeHero/cpp/issues/92" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">GitHub</div>
+                            <div class="ref_title">HandmadeHero /&#8203; cpp /&#8203; Support writing &quot;large&quot; PNGs</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="259" class="timecode"><span class="ref_index">[1]</span><span class="time">4:19</span></span><span data-timestamp="6257" class="timecode"><span class="ref_index">[8]</span><span class="time">1:44:17</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://w3.org/TR/2003/REC-PNG-20031110/" href="https://w3.org/TR/2003/REC-PNG-20031110/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">W3C</div>
+                            <div class="ref_title">Portable Network Graphics (PNG) Specification (Second Edition)</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="771" class="timecode"><span class="ref_index">[2]</span><span class="time">12:51</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://www.ietf.org/rfc/rfc1950.txt" href="http://www.ietf.org/rfc/rfc1950.txt" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">IETF</div>
+                            <div class="ref_title">ZLIB Compressed Data Format Specification version 3.3</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1526" class="timecode"><span class="ref_index">[3]</span><span class="time">25:26</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta" href="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Windows Dev Center</div>
+                            <div class="ref_title">CreateFontA function</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="3135" class="timecode"><span class="ref_index">[4]</span><span class="time">52:15</span></span><span data-timestamp="3326" class="timecode"><span class="ref_index">[5]</span><span class="time">55:26</span></span><span data-timestamp="5039" class="timecode"><span class="ref_index">[6]</span><span class="time">1:23:59</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="5270" class="timecode"><span class="ref_index">[7]</span><span class="time">1:27:50</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/HandmadeHero/cpp/issues/93" href="https://github.com/HandmadeHero/cpp/issues/93" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">GitHub</div>
+                            <div class="ref_title">HandmadeHero /&#8203; cpp /&#8203; Should we advance a character here?</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6282" class="timecode"><span class="ref_index">[9]</span><span class="time">1:44:42</span></span><span data-timestamp="6400" class="timecode"><span class="ref_index">[10]</span><span class="time">1:46:40</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://handmadehero.org/conference" href="https://handmadehero.org/conference" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Handmade Hero</div>
+                            <div class="ref_title">Handmade Hero-related Conferences</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6456" class="timecode"><span class="ref_index">[11]</span><span class="time">1:47:36</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://fonts.google.com/" href="https://fonts.google.com/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">Google Fonts</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6540" class="timecode"><span class="ref_index">[12]</span><span class="time">1:49:00</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asset-system">
+                                <span class="icon category asset-system"></span><span class="cineraText">asset system</span>
+                            </div>
+                            <div class="filter_content file-format">
+                                <span class="icon category file-format"></span><span class="cineraText">file format</span>
+                            </div>
+                            <div class="filter_content font">
+                                <span class="icon category font"></span><span class="cineraText">font</span>
+                            </div>
+                            <div class="filter_content hashing">
+                                <span class="icon category hashing"></span><span class="cineraText">hashing</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div class="filter_content platform-layer">
+                                <span class="icon category platform-layer"></span><span class="cineraText">platform layer</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="6-nOuoehfd4"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day529/"><div>&#9195;</div><div>Previous: 'Debugging the PNG Writer'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_asset-system cat_font speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day with a few words on asset metadata<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day with a few words on asset metadata<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day with a few words on asset metadata<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="259" class="marker cat_asset-system research" data-ref="https://github.com/HandmadeHero/cpp/issues/92">
+                    <div class="cineraContent"><span class="timecode">4:19</span>Determine to address the &quot;Support writing &quot;large&quot; PNGs&quot; issue<sup>1</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:19</span>Determine to address the &quot;Support writing &quot;large&quot; PNGs&quot; issue<sup>1</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:19</span>Determine to address the &quot;Support writing &quot;large&quot; PNGs&quot; issue<sup>1</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="421" class="marker cat_asset-system cat_font admin">
+                    <div class="cineraContent"><span class="timecode">7:01</span>Run our font exporter–extractor for 20px high glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:01</span>Run our font exporter–extractor for 20px high glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:01</span>Run our font exporter–extractor for 20px high glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="524" class="marker cat_asset-system cat_font admin">
+                    <div class="cineraContent"><span class="timecode">8:44</span>Run our font exporter–extractor for 512px high glyphs to exhibit our bug<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:44</span>Run our font exporter–extractor for 512px high glyphs to exhibit our bug<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:44</span>Run our font exporter–extractor for 512px high glyphs to exhibit our bug<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="634" class="marker cat_asset-system cat_font research">
+                    <div class="cineraContent"><span class="timecode">10:34</span>Set up to enable WritePNG() write out large images in multiple chunks<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:34</span>Set up to enable WritePNG() write out large images in multiple chunks<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:34</span>Set up to enable WritePNG() write out large images in multiple chunks<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="771" class="marker cat_asset-system cat_file-format programming" data-ref="https://w3.org/TR/2003/REC-PNG-20031110/">
+                    <div class="cineraContent"><span class="timecode">12:51</span>Enable WritePNG() to write out multiple chunks<sup>2</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:51</span>Enable WritePNG() to write out multiple chunks<sup>2</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:51</span>Enable WritePNG() to write out multiple chunks<sup>2</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1526" class="marker cat_file-format research" data-ref="http://www.ietf.org/rfc/rfc1950.txt">
+                    <div class="cineraContent"><span class="timecode">25:26</span>Consult the ZLIB spec to see where the ADLER32 checksum is supposed to go<sup>3</sup><span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:26</span>Consult the ZLIB spec to see where the ADLER32 checksum is supposed to go<sup>3</sup><span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:26</span>Consult the ZLIB spec to see where the ADLER32 checksum is supposed to go<sup>3</sup><span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1702" class="marker cat_asset-system cat_file-format programming">
+                    <div class="cineraContent"><span class="timecode">28:22</span>Continue to enable WritePNG() to handle multiple chunks, prepending rows with the filter value<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:22</span>Continue to enable WritePNG() to handle multiple chunks, prepending rows with the filter value<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:22</span>Continue to enable WritePNG() to handle multiple chunks, prepending rows with the filter value<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2219" class="marker cat_file-format speech">
+                    <div class="cineraContent"><span class="timecode">36:59</span>Thoughts on a more succinct and maintainable specification of the ability to modify rarely modified values, e.g. PNG filter per row<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:59</span>Thoughts on a more succinct and maintainable specification of the ability to modify rarely modified values, e.g. PNG filter per row<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:59</span>Thoughts on a more succinct and maintainable specification of the ability to modify rarely modified values, e.g. PNG filter per row<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2311" class="marker cat_asset-system cat_file-format programming">
+                    <div class="cineraContent"><span class="timecode">38:31</span>Continue to enable WritePNG() to process rows for multiple chunks<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:31</span>Continue to enable WritePNG() to process rows for multiple chunks<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:31</span>Continue to enable WritePNG() to process rows for multiple chunks<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2483" class="marker cat_file-format cat_hashing programming">
+                    <div class="cineraContent"><span class="timecode">41:23</span>Enable WritePNG() to handle the ADLER32 checksum for multiple chunks, introducing BeginAdler32() and Adler32Append()<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="hashing" class="category hashing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:23</span>Enable WritePNG() to handle the ADLER32 checksum for multiple chunks, introducing BeginAdler32() and Adler32Append()<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="hashing" class="category hashing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:23</span>Enable WritePNG() to handle the ADLER32 checksum for multiple chunks, introducing BeginAdler32() and Adler32Append()<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="hashing" class="category hashing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2881" class="marker cat_asset-system cat_file-format run">
+                    <div class="cineraContent"><span class="timecode">48:01</span>Step through WritePNG() to find that our B and Width fail to line up<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:01</span>Step through WritePNG() to find that our B and Width fail to line up<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:01</span>Step through WritePNG() to find that our B and Width fail to line up<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3011" class="marker cat_asset-system cat_file-format programming">
+                    <div class="cineraContent"><span class="timecode">50:11</span>Fix WritePNG() to correctly detect the end of row<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:11</span>Fix WritePNG() to correctly detect the end of row<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:11</span>Fix WritePNG() to correctly detect the end of row<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3041" class="marker cat_asset-system cat_file-format cat_font admin">
+                    <div class="cineraContent"><span class="timecode">50:41</span>Run hhfont to completion, and check out a glyph in GIMP to see no antialiasing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:41</span>Run hhfont to completion, and check out a glyph in GIMP to see no antialiasing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:41</span>Run hhfont to completion, and check out a glyph in GIMP to see no antialiasing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file format" class="category file-format"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3135" class="marker cat_font cat_platform-layer research" data-ref="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta">
+                    <div class="cineraContent"><span class="timecode">52:15</span>Consult the documentation on CreateFontA() for its ANTIALIASED_QUALITY parameter<sup>4</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="platform layer" class="category platform-layer"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:15</span>Consult the documentation on CreateFontA() for its ANTIALIASED_QUALITY parameter<sup>4</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="platform layer" class="category platform-layer"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:15</span>Consult the documentation on CreateFontA() for its ANTIALIASED_QUALITY parameter<sup>4</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="platform layer" class="category platform-layer"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3326" class="marker cat_font cat_rendering programming" data-ref="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta">
+                    <div class="cineraContent"><span class="timecode">55:26</span>Enable ExtractFont() and LoadGlyphBitmap() to oversample our output glyphs<sup>5</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:26</span>Enable ExtractFont() and LoadGlyphBitmap() to oversample our output glyphs<sup>5</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:26</span>Enable ExtractFont() and LoadGlyphBitmap() to oversample our output glyphs<sup>5</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4287" class="marker cat_asset-system cat_font admin">
+                    <div class="cineraContent"><span class="timecode">1:11:27</span>Run our exporter–extractor to find that we produced corrupted .png files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:27</span>Run our exporter–extractor to find that we produced corrupted .png files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:27</span>Run our exporter–extractor to find that we produced corrupted .png files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4352" class="marker cat_font cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:12:32</span>Prevent LoadGlyphBitmap() and ExtractFont() from scaling<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:32</span>Prevent LoadGlyphBitmap() and ExtractFont() from scaling<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:32</span>Prevent LoadGlyphBitmap() and ExtractFont() from scaling<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4391" class="marker cat_asset-system cat_font admin">
+                    <div class="cineraContent"><span class="timecode">1:13:11</span>Run our exporter–extractor successfully on both 512px and 800px high glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:11</span>Run our exporter–extractor successfully on both 512px and 800px high glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:11</span>Run our exporter–extractor successfully on both 512px and 800px high glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4440" class="marker cat_font cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:14:00</span>Make ExtractFont() oversample by 2<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:00</span>Make ExtractFont() oversample by 2<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:00</span>Make ExtractFont() oversample by 2<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4448" class="marker cat_asset-system cat_font admin">
+                    <div class="cineraContent"><span class="timecode">1:14:08</span>Run our exporter–extractor to find that we produced corrupted .png files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:08</span>Run our exporter–extractor to find that we produced corrupted .png files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:08</span>Run our exporter–extractor to find that we produced corrupted .png files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4460" class="marker cat_asset-system cat_font cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:14:20</span>Step in to WritePNG() to see that the Width and Height are 0, and then on through LoadGlyphBitmap() to see what it does<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:20</span>Step in to WritePNG() to see that the Width and Height are 0, and then on through LoadGlyphBitmap() to see what it does<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:20</span>Step in to WritePNG() to see that the Width and Height are 0, and then on through LoadGlyphBitmap() to see what it does<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4582" class="marker cat_asset-system cat_font cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:16:22</span>Change LoadGlyphBitmap() to increment the SampleInner<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:22</span>Change LoadGlyphBitmap() to increment the SampleInner<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:22</span>Change LoadGlyphBitmap() to increment the SampleInner<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4614" class="marker cat_asset-system cat_font cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:16:54</span>Step back in to WritePNG() to still see a Width and Height of 0<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:54</span>Step back in to WritePNG() to still see a Width and Height of 0<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:54</span>Step back in to WritePNG() to still see a Width and Height of 0<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4636" class="marker cat_asset-system cat_font cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:17:16</span>Fix LoadGlyphBitmap() to increment the Sample<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:16</span>Fix LoadGlyphBitmap() to increment the Sample<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:16</span>Fix LoadGlyphBitmap() to increment the Sample<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4653" class="marker cat_asset-system cat_font cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:17:33</span>Step back in to WritePNG() to find more plausible Width and Height values<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:33</span>Step back in to WritePNG() to find more plausible Width and Height values<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:33</span>Step back in to WritePNG() to find more plausible Width and Height values<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4657" class="marker cat_asset-system cat_font cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">1:17:37</span>View our glyphs to find that they appear squished horizontally, but antialiased<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:37</span>View our glyphs to find that they appear squished horizontally, but antialiased<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:37</span>View our glyphs to find that they appear squished horizontally, but antialiased<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4691" class="marker cat_asset-system cat_font cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:18:11</span>Fix LoadGlyphBitmap() to increment the Sample by the Scale<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:11</span>Fix LoadGlyphBitmap() to increment the Sample by the Scale<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:11</span>Fix LoadGlyphBitmap() to increment the Sample by the Scale<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4703" class="marker cat_asset-system cat_font cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">1:18:23</span>Rerun our exporter–extractor and check the antialiasing of our correctly scaled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:23</span>Rerun our exporter–extractor and check the antialiasing of our correctly scaled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:23</span>Rerun our exporter–extractor and check the antialiasing of our correctly scaled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4821" class="marker cat_font cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:20:21</span>Increase the scaling to 4 in ExtractFont()<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:21</span>Increase the scaling to 4 in ExtractFont()<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:21</span>Increase the scaling to 4 in ExtractFont()<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4839" class="marker cat_asset-system cat_font cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">1:20:39</span>Rerun our exporter–extractor and check the antialiasing of these ×4 oversampled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:39</span>Rerun our exporter–extractor and check the antialiasing of these ×4 oversampled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:39</span>Rerun our exporter–extractor and check the antialiasing of these ×4 oversampled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4906" class="marker cat_font cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:21:46</span>Prevent ExtractFont() from scaling<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:46</span>Prevent ExtractFont() from scaling<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:46</span>Prevent ExtractFont() from scaling<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4920" class="marker cat_asset-system cat_font cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">1:22:00</span>Rerun our exporter–extractor and compare the antialiasing of our unscaled and oversampled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:00</span>Rerun our exporter–extractor and compare the antialiasing of our unscaled and oversampled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:00</span>Rerun our exporter–extractor and compare the antialiasing of our unscaled and oversampled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4952" class="marker cat_font cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:22:32</span>Increase the scaling to 8 in ExtractFont()<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:32</span>Increase the scaling to 8 in ExtractFont()<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:32</span>Increase the scaling to 8 in ExtractFont()<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4965" class="marker cat_asset-system cat_font cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">1:22:45</span>Rerun our exporter–extractor and compare the antialiasing of our variously oversampled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:45</span>Rerun our exporter–extractor and compare the antialiasing of our variously oversampled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:45</span>Rerun our exporter–extractor and compare the antialiasing of our variously oversampled glyphs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5039" class="marker cat_font cat_rendering programming" data-ref="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta">
+                    <div class="cineraContent"><span class="timecode">1:23:59</span>Set our Scale amount to 4 in ExtractFont(), and briefly check the CreateFontA() documentation for the switch-over point of antialising<sup>6</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:59</span>Set our Scale amount to 4 in ExtractFont(), and briefly check the CreateFontA() documentation for the switch-over point of antialising<sup>6</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:59</span>Set our Scale amount to 4 in ExtractFont(), and briefly check the CreateFontA() documentation for the switch-over point of antialising<sup>6</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5168" class="marker cat_font cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:26:08</span>Prevent ExtractFont() from scaling, to allow Windows to perform antialiasing<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:08</span>Prevent ExtractFont() from scaling, to allow Windows to perform antialiasing<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:08</span>Prevent ExtractFont() from scaling, to allow Windows to perform antialiasing<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5189" class="marker cat_font cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">1:26:29</span>Start to binary search the switch-over point of Windows&#39; font antialiasing<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:29</span>Start to binary search the switch-over point of Windows&#39; font antialiasing<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:29</span>Start to binary search the switch-over point of Windows&#39; font antialiasing<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5257" class="marker cat_font programming">
+                    <div class="cineraContent"><span class="timecode">1:27:37</span>Make ExtractFont() pass the negative SamplePixelHeight to CreateFontA()<span class="cineraCategories"><div title="font" class="category font"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:37</span>Make ExtractFont() pass the negative SamplePixelHeight to CreateFontA()<span class="cineraCategories"><div title="font" class="category font"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:37</span>Make ExtractFont() pass the negative SamplePixelHeight to CreateFontA()<span class="cineraCategories"><div title="font" class="category font"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5270" class="marker cat_font admin" data-ref="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta">
+                    <div class="cineraContent"><span class="timecode">1:27:50</span>Find that our glyphs are now larger, and explain the reason for this negative cHeight value<sup>7</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:50</span>Find that our glyphs are now larger, and explain the reason for this negative cHeight value<sup>7</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:50</span>Find that our glyphs are now larger, and explain the reason for this negative cHeight value<sup>7</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5334" class="marker cat_font cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">1:28:54</span>Continue to binary search the switch-over point of Windows&#39; font antialiasing<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:54</span>Continue to binary search the switch-over point of Windows&#39; font antialiasing<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:54</span>Continue to binary search the switch-over point of Windows&#39; font antialiasing<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5533" class="marker cat_font cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">1:32:13</span>Note that 354 is the magic value at which Windows stops antialiasing font glyphs<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:13</span>Note that 354 is the magic value at which Windows stops antialiasing font glyphs<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:13</span>Note that 354 is the magic value at which Windows stops antialiasing font glyphs<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5748" class="marker cat_font cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:35:48</span>Make ExtractFont() oversample if the pixel height is greater than 4<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:48</span>Make ExtractFont() oversample if the pixel height is greater than 4<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:48</span>Make ExtractFont() oversample if the pixel height is greater than 4<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5802" class="marker cat_asset-system cat_font cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">1:36:42</span>Run our exporter–extractor on various glyph heights and check their antialiasing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:42</span>Run our exporter–extractor on various glyph heights and check their antialiasing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:42</span>Run our exporter–extractor on various glyph heights and check their antialiasing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5859" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:37:39</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:39</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:39</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5895" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:38:15</span><span class="author" data-hue="228" data-saturation="97%">vtlmks</span> Q: Perhaps your certificate for large font antialiasing died<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:15</span><span class="author" data-hue="228" data-saturation="97%">vtlmks</span> Q: Perhaps your certificate for large font antialiasing died<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:15</span><span class="author" data-hue="228" data-saturation="97%">vtlmks</span> Q: Perhaps your certificate for large font antialiasing died<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5915" class="marker cat_font authored">
+                    <div class="cineraContent"><span class="timecode">1:38:35</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Q: In ExtractFont(), MaxGlyphDim&#39;s x value is set using TextMetric.tmOverhang. It seems like tmOverhang should only apply to MaxGlyphDim&#39;s y-value?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:35</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Q: In ExtractFont(), MaxGlyphDim&#39;s x value is set using TextMetric.tmOverhang. It seems like tmOverhang should only apply to MaxGlyphDim&#39;s y-value?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:35</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Q: In ExtractFont(), MaxGlyphDim&#39;s x value is set using TextMetric.tmOverhang. It seems like tmOverhang should only apply to MaxGlyphDim&#39;s y-value?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5967" class="marker cat_font authored">
+                    <div class="cineraContent"><span class="timecode">1:39:27</span><span class="author" data-hue="196" data-saturation="82%">theomarest</span> Q: Would this only work for monospace fonts?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:27</span><span class="author" data-hue="196" data-saturation="82%">theomarest</span> Q: Would this only work for monospace fonts?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:27</span><span class="author" data-hue="196" data-saturation="82%">theomarest</span> Q: Would this only work for monospace fonts?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5974" class="marker cat_font authored">
+                    <div class="cineraContent"><span class="timecode">1:39:34</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: What is the difference between the FreeType and TrueType fonts? Do both do the sub-pixel rasterization?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:34</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: What is the difference between the FreeType and TrueType fonts? Do both do the sub-pixel rasterization?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:34</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: What is the difference between the FreeType and TrueType fonts? Do both do the sub-pixel rasterization?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6008" class="marker cat_font cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">1:40:08</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> You wrote in the note 543-&gt;544 instead of 353-&gt;354. Glasses!<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:08</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> You wrote in the note 543-&gt;544 instead of 353-&gt;354. Glasses!<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:08</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> You wrote in the note 543-&gt;544 instead of 353-&gt;354. Glasses!<span class="cineraCategories"><div title="font" class="category font"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6019" class="marker cat_font programming">
+                    <div class="cineraContent"><span class="timecode">1:40:19</span>Fix the antialiasing magic value note in ExtractFont()<span class="cineraCategories"><div title="font" class="category font"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:19</span>Fix the antialiasing magic value note in ExtractFont()<span class="cineraCategories"><div title="font" class="category font"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:19</span>Fix the antialiasing magic value note in ExtractFont()<span class="cineraCategories"><div title="font" class="category font"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6036" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:40:36</span><span class="author" data-hue="284" data-saturation="94%">boonetbe</span> Q: Did you try the Kakoune editor? Could its behavior be achieved in <span class="project" data-hue="13" data-saturation="79%">4coder</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:36</span><span class="author" data-hue="284" data-saturation="94%">boonetbe</span> Q: Did you try the Kakoune editor? Could its behavior be achieved in <span class="project" data-hue="13" data-saturation="79%">4coder</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:36</span><span class="author" data-hue="284" data-saturation="94%">boonetbe</span> Q: Did you try the Kakoune editor? Could its behavior be achieved in <span class="project" data-hue="13" data-saturation="79%">4coder</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6108" class="marker cat_font authored">
+                    <div class="cineraContent"><span class="timecode">1:41:48</span><span class="author" data-hue="51" data-saturation="86%">glog78</span> Q: Didn&#39;t MSN say something about small fonts too?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:48</span><span class="author" data-hue="51" data-saturation="86%">glog78</span> Q: Didn&#39;t MSN say something about small fonts too?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:48</span><span class="author" data-hue="51" data-saturation="86%">glog78</span> Q: Didn&#39;t MSN say something about small fonts too?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6171" class="marker cat_font authored">
+                    <div class="cineraContent"><span class="timecode">1:42:51</span><span class="author" data-hue="270" data-saturation="89%">teamrandb</span> Q: But did you not check 500 and it worked?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:51</span><span class="author" data-hue="270" data-saturation="89%">teamrandb</span> Q: But did you not check 500 and it worked?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:51</span><span class="author" data-hue="270" data-saturation="89%">teamrandb</span> Q: But did you not check 500 and it worked?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6235" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:43:55</span><span class="author" data-hue="270" data-saturation="83%">floorislava</span> Q: GitHub bug report?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:55</span><span class="author" data-hue="270" data-saturation="83%">floorislava</span> Q: GitHub bug report?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:55</span><span class="author" data-hue="270" data-saturation="83%">floorislava</span> Q: GitHub bug report?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6257" class="marker cat_nullTopic admin" data-ref="https://github.com/HandmadeHero/cpp/issues/92">
+                    <div class="cineraContent"><span class="timecode">1:44:17</span>Close the &quot;Support writing &quot;large&quot; PNGs&quot; issue<sup>8</sup><span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:17</span>Close the &quot;Support writing &quot;large&quot; PNGs&quot; issue<sup>8</sup><span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:17</span>Close the &quot;Support writing &quot;large&quot; PNGs&quot; issue<sup>8</sup><span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6282" class="marker cat_parsing research" data-ref="https://github.com/HandmadeHero/cpp/issues/93">
+                    <div class="cineraContent"><span class="timecode">1:44:42</span>Address the &quot;Should we advance a character here?&quot; issue<sup>9</sup><span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:42</span>Address the &quot;Should we advance a character here?&quot; issue<sup>9</sup><span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:42</span>Address the &quot;Should we advance a character here?&quot; issue<sup>9</sup><span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6382" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:46:22</span>Fix GetTokenRaw() to skip past the &#39;.&#39; of decimal numbers<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:22</span>Fix GetTokenRaw() to skip past the &#39;.&#39; of decimal numbers<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:22</span>Fix GetTokenRaw() to skip past the &#39;.&#39; of decimal numbers<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6400" class="marker cat_parsing admin" data-ref="https://github.com/HandmadeHero/cpp/issues/93">
+                    <div class="cineraContent"><span class="timecode">1:46:40</span>Close the &quot;Should we advance a character here?&quot; issue<sup>10</sup><span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:40</span>Close the &quot;Should we advance a character here?&quot; issue<sup>10</sup><span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:40</span>Close the &quot;Should we advance a character here?&quot; issue<sup>10</sup><span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6456" class="marker cat_nullTopic authored" data-ref="https://handmadehero.org/conference">
+                    <div class="cineraContent"><span class="timecode">1:47:36</span><span class="author" data-hue="33" data-saturation="95%">mycon_</span> Q: Are there any plans for a new HandmadeCon?<sup>11</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:36</span><span class="author" data-hue="33" data-saturation="95%">mycon_</span> Q: Are there any plans for a new HandmadeCon?<sup>11</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:36</span><span class="author" data-hue="33" data-saturation="95%">mycon_</span> Q: Are there any plans for a new HandmadeCon?<sup>11</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6540" class="marker cat_font authored" data-ref="https://fonts.google.com/">
+                    <div class="cineraContent"><span class="timecode">1:49:00</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: I followed your suggestions and used Roboto and Droid Sans fonts for my desktop app. They look good! Thanks for that. Do you have any other suggestions for a good looking font?<sup>12</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:00</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: I followed your suggestions and used Roboto and Droid Sans fonts for my desktop app. They look good! Thanks for that. Do you have any other suggestions for a good looking font?<sup>12</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:00</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: I followed your suggestions and used Roboto and Droid Sans fonts for my desktop app. They look good! Thanks for that. Do you have any other suggestions for a good looking font?<sup>12</sup><span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6643" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:50:43</span>Close it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:43</span>Close it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:43</span>Close it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day531/"><div>&#9196;</div><div>Next: 'Parsing and Updating Font Metadata'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

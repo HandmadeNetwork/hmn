@@ -1,0 +1,376 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="hardware, language, peripheral, platform, Experience, Programming, Research, Trivia">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__riscy.css?r=5b0a4e13">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_post.js?r=47438299" defer></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus riscy">
+            <span class="episode_name">uart_init, get_cpu_freq, &amp; `static` Legalese</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://static.dev.sifive.com/dev-kits/hifive1/hifive1-getting-started-v1.0.3.pdf" href="https://static.dev.sifive.com/dev-kits/hifive1/hifive1-getting-started-v1.0.3.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">SiFive Developers</div>
+                            <div class="ref_title">SiFive HiFive1 Getting Started Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="150" class="timecode"><span class="ref_index">[1]</span><span class="time">2:30</span></span><span data-timestamp="649" class="timecode"><span class="ref_index">[4]</span><span class="time">10:49</span></span><span data-timestamp="1298" class="timecode"><span class="ref_index">[6]</span><span class="time">21:38</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.sifive.com/documentation/chips/freedom-e310-g000-manual/" href="https://www.sifive.com/documentation/chips/freedom-e310-g000-manual/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">SiFive Developers</div>
+                            <div class="ref_title">Freedom E310-G000 Manual</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="514" class="timecode"><span class="ref_index">[2]</span><span class="time">8:34</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.sifive.com/documentation/freedom-soc/freedom-e300-platform-reference-manual/" href="https://www.sifive.com/documentation/freedom-soc/freedom-e300-platform-reference-manual/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">SiFive Developers</div>
+                            <div class="ref_title">Freedom E300 Platform Reference Manual</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="514" class="timecode"><span class="ref_index">[3]</span><span class="time">8:34</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.youtube.com/watch?v=wBy4tjKEF3s" href="https://www.youtube.com/watch?v=wBy4tjKEF3s" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">YouTube</div>
+                            <div class="ref_title">RISCY BUSINESS - Day 27: Diving Into Pulse Width Modulation</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="849" class="timecode"><span class="ref_index">[5]</span><span class="time">14:09</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://open-std.org/JTC1/SC22/WG14/www/docs/n1570.pdf" href="http://open-std.org/JTC1/SC22/WG14/www/docs/n1570.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">ISO/&#8203;IEC 9899:201x</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2496" class="timecode"><span class="ref_index">[7]</span><span class="time">41:36</span></span><span data-timestamp="3188" class="timecode"><span class="ref_index">[8]</span><span class="time">53:08</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://forums.sifive.com/t/the-big-riscy-business-question-thread/531/4" href="https://forums.sifive.com/t/the-big-riscy-business-question-thread/531/4" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">SiFive Forums</div>
+                            <div class="ref_title">The Big RISCY BUSINESS Question Thread</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="3544" class="timecode"><span class="ref_index">[9]</span><span class="time">59:04</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content peripheral">
+                                <span class="icon category peripheral"></span><span class="cineraText">peripheral</span>
+                            </div>
+                            <div class="filter_content platform">
+                                <span class="icon category platform"></span><span class="cineraText">platform</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content experience">
+                                <span class="icon">&#127863;</span><span class="cineraText">Experience</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content trivia">
+                                <span class="icon">&#127922;</span><span class="cineraText">Trivia</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="http://riscy.tv/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Neo Ar</div>
+                        </a>
+                        <a class="support" href="https://patreon.com/miotatsu" target="_blank"><div class="cineraSprite" data-sprite-width=32 data-sprite-height=16 data-tile-width=16 data-tile-height=16 data-x-light=0 data-x-dark=16 data-y-normal=0 data-y-focused=0 data-y-disabled=0 data-src="https://handmade.network/public/annotations/cinera_sprite_patreon.png?r=5df50e2b"></div></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="HVxZkIliQd0"></div>
+            <div class="markers_container riscy">
+                <a class="episodeMarker prev" href="https://riscy.handmade.network/episode/riscy/riscy034/"><div>&#9195;</div><div>Previous: 'Learning about the UART'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="7" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day</div>
+                    </div>
+                </div>
+                <div data-timestamp="150" class="marker cat_hardware research" data-ref="https://static.dev.sifive.com/dev-kits/hifive1/hifive1-getting-started-v1.0.3.pdf">
+                    <div class="cineraContent"><span class="timecode">2:30</span>Consult Table 7.1: HiFive1 GPIO Offset to Board Pin Number, and locate the definition of IOF0_UART0_MASK<sup>1</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30</span>Consult Table 7.1: HiFive1 GPIO Offset to Board Pin Number, and locate the definition of IOF0_UART0_MASK<sup>1</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30</span>Consult Table 7.1: HiFive1 GPIO Offset to Board Pin Number, and locate the definition of IOF0_UART0_MASK<sup>1</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="377" class="marker cat_peripheral programming">
+                    <div class="cineraContent"><span class="timecode">6:17</span>Return to uart_init() and determine to understand how IOF0_UART0_MASK is being used<span class="cineraCategories"><div title="peripheral" class="category peripheral"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:17</span>Return to uart_init() and determine to understand how IOF0_UART0_MASK is being used<span class="cineraCategories"><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:17</span>Return to uart_init() and determine to understand how IOF0_UART0_MASK is being used<span class="cineraCategories"><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="514" class="marker cat_hardware research" data-ref="https://www.sifive.com/documentation/chips/freedom-e310-g000-manual/,https://www.sifive.com/documentation/freedom-soc/freedom-e300-platform-reference-manual/">
+                    <div class="cineraContent"><span class="timecode">8:34</span>Refresh our memory on the GPIO Complex<sup>2</sup> and HW I/O Functions (IOF)<sup>3</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:34</span>Refresh our memory on the GPIO Complex<sup>2</sup> and HW I/O Functions (IOF)<sup>3</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:34</span>Refresh our memory on the GPIO Complex<sup>2</sup> and HW I/O Functions (IOF)<sup>3</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="649" class="marker cat_hardware research" data-ref="https://static.dev.sifive.com/dev-kits/hifive1/hifive1-getting-started-v1.0.3.pdf">
+                    <div class="cineraContent"><span class="timecode">10:49</span>Assume the layout of the IOF select register<sup>4</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:49</span>Assume the layout of the IOF select register<sup>4</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:49</span>Assume the layout of the IOF select register<sup>4</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="849" class="marker cat_nullTopic programming" data-ref="https://www.youtube.com/watch?v=wBy4tjKEF3s">
+                    <div class="cineraContent"><span class="timecode">14:09</span>Consult the annotations for IOF<sup>5</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:09</span>Consult the annotations for IOF<sup>5</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:09</span>Consult the annotations for IOF<sup>5</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="1064" class="marker cat_peripheral programming">
+                    <div class="cineraContent"><span class="timecode">17:44</span>Refresh our memory on the IOF masks for the LEDs<span class="cineraCategories"><div title="peripheral" class="category peripheral"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:44</span>Refresh our memory on the IOF masks for the LEDs<span class="cineraCategories"><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:44</span>Refresh our memory on the IOF masks for the LEDs<span class="cineraCategories"><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1298" class="marker cat_peripheral research" data-ref="https://static.dev.sifive.com/dev-kits/hifive1/hifive1-getting-started-v1.0.3.pdf">
+                    <div class="cineraContent"><span class="timecode">21:38</span>Match up our IOF0_UART0_MASK in code with the documentation<sup>6</sup><span class="cineraCategories"><div title="peripheral" class="category peripheral"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:38</span>Match up our IOF0_UART0_MASK in code with the documentation<sup>6</sup><span class="cineraCategories"><div title="peripheral" class="category peripheral"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:38</span>Match up our IOF0_UART0_MASK in code with the documentation<sup>6</sup><span class="cineraCategories"><div title="peripheral" class="category peripheral"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1523" class="marker cat_nullTopic experience">
+                    <div class="cineraContent"><span class="timecode">25:23</span>Critique the clarity of using masks instead of offsets for UART0<span class="cineraCategories"><div title="Experience" class="categoryMedium experience">&#127863;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:23</span>Critique the clarity of using masks instead of offsets for UART0<span class="cineraCategories"><div title="Experience" class="categoryMedium experience">&#127863;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:23</span>Critique the clarity of using masks instead of offsets for UART0<span class="cineraCategories"><div title="Experience" class="categoryMedium experience">&#127863;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1749" class="marker cat_language programming">
+                    <div class="cineraContent"><span class="timecode">29:09</span>Consider what the static keyword does in terms of zero initialisation<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:09</span>Consider what the static keyword does in terms of zero initialisation<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:09</span>Consider what the static keyword does in terms of zero initialisation<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2496" class="marker cat_language research" data-ref="http://open-std.org/JTC1/SC22/WG14/www/docs/n1570.pdf">
+                    <div class="cineraContent"><span class="timecode">41:36</span>Consult the C11 spec for the default initialisation rule of locally scoped static variables<sup>7</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:36</span>Consult the C11 spec for the default initialisation rule of locally scoped static variables<sup>7</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:36</span>Consult the C11 spec for the default initialisation rule of locally scoped static variables<sup>7</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3188" class="marker cat_language research" data-ref="http://open-std.org/JTC1/SC22/WG14/www/docs/n1570.pdf">
+                    <div class="cineraContent"><span class="timecode">53:08</span>Read section 5.1.2 &quot;Execution environments&quot; in C11 spec, and determine to confirm with SiFive whether their static implementation does zero initialise<sup>8</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:08</span>Read section 5.1.2 &quot;Execution environments&quot; in C11 spec, and determine to confirm with SiFive whether their static implementation does zero initialise<sup>8</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:08</span>Read section 5.1.2 &quot;Execution environments&quot; in C11 spec, and determine to confirm with SiFive whether their static implementation does zero initialise<sup>8</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3416" class="marker cat_platform research">
+                    <div class="cineraContent"><span class="timecode">56:56</span>Read about how the uninitialised .bss segment in Linux executables, which holds global and static variables, initialises variables to zero<span class="cineraCategories"><div title="platform" class="category platform"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:56</span>Read about how the uninitialised .bss segment in Linux executables, which holds global and static variables, initialises variables to zero<span class="cineraCategories"><div title="platform" class="category platform"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:56</span>Read about how the uninitialised .bss segment in Linux executables, which holds global and static variables, initialises variables to zero<span class="cineraCategories"><div title="platform" class="category platform"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3479" class="marker cat_language cat_platform trivia">
+                    <div class="cineraContent"><span class="timecode">57:59</span>Recommend not explicitly initialising static and global variables to 0 to save some space<span class="cineraCategories"><div title="language" class="category language"></div><div title="platform" class="category platform"></div><div title="Trivia" class="categoryMedium trivia">&#127922;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:59</span>Recommend not explicitly initialising static and global variables to 0 to save some space<span class="cineraCategories"><div title="language" class="category language"></div><div title="platform" class="category platform"></div><div title="Trivia" class="categoryMedium trivia">&#127922;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:59</span>Recommend not explicitly initialising static and global variables to 0 to save some space<span class="cineraCategories"><div title="language" class="category language"></div><div title="platform" class="category platform"></div><div title="Trivia" class="categoryMedium trivia">&#127922;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3544" class="marker cat_platform research" data-ref="https://forums.sifive.com/t/the-big-riscy-business-question-thread/531/4">
+                    <div class="cineraContent"><span class="timecode">59:04</span>Ask in the forums where it is defined how uninitialised variables with static storage duration are initialized for the HiFive1<sup>9</sup><span class="cineraCategories"><div title="platform" class="category platform"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:04</span>Ask in the forums where it is defined how uninitialised variables with static storage duration are initialized for the HiFive1<sup>9</sup><span class="cineraCategories"><div title="platform" class="category platform"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:04</span>Ask in the forums where it is defined how uninitialised variables with static storage duration are initialized for the HiFive1<sup>9</sup><span class="cineraCategories"><div title="platform" class="category platform"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3918" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:05:18</span>We are out of time for tonight</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:18</span>We are out of time for tonight</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:18</span>We are out of time for tonight</div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://riscy.handmade.network/episode/riscy/riscy036/"><div>&#9196;</div><div>Next: 'BareD, Story Time, & measure_cpu_freq'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

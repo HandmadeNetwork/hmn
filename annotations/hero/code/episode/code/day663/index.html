@@ -1,0 +1,1219 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="compression, data structure, debug system, debug visualisation, entity system, hashing, language, library, mathematics, movement, performance, procedural generation, threading, Administrivia, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Simplifying Entity Storage, Part I</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://github.com/Dion-Systems/4coder/tree/master/ship_files/themes" href="https://github.com/Dion-Systems/4coder/tree/master/ship_files/themes" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Dion-Systems /&#8203; 4coder</div>
+                            <div class="ref_title">4coder /&#8203; ship_files /&#8203; themes</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2885" class="timecode"><span class="ref_index">[1]</span><span class="time">48:05</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.twitch.tv/oalabslive" href="https://www.twitch.tv/oalabslive" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Twitch</div>
+                            <div class="ref_title">OALabsLive</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="3221" class="timecode"><span class="ref_index">[2]</span><span class="time">53:41</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/Dion-Systems/4coder_fleury" href="https://github.com/Dion-Systems/4coder_fleury" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Dion-Systems /&#8203; 4coder_fleury</div>
+                            <div class="ref_title">4coder_fleury</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8294" class="timecode"><span class="ref_index">[3]</span><span class="time">2:18:14</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/Dion-Systems/4coder" href="https://github.com/Dion-Systems/4coder" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Dion-Systems /&#8203; 4coder</div>
+                            <div class="ref_title">4coder</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8294" class="timecode"><span class="ref_index">[4]</span><span class="time">2:18:14</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/Dion-Systems/4coder/blob/master/custom/4coder_default_hooks.cpp" href="https://github.com/Dion-Systems/4coder/blob/master/custom/4coder_default_hooks.cpp" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Dion-Systems /&#8203; 4coder</div>
+                            <div class="ref_title">4coder /&#8203; custom /&#8203; 4coder_default_hooks.cpp</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8554" class="timecode"><span class="ref_index">[5]</span><span class="time">2:22:34</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content compression">
+                                <span class="icon category compression"></span><span class="cineraText">compression</span>
+                            </div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content debug-system">
+                                <span class="icon category debug-system"></span><span class="cineraText">debug system</span>
+                            </div>
+                            <div class="filter_content debug-visualisation">
+                                <span class="icon category debug-visualisation"></span><span class="cineraText">debug visualisation</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content hashing">
+                                <span class="icon category hashing"></span><span class="cineraText">hashing</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content library">
+                                <span class="icon category library"></span><span class="cineraText">library</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content movement">
+                                <span class="icon category movement"></span><span class="cineraText">movement</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content procedural-generation">
+                                <span class="icon category procedural-generation"></span><span class="cineraText">procedural generation</span>
+                            </div>
+                            <div class="filter_content threading">
+                                <span class="icon category threading"></span><span class="cineraText">threading</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="LR3THwlv_r4"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day662/"><div>&#9195;</div><div>Previous: 'Generating Entities from Layouts'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="34" class="marker cat_entity-system cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">0:34</span>Demo our updated world generation without entity unpacking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:34</span>Demo our updated world generation without entity unpacking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:34</span>Demo our updated world generation without entity unpacking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="79" class="marker cat_entity-system speech">
+                    <div class="cineraContent"><span class="timecode">1:19</span>Determine to simplify entity storage<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19</span>Determine to simplify entity storage<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19</span>Determine to simplify entity storage<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="252" class="marker cat_compression cat_entity-system speech">
+                    <div class="cineraContent"><span class="timecode">4:12</span>Describe our entity packing system<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:12</span>Describe our entity packing system<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:12</span>Describe our entity packing system<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="351" class="marker cat_entity-system speech">
+                    <div class="cineraContent"><span class="timecode">5:51</span>Plan our entity storage simplification<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:51</span>Plan our entity storage simplification<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:51</span>Plan our entity storage simplification<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="441" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">7:21</span>Remove ChunkZ from world_chunk and world_position<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:21</span>Remove ChunkZ from world_chunk and world_position<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:21</span>Remove ChunkZ from world_chunk and world_position<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="673" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">11:13</span>The game runs just the same<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:13</span>The game runs just the same<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:13</span>The game runs just the same<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="742" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">12:22</span>Reacquaint ourselves with the TODO in world_position<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:22</span>Reacquaint ourselves with the TODO in world_position<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:22</span>Reacquaint ourselves with the TODO in world_position<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="779" class="marker cat_data-structure cat_threading research">
+                    <div class="cineraContent"><span class="timecode">12:59</span>Consider removing the ChangeTicket ticket_mutex from world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="threading" class="category threading"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:59</span>Consider removing the ChangeTicket ticket_mutex from world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="threading" class="category threading"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:59</span>Consider removing the ChangeTicket ticket_mutex from world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="threading" class="category threading"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1047" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">17:27</span>Plan to simplify the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:27</span>Plan to simplify the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:27</span>Plan to simplify the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1126" class="marker cat_data-structure cat_debug-system cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">18:46</span>Reorganise Rooms and Connections to the end of the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:46</span>Reorganise Rooms and Connections to the end of the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:46</span>Reorganise Rooms and Connections to the end of the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1143" class="marker cat_debug-visualisation cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">19:03</span>Describe our rooms and connections debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:03</span>Describe our rooms and connections debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:03</span>Describe our rooms and connections debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1188" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">19:48</span>Reacquaint ourselves with the entity packing system<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:48</span>Reacquaint ourselves with the entity packing system<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:48</span>Reacquaint ourselves with the entity packing system<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1327" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">22:07</span>Consider switching to an updatable entity hash table: 1) Removing the sim_region<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:07</span>Consider switching to an updatable entity hash table: 1) Removing the sim_region<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:07</span>Consider switching to an updatable entity hash table: 1) Removing the sim_region<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1456" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">24:16</span>Consider switching to an updatable entity hash table: 2) Moving the unpacked stuff from the world into the sim_region<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:16</span>Consider switching to an updatable entity hash table: 2) Moving the unpacked stuff from the world into the sim_region<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:16</span>Consider switching to an updatable entity hash table: 2) Moving the unpacked stuff from the world into the sim_region<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1515" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">25:15</span>Consider the need to handle distant unpacked sim regions, e.g. free-exploring couch co-op<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:15</span>Consider the need to handle distant unpacked sim regions, e.g. free-exploring couch co-op<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:15</span>Consider the need to handle distant unpacked sim regions, e.g. free-exploring couch co-op<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1650" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">27:30</span>Consider the need for spatial partitioning<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:30</span>Consider the need for spatial partitioning<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:30</span>Consider the need for spatial partitioning<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1812" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">30:12</span><span class="author" data-hue="329" data-saturation="75%">nsaibot</span> Usually I take a nap to think about things<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:12</span><span class="author" data-hue="329" data-saturation="75%">nsaibot</span> Usually I take a nap to think about things<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:12</span><span class="author" data-hue="329" data-saturation="75%">nsaibot</span> Usually I take a nap to think about things<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1841" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">30:41</span>Consider the need for spatial partitioning (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:41</span>Consider the need for spatial partitioning (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:41</span>Consider the need for spatial partitioning (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1960" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">32:40</span>Reacquaint ourselves with the world&#39;s LastUsedEntityStorageIndex<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:40</span>Reacquaint ourselves with the world&#39;s LastUsedEntityStorageIndex<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:40</span>Reacquaint ourselves with the world&#39;s LastUsedEntityStorageIndex<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2014" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">33:34</span>Respecify world_entity_block as packed_entity_block, and remove FirstFree from the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:34</span>Respecify world_entity_block as packed_entity_block, and remove FirstFree from the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:34</span>Respecify world_entity_block as packed_entity_block, and remove FirstFree from the world<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2188" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">36:28</span>Introduce unpacked_entity_block for world_chunk to contain<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:28</span>Introduce unpacked_entity_block for world_chunk to contain<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:28</span>Introduce unpacked_entity_block for world_chunk to contain<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2427" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">40:27</span>Consider moving EntityHash from sim_region to the world, for entity ID lookup<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:27</span>Consider moving EntityHash from sim_region to the world, for entity ID lookup<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:27</span>Consider moving EntityHash from sim_region to the world, for entity ID lookup<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2472" class="marker cat_entity-system cat_hashing research">
+                    <div class="cineraContent"><span class="timecode">41:12</span>Consider switching entity hash collision resolution from probing to chaining<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="hashing" class="category hashing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:12</span>Consider switching entity hash collision resolution from probing to chaining<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="hashing" class="category hashing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:12</span>Consider switching entity hash collision resolution from probing to chaining<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="hashing" class="category hashing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2619" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">43:39</span>Consider removing entity ID lookup entirely in favour of spatial querying<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:39</span>Consider removing entity ID lookup entirely in favour of spatial querying<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:39</span>Consider removing entity ID lookup entirely in favour of spatial querying<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2714" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">45:14</span>Briefly run the game<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:14</span>Briefly run the game<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:14</span>Briefly run the game<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2726" class="marker cat_entity-system cat_hashing programming">
+                    <div class="cineraContent"><span class="timecode">45:26</span>Speculatively remove GetEntityByID()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="hashing" class="category hashing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:26</span>Speculatively remove GetEntityByID()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="hashing" class="category hashing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:26</span>Speculatively remove GetEntityByID()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="hashing" class="category hashing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2795" class="marker cat_entity-system cat_movement research">
+                    <div class="cineraContent"><span class="timecode">46:35</span>Plan entity storage simplification: 1) Remove traversables in favour of grid square occupation<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:35</span>Plan entity storage simplification: 1) Remove traversables in favour of grid square occupation<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:35</span>Plan entity storage simplification: 1) Remove traversables in favour of grid square occupation<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2842" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">47:22</span><span class="author" data-hue="83" data-saturation="96%">landosensei</span> Amazing content! I like the theme color palette. I would like to know: which theme are you using?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:22</span><span class="author" data-hue="83" data-saturation="96%">landosensei</span> Amazing content! I like the theme color palette. I would like to know: which theme are you using?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:22</span><span class="author" data-hue="83" data-saturation="96%">landosensei</span> Amazing content! I like the theme color palette. I would like to know: which theme are you using?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2885" class="marker cat_nullTopic authored" data-ref="https://github.com/Dion-Systems/4coder/tree/master/ship_files/themes">
+                    <div class="cineraContent"><span class="timecode">48:05</span><span class="author" data-hue="229" data-saturation="86%">alparkaan</span> Can you share the theme? The one in the source files is outdated<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:05</span><span class="author" data-hue="229" data-saturation="86%">alparkaan</span> Can you share the theme? The one in the source files is outdated<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:05</span><span class="author" data-hue="229" data-saturation="86%">alparkaan</span> Can you share the theme? The one in the source files is outdated<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3009" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">50:09</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> I always thought it was <span class="member" data-hue="269" data-saturation="82%">Ryan</span>&#39;s theme. It looked very similar<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:09</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> I always thought it was <span class="member" data-hue="269" data-saturation="82%">Ryan</span>&#39;s theme. It looked very similar<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:09</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> I always thought it was <span class="member" data-hue="269" data-saturation="82%">Ryan</span>&#39;s theme. It looked very similar<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3018" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">50:18</span><span class="author" data-hue="242" data-saturation="90%">lesnariv</span> The repo is archived now. I don&#39;t think you can submit it<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:18</span><span class="author" data-hue="242" data-saturation="90%">lesnariv</span> The repo is archived now. I don&#39;t think you can submit it<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:18</span><span class="author" data-hue="242" data-saturation="90%">lesnariv</span> The repo is archived now. I don&#39;t think you can submit it<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3023" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">50:23</span>Copy theme-casey.4coder into the <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> directory<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:23</span>Copy theme-casey.4coder into the <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> directory<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:23</span>Copy theme-casey.4coder into the <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> directory<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3062" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">51:02</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> I don&#39;t know if it will get merged, but I have a repo with just <span class="project" data-hue="13" data-saturation="79%">4coder</span> themes if you wanna submit it there. It&#39;s where most people get pointed to from the <span class="project" data-hue="13" data-saturation="79%">4coder</span> discord<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:02</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> I don&#39;t know if it will get merged, but I have a repo with just <span class="project" data-hue="13" data-saturation="79%">4coder</span> themes if you wanna submit it there. It&#39;s where most people get pointed to from the <span class="project" data-hue="13" data-saturation="79%">4coder</span> discord<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:02</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> I don&#39;t know if it will get merged, but I have a repo with just <span class="project" data-hue="13" data-saturation="79%">4coder</span> themes if you wanna submit it there. It&#39;s where most people get pointed to from the <span class="project" data-hue="13" data-saturation="79%">4coder</span> discord<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3107" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">51:47</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> I have access to the <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> code so as long as your happy with it being public I can chuck it in when it goes up<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:47</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> I have access to the <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> code so as long as your happy with it being public I can chuck it in when it goes up<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:47</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> I have access to the <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> code so as long as your happy with it being public I can chuck it in when it goes up<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3119" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">51:59</span>Remove StompOnEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:59</span>Remove StompOnEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:59</span>Remove StompOnEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3138" class="marker cat_entity-system cat_movement research">
+                    <div class="cineraContent"><span class="timecode">52:18</span>Determine to change the idea of traversables to be based on an actual position<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:18</span>Determine to change the idea of traversables to be based on an actual position<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:18</span>Determine to change the idea of traversables to be based on an actual position<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3221" class="marker cat_nullTopic speech" data-ref="https://www.twitch.tv/oalabslive">
+                    <div class="cineraContent"><span class="timecode">53:41</span>Plug OALabsLive<sup>2</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:41</span>Plug OALabsLive<sup>2</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:41</span>Plug OALabsLive<sup>2</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3331" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">55:31</span><span class="author" data-hue="329" data-saturation="97%">an0nymal</span> Just wondering, is 32-bit int + float a quick and dirty way to get around floating point precision issues (assuming you only need a small range of the float within any 32-bit ID?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:31</span><span class="author" data-hue="329" data-saturation="97%">an0nymal</span> Just wondering, is 32-bit int + float a quick and dirty way to get around floating point precision issues (assuming you only need a small range of the float within any 32-bit ID?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:31</span><span class="author" data-hue="329" data-saturation="97%">an0nymal</span> Just wondering, is 32-bit int + float a quick and dirty way to get around floating point precision issues (assuming you only need a small range of the float within any 32-bit ID?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3552" class="marker cat_entity-system cat_movement research">
+                    <div class="cineraContent"><span class="timecode">59:12</span>Plan our removal of traversables<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:12</span>Plan our removal of traversables<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:12</span>Plan our removal of traversables<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3630" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:00:30</span>Change IsOccupied() and Vacate() to take a v2s rather than traversable_reference<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:30</span>Change IsOccupied() and Vacate() to take a v2s rather than traversable_reference<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:30</span>Change IsOccupied() and Vacate() to take a v2s rather than traversable_reference<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3701" class="marker cat_data-structure programming">
+                    <div class="cineraContent"><span class="timecode">1:01:41</span>Introduce v2s, to possibly replace v2u<span class="cineraCategories"><div title="data structure" class="category data-structure"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:41</span>Introduce v2s, to possibly replace v2u<span class="cineraCategories"><div title="data structure" class="category data-structure"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:41</span>Introduce v2s, to possibly replace v2u<span class="cineraCategories"><div title="data structure" class="category data-structure"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3775" class="marker cat_language programming">
+                    <div class="cineraContent"><span class="timecode">1:02:55</span>#define function as static<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:55</span>#define function as static<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:55</span>#define function as static<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3865" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:04:25</span><span class="author" data-hue="97" data-saturation="79%">cynokron</span> Rust: Hold my fn<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:25</span><span class="author" data-hue="97" data-saturation="79%">cynokron</span> Rust: Hold my fn<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:25</span><span class="author" data-hue="97" data-saturation="79%">cynokron</span> Rust: Hold my fn<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3876" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:04:36</span>Remove Vacate() and change TransactionalOccupy() to take a v2s rather than traversable_reference<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:36</span>Remove Vacate() and change TransactionalOccupy() to take a v2s rather than traversable_reference<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:36</span>Remove Vacate() and change TransactionalOccupy() to take a v2s rather than traversable_reference<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3959" class="marker cat_entity-system cat_movement research">
+                    <div class="cineraContent"><span class="timecode">1:05:59</span>Consider respecifying IsOccupied()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:59</span>Consider respecifying IsOccupied()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:59</span>Consider respecifying IsOccupied()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4078" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:07:58</span>Remove GetClosestTraversable()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:58</span>Remove GetClosestTraversable()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:58</span>Remove GetClosestTraversable()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4199" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:09:59</span>Remove GetClosestTraversableAlongRay()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:59</span>Remove GetClosestTraversableAlongRay()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:59</span>Remove GetClosestTraversableAlongRay()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4256" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:10:56</span>Remove GetMovementVoxelIndex() and AlignToMovementVoxel()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:56</span>Remove GetMovementVoxelIndex() and AlignToMovementVoxel()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:56</span>Remove GetMovementVoxelIndex() and AlignToMovementVoxel()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4313" class="marker cat_entity-system cat_movement authored">
+                    <div class="cineraContent"><span class="timecode">1:11:53</span><span class="author" data-hue="228" data-saturation="95%">sbrabez</span> IsCrossable()? I used this terminology in my Lemmings game<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:53</span><span class="author" data-hue="228" data-saturation="95%">sbrabez</span> IsCrossable()? I used this terminology in my Lemmings game<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:53</span><span class="author" data-hue="228" data-saturation="95%">sbrabez</span> IsCrossable()? I used this terminology in my Lemmings game<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4351" class="marker cat_entity-system cat_movement authored">
+                    <div class="cineraContent"><span class="timecode">1:12:31</span><span class="author" data-hue="312" data-saturation="94%">detrohutt</span> Is it intentional for TransactionalOccupy() to always return false?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:31</span><span class="author" data-hue="312" data-saturation="94%">detrohutt</span> Is it intentional for TransactionalOccupy() to always return false?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:31</span><span class="author" data-hue="312" data-saturation="94%">detrohutt</span> Is it intentional for TransactionalOccupy() to always return false?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4354" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:12:34</span>Enable TransactionalOccupy() to return true<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:34</span>Enable TransactionalOccupy() to return true<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:34</span>Enable TransactionalOccupy() to return true<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4358" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:12:38</span>Yearn for <span class="member" data-hue="228" data-saturation="95%">sbrabez</span>&#39;s Lemmings game<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:38</span>Yearn for <span class="member" data-hue="228" data-saturation="95%">sbrabez</span>&#39;s Lemmings game<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:38</span>Yearn for <span class="member" data-hue="228" data-saturation="95%">sbrabez</span>&#39;s Lemmings game<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4400" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:13:20</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Stream will not continue until this Lemmings game is found<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:20</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Stream will not continue until this Lemmings game is found<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:20</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Stream will not continue until this Lemmings game is found<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4432" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:13:52</span><span class="author" data-hue="228" data-saturation="95%">sbrabez</span> Not released yet, it was a personal project in Java<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:52</span><span class="author" data-hue="228" data-saturation="95%">sbrabez</span> Not released yet, it was a personal project in Java<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:52</span><span class="author" data-hue="228" data-saturation="95%">sbrabez</span> Not released yet, it was a personal project in Java<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4446" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:14:06</span><span class="author" data-hue="207" data-saturation="84%">sagian2005</span> We need LemmingsVR<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:06</span><span class="author" data-hue="207" data-saturation="84%">sagian2005</span> We need LemmingsVR<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:06</span><span class="author" data-hue="207" data-saturation="84%">sagian2005</span> We need LemmingsVR<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4488" class="marker cat_data-structure cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:14:48</span>Augment entity with TileIndex and add EntityFlag_OccupiesTile<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:48</span>Augment entity with TileIndex and add EntityFlag_OccupiesTile<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:48</span>Augment entity with TileIndex and add EntityFlag_OccupiesTile<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4615" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:16:55</span><span class="author" data-hue="299" data-saturation="90%">philbohun</span> I swear someone will make an &quot;open world&quot; Lemmings<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:55</span><span class="author" data-hue="299" data-saturation="90%">philbohun</span> I swear someone will make an &quot;open world&quot; Lemmings<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:55</span><span class="author" data-hue="299" data-saturation="90%">philbohun</span> I swear someone will make an &quot;open world&quot; Lemmings<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4637" class="marker cat_data-structure cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:17:17</span>Replace GetClosestTraversable() with tile indexing in ExecuteBrainHero(), changing Occupying and CameFrom to be a v2s in entity<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:17</span>Replace GetClosestTraversable() with tile indexing in ExecuteBrainHero(), changing Occupying and CameFrom to be a v2s in entity<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:17</span>Replace GetClosestTraversable() with tile indexing in ExecuteBrainHero(), changing Occupying and CameFrom to be a v2s in entity<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4819" class="marker cat_language programming">
+                    <div class="cineraContent"><span class="timecode">1:20:19</span>Update DeleteEntity(), CreateEntity(), IsRoom() and EndWorldChange() to use our new &quot;function&quot; keyword<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:19</span>Update DeleteEntity(), CreateEntity(), IsRoom() and EndWorldChange() to use our new &quot;function&quot; keyword<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:19</span>Update DeleteEntity(), CreateEntity(), IsRoom() and EndWorldChange() to use our new &quot;function&quot; keyword<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4882" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">1:21:22</span>Note mis-parsed error by <span class="project" data-hue="13" data-saturation="79%">4coder</span><span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:22</span>Note mis-parsed error by <span class="project" data-hue="13" data-saturation="79%">4coder</span><span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:22</span>Note mis-parsed error by <span class="project" data-hue="13" data-saturation="79%">4coder</span><span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4904" class="marker cat_language programming">
+                    <div class="cineraContent"><span class="timecode">1:21:44</span>Introduce a v2s overload of operator+()<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:44</span>Introduce a v2s overload of operator+()<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:44</span>Introduce a v2s overload of operator+()<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4983" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:23:03</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> When I implement this code in C I tend to just make a macro festival to declare all the operator boilerplate<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:03</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> When I implement this code in C I tend to just make a macro festival to declare all the operator boilerplate<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:03</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> When I implement this code in C I tend to just make a macro festival to declare all the operator boilerplate<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5032" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:23:52</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> This is one of the things I despise about GLM<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:52</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> This is one of the things I despise about GLM<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:52</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> This is one of the things I despise about GLM<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5039" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:23:59</span>Introduce a v2s overload of AreEqual()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:59</span>Introduce a v2s overload of AreEqual()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:59</span>Introduce a v2s overload of AreEqual()</div>
+                    </div>
+                </div>
+                <div data-timestamp="5067" class="marker cat_library cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">1:24:27</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> It&#39;s the C++ math library everybody on the open source internet likes to use<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:27</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> It&#39;s the C++ math library everybody on the open source internet likes to use<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:27</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> It&#39;s the C++ math library everybody on the open source internet likes to use<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5080" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:24:40</span>Implement the v2s overload of AreEqual()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:40</span>Implement the v2s overload of AreEqual()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:40</span>Implement the v2s overload of AreEqual()</div>
+                    </div>
+                </div>
+                <div data-timestamp="5098" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:24:58</span><span class="author" data-hue="113" data-saturation="81%">pajpiart</span> Best music I&#39;ve heard all year<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:58</span><span class="author" data-hue="113" data-saturation="81%">pajpiart</span> Best music I&#39;ve heard all year<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:58</span><span class="author" data-hue="113" data-saturation="81%">pajpiart</span> Best music I&#39;ve heard all year<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5140" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:25:40</span><span class="author" data-hue="169" data-saturation="82%">thebaker__</span> Indiana Jones theme is mouth-trumpetty<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:40</span><span class="author" data-hue="169" data-saturation="82%">thebaker__</span> Indiana Jones theme is mouth-trumpetty<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:40</span><span class="author" data-hue="169" data-saturation="82%">thebaker__</span> Indiana Jones theme is mouth-trumpetty<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5179" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:26:19</span>Change ExecuteBrainHero() to test on EntityFlag_OccupiesTile rather than IsValid()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:19</span>Change ExecuteBrainHero() to test on EntityFlag_OccupiesTile rather than IsValid()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:19</span>Change ExecuteBrainHero() to test on EntityFlag_OccupiesTile rather than IsValid()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5302" class="marker cat_entity-system cat_movement research">
+                    <div class="cineraContent"><span class="timecode">1:28:22</span>Move on to ExecuteBrainSnake()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:22</span>Move on to ExecuteBrainSnake()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:22</span>Move on to ExecuteBrainSnake()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5317" class="marker cat_entity-system cat_movement research">
+                    <div class="cineraContent"><span class="timecode">1:28:37</span>Wonder why ExecuteBrain*() first set CameFrom to Occupying<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:37</span>Wonder why ExecuteBrain*() first set CameFrom to Occupying<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:37</span>Wonder why ExecuteBrain*() first set CameFrom to Occupying<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5351" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:29:11</span>Replace GetClosestTraversable() with tile indexing in ExecuteBrainSnake()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:11</span>Replace GetClosestTraversable() with tile indexing in ExecuteBrainSnake()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:11</span>Replace GetClosestTraversable() with tile indexing in ExecuteBrainSnake()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5406" class="marker cat_entity-system cat_movement research">
+                    <div class="cineraContent"><span class="timecode">1:30:06</span>Consider changing how TransactionalOccupy() works<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:06</span>Consider changing how TransactionalOccupy() works<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:06</span>Consider changing how TransactionalOccupy() works<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5536" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:32:16</span>Fix ExecuteBrainHero() to set CameFrom to Occupying before TransactionalOccupy()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:16</span>Fix ExecuteBrainHero() to set CameFrom to Occupying before TransactionalOccupy()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:16</span>Fix ExecuteBrainHero() to set CameFrom to Occupying before TransactionalOccupy()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5574" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:32:54</span>Introduce SingleTileDeltaFrom() for ExecuteBrain*() to use<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:54</span>Introduce SingleTileDeltaFrom() for ExecuteBrain*() to use<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:54</span>Introduce SingleTileDeltaFrom() for ExecuteBrain*() to use<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5720" class="marker cat_data-structure cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:35:20</span>Remove Traversables and Occupying from entity<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:20</span>Remove Traversables and Occupying from entity<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:20</span>Remove Traversables and Occupying from entity<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5746" class="marker cat_data-structure cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:35:46</span>Change ExecuteBrainSwitches() to use IsOccupied(), removing entity_traversable_point and traversable_reference, and augmenting entity with WasOccupiedLastCheck<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:46</span>Change ExecuteBrainSwitches() to use IsOccupied(), removing entity_traversable_point and traversable_reference, and augmenting entity with WasOccupiedLastCheck<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:46</span>Change ExecuteBrainSwitches() to use IsOccupied(), removing entity_traversable_point and traversable_reference, and augmenting entity with WasOccupiedLastCheck<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6123" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:42:03</span>Temporarily make IsOccupied() simply return false<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:03</span>Temporarily make IsOccupied() simply return false<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:03</span>Temporarily make IsOccupied() simply return false<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6151" class="marker cat_entity-system cat_movement cat_performance research">
+                    <div class="cineraContent"><span class="timecode">1:42:31</span>Determine to replace the ATan2() calls in ExecuteBrainSnake()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:31</span>Determine to replace the ATan2() calls in ExecuteBrainSnake()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:31</span>Determine to replace the ATan2() calls in ExecuteBrainSnake()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6275" class="marker cat_entity-system cat_mathematics cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:44:35</span>Introduce GetFacingDirectionFromSingleTileDelta() for ExecuteBrainSnake() to use<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:35</span>Introduce GetFacingDirectionFromSingleTileDelta() for ExecuteBrainSnake() to use<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:35</span>Introduce GetFacingDirectionFromSingleTileDelta() for ExecuteBrainSnake() to use<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6476" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">1:47:56</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Pi and Tau have been cancelled<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:56</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Pi and Tau have been cancelled<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:56</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Pi and Tau have been cancelled<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6524" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">1:48:44</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> It&#39;s a math thing, and &quot;Turns&quot; hasn&#39;t become popular enough yet<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:44</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> It&#39;s a math thing, and &quot;Turns&quot; hasn&#39;t become popular enough yet<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:44</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> It&#39;s a math thing, and &quot;Turns&quot; hasn&#39;t become popular enough yet<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6576" class="marker cat_entity-system cat_mathematics cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:49:36</span>Implement GetFacingDirectionFromSingleTileDelta()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:36</span>Implement GetFacingDirectionFromSingleTileDelta()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:36</span>Implement GetFacingDirectionFromSingleTileDelta()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6639" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">1:50:39</span><span class="author" data-hue="336" data-saturation="80%">nates7</span> Do you configure your sin, cos and tan functions to use 0-1, then, instead of radians?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:39</span><span class="author" data-hue="336" data-saturation="80%">nates7</span> Do you configure your sin, cos and tan functions to use 0-1, then, instead of radians?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:39</span><span class="author" data-hue="336" data-saturation="80%">nates7</span> Do you configure your sin, cos and tan functions to use 0-1, then, instead of radians?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6648" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">1:50:48</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> Some dude said tau &gt; pi in some early stream&#39;s Q&amp;A and we all fell for it<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:48</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> Some dude said tau &gt; pi in some early stream&#39;s Q&amp;A and we all fell for it<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:48</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> Some dude said tau &gt; pi in some early stream&#39;s Q&amp;A and we all fell for it<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6714" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">1:51:54</span><span class="author" data-hue="65" data-saturation="86%">rct33</span> Just don&#39;t let the math people see the video<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:54</span><span class="author" data-hue="65" data-saturation="86%">rct33</span> Just don&#39;t let the math people see the video<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:54</span><span class="author" data-hue="65" data-saturation="86%">rct33</span> Just don&#39;t let the math people see the video<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6764" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">1:52:44</span><span class="author" data-hue="33" data-saturation="92%">chadges_</span> For the assert would it be better to use an XOR since you don&#39;t want dTile x and y to both be 0?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:44</span><span class="author" data-hue="33" data-saturation="92%">chadges_</span> For the assert would it be better to use an XOR since you don&#39;t want dTile x and y to both be 0?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:44</span><span class="author" data-hue="33" data-saturation="92%">chadges_</span> For the assert would it be better to use an XOR since you don&#39;t want dTile x and y to both be 0?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6797" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">1:53:17</span><span class="author" data-hue="203" data-saturation="80%">123_bou</span> Yes please!<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:17</span><span class="author" data-hue="203" data-saturation="80%">123_bou</span> Yes please!<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:17</span><span class="author" data-hue="203" data-saturation="80%">123_bou</span> Yes please!<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6827" class="marker cat_entity-system cat_mathematics cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:53:47</span>Implement GetFacingDirectionFromSingleTileDelta() (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:47</span>Implement GetFacingDirectionFromSingleTileDelta() (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:47</span>Implement GetFacingDirectionFromSingleTileDelta() (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6979" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">1:56:19</span><span class="author" data-hue="234" data-saturation="90%">whimax07</span> 2 - y and 1 - x then some type of mask?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:19</span><span class="author" data-hue="234" data-saturation="90%">whimax07</span> 2 - y and 1 - x then some type of mask?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:19</span><span class="author" data-hue="234" data-saturation="90%">whimax07</span> 2 - y and 1 - x then some type of mask?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7004" class="marker cat_entity-system cat_mathematics cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:56:44</span>Implement GetFacingDirectionFromSingleTileDelta() (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:44</span>Implement GetFacingDirectionFromSingleTileDelta() (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:44</span>Implement GetFacingDirectionFromSingleTileDelta() (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7512" class="marker cat_entity-system cat_mathematics cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">2:05:12</span>Replace all ATan2() calls in ExecuteBrain*() with GetFacingDirectionFromSingleTileDelta()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:12</span>Replace all ATan2() calls in ExecuteBrain*() with GetFacingDirectionFromSingleTileDelta()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:12</span>Replace all ATan2() calls in ExecuteBrain*() with GetFacingDirectionFromSingleTileDelta()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="mathematics" class="category mathematics"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7877" class="marker cat_language programming">
+                    <div class="cineraContent"><span class="timecode">2:11:17</span>Introduce a v2s overload of operator-()<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:17</span>Introduce a v2s overload of operator-()<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:17</span>Introduce a v2s overload of operator-()<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7911" class="marker cat_entity-system cat_movement research">
+                    <div class="cineraContent"><span class="timecode">2:11:51</span>Scan through our remaining traversable replacement work<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:51</span>Scan through our remaining traversable replacement work<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:51</span>Scan through our remaining traversable replacement work<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7981" class="marker cat_language programming">
+                    <div class="cineraContent"><span class="timecode">2:13:01</span>#undef function for Windows<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:01</span>#undef function for Windows<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:01</span>#undef function for Windows<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8007" class="marker cat_entity-system cat_movement research">
+                    <div class="cineraContent"><span class="timecode">2:13:27</span>Scan through our remaining traversable replacement work (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:27</span>Scan through our remaining traversable replacement work (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:27</span>Scan through our remaining traversable replacement work (cont.)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8038" class="marker cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">2:13:58</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> Q: Don&#39;t know if it is still in there but in handmade_entity.cpp there was a flag check where the or / and part needed extra parentheses: ((Entity-&gt;Flags &amp; EntityFlag_Deleted|EntityFlag_Active) == EntityFlag_Active)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:58</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> Q: Don&#39;t know if it is still in there but in handmade_entity.cpp there was a flag check where the or / and part needed extra parentheses: ((Entity-&gt;Flags &amp; EntityFlag_Deleted|EntityFlag_Active) == EntityFlag_Active)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:58</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> Q: Don&#39;t know if it is still in there but in handmade_entity.cpp there was a flag check where the or / and part needed extra parentheses: ((Entity-&gt;Flags &amp; EntityFlag_Deleted|EntityFlag_Active) == EntityFlag_Active)<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8070" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:14:30</span>Fix the parentheses in IsActive()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:30</span>Fix the parentheses in IsActive()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:30</span>Fix the parentheses in IsActive()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8080" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:14:40</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> Yep<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:40</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> Yep<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:40</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> Yep<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8103" class="marker cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">2:15:03</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> And goes before or, if I am correct<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:03</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> And goes before or, if I am correct<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:03</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> And goes before or, if I am correct<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8130" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:15:30</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> I meant the execution<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:30</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> I meant the execution<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:30</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> I meant the execution<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8188" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:16:28</span><span class="author" data-hue="20" data-saturation="95%">und3f1n3d</span> What editor is it? Smooth scroll looks nice<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:28</span><span class="author" data-hue="20" data-saturation="95%">und3f1n3d</span> What editor is it? Smooth scroll looks nice<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:28</span><span class="author" data-hue="20" data-saturation="95%">und3f1n3d</span> What editor is it? Smooth scroll looks nice<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8294" class="marker cat_nullTopic authored" data-ref="https://github.com/Dion-Systems/4coder_fleury,https://github.com/Dion-Systems/4coder">
+                    <div class="cineraContent"><span class="timecode">2:18:14</span><span class="author" data-hue="142" data-saturation="88%">valigo</span> You can try to search for &quot;scroll&quot; right on GitHub and pray that their search will work<sup>3</sup><sup>,4</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:14</span><span class="author" data-hue="142" data-saturation="88%">valigo</span> You can try to search for &quot;scroll&quot; right on GitHub and pray that their search will work<sup>3</sup><sup>,4</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:14</span><span class="author" data-hue="142" data-saturation="88%">valigo</span> You can try to search for &quot;scroll&quot; right on GitHub and pray that their search will work<sup>3</sup><sup>,4</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8554" class="marker cat_nullTopic authored" data-ref="https://github.com/Dion-Systems/4coder/blob/master/custom/4coder_default_hooks.cpp">
+                    <div class="cineraContent"><span class="timecode">2:22:34</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> Pretty sure smoothscroll is default behaviour. Did you submit it to <span class="member" data-hue="13" data-saturation="74%">Allen</span> and he added it to the default layer maybe? So it&#39;s probably part of 4coder_default_hooks.cpp<sup>5</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:34</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> Pretty sure smoothscroll is default behaviour. Did you submit it to <span class="member" data-hue="13" data-saturation="74%">Allen</span> and he added it to the default layer maybe? So it&#39;s probably part of 4coder_default_hooks.cpp<sup>5</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:34</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> Pretty sure smoothscroll is default behaviour. Did you submit it to <span class="member" data-hue="13" data-saturation="74%">Allen</span> and he added it to the default layer maybe? So it&#39;s probably part of 4coder_default_hooks.cpp<sup>5</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8774" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:26:14</span>Reflect on our cubic-spline interpolation scrolling for <span class="project" data-hue="13" data-saturation="79%">4coder</span><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:26:14</span>Reflect on our cubic-spline interpolation scrolling for <span class="project" data-hue="13" data-saturation="79%">4coder</span><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:26:14</span>Reflect on our cubic-spline interpolation scrolling for <span class="project" data-hue="13" data-saturation="79%">4coder</span><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8799" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:26:39</span>Call it a day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:26:39</span>Call it a day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:26:39</span>Call it a day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day664/"><div>&#9196;</div><div>Next: 'Simplifying Entity Storage Part II'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

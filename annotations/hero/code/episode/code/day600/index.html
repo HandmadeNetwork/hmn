@@ -1,0 +1,642 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="data structure, geometry, health, isa, lighting, performance, simd, Blackboard, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Better AABB Normal Derivation</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one" href="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Kickstarter</div>
+                            <div class="ref_title">Meow the Infinite: Book One</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1" class="timecode"><span class="ref_index">[1]</span><span class="time">0:01</span></span><span data-timestamp="7911" class="timecode"><span class="ref_index">[7]</span><span class="time">2:11:51</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel</div>
+                            <div class="ref_title">Intel Intrinsics Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="3099" class="timecode"><span class="ref_index">[2]</span><span class="time">51:39</span></span><span data-timestamp="4745" class="timecode"><span class="ref_index">[3]</span><span class="time">1:19:05</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://uops.info/table.html" href="https://uops.info/table.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">uops.info</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6261" class="timecode"><span class="ref_index">[4]</span><span class="time">1:44:21</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://handmadehero.org/watch#EpisodeGuide" href="https://handmadehero.org/watch#EpisodeGuide" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Handmade Hero</div>
+                            <div class="ref_title">Episode Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6591" class="timecode"><span class="ref_index">[5]</span><span class="time">1:49:51</span></span><span data-timestamp="7833" class="timecode"><span class="ref_index">[6]</span><span class="time">2:10:33</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content geometry">
+                                <span class="icon category geometry"></span><span class="cineraText">geometry</span>
+                            </div>
+                            <div class="filter_content health">
+                                <span class="icon category health"></span><span class="cineraText">health</span>
+                            </div>
+                            <div class="filter_content isa">
+                                <span class="icon category isa"></span><span class="cineraText">isa</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content simd">
+                                <span class="icon category simd"></span><span class="cineraText">simd</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="l05e2eBPREI"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day599/"><div>&#9195;</div><div>Previous: 'Implementing the Grid Raycast Postamble'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_nullTopic speech" data-ref="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Welcome to the stream with a plug of the Meow the Infinite printed comic Kickstarter<sup>1</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Welcome to the stream with a plug of the Meow the Infinite printed comic Kickstarter<sup>1</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Welcome to the stream with a plug of the Meow the Infinite printed comic Kickstarter<sup>1</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="41" class="marker cat_lighting speech">
+                    <div class="cineraContent"><span class="timecode">0:41</span>Recap our ongoing move to grid-based ray casting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:41</span>Recap our ongoing move to grid-based ray casting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:41</span>Recap our ongoing move to grid-based ray casting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="116" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:56</span><span class="author" data-hue="302" data-saturation="79%">i___d___k</span> Yeah, <span class="member" data-hue="125" data-saturation="81%">he</span>&#39;s been saying &quot;only gameplay code now&quot; since day 300<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56</span><span class="author" data-hue="302" data-saturation="79%">i___d___k</span> Yeah, <span class="member" data-hue="125" data-saturation="81%">he</span>&#39;s been saying &quot;only gameplay code now&quot; since day 300<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56</span><span class="author" data-hue="302" data-saturation="79%">i___d___k</span> Yeah, <span class="member" data-hue="125" data-saturation="81%">he</span>&#39;s been saying &quot;only gameplay code now&quot; since day 300<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="174" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">2:54</span>Toggle on the normal derivation code in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:54</span>Toggle on the normal derivation code in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:54</span>Toggle on the normal derivation code in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="199" class="marker cat_data-structure cat_lighting cat_simd research">
+                    <div class="cineraContent"><span class="timecode">3:19</span>Refresh our memories on the SIMD grid-based ray casting<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:19</span>Refresh our memories on the SIMD grid-based ray casting<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:19</span>Refresh our memories on the SIMD grid-based ray casting<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="312" class="marker cat_data-structure cat_lighting cat_performance cat_simd research">
+                    <div class="cineraContent"><span class="timecode">5:12</span>Floating-point ALUs, and when to drop down from wide to scalar operations<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:12</span>Floating-point ALUs, and when to drop down from wide to scalar operations<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:12</span>Floating-point ALUs, and when to drop down from wide to scalar operations<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="460" class="marker cat_data-structure cat_lighting cat_simd research">
+                    <div class="cineraContent"><span class="timecode">7:40</span>Continue to refresh our memories on the ray hit extraction in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:40</span>Continue to refresh our memories on the ray hit extraction in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:40</span>Continue to refresh our memories on the ray hit extraction in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="560" class="marker cat_data-structure cat_lighting cat_simd programming">
+                    <div class="cineraContent"><span class="timecode">9:20</span>Make GridRayCast() set ProbeSamplePSingle and ProbeSampleNSingle<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:20</span>Make GridRayCast() set ProbeSamplePSingle and ProbeSampleNSingle<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:20</span>Make GridRayCast() set ProbeSamplePSingle and ProbeSampleNSingle<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="669" class="marker cat_data-structure cat_lighting cat_simd research">
+                    <div class="cineraContent"><span class="timecode">11:09</span>Producing the normal of the box surface we hit<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:09</span>Producing the normal of the box surface we hit<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:09</span>Producing the normal of the box surface we hit<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="759" class="marker cat_data-structure cat_lighting cat_simd programming">
+                    <div class="cineraContent"><span class="timecode">12:39</span>Embark on making GridRayCast() produce the normal of the box surface we hit<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:39</span>Embark on making GridRayCast() produce the normal of the box surface we hit<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:39</span>Embark on making GridRayCast() produce the normal of the box surface we hit<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1634" class="marker cat_lighting cat_simd research">
+                    <div class="cineraContent"><span class="timecode">27:14</span>Consult ComputeVoxelIrradianceAt() for SIMD potential<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:14</span>Consult ComputeVoxelIrradianceAt() for SIMD potential<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:14</span>Consult ComputeVoxelIrradianceAt() for SIMD potential<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1706" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">28:26</span>Rewrite our ShuffleTable in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:26</span>Rewrite our ShuffleTable in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:26</span>Rewrite our ShuffleTable in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2273" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">37:53</span>Try making GridRayCast() test the box surfaces unpacked<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:53</span>Try making GridRayCast() test the box surfaces unpacked<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:53</span>Try making GridRayCast() test the box surfaces unpacked<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2641" class="marker cat_data-structure cat_lighting cat_simd research">
+                    <div class="cineraContent"><span class="timecode">44:01</span>Consider unpacked testing to be worse<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:01</span>Consider unpacked testing to be worse<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:01</span>Consider unpacked testing to be worse<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2669" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">44:29</span>Switch our attention to making GridRayCast() test the box surfaces while packed, renaming ShuffleTable to ClearMaskTable<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:29</span>Switch our attention to making GridRayCast() test the box surfaces while packed, renaming ShuffleTable to ClearMaskTable<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:29</span>Switch our attention to making GridRayCast() test the box surfaces while packed, renaming ShuffleTable to ClearMaskTable<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3099" class="marker cat_data-structure cat_lighting programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">51:39</span>Make GridRayCast() pack up the ray hit<sup>2</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:39</span>Make GridRayCast() pack up the ray hit<sup>2</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:39</span>Make GridRayCast() pack up the ray hit<sup>2</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3525" class="marker cat_data-structure cat_lighting cat_performance research">
+                    <div class="cineraContent"><span class="timecode">58:45</span>Consider the performance of our ray packing<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:45</span>Consider the performance of our ray packing<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:45</span>Consider the performance of our ray packing<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3569" class="marker cat_data-structure cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">59:29</span>Determine to set up the SpatialGridNodes and SpatialGridLeaves, and pre-generate the WalkTable<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:29</span>Determine to set up the SpatialGridNodes and SpatialGridLeaves, and pre-generate the WalkTable<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:29</span>Determine to set up the SpatialGridNodes and SpatialGridLeaves, and pre-generate the WalkTable<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3734" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:02:14</span>Introduce light_sample_direction for GridRayCast() to take<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:14</span>Introduce light_sample_direction for GridRayCast() to take<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:14</span>Introduce light_sample_direction for GridRayCast() to take<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3972" class="marker cat_data-structure cat_lighting cat_performance research">
+                    <div class="cineraContent"><span class="timecode">1:06:12</span>Consider the performance of our grid-based ray casting<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:12</span>Consider the performance of our grid-based ray casting<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:12</span>Consider the performance of our grid-based ray casting<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4133" class="marker cat_geometry cat_lighting blackboard">
+                    <div class="cineraContent"><span class="timecode">1:08:53</span>Ray Hit Normal Derivation<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:53</span>Ray Hit Normal Derivation<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:53</span>Ray Hit Normal Derivation<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4506" class="marker cat_data-structure cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:15:06</span>On the possibility to remove the PShufB() calls if the BoxMin and BoxMax were not shuffled<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:06</span>On the possibility to remove the PShufB() calls if the BoxMin and BoxMax were not shuffled<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:06</span>On the possibility to remove the PShufB() calls if the BoxMin and BoxMax were not shuffled<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4549" class="marker cat_data-structure cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:15:49</span>Consider what information obtained while picking the tRay may we use to derive the box surface normal<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:49</span>Consider what information obtained while picking the tRay may we use to derive the box surface normal<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:49</span>Consider what information obtained while picking the tRay may we use to derive the box surface normal<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4745" class="marker cat_data-structure cat_lighting programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">1:19:05</span>Temporarily relieve GridRayCast() of storing the HitBoxMin and HitBoxMax<sup>3</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:05</span>Temporarily relieve GridRayCast() of storing the HitBoxMin and HitBoxMax<sup>3</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:05</span>Temporarily relieve GridRayCast() of storing the HitBoxMin and HitBoxMax<sup>3</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5032" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:23:52</span>Change GridRayCast to store HitTMinX and HitTMinY rather than HitBoxMin and HitBoxMax<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:52</span>Change GridRayCast to store HitTMinX and HitTMinY rather than HitBoxMin and HitBoxMax<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:52</span>Change GridRayCast to store HitTMinX and HitTMinY rather than HitBoxMin and HitBoxMax<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5242" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:27:22</span>Make GridRayCast() more efficiently derive the box surface normal<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:22</span>Make GridRayCast() more efficiently derive the box surface normal<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:22</span>Make GridRayCast() more efficiently derive the box surface normal<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5906" class="marker cat_data-structure cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:38:26</span>Consider GridRayCast() to be done<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:26</span>Consider GridRayCast() to be done<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:26</span>Consider GridRayCast() to be done<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6082" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:41:22</span>Fix up compile errors in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:22</span>Fix up compile errors in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:22</span>Fix up compile errors in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6149" class="marker cat_data-structure cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:42:29</span>Run hhlightprof successfully<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:29</span>Run hhlightprof successfully<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:29</span>Run hhlightprof successfully<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6210" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:43:30</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:30</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:30</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6235" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">1:43:55</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Nice upgrade of the routine! Just wanted to let you know there is a double PShufB() in the creation of tRaySingle. Which leads me to a question, what do the P and B in PShufB() stand for, position and bit?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:55</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Nice upgrade of the routine! Just wanted to let you know there is a double PShufB() in the creation of tRaySingle. Which leads me to a question, what do the P and B in PShufB() stand for, position and bit?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:55</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Nice upgrade of the routine! Just wanted to let you know there is a double PShufB() in the creation of tRaySingle. Which leads me to a question, what do the P and B in PShufB() stand for, position and bit?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6253" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:44:13</span>Relieve GridRayCast() of calling PShufB() twice in the creation of tRaySingle<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:13</span>Relieve GridRayCast() of calling PShufB() twice in the creation of tRaySingle<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:13</span>Relieve GridRayCast() of calling PShufB() twice in the creation of tRaySingle<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6261" class="marker cat_isa cat_simd research" data-ref="https://uops.info/table.html">
+                    <div class="cineraContent"><span class="timecode">1:44:21</span>What PShufB stands for: Packed Shuffle Bytes<sup>4</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:21</span>What PShufB stands for: Packed Shuffle Bytes<sup>4</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:21</span>What PShufB stands for: Packed Shuffle Bytes<sup>4</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6574" class="marker cat_health authored">
+                    <div class="cineraContent"><span class="timecode">1:49:34</span><span class="author" data-hue="241" data-saturation="89%">miltondts</span> Q: Hi <span class="member" data-hue="125" data-saturation="81%">Casey</span>, love your show. Lately you seem to be having some problems with your voice (breaking, coughing). Have you considered visiting a speech therapist?<span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:34</span><span class="author" data-hue="241" data-saturation="89%">miltondts</span> Q: Hi <span class="member" data-hue="125" data-saturation="81%">Casey</span>, love your show. Lately you seem to be having some problems with your voice (breaking, coughing). Have you considered visiting a speech therapist?<span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:34</span><span class="author" data-hue="241" data-saturation="89%">miltondts</span> Q: Hi <span class="member" data-hue="125" data-saturation="81%">Casey</span>, love your show. Lately you seem to be having some problems with your voice (breaking, coughing). Have you considered visiting a speech therapist?<span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6591" class="marker cat_nullTopic authored" data-ref="https://handmadehero.org/watch#EpisodeGuide">
+                    <div class="cineraContent"><span class="timecode">1:49:51</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: Mostly off-topic: Happy 600th Day! The stars have aligned and the Episode Guide<sup>5</sup> has received an update<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:51</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: Mostly off-topic: Happy 600th Day! The stars have aligned and the Episode Guide<sup>5</sup> has received an update<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:51</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: Mostly off-topic: Happy 600th Day! The stars have aligned and the Episode Guide<sup>5</sup> has received an update<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6663" class="marker cat_geometry cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">1:51:03</span><span class="author" data-hue="11" data-saturation="74%">pancelor</span> Q: Could you explain the math and diagram behind why the sign bits are the inverse of the ray&#39;s sign again? I showed up halfway through that and I think I&#39;m missing some context<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:03</span><span class="author" data-hue="11" data-saturation="74%">pancelor</span> Q: Could you explain the math and diagram behind why the sign bits are the inverse of the ray&#39;s sign again? I showed up halfway through that and I think I&#39;m missing some context<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:03</span><span class="author" data-hue="11" data-saturation="74%">pancelor</span> Q: Could you explain the math and diagram behind why the sign bits are the inverse of the ray&#39;s sign again? I showed up halfway through that and I think I&#39;m missing some context<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6685" class="marker cat_geometry blackboard">
+                    <div class="cineraContent"><span class="timecode">1:51:25</span>Plug(?) &quot;Behind the Curve&quot;<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:25</span>Plug(?) &quot;Behind the Curve&quot;<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:25</span>Plug(?) &quot;Behind the Curve&quot;<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6961" class="marker cat_geometry blackboard">
+                    <div class="cineraContent"><span class="timecode">1:56:01</span>Understanding why the sign of the hit surface normal is the inverse of that of the ray, in infinite planes<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:01</span>Understanding why the sign of the hit surface normal is the inverse of that of the ray, in infinite planes<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:01</span>Understanding why the sign of the hit surface normal is the inverse of that of the ray, in infinite planes<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7135" class="marker cat_geometry blackboard">
+                    <div class="cineraContent"><span class="timecode">1:58:55</span>Understanding why the sign of the hit surface normal is the inverse of that of the ray, in boxes<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:55</span>Understanding why the sign of the hit surface normal is the inverse of that of the ray, in boxes<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:55</span>Understanding why the sign of the hit surface normal is the inverse of that of the ray, in boxes<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7339" class="marker cat_geometry authored">
+                    <div class="cineraContent"><span class="timecode">2:02:19</span><span class="author" data-hue="11" data-saturation="74%">pancelor</span> But it forms nine quadrants, not four quadrants? I guess we know we&#39;re not stuck in between the fake heavens somehow?<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:19</span><span class="author" data-hue="11" data-saturation="74%">pancelor</span> But it forms nine quadrants, not four quadrants? I guess we know we&#39;re not stuck in between the fake heavens somehow?<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:19</span><span class="author" data-hue="11" data-saturation="74%">pancelor</span> But it forms nine quadrants, not four quadrants? I guess we know we&#39;re not stuck in between the fake heavens somehow?<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7368" class="marker cat_geometry blackboard">
+                    <div class="cineraContent"><span class="timecode">2:02:48</span>Deterministically knowing which surface we hit when our ray is in the edge octants<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:48</span>Deterministically knowing which surface we hit when our ray is in the edge octants<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:48</span>Deterministically knowing which surface we hit when our ray is in the edge octants<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7478" class="marker cat_geometry authored">
+                    <div class="cineraContent"><span class="timecode">2:04:38</span><span class="author" data-hue="11" data-saturation="74%">pancelor</span> But assuming that we know we&#39;re in the four corner quadrants, and that the boxes are axis-aligned, then that all makes sense now<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:38</span><span class="author" data-hue="11" data-saturation="74%">pancelor</span> But assuming that we know we&#39;re in the four corner quadrants, and that the boxes are axis-aligned, then that all makes sense now<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:38</span><span class="author" data-hue="11" data-saturation="74%">pancelor</span> But assuming that we know we&#39;re in the four corner quadrants, and that the boxes are axis-aligned, then that all makes sense now<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7489" class="marker cat_geometry blackboard">
+                    <div class="cineraContent"><span class="timecode">2:04:49</span>The utility of transforming into an axis-aligned space for hit testing<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:49</span>The utility of transforming into an axis-aligned space for hit testing<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:49</span>The utility of transforming into an axis-aligned space for hit testing<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7772" class="marker cat_geometry authored">
+                    <div class="cineraContent"><span class="timecode">2:09:32</span><span class="author" data-hue="313" data-saturation="95%">stovecat</span> Is it faster to do the matrix rotation or the dot product, though? I guess there&#39;s only one rotation and plenty of dot products<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:32</span><span class="author" data-hue="313" data-saturation="95%">stovecat</span> Is it faster to do the matrix rotation or the dot product, though? I guess there&#39;s only one rotation and plenty of dot products<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:32</span><span class="author" data-hue="313" data-saturation="95%">stovecat</span> Is it faster to do the matrix rotation or the dot product, though? I guess there&#39;s only one rotation and plenty of dot products<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7833" class="marker cat_geometry research" data-ref="https://handmadehero.org/watch#EpisodeGuide">
+                    <div class="cineraContent"><span class="timecode">2:10:33</span>Signed distance fields<sup>6</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:33</span>Signed distance fields<sup>6</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:33</span>Signed distance fields<sup>6</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7911" class="marker cat_nullTopic speech" data-ref="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one">
+                    <div class="cineraContent"><span class="timecode">2:11:51</span>Wrap it up with a plug of the Meow the Infinite printed comic Kickstarter<sup>7</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:51</span>Wrap it up with a plug of the Meow the Infinite printed comic Kickstarter<sup>7</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:51</span>Wrap it up with a plug of the Meow the Infinite printed comic Kickstarter<sup>7</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day601/"><div>&#9196;</div><div>Next: 'Sketching Out the Walk Table Generator'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

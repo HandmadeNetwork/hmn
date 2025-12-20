@@ -1,0 +1,712 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asm, error handling, memory, parsing, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__bitwise.css?r=c4e77686">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus bitwise">
+            <span class="episode_name">Forth Implementation, Part 5</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content error-handling">
+                                <span class="icon category error-handling"></span><span class="cineraText">error handling</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://github.com/pervognsen/bitwise/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Per Vognsen</div>
+                        </a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="4Uy1Mq8p72w"></div>
+            <div class="markers_container bitwise">
+                <a class="episodeMarker prev" href="https://bitwise.handmade.network/episode/bitwise/bitwise038_2/"><div>&#9195;</div><div>Previous: 'Forth Implementation, Part 4 (Extra)'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="8" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:08</span>Recap and set the stage for the day focusing on bootstrapping<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:08</span>Recap and set the stage for the day focusing on bootstrapping<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:08</span>Recap and set the stage for the day focusing on bootstrapping<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="99" class="marker cat_asm research">
+                    <div class="cineraContent"><span class="timecode">1:39</span>Review the in-progress bootstrapping of the immediate / compilation modality interpretation<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39</span>Review the in-progress bootstrapping of the immediate / compilation modality interpretation<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39</span>Review the in-progress bootstrapping of the immediate / compilation modality interpretation<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="496" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">8:16</span>Make &quot;immediate&quot; itself be immediate<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:16</span>Make &quot;immediate&quot; itself be immediate<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:16</span>Make &quot;immediate&quot; itself be immediate<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="590" class="marker cat_asm research">
+                    <div class="cineraContent"><span class="timecode">9:50</span>Review the new immediate words &quot;else&quot;, &quot;begin&quot;, &quot;again&quot;, &quot;until&quot;, &quot;variable&quot; and &quot;constant&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:50</span>Review the new immediate words &quot;else&quot;, &quot;begin&quot;, &quot;again&quot;, &quot;until&quot;, &quot;variable&quot; and &quot;constant&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:50</span>Review the new immediate words &quot;else&quot;, &quot;begin&quot;, &quot;again&quot;, &quot;until&quot;, &quot;variable&quot; and &quot;constant&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="899" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">14:59</span>Demo the idea behind counter and if-else<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:59</span>Demo the idea behind counter and if-else<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:59</span>Demo the idea behind counter and if-else<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="972" class="marker cat_asm speech">
+                    <div class="cineraContent"><span class="timecode">16:12</span>Determine to work on &quot;immediate?&quot; with a mention of a &quot;hiding&quot; word<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:12</span>Determine to work on &quot;immediate?&quot; with a mention of a &quot;hiding&quot; word<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:12</span>Determine to work on &quot;immediate?&quot; with a mention of a &quot;hiding&quot; word<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1095" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">18:15</span>Create &quot;immediate?&quot; in FORTH<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:15</span>Create &quot;immediate?&quot; in FORTH<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:15</span>Create &quot;immediate?&quot; in FORTH<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1190" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">19:50</span>Run it to find that it works, and remove the hard coded definition<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:50</span>Run it to find that it works, and remove the hard coded definition<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:50</span>Run it to find that it works, and remove the hard coded definition<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1257" class="marker cat_asm speech">
+                    <div class="cineraContent"><span class="timecode">20:57</span>Consider kicking out the ladder from under us once we&#39;re bootstrapped<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:57</span>Consider kicking out the ladder from under us once we&#39;re bootstrapped<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:57</span>Consider kicking out the ladder from under us once we&#39;re bootstrapped<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1502" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">25:02</span>Define defop2 macro to quickly define binary operators, using it on an &quot;+&quot; operator<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:02</span>Define defop2 macro to quickly define binary operators, using it on an &quot;+&quot; operator<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:02</span>Define defop2 macro to quickly define binary operators, using it on an &quot;+&quot; operator<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1614" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">26:54</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:54</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:54</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1622" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">27:02</span>Define &quot;-&quot;, &quot;and&quot;, &quot;or&quot; and &quot;xor&quot; operators<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:02</span>Define &quot;-&quot;, &quot;and&quot;, &quot;or&quot; and &quot;xor&quot; operators<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:02</span>Define &quot;-&quot;, &quot;and&quot;, &quot;or&quot; and &quot;xor&quot; operators<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1666" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">27:46</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:46</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:46</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1676" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">27:56</span>Define defop1 macro to quickly define unary operators, using it to define &quot;0=&quot; and &quot;&lt;&gt;0&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:56</span>Define defop1 macro to quickly define unary operators, using it to define &quot;0=&quot; and &quot;&lt;&gt;0&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:56</span>Define defop1 macro to quickly define unary operators, using it to define &quot;0=&quot; and &quot;&lt;&gt;0&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1793" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">29:53</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:53</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:53</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1805" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">30:05</span>Alias &quot;not&quot; as &quot;0=&quot;</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:05</span>Alias &quot;not&quot; as &quot;0=&quot;</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:05</span>Alias &quot;not&quot; as &quot;0=&quot;</div>
+                    </div>
+                </div>
+                <div data-timestamp="1884" class="marker cat_asm cat_error-handling run">
+                    <div class="cineraContent"><span class="timecode">31:24</span>Run it to find that it works, but that we may want to bootstrap error checking<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="error handling" class="category error-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:24</span>Run it to find that it works, but that we may want to bootstrap error checking<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="error handling" class="category error-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:24</span>Run it to find that it works, but that we may want to bootstrap error checking<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="error handling" class="category error-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1913" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">31:53</span>Create &quot;&gt;flags&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:53</span>Create &quot;&gt;flags&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:53</span>Create &quot;&gt;flags&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1975" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">32:55</span>Run it to find that it broke everything<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:55</span>Run it to find that it broke everything<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:55</span>Run it to find that it broke everything<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2008" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">33:28</span>Make &quot;&gt;flags&quot; just exit for now<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:28</span>Make &quot;&gt;flags&quot; just exit for now<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:28</span>Make &quot;&gt;flags&quot; just exit for now<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2022" class="marker cat_asm speech">
+                    <div class="cineraContent"><span class="timecode">33:42</span>Consider creating &quot;&gt;cfa&quot; and integers<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:42</span>Consider creating &quot;&gt;cfa&quot; and integers<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:42</span>Consider creating &quot;&gt;cfa&quot; and integers<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2157" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">35:57</span>Rewrite &quot;&gt;flags&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:57</span>Rewrite &quot;&gt;flags&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:57</span>Rewrite &quot;&gt;flags&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2177" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">36:17</span>Run it to find that it now works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:17</span>Run it to find that it now works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:17</span>Run it to find that it now works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2183" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">36:23</span>Revert &quot;&gt;flags&quot; to just exit, and create &quot;&gt;namelen&quot;, &quot;&gt;name&quot; and &quot;&gt;cfa&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:23</span>Revert &quot;&gt;flags&quot; to just exit, and create &quot;&gt;namelen&quot;, &quot;&gt;name&quot; and &quot;&gt;cfa&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:23</span>Revert &quot;&gt;flags&quot; to just exit, and create &quot;&gt;namelen&quot;, &quot;&gt;name&quot; and &quot;&gt;cfa&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2493" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">41:33</span>Run it to find that the live &quot;&gt;cfa&quot; doesn&#39;t work<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:33</span>Run it to find that the live &quot;&gt;cfa&quot; doesn&#39;t work<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:33</span>Run it to find that the live &quot;&gt;cfa&quot; doesn&#39;t work<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2512" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">41:52</span>Test &quot;&gt;namelen&quot; and &quot;&gt;name&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:52</span>Test &quot;&gt;namelen&quot; and &quot;&gt;name&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:52</span>Test &quot;&gt;namelen&quot; and &quot;&gt;name&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2525" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">42:05</span>Run it to find that it&#39;s okay<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:05</span>Run it to find that it&#39;s okay<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:05</span>Run it to find that it&#39;s okay<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2546" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">42:26</span>Remove IMMEDIATE and HIDDEN initialisations<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:26</span>Remove IMMEDIATE and HIDDEN initialisations<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:26</span>Remove IMMEDIATE and HIDDEN initialisations<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2560" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">42:40</span>Run it to make sure that doesn&#39;t break it<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:40</span>Run it to make sure that doesn&#39;t break it<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:40</span>Run it to make sure that doesn&#39;t break it<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2572" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">42:52</span>Scrutinise &quot;&gt;cfa&quot; and start our investigations by putting the location of the &quot;drop&quot; word on the stack<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:52</span>Scrutinise &quot;&gt;cfa&quot; and start our investigations by putting the location of the &quot;drop&quot; word on the stack<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:52</span>Scrutinise &quot;&gt;cfa&quot; and start our investigations by putting the location of the &quot;drop&quot; word on the stack<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2696" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">44:56</span>Run it to see that &quot;drop&quot; is at 1224<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:56</span>Run it to see that &quot;drop&quot; is at 1224<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:56</span>Run it to see that &quot;drop&quot; is at 1224<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2720" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">45:20</span>Try to dup our &quot;&gt;cfa&quot; after finding the &quot;drop&quot; word<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:20</span>Try to dup our &quot;&gt;cfa&quot; after finding the &quot;drop&quot; word<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:20</span>Try to dup our &quot;&gt;cfa&quot; after finding the &quot;drop&quot; word<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2750" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">45:50</span>Run it to find that the cfa is at 1852402392<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:50</span>Run it to find that the cfa is at 1852402392<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:50</span>Run it to find that the cfa is at 1852402392<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2761" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">46:01</span>Try dereferencing the &quot;&gt;namelen&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:01</span>Try dereferencing the &quot;&gt;namelen&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:01</span>Try dereferencing the &quot;&gt;namelen&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2774" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">46:14</span>Run it to determine that it&#39;s already total garbage<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:14</span>Run it to determine that it&#39;s already total garbage<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:14</span>Run it to determine that it&#39;s already total garbage<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2782" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">46:22</span>Try to dup &quot;&gt;namelen&quot; itself<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:22</span>Try to dup &quot;&gt;namelen&quot; itself<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:22</span>Try to dup &quot;&gt;namelen&quot; itself<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2786" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">46:26</span>Run it to see that this is as expected<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:26</span>Run it to see that this is as expected<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:26</span>Run it to see that this is as expected<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2811" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">46:51</span>Make &quot;&gt;cfa&quot; correctly dereference &quot;&gt;namelen&quot; using a byte fetch<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:51</span>Make &quot;&gt;cfa&quot; correctly dereference &quot;&gt;namelen&quot; using a byte fetch<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:51</span>Make &quot;&gt;cfa&quot; correctly dereference &quot;&gt;namelen&quot; using a byte fetch<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2824" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">47:04</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:04</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:04</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2897" class="marker cat_asm cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">48:17</span>Determine to create a general number parser, initially redefining &quot;interpret&quot; and &quot;quit&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:17</span>Determine to create a general number parser, initially redefining &quot;interpret&quot; and &quot;quit&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:17</span>Determine to create a general number parser, initially redefining &quot;interpret&quot; and &quot;quit&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3106" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">51:46</span>Run it to find that it didn&#39;t work<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:46</span>Run it to find that it didn&#39;t work<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:46</span>Run it to find that it didn&#39;t work<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3132" class="marker cat_asm run programming">
+                    <div class="cineraContent"><span class="timecode">52:12</span>Investigate the problem in our new &quot;interpret&quot; and &quot;quit&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:12</span>Investigate the problem in our new &quot;interpret&quot; and &quot;quit&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:12</span>Investigate the problem in our new &quot;interpret&quot; and &quot;quit&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3465" class="marker cat_asm speech">
+                    <div class="cineraContent"><span class="timecode">57:45</span>Using &quot;break&quot; within [ and ]<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:45</span>Using &quot;break&quot; within [ and ]<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:45</span>Using &quot;break&quot; within [ and ]<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3516" class="marker cat_asm run programming">
+                    <div class="cineraContent"><span class="timecode">58:36</span>Continue to investigate &quot;interpret&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:36</span>Continue to investigate &quot;interpret&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:36</span>Continue to investigate &quot;interpret&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3582" class="marker cat_asm cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">59:42</span>Try increasing the stack size<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:42</span>Try increasing the stack size<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:42</span>Try increasing the stack size<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3616" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">1:00:16</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:16</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:16</span>Run it to find that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3637" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">1:00:37</span>Try using our new &quot;quit&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:37</span>Try using our new &quot;quit&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:37</span>Try using our new &quot;quit&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3656" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">1:00:56</span>Run it to find that it all works, with a few words on recreating more sophisticated definitions<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:56</span>Run it to find that it all works, with a few words on recreating more sophisticated definitions<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:56</span>Run it to find that it all works, with a few words on recreating more sophisticated definitions<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3727" class="marker cat_asm cat_error-handling speech">
+                    <div class="cineraContent"><span class="timecode">1:02:07</span>Consider building better error handling<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="error handling" class="category error-handling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:07</span>Consider building better error handling<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="error handling" class="category error-handling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:07</span>Consider building better error handling<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="error handling" class="category error-handling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3802" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">1:03:22</span>Define register-manipulation built-ins &quot;sp@&quot;, &quot;sp!&quot;, &quot;pc@&quot;, &quot;pc!&quot;, &quot;rp@&quot; and &quot;rp!&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:22</span>Define register-manipulation built-ins &quot;sp@&quot;, &quot;sp!&quot;, &quot;pc@&quot;, &quot;pc!&quot;, &quot;rp@&quot; and &quot;rp!&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:22</span>Define register-manipulation built-ins &quot;sp@&quot;, &quot;sp!&quot;, &quot;pc@&quot;, &quot;pc!&quot;, &quot;rp@&quot; and &quot;rp!&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4084" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">1:08:04</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:04</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:04</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4088" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">1:08:08</span>Define &quot;sp0&quot; and &quot;rp0&quot;, and introduce an abort function<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:08</span>Define &quot;sp0&quot; and &quot;rp0&quot;, and introduce an abort function<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:08</span>Define &quot;sp0&quot; and &quot;rp0&quot;, and introduce an abort function<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4408" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">1:13:28</span>Run it to see that &quot;abort&quot; has put 1234 on the stack, but it ends by crashing in bus_load_word()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:28</span>Run it to see that &quot;abort&quot; has put 1234 on the stack, but it ends by crashing in bus_load_word()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:28</span>Run it to see that &quot;abort&quot; has put 1234 on the stack, but it ends by crashing in bus_load_word()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4448" class="marker cat_asm research">
+                    <div class="cineraContent"><span class="timecode">1:14:08</span>Investigate the crash in &quot;abort&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:08</span>Investigate the crash in &quot;abort&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:08</span>Investigate the crash in &quot;abort&quot;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4893" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">1:21:33</span>Initialise sp0 and rp0 for the docol routine and &quot;rp0&quot; word to use<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:33</span>Initialise sp0 and rp0 for the docol routine and &quot;rp0&quot; word to use<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:33</span>Initialise sp0 and rp0 for the docol routine and &quot;rp0&quot; word to use<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4991" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">1:23:11</span>Run it to see that it is more reasonable<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:11</span>Run it to see that it is more reasonable<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:11</span>Run it to see that it is more reasonable<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5071" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">1:24:31</span>Prevent &quot;abort&quot; from putting 1234 on the stack, and try to enable it to push the code pointer for &quot;quit&quot; onto the return stack, rather than calling it directly<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:31</span>Prevent &quot;abort&quot; from putting 1234 on the stack, and try to enable it to push the code pointer for &quot;quit&quot; onto the return stack, rather than calling it directly<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:31</span>Prevent &quot;abort&quot; from putting 1234 on the stack, and try to enable it to push the code pointer for &quot;quit&quot; onto the return stack, rather than calling it directly<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5108" class="marker cat_asm run">
+                    <div class="cineraContent"><span class="timecode">1:25:08</span>Run it to find that it didn&#39;t work<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:08</span>Run it to find that it didn&#39;t work<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:08</span>Run it to find that it didn&#39;t work<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5149" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">1:25:49</span>Revert &quot;abort&quot; to just quit<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:49</span>Revert &quot;abort&quot; to just quit<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:49</span>Revert &quot;abort&quot; to just quit<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5201" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:26:41</span>Cut off the main stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:41</span>Cut off the main stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:41</span>Cut off the main stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://bitwise.handmade.network/episode/bitwise/bitwise039_2/"><div>&#9196;</div><div>Next: 'Forth Implementation, Part 5 (Extra)'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

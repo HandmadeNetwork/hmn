@@ -1,0 +1,903 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asm, debug visualisation, library, lighting, mathematics, memory, optimisation, platform layer, rendering, statistics, threading, Administrivia, Chat Comment, In-Game, Programming, Rant, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Removing the CRT from the Win32 Loader</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="http://dependencywalker.com/" href="http://dependencywalker.com/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">Dependency Walker</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="182" class="timecode"><span class="ref_index">[1]</span><span class="time">3:02</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://msdn.microsoft.com/en-us/library/2kzt1wy3.aspx" href="https://msdn.microsoft.com/en-us/library/2kzt1wy3.aspx" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">/&#8203;MD, /&#8203;MT, /&#8203;LD (Use Run-Time Library)</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="474" class="timecode"><span class="ref_index">[2]</span><span class="time">7:54</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://msdn.microsoft.com/en-us/library/3tz4da4a.aspx" href="https://msdn.microsoft.com/en-us/library/3tz4da4a.aspx" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">/&#8203;NODEFAULTLIB (Ignore Libraries)</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="840" class="timecode"><span class="ref_index">[3]</span><span class="time">14:00</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://hero.handmade.network/forums/code-discussion/t/94-guide_-_how_to_avoid_c_c++_runtime_on_windows" href="https://hero.handmade.network/forums/code-discussion/t/94-guide_-_how_to_avoid_c_c++_runtime_on_windows" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Handmade Hero Forums</div>
+                            <div class="ref_title">Guide - How to avoid C/&#8203;C++ runtime on Windows</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1316" class="timecode"><span class="ref_index">[4]</span><span class="time">21:56</span></span><span data-timestamp="1864" class="timecode"><span class="ref_index">[5]</span><span class="time">31:04</span></span><span data-timestamp="2796" class="timecode"><span class="ref_index">[8]</span><span class="time">46:36</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="11200" class="timecode"><span class="ref_index">[14]</span><span class="time">3:06:40</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://msdn.microsoft.com/en-us/library/9598wk25.aspx" href="https://msdn.microsoft.com/en-us/library/9598wk25.aspx" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">/&#8203;Gs (Control Stack Checking Calls)</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1864" class="timecode"><span class="ref_index">[6]</span><span class="time">31:04</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://msdn.microsoft.com/en-us/library/tzkfha43.aspx" href="https://msdn.microsoft.com/en-us/library/tzkfha43.aspx" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">intrinsic</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2155" class="timecode"><span class="ref_index">[7]</span><span class="time">35:55</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://msdn.microsoft.com/en-us/library/f9t8842e.aspx" href="https://msdn.microsoft.com/en-us/library/f9t8842e.aspx" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">/&#8203;ENTRY (Entry-Point Symbol)</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="3722" class="timecode"><span class="ref_index">[9]</span><span class="time">1:02:02</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://docs.microsoft.com/en-us/cpp/build/reference/subsystem-specify-subsystem" href="https://docs.microsoft.com/en-us/cpp/build/reference/subsystem-specify-subsystem" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">/&#8203;SUBSYSTEM (Specify Subsystem)</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="3722" class="timecode"><span class="ref_index">[10]</span><span class="time">1:02:02</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://msdn.microsoft.com/en-us/library/windows/desktop/ms686774.aspx" href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms686774.aspx" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">Thread Stack Size</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="5510" class="timecode"><span class="ref_index">[11]</span><span class="time">1:31:50</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel</div>
+                            <div class="ref_title">Intel Intrinsics Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8170" class="timecode"><span class="ref_index">[12]</span><span class="time">2:16:10</span></span><span data-timestamp="9197" class="timecode"><span class="ref_index">[13]</span><span class="time">2:33:17</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content debug-visualisation">
+                                <span class="icon category debug-visualisation"></span><span class="cineraText">debug visualisation</span>
+                            </div>
+                            <div class="filter_content library">
+                                <span class="icon category library"></span><span class="cineraText">library</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content optimisation">
+                                <span class="icon category optimisation"></span><span class="cineraText">optimisation</span>
+                            </div>
+                            <div class="filter_content platform-layer">
+                                <span class="icon category platform-layer"></span><span class="cineraText">platform layer</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content statistics">
+                                <span class="icon category statistics"></span><span class="cineraText">statistics</span>
+                            </div>
+                            <div class="filter_content threading">
+                                <span class="icon category threading"></span><span class="cineraText">threading</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content rant">
+                                <span class="icon">&#128162;</span><span class="cineraText">Rant</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="sE4tUVaxiV0"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day434/"><div>&#9195;</div><div>Previous: 'Replacing the Pseudo-random Number Generator'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="6" class="marker cat_library speech">
+                    <div class="cineraContent"><span class="timecode">0:06</span>Recap and set the stage for the day removing the C Runtime Library<span class="cineraCategories"><div title="library" class="category library"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:06</span>Recap and set the stage for the day removing the C Runtime Library<span class="cineraCategories"><div title="library" class="category library"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:06</span>Recap and set the stage for the day removing the C Runtime Library<span class="cineraCategories"><div title="library" class="category library"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="52" class="marker cat_library research">
+                    <div class="cineraContent"><span class="timecode">0:52</span>Read our linker flags in build.bat<span class="cineraCategories"><div title="library" class="category library"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:52</span>Read our linker flags in build.bat<span class="cineraCategories"><div title="library" class="category library"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:52</span>Read our linker flags in build.bat<span class="cineraCategories"><div title="library" class="category library"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="182" class="marker cat_library admin" data-ref="http://dependencywalker.com/">
+                    <div class="cineraContent"><span class="timecode">3:02</span>Inspect our executable in depends<sup>1</sup> to see what we&#39;re linking with<span class="cineraCategories"><div title="library" class="category library"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:02</span>Inspect our executable in depends<sup>1</sup> to see what we&#39;re linking with<span class="cineraCategories"><div title="library" class="category library"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:02</span>Inspect our executable in depends<sup>1</sup> to see what we&#39;re linking with<span class="cineraCategories"><div title="library" class="category library"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="474" class="marker cat_nullTopic programming" data-ref="https://msdn.microsoft.com/en-us/library/2kzt1wy3.aspx">
+                    <div class="cineraContent"><span class="timecode">7:54</span>Replace the -MTd switch with -MD in our CommonCompilerFlags<sup>2</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:54</span>Replace the -MTd switch with -MD in our CommonCompilerFlags<sup>2</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:54</span>Replace the -MTd switch with -MD in our CommonCompilerFlags<sup>2</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="654" class="marker cat_library admin">
+                    <div class="cineraContent"><span class="timecode">10:54</span>Inspect this executable in depends to see VCRUNTIME140.DLL in there<span class="cineraCategories"><div title="library" class="category library"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:54</span>Inspect this executable in depends to see VCRUNTIME140.DLL in there<span class="cineraCategories"><div title="library" class="category library"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:54</span>Inspect this executable in depends to see VCRUNTIME140.DLL in there<span class="cineraCategories"><div title="library" class="category library"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="840" class="marker cat_nullTopic research" data-ref="https://msdn.microsoft.com/en-us/library/3tz4da4a.aspx">
+                    <div class="cineraContent"><span class="timecode">14:00</span>NODEFAULTLIB<sup>3</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:00</span>NODEFAULTLIB<sup>3</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:00</span>NODEFAULTLIB<sup>3</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="912" class="marker cat_library programming">
+                    <div class="cineraContent"><span class="timecode">15:12</span>Add /NODEFAULTLIB to our 64-bit win32_handmade.cpp compilation line and move -MTd down to there<span class="cineraCategories"><div title="library" class="category library"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:12</span>Add /NODEFAULTLIB to our 64-bit win32_handmade.cpp compilation line and move -MTd down to there<span class="cineraCategories"><div title="library" class="category library"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:12</span>Add /NODEFAULTLIB to our 64-bit win32_handmade.cpp compilation line and move -MTd down to there<span class="cineraCategories"><div title="library" class="category library"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1048" class="marker cat_library rant speech">
+                    <div class="cineraContent"><span class="timecode">17:28</span>On the trend of compilers to essentially try and force the use of the CRT, and how to get around this<span class="cineraCategories"><div title="library" class="category library"></div><div title="Rant" class="categoryMedium rant">&#128162;</div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:28</span>On the trend of compilers to essentially try and force the use of the CRT, and how to get around this<span class="cineraCategories"><div title="library" class="category library"></div><div title="Rant" class="categoryMedium rant">&#128162;</div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:28</span>On the trend of compilers to essentially try and force the use of the CRT, and how to get around this<span class="cineraCategories"><div title="library" class="category library"></div><div title="Rant" class="categoryMedium rant">&#128162;</div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1160" class="marker cat_library research">
+                    <div class="cineraContent"><span class="timecode">19:20</span>Determine which functions from the CRT we need to replace<span class="cineraCategories"><div title="library" class="category library"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:20</span>Determine which functions from the CRT we need to replace<span class="cineraCategories"><div title="library" class="category library"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:20</span>Determine which functions from the CRT we need to replace<span class="cineraCategories"><div title="library" class="category library"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1316" class="marker cat_library cat_memory research" data-ref="https://hero.handmade.network/forums/code-discussion/t/94-guide_-_how_to_avoid_c_c++_runtime_on_windows">
+                    <div class="cineraContent"><span class="timecode">21:56</span>Read &#39;How to avoid C/C++ runtime on Windows&#39; by <span class="member" data-hue="342" data-saturation="98%">mmozeiko</span><sup>4</sup> on allocating large arrays / structures on stack (&gt;4KB)<span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:56</span>Read &#39;How to avoid C/C++ runtime on Windows&#39; by <span class="member" data-hue="342" data-saturation="98%">mmozeiko</span><sup>4</sup> on allocating large arrays / structures on stack (&gt;4KB)<span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:56</span>Read &#39;How to avoid C/C++ runtime on Windows&#39; by <span class="member" data-hue="342" data-saturation="98%">mmozeiko</span><sup>4</sup> on allocating large arrays / structures on stack (&gt;4KB)<span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1864" class="marker cat_library cat_memory programming" data-ref="https://hero.handmade.network/forums/code-discussion/t/94-guide_-_how_to_avoid_c_c++_runtime_on_windows,https://msdn.microsoft.com/en-us/library/9598wk25.aspx">
+                    <div class="cineraContent"><span class="timecode">31:04</span>Add -STACK:0x100000,0x100000, -GS- and -Gs9999999 to our CommonCompilerFlags<sup>5</sup><sup>,6</sup><span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:04</span>Add -STACK:0x100000,0x100000, -GS- and -Gs9999999 to our CommonCompilerFlags<sup>5</sup><sup>,6</sup><span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:04</span>Add -STACK:0x100000,0x100000, -GS- and -Gs9999999 to our CommonCompilerFlags<sup>5</sup><sup>,6</sup><span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2155" class="marker cat_library cat_memory programming" data-ref="https://msdn.microsoft.com/en-us/library/tzkfha43.aspx">
+                    <div class="cineraContent"><span class="timecode">35:55</span>Grab the function signature of memset() from vcruntime_string.h, and write our own implementation in a new file using #pragma intrinsic<sup>7</sup><span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:55</span>Grab the function signature of memset() from vcruntime_string.h, and write our own implementation in a new file using #pragma intrinsic<sup>7</sup><span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:55</span>Grab the function signature of memset() from vcruntime_string.h, and write our own implementation in a new file using #pragma intrinsic<sup>7</sup><span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2796" class="marker cat_library cat_memory programming" data-ref="https://hero.handmade.network/forums/code-discussion/t/94-guide_-_how_to_avoid_c_c++_runtime_on_windows">
+                    <div class="cineraContent"><span class="timecode">46:36</span>Change our memset() to use #pragma function<sup>8</sup><span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:36</span>Change our memset() to use #pragma function<sup>8</sup><span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:36</span>Change our memset() to use #pragma function<sup>8</sup><span class="cineraCategories"><div title="library" class="category library"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2895" class="marker cat_library cat_mathematics research">
+                    <div class="cineraContent"><span class="timecode">48:15</span>Hunt for _fltused in the CRT<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:15</span>Hunt for _fltused in the CRT<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:15</span>Hunt for _fltused in the CRT<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3057" class="marker cat_library cat_mathematics programming">
+                    <div class="cineraContent"><span class="timecode">50:57</span>Grab the int _fltused from fltused.cpp<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:57</span>Grab the int _fltused from fltused.cpp<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:57</span>Grab the int _fltused from fltused.cpp<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3134" class="marker cat_library cat_platform-layer research">
+                    <div class="cineraContent"><span class="timecode">52:14</span>Find WinMainCRTStartup<span class="cineraCategories"><div title="library" class="category library"></div><div title="platform layer" class="category platform-layer"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:14</span>Find WinMainCRTStartup<span class="cineraCategories"><div title="library" class="category library"></div><div title="platform layer" class="category platform-layer"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:14</span>Find WinMainCRTStartup<span class="cineraCategories"><div title="library" class="category library"></div><div title="platform layer" class="category platform-layer"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3532" class="marker cat_library cat_platform-layer programming">
+                    <div class="cineraContent"><span class="timecode">58:52</span>Pull in the declaration of WinMainCRTStartup<span class="cineraCategories"><div title="library" class="category library"></div><div title="platform layer" class="category platform-layer"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:52</span>Pull in the declaration of WinMainCRTStartup<span class="cineraCategories"><div title="library" class="category library"></div><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:52</span>Pull in the declaration of WinMainCRTStartup<span class="cineraCategories"><div title="library" class="category library"></div><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3722" class="marker cat_library cat_platform-layer research" data-ref="https://msdn.microsoft.com/en-us/library/f9t8842e.aspx,https://docs.microsoft.com/en-us/cpp/build/reference/subsystem-specify-subsystem">
+                    <div class="cineraContent"><span class="timecode">1:02:02</span>Read about the /ENTRY<sup>9</sup> and /SUBSYSTEM<sup>10</sup> flags<span class="cineraCategories"><div title="library" class="category library"></div><div title="platform layer" class="category platform-layer"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:02</span>Read about the /ENTRY<sup>9</sup> and /SUBSYSTEM<sup>10</sup> flags<span class="cineraCategories"><div title="library" class="category library"></div><div title="platform layer" class="category platform-layer"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:02</span>Read about the /ENTRY<sup>9</sup> and /SUBSYSTEM<sup>10</sup> flags<span class="cineraCategories"><div title="library" class="category library"></div><div title="platform layer" class="category platform-layer"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3871" class="marker cat_platform-layer programming">
+                    <div class="cineraContent"><span class="timecode">1:04:31</span>Add /SUBSYSTEM:windows to our win32_handmade.cpp compilation line<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:31</span>Add /SUBSYSTEM:windows to our win32_handmade.cpp compilation line<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:31</span>Add /SUBSYSTEM:windows to our win32_handmade.cpp compilation line<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4075" class="marker cat_library run">
+                    <div class="cineraContent"><span class="timecode">1:07:55</span>Run the game to see that we&#39;re running just fine without the CRT<span class="cineraCategories"><div title="library" class="category library"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:55</span>Run the game to see that we&#39;re running just fine without the CRT<span class="cineraCategories"><div title="library" class="category library"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:55</span>Run the game to see that we&#39;re running just fine without the CRT<span class="cineraCategories"><div title="library" class="category library"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4105" class="marker cat_library cat_mathematics programming">
+                    <div class="cineraContent"><span class="timecode">1:08:25</span>Add /NODEFAULTLIB to our handmade.cpp compilation line and compile to see that we are only missing the transcendental mathematics functions, sinf(), cosf() and atan2f()<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:25</span>Add /NODEFAULTLIB to our handmade.cpp compilation line and compile to see that we are only missing the transcendental mathematics functions, sinf(), cosf() and atan2f()<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:25</span>Add /NODEFAULTLIB to our handmade.cpp compilation line and compile to see that we are only missing the transcendental mathematics functions, sinf(), cosf() and atan2f()<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4417" class="marker cat_asm cat_mathematics research">
+                    <div class="cineraContent"><span class="timecode">1:13:37</span>Inspect the asm of cosf() with the determination to write our own<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:37</span>Inspect the asm of cosf() with the determination to write our own<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:37</span>Inspect the asm of cosf() with the determination to write our own<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4554" class="marker cat_lighting cat_rendering cat_statistics programming">
+                    <div class="cineraContent"><span class="timecode">1:15:54</span>Why we did all of this: for sampling the hemisphere<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:54</span>Why we did all of this: for sampling the hemisphere<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:54</span>Why we did all of this: for sampling the hemisphere<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4613" class="marker cat_library programming">
+                    <div class="cineraContent"><span class="timecode">1:16:53</span>Remove /NODEFAULTLIB from our handmade.cpp compilation line for now<span class="cineraCategories"><div title="library" class="category library"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:53</span>Remove /NODEFAULTLIB from our handmade.cpp compilation line for now<span class="cineraCategories"><div title="library" class="category library"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:53</span>Remove /NODEFAULTLIB from our handmade.cpp compilation line for now<span class="cineraCategories"><div title="library" class="category library"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4644" class="marker cat_lighting cat_rendering research">
+                    <div class="cineraContent"><span class="timecode">1:17:24</span>Read through our hemisphere sampling code in ComputeLightPropagation()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:24</span>Read through our hemisphere sampling code in ComputeLightPropagation()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:24</span>Read through our hemisphere sampling code in ComputeLightPropagation()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4708" class="marker cat_debug-visualisation cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:18:28</span>Run the game to show our sampling debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:28</span>Run the game to show our sampling debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:28</span>Run the game to show our sampling debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4733" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:18:53</span>Remove cruft – including EntropyCounter from lighting_solution – from the lighting code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:53</span>Remove cruft – including EntropyCounter from lighting_solution – from the lighting code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:53</span>Remove cruft – including EntropyCounter from lighting_solution – from the lighting code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4856" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:20:56</span>Run the game, hit Alt-F4 and note that the game is still running<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:56</span>Run the game, hit Alt-F4 and note that the game is still running<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:56</span>Run the game, hit Alt-F4 and note that the game is still running<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4906" class="marker cat_platform-layer programming">
+                    <div class="cineraContent"><span class="timecode">1:21:46</span>Make WinMainCRTStartup() call ExitProcess()<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:46</span>Make WinMainCRTStartup() call ExitProcess()<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:46</span>Make WinMainCRTStartup() call ExitProcess()<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4949" class="marker cat_platform-layer run">
+                    <div class="cineraContent"><span class="timecode">1:22:29</span>Run the game, hit Alt-F4 and successfully exit out<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:29</span>Run the game, hit Alt-F4 and successfully exit out<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:29</span>Run the game, hit Alt-F4 and successfully exit out<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4965" class="marker cat_library cat_mathematics research">
+                    <div class="cineraContent"><span class="timecode">1:22:45</span>Investigate ceilf() and floorf() from our debug build<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:45</span>Investigate ceilf() and floorf() from our debug build<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:45</span>Investigate ceilf() and floorf() from our debug build<span class="cineraCategories"><div title="library" class="category library"></div><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5173" class="marker cat_asm cat_lighting cat_memory cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:26:13</span>Crash in ComputeLightPropagation() and consult the asm to try and determine why<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:13</span>Crash in ComputeLightPropagation() and consult the asm to try and determine why<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:13</span>Crash in ComputeLightPropagation() and consult the asm to try and determine why<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5510" class="marker cat_memory cat_threading speech" data-ref="https://msdn.microsoft.com/en-us/library/windows/desktop/ms686774.aspx">
+                    <div class="cineraContent"><span class="timecode">1:31:50</span>Realise that threads initialised by us, subsequent to the first one initialised by Windows, were overflowing the stack<sup>11</sup><span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:50</span>Realise that threads initialised by us, subsequent to the first one initialised by Windows, were overflowing the stack<sup>11</sup><span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:50</span>Realise that threads initialised by us, subsequent to the first one initialised by Windows, were overflowing the stack<sup>11</sup><span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5778" class="marker cat_memory cat_threading programming">
+                    <div class="cineraContent"><span class="timecode">1:36:18</span>Make Win32MakeQueue() pass 1 megabyte as dwStackSize to CreateThread()<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:18</span>Make Win32MakeQueue() pass 1 megabyte as dwStackSize to CreateThread()<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:18</span>Make Win32MakeQueue() pass 1 megabyte as dwStackSize to CreateThread()<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5803" class="marker cat_memory cat_threading run">
+                    <div class="cineraContent"><span class="timecode">1:36:43</span>Run the game and try to determine how much stack space ComputeLightPropagation() could need<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:43</span>Run the game and try to determine how much stack space ComputeLightPropagation() could need<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:43</span>Run the game and try to determine how much stack space ComputeLightPropagation() could need<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6428" class="marker cat_lighting cat_memory cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:47:08</span>Note that our HitPointIndex is out of bounds, and investigate how<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:08</span>Note that our HitPointIndex is out of bounds, and investigate how<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:08</span>Note that our HitPointIndex is out of bounds, and investigate how<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6628" class="marker cat_asm cat_lighting cat_memory cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:50:28</span>Run the game until we crash in ComputeLightPropagation() and try to recover the HitBox and BoxSurfaceIndex information with help from the asm<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:28</span>Run the game until we crash in ComputeLightPropagation() and try to recover the HitBox and BoxSurfaceIndex information with help from the asm<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:28</span>Run the game until we crash in ComputeLightPropagation() and try to recover the HitBox and BoxSurfaceIndex information with help from the asm<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7052" class="marker cat_lighting cat_rendering research">
+                    <div class="cineraContent"><span class="timecode">1:57:32</span>Investigate how BoxSurfaceIndex could get set to 6<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:32</span>Investigate how BoxSurfaceIndex could get set to 6<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:32</span>Investigate how BoxSurfaceIndex could get set to 6<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7229" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:00:29</span>Assert (unfortunately in the #if 0 code) in RayCast() that Positive == 1 or 0, and that BoxSurfaceIndex is less than 6<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:29</span>Assert (unfortunately in the #if 0 code) in RayCast() that Positive == 1 or 0, and that BoxSurfaceIndex is less than 6<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:29</span>Assert (unfortunately in the #if 0 code) in RayCast() that Positive == 1 or 0, and that BoxSurfaceIndex is less than 6<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7270" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:01:10</span>Run the game until we crash<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:10</span>Run the game until we crash<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:10</span>Run the game until we crash<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7363" class="marker cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:02:43</span>Assert in the correct part of RayCast() that BoxSurfaceIndex is less that 6<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:43</span>Assert in the correct part of RayCast() that BoxSurfaceIndex is less that 6<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:43</span>Assert in the correct part of RayCast() that BoxSurfaceIndex is less that 6<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7546" class="marker cat_asm cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:05:46</span>Run the game, hit the assertion on our third lane, and note that a BoxSurfaceIndex &gt; 5 could be produced if a box has no size<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:46</span>Run the game, hit the assertion on our third lane, and note that a BoxSurfaceIndex &gt; 5 could be produced if a box has no size<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:46</span>Run the game, hit the assertion on our third lane, and note that a BoxSurfaceIndex &gt; 5 could be produced if a box has no size<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8170" class="marker cat_lighting cat_optimisation cat_rendering programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">2:16:10</span>Make RayCast() keep a running total of box surface hits in a RunningMask in order to correctly determine the BoxSurfaceIndex()<sup>12</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:10</span>Make RayCast() keep a running total of box surface hits in a RunningMask in order to correctly determine the BoxSurfaceIndex()<sup>12</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:10</span>Make RayCast() keep a running total of box surface hits in a RunningMask in order to correctly determine the BoxSurfaceIndex()<sup>12</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9013" class="marker cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:30:13</span>Run the game and try unsuccessfully to trigger our BoxSurfaceIndex assertions<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30:13</span>Run the game and try unsuccessfully to trigger our BoxSurfaceIndex assertions<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30:13</span>Run the game and try unsuccessfully to trigger our BoxSurfaceIndex assertions<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9152" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:32:32</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:32:32</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:32:32</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9197" class="marker cat_lighting cat_optimisation cat_rendering authored" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">2:33:17</span><span class="author" data-hue="214" data-saturation="88%">desuused</span> Q: Can we use six separate bits to represent hits with each box wall, then take the highest bit to determine which individual box hit we&#39;ll use? (see: _mm_lzcnt_epi32<sup>13</sup>)<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:33:17</span><span class="author" data-hue="214" data-saturation="88%">desuused</span> Q: Can we use six separate bits to represent hits with each box wall, then take the highest bit to determine which individual box hit we&#39;ll use? (see: _mm_lzcnt_epi32<sup>13</sup>)<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:33:17</span><span class="author" data-hue="214" data-saturation="88%">desuused</span> Q: Can we use six separate bits to represent hits with each box wall, then take the highest bit to determine which individual box hit we&#39;ll use? (see: _mm_lzcnt_epi32<sup>13</sup>)<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9420" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:37:00</span><span class="author" data-hue="320" data-saturation="77%">ginger_bill</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span>, RETURN THE ORIGINAL DESTINATION!!!!!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:37:00</span><span class="author" data-hue="320" data-saturation="77%">ginger_bill</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span>, RETURN THE ORIGINAL DESTINATION!!!!!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:37:00</span><span class="author" data-hue="320" data-saturation="77%">ginger_bill</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span>, RETURN THE ORIGINAL DESTINATION!!!!!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9442" class="marker cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">2:37:22</span>Make memset() return _Dst<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:37:22</span>Make memset() return _Dst<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:37:22</span>Make memset() return _Dst<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9501" class="marker cat_debug-visualisation cat_lighting cat_rendering cat_statistics authored">
+                    <div class="cineraContent"><span class="timecode">2:38:21</span><span class="author" data-hue="155" data-saturation="78%">yurasniper</span> Q: Would it be better to make hemisphere sampling visualization as an actual hemisphere with dots rendered on it?<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:38:21</span><span class="author" data-hue="155" data-saturation="78%">yurasniper</span> Q: Would it be better to make hemisphere sampling visualization as an actual hemisphere with dots rendered on it?<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:38:21</span><span class="author" data-hue="155" data-saturation="78%">yurasniper</span> Q: Would it be better to make hemisphere sampling visualization as an actual hemisphere with dots rendered on it?<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9526" class="marker cat_debug-visualisation cat_lighting cat_rendering cat_statistics programming">
+                    <div class="cineraContent"><span class="timecode">2:38:46</span>Reduce the length of the debug lines in LightingTest()<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:38:46</span>Reduce the length of the debug lines in LightingTest()<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:38:46</span>Reduce the length of the debug lines in LightingTest()<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9566" class="marker cat_debug-visualisation cat_lighting cat_rendering cat_statistics run">
+                    <div class="cineraContent"><span class="timecode">2:39:26</span>Run the game to see this debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:39:26</span>Run the game to see this debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:39:26</span>Run the game to see this debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9601" class="marker cat_debug-visualisation cat_lighting cat_rendering cat_statistics programming">
+                    <div class="cineraContent"><span class="timecode">2:40:01</span>Make LightingTest() use PushCube() instead<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:40:01</span>Make LightingTest() use PushCube() instead<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:40:01</span>Make LightingTest() use PushCube() instead<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9726" class="marker cat_debug-visualisation cat_lighting cat_rendering cat_statistics run">
+                    <div class="cineraContent"><span class="timecode">2:42:06</span>Run the game to see the cubes<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:42:06</span>Run the game to see the cubes<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:42:06</span>Run the game to see the cubes<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9751" class="marker cat_debug-visualisation cat_lighting cat_rendering cat_statistics programming">
+                    <div class="cineraContent"><span class="timecode">2:42:31</span>Enable LightingTest() to display a stationary sampling pattern<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:42:31</span>Enable LightingTest() to display a stationary sampling pattern<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:42:31</span>Enable LightingTest() to display a stationary sampling pattern<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9789" class="marker cat_debug-visualisation cat_lighting cat_rendering cat_statistics run">
+                    <div class="cineraContent"><span class="timecode">2:43:09</span>Run the game to see the static debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:43:09</span>Run the game to see the static debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:43:09</span>Run the game to see the static debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9846" class="marker cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">2:44:06</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> Q: Why do you do *(unsigned char*)&amp;_Val instead of (unsigned char)_Val in memset?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:44:06</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> Q: Why do you do *(unsigned char*)&amp;_Val instead of (unsigned char)_Val in memset?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:44:06</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> Q: Why do you do *(unsigned char*)&amp;_Val instead of (unsigned char)_Val in memset?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9971" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:46:11</span><span class="author" data-hue="84" data-saturation="84%">areriff</span> Q: Off-topic: What harm do you think could happen if you click on that yellow flag to upgrade MSVC? No breaking change has been introduce since this new machine, just lots of compiler upgrades<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:46:11</span><span class="author" data-hue="84" data-saturation="84%">areriff</span> Q: Off-topic: What harm do you think could happen if you click on that yellow flag to upgrade MSVC? No breaking change has been introduce since this new machine, just lots of compiler upgrades<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:46:11</span><span class="author" data-hue="84" data-saturation="84%">areriff</span> Q: Off-topic: What harm do you think could happen if you click on that yellow flag to upgrade MSVC? No breaking change has been introduce since this new machine, just lots of compiler upgrades<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10075" class="marker cat_memory cat_threading authored">
+                    <div class="cineraContent"><span class="timecode">2:47:55</span><span class="author" data-hue="156" data-saturation="76%">filiadelski</span> Q: Is the stack size set on the command line for the entire stack or for each stack frame?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:47:55</span><span class="author" data-hue="156" data-saturation="76%">filiadelski</span> Q: Is the stack size set on the command line for the entire stack or for each stack frame?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:47:55</span><span class="author" data-hue="156" data-saturation="76%">filiadelski</span> Q: Is the stack size set on the command line for the entire stack or for each stack frame?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10115" class="marker cat_memory cat_threading authored">
+                    <div class="cineraContent"><span class="timecode">2:48:35</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> Q: Another thing to mention when using /stack to get 1MB stack vs 4kb probing, is that all threads also will have this stack size by default. It could be an issue if somebody is creating and keeping hundreds of threads live<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:48:35</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> Q: Another thing to mention when using /stack to get 1MB stack vs 4kb probing, is that all threads also will have this stack size by default. It could be an issue if somebody is creating and keeping hundreds of threads live<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:48:35</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> Q: Another thing to mention when using /stack to get 1MB stack vs 4kb probing, is that all threads also will have this stack size by default. It could be an issue if somebody is creating and keeping hundreds of threads live<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10139" class="marker cat_library authored">
+                    <div class="cineraContent"><span class="timecode">2:48:59</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Q: Also you once said that in your projects you don&#39;t include windows.h and other windows-related h-files. How would we go about doing that?<span class="cineraCategories"><div title="library" class="category library"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:48:59</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Q: Also you once said that in your projects you don&#39;t include windows.h and other windows-related h-files. How would we go about doing that?<span class="cineraCategories"><div title="library" class="category library"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:48:59</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Q: Also you once said that in your projects you don&#39;t include windows.h and other windows-related h-files. How would we go about doing that?<span class="cineraCategories"><div title="library" class="category library"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10189" class="marker cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">2:49:49</span><span class="author" data-hue="169" data-saturation="88%">mextrox</span> Q: I hope this is not too far off-topic. Recently I have thought about a hook-based execution / memory management system. Where when you allocate memory you can tell in the next line when it should be freed. There would be as many hooks as you like, for example: afterFrameHook or levelLoadHook or stuff like this. The hooks internally would be a collection of lambdas so they can capture the address that<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:49:49</span><span class="author" data-hue="169" data-saturation="88%">mextrox</span> Q: I hope this is not too far off-topic. Recently I have thought about a hook-based execution / memory management system. Where when you allocate memory you can tell in the next line when it should be freed. There would be as many hooks as you like, for example: afterFrameHook or levelLoadHook or stuff like this. The hooks internally would be a collection of lambdas so they can capture the address that<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:49:49</span><span class="author" data-hue="169" data-saturation="88%">mextrox</span> Q: I hope this is not too far off-topic. Recently I have thought about a hook-based execution / memory management system. Where when you allocate memory you can tell in the next line when it should be freed. There would be as many hooks as you like, for example: afterFrameHook or levelLoadHook or stuff like this. The hooks internally would be a collection of lambdas so they can capture the address that<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10290" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:51:30</span><span class="author" data-hue="137" data-saturation="79%">conspicoussquirrel</span> Q: What are your thoughts on using macro&#39;s in C to make writing certain repeated patterns shorter? For example, encapsulating extremely common patterns like: #define DO(f,n) = for(int i = 0;i&lt;n;i++)f;<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:51:30</span><span class="author" data-hue="137" data-saturation="79%">conspicoussquirrel</span> Q: What are your thoughts on using macro&#39;s in C to make writing certain repeated patterns shorter? For example, encapsulating extremely common patterns like: #define DO(f,n) = for(int i = 0;i&lt;n;i++)f;<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:51:30</span><span class="author" data-hue="137" data-saturation="79%">conspicoussquirrel</span> Q: What are your thoughts on using macro&#39;s in C to make writing certain repeated patterns shorter? For example, encapsulating extremely common patterns like: #define DO(f,n) = for(int i = 0;i&lt;n;i++)f;<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10344" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:52:24</span><span class="author" data-hue="68" data-saturation="95%">klemensbaum</span> Q: Sorry off-topic, but since you worked at Microsoft, would you recommend working at Microsoft nowadays, for a new grad?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:52:24</span><span class="author" data-hue="68" data-saturation="95%">klemensbaum</span> Q: Sorry off-topic, but since you worked at Microsoft, would you recommend working at Microsoft nowadays, for a new grad?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:52:24</span><span class="author" data-hue="68" data-saturation="95%">klemensbaum</span> Q: Sorry off-topic, but since you worked at Microsoft, would you recommend working at Microsoft nowadays, for a new grad?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10978" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">3:02:58</span><span class="author" data-hue="281" data-saturation="74%">wolverinegator</span> Q: Do we still need a separate translation unit for the MSVC stuff? In my projects I had no problems having it in one unit<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:02:58</span><span class="author" data-hue="281" data-saturation="74%">wolverinegator</span> Q: Do we still need a separate translation unit for the MSVC stuff? In my projects I had no problems having it in one unit<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:02:58</span><span class="author" data-hue="281" data-saturation="74%">wolverinegator</span> Q: Do we still need a separate translation unit for the MSVC stuff? In my projects I had no problems having it in one unit<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="11032" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">3:03:52</span><span class="author" data-hue="42" data-saturation="88%">nxsy</span> So, if you’re joining FB, ask me. If google, ask <span class="member" data-hue="81" data-saturation="94%">quartertron</span>. I’m sure there are more people in the community for the others<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:03:52</span><span class="author" data-hue="42" data-saturation="88%">nxsy</span> So, if you’re joining FB, ask me. If google, ask <span class="member" data-hue="81" data-saturation="94%">quartertron</span>. I’m sure there are more people in the community for the others<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:03:52</span><span class="author" data-hue="42" data-saturation="88%">nxsy</span> So, if you’re joining FB, ask me. If google, ask <span class="member" data-hue="81" data-saturation="94%">quartertron</span>. I’m sure there are more people in the community for the others<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="11108" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">3:05:08</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span> You are so jealous that I get to go to GDC next week and see all the great talks<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:05:08</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span> You are so jealous that I get to go to GDC next week and see all the great talks<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:05:08</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span> You are so jealous that I get to go to GDC next week and see all the great talks<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="11200" class="marker cat_nullTopic speech" data-ref="https://hero.handmade.network/forums/code-discussion/t/94-guide_-_how_to_avoid_c_c++_runtime_on_windows">
+                    <div class="cineraContent"><span class="timecode">3:06:40</span>Close down with a reminder of <span class="member" data-hue="342" data-saturation="98%">mmozeiko</span>&#39;s guide &#39;How to avoid C/C++ runtime on Windows&#39;<sup>14</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:06:40</span>Close down with a reminder of <span class="member" data-hue="342" data-saturation="98%">mmozeiko</span>&#39;s guide &#39;How to avoid C/C++ runtime on Windows&#39;<sup>14</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:06:40</span>Close down with a reminder of <span class="member" data-hue="342" data-saturation="98%">mmozeiko</span>&#39;s guide &#39;How to avoid C/C++ runtime on Windows&#39;<sup>14</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day436/"><div>&#9196;</div><div>Next: 'Spiral and Blue Noise Distributions on the Sphere'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

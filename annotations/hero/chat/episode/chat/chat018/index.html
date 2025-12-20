@@ -1,0 +1,648 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asm, filtering, mathematics, performance, rendering, sampling, Administrivia, Blackboard, Chat Comment, In-Game, Programming, Research">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Pixel Art Games and nSight Shader Analysis</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://www.shadertoy.com/view/ltBGWc" href="https://www.shadertoy.com/view/ltBGWc" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Shadertoy</div>
+                            <div class="ref_title">fat-pixel move/&#8203;scale comparison</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7398" class="timecode"><span class="ref_index">[1]</span><span class="time">2:03:18</span></span><span data-timestamp="7810" class="timecode"><span class="ref_index">[2]</span><span class="time">2:10:10</span></span><span data-timestamp="9263" class="timecode"><span class="ref_index">[6]</span><span class="time">2:34:23</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://docs.unity3d.com/Packages/com.unity.2d.pixel-perfect@1.0/manual/index.html" href="https://docs.unity3d.com/Packages/com.unity.2d.pixel-perfect@1.0/manual/index.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Unity</div>
+                            <div class="ref_title">2D Pixel Perfect</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8113" class="timecode"><span class="ref_index">[3]</span><span class="time">2:15:13</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://sleef.org/" href="https://sleef.org/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">SLEEF Vectorized Math Library</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8313" class="timecode"><span class="ref_index">[4]</span><span class="time">2:18:33</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel</div>
+                            <div class="ref_title">Intel Intrinsics Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="9023" class="timecode"><span class="ref_index">[5]</span><span class="time">2:30:23</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content filtering">
+                                <span class="icon category filtering"></span><span class="cineraText">filtering</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content sampling">
+                                <span class="icon category sampling"></span><span class="cineraText">sampling</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="Yu8k7a1hQuU"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/chat/chat017/"><div>&#9195;</div><div>Previous: 'Modern x64 Architectures and the Cache'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="2" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">0:02</span>Welcome to the digression on pixel art games<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:02</span>Welcome to the digression on pixel art games<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:02</span>Welcome to the digression on pixel art games<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="183" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">3:03</span>Launch Children of Morta (through Steam) and NVIDIA Nsight Graphics<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:03</span>Launch Children of Morta (through Steam) and NVIDIA Nsight Graphics<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:03</span>Launch Children of Morta (through Steam) and NVIDIA Nsight Graphics<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="310" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">5:10</span>Point out the pixel art rendering artifacts<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:10</span>Point out the pixel art rendering artifacts<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:10</span>Point out the pixel art rendering artifacts<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="368" class="marker cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">6:08</span>Create a project in Nsight for Children of Morta, with a few words on launching games through Steam<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:08</span>Create a project in Nsight for Children of Morta, with a few words on launching games through Steam<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:08</span>Create a project in Nsight for Children of Morta, with a few words on launching games through Steam<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="670" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">11:10</span>Launch Children of Morta standalone, and then within Nsight<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:10</span>Launch Children of Morta standalone, and then within Nsight<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:10</span>Launch Children of Morta standalone, and then within Nsight<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="886" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">14:46</span>Capture our first D3D11 frame of Children of Morta and scrub through the draw events<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:46</span>Capture our first D3D11 frame of Children of Morta and scrub through the draw events<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:46</span>Capture our first D3D11 frame of Children of Morta and scrub through the draw events<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1271" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">21:11</span>Swaying tree draw event: Events View<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:11</span>Swaying tree draw event: Events View<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:11</span>Swaying tree draw event: Events View<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1465" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">24:25</span>Swaying tree draw event: API Inspector View - Input Assembler<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:25</span>Swaying tree draw event: API Inspector View - Input Assembler<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:25</span>Swaying tree draw event: API Inspector View - Input Assembler<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1609" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">26:49</span>Swaying tree draw event: API Inspector View - Vertex Shader<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:49</span>Swaying tree draw event: API Inspector View - Vertex Shader<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:49</span>Swaying tree draw event: API Inspector View - Vertex Shader<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1691" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">28:11</span>Swaying tree draw event: API Inspector View - Rasterizer<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:11</span>Swaying tree draw event: API Inspector View - Rasterizer<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:11</span>Swaying tree draw event: API Inspector View - Rasterizer<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1739" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">28:59</span>Swaying tree draw event: API Inspector View - Pixel Shader<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:59</span>Swaying tree draw event: API Inspector View - Pixel Shader<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:59</span>Swaying tree draw event: API Inspector View - Pixel Shader<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1855" class="marker cat_asm cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">30:55</span>Swaying tree draw event: API Inspector View - Pixel Shader Disassembly, and Resource Views<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:55</span>Swaying tree draw event: API Inspector View - Pixel Shader Disassembly, and Resource Views<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:55</span>Swaying tree draw event: API Inspector View - Pixel Shader Disassembly, and Resource Views<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2020" class="marker cat_asm cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">33:40</span>Swaying tree draw event: API Inspector View - Our tree sprite and its assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:40</span>Swaying tree draw event: API Inspector View - Our tree sprite and its assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:40</span>Swaying tree draw event: API Inspector View - Our tree sprite and its assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2651" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">44:11</span>We got <span class="member" data-hue="314" data-saturation="78%">a puss</span>!</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:11</span>We got <span class="member" data-hue="314" data-saturation="78%">a puss</span>!</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:11</span>We got <span class="member" data-hue="314" data-saturation="78%">a puss</span>!</div>
+                    </div>
+                </div>
+                <div data-timestamp="2695" class="marker cat_asm cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">44:55</span>Swaying tree draw event: API Inspector View - Understanding our tree sprite&#39;s assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:55</span>Swaying tree draw event: API Inspector View - Understanding our tree sprite&#39;s assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:55</span>Swaying tree draw event: API Inspector View - Understanding our tree sprite&#39;s assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2743" class="marker cat_asm cat_rendering cat_sampling run">
+                    <div class="cineraContent"><span class="timecode">45:43</span>How we may perform sub-pixel sampling<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:43</span>How we may perform sub-pixel sampling<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:43</span>How we may perform sub-pixel sampling<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2937" class="marker cat_rendering cat_sampling blackboard">
+                    <div class="cineraContent"><span class="timecode">48:57</span>Sampling Pixel Art<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:57</span>Sampling Pixel Art<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:57</span>Sampling Pixel Art<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3158" class="marker cat_filtering cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">52:38</span>The undesirable smearing effect of bilinear filtering on a pixel (texel) art game<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:38</span>The undesirable smearing effect of bilinear filtering on a pixel (texel) art game<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:38</span>The undesirable smearing effect of bilinear filtering on a pixel (texel) art game<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3294" class="marker cat_filtering cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">54:54</span>Panning with bilinear filtering disabled<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:54</span>Panning with bilinear filtering disabled<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:54</span>Panning with bilinear filtering disabled<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3676" class="marker cat_filtering cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">1:01:16</span>Zooming and unaligned panning with bilinear filtering disabled<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:16</span>Zooming and unaligned panning with bilinear filtering disabled<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:16</span>Zooming and unaligned panning with bilinear filtering disabled<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3887" class="marker cat_filtering cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">1:04:47</span>Understanding our desired filter in 1D<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:47</span>Understanding our desired filter in 1D<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:47</span>Understanding our desired filter in 1D<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4007" class="marker cat_filtering cat_rendering cat_sampling blackboard">
+                    <div class="cineraContent"><span class="timecode">1:06:47</span>Sub-pixel filtering: Brute-force sampling<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:47</span>Sub-pixel filtering: Brute-force sampling<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:47</span>Sub-pixel filtering: Brute-force sampling<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4132" class="marker cat_filtering cat_rendering cat_sampling blackboard">
+                    <div class="cineraContent"><span class="timecode">1:08:52</span>Sub-pixel filtering: UV coefficient bilinear sampling<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:52</span>Sub-pixel filtering: UV coefficient bilinear sampling<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:52</span>Sub-pixel filtering: UV coefficient bilinear sampling<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4809" class="marker cat_filtering cat_rendering cat_sampling blackboard">
+                    <div class="cineraContent"><span class="timecode">1:20:09</span>Plea to Unity: Precondition your UV coordinates in the pixel shader<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:09</span>Plea to Unity: Precondition your UV coordinates in the pixel shader<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:09</span>Plea to Unity: Precondition your UV coordinates in the pixel shader<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4881" class="marker cat_filtering cat_rendering cat_sampling blackboard">
+                    <div class="cineraContent"><span class="timecode">1:21:21</span>Preconditioning your UV coordinates in the pixel shader<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:21</span>Preconditioning your UV coordinates in the pixel shader<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:21</span>Preconditioning your UV coordinates in the pixel shader<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6947" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:55:47</span><span class="author" data-hue="125" data-saturation="77%">mempoedits</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Try &quot;-force-glcore&quot; for launch parameter to force OpenGL<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:47</span><span class="author" data-hue="125" data-saturation="77%">mempoedits</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Try &quot;-force-glcore&quot; for launch parameter to force OpenGL<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:47</span><span class="author" data-hue="125" data-saturation="77%">mempoedits</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Try &quot;-force-glcore&quot; for launch parameter to force OpenGL<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6984" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">1:56:24</span>Try unsuccessfully to launch Children of Morta in Nsight using the &quot;force-glcore&quot; command line argument<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:24</span>Try unsuccessfully to launch Children of Morta in Nsight using the &quot;force-glcore&quot; command line argument<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:24</span>Try unsuccessfully to launch Children of Morta in Nsight using the &quot;force-glcore&quot; command line argument<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7080" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:58:00</span>Capture and export a frame of Children of Morta<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:00</span>Capture and export a frame of Children of Morta<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:00</span>Capture and export a frame of Children of Morta<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7254" class="marker cat_rendering admin">
+                    <div class="cineraContent"><span class="timecode">2:00:54</span>Inspect our frame export<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:54</span>Inspect our frame export<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:54</span>Inspect our frame export<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7347" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:02:27</span>Q&amp;A</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:27</span>Q&amp;A</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:27</span>Q&amp;A</div>
+                    </div>
+                </div>
+                <div data-timestamp="7398" class="marker cat_filtering cat_rendering cat_sampling authored" data-ref="https://www.shadertoy.com/view/ltBGWc">
+                    <div class="cineraContent"><span class="timecode">2:03:18</span><span class="author" data-hue="12" data-saturation="74%">dithinas</span> Q: Here&#39;s a good side-by-side example of the artifacts you&#39;re talking about<sup>1</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:18</span><span class="author" data-hue="12" data-saturation="74%">dithinas</span> Q: Here&#39;s a good side-by-side example of the artifacts you&#39;re talking about<sup>1</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:18</span><span class="author" data-hue="12" data-saturation="74%">dithinas</span> Q: Here&#39;s a good side-by-side example of the artifacts you&#39;re talking about<sup>1</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7810" class="marker cat_filtering cat_rendering cat_sampling research" data-ref="https://www.shadertoy.com/view/ltBGWc">
+                    <div class="cineraContent"><span class="timecode">2:10:10</span>Understanding the smooth sub-pixel filtering in that Shadertoy<sup>2</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:10</span>Understanding the smooth sub-pixel filtering in that Shadertoy<sup>2</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:10</span>Understanding the smooth sub-pixel filtering in that Shadertoy<sup>2</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8019" class="marker cat_filtering cat_rendering cat_sampling authored">
+                    <div class="cineraContent"><span class="timecode">2:13:39</span><span class="author" data-hue="296" data-saturation="89%">raf_85</span> Q: Children of Morta looks like a fairly ambitious game. Why do you think they didn&#39;t bother to implement proper sub-pixel rendering?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:39</span><span class="author" data-hue="296" data-saturation="89%">raf_85</span> Q: Children of Morta looks like a fairly ambitious game. Why do you think they didn&#39;t bother to implement proper sub-pixel rendering?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:39</span><span class="author" data-hue="296" data-saturation="89%">raf_85</span> Q: Children of Morta looks like a fairly ambitious game. Why do you think they didn&#39;t bother to implement proper sub-pixel rendering?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8054" class="marker cat_filtering cat_rendering cat_sampling authored">
+                    <div class="cineraContent"><span class="timecode">2:14:14</span><span class="author" data-hue="350" data-saturation="96%">xrxr13579</span> Q: How did you learn about this artifact / how did you figure out the cause?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:14</span><span class="author" data-hue="350" data-saturation="96%">xrxr13579</span> Q: How did you learn about this artifact / how did you figure out the cause?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:14</span><span class="author" data-hue="350" data-saturation="96%">xrxr13579</span> Q: How did you learn about this artifact / how did you figure out the cause?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8098" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:14:58</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: That Shadertoy is by our very own <span class="member" data-hue="321" data-saturation="92%">d7samurai</span>!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:58</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: That Shadertoy is by our very own <span class="member" data-hue="321" data-saturation="92%">d7samurai</span>!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:58</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: That Shadertoy is by our very own <span class="member" data-hue="321" data-saturation="92%">d7samurai</span>!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8113" class="marker cat_filtering cat_rendering cat_sampling authored" data-ref="https://docs.unity3d.com/Packages/com.unity.2d.pixel-perfect@1.0/manual/index.html">
+                    <div class="cineraContent"><span class="timecode">2:15:13</span><span class="author" data-hue="176" data-saturation="75%">omgitsmoe11</span> Q: Someone posted a link before saying Unity has a pixel perfect 2D package<sup>3</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:13</span><span class="author" data-hue="176" data-saturation="75%">omgitsmoe11</span> Q: Someone posted a link before saying Unity has a pixel perfect 2D package<sup>3</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:13</span><span class="author" data-hue="176" data-saturation="75%">omgitsmoe11</span> Q: Someone posted a link before saying Unity has a pixel perfect 2D package<sup>3</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8282" class="marker cat_filtering cat_rendering cat_sampling authored">
+                    <div class="cineraContent"><span class="timecode">2:18:02</span><span class="author" data-hue="67" data-saturation="87%">gigasightmedia</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> How much more work / is any extra work required for oblique viewing?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:02</span><span class="author" data-hue="67" data-saturation="87%">gigasightmedia</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> How much more work / is any extra work required for oblique viewing?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:02</span><span class="author" data-hue="67" data-saturation="87%">gigasightmedia</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> How much more work / is any extra work required for oblique viewing?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8313" class="marker cat_mathematics authored" data-ref="https://sleef.org/">
+                    <div class="cineraContent"><span class="timecode">2:18:33</span><span class="author" data-hue="114" data-saturation="91%">zrizi</span> Q: (Off-topic) How is Pow function implemented? How would you go about implementing an efficient power?<sup>4</sup><span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:33</span><span class="author" data-hue="114" data-saturation="91%">zrizi</span> Q: (Off-topic) How is Pow function implemented? How would you go about implementing an efficient power?<sup>4</sup><span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:33</span><span class="author" data-hue="114" data-saturation="91%">zrizi</span> Q: (Off-topic) How is Pow function implemented? How would you go about implementing an efficient power?<sup>4</sup><span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8618" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">2:23:38</span><span class="author" data-hue="114" data-saturation="91%">zrizi</span> Q: I thought for cosine and sine we would use a table lookup (instead of series expansion), isn&#39;t it?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:38</span><span class="author" data-hue="114" data-saturation="91%">zrizi</span> Q: I thought for cosine and sine we would use a table lookup (instead of series expansion), isn&#39;t it?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:38</span><span class="author" data-hue="114" data-saturation="91%">zrizi</span> Q: I thought for cosine and sine we would use a table lookup (instead of series expansion), isn&#39;t it?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8830" class="marker cat_filtering cat_rendering cat_sampling authored">
+                    <div class="cineraContent"><span class="timecode">2:27:10</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Is there ever a reason not to compute your pixels this way? Is this a 2D only thing, etc?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:27:10</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Is there ever a reason not to compute your pixels this way? Is this a 2D only thing, etc?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:27:10</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Is there ever a reason not to compute your pixels this way? Is this a 2D only thing, etc?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8870" class="marker cat_filtering cat_rendering cat_sampling authored">
+                    <div class="cineraContent"><span class="timecode">2:27:50</span><span class="author" data-hue="350" data-saturation="96%">xrxr13579</span> Q: It seems that this artifact is quite well known, at least in your circle. Is there a name for it?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:27:50</span><span class="author" data-hue="350" data-saturation="96%">xrxr13579</span> Q: It seems that this artifact is quite well known, at least in your circle. Is there a name for it?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:27:50</span><span class="author" data-hue="350" data-saturation="96%">xrxr13579</span> Q: It seems that this artifact is quite well known, at least in your circle. Is there a name for it?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8952" class="marker cat_filtering cat_rendering cat_sampling authored">
+                    <div class="cineraContent"><span class="timecode">2:29:12</span><span class="author" data-hue="67" data-saturation="87%">gigasightmedia</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span>: This shader can only address artifacting within the texture, but cannot address sub-pixel occlusion artifacting (i.e. the shimmer is still present on exterior edge pixels)<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:29:12</span><span class="author" data-hue="67" data-saturation="87%">gigasightmedia</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span>: This shader can only address artifacting within the texture, but cannot address sub-pixel occlusion artifacting (i.e. the shimmer is still present on exterior edge pixels)<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:29:12</span><span class="author" data-hue="67" data-saturation="87%">gigasightmedia</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span>: This shader can only address artifacting within the texture, but cannot address sub-pixel occlusion artifacting (i.e. the shimmer is still present on exterior edge pixels)<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9023" class="marker cat_mathematics cat_performance authored" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">2:30:23</span><span class="author" data-hue="200" data-saturation="97%">Brian</span> Q: It was surprising to see how much latency was on division. Square root seems to have a similar latency, but reciprocal square root (i.e. _mm_rsqrt_ps) is as quick as multiply (with just half the throughput). Why is rsqrt much faster than regular sqrt?<sup>5</sup><span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="performance" class="category performance"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30:23</span><span class="author" data-hue="200" data-saturation="97%">Brian</span> Q: It was surprising to see how much latency was on division. Square root seems to have a similar latency, but reciprocal square root (i.e. _mm_rsqrt_ps) is as quick as multiply (with just half the throughput). Why is rsqrt much faster than regular sqrt?<sup>5</sup><span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="performance" class="category performance"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30:23</span><span class="author" data-hue="200" data-saturation="97%">Brian</span> Q: It was surprising to see how much latency was on division. Square root seems to have a similar latency, but reciprocal square root (i.e. _mm_rsqrt_ps) is as quick as multiply (with just half the throughput). Why is rsqrt much faster than regular sqrt?<sup>5</sup><span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="performance" class="category performance"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9174" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">2:32:54</span><span class="author" data-hue="200" data-saturation="97%">Brian</span> Q: Is there a less precise version of sqrt then? Because a lot of the math we need in games does not need the full precision<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:32:54</span><span class="author" data-hue="200" data-saturation="97%">Brian</span> Q: Is there a less precise version of sqrt then? Because a lot of the math we need in games does not need the full precision<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:32:54</span><span class="author" data-hue="200" data-saturation="97%">Brian</span> Q: Is there a less precise version of sqrt then? Because a lot of the math we need in games does not need the full precision<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9214" class="marker cat_filtering cat_rendering cat_sampling authored">
+                    <div class="cineraContent"><span class="timecode">2:33:34</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> Q: Could you do something similar inspecting some Unreal Engine 4 game and end the engine war for good?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:33:34</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> Q: Could you do something similar inspecting some Unreal Engine 4 game and end the engine war for good?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:33:34</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> Q: Could you do something similar inspecting some Unreal Engine 4 game and end the engine war for good?<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9263" class="marker cat_filtering cat_rendering cat_sampling authored" data-ref="https://www.shadertoy.com/view/ltBGWc">
+                    <div class="cineraContent"><span class="timecode">2:34:23</span><span class="author" data-hue="67" data-saturation="87%">gigasightmedia</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span>: So the artifacting still present here is because there is no border-pixel? If the texture were prepared properly, it would address that as well<sup>6</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:34:23</span><span class="author" data-hue="67" data-saturation="87%">gigasightmedia</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span>: So the artifacting still present here is because there is no border-pixel? If the texture were prepared properly, it would address that as well<sup>6</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:34:23</span><span class="author" data-hue="67" data-saturation="87%">gigasightmedia</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span>: So the artifacting still present here is because there is no border-pixel? If the texture were prepared properly, it would address that as well<sup>6</sup><span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="rendering" class="category rendering"></div><div title="sampling" class="category sampling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9504" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:38:24</span>Wrap it up</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:38:24</span>Wrap it up</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:38:24</span>Wrap it up</div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/chat/chat019/"><div>&#9196;</div><div>Next: 'Introduction to Mesh Skinning'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

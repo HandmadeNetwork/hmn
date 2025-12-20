@@ -1,0 +1,946 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="Chat Comment, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Adding an Ambient Occlusion Pass</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html" href="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">NVIDIA Developer</div>
+                            <div class="ref_title">Chapter 14. Dynamic Ambient Occlusion and Indirect Lighting</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="3132" class="timecode"><span class="ref_index">[1]</span><span class="time">52:12</span></span><span data-timestamp="3531" class="timecode"><span class="ref_index">[2]</span><span class="time">58:51</span></span><span data-timestamp="3837" class="timecode"><span class="ref_index">[3]</span><span class="time">1:03:57</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="3932" class="timecode"><span class="ref_index">[4]</span><span class="time">1:05:32</span></span><span data-timestamp="4104" class="timecode"><span class="ref_index">[5]</span><span class="time">1:08:24</span></span><span data-timestamp="4926" class="timecode"><span class="ref_index">[6]</span><span class="time">1:22:06</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="5191" class="timecode"><span class="ref_index">[7]</span><span class="time">1:26:31</span></span><span data-timestamp="5365" class="timecode"><span class="ref_index">[8]</span><span class="time">1:29:25</span></span><span data-timestamp="5567" class="timecode"><span class="ref_index">[9]</span><span class="time">1:32:47</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="6322" class="timecode"><span class="ref_index">[10]</span><span class="time">1:45:22</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="-BNki3w_HEE"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day399/"><div>&#9195;</div><div>Previous: 'Creating a CPU-side Lighting Testbed'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day</div>
+                    </div>
+                </div>
+                <div data-timestamp="89" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:29</span>Run the game to see the lighting diamonds</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29</span>Run the game to see the lighting diamonds</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29</span>Run the game to see the lighting diamonds</div>
+                    </div>
+                </div>
+                <div data-timestamp="331" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">5:31</span>handmade_render_group.cpp: Make LightingTest() correctly sum the Dest-&gt;FrontEmitC</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:31</span>handmade_render_group.cpp: Make LightingTest() correctly sum the Dest-&gt;FrontEmitC</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:31</span>handmade_render_group.cpp: Make LightingTest() correctly sum the Dest-&gt;FrontEmitC</div>
+                    </div>
+                </div>
+                <div data-timestamp="355" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">5:55</span>Run the game to see the correctly summed colours</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:55</span>Run the game to see the correctly summed colours</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:55</span>Run the game to see the correctly summed colours</div>
+                    </div>
+                </div>
+                <div data-timestamp="368" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">6:08</span>handmade_render_group.cpp: Make LightingTest() account for the DistanceFalloff</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:08</span>handmade_render_group.cpp: Make LightingTest() account for the DistanceFalloff</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:08</span>handmade_render_group.cpp: Make LightingTest() account for the DistanceFalloff</div>
+                    </div>
+                </div>
+                <div data-timestamp="436" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">7:16</span>Run the game with DistanceFalloff and summation, and consider our way forward</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:16</span>Run the game with DistanceFalloff and summation, and consider our way forward</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:16</span>Run the game with DistanceFalloff and summation, and consider our way forward</div>
+                    </div>
+                </div>
+                <div data-timestamp="497" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">8:17</span>handmade_render_group.cpp: Make LightingTest() set DiffuseInner to 1.0f</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:17</span>handmade_render_group.cpp: Make LightingTest() set DiffuseInner to 1.0f</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:17</span>handmade_render_group.cpp: Make LightingTest() set DiffuseInner to 1.0f</div>
+                    </div>
+                </div>
+                <div data-timestamp="515" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">8:35</span>Run the game to see the flickering</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:35</span>Run the game to see the flickering</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:35</span>Run the game to see the flickering</div>
+                    </div>
+                </div>
+                <div data-timestamp="542" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">9:02</span>Determine to introduce the ability to add light sources</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:02</span>Determine to introduce the ability to add light sources</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:02</span>Determine to introduce the ability to add light sources</div>
+                    </div>
+                </div>
+                <div data-timestamp="747" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">12:27</span>handmade_platform.h: Add Emission to the textured_vertex struct</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:27</span>handmade_platform.h: Add Emission to the textured_vertex struct</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:27</span>handmade_platform.h: Add Emission to the textured_vertex struct</div>
+                    </div>
+                </div>
+                <div data-timestamp="851" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">14:11</span>Run the game to see that nothing bad happens</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:11</span>Run the game to see that nothing bad happens</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:11</span>Run the game to see that nothing bad happens</div>
+                    </div>
+                </div>
+                <div data-timestamp="870" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">14:30</span>handmade_render_group.cpp: Make PushQuad() and LightingTest() set the emission</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:30</span>handmade_render_group.cpp: Make PushQuad() and LightingTest() set the emission</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:30</span>handmade_render_group.cpp: Make PushQuad() and LightingTest() set the emission</div>
+                    </div>
+                </div>
+                <div data-timestamp="1000" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">16:40</span>Run the game to see everything unlit</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:40</span>Run the game to see everything unlit</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:40</span>Run the game to see everything unlit</div>
+                    </div>
+                </div>
+                <div data-timestamp="1007" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">16:47</span>handmade_render_group.cpp: Introduce PushLight()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:47</span>handmade_render_group.cpp: Introduce PushLight()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:47</span>handmade_render_group.cpp: Introduce PushLight()</div>
+                    </div>
+                </div>
+                <div data-timestamp="1163" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">19:23</span>handmade_world_mode.cpp: Make UpdateAndRenderWorld() call PushLight()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:23</span>handmade_world_mode.cpp: Make UpdateAndRenderWorld() call PushLight()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:23</span>handmade_world_mode.cpp: Make UpdateAndRenderWorld() call PushLight()</div>
+                    </div>
+                </div>
+                <div data-timestamp="1259" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">20:59</span>Run the game and see a cube light that is not emitting any light</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:59</span>Run the game and see a cube light that is not emitting any light</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:59</span>Run the game and see a cube light that is not emitting any light</div>
+                    </div>
+                </div>
+                <div data-timestamp="1288" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">21:28</span>handmade_render_group.cpp: Make PushQuad() take Emission</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:28</span>handmade_render_group.cpp: Make PushQuad() take Emission</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:28</span>handmade_render_group.cpp: Make PushQuad() take Emission</div>
+                    </div>
+                </div>
+                <div data-timestamp="1347" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">22:27</span>Run the game to see our emitting light, with less flickering, but that the light itself is not lit up</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:27</span>Run the game to see our emitting light, with less flickering, but that the light itself is not lit up</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:27</span>Run the game to see our emitting light, with less flickering, but that the light itself is not lit up</div>
+                    </div>
+                </div>
+                <div data-timestamp="1495" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">24:55</span>handmade_render_group.cpp: Add a BreakHere in LightingTest() for the light</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:55</span>handmade_render_group.cpp: Add a BreakHere in LightingTest() for the light</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:55</span>handmade_render_group.cpp: Add a BreakHere in LightingTest() for the light</div>
+                    </div>
+                </div>
+                <div data-timestamp="1558" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">25:58</span>Step in to LightingTest() and inspect the values for the light</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:58</span>Step in to LightingTest() and inspect the values for the light</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:58</span>Step in to LightingTest() and inspect the values for the light</div>
+                    </div>
+                </div>
+                <div data-timestamp="1679" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">27:59</span>handmade_render_group.cpp: Make LightingTest() correctly set the FrontEmit</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:59</span>handmade_render_group.cpp: Make LightingTest() correctly set the FrontEmit</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:59</span>handmade_render_group.cpp: Make LightingTest() correctly set the FrontEmit</div>
+                    </div>
+                </div>
+                <div data-timestamp="1715" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">28:35</span>Run the game to see our lit light</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:35</span>Run the game to see our lit light</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:35</span>Run the game to see our lit light</div>
+                    </div>
+                </div>
+                <div data-timestamp="1758" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">29:18</span>handmade_render_group.cpp: Make LightingTest() iterate three times</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:18</span>handmade_render_group.cpp: Make LightingTest() iterate three times</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:18</span>handmade_render_group.cpp: Make LightingTest() iterate three times</div>
+                    </div>
+                </div>
+                <div data-timestamp="1769" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">29:29</span>Run the game to see our much brighter scene, now with flutter</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:29</span>Run the game to see our much brighter scene, now with flutter</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:29</span>Run the game to see our much brighter scene, now with flutter</div>
+                    </div>
+                </div>
+                <div data-timestamp="1803" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">30:03</span>handmade_render_group.cpp: Revert LightingTest() to perform one iteration</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:03</span>handmade_render_group.cpp: Revert LightingTest() to perform one iteration</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:03</span>handmade_render_group.cpp: Revert LightingTest() to perform one iteration</div>
+                    </div>
+                </div>
+                <div data-timestamp="1810" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">30:10</span>Run the game and consider building a wall</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:10</span>Run the game and consider building a wall</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:10</span>Run the game and consider building a wall</div>
+                    </div>
+                </div>
+                <div data-timestamp="1845" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">30:45</span>handmade_world_mode.cpp: Make AddStandardRoom() add a wall</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:45</span>handmade_world_mode.cpp: Make AddStandardRoom() add a wall</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:45</span>handmade_world_mode.cpp: Make AddStandardRoom() add a wall</div>
+                    </div>
+                </div>
+                <div data-timestamp="2015" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">33:35</span>Run the game to see our wall</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:35</span>Run the game to see our wall</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:35</span>Run the game to see our wall</div>
+                    </div>
+                </div>
+                <div data-timestamp="2156" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">35:56</span>handmade_render_group.cpp: Enable LightingTest() to compute the colours differently in the debug and game view</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:56</span>handmade_render_group.cpp: Enable LightingTest() to compute the colours differently in the debug and game view</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:56</span>handmade_render_group.cpp: Enable LightingTest() to compute the colours differently in the debug and game view</div>
+                    </div>
+                </div>
+                <div data-timestamp="2364" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">39:24</span>Run the game to see the beautiful game view</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:24</span>Run the game to see the beautiful game view</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:24</span>Run the game to see the beautiful game view</div>
+                    </div>
+                </div>
+                <div data-timestamp="2479" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">41:19</span>handmade_render_group.cpp: Consider gathering the light from the cubes&#39; corners rather than their faces</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:19</span>handmade_render_group.cpp: Consider gathering the light from the cubes&#39; corners rather than their faces</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:19</span>handmade_render_group.cpp: Consider gathering the light from the cubes&#39; corners rather than their faces</div>
+                    </div>
+                </div>
+                <div data-timestamp="2573" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">42:53</span>handmade_config.h: Add Global_Renderer_Lighting_ShowReflectors and Global_Renderer_Lighting_IterationCount</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:53</span>handmade_config.h: Add Global_Renderer_Lighting_ShowReflectors and Global_Renderer_Lighting_IterationCount</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:53</span>handmade_config.h: Add Global_Renderer_Lighting_ShowReflectors and Global_Renderer_Lighting_IterationCount</div>
+                    </div>
+                </div>
+                <div data-timestamp="2708" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">45:08</span>win32_handmade.cpp: Try to add keys in Win32ProcessPendingMessages() to control the reflectors and lighting iteration count</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:08</span>win32_handmade.cpp: Try to add keys in Win32ProcessPendingMessages() to control the reflectors and lighting iteration count</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:08</span>win32_handmade.cpp: Try to add keys in Win32ProcessPendingMessages() to control the reflectors and lighting iteration count</div>
+                    </div>
+                </div>
+                <div data-timestamp="2807" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">46:47</span>handmade_opengl.cpp: Prevent OpenGLRenderCommands() from calling ComputeLightTransport()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:47</span>handmade_opengl.cpp: Prevent OpenGLRenderCommands() from calling ComputeLightTransport()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:47</span>handmade_opengl.cpp: Prevent OpenGLRenderCommands() from calling ComputeLightTransport()</div>
+                    </div>
+                </div>
+                <div data-timestamp="2832" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">47:12</span>win32_handmade.cpp: Increase the resolution in WinMain()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:12</span>win32_handmade.cpp: Increase the resolution in WinMain()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:12</span>win32_handmade.cpp: Increase the resolution in WinMain()</div>
+                    </div>
+                </div>
+                <div data-timestamp="2854" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">47:34</span>Run the game to see that it&#39;s totally usable for lighting</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:34</span>Run the game to see that it&#39;s totally usable for lighting</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:34</span>Run the game to see that it&#39;s totally usable for lighting</div>
+                    </div>
+                </div>
+                <div data-timestamp="2865" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">47:45</span>handmade.cpp: Add lighting controls to the debug system</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:45</span>handmade.cpp: Add lighting controls to the debug system</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:45</span>handmade.cpp: Add lighting controls to the debug system</div>
+                    </div>
+                </div>
+                <div data-timestamp="2923" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">48:43</span>Run the game and try out those lighting controls</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:43</span>Run the game and try out those lighting controls</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:43</span>Run the game and try out those lighting controls</div>
+                    </div>
+                </div>
+                <div data-timestamp="2993" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">49:53</span>Determine to compute the lighting hierarchically</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">49:53</span>Determine to compute the lighting hierarchically</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">49:53</span>Determine to compute the lighting hierarchically</div>
+                    </div>
+                </div>
+                <div data-timestamp="3132" class="marker cat_nullTopic programming" data-ref="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html">
+                    <div class="cineraContent"><span class="timecode">52:12</span>Consult the multipass shadowing algorithm<sup>1</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:12</span>Consult the multipass shadowing algorithm<sup>1</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:12</span>Consult the multipass shadowing algorithm<sup>1</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="3307" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">55:07</span>Run the game and consider the problem of shadowing</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:07</span>Run the game and consider the problem of shadowing</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:07</span>Run the game and consider the problem of shadowing</div>
+                    </div>
+                </div>
+                <div data-timestamp="3430" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">57:10</span>Blackboard: Comparing reflectors, being an O(n³) problem</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:10</span>Blackboard: Comparing reflectors, being an O(n³) problem</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:10</span>Blackboard: Comparing reflectors, being an O(n³) problem</div>
+                    </div>
+                </div>
+                <div data-timestamp="3531" class="marker cat_nullTopic programming" data-ref="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html">
+                    <div class="cineraContent"><span class="timecode">58:51</span>Read 14.3 Indirect Lighting and Area Lights<sup>2</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:51</span>Read 14.3 Indirect Lighting and Area Lights<sup>2</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:51</span>Read 14.3 Indirect Lighting and Area Lights<sup>2</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="3626" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:00:26</span>Run the game and consider an iterative solution across multiple frames</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:26</span>Run the game and consider an iterative solution across multiple frames</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:26</span>Run the game and consider an iterative solution across multiple frames</div>
+                    </div>
+                </div>
+                <div data-timestamp="3716" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:01:56</span>handmade_render_group.cpp: Start to enable LightingTest() to compute some shadowing</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:56</span>handmade_render_group.cpp: Start to enable LightingTest() to compute some shadowing</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:56</span>handmade_render_group.cpp: Start to enable LightingTest() to compute some shadowing</div>
+                    </div>
+                </div>
+                <div data-timestamp="3837" class="marker cat_nullTopic programming" data-ref="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html">
+                    <div class="cineraContent"><span class="timecode">1:03:57</span>Consult the disk-to-disk occlusion algorithm<sup>3</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:57</span>Consult the disk-to-disk occlusion algorithm<sup>3</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:57</span>Consult the disk-to-disk occlusion algorithm<sup>3</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="3932" class="marker cat_nullTopic programming" data-ref="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html">
+                    <div class="cineraContent"><span class="timecode">1:05:32</span>handmade_render_group.cpp: Enable LightingTest() to compute the disk-to-disk occlusion<sup>4</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:32</span>handmade_render_group.cpp: Enable LightingTest() to compute the disk-to-disk occlusion<sup>4</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:32</span>handmade_render_group.cpp: Enable LightingTest() to compute the disk-to-disk occlusion<sup>4</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="4104" class="marker cat_nullTopic programming" data-ref="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html">
+                    <div class="cineraContent"><span class="timecode">1:08:24</span>Blackboard: Shadow Approx.<sup>5</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:24</span>Blackboard: Shadow Approx.<sup>5</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:24</span>Blackboard: Shadow Approx.<sup>5</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="4798" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:19:58</span>A mini rant on papers giving partial solutions</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:58</span>A mini rant on papers giving partial solutions</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:58</span>A mini rant on papers giving partial solutions</div>
+                    </div>
+                </div>
+                <div data-timestamp="4926" class="marker cat_nullTopic programming" data-ref="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html">
+                    <div class="cineraContent"><span class="timecode">1:22:06</span>Consider what their saturate function is meant to be doing<sup>6</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:06</span>Consider what their saturate function is meant to be doing<sup>6</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:06</span>Consider what their saturate function is meant to be doing<sup>6</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="5191" class="marker cat_nullTopic programming" data-ref="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html">
+                    <div class="cineraContent"><span class="timecode">1:26:31</span>Blackboard: Understanding their shadow approximation equation<sup>7</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:31</span>Blackboard: Understanding their shadow approximation equation<sup>7</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:31</span>Blackboard: Understanding their shadow approximation equation<sup>7</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="5365" class="marker cat_nullTopic programming" data-ref="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html">
+                    <div class="cineraContent"><span class="timecode">1:29:25</span>handmade_render_group.cpp: Enable LightingTest() to compute this shadow approximation equation<sup>8</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:25</span>handmade_render_group.cpp: Enable LightingTest() to compute this shadow approximation equation<sup>8</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:25</span>handmade_render_group.cpp: Enable LightingTest() to compute this shadow approximation equation<sup>8</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="5528" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:32:08</span>handmade_intrinsics.h: Introduce ReciprocalSquareRoot()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:08</span>handmade_intrinsics.h: Introduce ReciprocalSquareRoot()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:08</span>handmade_intrinsics.h: Introduce ReciprocalSquareRoot()</div>
+                    </div>
+                </div>
+                <div data-timestamp="5567" class="marker cat_nullTopic programming" data-ref="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html">
+                    <div class="cineraContent"><span class="timecode">1:32:47</span>handmade_render_group.cpp: Continue to implement the shadow equation in LightingTest()<sup>9</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:47</span>handmade_render_group.cpp: Continue to implement the shadow equation in LightingTest()<sup>9</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:47</span>handmade_render_group.cpp: Continue to implement the shadow equation in LightingTest()<sup>9</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="6088" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:41:28</span>Blackboard: Occlusion from in front and behind</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:28</span>Blackboard: Occlusion from in front and behind</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:28</span>Blackboard: Occlusion from in front and behind</div>
+                    </div>
+                </div>
+                <div data-timestamp="6106" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:41:46</span>handmade_render_group.cpp: Break out the shadow equation values in LightingTest()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:46</span>handmade_render_group.cpp: Break out the shadow equation values in LightingTest()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:46</span>handmade_render_group.cpp: Break out the shadow equation values in LightingTest()</div>
+                    </div>
+                </div>
+                <div data-timestamp="6322" class="marker cat_nullTopic programming" data-ref="https://developer.nvidia.com/gpugems/GPUGems2/gpugems2_chapter14.html">
+                    <div class="cineraContent"><span class="timecode">1:45:22</span>Correcting for occlusion by overlapping objects<sup>10</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:22</span>Correcting for occlusion by overlapping objects<sup>10</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:22</span>Correcting for occlusion by overlapping objects<sup>10</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="6403" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:46:43</span>handmade_render_group.cpp: Enable LightingTest() to iteratively occlude</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:43</span>handmade_render_group.cpp: Enable LightingTest() to iteratively occlude</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:43</span>handmade_render_group.cpp: Enable LightingTest() to iteratively occlude</div>
+                    </div>
+                </div>
+                <div data-timestamp="6607" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:50:07</span>Run the game to see the shadowing looking kind of reasonable</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:07</span>Run the game to see the shadowing looking kind of reasonable</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:07</span>Run the game to see the shadowing looking kind of reasonable</div>
+                    </div>
+                </div>
+                <div data-timestamp="6681" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:51:21</span>handmade_render_group.cpp: Make LightingTest() perform one shadowing iteration, and run the game to see that the wall&#39;s front face is not all black</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:21</span>handmade_render_group.cpp: Make LightingTest() perform one shadowing iteration, and run the game to see that the wall&#39;s front face is not all black</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:21</span>handmade_render_group.cpp: Make LightingTest() perform one shadowing iteration, and run the game to see that the wall&#39;s front face is not all black</div>
+                    </div>
+                </div>
+                <div data-timestamp="6740" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:52:20</span>handmade_render_group.cpp: Move the Dest-&gt;Visibility setting one scope out in LightingTest()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:20</span>handmade_render_group.cpp: Move the Dest-&gt;Visibility setting one scope out in LightingTest()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:20</span>handmade_render_group.cpp: Move the Dest-&gt;Visibility setting one scope out in LightingTest()</div>
+                    </div>
+                </div>
+                <div data-timestamp="6759" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:52:39</span>Run the game to see that the wall&#39;s front face is still black here</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:39</span>Run the game to see that the wall&#39;s front face is still black here</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:39</span>Run the game to see that the wall&#39;s front face is still black here</div>
+                    </div>
+                </div>
+                <div data-timestamp="6831" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:53:51</span>handmade_render_group.cpp: Read carefully though the shadowing code in LightingTest()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:51</span>handmade_render_group.cpp: Read carefully though the shadowing code in LightingTest()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:51</span>handmade_render_group.cpp: Read carefully though the shadowing code in LightingTest()</div>
+                    </div>
+                </div>
+                <div data-timestamp="6961" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:56:01</span>handmade_render_group.cpp: Add assertions in LightingTest() and compile in debug mode</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:01</span>handmade_render_group.cpp: Add assertions in LightingTest() and compile in debug mode</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:01</span>handmade_render_group.cpp: Add assertions in LightingTest() and compile in debug mode</div>
+                    </div>
+                </div>
+                <div data-timestamp="7003" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:56:43</span>Run the game and fail to hit those assertions</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:43</span>Run the game and fail to hit those assertions</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:43</span>Run the game and fail to hit those assertions</div>
+                    </div>
+                </div>
+                <div data-timestamp="7124" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:58:44</span>handmade_render_group.cpp: Assert in LightingTest() that the Visibility &gt;= Dest-&gt;Visibility on the first iteration</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:44</span>handmade_render_group.cpp: Assert in LightingTest() that the Visibility &gt;= Dest-&gt;Visibility on the first iteration</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:44</span>handmade_render_group.cpp: Assert in LightingTest() that the Visibility &gt;= Dest-&gt;Visibility on the first iteration</div>
+                    </div>
+                </div>
+                <div data-timestamp="7173" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:59:33</span>Run the game, hit that assertion and consider why</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:33</span>Run the game, hit that assertion and consider why</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:33</span>Run the game, hit that assertion and consider why</div>
+                    </div>
+                </div>
+                <div data-timestamp="7237" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:00:37</span>handmade_render_group.cpp: Add a Shadow in LightingTest() to accumulate based on the Visibility</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:37</span>handmade_render_group.cpp: Add a Shadow in LightingTest() to accumulate based on the Visibility</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:37</span>handmade_render_group.cpp: Add a Shadow in LightingTest() to accumulate based on the Visibility</div>
+                    </div>
+                </div>
+                <div data-timestamp="7482" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:04:42</span>Run the game to see our ambient occlusion solution</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:42</span>Run the game to see our ambient occlusion solution</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:42</span>Run the game to see our ambient occlusion solution</div>
+                    </div>
+                </div>
+                <div data-timestamp="7520" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:05:20</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:20</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:20</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7603" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:06:43</span><span class="author" data-hue="50" data-saturation="85%">vkar2</span> square root (A/pi + r²) = square root (r² * ( A/(pi * r²) + 1) = r * square root (A/(pi * r²) + 1)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:43</span><span class="author" data-hue="50" data-saturation="85%">vkar2</span> square root (A/pi + r²) = square root (r² * ( A/(pi * r²) + 1) = r * square root (A/(pi * r²) + 1)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:43</span><span class="author" data-hue="50" data-saturation="85%">vkar2</span> square root (A/pi + r²) = square root (r² * ( A/(pi * r²) + 1) = r * square root (A/(pi * r²) + 1)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7651" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:07:31</span>Blackboard: Pulling the r out of square root (A/π + r²)</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:31</span>Blackboard: Pulling the r out of square root (A/π + r²)</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:31</span>Blackboard: Pulling the r out of square root (A/π + r²)</div>
+                    </div>
+                </div>
+                <div data-timestamp="7836" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:10:36</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Thank you very much for 400 days of programming. Had I remembered I would&#39;ve sent you a golden crown to wear today. You&#39;re awesome!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:36</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Thank you very much for 400 days of programming. Had I remembered I would&#39;ve sent you a golden crown to wear today. You&#39;re awesome!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:36</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Thank you very much for 400 days of programming. Had I remembered I would&#39;ve sent you a golden crown to wear today. You&#39;re awesome!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7843" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:10:43</span><span class="author" data-hue="328" data-saturation="78%">mtsmox</span> What do extra iterations do for ambient occlusion? I understand it for bouncing light, but shadows?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:43</span><span class="author" data-hue="328" data-saturation="78%">mtsmox</span> What do extra iterations do for ambient occlusion? I understand it for bouncing light, but shadows?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:43</span><span class="author" data-hue="328" data-saturation="78%">mtsmox</span> What do extra iterations do for ambient occlusion? I understand it for bouncing light, but shadows?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7859" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:10:59</span>Blackboard: Calculating ambient occlusion over multiple iterations</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:59</span>Blackboard: Calculating ambient occlusion over multiple iterations</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:59</span>Blackboard: Calculating ambient occlusion over multiple iterations</div>
+                    </div>
+                </div>
+                <div data-timestamp="8172" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:16:12</span><span class="author" data-hue="328" data-saturation="78%">mtsmox</span> Should the accumulator for the light passes be reset to zero at the start of the next pass?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:12</span><span class="author" data-hue="328" data-saturation="78%">mtsmox</span> Should the accumulator for the light passes be reset to zero at the start of the next pass?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:12</span><span class="author" data-hue="328" data-saturation="78%">mtsmox</span> Should the accumulator for the light passes be reset to zero at the start of the next pass?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8200" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:16:40</span>handmade_render_group.cpp: Make LightingTest() reset the accumulator</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:40</span>handmade_render_group.cpp: Make LightingTest() reset the accumulator</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:40</span>handmade_render_group.cpp: Make LightingTest() reset the accumulator</div>
+                    </div>
+                </div>
+                <div data-timestamp="8270" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:17:50</span>Run the game to see the current lighting</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:50</span>Run the game to see the current lighting</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:50</span>Run the game to see the current lighting</div>
+                    </div>
+                </div>
+                <div data-timestamp="8294" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:18:14</span>handmade_render_group.cpp: Make LightingTest() perform ambient occlusion</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:14</span>handmade_render_group.cpp: Make LightingTest() perform ambient occlusion</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:14</span>handmade_render_group.cpp: Make LightingTest() perform ambient occlusion</div>
+                    </div>
+                </div>
+                <div data-timestamp="8335" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:18:55</span>Run the game to see how that looks with ambient occlusion</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:55</span>Run the game to see how that looks with ambient occlusion</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:55</span>Run the game to see how that looks with ambient occlusion</div>
+                    </div>
+                </div>
+                <div data-timestamp="8450" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:20:50</span>handmade_config.h: Increase the Global_Renderer_Lighting_IterationCount and run the game to see how that looks</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:20:50</span>handmade_config.h: Increase the Global_Renderer_Lighting_IterationCount and run the game to see how that looks</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:20:50</span>handmade_config.h: Increase the Global_Renderer_Lighting_IterationCount and run the game to see how that looks</div>
+                    </div>
+                </div>
+                <div data-timestamp="8542" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:22:22</span><span class="author" data-hue="343" data-saturation="98%">thesizik</span> It seems like the ground colors are off. Looks like it goes light green &gt; gray &gt; dark green<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:22</span><span class="author" data-hue="343" data-saturation="98%">thesizik</span> It seems like the ground colors are off. Looks like it goes light green &gt; gray &gt; dark green<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:22</span><span class="author" data-hue="343" data-saturation="98%">thesizik</span> It seems like the ground colors are off. Looks like it goes light green &gt; gray &gt; dark green<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8664" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:24:24</span>handmade_render_group.cpp: Make LightingTest() cast the Element-&gt;Visibility calculation to a V4 in the setting of FrontEmit</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:24:24</span>handmade_render_group.cpp: Make LightingTest() cast the Element-&gt;Visibility calculation to a V4 in the setting of FrontEmit</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:24:24</span>handmade_render_group.cpp: Make LightingTest() cast the Element-&gt;Visibility calculation to a V4 in the setting of FrontEmit</div>
+                    </div>
+                </div>
+                <div data-timestamp="8725" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:25:25</span>Run the game to see how that looks</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:25:25</span>Run the game to see how that looks</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:25:25</span>Run the game to see how that looks</div>
+                    </div>
+                </div>
+                <div data-timestamp="8800" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:26:40</span>Wind it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:26:40</span>Wind it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:26:40</span>Wind it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day401/"><div>&#9196;</div><div>Next: 'Debugging Lighting Transfer'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

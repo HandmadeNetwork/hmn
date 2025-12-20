@@ -1,0 +1,934 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asset system, entity system, hardware, lighting, memory, optimisation, prng, rendering, statistics, ui, Administrivia, Blackboard, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">GPU MIP Mapping</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="http://docs.gl/gl3/glCompressedTexSubImage3D" href="http://docs.gl/gl3/glCompressedTexSubImage3D" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">docs.GL</div>
+                            <div class="ref_title">glCompressedTexSubImage3D</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1975" class="timecode"><span class="ref_index">[1]</span><span class="time">32:55</span></span><span data-timestamp="2109" class="timecode"><span class="ref_index">[2]</span><span class="time">35:09</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://docs.gl/gl3/glGenerateMipmap" href="http://docs.gl/gl3/glGenerateMipmap" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">docs.GL</div>
+                            <div class="ref_title">glGenerateMipmap</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2258" class="timecode"><span class="ref_index">[3]</span><span class="time">37:38</span></span><span data-timestamp="2340" class="timecode"><span class="ref_index">[4]</span><span class="time">39:00</span></span><span data-timestamp="2463" class="timecode"><span class="ref_index">[5]</span><span class="time">41:03</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://docs.gl/gl3/glTexSubImage3D" href="http://docs.gl/gl3/glTexSubImage3D" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">docs.GL</div>
+                            <div class="ref_title">glTexSubImage3D</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6572" class="timecode"><span class="ref_index">[6]</span><span class="time">1:49:32</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://docs.gl/gl3/glTexParameter" href="http://docs.gl/gl3/glTexParameter" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">docs.GL</div>
+                            <div class="ref_title">glTexParameter</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6905" class="timecode"><span class="ref_index">[7]</span><span class="time">1:55:05</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asset-system">
+                                <span class="icon category asset-system"></span><span class="cineraText">asset system</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content optimisation">
+                                <span class="icon category optimisation"></span><span class="cineraText">optimisation</span>
+                            </div>
+                            <div class="filter_content prng">
+                                <span class="icon category prng"></span><span class="cineraText">prng</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content statistics">
+                                <span class="icon category statistics"></span><span class="cineraText">statistics</span>
+                            </div>
+                            <div class="filter_content ui">
+                                <span class="icon category ui"></span><span class="cineraText">ui</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="mpRKQCi3tjw"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day545/"><div>&#9195;</div><div>Previous: 'Adding Ground Cover'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="2" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:02</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:02</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:02</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="40" class="marker cat_entity-system cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">0:40</span>Demo our new ground cover, with the need to light our sprites<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:40</span>Demo our new ground cover, with the need to light our sprites<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:40</span>Demo our new ground cover, with the need to light our sprites<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="109" class="marker cat_entity-system cat_memory cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:49</span>MIP mapping our sprites<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49</span>MIP mapping our sprites<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49</span>MIP mapping our sprites<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="494" class="marker cat_entity-system cat_prng cat_statistics run">
+                    <div class="cineraContent"><span class="timecode">8:14</span>Distributing our grass more naturally<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="prng" class="category prng"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:14</span>Distributing our grass more naturally<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="prng" class="category prng"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:14</span>Distributing our grass more naturally<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="prng" class="category prng"></div><div title="statistics" class="category statistics"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="595" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">9:55</span>Plan to work on our rendering quality<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:55</span>Plan to work on our rendering quality<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:55</span>Plan to work on our rendering quality<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="668" class="marker cat_optimisation cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">11:08</span>MIP (Multum In Parvo) maps<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:08</span>MIP (Multum In Parvo) maps<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:08</span>MIP (Multum In Parvo) maps<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="840" class="marker cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">14:00</span>Texture sampling<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:00</span>Texture sampling<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:00</span>Texture sampling<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1085" class="marker cat_optimisation cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">18:05</span>MIP map pre-filtering<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:05</span>MIP map pre-filtering<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:05</span>MIP map pre-filtering<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1395" class="marker cat_optimisation cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">23:15</span>Anisotropic filtering<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:15</span>Anisotropic filtering<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:15</span>Anisotropic filtering<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1831" class="marker cat_memory cat_optimisation cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">30:31</span>MIP map memory bandwidth savings and efficiency<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:31</span>MIP map memory bandwidth savings and efficiency<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:31</span>MIP map memory bandwidth savings and efficiency<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1975" class="marker cat_hardware cat_rendering research" data-ref="http://docs.gl/gl3/glCompressedTexSubImage3D">
+                    <div class="cineraContent"><span class="timecode">32:55</span>Understanding glTexSubImage3D()<sup>1</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:55</span>Understanding glTexSubImage3D()<sup>1</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:55</span>Understanding glTexSubImage3D()<sup>1</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2109" class="marker cat_hardware cat_rendering blackboard" data-ref="http://docs.gl/gl3/glCompressedTexSubImage3D">
+                    <div class="cineraContent"><span class="timecode">35:09</span>Understanding the &quot;level&quot; parameter of glCompressedTexSubImage3D()<sup>2</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:09</span>Understanding the &quot;level&quot; parameter of glCompressedTexSubImage3D()<sup>2</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:09</span>Understanding the &quot;level&quot; parameter of glCompressedTexSubImage3D()<sup>2</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2198" class="marker cat_hardware cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">36:38</span>Set up OpenGLManageTextures() to specify the texture subimage of multiple MIP map levels<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:38</span>Set up OpenGLManageTextures() to specify the texture subimage of multiple MIP map levels<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:38</span>Set up OpenGLManageTextures() to specify the texture subimage of multiple MIP map levels<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2258" class="marker cat_hardware cat_rendering research" data-ref="http://docs.gl/gl3/glGenerateMipmap">
+                    <div class="cineraContent"><span class="timecode">37:38</span>Understanding glGenerateMipmap()<sup>3</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:38</span>Understanding glGenerateMipmap()<sup>3</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:38</span>Understanding glGenerateMipmap()<sup>3</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2340" class="marker cat_hardware cat_rendering programming" data-ref="http://docs.gl/gl3/glGenerateMipmap">
+                    <div class="cineraContent"><span class="timecode">39:00</span>Experimentally revert OpenGLManageTextures() and instead call glGenerateMipmap()<sup>4</sup> to do all the MIP mapping<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:00</span>Experimentally revert OpenGLManageTextures() and instead call glGenerateMipmap()<sup>4</sup> to do all the MIP mapping<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:00</span>Experimentally revert OpenGLManageTextures() and instead call glGenerateMipmap()<sup>4</sup> to do all the MIP mapping<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2463" class="marker cat_hardware cat_rendering research" data-ref="http://docs.gl/gl3/glGenerateMipmap">
+                    <div class="cineraContent"><span class="timecode">41:03</span>Better understanding glGenerateMipmap()<sup>5</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:03</span>Better understanding glGenerateMipmap()<sup>5</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:03</span>Better understanding glGenerateMipmap()<sup>5</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2639" class="marker cat_hardware cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">43:59</span>Abandon glGenerateMipmap() and make LoadAssetWork() to generate the MIP maps ourselves<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:59</span>Abandon glGenerateMipmap() and make LoadAssetWork() to generate the MIP maps ourselves<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:59</span>Abandon glGenerateMipmap() and make LoadAssetWork() to generate the MIP maps ourselves<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3349" class="marker cat_hardware cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">55:49</span>Make OpenGLManageTextures() specify the texture subimage of multiple MIP map levels<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:49</span>Make OpenGLManageTextures() specify the texture subimage of multiple MIP map levels<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:49</span>Make OpenGLManageTextures() specify the texture subimage of multiple MIP map levels<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3488" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">58:08</span>Introduce Downsample2x() for LoadAssetWork() and our original Downsample() to call<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:08</span>Introduce Downsample2x() for LoadAssetWork() and our original Downsample() to call<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:08</span>Introduce Downsample2x() for LoadAssetWork() and our original Downsample() to call<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3783" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:03:03</span>Create handmade_image.cpp and .h<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:03</span>Create handmade_image.cpp and .h<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:03</span>Create handmade_image.cpp and .h<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4157" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:09:17</span>Introduce GenerateSequentialMIPs() for LoadAssetWork() to call, IterateMIPs() and the mip_iterator versions of IsValid() and Advance()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:17</span>Introduce GenerateSequentialMIPs() for LoadAssetWork() to call, IterateMIPs() and the mip_iterator versions of IsValid() and Advance()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:17</span>Introduce GenerateSequentialMIPs() for LoadAssetWork() to call, IterateMIPs() and the mip_iterator versions of IsValid() and Advance()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4523" class="marker cat_rendering research">
+                    <div class="cineraContent"><span class="timecode">1:15:23</span>Consider how best to indicate special textures to BeginTextureOp()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:23</span>Consider how best to indicate special textures to BeginTextureOp()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:23</span>Consider how best to indicate special textures to BeginTextureOp()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4787" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:19:47</span>Change BeginTextureOp() to take a SizeRequested for LoadBitmap() to pass, introducing GetTotalSizeForMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:47</span>Change BeginTextureOp() to take a SizeRequested for LoadBitmap() to pass, introducing GetTotalSizeForMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:47</span>Change BeginTextureOp() to take a SizeRequested for LoadBitmap() to pass, introducing GetTotalSizeForMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5075" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:24:35</span>Implement GetTotalSizeForMIPs(), IterateMIPs() and the mip_iterator versions of IsValid() and Advance()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:35</span>Implement GetTotalSizeForMIPs(), IterateMIPs() and the mip_iterator versions of IsValid() and Advance()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:35</span>Implement GetTotalSizeForMIPs(), IterateMIPs() and the mip_iterator versions of IsValid() and Advance()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5469" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:31:09</span>Step through BeginTextureOp() to debug our new MIP mapping work<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:09</span>Step through BeginTextureOp() to debug our new MIP mapping work<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:09</span>Step through BeginTextureOp() to debug our new MIP mapping work<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5594" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:33:14</span>Fix GetTotalSizeForMIPs() to correctly accumulate the size, and the mip_iterator version of Advance() to operate the opposite way round<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:14</span>Fix GetTotalSizeForMIPs() to correctly accumulate the size, and the mip_iterator version of Advance() to operate the opposite way round<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:14</span>Fix GetTotalSizeForMIPs() to correctly accumulate the size, and the mip_iterator version of Advance() to operate the opposite way round<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5629" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:33:49</span>Step through GetTotalSizeForMIPs() and out to LoadBitmap()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:49</span>Step through GetTotalSizeForMIPs() and out to LoadBitmap()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:49</span>Step through GetTotalSizeForMIPs() and out to LoadBitmap()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5793" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:36:33</span>Hit a GL_INVALID_VALUE OpenGL error in OpenGLDebugCallback()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:33</span>Hit a GL_INVALID_VALUE OpenGL error in OpenGLDebugCallback()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:33</span>Hit a GL_INVALID_VALUE OpenGL error in OpenGLDebugCallback()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5955" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:39:15</span>Fix LoadBitmap() to set the TextureOp-&gt;GenMipMaps<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:15</span>Fix LoadBitmap() to set the TextureOp-&gt;GenMipMaps<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:15</span>Fix LoadBitmap() to set the TextureOp-&gt;GenMipMaps<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5990" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:39:50</span>Step through GenerateSequentialMIPs() to see that we&#39;re not dealing with powers of 2 sizes<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:50</span>Step through GenerateSequentialMIPs() to see that we&#39;re not dealing with powers of 2 sizes<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:50</span>Step through GenerateSequentialMIPs() to see that we&#39;re not dealing with powers of 2 sizes<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6122" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:42:02</span>Enable the mip_iterator version of Advance and Downsample2x() to handle non-powers of 2 sizes<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:02</span>Enable the mip_iterator version of Advance and Downsample2x() to handle non-powers of 2 sizes<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:02</span>Enable the mip_iterator version of Advance and Downsample2x() to handle non-powers of 2 sizes<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6520" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:48:40</span>Step through GenerateSequentialMIPs() successfully<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:40</span>Step through GenerateSequentialMIPs() successfully<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:40</span>Step through GenerateSequentialMIPs() successfully<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6572" class="marker cat_hardware cat_rendering research" data-ref="http://docs.gl/gl3/glTexSubImage3D">
+                    <div class="cineraContent"><span class="timecode">1:49:32</span>Investigate the GL_INVALID_VALUE OpenGL error in OpenGLDebugCallback()<sup>6</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:32</span>Investigate the GL_INVALID_VALUE OpenGL error in OpenGLDebugCallback()<sup>6</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:32</span>Investigate the GL_INVALID_VALUE OpenGL error in OpenGLDebugCallback()<sup>6</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6679" class="marker cat_hardware cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:51:19</span>Make OpenGLInit() announce all of our MIP levels<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:19</span>Make OpenGLInit() announce all of our MIP levels<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:19</span>Make OpenGLInit() announce all of our MIP levels<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6783" class="marker cat_hardware cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:53:03</span>Find that OpenGL is accepting our textures, but we have glitches<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:03</span>Find that OpenGL is accepting our textures, but we have glitches<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:03</span>Find that OpenGL is accepting our textures, but we have glitches<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6905" class="marker cat_hardware cat_rendering research" data-ref="http://docs.gl/gl3/glTexParameter">
+                    <div class="cineraContent"><span class="timecode">1:55:05</span>Understanding the GL_TEXTURE_MIN_FILTER value for glTexParameteri()<sup>7</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:05</span>Understanding the GL_TEXTURE_MIN_FILTER value for glTexParameteri()<sup>7</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:05</span>Understanding the GL_TEXTURE_MIN_FILTER value for glTexParameteri()<sup>7</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6985" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:56:25</span>Temporarily prevent LoadAssetWork() from calling GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:25</span>Temporarily prevent LoadAssetWork() from calling GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:25</span>Temporarily prevent LoadAssetWork() from calling GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7004" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:56:44</span>See that our rendering glitches are gone, and consider our possible bugs<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:44</span>See that our rendering glitches are gone, and consider our possible bugs<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:44</span>See that our rendering glitches are gone, and consider our possible bugs<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7035" class="marker cat_rendering research">
+                    <div class="cineraContent"><span class="timecode">1:57:15</span>Scour Downsample2x() and GenerateSequentialMIPs() for bugs<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:15</span>Scour Downsample2x() and GenerateSequentialMIPs() for bugs<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:15</span>Scour Downsample2x() and GenerateSequentialMIPs() for bugs<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7125" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:58:45</span>Slightly simplify GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:45</span>Slightly simplify GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:45</span>Slightly simplify GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7190" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:59:50</span>Step through GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:50</span>Step through GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:50</span>Step through GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7422" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">2:03:42</span><span class="project" data-hue="298" data-saturation="95%">remedygb</span> bug: Clicking values of entered variables<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:42</span><span class="project" data-hue="298" data-saturation="95%">remedygb</span> bug: Clicking values of entered variables<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:42</span><span class="project" data-hue="298" data-saturation="95%">remedygb</span> bug: Clicking values of entered variables<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7480" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:04:40</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Just fixed that about 20 minutes ago<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:40</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Just fixed that about 20 minutes ago<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:40</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Just fixed that about 20 minutes ago<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7501" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:05:01</span>Step through Downsample2x()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:01</span>Step through Downsample2x()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:01</span>Step through Downsample2x()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7628" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:07:08</span>Add a space-checking assertion in GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:08</span>Add a space-checking assertion in GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:08</span>Add a space-checking assertion in GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7737" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:08:57</span>Fail to hit that assertion in GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:57</span>Fail to hit that assertion in GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:57</span>Fail to hit that assertion in GenerateSequentialMIPs()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7758" class="marker cat_rendering research">
+                    <div class="cineraContent"><span class="timecode">2:09:18</span>Investigate our rendering glitches, scouring LoadBitmap()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:18</span>Investigate our rendering glitches, scouring LoadBitmap()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:18</span>Investigate our rendering glitches, scouring LoadBitmap()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7800" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:10:00</span>Slightly simplify LoadBitmap()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:00</span>Slightly simplify LoadBitmap()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:00</span>Slightly simplify LoadBitmap()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7881" class="marker cat_rendering research">
+                    <div class="cineraContent"><span class="timecode">2:11:21</span>Continue to investigate our rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:21</span>Continue to investigate our rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:21</span>Continue to investigate our rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8036" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:13:56</span>Slightly simplify OpenGLManageTextures()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:56</span>Slightly simplify OpenGLManageTextures()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:56</span>Slightly simplify OpenGLManageTextures()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8049" class="marker cat_rendering research">
+                    <div class="cineraContent"><span class="timecode">2:14:09</span>Continue to investigate our rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:09</span>Continue to investigate our rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:09</span>Continue to investigate our rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8102" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:15:02</span>See our rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:02</span>See our rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:02</span>See our rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8122" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:15:22</span>Temporarily prevent Downsample2x() from writing the pixels<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:22</span>Temporarily prevent Downsample2x() from writing the pixels<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:22</span>Temporarily prevent Downsample2x() from writing the pixels<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8141" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:15:41</span>See that our glitches are gone<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:41</span>See that our glitches are gone<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:41</span>See that our glitches are gone<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8144" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:15:44</span>Let Downsample2x() write the pixels<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:44</span>Let Downsample2x() write the pixels<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:44</span>Let Downsample2x() write the pixels<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8177" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:16:17</span>Assert in GenerateSequentialMIPs() that the end of one bitmap is the start of the next<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:17</span>Assert in GenerateSequentialMIPs() that the end of one bitmap is the start of the next<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:17</span>Assert in GenerateSequentialMIPs() that the end of one bitmap is the start of the next<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8258" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:17:38</span>Fail to hit that assertion but still see the glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:38</span>Fail to hit that assertion but still see the glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:38</span>Fail to hit that assertion but still see the glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8303" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:18:23</span>Change GenerateSequentialMIPs() to fill the MIP map with a different colour per level, introducing FillImage()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:23</span>Change GenerateSequentialMIPs() to fill the MIP map with a different colour per level, introducing FillImage()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:23</span>Change GenerateSequentialMIPs() to fill the MIP map with a different colour per level, introducing FillImage()<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8512" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:21:52</span>See no rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:21:52</span>See no rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:21:52</span>See no rendering glitches<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8525" class="marker cat_rendering research">
+                    <div class="cineraContent"><span class="timecode">2:22:05</span>Scour Downsample2x() for bugs<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:05</span>Scour Downsample2x() for bugs<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:05</span>Scour Downsample2x() for bugs<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8555" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:22:35</span>Fix Downsample2x() to output the correct sized image<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:35</span>Fix Downsample2x() to output the correct sized image<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:35</span>Fix Downsample2x() to output the correct sized image<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8610" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:23:30</span>See that our glitches are gone, and we are not using our MIP maps<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:30</span>See that our glitches are gone, and we are not using our MIP maps<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:30</span>See that our glitches are gone, and we are not using our MIP maps<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8628" class="marker cat_hardware cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:23:48</span>Enable MIP maps in OpenGLInit()<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:48</span>Enable MIP maps in OpenGLInit()<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:48</span>Enable MIP maps in OpenGLInit()<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8732" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:25:32</span>Admire our smoother, MIP mapped textures<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:25:32</span>Admire our smoother, MIP mapped textures<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:25:32</span>Admire our smoother, MIP mapped textures<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8854" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:27:34</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:27:34</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:27:34</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8884" class="marker cat_asset-system authored">
+                    <div class="cineraContent"><span class="timecode">2:28:04</span><span class="author" data-hue="13" data-saturation="83%">s0imn</span> Q: Would you want to add shaders to the asset system?<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:28:04</span><span class="author" data-hue="13" data-saturation="83%">s0imn</span> Q: Would you want to add shaders to the asset system?<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:28:04</span><span class="author" data-hue="13" data-saturation="83%">s0imn</span> Q: Would you want to add shaders to the asset system?<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8941" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:29:01</span><span class="author" data-hue="283" data-saturation="83%">pragmascrypt</span> Q: Which textures are considered &quot;special textures&quot;, and why do they not want MIP mapping?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:29:01</span><span class="author" data-hue="283" data-saturation="83%">pragmascrypt</span> Q: Which textures are considered &quot;special textures&quot;, and why do they not want MIP mapping?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:29:01</span><span class="author" data-hue="283" data-saturation="83%">pragmascrypt</span> Q: Which textures are considered &quot;special textures&quot;, and why do they not want MIP mapping?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9037" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:30:37</span><span class="author" data-hue="313" data-saturation="85%">nonsensation</span> Q: (Off-topic) Can you explain these light blue kind of selection bars in <span class="project" data-hue="13" data-saturation="79%">4coder</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30:37</span><span class="author" data-hue="313" data-saturation="85%">nonsensation</span> Q: (Off-topic) Can you explain these light blue kind of selection bars in <span class="project" data-hue="13" data-saturation="79%">4coder</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30:37</span><span class="author" data-hue="313" data-saturation="85%">nonsensation</span> Q: (Off-topic) Can you explain these light blue kind of selection bars in <span class="project" data-hue="13" data-saturation="79%">4coder</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9059" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:30:59</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Q: Request to change the name of mip_iterator to mipterator<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30:59</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Q: Request to change the name of mip_iterator to mipterator<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30:59</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Q: Request to change the name of mip_iterator to mipterator<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9066" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:31:06</span><span class="author" data-hue="140" data-saturation="96%">mattiamanzati</span> Q: Through stream is difficult to notice. Can we please see an image sent through chat difference between before and after MIP maps?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:31:06</span><span class="author" data-hue="140" data-saturation="96%">mattiamanzati</span> Q: Through stream is difficult to notice. Can we please see an image sent through chat difference between before and after MIP maps?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:31:06</span><span class="author" data-hue="140" data-saturation="96%">mattiamanzati</span> Q: Through stream is difficult to notice. Can we please see an image sent through chat difference between before and after MIP maps?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9110" class="marker cat_hardware cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:31:50</span>Enable OpenGLChangeToSettings() to toggle MIP maps and nearest texel filtering<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:31:50</span>Enable OpenGLChangeToSettings() to toggle MIP maps and nearest texel filtering<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:31:50</span>Enable OpenGLChangeToSettings() to toggle MIP maps and nearest texel filtering<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9706" class="marker cat_hardware cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:41:46</span>Try toggling nearest texel filtering and MIP maps<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:41:46</span>Try toggling nearest texel filtering and MIP maps<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:41:46</span>Try toggling nearest texel filtering and MIP maps<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9787" class="marker cat_hardware cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:43:07</span><span class="author" data-hue="285" data-saturation="94%">kniffel5</span> Q: Is there an easy way to view the MIP maps sent to the GPU and, if so, why didn&#39;t you use that feature for debugging purposes before?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:43:07</span><span class="author" data-hue="285" data-saturation="94%">kniffel5</span> Q: Is there an easy way to view the MIP maps sent to the GPU and, if so, why didn&#39;t you use that feature for debugging purposes before?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:43:07</span><span class="author" data-hue="285" data-saturation="94%">kniffel5</span> Q: Is there an easy way to view the MIP maps sent to the GPU and, if so, why didn&#39;t you use that feature for debugging purposes before?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9872" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:44:32</span><span class="author" data-hue="313" data-saturation="85%">nonsensation</span> Q: Some file formats like DDS have MIP maps already baked in. Is generating them better nowadays or does it actually matter any longer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:44:32</span><span class="author" data-hue="313" data-saturation="85%">nonsensation</span> Q: Some file formats like DDS have MIP maps already baked in. Is generating them better nowadays or does it actually matter any longer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:44:32</span><span class="author" data-hue="313" data-saturation="85%">nonsensation</span> Q: Some file formats like DDS have MIP maps already baked in. Is generating them better nowadays or does it actually matter any longer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9977" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:46:17</span><span class="author" data-hue="300" data-saturation="95%">abarishu</span> Q: If we add some packing, would MIP maps interfere with that?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:46:17</span><span class="author" data-hue="300" data-saturation="95%">abarishu</span> Q: If we add some packing, would MIP maps interfere with that?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:46:17</span><span class="author" data-hue="300" data-saturation="95%">abarishu</span> Q: If we add some packing, would MIP maps interfere with that?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10059" class="marker cat_ui authored">
+                    <div class="cineraContent"><span class="timecode">2:47:39</span><span class="author" data-hue="55" data-saturation="99%">variandra</span> I don&#39;t watch you much but I was wondering: Are those settings you toggle, can / do you have a GUI so users can interact, or is that different?<span class="cineraCategories"><div title="ui" class="category ui"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:47:39</span><span class="author" data-hue="55" data-saturation="99%">variandra</span> I don&#39;t watch you much but I was wondering: Are those settings you toggle, can / do you have a GUI so users can interact, or is that different?<span class="cineraCategories"><div title="ui" class="category ui"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:47:39</span><span class="author" data-hue="55" data-saturation="99%">variandra</span> I don&#39;t watch you much but I was wondering: Are those settings you toggle, can / do you have a GUI so users can interact, or is that different?<span class="cineraCategories"><div title="ui" class="category ui"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10162" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:49:22</span>Close up shop<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:49:22</span>Close up shop<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:49:22</span>Close up shop<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day547/"><div>&#9196;</div><div>Next: 'Starting the Move to Light Probes'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

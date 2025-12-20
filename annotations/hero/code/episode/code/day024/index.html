@@ -1,0 +1,621 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_post.js?r=47438299" defer></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Win32 Platform Layer Cleanup</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://lowtideproductions.com/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matthew VanDevander</div>
+                        </a>
+                        <a class="support" href="https://www.patreon.com/mv" target="_blank"><div class="cineraSprite" data-sprite-width=32 data-sprite-height=16 data-tile-width=16 data-tile-height=16 data-x-light=0 data-x-dark=16 data-y-normal=0 data-y-focused=0 data-y-disabled=0 data-src="https://handmade.network/public/annotations/cinera_sprite_patreon.png?r=5df50e2b"></div></a>
+                    </span>
+                    <span class="credit">
+                        <div class="person">
+                            <div class="role">Indexer</div>
+                            <div class="name">Ben Craddock</div>
+                        </div>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="nBBTPRO8AMI"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day023/"><div>&#9195;</div><div>Previous: 'Looped Live Code Editing'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="65" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:05</span>Goals for the day</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05</span>Goals for the day</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05</span>Goals for the day</div>
+                    </div>
+                </div>
+                <div data-timestamp="170" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:50</span>Fixing a dumb audio bug</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:50</span>Fixing a dumb audio bug</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:50</span>Fixing a dumb audio bug</div>
+                    </div>
+                </div>
+                <div data-timestamp="498" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">8:18</span>Failing to find a supposed SUCCEEDED related bug</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:18</span>Failing to find a supposed SUCCEEDED related bug</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:18</span>Failing to find a supposed SUCCEEDED related bug</div>
+                    </div>
+                </div>
+                <div data-timestamp="588" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">9:48</span>Concerns about WasDown/IsDown</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:48</span>Concerns about WasDown/IsDown</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:48</span>Concerns about WasDown/IsDown</div>
+                    </div>
+                </div>
+                <div data-timestamp="745" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">12:25</span>Fixing a bug in our gamepad input handling</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:25</span>Fixing a bug in our gamepad input handling</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:25</span>Fixing a bug in our gamepad input handling</div>
+                    </div>
+                </div>
+                <div data-timestamp="877" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">14:37</span>Fun? with Krita</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:37</span>Fun? with Krita</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:37</span>Fun? with Krita</div>
+                    </div>
+                </div>
+                <div data-timestamp="1007" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">16:47</span>Back to Paint to illustrate the input bugfix</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:47</span>Back to Paint to illustrate the input bugfix</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:47</span>Back to Paint to illustrate the input bugfix</div>
+                    </div>
+                </div>
+                <div data-timestamp="1257" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">20:57</span>Changing our renderbuffer to have fixed dimensions</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:57</span>Changing our renderbuffer to have fixed dimensions</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:57</span>Changing our renderbuffer to have fixed dimensions</div>
+                    </div>
+                </div>
+                <div data-timestamp="1419" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">23:39</span>Improving the build.bat file</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:39</span>Improving the build.bat file</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:39</span>Improving the build.bat file</div>
+                    </div>
+                </div>
+                <div data-timestamp="1500" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">25:00</span>Changing the write location for our .hmi files</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:00</span>Changing the write location for our .hmi files</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:00</span>Changing the write location for our .hmi files</div>
+                    </div>
+                </div>
+                <div data-timestamp="1657" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">27:37</span>Writing some helper functions to create the dll path</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:37</span>Writing some helper functions to create the dll path</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:37</span>Writing some helper functions to create the dll path</div>
+                    </div>
+                </div>
+                <div data-timestamp="2031" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">33:51</span>Step-through</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:51</span>Step-through</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:51</span>Step-through</div>
+                    </div>
+                </div>
+                <div data-timestamp="2172" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">36:12</span>Taking our helper functions and using them elsewhere</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:12</span>Taking our helper functions and using them elsewhere</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:12</span>Taking our helper functions and using them elsewhere</div>
+                    </div>
+                </div>
+                <div data-timestamp="2423" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">40:23</span>Testing the changes to input recording</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:23</span>Testing the changes to input recording</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:23</span>Testing the changes to input recording</div>
+                    </div>
+                </div>
+                <div data-timestamp="2482" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">41:22</span>Input Assert firing and turning off Topmost window</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:22</span>Input Assert firing and turning off Topmost window</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:22</span>Input Assert firing and turning off Topmost window</div>
+                    </div>
+                </div>
+                <div data-timestamp="2565" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">42:45</span>Changing Win32GetLastWriteTime() to use GetFileAttributesEx()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:45</span>Changing Win32GetLastWriteTime() to use GetFileAttributesEx()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:45</span>Changing Win32GetLastWriteTime() to use GetFileAttributesEx()</div>
+                    </div>
+                </div>
+                <div data-timestamp="2762" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">46:02</span>Using DeviceIoControl to potentially speed up input recording hitch</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:02</span>Using DeviceIoControl to potentially speed up input recording hitch</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:02</span>Using DeviceIoControl to potentially speed up input recording hitch</div>
+                    </div>
+                </div>
+                <div data-timestamp="3066" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">51:06</span>Removing stub functions from handmade.h for easier porting</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:06</span>Removing stub functions from handmade.h for easier porting</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:06</span>Removing stub functions from handmade.h for easier porting</div>
+                    </div>
+                </div>
+                <div data-timestamp="3230" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">53:50</span>Looking at improvments to our 1GB VirtualAlloc()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:50</span>Looking at improvments to our 1GB VirtualAlloc()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:50</span>Looking at improvments to our 1GB VirtualAlloc()</div>
+                    </div>
+                </div>
+                <div data-timestamp="3312" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">55:12</span>Whiteboard illustration of virtual memory</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:12</span>Whiteboard illustration of virtual memory</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:12</span>Whiteboard illustration of virtual memory</div>
+                    </div>
+                </div>
+                <div data-timestamp="3540" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">59:00</span>Looking at real world virtual memory addresses</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:00</span>Looking at real world virtual memory addresses</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:00</span>Looking at real world virtual memory addresses</div>
+                    </div>
+                </div>
+                <div data-timestamp="3699" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:01:39</span>Translation of virtual memory addresses into physical memory by the TLB</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:39</span>Translation of virtual memory addresses into physical memory by the TLB</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:39</span>Translation of virtual memory addresses into physical memory by the TLB</div>
+                    </div>
+                </div>
+                <div data-timestamp="3846" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:04:06</span>So what are large pages?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:06</span>So what are large pages?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:06</span>So what are large pages?</div>
+                    </div>
+                </div>
+                <div data-timestamp="3926" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:05:26</span>Changing VirtualAlloc() to use large pages</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:26</span>Changing VirtualAlloc() to use large pages</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:26</span>Changing VirtualAlloc() to use large pages</div>
+                    </div>
+                </div>
+                <div data-timestamp="4038" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:07:18</span>Putting aside the large page support for later</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:18</span>Putting aside the large page support for later</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:18</span>Putting aside the large page support for later</div>
+                    </div>
+                </div>
+                <div data-timestamp="4106" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:08:26</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:26</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:26</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4190" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:09:50</span>Can we go over really fast an overview of the game recording code?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:50</span>Can we go over really fast an overview of the game recording code?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:50</span>Can we go over really fast an overview of the game recording code?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4456" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:14:16</span>When you&#39;re saving the game_state snapshot, how big is the file?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:16</span>When you&#39;re saving the game_state snapshot, how big is the file?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:16</span>When you&#39;re saving the game_state snapshot, how big is the file?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4525" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:15:25</span>Can you check if the StringLength() needs a win32 prefix, or is this game code?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:25</span>Can you check if the StringLength() needs a win32 prefix, or is this game code?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:25</span>Can you check if the StringLength() needs a win32 prefix, or is this game code?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4537" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:15:37</span>How many lines of code is the finished game estimated to be?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:37</span>How many lines of code is the finished game estimated to be?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:37</span>How many lines of code is the finished game estimated to be?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4562" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:16:02</span>Maybe use two randoms in your batch file to get a more unique file name?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:02</span>Maybe use two randoms in your batch file to get a more unique file name?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:02</span>Maybe use two randoms in your batch file to get a more unique file name?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4580" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:16:20</span>Any advice on where I could go or what to do to pick up a bit more coding or knowledge experience?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:20</span>Any advice on where I could go or what to do to pick up a bit more coding or knowledge experience?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:20</span>Any advice on where I could go or what to do to pick up a bit more coding or knowledge experience?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4625" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:17:05</span>What is a good example of well-written game code? Everyone talks about the DOOM source code.</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:05</span>What is a good example of well-written game code? Everyone talks about the DOOM source code.</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:05</span>What is a good example of well-written game code? Everyone talks about the DOOM source code.</div>
+                    </div>
+                </div>
+                <div data-timestamp="4649" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:17:29</span>Assuming you want to record exactly what happens in the game, how would the looping handle random values; Say enemy bullets that are fired at random angles?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:29</span>Assuming you want to record exactly what happens in the game, how would the looping handle random values; Say enemy bullets that are fired at random angles?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:29</span>Assuming you want to record exactly what happens in the game, how would the looping handle random values; Say enemy bullets that are fired at random angles?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4703" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:18:23</span>If we dump memory to disk in a large-scale application, wouldn&#39;t that cause more than a 1GB footprint for every state?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:23</span>If we dump memory to disk in a large-scale application, wouldn&#39;t that cause more than a 1GB footprint for every state?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:23</span>If we dump memory to disk in a large-scale application, wouldn&#39;t that cause more than a 1GB footprint for every state?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4774" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:19:34</span>I don&#39;t get the stuff where you declare a variable without initializing it, and then you use the address to it in a function call. Is that a dummy thing, or what is it used for?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:34</span>I don&#39;t get the stuff where you declare a variable without initializing it, and then you use the address to it in a function call. Is that a dummy thing, or what is it used for?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:34</span>I don&#39;t get the stuff where you declare a variable without initializing it, and then you use the address to it in a function call. Is that a dummy thing, or what is it used for?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4909" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:21:49</span>You can make the recording instantaneous using copy-on-write pages.</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:49</span>You can make the recording instantaneous using copy-on-write pages.</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:49</span>You can make the recording instantaneous using copy-on-write pages.</div>
+                    </div>
+                </div>
+                <div data-timestamp="4978" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:22:58</span>Would the sparse file flags dropped the .hmi file size?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:58</span>Would the sparse file flags dropped the .hmi file size?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:58</span>Would the sparse file flags dropped the .hmi file size?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5009" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:23:29</span>I&#39;m still not sure why we&#39;re using the Windows API to get memory instead of the standard library. Why are we making Windows calls if we are supposed to be doing everything from scratch?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:29</span>I&#39;m still not sure why we&#39;re using the Windows API to get memory instead of the standard library. Why are we making Windows calls if we are supposed to be doing everything from scratch?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:29</span>I&#39;m still not sure why we&#39;re using the Windows API to get memory instead of the standard library. Why are we making Windows calls if we are supposed to be doing everything from scratch?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5089" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:24:49</span>As the game grows, how are you going to partition the game memory between systems to keep the record-and-playback feature working?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:49</span>As the game grows, how are you going to partition the game memory between systems to keep the record-and-playback feature working?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:49</span>As the game grows, how are you going to partition the game memory between systems to keep the record-and-playback feature working?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5120" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:25:20</span>Would it make sense to temporary lessen the size of game memory we don&#39;t use at the moment anyway?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:20</span>Would it make sense to temporary lessen the size of game memory we don&#39;t use at the moment anyway?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:20</span>Would it make sense to temporary lessen the size of game memory we don&#39;t use at the moment anyway?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5154" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:25:54</span>Are you happy with the timing FPS results? I found an old article on _rdtsc() for more accurate timing.</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:54</span>Are you happy with the timing FPS results? I found an old article on _rdtsc() for more accurate timing.</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:54</span>Are you happy with the timing FPS results? I found an old article on _rdtsc() for more accurate timing.</div>
+                    </div>
+                </div>
+                <div data-timestamp="5221" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:27:01</span>When would the Mac code start? I am following with Windows in a VM and it&#39;s really slow.</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:01</span>When would the Mac code start? I am following with Windows in a VM and it&#39;s really slow.</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:01</span>When would the Mac code start? I am following with Windows in a VM and it&#39;s really slow.</div>
+                    </div>
+                </div>
+                <div data-timestamp="5266" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:27:46</span>Is there any negative effects of making the page size bigger?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:46</span>Is there any negative effects of making the page size bigger?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:46</span>Is there any negative effects of making the page size bigger?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5387" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:29:47</span>How do you calculate the size of a struct?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:47</span>How do you calculate the size of a struct?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:47</span>How do you calculate the size of a struct?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5498" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:31:38</span>Can you add line numbers, so those of us following along have an easier time?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:38</span>Can you add line numbers, so those of us following along have an easier time?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:38</span>Can you add line numbers, so those of us following along have an easier time?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5630" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:33:50</span>I believe some people think that the game_state is saved every time with the input, whereas it is only saved at the beginning of the recording and then modified through input playback.</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:50</span>I believe some people think that the game_state is saved every time with the input, whereas it is only saved at the beginning of the recording and then modified through input playback.</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:50</span>I believe some people think that the game_state is saved every time with the input, whereas it is only saved at the beginning of the recording and then modified through input playback.</div>
+                    </div>
+                </div>
+                <div data-timestamp="5661" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:34:21</span>Do you think the recording technique will run into problems if we have multiple threads using the game_state?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:21</span>Do you think the recording technique will run into problems if we have multiple threads using the game_state?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:21</span>Do you think the recording technique will run into problems if we have multiple threads using the game_state?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5707" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:35:07</span>If VirtualAlloc() does not guarantee contiguous memory, could this pose a hindrance to cache optimizations?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:07</span>If VirtualAlloc() does not guarantee contiguous memory, could this pose a hindrance to cache optimizations?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:07</span>If VirtualAlloc() does not guarantee contiguous memory, could this pose a hindrance to cache optimizations?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5805" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:36:45</span>Where can I get earlier versions of the code? The link only gives me the latest version.</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:45</span>Where can I get earlier versions of the code? The link only gives me the latest version.</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:45</span>Where can I get earlier versions of the code? The link only gives me the latest version.</div>
+                    </div>
+                </div>
+                <div data-timestamp="5835" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:37:15</span>Wrap-up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:15</span>Wrap-up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:15</span>Wrap-up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day025/"><div>&#9196;</div><div>Next: 'Finishing the Win32 Prototyping Layer'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

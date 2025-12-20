@@ -1,0 +1,915 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asm, debug system, hardware, hot reloading, language, lighting, memory, optimisation, performance, sampling, simd, threading, Administrivia, Blackboard, Chat Comment, In-Game, Programming, Rant, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Examining the CPU Voxel Sampling</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel</div>
+                            <div class="ref_title">Intel Intrinsics Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="5206" class="timecode"><span class="ref_index">[1]</span><span class="time">1:26:46</span></span><span data-timestamp="6752" class="timecode"><span class="ref_index">[3]</span><span class="time">1:52:32</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://uops.info/table.html" href="https://uops.info/table.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">uops.info</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="5206" class="timecode"><span class="ref_index">[2]</span><span class="time">1:26:46</span></span><span data-timestamp="6752" class="timecode"><span class="ref_index">[4]</span><span class="time">1:52:32</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://en.wikichip.org/wiki/intel/microarchitectures/skylake" href="https://en.wikichip.org/wiki/intel/microarchitectures/skylake" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">WikiChip</div>
+                            <div class="ref_title">Skylake (client) - Microarchitectures - Intel</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7997" class="timecode"><span class="ref_index">[5]</span><span class="time">2:13:17</span></span><span data-timestamp="8663" class="timecode"><span class="ref_index">[7]</span><span class="time">2:24:23</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.techpowerup.com/215333/intel-skylake-die-layout-detailed" href="https://www.techpowerup.com/215333/intel-skylake-die-layout-detailed" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">TechPowerUp</div>
+                            <div class="ref_title">Intel &quot;Skylake&quot; Die Layout Detailed</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7997" class="timecode"><span class="ref_index">[6]</span><span class="time">2:13:17</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://csillustrated.berkeley.edu/PDFs/handouts/cache-3-associativity-handout.pdf" href="http://csillustrated.berkeley.edu/PDFs/handouts/cache-3-associativity-handout.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Katrina Yim (University of California, Berkeley)</div>
+                            <div class="ref_title">Cache Associativity</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8663" class="timecode"><span class="ref_index">[8]</span><span class="time">2:24:23</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content debug-system">
+                                <span class="icon category debug-system"></span><span class="cineraText">debug system</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content hot-reloading">
+                                <span class="icon category hot-reloading"></span><span class="cineraText">hot reloading</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content optimisation">
+                                <span class="icon category optimisation"></span><span class="cineraText">optimisation</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content sampling">
+                                <span class="icon category sampling"></span><span class="cineraText">sampling</span>
+                            </div>
+                            <div class="filter_content simd">
+                                <span class="icon category simd"></span><span class="cineraText">simd</span>
+                            </div>
+                            <div class="filter_content threading">
+                                <span class="icon category threading"></span><span class="cineraText">threading</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content rant">
+                                <span class="icon">&#128162;</span><span class="cineraText">Rant</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="MOqV_5x3qkg"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day610/"><div>&#9195;</div><div>Previous: 'Removing Incorrect Voxel-Voxel Reflections'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="31" class="marker cat_lighting cat_performance cat_sampling run">
+                    <div class="cineraContent"><span class="timecode">0:31</span>Determine to blur the lighting samples across voxels and reducing the flicker, after speeding up the performance of the grid ray tracer<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="sampling" class="category sampling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:31</span>Determine to blur the lighting samples across voxels and reducing the flicker, after speeding up the performance of the grid ray tracer<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="sampling" class="category sampling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:31</span>Determine to blur the lighting samples across voxels and reducing the flicker, after speeding up the performance of the grid ray tracer<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="sampling" class="category sampling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="182" class="marker cat_lighting cat_performance programming">
+                    <div class="cineraContent"><span class="timecode">3:02</span>Prepare to enable hhlightprof to capture a grid-based ray cast run<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:02</span>Prepare to enable hhlightprof to capture a grid-based ray cast run<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:02</span>Prepare to enable hhlightprof to capture a grid-based ray cast run<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="416" class="marker cat_lighting cat_performance programming">
+                    <div class="cineraContent"><span class="timecode">6:56</span>Update InternalLightingCore() to dump out the new source_lightboxes<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:56</span>Update InternalLightingCore() to dump out the new source_lightboxes<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:56</span>Update InternalLightingCore() to dump out the new source_lightboxes<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="587" class="marker cat_lighting cat_performance programming">
+                    <div class="cineraContent"><span class="timecode">9:47</span>Compile in hhlightprof and update it to work with our grid ray caster<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:47</span>Compile in hhlightprof and update it to work with our grid ray caster<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:47</span>Compile in hhlightprof and update it to work with our grid ray caster<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="987" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">16:27</span>Break in to InternalLightingCore()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:27</span>Break in to InternalLightingCore()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:27</span>Break in to InternalLightingCore()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1104" class="marker cat_hot-reloading cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">18:24</span>Reload, to see the walk table break<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:24</span>Reload, to see the walk table break<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:24</span>Reload, to see the walk table break<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1128" class="marker cat_hot-reloading cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">18:48</span>Investigate the walk table breakage on hot reloading<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:48</span>Investigate the walk table breakage on hot reloading<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:48</span>Investigate the walk table breakage on hot reloading<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1252" class="marker cat_hot-reloading cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">20:52</span>Run in -Od, hot-reload and see the walk table break<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:52</span>Run in -Od, hot-reload and see the walk table break<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:52</span>Run in -Od, hot-reload and see the walk table break<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1292" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">21:32</span>Refamiliarise ourselves with the walk table structure and code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:32</span>Refamiliarise ourselves with the walk table structure and code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:32</span>Refamiliarise ourselves with the walk table structure and code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1362" class="marker cat_hot-reloading cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">22:42</span>Break in to InternalLightingCore() and inspect the LightSamplingWalkTable<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:42</span>Break in to InternalLightingCore() and inspect the LightSamplingWalkTable<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:42</span>Break in to InternalLightingCore() and inspect the LightSamplingWalkTable<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1528" class="marker cat_hot-reloading cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">25:28</span>Break in to GridRayCast() and inspect the WalkTable usage<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:28</span>Break in to GridRayCast() and inspect the WalkTable usage<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:28</span>Break in to GridRayCast() and inspect the WalkTable usage<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1622" class="marker cat_hot-reloading cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">27:02</span>Fix our walk table breakage by making ComputeWalkTable() block copy the SampleDirections, and set a fresh RayD and WalkTableOffset<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:02</span>Fix our walk table breakage by making ComputeWalkTable() block copy the SampleDirections, and set a fresh RayD and WalkTableOffset<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:02</span>Fix our walk table breakage by making ComputeWalkTable() block copy the SampleDirections, and set a fresh RayD and WalkTableOffset<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2012" class="marker cat_hot-reloading cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">33:32</span>Run in -Od, hot-reload and see the walk table remain intact<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:32</span>Run in -Od, hot-reload and see the walk table remain intact<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:32</span>Run in -Od, hot-reload and see the walk table remain intact<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2048" class="marker cat_hot-reloading cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">34:08</span>Run in -O2, hot-reload and see the walk table remain intact<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:08</span>Run in -O2, hot-reload and see the walk table remain intact<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:08</span>Run in -O2, hot-reload and see the walk table remain intact<span class="cineraCategories"><div title="hot reloading" class="category hot-reloading"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2082" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">34:42</span>Enable then disable the LightBoxDumpTrigger, to dump the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:42</span>Enable then disable the LightBoxDumpTrigger, to dump the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:42</span>Enable then disable the LightBoxDumpTrigger, to dump the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2117" class="marker cat_lighting admin">
+                    <div class="cineraContent"><span class="timecode">35:17</span>Check out our lighting dump files, noting the large size of the source_lighting.dump<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:17</span>Check out our lighting dump files, noting the large size of the source_lighting.dump<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:17</span>Check out our lighting dump files, noting the large size of the source_lighting.dump<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2204" class="marker cat_lighting cat_memory run">
+                    <div class="cineraContent"><span class="timecode">36:44</span>Hit a read access violation in GetAlignmentOffset() from hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:44</span>Hit a read access violation in GetAlignmentOffset() from hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:44</span>Hit a read access violation in GetAlignmentOffset() from hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2234" class="marker cat_lighting cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">37:14</span>Make ProfileRun() push the SampleDirectionTable onto the TempArena<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:14</span>Make ProfileRun() push the SampleDirectionTable onto the TempArena<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:14</span>Make ProfileRun() push the SampleDirectionTable onto the TempArena<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2254" class="marker cat_debug-system cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">37:34</span>Hit a write access violation in PushDebugLine()<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:34</span>Hit a write access violation in PushDebugLine()<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:34</span>Hit a write access violation in PushDebugLine()<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2264" class="marker cat_debug-system cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">37:44</span>Make ProfileRun() disable UpdateDebugLines<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:44</span>Make ProfileRun() disable UpdateDebugLines<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:44</span>Make ProfileRun() disable UpdateDebugLines<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2283" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">38:03</span>Run hhlightprof successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:03</span>Run hhlightprof successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:03</span>Run hhlightprof successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2315" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">38:35</span>Run an -O2 build of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:35</span>Run an -O2 build of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:35</span>Run an -O2 build of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2339" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">38:59</span>hhlightprof total seconds elapsed: 7.646482<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:59</span>hhlightprof total seconds elapsed: 7.646482<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:59</span>hhlightprof total seconds elapsed: 7.646482<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2403" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">40:03</span>Disable LIGHTING_USE_GRID<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:03</span>Disable LIGHTING_USE_GRID<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:03</span>Disable LIGHTING_USE_GRID<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2420" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">40:20</span>hhlightprof total seconds elapsed: 7.287836<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:20</span>hhlightprof total seconds elapsed: 7.287836<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:20</span>hhlightprof total seconds elapsed: 7.287836<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2442" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">40:42</span>Save off our timings, enable LIGHTING_USE_GRID and make GridRayCast() return early if not Debugging<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:42</span>Save off our timings, enable LIGHTING_USE_GRID and make GridRayCast() return early if not Debugging<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:42</span>Save off our timings, enable LIGHTING_USE_GRID and make GridRayCast() return early if not Debugging<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2554" class="marker cat_language rant speech">
+                    <div class="cineraContent"><span class="timecode">42:34</span>A few words on replacing language / compiler &quot;Errors&quot; and &quot;Warnings&quot; with &quot;I could not compile this&quot; and &quot;Things I noticed about the code&quot;<span class="cineraCategories"><div title="language" class="category language"></div><div title="Rant" class="categoryMedium rant">&#128162;</div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:34</span>A few words on replacing language / compiler &quot;Errors&quot; and &quot;Warnings&quot; with &quot;I could not compile this&quot; and &quot;Things I noticed about the code&quot;<span class="cineraCategories"><div title="language" class="category language"></div><div title="Rant" class="categoryMedium rant">&#128162;</div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:34</span>A few words on replacing language / compiler &quot;Errors&quot; and &quot;Warnings&quot; with &quot;I could not compile this&quot; and &quot;Things I noticed about the code&quot;<span class="cineraCategories"><div title="language" class="category language"></div><div title="Rant" class="categoryMedium rant">&#128162;</div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2729" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">45:29</span>hhlightprof total seconds elapsed (without ray casting): 1.246065<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:29</span>hhlightprof total seconds elapsed (without ray casting): 1.246065<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:29</span>hhlightprof total seconds elapsed (without ray casting): 1.246065<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2804" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">46:44</span>Let GridRayCast() do its work<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:44</span>Let GridRayCast() do its work<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:44</span>Let GridRayCast() do its work<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2814" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">46:54</span>hhlightprof total seconds elapsed: 7.706672<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:54</span>hhlightprof total seconds elapsed: 7.706672<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:54</span>hhlightprof total seconds elapsed: 7.706672<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2830" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">47:10</span>Reorganise GridRayCast() to decrement the CostMetric after the loops, and comment out debugging code<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:10</span>Reorganise GridRayCast() to decrement the CostMetric after the loops, and comment out debugging code<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:10</span>Reorganise GridRayCast() to decrement the CostMetric after the loops, and comment out debugging code<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3018" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">50:18</span>hhlightprof total seconds elapsed: 7.479611<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:18</span>hhlightprof total seconds elapsed: 7.479611<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:18</span>hhlightprof total seconds elapsed: 7.479611<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3046" class="marker cat_lighting cat_simd research">
+                    <div class="cineraContent"><span class="timecode">50:46</span>Note why the AABB testing loop in GridRayCast() does not tend to use all four SIMD lanes, and the simplicity of ComputeWalkTable()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:46</span>Note why the AABB testing loop in GridRayCast() does not tend to use all four SIMD lanes, and the simplicity of ComputeWalkTable()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:46</span>Note why the AABB testing loop in GridRayCast() does not tend to use all four SIMD lanes, and the simplicity of ComputeWalkTable()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3173" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">52:53</span>Determine to decouple the spatial and lighting voxel grids<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:53</span>Determine to decouple the spatial and lighting voxel grids<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:53</span>Determine to decouple the spatial and lighting voxel grids<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3235" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">53:55</span>Try decreasing the CostMetric from 16 to 4 in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:55</span>Try decreasing the CostMetric from 16 to 4 in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:55</span>Try decreasing the CostMetric from 16 to 4 in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3268" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">54:28</span>hhlightprof total seconds elapsed: 6.321697<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:28</span>hhlightprof total seconds elapsed: 6.321697<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:28</span>hhlightprof total seconds elapsed: 6.321697<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3300" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">55:00</span>Try decreasing the CostMetric from 4 to 0 in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:00</span>Try decreasing the CostMetric from 4 to 0 in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:00</span>Try decreasing the CostMetric from 4 to 0 in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3313" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">55:13</span>hhlightprof total seconds elapsed: 4.679288<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:13</span>hhlightprof total seconds elapsed: 4.679288<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:13</span>hhlightprof total seconds elapsed: 4.679288<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3334" class="marker cat_lighting cat_performance research">
+                    <div class="cineraContent"><span class="timecode">55:34</span>Interpret our 4.679288 seconds performance when casting no rays<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:34</span>Interpret our 4.679288 seconds performance when casting no rays<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:34</span>Interpret our 4.679288 seconds performance when casting no rays<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3496" class="marker cat_lighting cat_memory cat_performance cat_threading blackboard">
+                    <div class="cineraContent"><span class="timecode">58:16</span>Alignment of Atlas Cells<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="performance" class="category performance"></div><div title="threading" class="category threading"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:16</span>Alignment of Atlas Cells<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="performance" class="category performance"></div><div title="threading" class="category threading"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:16</span>Alignment of Atlas Cells<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div><div title="performance" class="category performance"></div><div title="threading" class="category threading"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4008" class="marker cat_lighting cat_performance cat_threading research">
+                    <div class="cineraContent"><span class="timecode">1:06:48</span>Determine to remove the mutex from our atlas traversal code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="threading" class="category threading"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:48</span>Determine to remove the mutex from our atlas traversal code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="threading" class="category threading"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:48</span>Determine to remove the mutex from our atlas traversal code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="threading" class="category threading"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4218" class="marker cat_lighting cat_performance cat_threading programming">
+                    <div class="cineraContent"><span class="timecode">1:10:18</span>Change ComputeLightPropagationWork() to distribute the lighting computation along the Y axis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="threading" class="category threading"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:18</span>Change ComputeLightPropagationWork() to distribute the lighting computation along the Y axis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="threading" class="category threading"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:18</span>Change ComputeLightPropagationWork() to distribute the lighting computation along the Y axis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="threading" class="category threading"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4320" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">1:12:00</span>hhlightprof total seconds elapsed: 4.422329<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:00</span>hhlightprof total seconds elapsed: 4.422329<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:00</span>hhlightprof total seconds elapsed: 4.422329<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4361" class="marker cat_lighting cat_performance research">
+                    <div class="cineraContent"><span class="timecode">1:12:41</span>Consider compacting the lighting atlases<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:41</span>Consider compacting the lighting atlases<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:41</span>Consider compacting the lighting atlases<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4484" class="marker cat_lighting cat_performance research">
+                    <div class="cineraContent"><span class="timecode">1:14:44</span>Consider the performance of ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:44</span>Consider the performance of ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:44</span>Consider the performance of ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4541" class="marker cat_lighting cat_performance programming">
+                    <div class="cineraContent"><span class="timecode">1:15:41</span>Try greatly simplifying ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:41</span>Try greatly simplifying ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:41</span>Try greatly simplifying ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4606" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">1:16:46</span>hhlightprof total seconds elapsed: 3.160531<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:46</span>hhlightprof total seconds elapsed: 3.160531<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:46</span>hhlightprof total seconds elapsed: 3.160531<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4619" class="marker cat_lighting cat_performance programming">
+                    <div class="cineraContent"><span class="timecode">1:16:59</span>Try further simplifying ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:59</span>Try further simplifying ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:59</span>Try further simplifying ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4653" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">1:17:33</span>hhlightprof total seconds elapsed: 1.815950<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:33</span>hhlightprof total seconds elapsed: 1.815950<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:33</span>hhlightprof total seconds elapsed: 1.815950<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4670" class="marker cat_lighting cat_performance research">
+                    <div class="cineraContent"><span class="timecode">1:17:50</span>Determine to speed up ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:50</span>Determine to speed up ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:50</span>Determine to speed up ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4702" class="marker cat_lighting cat_performance programming">
+                    <div class="cineraContent"><span class="timecode">1:18:22</span>Instrument ComputeVoxelIrradianceAt() to more specifically gauge its performance<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:22</span>Instrument ComputeVoxelIrradianceAt() to more specifically gauge its performance<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:22</span>Instrument ComputeVoxelIrradianceAt() to more specifically gauge its performance<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4908" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">1:21:48</span>hhlightprof total seconds elapsed: 2.806293<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:48</span>hhlightprof total seconds elapsed: 2.806293<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:48</span>hhlightprof total seconds elapsed: 2.806293<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4920" class="marker cat_asm cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">1:22:00</span>Break in to ComputeVoxelIrradianceAt() and inspect the assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:00</span>Break in to ComputeVoxelIrradianceAt() and inspect the assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:00</span>Break in to ComputeVoxelIrradianceAt() and inspect the assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5011" class="marker cat_lighting cat_optimisation research">
+                    <div class="cineraContent"><span class="timecode">1:23:31</span>Determine to optimise out some of the math in ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:31</span>Determine to optimise out some of the math in ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:31</span>Determine to optimise out some of the math in ComputeVoxelIrradianceAt()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5206" class="marker cat_lighting cat_optimisation cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/,https://uops.info/table.html">
+                    <div class="cineraContent"><span class="timecode">1:26:46</span>Make ComputeVoxelIrradianceAt() operate wide<sup>1</sup><sup>,2</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:46</span>Make ComputeVoxelIrradianceAt() operate wide<sup>1</sup><sup>,2</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:46</span>Make ComputeVoxelIrradianceAt() operate wide<sup>1</sup><sup>,2</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6547" class="marker cat_hardware cat_performance programming">
+                    <div class="cineraContent"><span class="timecode">1:49:07</span>Dependents, and Cycle Ordering<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="performance" class="category performance"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:07</span>Dependents, and Cycle Ordering<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:07</span>Dependents, and Cycle Ordering<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6752" class="marker cat_lighting cat_optimisation cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/,https://uops.info/table.html">
+                    <div class="cineraContent"><span class="timecode">1:52:32</span>Continue to make ComputeVoxelIrradianceAt() operate wide<sup>3</sup><sup>,4</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:32</span>Continue to make ComputeVoxelIrradianceAt() operate wide<sup>3</sup><sup>,4</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:32</span>Continue to make ComputeVoxelIrradianceAt() operate wide<sup>3</sup><sup>,4</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7643" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">2:07:23</span>Let GridRayCast() use the original CostMetric<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:23</span>Let GridRayCast() use the original CostMetric<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:23</span>Let GridRayCast() use the original CostMetric<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7668" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">2:07:48</span>We are back to normal<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:48</span>We are back to normal<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:48</span>We are back to normal<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7673" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:07:53</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:53</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:53</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7695" class="marker cat_lighting cat_simd authored">
+                    <div class="cineraContent"><span class="timecode">2:08:15</span><span class="author" data-hue="207" data-saturation="84%">sagian2005</span> Q: Would things go better if you started with U, V and W each 4 wide?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:15</span><span class="author" data-hue="207" data-saturation="84%">sagian2005</span> Q: Would things go better if you started with U, V and W each 4 wide?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:15</span><span class="author" data-hue="207" data-saturation="84%">sagian2005</span> Q: Would things go better if you started with U, V and W each 4 wide?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7776" class="marker cat_threading authored">
+                    <div class="cineraContent"><span class="timecode">2:09:36</span><span class="author" data-hue="241" data-saturation="82%">cirdanvalen</span> Q: Could you not pad by 8 bytes to fix the overlap?<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:36</span><span class="author" data-hue="241" data-saturation="82%">cirdanvalen</span> Q: Could you not pad by 8 bytes to fix the overlap?<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:36</span><span class="author" data-hue="241" data-saturation="82%">cirdanvalen</span> Q: Could you not pad by 8 bytes to fix the overlap?<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7803" class="marker cat_hardware cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">2:10:03</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: The L0 determines how many cache lines the CPU can hold, right?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:03</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: The L0 determines how many cache lines the CPU can hold, right?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:03</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: The L0 determines how many cache lines the CPU can hold, right?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7843" class="marker cat_hardware cat_performance authored">
+                    <div class="cineraContent"><span class="timecode">2:10:43</span><span class="author" data-hue="313" data-saturation="74%">rooctag</span> Q: Would you ever consider just going over explaining how an operations takes x amount of CPU ops? Or will that be in the Intro to C?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="performance" class="category performance"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:43</span><span class="author" data-hue="313" data-saturation="74%">rooctag</span> Q: Would you ever consider just going over explaining how an operations takes x amount of CPU ops? Or will that be in the Intro to C?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="performance" class="category performance"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:43</span><span class="author" data-hue="313" data-saturation="74%">rooctag</span> Q: Would you ever consider just going over explaining how an operations takes x amount of CPU ops? Or will that be in the Intro to C?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="performance" class="category performance"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7859" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:10:59</span><span class="author" data-hue="273" data-saturation="97%">ali4410</span> Q: Hi, do you recommend learning vi keybindings, emacs keybindings, or neither?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:59</span><span class="author" data-hue="273" data-saturation="97%">ali4410</span> Q: Hi, do you recommend learning vi keybindings, emacs keybindings, or neither?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:59</span><span class="author" data-hue="273" data-saturation="97%">ali4410</span> Q: Hi, do you recommend learning vi keybindings, emacs keybindings, or neither?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7920" class="marker cat_hardware cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">2:12:00</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: The memory caches on the CPU<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:12:00</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: The memory caches on the CPU<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:12:00</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: The memory caches on the CPU<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7997" class="marker cat_hardware cat_memory research" data-ref="https://en.wikichip.org/wiki/intel/microarchitectures/skylake,https://www.techpowerup.com/215333/intel-skylake-die-layout-detailed">
+                    <div class="cineraContent"><span class="timecode">2:13:17</span>Hardware Caches<sup>5</sup><sup>,6</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:17</span>Hardware Caches<sup>5</sup><sup>,6</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:17</span>Hardware Caches<sup>5</sup><sup>,6</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8570" class="marker cat_hardware cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">2:22:50</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Yes, that answers my question. I just was just off by one index<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:50</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Yes, that answers my question. I just was just off by one index<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:50</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Yes, that answers my question. I just was just off by one index<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8595" class="marker cat_lighting cat_optimisation cat_performance cat_simd authored">
+                    <div class="cineraContent"><span class="timecode">2:23:15</span><span class="author" data-hue="298" data-saturation="85%">billdstrong</span> Q: How much time are you expecting to shave off from making this routine wide? About 2 / 3 or so? What are your expectations for your grid walk optimization? Are you trying to get under 4 seconds or lower?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:15</span><span class="author" data-hue="298" data-saturation="85%">billdstrong</span> Q: How much time are you expecting to shave off from making this routine wide? About 2 / 3 or so? What are your expectations for your grid walk optimization? Are you trying to get under 4 seconds or lower?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:15</span><span class="author" data-hue="298" data-saturation="85%">billdstrong</span> Q: How much time are you expecting to shave off from making this routine wide? About 2 / 3 or so? What are your expectations for your grid walk optimization? Are you trying to get under 4 seconds or lower?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8631" class="marker cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">2:23:51</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Yeah, I mentioned those L caches. I was wondering how to determine how many cache lines a core holds<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:51</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Yeah, I mentioned those L caches. I was wondering how to determine how many cache lines a core holds<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:51</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Yeah, I mentioned those L caches. I was wondering how to determine how many cache lines a core holds<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8663" class="marker cat_hardware cat_memory research" data-ref="https://en.wikichip.org/wiki/intel/microarchitectures/skylake,http://csillustrated.berkeley.edu/PDFs/handouts/cache-3-associativity-handout.pdf">
+                    <div class="cineraContent"><span class="timecode">2:24:23</span>8-Way Caches<sup>7</sup><sup>,8</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:24:23</span>8-Way Caches<sup>7</sup><sup>,8</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:24:23</span>8-Way Caches<sup>7</sup><sup>,8</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8941" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:29:01</span>Thanks, everyone<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:29:01</span>Thanks, everyone<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:29:01</span>Thanks, everyone<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day612/"><div>&#9196;</div><div>Next: 'First Pass Optimization of Voxel Sampling'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

@@ -1,0 +1,635 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="geometry, lighting, optimisation, performance, procedural generation, rendering, Blackboard, Chat Comment, In-Game, Programming, Speech, Trivia">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Modifying Lighting to Use a Spatial Hierarchy</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content geometry">
+                                <span class="icon category geometry"></span><span class="cineraText">geometry</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content optimisation">
+                                <span class="icon category optimisation"></span><span class="cineraText">optimisation</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content procedural-generation">
+                                <span class="icon category procedural-generation"></span><span class="cineraText">procedural generation</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                            <div class="filter_content trivia">
+                                <span class="icon">&#127922;</span><span class="cineraText">Trivia</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="XFR9WRnPgx4"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day422/"><div>&#9195;</div><div>Previous: 'Raycasting AABBs Directly'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="7" class="marker cat_lighting cat_optimisation cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day, optimising the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day, optimising the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day, optimising the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="157" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:37</span>Consider the intractability of O(n²) algorithms<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:37</span>Consider the intractability of O(n²) algorithms<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:37</span>Consider the intractability of O(n²) algorithms<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="430" class="marker cat_lighting cat_optimisation cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">7:10</span>Consider the kinds of numbers at play in our lighting system, and possible ways to optimise it as it is<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:10</span>Consider the kinds of numbers at play in our lighting system, and possible ways to optimise it as it is<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:10</span>Consider the kinds of numbers at play in our lighting system, and possible ways to optimise it as it is<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="650" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">10:50</span>Standard raycasting acceleration structure, bucketing up lighting elements<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:50</span>Standard raycasting acceleration structure, bucketing up lighting elements<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:50</span>Standard raycasting acceleration structure, bucketing up lighting elements<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="878" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">14:38</span>Ordered traversal of this acceleration structure<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:38</span>Ordered traversal of this acceleration structure<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:38</span>Ordered traversal of this acceleration structure<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1049" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">17:29</span>k-d tree<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:29</span>k-d tree<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:29</span>k-d tree<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1242" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering blackboard">
+                    <div class="cineraContent"><span class="timecode">20:42</span>Multiresolution tree, aggregating lighting elements to produce a plausible, approximate solution<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:42</span>Multiresolution tree, aggregating lighting elements to produce a plausible, approximate solution<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:42</span>Multiresolution tree, aggregating lighting elements to produce a plausible, approximate solution<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1530" class="marker cat_geometry speech">
+                    <div class="cineraContent"><span class="timecode">25:30</span>Consider unifying the spatial partitioning for use by all systems<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:30</span>Consider unifying the spatial partitioning for use by all systems<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:30</span>Consider unifying the spatial partitioning for use by all systems<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1801" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">30:01</span>Create handmade_lighting.h and handmade_lighting.cpp<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:01</span>Create handmade_lighting.h and handmade_lighting.cpp<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:01</span>Create handmade_lighting.h and handmade_lighting.cpp<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2019" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">33:39</span>A few words on separating code into files<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:39</span>A few words on separating code into files<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:39</span>A few words on separating code into files<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2124" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">35:24</span>Continue to populate handmade_lighting.h and #include our new files<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:24</span>Continue to populate handmade_lighting.h and #include our new files<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:24</span>Continue to populate handmade_lighting.h and #include our new files<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2291" class="marker cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">38:11</span>Run the game to see our lighting solution running not multiresolution, and consider how to split it into pieces<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:11</span>Run the game to see our lighting solution running not multiresolution, and consider how to split it into pieces<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:11</span>Run the game to see our lighting solution running not multiresolution, and consider how to split it into pieces<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2671" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">44:31</span>Augment lighting_box and lighting_solution to support child nodes, and propagate this to LightingTest() and RayCast()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:31</span>Augment lighting_box and lighting_solution to support child nodes, and propagate this to LightingTest() and RayCast()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:31</span>Augment lighting_box and lighting_solution to support child nodes, and propagate this to LightingTest() and RayCast()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3387" class="marker cat_lighting cat_performance cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">56:27</span>Run the game and consult the lighting solution data in the profiler<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:27</span>Run the game and consult the lighting solution data in the profiler<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:27</span>Run the game and consult the lighting solution data in the profiler<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3537" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">58:57</span>Begin to enable RayCast() to operate on a spatial partition<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:57</span>Begin to enable RayCast() to operate on a spatial partition<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:57</span>Begin to enable RayCast() to operate on a spatial partition<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3840" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:04:00</span>Simplify raycast_result and reorganise RayCast() to handle this<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:00</span>Simplify raycast_result and reorganise RayCast() to handle this<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:00</span>Simplify raycast_result and reorganise RayCast() to handle this<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4118" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:08:38</span>Run the game to see that that didn&#39;t much affect our speed<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:38</span>Run the game to see that that didn&#39;t much affect our speed<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:38</span>Run the game to see that that didn&#39;t much affect our speed<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4137" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:08:57</span>Introduce a new RayCast(), rename the existing one to RayCastRecurse() and continue to enable it to operate on a spatial partition, calling itself recursively<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:57</span>Introduce a new RayCast(), rename the existing one to RayCastRecurse() and continue to enable it to operate on a spatial partition, calling itself recursively<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:57</span>Introduce a new RayCast(), rename the existing one to RayCastRecurse() and continue to enable it to operate on a spatial partition, calling itself recursively<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4450" class="marker cat_geometry speech">
+                    <div class="cineraContent"><span class="timecode">1:14:10</span>A few words on ray intersection of a convex vs concave solid<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:10</span>A few words on ray intersection of a convex vs concave solid<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:10</span>A few words on ray intersection of a convex vs concave solid<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4490" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:14:50</span>Finish implementing RayCastRecurse()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:50</span>Finish implementing RayCastRecurse()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:50</span>Finish implementing RayCastRecurse()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4582" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:16:22</span>Introduce BuildSpatialPartitionForLighting()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:22</span>Introduce BuildSpatialPartitionForLighting()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:22</span>Introduce BuildSpatialPartitionForLighting()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4950" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:22:30</span>Run the game to see that we&#39;re doing okay<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:30</span>Run the game to see that we&#39;re doing okay<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:30</span>Run the game to see that we&#39;re doing okay<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4985" class="marker cat_geometry blackboard">
+                    <div class="cineraContent"><span class="timecode">1:23:05</span>Checking against the backface, to handle the case when a ray originates inside a cube<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:05</span>Checking against the backface, to handle the case when a ray originates inside a cube<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:05</span>Checking against the backface, to handle the case when a ray originates inside a cube<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5148" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:25:48</span>Run the game to confirm that it seems to be working okay<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:48</span>Run the game to confirm that it seems to be working okay<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:48</span>Run the game to confirm that it seems to be working okay<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5212" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:26:52</span><span class="author" data-hue="170" data-saturation="89%">insobot</span> 86 minutes into the main stream. 34 until Q&amp;A. (based on NOTE)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:52</span><span class="author" data-hue="170" data-saturation="89%">insobot</span> 86 minutes into the main stream. 34 until Q&amp;A. (based on NOTE)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:52</span><span class="author" data-hue="170" data-saturation="89%">insobot</span> 86 minutes into the main stream. 34 until Q&amp;A. (based on NOTE)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5228" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:27:08</span>Consider how to build a basic spatial partition<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:08</span>Consider how to build a basic spatial partition<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:08</span>Consider how to build a basic spatial partition<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5373" class="marker cat_performance run">
+                    <div class="cineraContent"><span class="timecode">1:29:33</span>Run the game to see that ComputeLightPropagation takes 148,634,510 cycles<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:33</span>Run the game to see that ComputeLightPropagation takes 148,634,510 cycles<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:33</span>Run the game to see that ComputeLightPropagation takes 148,634,510 cycles<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5404" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:30:04</span>Add BoxTable indirection to lighting_solution, and introduce GetBox()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:04</span>Add BoxTable indirection to lighting_solution, and introduce GetBox()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:04</span>Add BoxTable indirection to lighting_solution, and introduce GetBox()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5563" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:32:43</span>Enable BuildSpatialPartitionForLighting() to loop over our BoxTable<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:43</span>Enable BuildSpatialPartitionForLighting() to loop over our BoxTable<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:43</span>Enable BuildSpatialPartitionForLighting() to loop over our BoxTable<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5623" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:33:43</span>Run the game to see black<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:43</span>Run the game to see black<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:43</span>Run the game to see black<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5634" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:33:54</span>Fix BuildSpatialPartitionForLighting() to loop over the BoxTable after BoxCount has been incremented<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:54</span>Fix BuildSpatialPartitionForLighting() to loop over the BoxTable after BoxCount has been incremented<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:54</span>Fix BuildSpatialPartitionForLighting() to loop over the BoxTable after BoxCount has been incremented<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5661" class="marker cat_geometry cat_lighting cat_optimisation cat_performance cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:34:21</span>Run the game to see that that&#39;s fine and did not appreciably affect our performance<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:21</span>Run the game to see that that&#39;s fine and did not appreciably affect our performance<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:21</span>Run the game to see that that&#39;s fine and did not appreciably affect our performance<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5684" class="marker cat_geometry speech">
+                    <div class="cineraContent"><span class="timecode">1:34:44</span>Note that our indirection table allows a single child node to be placed in multiple places<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:44</span>Note that our indirection table allows a single child node to be placed in multiple places<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:44</span>Note that our indirection table allows a single child node to be placed in multiple places<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5739" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:35:39</span>Introduce AddOverlappingBoxes() and SplitBox()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:39</span>Introduce AddOverlappingBoxes() and SplitBox()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:39</span>Introduce AddOverlappingBoxes() and SplitBox()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6194" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:43:14</span>Run the game and note that we are testing against a spatial hierarchy<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:14</span>Run the game and note that we are testing against a spatial hierarchy<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:14</span>Run the game and note that we are testing against a spatial hierarchy<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6223" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:43:43</span>Make PlayWorld() generate 32 screens<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:43</span>Make PlayWorld() generate 32 screens<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:43</span>Make PlayWorld() generate 32 screens<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6253" class="marker cat_geometry cat_lighting cat_optimisation cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:44:13</span>Run the game to see our slowdown<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:13</span>Run the game to see our slowdown<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:13</span>Run the game to see our slowdown<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6606" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:50:06</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:06</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:06</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6643" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">1:50:43</span><span class="author" data-hue="130" data-saturation="93%">praet_a51</span> Q: Can you try lighting as it is in a release build?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:43</span><span class="author" data-hue="130" data-saturation="93%">praet_a51</span> Q: Can you try lighting as it is in a release build?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:43</span><span class="author" data-hue="130" data-saturation="93%">praet_a51</span> Q: Can you try lighting as it is in a release build?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6656" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:50:56</span>Try to build in release mode</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:56</span>Try to build in release mode</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:56</span>Try to build in release mode</div>
+                    </div>
+                </div>
+                <div data-timestamp="6677" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:51:17</span>Run the game to see that the O(n²) is too slow<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:17</span>Run the game to see that the O(n²) is too slow<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:17</span>Run the game to see that the O(n²) is too slow<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6699" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:51:39</span>Make PlayWorld() produce fewer rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:39</span>Make PlayWorld() produce fewer rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:39</span>Make PlayWorld() produce fewer rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6711" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:51:51</span>Run the game to see the fine framerate<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:51</span>Run the game to see the fine framerate<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:51</span>Run the game to see the fine framerate<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6764" class="marker cat_geometry authored">
+                    <div class="cineraContent"><span class="timecode">1:52:44</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: You mentioned something about the need to handle concave and convex solids differently when raycasting, due to (I believe) the possibility of entering and leaving a single face of a concave solid multiple times. Any chance you could explain a little more how this could affect us if we had concave solids?<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:44</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: You mentioned something about the need to handle concave and convex solids differently when raycasting, due to (I believe) the possibility of entering and leaving a single face of a concave solid multiple times. Any chance you could explain a little more how this could affect us if we had concave solids?<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:44</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: You mentioned something about the need to handle concave and convex solids differently when raycasting, due to (I believe) the possibility of entering and leaving a single face of a concave solid multiple times. Any chance you could explain a little more how this could affect us if we had concave solids?<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6781" class="marker cat_geometry cat_optimisation blackboard">
+                    <div class="cineraContent"><span class="timecode">1:53:01</span>Optimally raycasting a split convex solid, based on its front face<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="optimisation" class="category optimisation"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:01</span>Optimally raycasting a split convex solid, based on its front face<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="optimisation" class="category optimisation"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:01</span>Optimally raycasting a split convex solid, based on its front face<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="optimisation" class="category optimisation"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7078" class="marker cat_geometry cat_optimisation blackboard">
+                    <div class="cineraContent"><span class="timecode">1:57:58</span>Raycasting a split concave solid<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="optimisation" class="category optimisation"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:58</span>Raycasting a split concave solid<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="optimisation" class="category optimisation"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:58</span>Raycasting a split concave solid<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="optimisation" class="category optimisation"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7355" class="marker cat_geometry cat_optimisation blackboard">
+                    <div class="cineraContent"><span class="timecode">2:02:35</span>Raycasting against back faces of concave solids may work the same<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="optimisation" class="category optimisation"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:35</span>Raycasting against back faces of concave solids may work the same<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="optimisation" class="category optimisation"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:35</span>Raycasting against back faces of concave solids may work the same<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="optimisation" class="category optimisation"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7576" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:06:16</span><span class="author" data-hue="133" data-saturation="93%">enyo_enev</span> Q: Why did we skip the part with placing cubes over entities such as trees and the hero? And also they should receive light in some way, right?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:16</span><span class="author" data-hue="133" data-saturation="93%">enyo_enev</span> Q: Why did we skip the part with placing cubes over entities such as trees and the hero? And also they should receive light in some way, right?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:16</span><span class="author" data-hue="133" data-saturation="93%">enyo_enev</span> Q: Why did we skip the part with placing cubes over entities such as trees and the hero? And also they should receive light in some way, right?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7603" class="marker cat_nullTopic authored trivia">
+                    <div class="cineraContent"><span class="timecode">2:06:43</span><span class="author" data-hue="183" data-saturation="81%">zennmystic</span> Q: We just noticed your <span class="project" data-hue="13" data-saturation="79%">4coder</span> and <span class="project" data-hue="26" data-saturation="83%">Milton</span> are colour coordinated. What are the values?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div><div title="Trivia" class="categoryMedium trivia">&#127922;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:43</span><span class="author" data-hue="183" data-saturation="81%">zennmystic</span> Q: We just noticed your <span class="project" data-hue="13" data-saturation="79%">4coder</span> and <span class="project" data-hue="26" data-saturation="83%">Milton</span> are colour coordinated. What are the values?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div><div title="Trivia" class="categoryMedium trivia">&#127922;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:43</span><span class="author" data-hue="183" data-saturation="81%">zennmystic</span> Q: We just noticed your <span class="project" data-hue="13" data-saturation="79%">4coder</span> and <span class="project" data-hue="26" data-saturation="83%">Milton</span> are colour coordinated. What are the values?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div><div title="Trivia" class="categoryMedium trivia">&#127922;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7665" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:07:45</span>That&#39;s it for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:45</span>That&#39;s it for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:45</span>That&#39;s it for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day424/"><div>&#9196;</div><div>Next: 'Modifying Lighting to Use a Spatial Hierarchy'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

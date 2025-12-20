@@ -1,0 +1,778 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="api, asset loading, camera, engine, hardware, language, lighting, memory, rendering, threading, Administrivia, Chat Comment, Drawing, In-Game, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Separating the Renderer Completely (Part 2)</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://msdn.microsoft.com/en-us/library/z5hh6ee9.aspx" href="https://msdn.microsoft.com/en-us/library/z5hh6ee9.aspx" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">fopen_s, _wfopen_s</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="4221" class="timecode"><span class="ref_index">[1]</span><span class="time">1:10:21</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://youtu.be/ZHKGk3z54jE" href="https://youtu.be/ZHKGk3z54jE" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">YouTube</div>
+                            <div class="ref_title">CaseyLemongrab</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7989" class="timecode"><span class="ref_index">[2]</span><span class="time">2:13:09</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content api">
+                                <span class="icon category api"></span><span class="cineraText">api</span>
+                            </div>
+                            <div class="filter_content asset-loading">
+                                <span class="icon category asset-loading"></span><span class="cineraText">asset loading</span>
+                            </div>
+                            <div class="filter_content camera">
+                                <span class="icon category camera"></span><span class="cineraText">camera</span>
+                            </div>
+                            <div class="filter_content engine">
+                                <span class="icon category engine"></span><span class="cineraText">engine</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content threading">
+                                <span class="icon category threading"></span><span class="cineraText">threading</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content drawing">
+                                <span class="icon">&#127912;</span><span class="cineraText">Drawing</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="RS4kudtk0Xw"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day470/"><div>&#9195;</div><div>Previous: 'Separating the Renderer Completely (Part 1)'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Set the stage for the day making the texture system optional<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Set the stage for the day making the texture system optional<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Set the stage for the day making the texture system optional<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="134" class="marker cat_api speech">
+                    <div class="cineraContent"><span class="timecode">2:14</span>A few words on ping-ponging between the renderer test bed and the full game, to gradually work the code away from the game, like in cookery<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14</span>A few words on ping-ponging between the renderer test bed and the full game, to gradually work the code away from the game, like in cookery<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14</span>A few words on ping-ponging between the renderer test bed and the full game, to gradually work the code away from the game, like in cookery<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="256" class="marker cat_api programming">
+                    <div class="cineraContent"><span class="timecode">4:16</span>Pull out non-generic parts of handmade_renderer.h into handmade_math.h and handmade_renderer_software.h<span class="cineraCategories"><div title="api" class="category api"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:16</span>Pull out non-generic parts of handmade_renderer.h into handmade_math.h and handmade_renderer_software.h<span class="cineraCategories"><div title="api" class="category api"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:16</span>Pull out non-generic parts of handmade_renderer.h into handmade_math.h and handmade_renderer_software.h<span class="cineraCategories"><div title="api" class="category api"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="798" class="marker cat_api speech">
+                    <div class="cineraContent"><span class="timecode">13:18</span>Work towards the removal of loaded_bitmap from handmade_renderer.h in favour of a unified texture API<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:18</span>Work towards the removal of loaded_bitmap from handmade_renderer.h in favour of a unified texture API<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:18</span>Work towards the removal of loaded_bitmap from handmade_renderer.h in favour of a unified texture API<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1135" class="marker cat_api cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">18:55</span>Introduce renderer_texture to replace loaded_bitmap, propagating this replacement<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:55</span>Introduce renderer_texture to replace loaded_bitmap, propagating this replacement<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:55</span>Introduce renderer_texture to replace loaded_bitmap, propagating this replacement<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1796" class="marker cat_api cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">29:56</span>Run the game to see textured rendering<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:56</span>Run the game to see textured rendering<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:56</span>Run the game to see textured rendering<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1808" class="marker cat_api cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">30:08</span>Move loaded_bitmap out of handmade_renderer.h to guide our replacement of it<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:08</span>Move loaded_bitmap out of handmade_renderer.h to guide our replacement of it<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:08</span>Move loaded_bitmap out of handmade_renderer.h to guide our replacement of it<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2290" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">38:10</span>Create handmade_asset_rendering.cpp to contain the <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>-specific functions from handmade_renderer.cpp<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:10</span>Create handmade_asset_rendering.cpp to contain the <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>-specific functions from handmade_renderer.cpp<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:10</span>Create handmade_asset_rendering.cpp to contain the <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>-specific functions from handmade_renderer.cpp<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2457" class="marker cat_api cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">40:57</span>Replace loaded_bitmap with software_texture<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:57</span>Replace loaded_bitmap with software_texture<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:57</span>Replace loaded_bitmap with software_texture<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2660" class="marker cat_api cat_hardware cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">44:20</span>Change the hardware renderer to use renderer_texture directly<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:20</span>Change the hardware renderer to use renderer_texture directly<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:20</span>Change the hardware renderer to use renderer_texture directly<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3018" class="marker cat_api cat_hardware cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">50:18</span>Run the game and encounter a &quot;GL_INVALID_OPERATION&quot; OpenGL Error<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:18</span>Run the game and encounter a &quot;GL_INVALID_OPERATION&quot; OpenGL Error<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:18</span>Run the game and encounter a &quot;GL_INVALID_OPERATION&quot; OpenGL Error<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3069" class="marker cat_api cat_hardware cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">51:09</span>Fix RendererTextureFrom() to use the TextureHandle<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:09</span>Fix RendererTextureFrom() to use the TextureHandle<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:09</span>Fix RendererTextureFrom() to use the TextureHandle<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3097" class="marker cat_api cat_hardware cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">51:37</span>Run the game successfully<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:37</span>Run the game successfully<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:37</span>Run the game successfully<span class="cineraCategories"><div title="api" class="category api"></div><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3122" class="marker cat_api cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">52:02</span>Remove RendererTextureFrom() in favour of passing Bitmap-&gt;TextureHandle to PushQuad() and PushCube()<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:02</span>Remove RendererTextureFrom() in favour of passing Bitmap-&gt;TextureHandle to PushQuad() and PushCube()<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:02</span>Remove RendererTextureFrom() in favour of passing Bitmap-&gt;TextureHandle to PushQuad() and PushCube()<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3146" class="marker cat_api cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">52:26</span>Try to include handmade_renderer.cpp in win32_renderer_test.cpp, and set up to push our lighting solution into the renderer<span class="cineraCategories"><div title="api" class="category api"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:26</span>Try to include handmade_renderer.cpp in win32_renderer_test.cpp, and set up to push our lighting solution into the renderer<span class="cineraCategories"><div title="api" class="category api"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:26</span>Try to include handmade_renderer.cpp in win32_renderer_test.cpp, and set up to push our lighting solution into the renderer<span class="cineraCategories"><div title="api" class="category api"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3268" class="marker cat_api cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">54:28</span>Move lighting_point_state, lighting_box and LIGHT_POINTS_PER_CHUNK into handmade_renderer.h<span class="cineraCategories"><div title="api" class="category api"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:28</span>Move lighting_point_state, lighting_box and LIGHT_POINTS_PER_CHUNK into handmade_renderer.h<span class="cineraCategories"><div title="api" class="category api"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:28</span>Move lighting_point_state, lighting_box and LIGHT_POINTS_PER_CHUNK into handmade_renderer.h<span class="cineraCategories"><div title="api" class="category api"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3334" class="marker cat_api cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">55:34</span>Try to let win32_renderer_test.cpp call PushFullClear()<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:34</span>Try to let win32_renderer_test.cpp call PushFullClear()<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:34</span>Try to let win32_renderer_test.cpp call PushFullClear()<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3359" class="marker cat_api cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">55:59</span>Run the renderer test, see no clear colour and investigate why<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:59</span>Run the renderer test, see no clear colour and investigate why<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:59</span>Run the renderer test, see no clear colour and investigate why<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3392" class="marker cat_api cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">56:32</span>Make win32_renderer_test.cpp use PushFullClear() as the game uses it, performing the depth peel<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:32</span>Make win32_renderer_test.cpp use PushFullClear() as the game uses it, performing the depth peel<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:32</span>Make win32_renderer_test.cpp use PushFullClear() as the game uses it, performing the depth peel<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3495" class="marker cat_api cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">58:15</span>Run the renderer test to see our clear colour<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:15</span>Run the renderer test to see our clear colour<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:15</span>Run the renderer test to see our clear colour<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3514" class="marker cat_api cat_camera cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">58:34</span>Add a camera in win32_renderer_test.cpp<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:34</span>Add a camera in win32_renderer_test.cpp<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:34</span>Add a camera in win32_renderer_test.cpp<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3774" class="marker cat_api cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:02:54</span>Call PushCube() in win32_renderer_test.cpp<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:54</span>Call PushCube() in win32_renderer_test.cpp<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:54</span>Call PushCube() in win32_renderer_test.cpp<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3833" class="marker cat_api cat_camera cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:03:53</span>Run the game and see no cube<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:53</span>Run the game and see no cube<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:53</span>Run the game and see no cube<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3884" class="marker cat_api cat_camera cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:04:44</span>Set CameraDolly to 10.0f<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:44</span>Set CameraDolly to 10.0f<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:44</span>Set CameraDolly to 10.0f<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3892" class="marker cat_api cat_camera cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:04:52</span>Run the game, see the cube and tweak the camera parameters<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:52</span>Run the game, see the cube and tweak the camera parameters<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:52</span>Run the game, see the cube and tweak the camera parameters<span class="cineraCategories"><div title="api" class="category api"></div><div title="camera" class="category camera"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4011" class="marker cat_asset-loading speech">
+                    <div class="cineraContent"><span class="timecode">1:06:51</span>Consider how to proceed, tackling texturing<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:51</span>Consider how to proceed, tackling texturing<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:51</span>Consider how to proceed, tackling texturing<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4221" class="marker cat_asset-loading programming" data-ref="https://msdn.microsoft.com/en-us/library/z5hh6ee9.aspx">
+                    <div class="cineraContent"><span class="timecode">1:10:21</span>Set up win32_renderer_test.cpp to load a bitmap for passing to a texturing system<sup>1</sup><span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:21</span>Set up win32_renderer_test.cpp to load a bitmap for passing to a texturing system<sup>1</sup><span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:21</span>Set up win32_renderer_test.cpp to load a bitmap for passing to a texturing system<sup>1</sup><span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4672" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">1:17:52</span>Make cube_test.bmp and sprite_test.bmp<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:52</span>Make cube_test.bmp and sprite_test.bmp<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:52</span>Make cube_test.bmp and sprite_test.bmp<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4923" class="marker cat_asset-loading programming">
+                    <div class="cineraContent"><span class="timecode">1:22:03</span>Step through LoadBMP() in win32_renderer_test.cpp to see our bitmap loaded successfully<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:03</span>Step through LoadBMP() in win32_renderer_test.cpp to see our bitmap loaded successfully<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:03</span>Step through LoadBMP() in win32_renderer_test.cpp to see our bitmap loaded successfully<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4948" class="marker cat_api cat_asset-loading cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:22:28</span>Set up to submit our textures to the renderer as two types: odd-sized (slower) and 512×512 (faster)<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:28</span>Set up to submit our textures to the renderer as two types: odd-sized (slower) and 512×512 (faster)<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:28</span>Set up to submit our textures to the renderer as two types: odd-sized (slower) and 512×512 (faster)<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5263" class="marker cat_api cat_asset-loading cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:27:43</span>Consider how to structure the two-tiered textured quads<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:43</span>Consider how to structure the two-tiered textured quads<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:43</span>Consider how to structure the two-tiered textured quads<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5470" class="marker cat_api cat_asset-loading cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:31:10</span>Pull AddOp() and related structs into handmade_renderer.{cpp,h}<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:10</span>Pull AddOp() and related structs into handmade_renderer.{cpp,h}<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:10</span>Pull AddOp() and related structs into handmade_renderer.{cpp,h}<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6309" class="marker cat_threading run">
+                    <div class="cineraContent"><span class="timecode">1:45:09</span>Run the game and crash in AtomicAddU64()<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:09</span>Run the game and crash in AtomicAddU64()<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:09</span>Run the game and crash in AtomicAddU64()<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6342" class="marker cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">1:45:42</span>Fix WinMainCRTStartup() to set the GameMemory.TextureQueue<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:42</span>Fix WinMainCRTStartup() to set the GameMemory.TextureQueue<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:42</span>Fix WinMainCRTStartup() to set the GameMemory.TextureQueue<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6361" class="marker cat_api cat_asset-loading cat_memory cat_rendering cat_threading run">
+                    <div class="cineraContent"><span class="timecode">1:46:01</span>Run the game successfully<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:01</span>Run the game successfully<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:01</span>Run the game successfully<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="memory" class="category memory"></div><div title="rendering" class="category rendering"></div><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6368" class="marker cat_api cat_asset-loading cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:46:08</span>Determine to make the renderer use a fixed number of textures, to remove notion of allocating / deallocating textures, in favour of only updating them<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:08</span>Determine to make the renderer use a fixed number of textures, to remove notion of allocating / deallocating textures, in favour of only updating them<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:08</span>Determine to make the renderer use a fixed number of textures, to remove notion of allocating / deallocating textures, in favour of only updating them<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6568" class="marker cat_api cat_asset-loading cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:49:28</span>Introduce renderer_texture_group and renderer_memory_layout<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:28</span>Introduce renderer_texture_group and renderer_memory_layout<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:28</span>Introduce renderer_texture_group and renderer_memory_layout<span class="cineraCategories"><div title="api" class="category api"></div><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6966" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:56:06</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:06</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:06</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6991" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">1:56:31</span><span class="author" data-hue="255" data-saturation="87%">edvinholm</span> Q: How would you approach front-to-back rendering?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:31</span><span class="author" data-hue="255" data-saturation="87%">edvinholm</span> Q: How would you approach front-to-back rendering?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:31</span><span class="author" data-hue="255" data-saturation="87%">edvinholm</span> Q: How would you approach front-to-back rendering?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7044" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">1:57:24</span><span class="author" data-hue="255" data-saturation="87%">edvinholm</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Yes<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:24</span><span class="author" data-hue="255" data-saturation="87%">edvinholm</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Yes<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:24</span><span class="author" data-hue="255" data-saturation="87%">edvinholm</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Yes<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7086" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:58:06</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Is including a cpp file generally a bad idea?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:06</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Is including a cpp file generally a bad idea?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:06</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Is including a cpp file generally a bad idea?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7163" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:59:23</span><span class="author" data-hue="12" data-saturation="79%">iantjac</span> Q: Is it possible to make variadic functions in C, when compiling without a LIBC?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:23</span><span class="author" data-hue="12" data-saturation="79%">iantjac</span> Q: Is it possible to make variadic functions in C, when compiling without a LIBC?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:23</span><span class="author" data-hue="12" data-saturation="79%">iantjac</span> Q: Is it possible to make variadic functions in C, when compiling without a LIBC?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7474" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:04:34</span><span class="author" data-hue="343" data-saturation="98%">oldganon</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Including varargs.h doesnt pull in libc<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:34</span><span class="author" data-hue="343" data-saturation="98%">oldganon</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Including varargs.h doesnt pull in libc<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:34</span><span class="author" data-hue="343" data-saturation="98%">oldganon</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Including varargs.h doesnt pull in libc<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7505" class="marker cat_engine authored">
+                    <div class="cineraContent"><span class="timecode">2:05:05</span><span class="author" data-hue="294" data-saturation="93%">snovind92</span> Q: Why would the person you are helping not want to use a game engine if they are not too experienced with 3D programming?<span class="cineraCategories"><div title="engine" class="category engine"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:05</span><span class="author" data-hue="294" data-saturation="93%">snovind92</span> Q: Why would the person you are helping not want to use a game engine if they are not too experienced with 3D programming?<span class="cineraCategories"><div title="engine" class="category engine"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:05</span><span class="author" data-hue="294" data-saturation="93%">snovind92</span> Q: Why would the person you are helping not want to use a game engine if they are not too experienced with 3D programming?<span class="cineraCategories"><div title="engine" class="category engine"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7636" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:07:16</span><span class="author" data-hue="56" data-saturation="80%">xkrouzu</span> Q: Kinda new to the stream, but did you do any sort of batch rendering (like rendering once by storing into a texture)?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:16</span><span class="author" data-hue="56" data-saturation="80%">xkrouzu</span> Q: Kinda new to the stream, but did you do any sort of batch rendering (like rendering once by storing into a texture)?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:16</span><span class="author" data-hue="56" data-saturation="80%">xkrouzu</span> Q: Kinda new to the stream, but did you do any sort of batch rendering (like rendering once by storing into a texture)?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7688" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:08:08</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Does the current renderer support arbitrary meshes or shaders?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:08</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Does the current renderer support arbitrary meshes or shaders?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:08</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Does the current renderer support arbitrary meshes or shaders?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7727" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:08:47</span><span class="author" data-hue="270" data-saturation="83%">floorislava</span> Q: When the texture is sent to the GPU is it a 1:1 size ratio or does it get compressed<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:47</span><span class="author" data-hue="270" data-saturation="83%">floorislava</span> Q: When the texture is sent to the GPU is it a 1:1 size ratio or does it get compressed<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:47</span><span class="author" data-hue="270" data-saturation="83%">floorislava</span> Q: When the texture is sent to the GPU is it a 1:1 size ratio or does it get compressed<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7751" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:09:11</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: Did you noticed that the stream went down for a minute at around minute 45 of this stream?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:11</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: Did you noticed that the stream went down for a minute at around minute 45 of this stream?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:11</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: Did you noticed that the stream went down for a minute at around minute 45 of this stream?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7806" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:10:06</span><span class="author" data-hue="352" data-saturation="76%">dudeinbasement1</span> Q: Thoughts on a simple handmade OBS?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:06</span><span class="author" data-hue="352" data-saturation="76%">dudeinbasement1</span> Q: Thoughts on a simple handmade OBS?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:06</span><span class="author" data-hue="352" data-saturation="76%">dudeinbasement1</span> Q: Thoughts on a simple handmade OBS?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7882" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:11:22</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: Would this texture system solve our binding texture timing?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:22</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: Would this texture system solve our binding texture timing?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:22</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: Would this texture system solve our binding texture timing?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7899" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:11:39</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> Q: Where do you buy your cool hats?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:39</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> Q: Where do you buy your cool hats?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:39</span><span class="author" data-hue="287" data-saturation="98%">ponkkiz</span> Q: Where do you buy your cool hats?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7918" class="marker cat_api cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:11:58</span><span class="author" data-hue="26" data-saturation="79%">kittehk</span> Q: Stupid question, but would there ever be a need to use compute shaders in the game, or are we staying away from this side of the API?<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:58</span><span class="author" data-hue="26" data-saturation="79%">kittehk</span> Q: Stupid question, but would there ever be a need to use compute shaders in the game, or are we staying away from this side of the API?<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:58</span><span class="author" data-hue="26" data-saturation="79%">kittehk</span> Q: Stupid question, but would there ever be a need to use compute shaders in the game, or are we staying away from this side of the API?<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7940" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:12:20</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: I mean the time spent in glBindTexture()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:12:20</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: I mean the time spent in glBindTexture()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:12:20</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: I mean the time spent in glBindTexture()<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7989" class="marker cat_nullTopic authored" data-ref="https://youtu.be/ZHKGk3z54jE">
+                    <div class="cineraContent"><span class="timecode">2:13:09</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: Can we get another Lemongrab impersonation for my compilation?<sup>2</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:09</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: Can we get another Lemongrab impersonation for my compilation?<sup>2</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:09</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: Can we get another Lemongrab impersonation for my compilation?<sup>2</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8163" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:16:03</span><span class="author" data-hue="90" data-saturation="83%">xghost7</span> Q: Why did you change to Visual Studio editor? You were using something else before, I think<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:03</span><span class="author" data-hue="90" data-saturation="83%">xghost7</span> Q: Why did you change to Visual Studio editor? You were using something else before, I think<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:03</span><span class="author" data-hue="90" data-saturation="83%">xghost7</span> Q: Why did you change to Visual Studio editor? You were using something else before, I think<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8177" class="marker cat_asset-loading cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:16:17</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: Any idea on how to handle different textures when using instancing rendering? Pack all the textures in an array and write a custom sampler?<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:17</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: Any idea on how to handle different textures when using instancing rendering? Pack all the textures in an array and write a custom sampler?<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:17</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: Any idea on how to handle different textures when using instancing rendering? Pack all the textures in an array and write a custom sampler?<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8240" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:17:20</span><span class="author" data-hue="126" data-saturation="78%">jhaxgaming</span> Q: Sorry to ask a noob question, but why do your function signatures use the internal keyword?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:20</span><span class="author" data-hue="126" data-saturation="78%">jhaxgaming</span> Q: Sorry to ask a noob question, but why do your function signatures use the internal keyword?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:20</span><span class="author" data-hue="126" data-saturation="78%">jhaxgaming</span> Q: Sorry to ask a noob question, but why do your function signatures use the internal keyword?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8262" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:17:42</span><span class="author" data-hue="155" data-saturation="79%">naimlesson</span> Q: Do you know if DX12 is going to be needed for making use of the new hardware ray tracing stuff? What alternatives exists, and is it going to be worth it?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:42</span><span class="author" data-hue="155" data-saturation="79%">naimlesson</span> Q: Do you know if DX12 is going to be needed for making use of the new hardware ray tracing stuff? What alternatives exists, and is it going to be worth it?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:42</span><span class="author" data-hue="155" data-saturation="79%">naimlesson</span> Q: Do you know if DX12 is going to be needed for making use of the new hardware ray tracing stuff? What alternatives exists, and is it going to be worth it?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8351" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:19:11</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: And there is a reason for that, <span class="member" data-hue="125" data-saturation="81%">Casey</span>: if you include any cpp it will break as they define their version of internal somewhere in the STL<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:19:11</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: And there is a reason for that, <span class="member" data-hue="125" data-saturation="81%">Casey</span>: if you include any cpp it will break as they define their version of internal somewhere in the STL<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:19:11</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: And there is a reason for that, <span class="member" data-hue="125" data-saturation="81%">Casey</span>: if you include any cpp it will break as they define their version of internal somewhere in the STL<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8401" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:20:01</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: What&#39;s wrong with STL?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:20:01</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: What&#39;s wrong with STL?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:20:01</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: What&#39;s wrong with STL?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8619" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:23:39</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Invasive list?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:39</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Invasive list?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:39</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Invasive list?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8742" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:25:42</span>Close down shop<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:25:42</span>Close down shop<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:25:42</span>Close down shop<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day472/"><div>&#9196;</div><div>Next: 'Making a Simple Scene with the Separated Renderer'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

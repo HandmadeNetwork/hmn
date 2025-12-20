@@ -1,0 +1,844 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="animation, entity system, font, input handling, language, lighting, mathematics, movement, networking, platform layer, procedural generation, rendering, Blackboard, Chat Comment, In-Game, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Updating the Player Movement Code</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://hero.handmade.network/episode/code/day440/#8972" href="https://hero.handmade.network/episode/code/day440/#8972" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Handmade Hero Annotated Episode Guide</div>
+                            <div class="ref_title">Introduction to Function Approximation with Andrew Bromage</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1298" class="timecode"><span class="ref_index">[1]</span><span class="time">21:38</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content animation">
+                                <span class="icon category animation"></span><span class="cineraText">animation</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content font">
+                                <span class="icon category font"></span><span class="cineraText">font</span>
+                            </div>
+                            <div class="filter_content input-handling">
+                                <span class="icon category input-handling"></span><span class="cineraText">input handling</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content movement">
+                                <span class="icon category movement"></span><span class="cineraText">movement</span>
+                            </div>
+                            <div class="filter_content networking">
+                                <span class="icon category networking"></span><span class="cineraText">networking</span>
+                            </div>
+                            <div class="filter_content platform-layer">
+                                <span class="icon category platform-layer"></span><span class="cineraText">platform layer</span>
+                            </div>
+                            <div class="filter_content procedural-generation">
+                                <span class="icon category procedural-generation"></span><span class="cineraText">procedural generation</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="1-10ddFNqcM"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day442/"><div>&#9195;</div><div>Previous: 'Getting NSight Working'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="7" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for a few weeks of bouncing around<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for a few weeks of bouncing around<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for a few weeks of bouncing around<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="196" class="marker cat_movement cat_procedural-generation speech">
+                    <div class="cineraContent"><span class="timecode">3:16</span>Determine to lock down the movement code and make tools to build rooms<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:16</span>Determine to lock down the movement code and make tools to build rooms<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:16</span>Determine to lock down the movement code and make tools to build rooms<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="439" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">7:19</span>Re-enable the hero in AddPlayer()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:19</span>Re-enable the hero in AddPlayer()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:19</span>Re-enable the hero in AddPlayer()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="489" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">8:09</span>Run the game and traverse our hero around the world a little<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:09</span>Run the game and traverse our hero around the world a little<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:09</span>Run the game and traverse our hero around the world a little<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="649" class="marker cat_movement run">
+                    <div class="cineraContent"><span class="timecode">10:49</span>Determine to move from a continuous movement style to a tile-based one<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:49</span>Determine to move from a continuous movement style to a tile-based one<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:49</span>Determine to move from a continuous movement style to a tile-based one<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="899" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">14:59</span>Re-enable doors in all directions in PlayWorld()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:59</span>Re-enable doors in all directions in PlayWorld()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:59</span>Re-enable doors in all directions in PlayWorld()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="917" class="marker cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">15:17</span>Run the game to see those bigger rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:17</span>Run the game to see those bigger rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:17</span>Run the game to see those bigger rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="967" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">16:07</span>Introduce ExecuteBrainHero() to handle the Type_brain_hero case from ExecuteBrain()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:07</span>Introduce ExecuteBrainHero() to handle the Type_brain_hero case from ExecuteBrain()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:07</span>Introduce ExecuteBrainHero() to handle the Type_brain_hero case from ExecuteBrain()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1220" class="marker cat_input-handling run">
+                    <div class="cineraContent"><span class="timecode">20:20</span>Try out the gamepad controller to see that it happily still works<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:20</span>Try out the gamepad controller to see that it happily still works<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:20</span>Try out the gamepad controller to see that it happily still works<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1298" class="marker cat_input-handling cat_mathematics programming" data-ref="https://hero.handmade.network/episode/code/day440/#8972">
+                    <div class="cineraContent"><span class="timecode">21:38</span>Reacquaint ourselves with the gamepad controller code in ExecuteBrainHero(), encountering the Atan2() call mentioned by <span class="member" data-hue="8" data-saturation="89%">Pseudonym73</span><sup>1</sup><span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="mathematics" class="category mathematics"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:38</span>Reacquaint ourselves with the gamepad controller code in ExecuteBrainHero(), encountering the Atan2() call mentioned by <span class="member" data-hue="8" data-saturation="89%">Pseudonym73</span><sup>1</sup><span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="mathematics" class="category mathematics"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:38</span>Reacquaint ourselves with the gamepad controller code in ExecuteBrainHero(), encountering the Atan2() call mentioned by <span class="member" data-hue="8" data-saturation="89%">Pseudonym73</span><sup>1</sup><span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="mathematics" class="category mathematics"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1524" class="marker cat_entity-system cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">25:24</span>Only permit movement in ExecuteBrainHero() if we have a head and a body<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:24</span>Only permit movement in ExecuteBrainHero() if we have a head and a body<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:24</span>Only permit movement in ExecuteBrainHero() if we have a head and a body<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1804" class="marker cat_movement run">
+                    <div class="cineraContent"><span class="timecode">30:04</span>Run the game to see the same movement<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:04</span>Run the game to see the same movement<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:04</span>Run the game to see the same movement<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1871" class="marker cat_input-handling cat_movement blackboard">
+                    <div class="cineraContent"><span class="timecode">31:11</span>Body Motion<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:11</span>Body Motion<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:11</span>Body Motion<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2127" class="marker cat_input-handling cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">35:27</span>Replace the current movement code in ExecuteBrainHero() with the beginnings of a tile-wise, tapped hopping scheme<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:27</span>Replace the current movement code in ExecuteBrainHero() with the beginnings of a tile-wise, tapped hopping scheme<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:27</span>Replace the current movement code in ExecuteBrainHero() with the beginnings of a tile-wise, tapped hopping scheme<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2752" class="marker cat_movement run">
+                    <div class="cineraContent"><span class="timecode">45:52</span>Run the game to see the head&#39;s analogue movement<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:52</span>Run the game to see the head&#39;s analogue movement<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:52</span>Run the game to see the head&#39;s analogue movement<span class="cineraCategories"><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2796" class="marker cat_input-handling programming">
+                    <div class="cineraContent"><span class="timecode">46:36</span>Enable ExecuteBrainHero() to initiate hops, with a few words on feel in terms of non-laggy but forgiving input handling<span class="cineraCategories"><div title="input handling" class="category input-handling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:36</span>Enable ExecuteBrainHero() to initiate hops, with a few words on feel in terms of non-laggy but forgiving input handling<span class="cineraCategories"><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:36</span>Enable ExecuteBrainHero() to initiate hops, with a few words on feel in terms of non-laggy but forgiving input handling<span class="cineraCategories"><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3050" class="marker cat_input-handling cat_movement run">
+                    <div class="cineraContent"><span class="timecode">50:50</span>Run the game and try hopping, noting the nicety of holding down the key for continuous movement, and consider using a clutch to control dodging<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:50</span>Run the game and try hopping, noting the nicety of holding down the key for continuous movement, and consider using a clutch to control dodging<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:50</span>Run the game and try hopping, noting the nicety of holding down the key for continuous movement, and consider using a clutch to control dodging<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3428" class="marker cat_input-handling speech">
+                    <div class="cineraContent"><span class="timecode">57:08</span>A few words on games that proliferate the number of buttons<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:08</span>A few words on games that proliferate the number of buttons<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:08</span>A few words on games that proliferate the number of buttons<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3556" class="marker cat_input-handling cat_platform-layer programming">
+                    <div class="cineraContent"><span class="timecode">59:16</span>Add ClutchAverage to game_controller_input and enable WinMainCRTStartup() to process the triggers, change the &quot;Add Player&quot; key to VK_RETURN, and use VK_SPACE for the clutch<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="platform layer" class="category platform-layer"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:16</span>Add ClutchAverage to game_controller_input and enable WinMainCRTStartup() to process the triggers, change the &quot;Add Player&quot; key to VK_RETURN, and use VK_SPACE for the clutch<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:16</span>Add ClutchAverage to game_controller_input and enable WinMainCRTStartup() to process the triggers, change the &quot;Add Player&quot; key to VK_RETURN, and use VK_SPACE for the clutch<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4272" class="marker cat_input-handling cat_movement run">
+                    <div class="cineraContent"><span class="timecode">1:11:12</span>Run the game with the determination to handle dodging using our clutch<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:12</span>Run the game with the determination to handle dodging using our clutch<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:12</span>Run the game with the determination to handle dodging using our clutch<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4303" class="marker cat_input-handling cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:11:43</span>Enable ExecuteBrainHero() to handle the notion of dodging<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:43</span>Enable ExecuteBrainHero() to handle the notion of dodging<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:43</span>Enable ExecuteBrainHero() to handle the notion of dodging<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4385" class="marker cat_input-handling cat_movement run">
+                    <div class="cineraContent"><span class="timecode">1:13:05</span>Run the game and try dodging<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:05</span>Run the game and try dodging<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:05</span>Run the game and try dodging<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4450" class="marker cat_input-handling cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:14:10</span>Enable WinMainCRTStartup() to correctly persist the clutch-key state<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:10</span>Enable WinMainCRTStartup() to correctly persist the clutch-key state<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:10</span>Enable WinMainCRTStartup() to correctly persist the clutch-key state<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4612" class="marker cat_input-handling cat_movement run">
+                    <div class="cineraContent"><span class="timecode">1:16:52</span>Run the game and try out clutching with Space, noting that this dodging doesn&#39;t feel great on the keyboard<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:52</span>Run the game and try out clutching with Space, noting that this dodging doesn&#39;t feel great on the keyboard<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:52</span>Run the game and try out clutching with Space, noting that this dodging doesn&#39;t feel great on the keyboard<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4812" class="marker cat_input-handling programming">
+                    <div class="cineraContent"><span class="timecode">1:20:12</span>Add the Shift keys as clutches in Win32ProcessPendingMessages()<span class="cineraCategories"><div title="input handling" class="category input-handling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:12</span>Add the Shift keys as clutches in Win32ProcessPendingMessages()<span class="cineraCategories"><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:12</span>Add the Shift keys as clutches in Win32ProcessPendingMessages()<span class="cineraCategories"><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4931" class="marker cat_input-handling run">
+                    <div class="cineraContent"><span class="timecode">1:22:11</span>Try out the Space and Shift clutching<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:11</span>Try out the Space and Shift clutching<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:11</span>Try out the Space and Shift clutching<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4961" class="marker cat_animation programming">
+                    <div class="cineraContent"><span class="timecode">1:22:41</span>Re-enable stretchy leaning in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:41</span>Re-enable stretchy leaning in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:41</span>Re-enable stretchy leaning in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5094" class="marker cat_animation run">
+                    <div class="cineraContent"><span class="timecode">1:24:54</span>Try out the stretchy leaning<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:54</span>Try out the stretchy leaning<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:54</span>Try out the stretchy leaning<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5203" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:26:43</span>Delete extraneous code from ExecuteBrainHero()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:43</span>Delete extraneous code from ExecuteBrainHero()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:43</span>Delete extraneous code from ExecuteBrainHero()</div>
+                    </div>
+                </div>
+                <div data-timestamp="5332" class="marker cat_animation run">
+                    <div class="cineraContent"><span class="timecode">1:28:52</span>Traverse the world with Body-&gt;dP disabled<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:52</span>Traverse the world with Body-&gt;dP disabled<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:52</span>Traverse the world with Body-&gt;dP disabled<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5347" class="marker cat_animation programming">
+                    <div class="cineraContent"><span class="timecode">1:29:07</span>Toggle on the Body-&gt;ddtBob calculation in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:07</span>Toggle on the Body-&gt;ddtBob calculation in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:07</span>Toggle on the Body-&gt;ddtBob calculation in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5401" class="marker cat_animation cat_movement run">
+                    <div class="cineraContent"><span class="timecode">1:30:01</span>Traverse the world and consider the bounce animation to be fine<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:01</span>Traverse the world and consider the bounce animation to be fine<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:01</span>Traverse the world and consider the bounce animation to be fine<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5478" class="marker cat_animation cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:31:18</span>Introduce the notion of crouch while dodging in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:18</span>Introduce the notion of crouch while dodging in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:18</span>Introduce the notion of crouch while dodging in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5642" class="marker cat_animation cat_movement run">
+                    <div class="cineraContent"><span class="timecode">1:34:02</span>Run the game and try dodging<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:02</span>Run the game and try dodging<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:02</span>Run the game and try dodging<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5679" class="marker cat_animation cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:34:39</span>Enable ExecuteBrainHero() to correctly crouch the head<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:39</span>Enable ExecuteBrainHero() to correctly crouch the head<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:39</span>Enable ExecuteBrainHero() to correctly crouch the head<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5726" class="marker cat_animation cat_movement run">
+                    <div class="cineraContent"><span class="timecode">1:35:26</span>Run the game to see the head crouching while dodging<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:26</span>Run the game to see the head crouching while dodging<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:26</span>Run the game to see the head crouching while dodging<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5736" class="marker cat_animation cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:35:36</span>Enable ExecuteBrainHero() to also crouch the body<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:36</span>Enable ExecuteBrainHero() to also crouch the body<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:36</span>Enable ExecuteBrainHero() to also crouch the body<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5771" class="marker cat_animation cat_movement run">
+                    <div class="cineraContent"><span class="timecode">1:36:11</span>Run the game to see the crouching<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:11</span>Run the game to see the crouching<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:11</span>Run the game to see the crouching<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5814" class="marker cat_animation cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:36:54</span>Reintroduce the springiness if dodging in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:54</span>Reintroduce the springiness if dodging in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:54</span>Reintroduce the springiness if dodging in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5917" class="marker cat_animation cat_movement run">
+                    <div class="cineraContent"><span class="timecode">1:38:37</span>Traverse the world to try out the springiness while dodging<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:37</span>Traverse the world to try out the springiness while dodging<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:37</span>Traverse the world to try out the springiness while dodging<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5973" class="marker cat_input-handling cat_movement programming">
+                    <div class="cineraContent"><span class="timecode">1:39:33</span>Prevent diagonal movement in ExecuteBrainHero()<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:33</span>Prevent diagonal movement in ExecuteBrainHero()<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:33</span>Prevent diagonal movement in ExecuteBrainHero()<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6065" class="marker cat_input-handling cat_movement run">
+                    <div class="cineraContent"><span class="timecode">1:41:05</span>Run the game to try out the cardinal (non-diagonal) movement<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:05</span>Run the game to try out the cardinal (non-diagonal) movement<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:05</span>Run the game to try out the cardinal (non-diagonal) movement<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6108" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:41:48</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:48</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:48</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6162" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:42:42</span><span class="author" data-hue="170" data-saturation="89%">insobot</span> Q: Celeron ftw. FailFish?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:42</span><span class="author" data-hue="170" data-saturation="89%">insobot</span> Q: Celeron ftw. FailFish?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:42</span><span class="author" data-hue="170" data-saturation="89%">insobot</span> Q: Celeron ftw. FailFish?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6177" class="marker cat_input-handling cat_movement authored">
+                    <div class="cineraContent"><span class="timecode">1:42:57</span><span class="author" data-hue="22" data-saturation="88%">neitchzehrer</span> Q: Are you planning on having a jump command?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:57</span><span class="author" data-hue="22" data-saturation="88%">neitchzehrer</span> Q: Are you planning on having a jump command?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:57</span><span class="author" data-hue="22" data-saturation="88%">neitchzehrer</span> Q: Are you planning on having a jump command?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6200" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:43:20</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Don&#39;t even remember what a Celeron is<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:20</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Don&#39;t even remember what a Celeron is<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:20</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Don&#39;t even remember what a Celeron is<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6272" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:44:32</span><span class="author" data-hue="42" data-saturation="88%">nxsy</span> Q: There were some questions around b32x vs. b32 at some point<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:32</span><span class="author" data-hue="42" data-saturation="88%">nxsy</span> Q: There were some questions around b32x vs. b32 at some point<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:32</span><span class="author" data-hue="42" data-saturation="88%">nxsy</span> Q: There were some questions around b32x vs. b32 at some point<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6304" class="marker cat_input-handling cat_movement authored">
+                    <div class="cineraContent"><span class="timecode">1:45:04</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: How about a dive and slide command?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:04</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: How about a dive and slide command?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:04</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: How about a dive and slide command?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6321" class="marker cat_input-handling authored">
+                    <div class="cineraContent"><span class="timecode">1:45:21</span><span class="author" data-hue="328" data-saturation="97%">jamoflaw</span> Q: Are you planning on implementing a control remapping interface?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:21</span><span class="author" data-hue="328" data-saturation="97%">jamoflaw</span> Q: Are you planning on implementing a control remapping interface?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:21</span><span class="author" data-hue="328" data-saturation="97%">jamoflaw</span> Q: Are you planning on implementing a control remapping interface?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6338" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:45:38</span><span class="author" data-hue="273" data-saturation="76%">m0re85</span> Q: I know your view on comments but I often see you asking yourself &quot;what was all that about?&quot; when looking at old code. Wouldn&#39;t it be beneficial to comment non-obvious stuff?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:38</span><span class="author" data-hue="273" data-saturation="76%">m0re85</span> Q: I know your view on comments but I often see you asking yourself &quot;what was all that about?&quot; when looking at old code. Wouldn&#39;t it be beneficial to comment non-obvious stuff?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:38</span><span class="author" data-hue="273" data-saturation="76%">m0re85</span> Q: I know your view on comments but I often see you asking yourself &quot;what was all that about?&quot; when looking at old code. Wouldn&#39;t it be beneficial to comment non-obvious stuff?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6375" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:46:15</span><span class="author" data-hue="300" data-saturation="85%">shadowpro67</span> Q: What is the reason of pure C? I think C++&#39;s oop and procedural coverage much better<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:15</span><span class="author" data-hue="300" data-saturation="85%">shadowpro67</span> Q: What is the reason of pure C? I think C++&#39;s oop and procedural coverage much better<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:15</span><span class="author" data-hue="300" data-saturation="85%">shadowpro67</span> Q: What is the reason of pure C? I think C++&#39;s oop and procedural coverage much better<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6390" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:46:30</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Q: If you don&#39;t care how much space a bool is, why not use b8x?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:30</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Q: If you don&#39;t care how much space a bool is, why not use b8x?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:30</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Q: If you don&#39;t care how much space a bool is, why not use b8x?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6434" class="marker cat_input-handling authored">
+                    <div class="cineraContent"><span class="timecode">1:47:14</span><span class="author" data-hue="127" data-saturation="90%">mrpque</span> Q: Will you eventually make these input commands event driven rather, now that multiple sources of input are being accounted for?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:14</span><span class="author" data-hue="127" data-saturation="90%">mrpque</span> Q: Will you eventually make these input commands event driven rather, now that multiple sources of input are being accounted for?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:14</span><span class="author" data-hue="127" data-saturation="90%">mrpque</span> Q: Will you eventually make these input commands event driven rather, now that multiple sources of input are being accounted for?<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6465" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:47:45</span><span class="author" data-hue="35" data-saturation="94%">yourmoviesbaddotnet</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> What do you think are the disadvantages of C++ compared to C? Isn&#39;t C basically a subset of C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:45</span><span class="author" data-hue="35" data-saturation="94%">yourmoviesbaddotnet</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> What do you think are the disadvantages of C++ compared to C? Isn&#39;t C basically a subset of C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:45</span><span class="author" data-hue="35" data-saturation="94%">yourmoviesbaddotnet</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> What do you think are the disadvantages of C++ compared to C? Isn&#39;t C basically a subset of C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6621" class="marker cat_input-handling cat_movement authored">
+                    <div class="cineraContent"><span class="timecode">1:50:21</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Something I thought of, of coarse it is a gameplay thing totally up to you. You could have the dodge double as an attack or have it push enemies away (or something) in the direction of the dodge<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:21</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Something I thought of, of coarse it is a gameplay thing totally up to you. You could have the dodge double as an attack or have it push enemies away (or something) in the direction of the dodge<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:21</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Something I thought of, of coarse it is a gameplay thing totally up to you. You could have the dodge double as an attack or have it push enemies away (or something) in the direction of the dodge<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="movement" class="category movement"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6649" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:50:49</span><span class="author" data-hue="225" data-saturation="86%">ricecream</span> Q: Since you interviewed Pat Wyatt in 2015 HandmadeCon, have you ever thought about copying the Guild Wars faux Z-axis configuration?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:49</span><span class="author" data-hue="225" data-saturation="86%">ricecream</span> Q: Since you interviewed Pat Wyatt in 2015 HandmadeCon, have you ever thought about copying the Guild Wars faux Z-axis configuration?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:49</span><span class="author" data-hue="225" data-saturation="86%">ricecream</span> Q: Since you interviewed Pat Wyatt in 2015 HandmadeCon, have you ever thought about copying the Guild Wars faux Z-axis configuration?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6710" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:51:50</span><span class="author" data-hue="39" data-saturation="92%">vateferfout</span> Q: What is happening with C++ templates that shouldn&#39;t be? Isn&#39;t it just generating code based on the template parameters?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:50</span><span class="author" data-hue="39" data-saturation="92%">vateferfout</span> Q: What is happening with C++ templates that shouldn&#39;t be? Isn&#39;t it just generating code based on the template parameters?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:50</span><span class="author" data-hue="39" data-saturation="92%">vateferfout</span> Q: What is happening with C++ templates that shouldn&#39;t be? Isn&#39;t it just generating code based on the template parameters?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6826" class="marker cat_entity-system cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:53:46</span><span class="author" data-hue="242" data-saturation="86%">wubbleduff</span> Q: What do you think about entity component systems as the engine architecture? How would you implement this if you don&#39;t use inheritance?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:46</span><span class="author" data-hue="242" data-saturation="86%">wubbleduff</span> Q: What do you think about entity component systems as the engine architecture? How would you implement this if you don&#39;t use inheritance?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:46</span><span class="author" data-hue="242" data-saturation="86%">wubbleduff</span> Q: What do you think about entity component systems as the engine architecture? How would you implement this if you don&#39;t use inheritance?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6865" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">1:54:25</span><span class="author" data-hue="81" data-saturation="95%">steamymcfly</span> Q: I recently learned about Imperfect Shadow Maps, I wonder if that could be a substitute for raycasting in the current lighting system (at least on the GPU)?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:25</span><span class="author" data-hue="81" data-saturation="95%">steamymcfly</span> Q: I recently learned about Imperfect Shadow Maps, I wonder if that could be a substitute for raycasting in the current lighting system (at least on the GPU)?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:25</span><span class="author" data-hue="81" data-saturation="95%">steamymcfly</span> Q: I recently learned about Imperfect Shadow Maps, I wonder if that could be a substitute for raycasting in the current lighting system (at least on the GPU)?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6954" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:55:54</span><span class="author" data-hue="170" data-saturation="81%">strangezak</span> 400 viewers today. That&#39;s a lot more than usual!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:54</span><span class="author" data-hue="170" data-saturation="81%">strangezak</span> 400 viewers today. That&#39;s a lot more than usual!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:54</span><span class="author" data-hue="170" data-saturation="81%">strangezak</span> 400 viewers today. That&#39;s a lot more than usual!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6976" class="marker cat_networking authored">
+                    <div class="cineraContent"><span class="timecode">1:56:16</span><span class="author" data-hue="209" data-saturation="80%">theflame937</span> Q: Even if you don&#39;t do network for the game, will you do some lecture about it?<span class="cineraCategories"><div title="networking" class="category networking"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:16</span><span class="author" data-hue="209" data-saturation="80%">theflame937</span> Q: Even if you don&#39;t do network for the game, will you do some lecture about it?<span class="cineraCategories"><div title="networking" class="category networking"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:16</span><span class="author" data-hue="209" data-saturation="80%">theflame937</span> Q: Even if you don&#39;t do network for the game, will you do some lecture about it?<span class="cineraCategories"><div title="networking" class="category networking"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7162" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:59:22</span><span class="author" data-hue="169" data-saturation="88%">mextrox</span> Q: What are your current thoughts on jai?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:22</span><span class="author" data-hue="169" data-saturation="88%">mextrox</span> Q: What are your current thoughts on jai?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:22</span><span class="author" data-hue="169" data-saturation="88%">mextrox</span> Q: What are your current thoughts on jai?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7209" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:00:09</span><span class="author" data-hue="225" data-saturation="86%">ricecream</span> Q: With the capabilities of mobile games exponentially increasing, what are the decision factors that result in games being ported to mobile?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:09</span><span class="author" data-hue="225" data-saturation="86%">ricecream</span> Q: With the capabilities of mobile games exponentially increasing, what are the decision factors that result in games being ported to mobile?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:09</span><span class="author" data-hue="225" data-saturation="86%">ricecream</span> Q: With the capabilities of mobile games exponentially increasing, what are the decision factors that result in games being ported to mobile?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7398" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:03:18</span><span class="author" data-hue="55" data-saturation="77%">maxkaren</span> Q: What are your thoughts on Rust?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:18</span><span class="author" data-hue="55" data-saturation="77%">maxkaren</span> Q: What are your thoughts on Rust?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:18</span><span class="author" data-hue="55" data-saturation="77%">maxkaren</span> Q: What are your thoughts on Rust?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7405" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:03:25</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: What was it C was missing that makes you compile using C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:25</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: What was it C was missing that makes you compile using C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:25</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: What was it C was missing that makes you compile using C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7477" class="marker cat_font authored">
+                    <div class="cineraContent"><span class="timecode">2:04:37</span><span class="author" data-hue="352" data-saturation="76%">dudeinbasement1</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> stb doesn&#39;t do hinting, is there another lib that supports small text?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:37</span><span class="author" data-hue="352" data-saturation="76%">dudeinbasement1</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> stb doesn&#39;t do hinting, is there another lib that supports small text?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:37</span><span class="author" data-hue="352" data-saturation="76%">dudeinbasement1</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> stb doesn&#39;t do hinting, is there another lib that supports small text?<span class="cineraCategories"><div title="font" class="category font"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7535" class="marker cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">2:05:35</span><span class="author" data-hue="22" data-saturation="88%">neitchzehrer</span> Q: How many types of enemies are you planning on having?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:35</span><span class="author" data-hue="22" data-saturation="88%">neitchzehrer</span> Q: How many types of enemies are you planning on having?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:35</span><span class="author" data-hue="22" data-saturation="88%">neitchzehrer</span> Q: How many types of enemies are you planning on having?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7542" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:05:42</span><span class="author" data-hue="20" data-saturation="86%">keepingtrckofthisacct</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> How long have you been coding?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:42</span><span class="author" data-hue="20" data-saturation="86%">keepingtrckofthisacct</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> How long have you been coding?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:42</span><span class="author" data-hue="20" data-saturation="86%">keepingtrckofthisacct</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> How long have you been coding?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7559" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:05:59</span><span class="author" data-hue="328" data-saturation="79%">warner</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Kind of off-topic question but here it goes: I&#39;ve been in the gamedev industry working with studios, but now I decided to make an independent game of my own, and I kinda want to make a Kickstarter. Do you have any recommendations on that?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:59</span><span class="author" data-hue="328" data-saturation="79%">warner</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Kind of off-topic question but here it goes: I&#39;ve been in the gamedev industry working with studios, but now I decided to make an independent game of my own, and I kinda want to make a Kickstarter. Do you have any recommendations on that?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:59</span><span class="author" data-hue="328" data-saturation="79%">warner</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Kind of off-topic question but here it goes: I&#39;ve been in the gamedev industry working with studios, but now I decided to make an independent game of my own, and I kinda want to make a Kickstarter. Do you have any recommendations on that?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7576" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:06:16</span>Wrap it up for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:16</span>Wrap it up for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:16</span>Wrap it up for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day444/"><div>&#9196;</div><div>Next: 'Stubbing Out the World Generator'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

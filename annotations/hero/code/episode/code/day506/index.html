@@ -1,0 +1,886 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="camera, debug system, debug visualisation, entity system, health, lighting, mathematics, procedural generation, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Improving Camera Motion</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://www.youtube.com/watch?v=i7kh8pNRWOo" href="https://www.youtube.com/watch?v=i7kh8pNRWOo" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Jonathan Blow (YouTube)</div>
+                            <div class="ref_title">Techniques for dealing with lack of motivation, malaise, depression</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6497" class="timecode"><span class="ref_index">[1]</span><span class="time">1:48:17</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://guide.handmadehero.org/chat/chat012/" href="https://guide.handmadehero.org/chat/chat012/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Handmade Chat</div>
+                            <div class="ref_title">Imposter Syndrome</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7010" class="timecode"><span class="ref_index">[2]</span><span class="time">1:56:50</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content camera">
+                                <span class="icon category camera"></span><span class="cineraText">camera</span>
+                            </div>
+                            <div class="filter_content debug-system">
+                                <span class="icon category debug-system"></span><span class="cineraText">debug system</span>
+                            </div>
+                            <div class="filter_content debug-visualisation">
+                                <span class="icon category debug-visualisation"></span><span class="cineraText">debug visualisation</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content health">
+                                <span class="icon category health"></span><span class="cineraText">health</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content procedural-generation">
+                                <span class="icon category procedural-generation"></span><span class="cineraText">procedural generation</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="MDeoneIezno"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day505/"><div>&#9195;</div><div>Previous: 'Placing Multiple Entities at a Time'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_entity-system speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap our new entity grouping functionality and set the stage for the day<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap our new entity grouping functionality and set the stage for the day<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap our new entity grouping functionality and set the stage for the day<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="119" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:59</span>Show off our orphan–cat groups<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59</span>Show off our orphan–cat groups<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59</span>Show off our orphan–cat groups<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="182" class="marker cat_camera cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">3:02</span>Create a special camera-triggering entity region, introducing AddConversation() and GetCameraOffsetZForCloseup()<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:02</span>Create a special camera-triggering entity region, introducing AddConversation() and GetCameraOffsetZForCloseup()<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:02</span>Create a special camera-triggering entity region, introducing AddConversation() and GetCameraOffsetZForCloseup()<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="789" class="marker cat_debug-visualisation cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">13:09</span>Toggle on the entity bounds debug visualisation in UpdateAndRenderEntities()<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:09</span>Toggle on the entity bounds debug visualisation in UpdateAndRenderEntities()<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:09</span>Toggle on the entity bounds debug visualisation in UpdateAndRenderEntities()<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="848" class="marker cat_debug-visualisation run">
+                    <div class="cineraContent"><span class="timecode">14:08</span>Check out our entity bounds debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:08</span>Check out our entity bounds debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:08</span>Check out our entity bounds debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="938" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">15:38</span>Make PlaceOrphan() position the orphan facing downwards<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:38</span>Make PlaceOrphan() position the orphan facing downwards<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:38</span>Make PlaceOrphan() position the orphan facing downwards<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="979" class="marker cat_mathematics speech">
+                    <div class="cineraContent"><span class="timecode">16:19</span>Announce the upcoming Tau vs Pi rant<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:19</span>Announce the upcoming Tau vs Pi rant<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:19</span>Announce the upcoming Tau vs Pi rant<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1022" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">17:02</span>Change PlaceOrphan() to add a conversation rather than a cat<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:02</span>Change PlaceOrphan() to add a conversation rather than a cat<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:02</span>Change PlaceOrphan() to add a conversation rather than a cat<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1050" class="marker cat_entity-system cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">17:30</span>Find that the conversation boxes are misplaced<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:30</span>Find that the conversation boxes are misplaced<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:30</span>Find that the conversation boxes are misplaced<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1068" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">17:48</span>Fix AddConversation() to correctly position the entity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:48</span>Fix AddConversation() to correctly position the entity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:48</span>Fix AddConversation() to correctly position the entity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1090" class="marker cat_entity-system cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">18:10</span>Find that the conversations are correctly positioned<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:10</span>Find that the conversations are correctly positioned<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:10</span>Find that the conversations are correctly positioned<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1119" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">18:39</span>Recompile in debug mode</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:39</span>Recompile in debug mode</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:39</span>Recompile in debug mode</div>
+                    </div>
+                </div>
+                <div data-timestamp="1155" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">19:15</span>Step in to UpdateCameraForEntityMovement() to find that we never get to the special camera case<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:15</span>Step in to UpdateCameraForEntityMovement() to find that we never get to the special camera case<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:15</span>Step in to UpdateCameraForEntityMovement() to find that we never get to the special camera case<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1272" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">21:12</span>Make AddConversation() create a larger collision box<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:12</span>Make AddConversation() create a larger collision box<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:12</span>Make AddConversation() create a larger collision box<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1301" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">21:41</span>Step in to UpdateCameraForEntityMovement() to find that we now trigger the special camera case<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:41</span>Step in to UpdateCameraForEntityMovement() to find that we now trigger the special camera case<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:41</span>Step in to UpdateCameraForEntityMovement() to find that we now trigger the special camera case<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1459" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">24:19</span>Make GetCameraOffsetZForCloseup() zoom in closer<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:19</span>Make GetCameraOffsetZForCloseup() zoom in closer<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:19</span>Make GetCameraOffsetZForCloseup() zoom in closer<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1505" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">25:05</span>Try out our conversation zoom<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:05</span>Try out our conversation zoom<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:05</span>Try out our conversation zoom<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1574" class="marker cat_camera cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">26:14</span>Make AddConversation() offset the camera northwards<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:14</span>Make AddConversation() offset the camera northwards<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:14</span>Make AddConversation() offset the camera northwards<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1604" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">26:44</span>Try out our offset conversation zoom<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:44</span>Try out our offset conversation zoom<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:44</span>Try out our offset conversation zoom<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1657" class="marker cat_camera cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">27:37</span>Plan to improve the camera code: damping hopping motion; alpha clipping interpolation; reintroducing debug camera; computing lighting for the entire visible area<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:37</span>Plan to improve the camera code: damping hopping motion; alpha clipping interpolation; reintroducing debug camera; computing lighting for the entire visible area<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:37</span>Plan to improve the camera code: damping hopping motion; alpha clipping interpolation; reintroducing debug camera; computing lighting for the entire visible area<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1828" class="marker cat_camera research">
+                    <div class="cineraContent"><span class="timecode">30:28</span>Harmonising the alpha clip and camera movement interpolation<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:28</span>Harmonising the alpha clip and camera movement interpolation<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:28</span>Harmonising the alpha clip and camera movement interpolation<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2051" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">34:11</span>Mathematically tie together the alpha clip and camera position interpolation in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:11</span>Mathematically tie together the alpha clip and camera position interpolation in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:11</span>Mathematically tie together the alpha clip and camera position interpolation in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2621" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">43:41</span>Try out our newly harmonised camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:41</span>Try out our newly harmonised camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:41</span>Try out our newly harmonised camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2711" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">45:11</span>Fix UpdateCameraForEntityMovement() to use the target camera position directly if it&#39;s close enough<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:11</span>Fix UpdateCameraForEntityMovement() to use the target camera position directly if it&#39;s close enough<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:11</span>Fix UpdateCameraForEntityMovement() to use the target camera position directly if it&#39;s close enough<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2860" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">47:40</span>Try out our harmonised camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:40</span>Try out our harmonised camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:40</span>Try out our harmonised camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2930" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">48:50</span>Try out smaller values for the AlphaMin and AlphaSpan<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:50</span>Try out smaller values for the AlphaMin and AlphaSpan<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:50</span>Try out smaller values for the AlphaMin and AlphaSpan<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3170" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">52:50</span>Reduce the AlphaMin and AlphaSpan in PlayWorld()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:50</span>Reduce the AlphaMin and AlphaSpan in PlayWorld()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:50</span>Reduce the AlphaMin and AlphaSpan in PlayWorld()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3184" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">53:04</span>Plan to damp the camera Z motion<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:04</span>Plan to damp the camera Z motion<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:04</span>Plan to damp the camera Z motion<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3392" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">56:32</span>Only moving the camera when the player has moved far enough, on each axis separately<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:32</span>Only moving the camera when the player has moved far enough, on each axis separately<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:32</span>Only moving the camera when the player has moved far enough, on each axis separately<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3522" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">58:42</span>Augment game_camera with a MovementMask for UpdateCameraForEntityMovement() to modify the camera&#39;s position<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:42</span>Augment game_camera with a MovementMask for UpdateCameraForEntityMovement() to modify the camera&#39;s position<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:42</span>Augment game_camera with a MovementMask for UpdateCameraForEntityMovement() to modify the camera&#39;s position<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3620" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:00:20</span>See that our camera is unexpectedly working<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:20</span>See that our camera is unexpectedly working<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:20</span>See that our camera is unexpectedly working<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3648" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:00:48</span>Use the computed TotalDeltaP in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:48</span>Use the computed TotalDeltaP in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:48</span>Use the computed TotalDeltaP in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3799" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:03:19</span>See nothing, as expected<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:19</span>See nothing, as expected<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:19</span>See nothing, as expected<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3810" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:03:30</span>Use Camera-&gt;MovementMask in UpdateCameraForEntityMovement() to move the camera above a threshold<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:30</span>Use Camera-&gt;MovementMask in UpdateCameraForEntityMovement() to move the camera above a threshold<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:30</span>Use Camera-&gt;MovementMask in UpdateCameraForEntityMovement() to move the camera above a threshold<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3995" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:06:35</span>Try out our camera movement threshold<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:35</span>Try out our camera movement threshold<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:35</span>Try out our camera movement threshold<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4028" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:07:08</span>Increase the camera movement threshold in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:08</span>Increase the camera movement threshold in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:08</span>Increase the camera movement threshold in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4057" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:07:37</span>Try out our camera movement threshold<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:37</span>Try out our camera movement threshold<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:37</span>Try out our camera movement threshold<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4106" class="marker cat_camera research">
+                    <div class="cineraContent"><span class="timecode">1:08:26</span>Investigate our threshold and camera movement masking<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:26</span>Investigate our threshold and camera movement masking<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:26</span>Investigate our threshold and camera movement masking<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4469" class="marker cat_camera cat_debug-system programming">
+                    <div class="cineraContent"><span class="timecode">1:14:29</span>Add camera data to the debug system<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:29</span>Add camera data to the debug system<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:29</span>Add camera data to the debug system<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4591" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:16:31</span>Find that the camera&#39;s Y values are already wrong at startup<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:31</span>Find that the camera&#39;s Y values are already wrong at startup<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:31</span>Find that the camera&#39;s Y values are already wrong at startup<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4614" class="marker cat_camera cat_debug-system programming">
+                    <div class="cineraContent"><span class="timecode">1:16:54</span>Print the TotalDeltaP after doing the Hadamard product with the MovementMask<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:54</span>Print the TotalDeltaP after doing the Hadamard product with the MovementMask<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:54</span>Print the TotalDeltaP after doing the Hadamard product with the MovementMask<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4735" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:18:55</span>Traverse the orphanage, watching the camera data printout<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:55</span>Traverse the orphanage, watching the camera data printout<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:55</span>Traverse the orphanage, watching the camera data printout<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4940" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:22:20</span>Interpolate the camera when the target position is below 0.01f in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:20</span>Interpolate the camera when the target position is below 0.01f in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:20</span>Interpolate the camera when the target position is below 0.01f in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5001" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:23:21</span>Find that the camera position interpolates forever<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:21</span>Find that the camera position interpolates forever<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:21</span>Find that the camera position interpolates forever<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5157" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:25:57</span>Fix UpdateCameraForEntityMovement() to only interpolate the camera when the target position is above 0.01f<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:57</span>Fix UpdateCameraForEntityMovement() to only interpolate the camera when the target position is above 0.01f<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:57</span>Fix UpdateCameraForEntityMovement() to only interpolate the camera when the target position is above 0.01f<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5196" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:26:36</span>Find that the camera interpolation is discontinuous<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:36</span>Find that the camera interpolation is discontinuous<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:36</span>Find that the camera interpolation is discontinuous<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5204" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:26:44</span>Increase that target distance threshold in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:44</span>Increase that target distance threshold in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:44</span>Increase that target distance threshold in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5250" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:27:30</span>Try out our stabilising camera, still with slight wonkiness<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:30</span>Try out our stabilising camera, still with slight wonkiness<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:30</span>Try out our stabilising camera, still with slight wonkiness<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5281" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:28:01</span>Remove that target threshold, and reduce the deceleration of our proportional derivative controller from 6 to 2<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:01</span>Remove that target threshold, and reduce the deceleration of our proportional derivative controller from 6 to 2<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:01</span>Remove that target threshold, and reduce the deceleration of our proportional derivative controller from 6 to 2<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5311" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:28:31</span>Try out our camera to find it overshoots<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:31</span>Try out our camera to find it overshoots<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:31</span>Try out our camera to find it overshoots<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5316" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:28:36</span>Increase the deceleration of our proportional derivative controller from 2 to 3<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:36</span>Increase the deceleration of our proportional derivative controller from 2 to 3<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:36</span>Increase the deceleration of our proportional derivative controller from 2 to 3<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5318" class="marker cat_camera run programming">
+                    <div class="cineraContent"><span class="timecode">1:28:38</span>Traverse the orphanage to still find overshoot in the camera, increasing the deceleration value to 5.5<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:38</span>Traverse the orphanage to still find overshoot in the camera, increasing the deceleration value to 5.5<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:38</span>Traverse the orphanage to still find overshoot in the camera, increasing the deceleration value to 5.5<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5465" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:31:05</span>Reduce that deceleration value to 5.25<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:05</span>Reduce that deceleration value to 5.25<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:05</span>Reduce that deceleration value to 5.25<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5479" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:31:19</span>Try out our camera, and consider making the MovementMask signed<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:19</span>Try out our camera, and consider making the MovementMask signed<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:19</span>Try out our camera, and consider making the MovementMask signed<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5594" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:33:14</span>Let the camera smoothly change direction in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:14</span>Let the camera smoothly change direction in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:14</span>Let the camera smoothly change direction in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5748" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:35:48</span>Try out camera direction changing<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:48</span>Try out camera direction changing<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:48</span>Try out camera direction changing<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5773" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:36:13</span>Reduce the camera speed threshold in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:13</span>Reduce the camera speed threshold in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:13</span>Reduce the camera speed threshold in UpdateCameraForEntityMovement()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5782" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:36:22</span>Try out camera direction changing<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:22</span>Try out camera direction changing<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:22</span>Try out camera direction changing<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5829" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:37:09</span>Cold set the camera&#39;s velocity when it is close enough to the target<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:09</span>Cold set the camera&#39;s velocity when it is close enough to the target<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:09</span>Cold set the camera&#39;s velocity when it is close enough to the target<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5844" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:37:24</span>Try out the camera to find that the special camera gets positioned incorrectly<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:24</span>Try out the camera to find that the special camera gets positioned incorrectly<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:24</span>Try out the camera to find that the special camera gets positioned incorrectly<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5875" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:37:55</span>Make the special camera set the Camera-&gt;MovementMask to 1, 1, 1<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:55</span>Make the special camera set the Camera-&gt;MovementMask to 1, 1, 1<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:55</span>Make the special camera set the Camera-&gt;MovementMask to 1, 1, 1<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5903" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:38:23</span>Try out the special camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:23</span>Try out the special camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:23</span>Try out the special camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5990" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:39:50</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:50</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:50</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6027" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:40:27</span>Make ExecuteBrainHero() position the glove with the hero<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:27</span>Make ExecuteBrainHero() position the glove with the hero<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:27</span>Make ExecuteBrainHero() position the glove with the hero<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6169" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:42:49</span>Find that the glove stays with the hero<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:49</span>Find that the glove stays with the hero<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:49</span>Find that the glove stays with the hero<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6265" class="marker cat_camera authored">
+                    <div class="cineraContent"><span class="timecode">1:44:25</span><span class="author" data-hue="84" data-saturation="83%">culdevu</span> Q: I&#39;m still not sure I understand the reason why you don&#39;t store the &quot;actual&quot; position and smoothly scrolling between tiles, and the &quot;animation&quot; position doing the bouncing? The bouncing should only have to be dealt with during render and can be derived from the &quot;actual&quot; position, and so you don&#39;t have to store it anywhere. Am I wrong about that?<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:25</span><span class="author" data-hue="84" data-saturation="83%">culdevu</span> Q: I&#39;m still not sure I understand the reason why you don&#39;t store the &quot;actual&quot; position and smoothly scrolling between tiles, and the &quot;animation&quot; position doing the bouncing? The bouncing should only have to be dealt with during render and can be derived from the &quot;actual&quot; position, and so you don&#39;t have to store it anywhere. Am I wrong about that?<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:25</span><span class="author" data-hue="84" data-saturation="83%">culdevu</span> Q: I&#39;m still not sure I understand the reason why you don&#39;t store the &quot;actual&quot; position and smoothly scrolling between tiles, and the &quot;animation&quot; position doing the bouncing? The bouncing should only have to be dealt with during render and can be derived from the &quot;actual&quot; position, and so you don&#39;t have to store it anywhere. Am I wrong about that?<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6417" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">1:46:57</span><span class="author" data-hue="83" data-saturation="80%">davechat</span> Q: What was the plan for lighting on the sprites?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:57</span><span class="author" data-hue="83" data-saturation="80%">davechat</span> Q: What was the plan for lighting on the sprites?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:57</span><span class="author" data-hue="83" data-saturation="80%">davechat</span> Q: What was the plan for lighting on the sprites?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6473" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">1:47:53</span><span class="author" data-hue="74" data-saturation="99%">saidwho12</span> Q: Is the variance in lighting just a side effect of the random sample?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:53</span><span class="author" data-hue="74" data-saturation="99%">saidwho12</span> Q: Is the variance in lighting just a side effect of the random sample?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:53</span><span class="author" data-hue="74" data-saturation="99%">saidwho12</span> Q: Is the variance in lighting just a side effect of the random sample?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6497" class="marker cat_health authored" data-ref="https://www.youtube.com/watch?v=i7kh8pNRWOo">
+                    <div class="cineraContent"><span class="timecode">1:48:17</span><span class="author" data-hue="5" data-saturation="94%">robotchocolatedino</span> Q: Off-topic but how do you stay motivated on long projects like this? I usually would lose interest much earlier, and am wondering if there are techniques to want to keep working for on the same game for many years<sup>1</sup><span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:17</span><span class="author" data-hue="5" data-saturation="94%">robotchocolatedino</span> Q: Off-topic but how do you stay motivated on long projects like this? I usually would lose interest much earlier, and am wondering if there are techniques to want to keep working for on the same game for many years<sup>1</sup><span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:17</span><span class="author" data-hue="5" data-saturation="94%">robotchocolatedino</span> Q: Off-topic but how do you stay motivated on long projects like this? I usually would lose interest much earlier, and am wondering if there are techniques to want to keep working for on the same game for many years<sup>1</sup><span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6720" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:52:00</span><span class="author" data-hue="74" data-saturation="99%">saidwho12</span> Q: How big is <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:00</span><span class="author" data-hue="74" data-saturation="99%">saidwho12</span> Q: How big is <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:00</span><span class="author" data-hue="74" data-saturation="99%">saidwho12</span> Q: How big is <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6816" class="marker cat_health authored">
+                    <div class="cineraContent"><span class="timecode">1:53:36</span><span class="author" data-hue="245" data-saturation="92%">very_mediocre</span> Q: Do you ever get burnt out? What does it take for that? Have you noticed a change in your mental stamina as you&#39;ve gotten older?<span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:36</span><span class="author" data-hue="245" data-saturation="92%">very_mediocre</span> Q: Do you ever get burnt out? What does it take for that? Have you noticed a change in your mental stamina as you&#39;ve gotten older?<span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:36</span><span class="author" data-hue="245" data-saturation="92%">very_mediocre</span> Q: Do you ever get burnt out? What does it take for that? Have you noticed a change in your mental stamina as you&#39;ve gotten older?<span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6954" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:55:54</span><span class="author" data-hue="323" data-saturation="86%">fishrock123</span> Q: How long does a full rebuild take?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:54</span><span class="author" data-hue="323" data-saturation="86%">fishrock123</span> Q: How long does a full rebuild take?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:54</span><span class="author" data-hue="323" data-saturation="86%">fishrock123</span> Q: How long does a full rebuild take?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7010" class="marker cat_health authored" data-ref="https://guide.handmadehero.org/chat/chat012/">
+                    <div class="cineraContent"><span class="timecode">1:56:50</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Motivation: I can recommend your chat about the imposter syndrome.<sup>2</sup>It helped me a lot. I used to have way too high expectations of what I can do in a day. I reduced that expectation and set myself smaller goals for each day. Way easier to even start then and I was surprised how quickly I got way more done than I initially wanted to do<span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:50</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Motivation: I can recommend your chat about the imposter syndrome.<sup>2</sup>It helped me a lot. I used to have way too high expectations of what I can do in a day. I reduced that expectation and set myself smaller goals for each day. Way easier to even start then and I was surprised how quickly I got way more done than I initially wanted to do<span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:50</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Motivation: I can recommend your chat about the imposter syndrome.<sup>2</sup>It helped me a lot. I used to have way too high expectations of what I can do in a day. I reduced that expectation and set myself smaller goals for each day. Way easier to even start then and I was surprised how quickly I got way more done than I initially wanted to do<span class="cineraCategories"><div title="health" class="category health"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7217" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:00:17</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Do you ever experience having no idea on how to approach a specific problem and have that negatively impact how productive you are? Any tip on how to deal with it?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:17</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Do you ever experience having no idea on how to approach a specific problem and have that negatively impact how productive you are? Any tip on how to deal with it?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:17</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Do you ever experience having no idea on how to approach a specific problem and have that negatively impact how productive you are? Any tip on how to deal with it?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7436" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:03:56</span>Roll it up for 2018<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:56</span>Roll it up for 2018<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:56</span>Roll it up for 2018<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day507/"><div>&#9196;</div><div>Next: 'LRU Texture Handle Reuse'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

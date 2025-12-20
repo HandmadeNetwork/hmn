@@ -1,0 +1,1056 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="data structure, file io, hardware, lighting, memory, performance, profiling, threading, timing, Administrivia, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Capturing the Entire Lighting Data</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one" href="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Kickstarter</div>
+                            <div class="ref_title">Meow the Infinite: Book One</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8" class="timecode"><span class="ref_index">[1]</span><span class="time">0:08</span></span><span data-timestamp="7545" class="timecode"><span class="ref_index">[11]</span><span class="time">2:05:45</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.youtube.com/c/MollyRocket" href="https://www.youtube.com/c/MollyRocket" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">YouTube</div>
+                            <div class="ref_title">Molly Rocket</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8" class="timecode"><span class="ref_index">[2]</span><span class="time">0:08</span></span><span data-timestamp="7545" class="timecode"><span class="ref_index">[12]</span><span class="time">2:05:45</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/en-us/vtune/documentation/featured-documentation" href="https://software.intel.com/en-us/vtune/documentation/featured-documentation" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel Developer Zone</div>
+                            <div class="ref_title">Intel® VTune™ Profiler: Featured Documentation</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="731" class="timecode"><span class="ref_index">[3]</span><span class="time">12:11</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/en-us/vtune-help-hardware-event-based-sampling-collection" href="https://software.intel.com/en-us/vtune-help-hardware-event-based-sampling-collection" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel Developer Zone</div>
+                            <div class="ref_title">Intel® VTune™ Profiler User Guide: Hardware Event-based Sampling Collection</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="849" class="timecode"><span class="ref_index">[4]</span><span class="time">14:09</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/en-us/vtune-help-general-exploration-analysis" href="https://software.intel.com/en-us/vtune-help-general-exploration-analysis" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel Developer Zone</div>
+                            <div class="ref_title">Intel® VTune™ Profiler User Guide: Microarchitecture Exploration Analysis for Hardware Issues</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="945" class="timecode"><span class="ref_index">[5]</span><span class="time">15:45</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/en-us/vtune-help-custom-analysis" href="https://software.intel.com/en-us/vtune-help-custom-analysis" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel Developer Zone</div>
+                            <div class="ref_title">Intel® VTune™ Profiler User Guide: Custom Analysis</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="962" class="timecode"><span class="ref_index">[6]</span><span class="time">16:02</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://uops.info/table.html" href="https://uops.info/table.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">uops.info</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2296" class="timecode"><span class="ref_index">[7]</span><span class="time">38:16</span></span><span data-timestamp="2880" class="timecode"><span class="ref_index">[8]</span><span class="time">48:00</span></span><span data-timestamp="6725" class="timecode"><span class="ref_index">[9]</span><span class="time">1:52:05</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="7215" class="timecode"><span class="ref_index">[10]</span><span class="time">2:00:15</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content file-io">
+                                <span class="icon category file-io"></span><span class="cineraText">file io</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content profiling">
+                                <span class="icon category profiling"></span><span class="cineraText">profiling</span>
+                            </div>
+                            <div class="filter_content threading">
+                                <span class="icon category threading"></span><span class="cineraText">threading</span>
+                            </div>
+                            <div class="filter_content timing">
+                                <span class="icon category timing"></span><span class="cineraText">timing</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="YTIz_eV_BsE"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day591/"><div>&#9195;</div><div>Previous: 'Making a Stand-alone Lighting Performance Test'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="2" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:02</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:02</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:02</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8" class="marker cat_nullTopic research" data-ref="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one,https://www.youtube.com/c/MollyRocket">
+                    <div class="cineraContent"><span class="timecode">0:08</span>Plug the Meow the Infinite printed comic Kickstarter<sup>1</sup> and the related fun videos at Molly Rocket&#39;s YouTube channel<sup>2</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:08</span>Plug the Meow the Infinite printed comic Kickstarter<sup>1</sup> and the related fun videos at Molly Rocket&#39;s YouTube channel<sup>2</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:08</span>Plug the Meow the Infinite printed comic Kickstarter<sup>1</sup> and the related fun videos at Molly Rocket&#39;s YouTube channel<sup>2</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="246" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">4:06</span>Dive into the code<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:06</span>Dive into the code<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:06</span>Dive into the code<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="286" class="marker cat_lighting cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">4:46</span>Fix hhlightprof to allocate memory for four times the BoxCount to allow room for child boxes<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:46</span>Fix hhlightprof to allocate memory for four times the BoxCount to allow room for child boxes<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:46</span>Fix hhlightprof to allocate memory for four times the BoxCount to allow room for child boxes<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="312" class="marker cat_lighting speech">
+                    <div class="cineraContent"><span class="timecode">5:12</span>Determine to pseudo-verify our standalone ray tracer<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:12</span>Determine to pseudo-verify our standalone ray tracer<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:12</span>Determine to pseudo-verify our standalone ray tracer<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="404" class="marker cat_profiling speech">
+                    <div class="cineraContent"><span class="timecode">6:44</span>Determine to learn VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:44</span>Determine to learn VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:44</span>Determine to learn VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="439" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">7:19</span>Run hhlightprof for 16 seconds, to completion<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:19</span>Run hhlightprof for 16 seconds, to completion<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:19</span>Run hhlightprof for 16 seconds, to completion<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="461" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">7:41</span>Decrease the ray multiplier from 256 to 64 in TestRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:41</span>Decrease the ray multiplier from 256 to 64 in TestRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:41</span>Decrease the ray multiplier from 256 to 64 in TestRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="471" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">7:51</span>Run hhlightprof for 4 seconds, to completion<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:51</span>Run hhlightprof for 4 seconds, to completion<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:51</span>Run hhlightprof for 4 seconds, to completion<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="480" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">8:00</span>Increase the ray multiplier from 64 to 128 in TestRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:00</span>Increase the ray multiplier from 64 to 128 in TestRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:00</span>Increase the ray multiplier from 64 to 128 in TestRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="488" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">8:08</span>Run hhlightprof for 7 seconds, to completion<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:08</span>Run hhlightprof for 7 seconds, to completion<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:08</span>Run hhlightprof for 7 seconds, to completion<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="495" class="marker cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">8:15</span>Launch VTune and hunt its interface for custom analysis capabilities<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:15</span>Launch VTune and hunt its interface for custom analysis capabilities<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:15</span>Launch VTune and hunt its interface for custom analysis capabilities<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="705" class="marker cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">11:45</span>Launch VTune as administrator<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:45</span>Launch VTune as administrator<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:45</span>Launch VTune as administrator<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="731" class="marker cat_profiling research" data-ref="https://software.intel.com/en-us/vtune/documentation/featured-documentation">
+                    <div class="cineraContent"><span class="timecode">12:11</span>Consult VTune&#39;s documentation<sup>3</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:11</span>Consult VTune&#39;s documentation<sup>3</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:11</span>Consult VTune&#39;s documentation<sup>3</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="849" class="marker cat_profiling research" data-ref="https://software.intel.com/en-us/vtune-help-hardware-event-based-sampling-collection">
+                    <div class="cineraContent"><span class="timecode">14:09</span>Research VTune&#39;s Hardware Event-based Sampling Collection<sup>4</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:09</span>Research VTune&#39;s Hardware Event-based Sampling Collection<sup>4</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:09</span>Research VTune&#39;s Hardware Event-based Sampling Collection<sup>4</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="945" class="marker cat_profiling research" data-ref="https://software.intel.com/en-us/vtune-help-general-exploration-analysis">
+                    <div class="cineraContent"><span class="timecode">15:45</span>Research VTune&#39;s Microarchitecture Exploration Analysis for Hardware Issues<sup>5</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:45</span>Research VTune&#39;s Microarchitecture Exploration Analysis for Hardware Issues<sup>5</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:45</span>Research VTune&#39;s Microarchitecture Exploration Analysis for Hardware Issues<sup>5</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="962" class="marker cat_profiling research" data-ref="https://software.intel.com/en-us/vtune-help-custom-analysis">
+                    <div class="cineraContent"><span class="timecode">16:02</span>Research VTune&#39;s Custom Analysis<sup>6</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:02</span>Research VTune&#39;s Custom Analysis<sup>6</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:02</span>Research VTune&#39;s Custom Analysis<sup>6</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="987" class="marker cat_profiling admin">
+                    <div class="cineraContent"><span class="timecode">16:27</span>Create a new &quot;Fruit Salad x12&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:27</span>Create a new &quot;Fruit Salad x12&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:27</span>Create a new &quot;Fruit Salad x12&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1095" class="marker cat_timing speech">
+                    <div class="cineraContent"><span class="timecode">18:15</span>Some words on x64 performance counters<span class="cineraCategories"><div title="timing" class="category timing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:15</span>Some words on x64 performance counters<span class="cineraCategories"><div title="timing" class="category timing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:15</span>Some words on x64 performance counters<span class="cineraCategories"><div title="timing" class="category timing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1274" class="marker cat_profiling admin">
+                    <div class="cineraContent"><span class="timecode">21:14</span>Continue to create our &quot;Fruit Salad x12&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:14</span>Continue to create our &quot;Fruit Salad x12&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:14</span>Continue to create our &quot;Fruit Salad x12&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1405" class="marker cat_profiling admin">
+                    <div class="cineraContent"><span class="timecode">23:25</span>Rename &quot;Fruit Salad x12&quot; to &quot;No Counters Template&quot; and clone it as &quot;The Ultimate Fruit Salad&quot;<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:25</span>Rename &quot;Fruit Salad x12&quot; to &quot;No Counters Template&quot; and clone it as &quot;The Ultimate Fruit Salad&quot;<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:25</span>Rename &quot;Fruit Salad x12&quot; to &quot;No Counters Template&quot; and clone it as &quot;The Ultimate Fruit Salad&quot;<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1476" class="marker cat_profiling admin">
+                    <div class="cineraContent"><span class="timecode">24:36</span>Enable our desired counters in &quot;The Ultimate Fruit Salad&quot;<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:36</span>Enable our desired counters in &quot;The Ultimate Fruit Salad&quot;<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:36</span>Enable our desired counters in &quot;The Ultimate Fruit Salad&quot;<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1542" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">25:42</span>Run hhlightprof in VTune<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:42</span>Run hhlightprof in VTune<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:42</span>Run hhlightprof in VTune<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1558" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">25:58</span>Consult our VTune Hardware Events analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:58</span>Consult our VTune Hardware Events analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:58</span>Consult our VTune Hardware Events analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1664" class="marker cat_hardware speech">
+                    <div class="cineraContent"><span class="timecode">27:44</span>A few words on 4 µOPs per cycle issuance<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:44</span>A few words on 4 µOPs per cycle issuance<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:44</span>A few words on 4 µOPs per cycle issuance<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1794" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">29:54</span>Continue to consult our VTune Hardware Events analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:54</span>Continue to consult our VTune Hardware Events analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:54</span>Continue to consult our VTune Hardware Events analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1844" class="marker cat_profiling admin">
+                    <div class="cineraContent"><span class="timecode">30:44</span>Rename &quot;The Ultimate Fruit Salad&quot; to &quot;Instructions Per Clock&quot; and swap out the UOPS_EXECUTED.CORE_CYCLES_NONE counter for UOPS_EXECUTED.CORE_CYCLES_GE_4<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:44</span>Rename &quot;The Ultimate Fruit Salad&quot; to &quot;Instructions Per Clock&quot; and swap out the UOPS_EXECUTED.CORE_CYCLES_NONE counter for UOPS_EXECUTED.CORE_CYCLES_GE_4<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:44</span>Rename &quot;The Ultimate Fruit Salad&quot; to &quot;Instructions Per Clock&quot; and swap out the UOPS_EXECUTED.CORE_CYCLES_NONE counter for UOPS_EXECUTED.CORE_CYCLES_GE_4<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1918" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">31:58</span>Run our &quot;Instructions Per Clock&quot; analysis of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:58</span>Run our &quot;Instructions Per Clock&quot; analysis of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:58</span>Run our &quot;Instructions Per Clock&quot; analysis of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1933" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">32:13</span>Consult our &quot;Instructions Per Clock&quot; VTune analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:13</span>Consult our &quot;Instructions Per Clock&quot; VTune analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:13</span>Consult our &quot;Instructions Per Clock&quot; VTune analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1962" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">32:42</span>Interpret our &quot;Instructions Per Clock&quot; VTune analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:42</span>Interpret our &quot;Instructions Per Clock&quot; VTune analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:42</span>Interpret our &quot;Instructions Per Clock&quot; VTune analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2076" class="marker cat_performance speech">
+                    <div class="cineraContent"><span class="timecode">34:36</span>Get the Work In More Efficiently vs Do the Work More Efficiently<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:36</span>Get the Work In More Efficiently vs Do the Work More Efficiently<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:36</span>Get the Work In More Efficiently vs Do the Work More Efficiently<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2104" class="marker cat_profiling admin">
+                    <div class="cineraContent"><span class="timecode">35:04</span>Create a new &quot;Arithmetic Port Usage&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:04</span>Create a new &quot;Arithmetic Port Usage&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:04</span>Create a new &quot;Arithmetic Port Usage&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2296" class="marker cat_profiling research" data-ref="https://uops.info/table.html">
+                    <div class="cineraContent"><span class="timecode">38:16</span>Understanding port usage with uops.info<sup>7</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:16</span>Understanding port usage with uops.info<sup>7</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:16</span>Understanding port usage with uops.info<sup>7</sup><span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2588" class="marker cat_profiling admin">
+                    <div class="cineraContent"><span class="timecode">43:08</span>Enable the counters of ports 0, 1 and 5, renaming &quot;Arithmetic Port Usage&quot; to &quot;Float Port Usage&quot;<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:08</span>Enable the counters of ports 0, 1 and 5, renaming &quot;Arithmetic Port Usage&quot; to &quot;Float Port Usage&quot;<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:08</span>Enable the counters of ports 0, 1 and 5, renaming &quot;Arithmetic Port Usage&quot; to &quot;Float Port Usage&quot;<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2648" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">44:08</span>Run our &quot;Float Port Usage&quot; analysis of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:08</span>Run our &quot;Float Port Usage&quot; analysis of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:08</span>Run our &quot;Float Port Usage&quot; analysis of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2663" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">44:23</span>Consult our &quot;Float Port Usage&quot; VTune analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:23</span>Consult our &quot;Float Port Usage&quot; VTune analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:23</span>Consult our &quot;Float Port Usage&quot; VTune analysis<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2814" class="marker cat_profiling admin">
+                    <div class="cineraContent"><span class="timecode">46:54</span>Create a new &quot;All Ports Usage&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:54</span>Create a new &quot;All Ports Usage&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:54</span>Create a new &quot;All Ports Usage&quot; custom analysis in VTune<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2864" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">47:44</span>Run our &quot;All Ports Usage&quot; analysis of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:44</span>Run our &quot;All Ports Usage&quot; analysis of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:44</span>Run our &quot;All Ports Usage&quot; analysis of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2880" class="marker cat_lighting cat_profiling run" data-ref="https://uops.info/table.html">
+                    <div class="cineraContent"><span class="timecode">48:00</span>Consult our &quot;All Ports Usage&quot; VTune analysis, noting that port 4 is the write port<sup>8</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:00</span>Consult our &quot;All Ports Usage&quot; VTune analysis, noting that port 4 is the write port<sup>8</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:00</span>Consult our &quot;All Ports Usage&quot; VTune analysis, noting that port 4 is the write port<sup>8</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3026" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">50:26</span>Interpret our &quot;All Ports Usage&quot; VTune analysis, desiring to Get the Work In More Efficiently<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:26</span>Interpret our &quot;All Ports Usage&quot; VTune analysis, desiring to Get the Work In More Efficiently<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:26</span>Interpret our &quot;All Ports Usage&quot; VTune analysis, desiring to Get the Work In More Efficiently<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3154" class="marker cat_lighting cat_profiling speech">
+                    <div class="cineraContent"><span class="timecode">52:34</span>Determine to validate our code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:34</span>Determine to validate our code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:34</span>Determine to validate our code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3219" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">53:39</span>Step through an -Od build of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:39</span>Step through an -Od build of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:39</span>Step through an -Od build of hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3518" class="marker cat_file-io cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">58:38</span>Disable the LightBoxDumpTrigger<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:38</span>Disable the LightBoxDumpTrigger<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:38</span>Disable the LightBoxDumpTrigger<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3526" class="marker cat_lighting cat_profiling run">
+                    <div class="cineraContent"><span class="timecode">58:46</span>Continue to step through hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:46</span>Continue to step through hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:46</span>Continue to step through hhlightprof<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="profiling" class="category profiling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3745" class="marker cat_file-io cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:02:25</span>Make EndLightingComputation() call DEBUGDumpData() on the SpecAtlas, DiffuseAtlas, and the entire lighting Solution<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:25</span>Make EndLightingComputation() call DEBUGDumpData() on the SpecAtlas, DiffuseAtlas, and the entire lighting Solution<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:25</span>Make EndLightingComputation() call DEBUGDumpData() on the SpecAtlas, DiffuseAtlas, and the entire lighting Solution<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4051" class="marker cat_file-io cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:07:31</span>Dump the lighting data to file<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:31</span>Dump the lighting data to file<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:31</span>Dump the lighting data to file<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4109" class="marker cat_lighting admin">
+                    <div class="cineraContent"><span class="timecode">1:08:29</span>Check out our lighting debug dumps<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:29</span>Check out our lighting debug dumps<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:29</span>Check out our lighting debug dumps<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4132" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:08:52</span>Make TestRayCast() in hhlightprof do the full ComputeLightPropagationWork(), replacing Commands in the lighting_work with the DiffuseAtlas and SpecAtlas<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:52</span>Make TestRayCast() in hhlightprof do the full ComputeLightPropagationWork(), replacing Commands in the lighting_work with the DiffuseAtlas and SpecAtlas<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:52</span>Make TestRayCast() in hhlightprof do the full ComputeLightPropagationWork(), replacing Commands in the lighting_work with the DiffuseAtlas and SpecAtlas<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4493" class="marker cat_file-io cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:14:53</span>Introduce LoadEntireFile() in hhlightprof, and load in all our lighting dumps<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:53</span>Introduce LoadEntireFile() in hhlightprof, and load in all our lighting dumps<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:53</span>Introduce LoadEntireFile() in hhlightprof, and load in all our lighting dumps<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4861" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:21:01</span>Set up hhlightprof to use our loaded dumps<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:01</span>Set up hhlightprof to use our loaded dumps<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:01</span>Set up hhlightprof to use our loaded dumps<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5112" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:25:12</span>Hit a write access violation on the Solution-&gt;SamplingSpheres<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:12</span>Hit a write access violation on the Solution-&gt;SamplingSpheres<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:12</span>Hit a write access violation on the Solution-&gt;SamplingSpheres<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5141" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:25:41</span>Hit a write access violation on Byte in ZeroSize()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:41</span>Hit a write access violation on Byte in ZeroSize()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:41</span>Hit a write access violation on Byte in ZeroSize()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5145" class="marker cat_lighting cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">1:25:45</span>Allocate memory for the Solution-&gt;Works<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:45</span>Allocate memory for the Solution-&gt;Works<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:45</span>Allocate memory for the Solution-&gt;Works<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5291" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:28:11</span>Run hhlightprof successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:11</span>Run hhlightprof successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:11</span>Run hhlightprof successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5301" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:28:21</span>Make hhlightprof validate our SpecAtlas texels<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:21</span>Make hhlightprof validate our SpecAtlas texels<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:21</span>Make hhlightprof validate our SpecAtlas texels<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5474" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:31:14</span>Run hhlightprof with non-zero errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:14</span>Run hhlightprof with non-zero errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:14</span>Run hhlightprof with non-zero errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5517" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:31:57</span>Run hhlightprof in -O2 with non-zero errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:57</span>Run hhlightprof in -O2 with non-zero errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:57</span>Run hhlightprof in -O2 with non-zero errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5522" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:32:02</span>Make hhlightprof print the TexelCount<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:02</span>Make hhlightprof print the TexelCount<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:02</span>Make hhlightprof print the TexelCount<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5548" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:32:28</span>Run hhlightprof with non-zero errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:28</span>Run hhlightprof with non-zero errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:28</span>Run hhlightprof with non-zero errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5571" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:32:51</span>Try making hhlightprof overwrite the tUpdateBlend as 1.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:51</span>Try making hhlightprof overwrite the tUpdateBlend as 1.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:51</span>Try making hhlightprof overwrite the tUpdateBlend as 1.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5629" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:33:49</span>Run hhlightprof with a similar number of errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:49</span>Run hhlightprof with a similar number of errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:49</span>Run hhlightprof with a similar number of errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5672" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:34:32</span>Double-check our SpecAtlas validity checking<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:32</span>Double-check our SpecAtlas validity checking<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:32</span>Double-check our SpecAtlas validity checking<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5704" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:35:04</span>Try making hhlightprof overwrite the tUpdateBlend as 0.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:04</span>Try making hhlightprof overwrite the tUpdateBlend as 0.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:04</span>Try making hhlightprof overwrite the tUpdateBlend as 0.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5722" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:35:22</span>Run hhlightprof with a changed number of errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:22</span>Run hhlightprof with a changed number of errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:22</span>Run hhlightprof with a changed number of errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5741" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:35:41</span>Try making hhlightprof overwrite the tUpdateBlend as 100.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:41</span>Try making hhlightprof overwrite the tUpdateBlend as 100.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:41</span>Try making hhlightprof overwrite the tUpdateBlend as 100.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5755" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:35:55</span>Run hhlightprof with an infinite number of errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:55</span>Run hhlightprof with an infinite number of errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:55</span>Run hhlightprof with an infinite number of errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5763" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:36:03</span>Try making hhlightprof overwrite the tUpdateBlend as 10.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:03</span>Try making hhlightprof overwrite the tUpdateBlend as 10.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:03</span>Try making hhlightprof overwrite the tUpdateBlend as 10.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5774" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:36:14</span>Run hhlightprof with many errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:14</span>Run hhlightprof with many errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:14</span>Run hhlightprof with many errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5776" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:36:16</span>Try making hhlightprof overwrite the tUpdateBlend as 1.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:16</span>Try making hhlightprof overwrite the tUpdateBlend as 1.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:16</span>Try making hhlightprof overwrite the tUpdateBlend as 1.0f<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5782" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:36:22</span>Run hhlightprof with few errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:22</span>Run hhlightprof with few errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:22</span>Run hhlightprof with few errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5793" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:36:33</span>Prevent hhlightprof from overwriting the tUpdateBlend<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:33</span>Prevent hhlightprof from overwriting the tUpdateBlend<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:33</span>Prevent hhlightprof from overwriting the tUpdateBlend<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5801" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:36:41</span>Continue to scour hhlightprof and <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>&#39;s lighting system for inconsistencies<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:41</span>Continue to scour hhlightprof and <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>&#39;s lighting system for inconsistencies<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:41</span>Continue to scour hhlightprof and <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>&#39;s lighting system for inconsistencies<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6227" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:43:47</span>Make TestRayCast() set the Work-&gt;VoxelX<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:47</span>Make TestRayCast() set the Work-&gt;VoxelX<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:47</span>Make TestRayCast() set the Work-&gt;VoxelX<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6279" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:44:39</span>Run hhlightprof, still with errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:39</span>Run hhlightprof, still with errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:39</span>Run hhlightprof, still with errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6294" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:44:54</span>Introduce InternalLightingCore() to perform our dumps<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:54</span>Introduce InternalLightingCore() to perform our dumps<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:54</span>Introduce InternalLightingCore() to perform our dumps<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6562" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:49:22</span>Run hhlightprof, still with errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:22</span>Run hhlightprof, still with errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:22</span>Run hhlightprof, still with errors<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6573" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:49:33</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:33</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:33</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6598" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:49:58</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Is it still building under the overdose flag?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:58</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Is it still building under the overdose flag?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:58</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Is it still building under the overdose flag?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6632" class="marker cat_lighting cat_threading authored">
+                    <div class="cineraContent"><span class="timecode">1:50:32</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Maybe capture a single threaded run?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:32</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Maybe capture a single threaded run?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:32</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Maybe capture a single threaded run?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6725" class="marker cat_nullTopic authored" data-ref="https://uops.info/table.html">
+                    <div class="cineraContent"><span class="timecode">1:52:05</span><span class="author" data-hue="11" data-saturation="95%">wakeuphate</span> Q: On your UOPS info table<sup>9</sup> earlier in the stream, you were set to Skylake rather than Kaby Lake, just in case that&#39;s why you were seeing issues then<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:05</span><span class="author" data-hue="11" data-saturation="95%">wakeuphate</span> Q: On your UOPS info table<sup>9</sup> earlier in the stream, you were set to Skylake rather than Kaby Lake, just in case that&#39;s why you were seeing issues then<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:05</span><span class="author" data-hue="11" data-saturation="95%">wakeuphate</span> Q: On your UOPS info table<sup>9</sup> earlier in the stream, you were set to Skylake rather than Kaby Lake, just in case that&#39;s why you were seeing issues then<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6929" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:55:29</span><span class="author" data-hue="97" data-saturation="75%">dataqsloth</span> Q: Have you considered releasing your C course earlier as a beta release (even full price) just because so many of us and people we know are currently on quarantine!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:29</span><span class="author" data-hue="97" data-saturation="75%">dataqsloth</span> Q: Have you considered releasing your C course earlier as a beta release (even full price) just because so many of us and people we know are currently on quarantine!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:29</span><span class="author" data-hue="97" data-saturation="75%">dataqsloth</span> Q: Have you considered releasing your C course earlier as a beta release (even full price) just because so many of us and people we know are currently on quarantine!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6959" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:55:59</span><span class="author" data-hue="56" data-saturation="82%">ikojan</span> How long would the course be?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:59</span><span class="author" data-hue="56" data-saturation="82%">ikojan</span> How long would the course be?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:59</span><span class="author" data-hue="56" data-saturation="82%">ikojan</span> How long would the course be?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7044" class="marker cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">1:57:24</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: Is it really bad on x86 to do unaligned pointers? Because I have a packed structure with pointers and the compiler is warning me about unaligned pointers. (Apparently there is a declspec to allow unaligned pointers?)<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:24</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: Is it really bad on x86 to do unaligned pointers? Because I have a packed structure with pointers and the compiler is warning me about unaligned pointers. (Apparently there is a declspec to allow unaligned pointers?)<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:24</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: Is it really bad on x86 to do unaligned pointers? Because I have a packed structure with pointers and the compiler is warning me about unaligned pointers. (Apparently there is a declspec to allow unaligned pointers?)<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7215" class="marker cat_hardware authored" data-ref="https://uops.info/table.html">
+                    <div class="cineraContent"><span class="timecode">2:00:15</span><span class="author" data-hue="256" data-saturation="96%">leo0230</span> Q: Do instructions with memory operands actually use the arithmetic units before the data is ready?<sup>10</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:15</span><span class="author" data-hue="256" data-saturation="96%">leo0230</span> Q: Do instructions with memory operands actually use the arithmetic units before the data is ready?<sup>10</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:15</span><span class="author" data-hue="256" data-saturation="96%">leo0230</span> Q: Do instructions with memory operands actually use the arithmetic units before the data is ready?<sup>10</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7383" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:03:03</span><span class="author" data-hue="133" data-saturation="93%">enyo_enev</span> Q: Is it going to be useful for hardcore fans of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:03</span><span class="author" data-hue="133" data-saturation="93%">enyo_enev</span> Q: Is it going to be useful for hardcore fans of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:03</span><span class="author" data-hue="133" data-saturation="93%">enyo_enev</span> Q: Is it going to be useful for hardcore fans of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7431" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:03:51</span><span class="author" data-hue="56" data-saturation="82%">ikojan</span> Q: Will the course be project-based, where throughout the course you&#39;ll be making x or y project?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:51</span><span class="author" data-hue="56" data-saturation="82%">ikojan</span> Q: Will the course be project-based, where throughout the course you&#39;ll be making x or y project?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:51</span><span class="author" data-hue="56" data-saturation="82%">ikojan</span> Q: Will the course be project-based, where throughout the course you&#39;ll be making x or y project?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7440" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:04:00</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Is there an API to access the performance counters so you don&#39;t have to use VTune?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:00</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Is there an API to access the performance counters so you don&#39;t have to use VTune?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:00</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Is there an API to access the performance counters so you don&#39;t have to use VTune?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7545" class="marker cat_nullTopic speech" data-ref="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one,https://www.youtube.com/c/MollyRocket">
+                    <div class="cineraContent"><span class="timecode">2:05:45</span>Wrap it up with a plug of the Meow the Infinite printed comic Kickstarter<sup>11</sup> and related fun videos at Molly Rocket&#39;s YouTube channel<sup>12</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:45</span>Wrap it up with a plug of the Meow the Infinite printed comic Kickstarter<sup>11</sup> and related fun videos at Molly Rocket&#39;s YouTube channel<sup>12</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:45</span>Wrap it up with a plug of the Meow the Infinite printed comic Kickstarter<sup>11</sup> and related fun videos at Molly Rocket&#39;s YouTube channel<sup>12</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day593/"><div>&#9196;</div><div>Next: 'Debugging Lighting Validation'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

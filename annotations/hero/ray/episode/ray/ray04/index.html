@@ -1,0 +1,1069 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="animation, data structure, file io, geometry, lighting, mathematics, memory, performance, sampling, simd, Administrivia, Blackboard, Chat Comment, Drawing, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Loading sampled BRDF data</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://www.disneyanimation.com/technology/brdf.html" href="https://www.disneyanimation.com/technology/brdf.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Disney Animation</div>
+                            <div class="ref_title">BRDF Explorer</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1142" class="timecode"><span class="ref_index">[1]</span><span class="time">19:02</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf" href="https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Brent Burley (Walt Disney Animation Studios)</div>
+                            <div class="ref_title">Physically-Based Shading at Disney</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1142" class="timecode"><span class="ref_index">[2]</span><span class="time">19:02</span></span><span data-timestamp="1654" class="timecode"><span class="ref_index">[7]</span><span class="time">27:34</span></span><span data-timestamp="1881" class="timecode"><span class="ref_index">[8]</span><span class="time">31:21</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.shadertoy.com/view/XdyyDd" href="https://www.shadertoy.com/view/XdyyDd" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">ShaderToy</div>
+                            <div class="ref_title">Disney Principled BRDF</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1142" class="timecode"><span class="ref_index">[3]</span><span class="time">19:02</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/wdas/brdf/blob/master/src/brdfs/disney.brdf" href="https://github.com/wdas/brdf/blob/master/src/brdfs/disney.brdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">GitHub</div>
+                            <div class="ref_title">brdf/&#8203;src/&#8203;brdfs/&#8203;disney.brdf</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1510" class="timecode"><span class="ref_index">[4]</span><span class="time">25:10</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://shihchinw.github.io/2015/07/implementing-disney-principled-brdf-in-arnold.html" href="http://shihchinw.github.io/2015/07/implementing-disney-principled-brdf-in-arnold.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Shih-Chin</div>
+                            <div class="ref_title">Implementing Disney Principled BRDF in Arnold</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1510" class="timecode"><span class="ref_index">[5]</span><span class="time">25:10</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://schuttejoe.github.io/post/disneybsdf/" href="https://schuttejoe.github.io/post/disneybsdf/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Rendering Equations</div>
+                            <div class="ref_title">Rendering the Moana Island Scene Part 1: Implementing the Disney BSDF</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1510" class="timecode"><span class="ref_index">[6]</span><span class="time">25:10</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://en.wikipedia.org/wiki/Gonioreflectometer" href="https://en.wikipedia.org/wiki/Gonioreflectometer" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Wikipedia</div>
+                            <div class="ref_title">Gonioreflectometer</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1881" class="timecode"><span class="ref_index">[9]</span><span class="time">31:21</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.merl.com/brdf/" href="https://www.merl.com/brdf/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MERL - Mitsubishi Electric Research Laboratories</div>
+                            <div class="ref_title">MERL BRDF Database</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1881" class="timecode"><span class="ref_index">[10]</span><span class="time">31:21</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://www.csbio.unc.edu/mcmillan/pubs/sig03_matusik.pdf" href="http://www.csbio.unc.edu/mcmillan/pubs/sig03_matusik.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Wojciech Matusik, Hanspeter Pfister, Matt Brand and Leonard McMillan</div>
+                            <div class="ref_title">A Data-Driven Reflectance Model</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2361" class="timecode"><span class="ref_index">[11]</span><span class="time">39:21</span></span><span data-timestamp="3852" class="timecode"><span class="ref_index">[16]</span><span class="time">1:04:12</span></span><span data-timestamp="4526" class="timecode"><span class="ref_index">[19]</span><span class="time">1:15:26</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="5834" class="timecode"><span class="ref_index">[23]</span><span class="time">1:37:14</span></span><span data-timestamp="6216" class="timecode"><span class="ref_index">[24]</span><span class="time">1:43:36</span></span><span data-timestamp="6344" class="timecode"><span class="ref_index">[26]</span><span class="time">1:45:44</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp" href="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MERL - Mitsubishi Electric Research Laboratories</div>
+                            <div class="ref_title">BRDFRead.cpp</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2816" class="timecode"><span class="ref_index">[12]</span><span class="time">46:56</span></span><span data-timestamp="2872" class="timecode"><span class="ref_index">[13]</span><span class="time">47:52</span></span><span data-timestamp="3328" class="timecode"><span class="ref_index">[14]</span><span class="time">55:28</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="3852" class="timecode"><span class="ref_index">[15]</span><span class="time">1:04:12</span></span><span data-timestamp="4121" class="timecode"><span class="ref_index">[17]</span><span class="time">1:08:41</span></span><span data-timestamp="4526" class="timecode"><span class="ref_index">[18]</span><span class="time">1:15:26</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="5834" class="timecode"><span class="ref_index">[22]</span><span class="time">1:37:14</span></span><span data-timestamp="6344" class="timecode"><span class="ref_index">[25]</span><span class="time">1:45:44</span></span><span data-timestamp="6705" class="timecode"><span class="ref_index">[28]</span><span class="time">1:51:45</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="8031" class="timecode"><span class="ref_index">[31]</span><span class="time">2:13:51</span></span><span data-timestamp="8517" class="timecode"><span class="ref_index">[32]</span><span class="time">2:21:57</span></span><span data-timestamp="8726" class="timecode"><span class="ref_index">[33]</span><span class="time">2:25:26</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="9014" class="timecode"><span class="ref_index">[34]</span><span class="time">2:30:14</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://en.wikipedia.org/wiki/Spherical_cow" href="https://en.wikipedia.org/wiki/Spherical_cow" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Wikipedia</div>
+                            <div class="ref_title">Spherical cow</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="5345" class="timecode"><span class="ref_index">[20]</span><span class="time">1:29:05</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://en.wikipedia.org/wiki/Hairy_ball_theorem" href="https://en.wikipedia.org/wiki/Hairy_ball_theorem" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Wikipedia</div>
+                            <div class="ref_title">Hairy ball theorem</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="5345" class="timecode"><span class="ref_index">[21]</span><span class="time">1:29:05</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.cs.princeton.edu/~smr/papers/brdf_change_of_variables/brdf_change_of_variables.pdf" href="https://www.cs.princeton.edu/~smr/papers/brdf_change_of_variables/brdf_change_of_variables.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Szymon Rusinkiewicz</div>
+                            <div class="ref_title">A New Change of Variables for Efficient BRDF Representation</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6344" class="timecode"><span class="ref_index">[27]</span><span class="time">1:45:44</span></span><span data-timestamp="7072" class="timecode"><span class="ref_index">[29]</span><span class="time">1:57:52</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel</div>
+                            <div class="ref_title">Intel Intrinsics Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7810" class="timecode"><span class="ref_index">[30]</span><span class="time">2:10:10</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf" href="https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Bruce Walter, Stephen R. Marschner, Hongsong Li and Kenneth E. Torrance</div>
+                            <div class="ref_title">Microfacet Models for Refraction through Rough Surfaces</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="10044" class="timecode"><span class="ref_index">[35]</span><span class="time">2:47:24</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content animation">
+                                <span class="icon category animation"></span><span class="cineraText">animation</span>
+                            </div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content file-io">
+                                <span class="icon category file-io"></span><span class="cineraText">file io</span>
+                            </div>
+                            <div class="filter_content geometry">
+                                <span class="icon category geometry"></span><span class="cineraText">geometry</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content sampling">
+                                <span class="icon category sampling"></span><span class="cineraText">sampling</span>
+                            </div>
+                            <div class="filter_content simd">
+                                <span class="icon category simd"></span><span class="cineraText">simd</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content drawing">
+                                <span class="icon">&#127912;</span><span class="cineraText">Drawing</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="iHXYFbHAmlw"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/ray/ray03/"><div>&#9195;</div><div>Previous: 'Optimizing with SSE2 and AVX2'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="26" class="marker cat_nullTopic research">
+                    <div class="cineraContent"><span class="timecode">0:26</span>Reacquaint ourselves with the ray tracer<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:26</span>Reacquaint ourselves with the ray tracer<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:26</span>Reacquaint ourselves with the ray tracer<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="86" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:26</span>Default LANE_WIDTH to 8 if not defined on our build line</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26</span>Default LANE_WIDTH to 8 if not defined on our build line</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26</span>Default LANE_WIDTH to 8 if not defined on our build line</div>
+                    </div>
+                </div>
+                <div data-timestamp="107" class="marker cat_performance admin">
+                    <div class="cineraContent"><span class="timecode">1:47</span>Check out our 2017_10_22_Day01.txt performance dump<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47</span>Check out our 2017_10_22_Day01.txt performance dump<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47</span>Check out our 2017_10_22_Day01.txt performance dump<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="157" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">2:37</span>Admire our 2017_11_19_Day08_8x.bmp image<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:37</span>Admire our 2017_11_19_Day08_8x.bmp image<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:37</span>Admire our 2017_11_19_Day08_8x.bmp image<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="214" class="marker cat_lighting cat_sampling research">
+                    <div class="cineraContent"><span class="timecode">3:34</span>Determine to add some importance sampling and / or material properties<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:34</span>Determine to add some importance sampling and / or material properties<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:34</span>Determine to add some importance sampling and / or material properties<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="267" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">4:27</span>Try to run the ray caster<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:27</span>Try to run the ray caster<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:27</span>Try to run the ray caster<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="359" class="marker cat_nullTopic research">
+                    <div class="cineraContent"><span class="timecode">5:59</span>Reacquaint ourselves with CastSampleRays()<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:59</span>Reacquaint ourselves with CastSampleRays()<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:59</span>Reacquaint ourselves with CastSampleRays()<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="606" class="marker cat_nullTopic research">
+                    <div class="cineraContent"><span class="timecode">10:06</span>Consider adding some exposure control<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:06</span>Consider adding some exposure control<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:06</span>Consider adding some exposure control<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="657" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">10:57</span>Try increasing the redness of the 4th material&#39;s EmitColor from 4 to 20</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:57</span>Try increasing the redness of the 4th material&#39;s EmitColor from 4 to 20</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:57</span>Try increasing the redness of the 4th material&#39;s EmitColor from 4 to 20</div>
+                    </div>
+                </div>
+                <div data-timestamp="682" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">11:22</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:22</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:22</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="697" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">11:37</span>Admire our image with more red emittance<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:37</span>Admire our image with more red emittance<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:37</span>Admire our image with more red emittance<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="765" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">12:45</span>Try increasing the redness of the 4th material&#39;s EmitColor from 20 to 50</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:45</span>Try increasing the redness of the 4th material&#39;s EmitColor from 20 to 50</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:45</span>Try increasing the redness of the 4th material&#39;s EmitColor from 20 to 50</div>
+                    </div>
+                </div>
+                <div data-timestamp="772" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">12:52</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:52</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:52</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="782" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">13:02</span>Admire our image with yet more red emittance<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:02</span>Admire our image with yet more red emittance<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:02</span>Admire our image with yet more red emittance<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="857" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">14:17</span>Introduce a second plane</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:17</span>Introduce a second plane</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:17</span>Introduce a second plane</div>
+                    </div>
+                </div>
+                <div data-timestamp="887" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">14:47</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:47</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:47</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="906" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">15:06</span>Admire our image with two planes<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:06</span>Admire our image with two planes<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:06</span>Admire our image with two planes<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="952" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">15:52</span>Try decreasing the d of the 2nd plane from 10 to 2</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:52</span>Try decreasing the d of the 2nd plane from 10 to 2</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:52</span>Try decreasing the d of the 2nd plane from 10 to 2</div>
+                    </div>
+                </div>
+                <div data-timestamp="957" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">15:57</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:57</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:57</span>Run the program<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="989" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">16:29</span>Admire our image with the second plane cutting through the blue hemisphere<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:29</span>Admire our image with the second plane cutting through the blue hemisphere<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:29</span>Admire our image with the second plane cutting through the blue hemisphere<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1031" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">17:11</span>Determine to vary the light based on direction<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:11</span>Determine to vary the light based on direction<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:11</span>Determine to vary the light based on direction<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1064" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">17:44</span>Try adding some Green and Blue to the 4th material&#39;s EmitColor, and take RaysPerPixel as a command line argument</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:44</span>Try adding some Green and Blue to the 4th material&#39;s EmitColor, and take RaysPerPixel as a command line argument</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:44</span>Try adding some Green and Blue to the 4th material&#39;s EmitColor, and take RaysPerPixel as a command line argument</div>
+                    </div>
+                </div>
+                <div data-timestamp="1093" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">18:13</span>Run the program with and without passing a RaysPerPixel<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:13</span>Run the program with and without passing a RaysPerPixel<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:13</span>Run the program with and without passing a RaysPerPixel<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1112" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">18:32</span>Admire our image with orange emittance<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:32</span>Admire our image with orange emittance<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:32</span>Admire our image with orange emittance<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1142" class="marker cat_lighting research" data-ref="https://www.disneyanimation.com/technology/brdf.html,https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf,https://www.shadertoy.com/view/XdyyDd">
+                    <div class="cineraContent"><span class="timecode">19:02</span>Research Disney&#39;s standard BRDF (Bidirectional Reflectance Distribution Function)<sup>1</sup><sup>,2</sup><sup>,3</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:02</span>Research Disney&#39;s standard BRDF (Bidirectional Reflectance Distribution Function)<sup>1</sup><sup>,2</sup><sup>,3</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:02</span>Research Disney&#39;s standard BRDF (Bidirectional Reflectance Distribution Function)<sup>1</sup><sup>,2</sup><sup>,3</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1510" class="marker cat_lighting research" data-ref="https://github.com/wdas/brdf/blob/master/src/brdfs/disney.brdf,http://shihchinw.github.io/2015/07/implementing-disney-principled-brdf-in-arnold.html,https://schuttejoe.github.io/post/disneybsdf/">
+                    <div class="cineraContent"><span class="timecode">25:10</span>Research reference implementations of Disney&#39;s Principled BRDF<sup>4</sup><sup>,5</sup><sup>,6</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:10</span>Research reference implementations of Disney&#39;s Principled BRDF<sup>4</sup><sup>,5</sup><sup>,6</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:10</span>Research reference implementations of Disney&#39;s Principled BRDF<sup>4</sup><sup>,5</sup><sup>,6</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1654" class="marker cat_lighting research" data-ref="https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf">
+                    <div class="cineraContent"><span class="timecode">27:34</span>Prepare to proceed, reading 2 &quot;The microfacet model&quot;<sup>7</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:34</span>Prepare to proceed, reading 2 &quot;The microfacet model&quot;<sup>7</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:34</span>Prepare to proceed, reading 2 &quot;The microfacet model&quot;<sup>7</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1881" class="marker cat_lighting research" data-ref="https://disney-animation.s3.amazonaws.com/library/s2012_pbs_disney_brdf_notes_v2.pdf,https://en.wikipedia.org/wiki/Gonioreflectometer,https://www.merl.com/brdf/">
+                    <div class="cineraContent"><span class="timecode">31:21</span>Read 3 &quot;Visualizing measured BDRFs&quot;,<sup>8</sup> describing a gonioreflectometer<sup>9</sup> and checking out MERL&#39;s BRDF database<sup>10</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:21</span>Read 3 &quot;Visualizing measured BDRFs&quot;,<sup>8</sup> describing a gonioreflectometer<sup>9</sup> and checking out MERL&#39;s BRDF database<sup>10</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:21</span>Read 3 &quot;Visualizing measured BDRFs&quot;,<sup>8</sup> describing a gonioreflectometer<sup>9</sup> and checking out MERL&#39;s BRDF database<sup>10</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2361" class="marker cat_lighting research" data-ref="http://www.csbio.unc.edu/mcmillan/pubs/sig03_matusik.pdf">
+                    <div class="cineraContent"><span class="timecode">39:21</span>Read &#39;A Data-Driven Reflectance Model&#39;<sup>11</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:21</span>Read &#39;A Data-Driven Reflectance Model&#39;<sup>11</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:21</span>Read &#39;A Data-Driven Reflectance Model&#39;<sup>11</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2816" class="marker cat_lighting research" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp">
+                    <div class="cineraContent"><span class="timecode">46:56</span>Consult the BRDF reference implementation in MERL&#39;s BRDF database<sup>12</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:56</span>Consult the BRDF reference implementation in MERL&#39;s BRDF database<sup>12</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:56</span>Consult the BRDF reference implementation in MERL&#39;s BRDF database<sup>12</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2872" class="marker cat_file-io cat_lighting programming" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp">
+                    <div class="cineraContent"><span class="timecode">47:52</span>Embark on our BRDF loader, introducing brdf_table and LoadMERLBinary()<sup>13</sup><span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:52</span>Embark on our BRDF loader, introducing brdf_table and LoadMERLBinary()<sup>13</sup><span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:52</span>Embark on our BRDF loader, introducing brdf_table and LoadMERLBinary()<sup>13</sup><span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3267" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">54:27</span>Organise our MERL .binary files<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:27</span>Organise our MERL .binary files<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:27</span>Organise our MERL .binary files<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3328" class="marker cat_lighting programming" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp">
+                    <div class="cineraContent"><span class="timecode">55:28</span>Set up to call LoadMERLBinary(), changing it to handle three colour channels<sup>14</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:28</span>Set up to call LoadMERLBinary(), changing it to handle three colour channels<sup>14</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:28</span>Set up to call LoadMERLBinary(), changing it to handle three colour channels<sup>14</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3619" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:00:19</span>Run the program, to see no progress printout<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:19</span>Run the program, to see no progress printout<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:19</span>Run the program, to see no progress printout<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3813" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:03:33</span>Run the program with 16 RaysPerPixel<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:33</span>Run the program with 16 RaysPerPixel<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:33</span>Run the program with 16 RaysPerPixel<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3835" class="marker cat_lighting drawing">
+                    <div class="cineraContent"><span class="timecode">1:03:55</span>Admire our test.bmp<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:55</span>Admire our test.bmp<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:55</span>Admire our test.bmp<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3852" class="marker cat_lighting research" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp,http://www.csbio.unc.edu/mcmillan/pubs/sig03_matusik.pdf">
+                    <div class="cineraContent"><span class="timecode">1:04:12</span>Determine to sample the BRDF values, first learning about the colour scaling values<sup>15</sup><sup>,16</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:12</span>Determine to sample the BRDF values, first learning about the colour scaling values<sup>15</sup><sup>,16</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:12</span>Determine to sample the BRDF values, first learning about the colour scaling values<sup>15</sup><sup>,16</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4121" class="marker cat_lighting programming" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp">
+                    <div class="cineraContent"><span class="timecode">1:08:41</span>Change LoadMERLBinary() to read in the colour channels as per the reference implementation<sup>17</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:41</span>Change LoadMERLBinary() to read in the colour channels as per the reference implementation<sup>17</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:41</span>Change LoadMERLBinary() to read in the colour channels as per the reference implementation<sup>17</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4269" class="marker cat_lighting cat_sampling programming">
+                    <div class="cineraContent"><span class="timecode">1:11:09</span>Upgrade CastSampleRays() to attenuate by the BRDF-sampled reflectance colour, introducing BRDFLookup()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:09</span>Upgrade CastSampleRays() to attenuate by the BRDF-sampled reflectance colour, introducing BRDFLookup()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:09</span>Upgrade CastSampleRays() to attenuate by the BRDF-sampled reflectance colour, introducing BRDFLookup()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4526" class="marker cat_lighting cat_sampling programming" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp,http://www.csbio.unc.edu/mcmillan/pubs/sig03_matusik.pdf">
+                    <div class="cineraContent"><span class="timecode">1:15:26</span>Implement BRDFLookup(), informed by the reference implementation<sup>18</sup> and &#39;A Data-Driven Reflectance Model&#39;<sup>19</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:26</span>Implement BRDFLookup(), informed by the reference implementation<sup>18</sup> and &#39;A Data-Driven Reflectance Model&#39;<sup>19</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:26</span>Implement BRDFLookup(), informed by the reference implementation<sup>18</sup> and &#39;A Data-Driven Reflectance Model&#39;<sup>19</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5345" class="marker cat_geometry cat_lighting blackboard" data-ref="https://en.wikipedia.org/wiki/Spherical_cow,https://en.wikipedia.org/wiki/Hairy_ball_theorem">
+                    <div class="cineraContent"><span class="timecode">1:29:05</span>Coordinate System on a Sphere<sup>20</sup><sup>,21</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:05</span>Coordinate System on a Sphere<sup>20</sup><sup>,21</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:05</span>Coordinate System on a Sphere<sup>20</sup><sup>,21</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5594" class="marker cat_geometry cat_lighting cat_sampling programming">
+                    <div class="cineraContent"><span class="timecode">1:33:14</span>Make CastSampleRays() generate a coordinate system for our sampling sphere, to pass to BRDFLookup()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:14</span>Make CastSampleRays() generate a coordinate system for our sampling sphere, to pass to BRDFLookup()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:14</span>Make CastSampleRays() generate a coordinate system for our sampling sphere, to pass to BRDFLookup()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5834" class="marker cat_geometry cat_lighting research" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp,http://www.csbio.unc.edu/mcmillan/pubs/sig03_matusik.pdf">
+                    <div class="cineraContent"><span class="timecode">1:37:14</span>Consult our documents<sup>22</sup><sup>,23</sup> on computation of the diff vector<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:14</span>Consult our documents<sup>22</sup><sup>,23</sup> on computation of the diff vector<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:14</span>Consult our documents<sup>22</sup><sup>,23</sup> on computation of the diff vector<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5962" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:39:22</span>Make BRDFLookup() compute ThetaHalf and PhiHalf, after mapping the LightDir and HalfVector in to the tangent space of the reflection<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:22</span>Make BRDFLookup() compute ThetaHalf and PhiHalf, after mapping the LightDir and HalfVector in to the tangent space of the reflection<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:22</span>Make BRDFLookup() compute ThetaHalf and PhiHalf, after mapping the LightDir and HalfVector in to the tangent space of the reflection<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6216" class="marker cat_lighting programming" data-ref="http://www.csbio.unc.edu/mcmillan/pubs/sig03_matusik.pdf">
+                    <div class="cineraContent"><span class="timecode">1:43:36</span>Make BRDFLookup() compute ThetaDiff<sup>24</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:36</span>Make BRDFLookup() compute ThetaDiff<sup>24</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:36</span>Make BRDFLookup() compute ThetaDiff<sup>24</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6344" class="marker cat_geometry cat_lighting research" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp,http://www.csbio.unc.edu/mcmillan/pubs/sig03_matusik.pdf,https://www.cs.princeton.edu/~smr/papers/brdf_change_of_variables/brdf_change_of_variables.pdf">
+                    <div class="cineraContent"><span class="timecode">1:45:44</span>Come to understand the PhiDiff computation<sup>25</sup><sup>,26</sup><sup>,27</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:44</span>Come to understand the PhiDiff computation<sup>25</sup><sup>,26</sup><sup>,27</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:44</span>Come to understand the PhiDiff computation<sup>25</sup><sup>,26</sup><sup>,27</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6570" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:49:30</span>Rename Bitangent to Binormal in plane<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:30</span>Rename Bitangent to Binormal in plane<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:30</span>Rename Bitangent to Binormal in plane<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6705" class="marker cat_geometry cat_lighting blackboard" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp">
+                    <div class="cineraContent"><span class="timecode">1:51:45</span>Locating a (Light) Vector in a Transformed Coordinate System<sup>28</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:45</span>Locating a (Light) Vector in a Transformed Coordinate System<sup>28</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:45</span>Locating a (Light) Vector in a Transformed Coordinate System<sup>28</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7072" class="marker cat_geometry cat_lighting blackboard" data-ref="https://www.cs.princeton.edu/~smr/papers/brdf_change_of_variables/brdf_change_of_variables.pdf">
+                    <div class="cineraContent"><span class="timecode">1:57:52</span>Efficiently locating a (Light) Vector in a Transformed Coordinate System<sup>29</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:52</span>Efficiently locating a (Light) Vector in a Transformed Coordinate System<sup>29</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:52</span>Efficiently locating a (Light) Vector in a Transformed Coordinate System<sup>29</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7477" class="marker cat_geometry cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">2:04:37</span>Make BRDFLookup() efficiently compute the PhiDiff<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:37</span>Make BRDFLookup() efficiently compute the PhiDiff<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:37</span>Make BRDFLookup() efficiently compute the PhiDiff<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7810" class="marker cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">2:10:10</span>Introduce ExtractF32() for BRDFLookup() to call<sup>30</sup><span class="cineraCategories"><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:10</span>Introduce ExtractF32() for BRDFLookup() to call<sup>30</sup><span class="cineraCategories"><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:10</span>Introduce ExtractF32() for BRDFLookup() to call<sup>30</sup><span class="cineraCategories"><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8031" class="marker cat_lighting programming" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp">
+                    <div class="cineraContent"><span class="timecode">2:13:51</span>Make BRDFLookup() look up the colour values<sup>31</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:51</span>Make BRDFLookup() look up the colour values<sup>31</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:51</span>Make BRDFLookup() look up the colour values<sup>31</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8517" class="marker cat_lighting programming" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp">
+                    <div class="cineraContent"><span class="timecode">2:21:57</span>Begin to make BRDFLookup() index in to the BRDF table<sup>32</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:21:57</span>Begin to make BRDFLookup() index in to the BRDF table<sup>32</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:21:57</span>Begin to make BRDFLookup() index in to the BRDF table<sup>32</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8726" class="marker cat_mathematics research" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp">
+                    <div class="cineraContent"><span class="timecode">2:25:26</span>Wonder if the squaring and rooting is correct<sup>33</sup><span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:25:26</span>Wonder if the squaring and rooting is correct<sup>33</sup><span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:25:26</span>Wonder if the squaring and rooting is correct<sup>33</sup><span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8914" class="marker cat_mathematics blackboard">
+                    <div class="cineraContent"><span class="timecode">2:28:34</span>I = √t × R²<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:28:34</span>I = √t × R²<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:28:34</span>I = √t × R²<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9014" class="marker cat_lighting programming" data-ref="http://people.csail.mit.edu/wojciech/BRDFDatabase/code/BRDFRead.cpp">
+                    <div class="cineraContent"><span class="timecode">2:30:14</span>Finish making BRDFLookup() index in to the BRDF table<sup>34</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30:14</span>Finish making BRDFLookup() index in to the BRDF table<sup>34</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30:14</span>Finish making BRDFLookup() index in to the BRDF table<sup>34</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9436" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">2:37:16</span>Run the program to find uninitialised Values<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:37:16</span>Run the program to find uninitialised Values<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:37:16</span>Run the program to find uninitialised Values<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9521" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">2:38:41</span>Introduce NullBRDF()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:38:41</span>Introduce NullBRDF()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:38:41</span>Introduce NullBRDF()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9625" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">2:40:25</span>Run the program<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:40:25</span>Run the program<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:40:25</span>Run the program<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9639" class="marker cat_lighting drawing">
+                    <div class="cineraContent"><span class="timecode">2:40:39</span>Admire our test.bmp<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:40:39</span>Admire our test.bmp<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:40:39</span>Admire our test.bmp<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9666" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:41:06</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:41:06</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:41:06</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9708" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">2:41:48</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: When computing the sphere bitangent, could you just NOZ the tangent before computing the Bitangent so you don&#39;t have to NOZ the Bitangent afterwards?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:41:48</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: When computing the sphere bitangent, could you just NOZ the tangent before computing the Bitangent so you don&#39;t have to NOZ the Bitangent afterwards?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:41:48</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: When computing the sphere bitangent, could you just NOZ the tangent before computing the Bitangent so you don&#39;t have to NOZ the Bitangent afterwards?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9742" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">2:42:22</span>Save BRDFLookup() from performing NOZ() on the DiffX, and make it perform NOZ() when initialising SphereTangent to save doing in on the SphereBinormal<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:42:22</span>Save BRDFLookup() from performing NOZ() on the DiffX, and make it perform NOZ() when initialising SphereTangent to save doing in on the SphereBinormal<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:42:22</span>Save BRDFLookup() from performing NOZ() on the DiffX, and make it perform NOZ() when initialising SphereTangent to save doing in on the SphereBinormal<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9808" class="marker cat_memory cat_simd authored">
+                    <div class="cineraContent"><span class="timecode">2:43:28</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Talking about ray and Linux and more beautiful code, there is still a GitHub issue about memory loading in SIMD<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:43:28</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Talking about ray and Linux and more beautiful code, there is still a GitHub issue about memory loading in SIMD<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:43:28</span><span class="author" data-hue="344" data-saturation="76%">somebody_took_my_name</span> Q: Talking about ray and Linux and more beautiful code, there is still a GitHub issue about memory loading in SIMD<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9820" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">2:43:40</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Is the BRDS essentially a function that tells us which rays within the hemisphere to use?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:43:40</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Is the BRDS essentially a function that tells us which rays within the hemisphere to use?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:43:40</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Is the BRDS essentially a function that tells us which rays within the hemisphere to use?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9833" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:43:53</span><span class="author" data-hue="47" data-saturation="87%">smack_ssbm</span> Q: Do you get &quot;uncanny valley&quot; impressions sometimes when looking at raytraced images? If so, what strategies might you have to mitigate that?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:43:53</span><span class="author" data-hue="47" data-saturation="87%">smack_ssbm</span> Q: Do you get &quot;uncanny valley&quot; impressions sometimes when looking at raytraced images? If so, what strategies might you have to mitigate that?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:43:53</span><span class="author" data-hue="47" data-saturation="87%">smack_ssbm</span> Q: Do you get &quot;uncanny valley&quot; impressions sometimes when looking at raytraced images? If so, what strategies might you have to mitigate that?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9868" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">2:44:28</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: BRDF, yes, typo, sorry<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:44:28</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: BRDF, yes, typo, sorry<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:44:28</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: BRDF, yes, typo, sorry<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9921" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">2:45:21</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Will you finish this tomorrow?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:45:21</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Will you finish this tomorrow?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:45:21</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Will you finish this tomorrow?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9931" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:45:31</span><span class="author" data-hue="207" data-saturation="84%">sagian2005</span> Q: The sound was fine and it was synced. Your camera frame rate seems low, though<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:45:31</span><span class="author" data-hue="207" data-saturation="84%">sagian2005</span> Q: The sound was fine and it was synced. Your camera frame rate seems low, though<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:45:31</span><span class="author" data-hue="207" data-saturation="84%">sagian2005</span> Q: The sound was fine and it was synced. Your camera frame rate seems low, though<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9953" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">2:45:53</span><span class="author" data-hue="263" data-saturation="91%">tocsin16</span> Q: Have you thought about implementing GGX for <span class="project" data-hue="242" data-saturation="78%">/ray Handmade Ray</span>?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:45:53</span><span class="author" data-hue="263" data-saturation="91%">tocsin16</span> Q: Have you thought about implementing GGX for <span class="project" data-hue="242" data-saturation="78%">/ray Handmade Ray</span>?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:45:53</span><span class="author" data-hue="263" data-saturation="91%">tocsin16</span> Q: Have you thought about implementing GGX for <span class="project" data-hue="242" data-saturation="78%">/ray Handmade Ray</span>?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10012" class="marker cat_animation authored">
+                    <div class="cineraContent"><span class="timecode">2:46:52</span><span class="author" data-hue="272" data-saturation="96%">tinspin</span> Q: How much of modern skin mesh animation did you contribute to?<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:46:52</span><span class="author" data-hue="272" data-saturation="96%">tinspin</span> Q: How much of modern skin mesh animation did you contribute to?<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:46:52</span><span class="author" data-hue="272" data-saturation="96%">tinspin</span> Q: How much of modern skin mesh animation did you contribute to?<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10044" class="marker cat_lighting authored" data-ref="https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf">
+                    <div class="cineraContent"><span class="timecode">2:47:24</span><span class="author" data-hue="263" data-saturation="91%">tocsin16</span> Q: Haha, this is what I&#39;m talking about<sup>35</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:47:24</span><span class="author" data-hue="263" data-saturation="91%">tocsin16</span> Q: Haha, this is what I&#39;m talking about<sup>35</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:47:24</span><span class="author" data-hue="263" data-saturation="91%">tocsin16</span> Q: Haha, this is what I&#39;m talking about<sup>35</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10166" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">2:49:26</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Alright, thanks. But what function chooses the outgoing rays to use? Because it will affect the outcome of the picture. It gets fuzzier if the rays spread in more directions<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:49:26</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Alright, thanks. But what function chooses the outgoing rays to use? Because it will affect the outcome of the picture. It gets fuzzier if the rays spread in more directions<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:49:26</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Alright, thanks. But what function chooses the outgoing rays to use? Because it will affect the outcome of the picture. It gets fuzzier if the rays spread in more directions<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10190" class="marker cat_lighting cat_sampling blackboard">
+                    <div class="cineraContent"><span class="timecode">2:49:50</span>Equally vs BRDF weighted sampling<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:49:50</span>Equally vs BRDF weighted sampling<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:49:50</span>Equally vs BRDF weighted sampling<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10401" class="marker cat_animation authored">
+                    <div class="cineraContent"><span class="timecode">2:53:21</span><span class="author" data-hue="272" data-saturation="96%">tinspin</span> Q: Did shader weighted skin mesh animation exist before you started meddling with it? How did it evolve, and do you see any future improvements possible on it?<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:53:21</span><span class="author" data-hue="272" data-saturation="96%">tinspin</span> Q: Did shader weighted skin mesh animation exist before you started meddling with it? How did it evolve, and do you see any future improvements possible on it?<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:53:21</span><span class="author" data-hue="272" data-saturation="96%">tinspin</span> Q: Did shader weighted skin mesh animation exist before you started meddling with it? How did it evolve, and do you see any future improvements possible on it?<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10596" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">2:56:36</span><span class="author" data-hue="263" data-saturation="91%">tocsin16</span> Q: I see missed the start of the stream so didn&#39;t realize the dataset was a requirement. I don&#39;t know if there is set of measured GGX BRDFs. It is a very common BRDF used in offline pathtracing for film (and I think gaining popularity in the realtime world too). Thanks for the education streams!<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:56:36</span><span class="author" data-hue="263" data-saturation="91%">tocsin16</span> Q: I see missed the start of the stream so didn&#39;t realize the dataset was a requirement. I don&#39;t know if there is set of measured GGX BRDFs. It is a very common BRDF used in offline pathtracing for film (and I think gaining popularity in the realtime world too). Thanks for the education streams!<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:56:36</span><span class="author" data-hue="263" data-saturation="91%">tocsin16</span> Q: I see missed the start of the stream so didn&#39;t realize the dataset was a requirement. I don&#39;t know if there is set of measured GGX BRDFs. It is a very common BRDF used in offline pathtracing for film (and I think gaining popularity in the realtime world too). Thanks for the education streams!<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10634" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:57:14</span><span class="author" data-hue="140" data-saturation="77%">ryanfleury</span> Was the game Messiah?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:57:14</span><span class="author" data-hue="140" data-saturation="77%">ryanfleury</span> Was the game Messiah?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:57:14</span><span class="author" data-hue="140" data-saturation="77%">ryanfleury</span> Was the game Messiah?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10706" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:58:26</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:58:26</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:58:26</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <div class="episodeMarker last"><div>&#8226;</div><div>You have arrived at the (current) end of <cite>Handmade Ray</cite></div><div>&#8226;</div></div>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

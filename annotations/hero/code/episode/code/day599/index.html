@@ -1,0 +1,701 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="api, asm, data structure, hardware, isa, language, lighting, performance, sampling, simd, Administrivia, Blackboard, Chat Comment, In-Game, Programming, Rant, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Implementing the Grid Raycast Postamble</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://slipways.net/" href="https://slipways.net/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">SlipWays</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="0" class="timecode"><span class="ref_index">[1]</span><span class="time">0:00</span></span><span data-timestamp="8369" class="timecode"><span class="ref_index">[18]</span><span class="time">2:19:29</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel</div>
+                            <div class="ref_title">Intel Intrinsics Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1142" class="timecode"><span class="ref_index">[2]</span><span class="time">19:02</span></span><span data-timestamp="1465" class="timecode"><span class="ref_index">[4]</span><span class="time">24:25</span></span><span data-timestamp="1920" class="timecode"><span class="ref_index">[5]</span><span class="time">32:00</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="2684" class="timecode"><span class="ref_index">[8]</span><span class="time">44:44</span></span><span data-timestamp="3237" class="timecode"><span class="ref_index">[9]</span><span class="time">53:57</span></span><span data-timestamp="3660" class="timecode"><span class="ref_index">[10]</span><span class="time">1:01:00</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="3793" class="timecode"><span class="ref_index">[11]</span><span class="time">1:03:13</span></span><span data-timestamp="4501" class="timecode"><span class="ref_index">[13]</span><span class="time">1:15:01</span></span><span data-timestamp="5134" class="timecode"><span class="ref_index">[14]</span><span class="time">1:25:34</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="7106" class="timecode"><span class="ref_index">[15]</span><span class="time">1:58:26</span></span><span data-timestamp="8135" class="timecode"><span class="ref_index">[16]</span><span class="time">2:15:35</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://uops.info/html-instr/PHMINPOSUW_XMM_XMM.html" href="https://uops.info/html-instr/PHMINPOSUW_XMM_XMM.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">uops.info</div>
+                            <div class="ref_title">PHMINPOSUW (XMM, XMM)</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1142" class="timecode"><span class="ref_index">[3]</span><span class="time">19:02</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://godbolt.org" href="https://godbolt.org" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">Compiler Explorer</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1920" class="timecode"><span class="ref_index">[6]</span><span class="time">32:00</span></span><span data-timestamp="4001" class="timecode"><span class="ref_index">[12]</span><span class="time">1:06:41</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/cmuratori/meow_hash/" href="https://github.com/cmuratori/meow_hash/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">GitHub</div>
+                            <div class="ref_title">cmuratori /&#8203; meow_hash</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1920" class="timecode"><span class="ref_index">[7]</span><span class="time">32:00</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one" href="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Kickstarter</div>
+                            <div class="ref_title">Meow the Infinite: Book One</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8369" class="timecode"><span class="ref_index">[17]</span><span class="time">2:19:29</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content api">
+                                <span class="icon category api"></span><span class="cineraText">api</span>
+                            </div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content isa">
+                                <span class="icon category isa"></span><span class="cineraText">isa</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content sampling">
+                                <span class="icon category sampling"></span><span class="cineraText">sampling</span>
+                            </div>
+                            <div class="filter_content simd">
+                                <span class="icon category simd"></span><span class="cineraText">simd</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content rant">
+                                <span class="icon">&#128162;</span><span class="cineraText">Rant</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="HN5IP9q4pWE"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day598/"><div>&#9195;</div><div>Previous: 'Exploring Voxel Partitions for Raycasting'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic speech" data-ref="https://slipways.net/">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Welcome to the stream with a plug of Slipways<sup>1</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Welcome to the stream with a plug of Slipways<sup>1</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Welcome to the stream with a plug of Slipways<sup>1</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="48" class="marker cat_lighting speech">
+                    <div class="cineraContent"><span class="timecode">0:48</span>Begin to recap the new grid-based raycasting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:48</span>Begin to recap the new grid-based raycasting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:48</span>Begin to recap the new grid-based raycasting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="102" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:42</span>Toggle on LIGHTING_USE_FOUR_RAYS (i.e. the tree-based raycaster)<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42</span>Toggle on LIGHTING_USE_FOUR_RAYS (i.e. the tree-based raycaster)<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42</span>Toggle on LIGHTING_USE_FOUR_RAYS (i.e. the tree-based raycaster)<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="117" class="marker cat_lighting cat_sampling run">
+                    <div class="cineraContent"><span class="timecode">1:57</span>Demo the lighting with the determination to reduce the sampling noise and speed it up<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57</span>Demo the lighting with the determination to reduce the sampling noise and speed it up<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57</span>Demo the lighting with the determination to reduce the sampling noise and speed it up<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="sampling" class="category sampling"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="176" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">2:56</span>Toggle off LIGHTING_USE_FOUR_RAYS mentioning our refusal to use Apple hardware<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:56</span>Toggle off LIGHTING_USE_FOUR_RAYS mentioning our refusal to use Apple hardware<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:56</span>Toggle off LIGHTING_USE_FOUR_RAYS mentioning our refusal to use Apple hardware<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="207" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">3:27</span>GridRayCast() work: 1) Implement the routine correctly<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:27</span>GridRayCast() work: 1) Implement the routine correctly<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:27</span>GridRayCast() work: 1) Implement the routine correctly<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="230" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">3:50</span>GridRayCast() setup work: 2) Produce the ray-direction lookup tables<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:50</span>GridRayCast() setup work: 2) Produce the ray-direction lookup tables<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:50</span>GridRayCast() setup work: 2) Produce the ray-direction lookup tables<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="241" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">4:01</span>GridRayCast() setup work: 3) Grid up our geometry<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:01</span>GridRayCast() setup work: 3) Grid up our geometry<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:01</span>GridRayCast() setup work: 3) Grid up our geometry<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="249" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">4:09</span>Embark on implementing GridRayCast() correctly<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:09</span>Embark on implementing GridRayCast() correctly<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:09</span>Embark on implementing GridRayCast() correctly<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="442" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">7:22</span>Delete archived videos and disable Storage Sense on the streaming machine<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:22</span>Delete archived videos and disable Storage Sense on the streaming machine<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:22</span>Delete archived videos and disable Storage Sense on the streaming machine<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="550" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">9:10</span>Implement the leaf picking in GridRayCast(), introducing lighting_spatial_grid_node and lighting_spatial_grid_leaf<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:10</span>Implement the leaf picking in GridRayCast(), introducing lighting_spatial_grid_node and lighting_spatial_grid_leaf<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:10</span>Implement the leaf picking in GridRayCast(), introducing lighting_spatial_grid_node and lighting_spatial_grid_leaf<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="768" class="marker cat_data-structure cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">12:48</span>Reflect on our grid-based raycaster, comparing it with the tree-based one<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:48</span>Reflect on our grid-based raycaster, comparing it with the tree-based one<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:48</span>Reflect on our grid-based raycaster, comparing it with the tree-based one<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="872" class="marker cat_data-structure cat_lighting cat_simd research">
+                    <div class="cineraContent"><span class="timecode">14:32</span>SIMD inefficiency considerations, including packing on-demand<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:32</span>SIMD inefficiency considerations, including packing on-demand<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:32</span>SIMD inefficiency considerations, including packing on-demand<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1012" class="marker cat_data-structure cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">16:52</span>Make a note to do a single-leaf spatial structure version<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:52</span>Make a note to do a single-leaf spatial structure version<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:52</span>Make a note to do a single-leaf spatial structure version<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1050" class="marker cat_data-structure cat_lighting cat_simd research">
+                    <div class="cineraContent"><span class="timecode">17:30</span>Continued SIMD inefficiency considerations when we have between 1 and 3 pieces of data to work with<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:30</span>Continued SIMD inefficiency considerations when we have between 1 and 3 pieces of data to work with<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:30</span>Continued SIMD inefficiency considerations when we have between 1 and 3 pieces of data to work with<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1142" class="marker cat_data-structure cat_lighting cat_simd research" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/,https://uops.info/html-instr/PHMINPOSUW_XMM_XMM.html">
+                    <div class="cineraContent"><span class="timecode">19:02</span>Prepare to implement the tRay picking in GridRayCast() using _mm_minpos_epu16()<sup>2</sup><sup>,3</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:02</span>Prepare to implement the tRay picking in GridRayCast() using _mm_minpos_epu16()<sup>2</sup><sup>,3</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:02</span>Prepare to implement the tRay picking in GridRayCast() using _mm_minpos_epu16()<sup>2</sup><sup>,3</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1465" class="marker cat_data-structure cat_lighting cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">24:25</span>Implement the tRay picking in GridRayCast() using _mm_minpos_epu16()<sup>4</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:25</span>Implement the tRay picking in GridRayCast() using _mm_minpos_epu16()<sup>4</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:25</span>Implement the tRay picking in GridRayCast() using _mm_minpos_epu16()<sup>4</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1920" class="marker cat_simd research" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/,https://godbolt.org,https://github.com/cmuratori/meow_hash/">
+                    <div class="cineraContent"><span class="timecode">32:00</span>Recall platform-specific bugginess of _mm_set1_epi32()<sup>5</sup><sup>,6</sup><sup>,7</sup><span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:00</span>Recall platform-specific bugginess of _mm_set1_epi32()<sup>5</sup><sup>,6</sup><sup>,7</sup><span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:00</span>Recall platform-specific bugginess of _mm_set1_epi32()<sup>5</sup><sup>,6</sup><sup>,7</sup><span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2361" class="marker cat_data-structure cat_lighting cat_simd programming">
+                    <div class="cineraContent"><span class="timecode">39:21</span>Try _mm_set1_epi32() in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:21</span>Try _mm_set1_epi32() in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:21</span>Try _mm_set1_epi32() in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2488" class="marker cat_hardware cat_isa research">
+                    <div class="cineraContent"><span class="timecode">41:28</span>Consider a special floating-point comparison circuit to be unnecessary<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:28</span>Consider a special floating-point comparison circuit to be unnecessary<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:28</span>Consider a special floating-point comparison circuit to be unnecessary<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2680" class="marker cat_hardware cat_isa authored">
+                    <div class="cineraContent"><span class="timecode">44:40</span><span class="author" data-hue="167" data-saturation="88%">charlesbukowski</span> I can confirm that I am in fact not an IEEE expert<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="isa" class="category isa"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:40</span><span class="author" data-hue="167" data-saturation="88%">charlesbukowski</span> I can confirm that I am in fact not an IEEE expert<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="isa" class="category isa"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:40</span><span class="author" data-hue="167" data-saturation="88%">charlesbukowski</span> I can confirm that I am in fact not an IEEE expert<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="isa" class="category isa"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2684" class="marker cat_data-structure cat_lighting cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">44:44</span>Continue to implement versions of tRay picking in GridRayCast(), with and without _mm_cvtepi32_ps()<sup>8</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:44</span>Continue to implement versions of tRay picking in GridRayCast(), with and without _mm_cvtepi32_ps()<sup>8</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:44</span>Continue to implement versions of tRay picking in GridRayCast(), with and without _mm_cvtepi32_ps()<sup>8</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3177" class="marker cat_hardware cat_isa research">
+                    <div class="cineraContent"><span class="timecode">52:57</span>Continue to consider special comparison of the top 16-bits of a floating-point value to be unnecessary<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:57</span>Continue to consider special comparison of the top 16-bits of a floating-point value to be unnecessary<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:57</span>Continue to consider special comparison of the top 16-bits of a floating-point value to be unnecessary<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3237" class="marker cat_data-structure cat_lighting cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">53:57</span>Write the HCompShuffler in GridRayCast()<sup>9</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:57</span>Write the HCompShuffler in GridRayCast()<sup>9</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:57</span>Write the HCompShuffler in GridRayCast()<sup>9</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3660" class="marker cat_simd research" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">1:01:00</span>Learn that _mm_minpos_epu16(), given duplicated input, is documented to return the first matching value<sup>10</sup><span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:00</span>Learn that _mm_minpos_epu16(), given duplicated input, is documented to return the first matching value<sup>10</sup><span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:00</span>Learn that _mm_minpos_epu16(), given duplicated input, is documented to return the first matching value<sup>10</sup><span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3793" class="marker cat_data-structure cat_lighting cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">1:03:13</span>Write the ShuffleTable in GridRayCast()<sup>11</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:13</span>Write the ShuffleTable in GridRayCast()<sup>11</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:13</span>Write the ShuffleTable in GridRayCast()<sup>11</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3982" class="marker cat_data-structure cat_lighting cat_simd programming">
+                    <div class="cineraContent"><span class="timecode">1:06:22</span>Fix compile errors in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:22</span>Fix compile errors in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:22</span>Fix compile errors in GridRayCast()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4001" class="marker cat_asm cat_simd research" data-ref="https://godbolt.org">
+                    <div class="cineraContent"><span class="timecode">1:06:41</span>Check the assembly of _mm_set1_epi32() in Compiler Explorer<sup>12</sup> to find that the compiler generates the full broadcast table, rather than our desired broadcast instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:41</span>Check the assembly of _mm_set1_epi32() in Compiler Explorer<sup>12</sup> to find that the compiler generates the full broadcast table, rather than our desired broadcast instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:41</span>Check the assembly of _mm_set1_epi32() in Compiler Explorer<sup>12</sup> to find that the compiler generates the full broadcast table, rather than our desired broadcast instruction<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4125" class="marker cat_data-structure cat_lighting cat_simd programming">
+                    <div class="cineraContent"><span class="timecode">1:08:45</span>Manually write out the full ShuffleTable in GridRayCast(), to abandon _mm_set1_epi32()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:45</span>Manually write out the full ShuffleTable in GridRayCast(), to abandon _mm_set1_epi32()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:45</span>Manually write out the full ShuffleTable in GridRayCast(), to abandon _mm_set1_epi32()<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4289" class="marker cat_data-structure cat_lighting cat_simd research">
+                    <div class="cineraContent"><span class="timecode">1:11:29</span>Reflect on the efficiency of our tRay picking<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:29</span>Reflect on the efficiency of our tRay picking<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:29</span>Reflect on the efficiency of our tRay picking<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4354" class="marker cat_data-structure cat_lighting cat_simd research">
+                    <div class="cineraContent"><span class="timecode">1:12:34</span>Move on to the ray hit extraction<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:34</span>Move on to the ray hit extraction<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:34</span>Move on to the ray hit extraction<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4501" class="marker cat_data-structure cat_lighting cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">1:15:01</span>Correctly implement the ray hit extraction in GridRayCast()<sup>13</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:01</span>Correctly implement the ray hit extraction in GridRayCast()<sup>13</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:01</span>Correctly implement the ray hit extraction in GridRayCast()<sup>13</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4887" class="marker cat_asm cat_data-structure cat_language cat_lighting cat_simd rant">
+                    <div class="cineraContent"><span class="timecode">1:21:27</span>Introduce PShufB(), with a rant on C++ vs assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="data structure" class="category data-structure"></div><div title="language" class="category language"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Rant" class="categoryMedium rant">&#128162;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:27</span>Introduce PShufB(), with a rant on C++ vs assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="data structure" class="category data-structure"></div><div title="language" class="category language"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Rant" class="categoryMedium rant">&#128162;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:27</span>Introduce PShufB(), with a rant on C++ vs assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="data structure" class="category data-structure"></div><div title="language" class="category language"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div><div title="Rant" class="categoryMedium rant">&#128162;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5134" class="marker cat_data-structure cat_lighting cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">1:25:34</span>Introduce Extract0() for GridRayCast() to use<sup>14</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:34</span>Introduce Extract0() for GridRayCast() to use<sup>14</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:34</span>Introduce Extract0() for GridRayCast() to use<sup>14</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5297" class="marker cat_data-structure cat_lighting cat_simd programming">
+                    <div class="cineraContent"><span class="timecode">1:28:17</span>Continue to implement the ray hit extraction in GridRayCast(), making it set the TransferPPS in a passed-in value<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:17</span>Continue to implement the ray hit extraction in GridRayCast(), making it set the TransferPPS in a passed-in value<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:17</span>Continue to implement the ray hit extraction in GridRayCast(), making it set the TransferPPS in a passed-in value<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7106" class="marker cat_data-structure cat_lighting cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">1:58:26</span>Change Extract0() to use _mm_cvtss_f32(), and introduce Extract1() and Extract2(), using _mm_extract_ps()<sup>15</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:26</span>Change Extract0() to use _mm_cvtss_f32(), and introduce Extract1() and Extract2(), using _mm_extract_ps()<sup>15</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:26</span>Change Extract0() to use _mm_cvtss_f32(), and introduce Extract1() and Extract2(), using _mm_extract_ps()<sup>15</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7308" class="marker cat_data-structure cat_lighting cat_simd programming">
+                    <div class="cineraContent"><span class="timecode">2:01:48</span>Get GridRayCast() in a compilable state<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:48</span>Get GridRayCast() in a compilable state<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:48</span>Get GridRayCast() in a compilable state<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="lighting" class="category lighting"></div><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7457" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:04:17</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:17</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:17</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7474" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:04:34</span><span class="author" data-hue="269" data-saturation="75%">x1bzzr</span> Q: <span class="member" data-hue="277" data-saturation="88%">Jon</span> said you had opinions on signed / unsigned. He said you said &quot;maybe it&#39;s the wrong complication to have&quot;. Do you know what he was referring to and, if so, can you elaborate?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:34</span><span class="author" data-hue="269" data-saturation="75%">x1bzzr</span> Q: <span class="member" data-hue="277" data-saturation="88%">Jon</span> said you had opinions on signed / unsigned. He said you said &quot;maybe it&#39;s the wrong complication to have&quot;. Do you know what he was referring to and, if so, can you elaborate?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:34</span><span class="author" data-hue="269" data-saturation="75%">x1bzzr</span> Q: <span class="member" data-hue="277" data-saturation="88%">Jon</span> said you had opinions on signed / unsigned. He said you said &quot;maybe it&#39;s the wrong complication to have&quot;. Do you know what he was referring to and, if so, can you elaborate?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7628" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:07:08</span><span class="author" data-hue="54" data-saturation="76%">sholofly</span> Q: Are you familiar with Home Assistant?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:08</span><span class="author" data-hue="54" data-saturation="76%">sholofly</span> Q: Are you familiar with Home Assistant?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:08</span><span class="author" data-hue="54" data-saturation="76%">sholofly</span> Q: Are you familiar with Home Assistant?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7639" class="marker cat_asm authored">
+                    <div class="cineraContent"><span class="timecode">2:07:19</span><span class="author" data-hue="271" data-saturation="76%">hubco</span> Q: Are there alternatives to inline assembly other than intrinsic?<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:19</span><span class="author" data-hue="271" data-saturation="76%">hubco</span> Q: Are there alternatives to inline assembly other than intrinsic?<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:19</span><span class="author" data-hue="271" data-saturation="76%">hubco</span> Q: Are there alternatives to inline assembly other than intrinsic?<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7682" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:08:02</span><span class="author" data-hue="118" data-saturation="87%">bogez57</span> Q: Hey <span class="member" data-hue="125" data-saturation="81%">Casey</span>, on episode 300-ish you mentioned that OpenGL 4.5 is much closer to a good graphics API then something like Vulcan. I&#39;m wondering if other developers you know agree with you on this and if so, then why would something like Vulkan get support? Who exactly makes the design / adoption decisions for these kinds of technologies? Do developers have any say?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:02</span><span class="author" data-hue="118" data-saturation="87%">bogez57</span> Q: Hey <span class="member" data-hue="125" data-saturation="81%">Casey</span>, on episode 300-ish you mentioned that OpenGL 4.5 is much closer to a good graphics API then something like Vulcan. I&#39;m wondering if other developers you know agree with you on this and if so, then why would something like Vulkan get support? Who exactly makes the design / adoption decisions for these kinds of technologies? Do developers have any say?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:02</span><span class="author" data-hue="118" data-saturation="87%">bogez57</span> Q: Hey <span class="member" data-hue="125" data-saturation="81%">Casey</span>, on episode 300-ish you mentioned that OpenGL 4.5 is much closer to a good graphics API then something like Vulcan. I&#39;m wondering if other developers you know agree with you on this and if so, then why would something like Vulkan get support? Who exactly makes the design / adoption decisions for these kinds of technologies? Do developers have any say?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7804" class="marker cat_simd authored">
+                    <div class="cineraContent"><span class="timecode">2:10:04</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Why is it slow for the CPU to do horizontal SIMD operations?<span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:04</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Why is it slow for the CPU to do horizontal SIMD operations?<span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:04</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Why is it slow for the CPU to do horizontal SIMD operations?<span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7839" class="marker cat_performance blackboard">
+                    <div class="cineraContent"><span class="timecode">2:10:39</span>&quot;Slow&quot; → What does this mean?<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:39</span>&quot;Slow&quot; → What does this mean?<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:39</span>&quot;Slow&quot; → What does this mean?<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7929" class="marker cat_performance cat_simd blackboard">
+                    <div class="cineraContent"><span class="timecode">2:12:09</span>Horizontal Operations = High Latency<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:12:09</span>Horizontal Operations = High Latency<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:12:09</span>Horizontal Operations = High Latency<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8135" class="marker cat_performance cat_simd research" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">2:15:35</span>_mm_minpos_epu16() and _mm_hadd_epi32() as horizontal operations<sup>16</sup><span class="cineraCategories"><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:35</span>_mm_minpos_epu16() and _mm_hadd_epi32() as horizontal operations<sup>16</sup><span class="cineraCategories"><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:35</span>_mm_minpos_epu16() and _mm_hadd_epi32() as horizontal operations<sup>16</sup><span class="cineraCategories"><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8272" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:17:52</span><span class="author" data-hue="271" data-saturation="76%">hubco</span> Q: Wouldn&#39;t you use Vulkan for cross platform?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:52</span><span class="author" data-hue="271" data-saturation="76%">hubco</span> Q: Wouldn&#39;t you use Vulkan for cross platform?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:52</span><span class="author" data-hue="271" data-saturation="76%">hubco</span> Q: Wouldn&#39;t you use Vulkan for cross platform?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8369" class="marker cat_nullTopic speech" data-ref="https://www.kickstarter.com/projects/annarettberg/meow-the-infinite-book-one,https://slipways.net/">
+                    <div class="cineraContent"><span class="timecode">2:19:29</span>Close everything down with a plug of the Meow the Infinite printed comic Kickstarter<sup>17</sup> and a further mention of Slipways<sup>18</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:19:29</span>Close everything down with a plug of the Meow the Infinite printed comic Kickstarter<sup>17</sup> and a further mention of Slipways<sup>18</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:19:29</span>Close everything down with a plug of the Meow the Infinite printed comic Kickstarter<sup>17</sup> and a further mention of Slipways<sup>18</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day600/"><div>&#9196;</div><div>Next: 'Better AABB Normal Derivation'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

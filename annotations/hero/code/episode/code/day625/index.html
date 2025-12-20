@@ -1,0 +1,1343 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="entity system, filtering, hardware, lighting, memory, simd, threading, Administrivia, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Fixing the &quot;Lighting&quot; Bug</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel</div>
+                            <div class="ref_title">Intel Intrinsics Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="21" class="timecode"><span class="ref_index">[1]</span><span class="time">0:21</span></span><span data-timestamp="419" class="timecode"><span class="ref_index">[2]</span><span class="time">6:59</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.youtube.com/watch?v=ogd5iVr4_cM" href="https://www.youtube.com/watch?v=ogd5iVr4_cM" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Mr Yabatan (YouTube)</div>
+                            <div class="ref_title">お父さんと鍋パーティー！Nabe Party with my Dad!</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2767" class="timecode"><span class="ref_index">[3]</span><span class="time">46:07</span></span><span data-timestamp="2891" class="timecode"><span class="ref_index">[5]</span><span class="time">48:11</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.youtube.com/watch?v=k9EIo-J7WVY" href="https://www.youtube.com/watch?v=k9EIo-J7WVY" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Mr Yabatan (YouTube)</div>
+                            <div class="ref_title">Foreigner meets Ramen 🍜 ラーメンで興奮する外国人！</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2826" class="timecode"><span class="ref_index">[4]</span><span class="time">47:06</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://jcgt.org/published/0003/02/01/" href="http://jcgt.org/published/0003/02/01/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Zina H. Cigolle, Sam Donow, Daniel Evangelakos, Michael Mara, Morgan McGuire, Quirin Meyer</div>
+                            <div class="ref_title">Survey of Efficient Representations for Independent Unit Vectors</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="3131" class="timecode"><span class="ref_index">[6]</span><span class="time">52:11</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://shader-playground.timjones.io/" href="http://shader-playground.timjones.io/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">Shader Playground</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7781" class="timecode"><span class="ref_index">[7]</span><span class="time">2:09:41</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://starcodegalaxy.com" href="https://starcodegalaxy.com" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">Star Code Galaxy</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7906" class="timecode"><span class="ref_index">[8]</span><span class="time">2:11:46</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content filtering">
+                                <span class="icon category filtering"></span><span class="cineraText">filtering</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content simd">
+                                <span class="icon category simd"></span><span class="cineraText">simd</span>
+                            </div>
+                            <div class="filter_content threading">
+                                <span class="icon category threading"></span><span class="cineraText">threading</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="nIeqZzUPqp8"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day624/"><div>&#9195;</div><div>Previous: 'Turns Out It Really WAS a Feature'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="21" class="marker cat_simd research" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">0:21</span>Look into our incorrect usage of _mm_blendv_ps() in the f32 version of SignOf()<sup>1</sup><span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:21</span>Look into our incorrect usage of _mm_blendv_ps() in the f32 version of SignOf()<sup>1</sup><span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:21</span>Look into our incorrect usage of _mm_blendv_ps() in the f32 version of SignOf()<sup>1</sup><span class="cineraCategories"><div title="simd" class="category simd"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="419" class="marker cat_simd programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">6:59</span>Fix the f32 SignOf() in SIMD<sup>2</sup><span class="cineraCategories"><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:59</span>Fix the f32 SignOf() in SIMD<sup>2</sup><span class="cineraCategories"><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:59</span>Fix the f32 SignOf() in SIMD<sup>2</sup><span class="cineraCategories"><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="683" class="marker cat_nullTopic research">
+                    <div class="cineraContent"><span class="timecode">11:23</span>Hunt in vain for SignOrZero()<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:23</span>Hunt in vain for SignOrZero()<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:23</span>Hunt in vain for SignOrZero()<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="858" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">14:18</span>Determine to look at octahedral code to see if we&#39;re using SignOf() as SignOrZero()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:18</span>Determine to look at octahedral code to see if we&#39;re using SignOf() as SignOrZero()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:18</span>Determine to look at octahedral code to see if we&#39;re using SignOf() as SignOrZero()</div>
+                    </div>
+                </div>
+                <div data-timestamp="897" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">14:57</span>Fix compile errors in SignOf()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:57</span>Fix compile errors in SignOf()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:57</span>Fix compile errors in SignOf()</div>
+                    </div>
+                </div>
+                <div data-timestamp="916" class="marker cat_nullTopic research">
+                    <div class="cineraContent"><span class="timecode">15:16</span>Double-check our SignOf()<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:16</span>Double-check our SignOf()<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:16</span>Double-check our SignOf()<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="995" class="marker cat_simd programming">
+                    <div class="cineraContent"><span class="timecode">16:35</span>Update the f32_4x SignOf()<span class="cineraCategories"><div title="simd" class="category simd"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:35</span>Update the f32_4x SignOf()<span class="cineraCategories"><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:35</span>Update the f32_4x SignOf()<span class="cineraCategories"><div title="simd" class="category simd"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1193" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">19:53</span>Traverse the orphanage, and successfully provoke our lighting bug<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:53</span>Traverse the orphanage, and successfully provoke our lighting bug<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:53</span>Traverse the orphanage, and successfully provoke our lighting bug<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1412" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">23:32</span>Exhibit our lighting bug localised<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:32</span>Exhibit our lighting bug localised<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:32</span>Exhibit our lighting bug localised<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1427" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">23:47</span>Consider a possible lighting quality improvement<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:47</span>Consider a possible lighting quality improvement<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:47</span>Consider a possible lighting quality improvement<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1516" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">25:16</span>Determine to investigate our lighting bug<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:16</span>Determine to investigate our lighting bug<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:16</span>Determine to investigate our lighting bug<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1553" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">25:53</span>Try to provoke our lighting bug in -Od<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:53</span>Try to provoke our lighting bug in -Od<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:53</span>Try to provoke our lighting bug in -Od<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1663" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">27:43</span>In -O2 our SpecValid and DiffuseValid values start at 0<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:43</span>In -O2 our SpecValid and DiffuseValid values start at 0<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:43</span>In -O2 our SpecValid and DiffuseValid values start at 0<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1691" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">28:11</span>Introduce ValidateTexel() and make BlockCopyAtlas() assert with ValidateAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:11</span>Introduce ValidateTexel() and make BlockCopyAtlas() assert with ValidateAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:11</span>Introduce ValidateTexel() and make BlockCopyAtlas() assert with ValidateAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1877" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">31:17</span>Hit our top ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:17</span>Hit our top ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:17</span>Hit our top ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1966" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">32:46</span>Make SetLightAtlasTexels() assert with ValidateAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:46</span>Make SetLightAtlasTexels() assert with ValidateAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:46</span>Make SetLightAtlasTexels() assert with ValidateAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1984" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">33:04</span>Never hit our assertion in SetLightAtlasTexels()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:04</span>Never hit our assertion in SetLightAtlasTexels()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:04</span>Never hit our assertion in SetLightAtlasTexels()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2011" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">33:31</span>Use LIGHT_ATLAS_ASSERT() for our assertions<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:31</span>Use LIGHT_ATLAS_ASSERT() for our assertions<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:31</span>Use LIGHT_ATLAS_ASSERT() for our assertions<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2041" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">34:01</span>Hit none of our assertions<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:01</span>Hit none of our assertions<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:01</span>Hit none of our assertions<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2055" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">34:15</span>Try replacing LIGHT_ATLAS_ASSERT() with Assert() in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:15</span>Try replacing LIGHT_ATLAS_ASSERT() with Assert() in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:15</span>Try replacing LIGHT_ATLAS_ASSERT() with Assert() in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2089" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">34:49</span>Hit our ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:49</span>Hit our ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:49</span>Hit our ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2095" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">34:55</span>Replace Assert() with LIGHT_ATLAS_ASSERT() in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:55</span>Replace Assert() with LIGHT_ATLAS_ASSERT() in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:55</span>Replace Assert() with LIGHT_ATLAS_ASSERT() in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2106" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">35:06</span>Hit our ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:06</span>Hit our ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:06</span>Hit our ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2130" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">35:30</span>Describe our method for zeroing in on a bug, lacking a theory as to its source<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:30</span>Describe our method for zeroing in on a bug, lacking a theory as to its source<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:30</span>Describe our method for zeroing in on a bug, lacking a theory as to its source<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2260" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">37:40</span>Plan our lighting map validation<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:40</span>Plan our lighting map validation<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:40</span>Plan our lighting map validation<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2408" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">40:08</span>Make ComputeLightPropagationWork() assert with ValidateAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:08</span>Make ComputeLightPropagationWork() assert with ValidateAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:08</span>Make ComputeLightPropagationWork() assert with ValidateAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2480" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">41:20</span>Hit our DiffuseAtlas assertion in ComputeLightPropagationWork() after FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:20</span>Hit our DiffuseAtlas assertion in ComputeLightPropagationWork() after FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:20</span>Hit our DiffuseAtlas assertion in ComputeLightPropagationWork() after FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2527" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">42:07</span>Remove our ValidateAtlas() calls<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:07</span>Remove our ValidateAtlas() calls<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:07</span>Remove our ValidateAtlas() calls<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2554" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">42:34</span>Focus our lighting map validation on FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:34</span>Focus our lighting map validation on FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:34</span>Focus our lighting map validation on FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2693" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">44:53</span>Consult the chat for Japanese speakers<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:53</span>Consult the chat for Japanese speakers<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:53</span>Consult the chat for Japanese speakers<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2712" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">45:12</span><span class="author" data-hue="278" data-saturation="78%">mas_ketta</span> Bikkuri shita!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:12</span><span class="author" data-hue="278" data-saturation="78%">mas_ketta</span> Bikkuri shita!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:12</span><span class="author" data-hue="278" data-saturation="78%">mas_ketta</span> Bikkuri shita!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2731" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">45:31</span><span class="author" data-hue="284" data-saturation="89%">drspectra</span> I mean it&#39;s 5:30 am in Japan<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:31</span><span class="author" data-hue="284" data-saturation="89%">drspectra</span> I mean it&#39;s 5:30 am in Japan<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:31</span><span class="author" data-hue="284" data-saturation="89%">drspectra</span> I mean it&#39;s 5:30 am in Japan<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2755" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">45:55</span><span class="author" data-hue="56" data-saturation="81%">infinum</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> How good is your Japanese?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:55</span><span class="author" data-hue="56" data-saturation="81%">infinum</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> How good is your Japanese?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:55</span><span class="author" data-hue="56" data-saturation="81%">infinum</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> How good is your Japanese?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2767" class="marker cat_nullTopic programming" data-ref="https://www.youtube.com/watch?v=ogd5iVr4_cM">
+                    <div class="cineraContent"><span class="timecode">46:07</span>Request a link to Mr Yabatan making a hotpot, with his Dad on the phone<sup>3</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:07</span>Request a link to Mr Yabatan making a hotpot, with his Dad on the phone<sup>3</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:07</span>Request a link to Mr Yabatan making a hotpot, with his Dad on the phone<sup>3</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="2826" class="marker cat_nullTopic authored" data-ref="https://www.youtube.com/watch?v=k9EIo-J7WVY">
+                    <div class="cineraContent"><span class="timecode">47:06</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> Foreigner meets Ramen 🍜 ラーメンで興奮する外国人！<sup>4</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:06</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> Foreigner meets Ramen 🍜 ラーメンで興奮する外国人！<sup>4</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:06</span><span class="author" data-hue="281" data-saturation="97%">thesandvichmaker</span> Foreigner meets Ramen 🍜 ラーメンで興奮する外国人！<sup>4</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2891" class="marker cat_nullTopic authored" data-ref="https://www.youtube.com/watch?v=ogd5iVr4_cM">
+                    <div class="cineraContent"><span class="timecode">48:11</span><span class="author" data-hue="53" data-saturation="89%">nestedmadness</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Talking about this?<sup>5</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:11</span><span class="author" data-hue="53" data-saturation="89%">nestedmadness</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Talking about this?<sup>5</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:11</span><span class="author" data-hue="53" data-saturation="89%">nestedmadness</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Talking about this?<sup>5</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2922" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">48:42</span>Add ValidateAtlas() assertions in FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:42</span>Add ValidateAtlas() assertions in FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:42</span>Add ValidateAtlas() assertions in FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2993" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">49:53</span>Hit our bottom SpecAtlas ValidateAtlas() assertion in FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">49:53</span>Hit our bottom SpecAtlas ValidateAtlas() assertion in FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">49:53</span>Hit our bottom SpecAtlas ValidateAtlas() assertion in FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3016" class="marker cat_threading programming">
+                    <div class="cineraContent"><span class="timecode">50:16</span>Disable multithreading<span class="cineraCategories"><div title="threading" class="category threading"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:16</span>Disable multithreading<span class="cineraCategories"><div title="threading" class="category threading"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:16</span>Disable multithreading<span class="cineraCategories"><div title="threading" class="category threading"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3114" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">51:54</span>Try and hit our assertion in FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:54</span>Try and hit our assertion in FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:54</span>Try and hit our assertion in FullCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3131" class="marker cat_nullTopic authored" data-ref="http://jcgt.org/published/0003/02/01/">
+                    <div class="cineraContent"><span class="timecode">52:11</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> I just checked the octrahedral paper.<sup>6</sup> It uses signNotZero()<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:11</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> I just checked the octrahedral paper.<sup>6</sup> It uses signNotZero()<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:11</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> I just checked the octrahedral paper.<sup>6</sup> It uses signNotZero()<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3162" class="marker cat_lighting cat_threading run">
+                    <div class="cineraContent"><span class="timecode">52:42</span>We hit our assertion in FullCast() single-threaded<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:42</span>We hit our assertion in FullCast() single-threaded<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:42</span>We hit our assertion in FullCast() single-threaded<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="threading" class="category threading"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3169" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">52:49</span>Focus our lighting map validation on GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:49</span>Focus our lighting map validation on GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:49</span>Focus our lighting map validation on GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3359" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">55:59</span>Request a reminder from chat to rerun the sphere generator<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:59</span>Request a reminder from chat to rerun the sphere generator<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:59</span>Request a reminder from chat to rerun the sphere generator<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3382" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">56:22</span>Make GridRayCast() assert with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:22</span>Make GridRayCast() assert with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:22</span>Make GridRayCast() assert with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3436" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">57:16</span>Hit our bottom 6th SpecAtlas ValidateTexel() assertion in GridRayCast()()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:16</span>Hit our bottom 6th SpecAtlas ValidateTexel() assertion in GridRayCast()()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:16</span>Hit our bottom 6th SpecAtlas ValidateTexel() assertion in GridRayCast()()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3484" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">58:04</span>Fail to hit our assertion in -Od<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:04</span>Fail to hit our assertion in -Od<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:04</span>Fail to hit our assertion in -Od<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3524" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">58:44</span>Fail to hit our assertion in -O2, until hitting it on the bottom 7th SpecAtlas texel<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:44</span>Fail to hit our assertion in -O2, until hitting it on the bottom 7th SpecAtlas texel<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:44</span>Fail to hit our assertion in -O2, until hitting it on the bottom 7th SpecAtlas texel<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3586" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">59:46</span>Wonder if TransferPPS never gets initialised, causing our negative lighting values<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:46</span>Wonder if TransferPPS never gets initialised, causing our negative lighting values<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:46</span>Wonder if TransferPPS never gets initialised, causing our negative lighting values<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3715" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:01:55</span>Make GridRayCast() initialise TransferPPS<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:55</span>Make GridRayCast() initialise TransferPPS<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:55</span>Make GridRayCast() initialise TransferPPS<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3733" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:02:13</span>Hit our bottom 7th SpecAtlas ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:13</span>Hit our bottom 7th SpecAtlas ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:13</span>Hit our bottom 7th SpecAtlas ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3747" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:02:27</span>Scrutinise the TransferPPS values in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:27</span>Scrutinise the TransferPPS values in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:27</span>Scrutinise the TransferPPS values in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3888" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:04:48</span>Make GridRayCast() assert TransferPPS with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:48</span>Make GridRayCast() assert TransferPPS with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:48</span>Make GridRayCast() assert TransferPPS with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3922" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:05:22</span>Hit our 1st TransferPPS ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:22</span>Hit our 1st TransferPPS ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:22</span>Hit our 1st TransferPPS ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3955" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:05:55</span>Make GridRayCast() assert TransferPPS with ValidateTexel() upon setting it<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:55</span>Make GridRayCast() assert TransferPPS with ValidateTexel() upon setting it<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:55</span>Make GridRayCast() assert TransferPPS with ValidateTexel() upon setting it<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3995" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:06:35</span>Exhibit our lighting bug without hitting an assertion, before hitting the TransferPPS one<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:35</span>Exhibit our lighting bug without hitting an assertion, before hitting the TransferPPS one<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:35</span>Exhibit our lighting bug without hitting an assertion, before hitting the TransferPPS one<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4062" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:07:42</span>Scrutinise our TransferPPS computation in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:42</span>Scrutinise our TransferPPS computation in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:42</span>Scrutinise our TransferPPS computation in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4201" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:10:01</span>Try to make GridRayCast() assert TransmissionLevel and HitRefColor with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:01</span>Try to make GridRayCast() assert TransmissionLevel and HitRefColor with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:01</span>Try to make GridRayCast() assert TransmissionLevel and HitRefColor with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4250" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:10:50</span>Scrutinise our TransmissionLevel and HitRefColor computations in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:50</span>Scrutinise our TransmissionLevel and HitRefColor computations in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:50</span>Scrutinise our TransmissionLevel and HitRefColor computations in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4321" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:12:01</span>Introduce an f32_4x version of ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:01</span>Introduce an f32_4x version of ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:01</span>Introduce an f32_4x version of ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4444" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:14:04</span>Hit our 0th HitRefColor ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:04</span>Hit our 0th HitRefColor ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:04</span>Hit our 0th HitRefColor ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4474" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:14:34</span>Scrutinise our HitRefColor computations in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:34</span>Scrutinise our HitRefColor computations in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:34</span>Scrutinise our HitRefColor computations in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4581" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:16:21</span>Make GridRayCast() assert HitRefColor with ValidateTexel() upon initialisation<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:21</span>Make GridRayCast() assert HitRefColor with ValidateTexel() upon initialisation<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:21</span>Make GridRayCast() assert HitRefColor with ValidateTexel() upon initialisation<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4592" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:16:32</span>Hit our TransferPPS ValidateTexel() assertion in GridRayCast() upon setting it<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:32</span>Hit our TransferPPS ValidateTexel() assertion in GridRayCast() upon setting it<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:32</span>Hit our TransferPPS ValidateTexel() assertion in GridRayCast() upon setting it<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4619" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:16:59</span>Make GridRayCast() assert HitRefColor with ValidateTexel() upon setting TransferPPS<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:59</span>Make GridRayCast() assert HitRefColor with ValidateTexel() upon setting TransferPPS<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:59</span>Make GridRayCast() assert HitRefColor with ValidateTexel() upon setting TransferPPS<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4630" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:17:10</span>Hit our 0th HitRefColor ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:10</span>Hit our 0th HitRefColor ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:10</span>Hit our 0th HitRefColor ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4644" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:17:24</span>Scrutinise our HitRefColor usage in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:24</span>Scrutinise our HitRefColor usage in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:24</span>Scrutinise our HitRefColor usage in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4695" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:18:15</span>Make GridRayCast() assert Leaf.RefColor with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:15</span>Make GridRayCast() assert Leaf.RefColor with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:15</span>Make GridRayCast() assert Leaf.RefColor with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4721" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:18:41</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:41</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:41</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridRayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4888" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:21:28</span>Focus our lighting map validation on GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:28</span>Focus our lighting map validation on GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:28</span>Focus our lighting map validation on GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5031" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:23:51</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:51</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:51</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5120" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:25:20</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:20</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:20</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5123" class="marker cat_lighting cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">1:25:23</span>Make GridBuildSpatialPartition() clear the SpatialGridLeaves<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:23</span>Make GridBuildSpatialPartition() clear the SpatialGridLeaves<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:23</span>Make GridBuildSpatialPartition() clear the SpatialGridLeaves<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5159" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:25:59</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:59</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:59</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5166" class="marker cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">1:26:06</span>Fix parentheses of ZeroArray()<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:06</span>Fix parentheses of ZeroArray()<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:06</span>Fix parentheses of ZeroArray()<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5197" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:26:37</span>Assert in GridBuildSpatialPartition() that we are in bounds<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:37</span>Assert in GridBuildSpatialPartition() that we are in bounds<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:37</span>Assert in GridBuildSpatialPartition() that we are in bounds<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5258" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:27:38</span>Do not hit our bounds-checking assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:38</span>Do not hit our bounds-checking assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:38</span>Do not hit our bounds-checking assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5261" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:27:41</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel() upon initialisation<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:41</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel() upon initialisation<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:41</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel() upon initialisation<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5308" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:28:28</span>Do not hit our Leaf.RefColor initialisation assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:28</span>Do not hit our Leaf.RefColor initialisation assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:28</span>Do not hit our Leaf.RefColor initialisation assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5312" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:28:32</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel() after fill-in<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:32</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel() after fill-in<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:32</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel() after fill-in<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5324" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:28:44</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition() after fill-in<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:44</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition() after fill-in<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:44</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition() after fill-in<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5328" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:28:48</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel() around their setting<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:48</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel() around their setting<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:48</span>Make GridBuildSpatialPartition() assert Leaf.RefColor with ValidateTexel() around their setting<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5406" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:30:06</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition() after setting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:06</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition() after setting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:06</span>Hit our 0th Leaf.RefColor ValidateTexel() assertion in GridBuildSpatialPartition() after setting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5451" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:30:51</span>Make GridBuildSpatialPartition() assert Box-&gt;RefC with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:51</span>Make GridBuildSpatialPartition() assert Box-&gt;RefC with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:51</span>Make GridBuildSpatialPartition() assert Box-&gt;RefC with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5488" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:31:28</span>Hit our Box-&gt;RefC ValidateTexel() assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:28</span>Hit our Box-&gt;RefC ValidateTexel() assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:28</span>Hit our Box-&gt;RefC ValidateTexel() assertion in GridBuildSpatialPartition()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5540" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:32:20</span>Focus our validation on PushCube(), PushOccluder() and PushLight()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:20</span>Focus our validation on PushCube(), PushOccluder() and PushLight()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:20</span>Focus our validation on PushCube(), PushOccluder() and PushLight()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5757" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:35:57</span>Hit our Box-&gt;RefC ValidateTexel() assertion in GridBuildSpatialPartition(), but none of the ones upstream<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:57</span>Hit our Box-&gt;RefC ValidateTexel() assertion in GridBuildSpatialPartition(), but none of the ones upstream<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:57</span>Hit our Box-&gt;RefC ValidateTexel() assertion in GridBuildSpatialPartition(), but none of the ones upstream<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5895" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:38:15</span>Scrutinise our upstream Box-&gt;RefC code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:15</span>Scrutinise our upstream Box-&gt;RefC code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:15</span>Scrutinise our upstream Box-&gt;RefC code<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6102" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">1:41:42</span><span class="author" data-hue="326" data-saturation="88%">codeslasher</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> You are missing an assert in PushOccluder()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:42</span><span class="author" data-hue="326" data-saturation="88%">codeslasher</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> You are missing an assert in PushOccluder()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:42</span><span class="author" data-hue="326" data-saturation="88%">codeslasher</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> You are missing an assert in PushOccluder()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6107" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:41:47</span>Make PushCube(), PushOccluder() and PushLight() assert Box-&gt;RefC with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:47</span>Make PushCube(), PushOccluder() and PushLight() assert Box-&gt;RefC with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:47</span>Make PushCube(), PushOccluder() and PushLight() assert Box-&gt;RefC with ValidateTexel()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6140" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:42:20</span>Hit our Hit our ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:20</span>Hit our Hit our ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:20</span>Hit our Hit our ValidateAtlas() assertion in BlockCopyAtlas()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6152" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:42:32</span>Hit our Box-&gt;RefC ValidateTexel() assertion in PushOccluder()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:32</span>Hit our Box-&gt;RefC ValidateTexel() assertion in PushOccluder()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:32</span>Hit our Box-&gt;RefC ValidateTexel() assertion in PushOccluder()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6369" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:46:09</span>#if 0 out the Tag_Ghost indexing into MatchVector.E in UpdateAndRenderEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:09</span>#if 0 out the Tag_Ghost indexing into MatchVector.E in UpdateAndRenderEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:09</span>#if 0 out the Tag_Ghost indexing into MatchVector.E in UpdateAndRenderEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6490" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:48:10</span>Try to provoke our &quot;lighting&quot; bug<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:10</span>Try to provoke our &quot;lighting&quot; bug<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:10</span>Try to provoke our &quot;lighting&quot; bug<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6596" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:49:56</span>#define ValidateTexel() as VALIDATE_TEXEL()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:56</span>#define ValidateTexel() as VALIDATE_TEXEL()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:56</span>#define ValidateTexel() as VALIDATE_TEXEL()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6797" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:53:17</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:17</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:17</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6809" class="marker cat_lighting cat_threading programming">
+                    <div class="cineraContent"><span class="timecode">1:53:29</span>Re-enable multithreading<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="threading" class="category threading"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:29</span>Re-enable multithreading<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="threading" class="category threading"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:29</span>Re-enable multithreading<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="threading" class="category threading"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6824" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:53:44</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:44</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:44</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6977" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:56:17</span>Reflect on our indexing bug, and our pincering method for debugging<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:17</span>Reflect on our indexing bug, and our pincering method for debugging<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:17</span>Reflect on our indexing bug, and our pincering method for debugging<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7045" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:57:25</span>Make VALIDATE_TEXEL() self-assert, and #define ValidateAtlas() as VALIDATE_TEXEL_ATLAS()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:25</span>Make VALIDATE_TEXEL() self-assert, and #define ValidateAtlas() as VALIDATE_TEXEL_ATLAS()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:25</span>Make VALIDATE_TEXEL() self-assert, and #define ValidateAtlas() as VALIDATE_TEXEL_ATLAS()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7173" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:59:33</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:33</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:33</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7188" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:59:48</span>#define out LIGHT_ATLAS_ASSERT()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:48</span>#define out LIGHT_ATLAS_ASSERT()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:48</span>#define out LIGHT_ATLAS_ASSERT()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7193" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:59:53</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:53</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:53</span>Run successfully<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7218" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">2:00:18</span>Determine to improve the lighting filtering<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:18</span>Determine to improve the lighting filtering<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:18</span>Determine to improve the lighting filtering<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7248" class="marker cat_lighting admin">
+                    <div class="cineraContent"><span class="timecode">2:00:48</span>Compile and invoke hhsphere<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:48</span>Compile and invoke hhsphere<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:48</span>Compile and invoke hhsphere<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7385" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">2:03:05</span>Rebuild and run the game<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:05</span>Rebuild and run the game<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:05</span>Rebuild and run the game<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7445" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">2:04:05</span>Make UpdateLighting() decrease tUpdateBlend from 8/60 to 1/60<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:05</span>Make UpdateLighting() decrease tUpdateBlend from 8/60 to 1/60<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:05</span>Make UpdateLighting() decrease tUpdateBlend from 8/60 to 1/60<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7488" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">2:04:48</span>Our lighting is smoother but slower to update<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:48</span>Our lighting is smoother but slower to update<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:48</span>Our lighting is smoother but slower to update<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7523" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">2:05:23</span>Make UpdateLighting() increase tUpdateBlend from 1/60 to 4/60<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:23</span>Make UpdateLighting() increase tUpdateBlend from 1/60 to 4/60<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:23</span>Make UpdateLighting() increase tUpdateBlend from 1/60 to 4/60<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7537" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">2:05:37</span>Our lighting is quicker to update, but doesn&#39;t propagate evenly<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:37</span>Our lighting is quicker to update, but doesn&#39;t propagate evenly<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:37</span>Our lighting is quicker to update, but doesn&#39;t propagate evenly<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7582" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:06:22</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:22</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:22</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7597" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">2:06:37</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Is it only me or does the lighting seem brighter with the blendv_ps fix?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:37</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Is it only me or does the lighting seem brighter with the blendv_ps fix?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:37</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Is it only me or does the lighting seem brighter with the blendv_ps fix?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7654" class="marker cat_hardware authored">
+                    <div class="cineraContent"><span class="timecode">2:07:34</span><span class="author" data-hue="111" data-saturation="83%">piggybankstudios</span> Q: Is there a way to test my GLSL shader compilation success / failure on other GPUs without actually having to buy a bunch of GPUs myself?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:34</span><span class="author" data-hue="111" data-saturation="83%">piggybankstudios</span> Q: Is there a way to test my GLSL shader compilation success / failure on other GPUs without actually having to buy a bunch of GPUs myself?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:34</span><span class="author" data-hue="111" data-saturation="83%">piggybankstudios</span> Q: Is there a way to test my GLSL shader compilation success / failure on other GPUs without actually having to buy a bunch of GPUs myself?<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7705" class="marker cat_hardware authored">
+                    <div class="cineraContent"><span class="timecode">2:08:25</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Whoa. Godbolt for shaders<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:25</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Whoa. Godbolt for shaders<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:25</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Whoa. Godbolt for shaders<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7781" class="marker cat_hardware authored" data-ref="http://shader-playground.timjones.io/">
+                    <div class="cineraContent"><span class="timecode">2:09:41</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> There is Shader Playground<sup>7</sup> but that&#39;s only for shader libraries (parser / validation / some codegen), not using actual drivers to compile<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:41</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> There is Shader Playground<sup>7</sup> but that&#39;s only for shader libraries (parser / validation / some codegen), not using actual drivers to compile<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:41</span><span class="author" data-hue="342" data-saturation="98%">mmozeiko</span> There is Shader Playground<sup>7</sup> but that&#39;s only for shader libraries (parser / validation / some codegen), not using actual drivers to compile<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7809" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:10:09</span><span class="author" data-hue="83" data-saturation="84%">lederr</span> (Viewbot #420) MrDestructoid Hello Mr. Teapot, I am here to &quot;view&quot; your channel as was previously discussed<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:09</span><span class="author" data-hue="83" data-saturation="84%">lederr</span> (Viewbot #420) MrDestructoid Hello Mr. Teapot, I am here to &quot;view&quot; your channel as was previously discussed<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:09</span><span class="author" data-hue="83" data-saturation="84%">lederr</span> (Viewbot #420) MrDestructoid Hello Mr. Teapot, I am here to &quot;view&quot; your channel as was previously discussed<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7826" class="marker cat_lighting speech">
+                    <div class="cineraContent"><span class="timecode">2:10:26</span>Consider lighting improvements<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:26</span>Consider lighting improvements<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:26</span>Consider lighting improvements<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7906" class="marker cat_nullTopic authored" data-ref="https://starcodegalaxy.com">
+                    <div class="cineraContent"><span class="timecode">2:11:46</span><span class="author" data-hue="10" data-saturation="96%">chepubelie</span> Q: Are you planning to release Star Code Galaxy<sup>8</sup> this year? Will this project be like a <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> where you make usage code first and everything from scratch?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:46</span><span class="author" data-hue="10" data-saturation="96%">chepubelie</span> Q: Are you planning to release Star Code Galaxy<sup>8</sup> this year? Will this project be like a <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> where you make usage code first and everything from scratch?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:46</span><span class="author" data-hue="10" data-saturation="96%">chepubelie</span> Q: Are you planning to release Star Code Galaxy<sup>8</sup> this year? Will this project be like a <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> where you make usage code first and everything from scratch?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7945" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:12:25</span><span class="author" data-hue="152" data-saturation="96%">1diogosantana</span> Are you in a tent?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:12:25</span><span class="author" data-hue="152" data-saturation="96%">1diogosantana</span> Are you in a tent?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:12:25</span><span class="author" data-hue="152" data-saturation="96%">1diogosantana</span> Are you in a tent?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7958" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:12:38</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> Q: Anyone know what browser <span class="member" data-hue="125" data-saturation="81%">Casey</span> is using? I don&#39;t recognise it<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:12:38</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> Q: Anyone know what browser <span class="member" data-hue="125" data-saturation="81%">Casey</span> is using? I don&#39;t recognise it<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:12:38</span><span class="author" data-hue="87" data-saturation="74%">tarriest_python</span> Q: Anyone know what browser <span class="member" data-hue="125" data-saturation="81%">Casey</span> is using? I don&#39;t recognise it<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7974" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:12:54</span>Thank you for joining<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:12:54</span>Thank you for joining<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:12:54</span>Thank you for joining<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day626/"><div>&#9196;</div><div>Next: 'Cleaning Up Traversables'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

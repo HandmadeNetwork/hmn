@@ -1,0 +1,539 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="Chat Comment, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Finishing the General Purpose Allocator</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <div class="person">
+                            <div class="role">Indexer</div>
+                            <div class="name">Jay Waggle</div>
+                        </div>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="http://blog.debiatan.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Miguel Lechón</div>
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="1LyHQVYlClw"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day160/"><div>&#9195;</div><div>Previous: 'Basic General Purpose Allocation'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="21" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:00:21</span>Recap and plan for today</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:00:21</span>Recap and plan for today</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:00:21</span>Recap and plan for today</div>
+                    </div>
+                </div>
+                <div data-timestamp="106" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:01:46</span>We will need to debug the changes from the past episode</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:01:46</span>We will need to debug the changes from the past episode</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:01:46</span>We will need to debug the changes from the past episode</div>
+                    </div>
+                </div>
+                <div data-timestamp="221" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:03:41</span>Simplifying some of yesterday&#39;s code</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:03:41</span>Simplifying some of yesterday&#39;s code</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:03:41</span>Simplifying some of yesterday&#39;s code</div>
+                    </div>
+                </div>
+                <div data-timestamp="454" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:07:34</span>Finishing the merging of the freed blocks</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:07:34</span>Finishing the merging of the freed blocks</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:07:34</span>Finishing the merging of the freed blocks</div>
+                    </div>
+                </div>
+                <div data-timestamp="614" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:10:14</span>Implementing MergeIfPossible</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:10:14</span>Implementing MergeIfPossible</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:10:14</span>Implementing MergeIfPossible</div>
+                    </div>
+                </div>
+                <div data-timestamp="961" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:16:01</span>Modifying AcquireAssetMemory to check if the asset we are loading fits inside the newly freed space</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:16:01</span>Modifying AcquireAssetMemory to check if the asset we are loading fits inside the newly freed space</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:16:01</span>Modifying AcquireAssetMemory to check if the asset we are loading fits inside the newly freed space</div>
+                    </div>
+                </div>
+                <div data-timestamp="1007" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:16:47</span>We&#39;re good!</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:16:47</span>We&#39;re good!</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:16:47</span>We&#39;re good!</div>
+                    </div>
+                </div>
+                <div data-timestamp="1156" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:19:16</span>Potential problem of this general-purpose allocator: The linked list could be too long to walk on each allocation</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:19:16</span>Potential problem of this general-purpose allocator: The linked list could be too long to walk on each allocation</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:19:16</span>Potential problem of this general-purpose allocator: The linked list could be too long to walk on each allocation</div>
+                    </div>
+                </div>
+                <div data-timestamp="1533" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:25:33</span>Fixing an error in OpenNextFile: If the platform layer failed to allocate the file handle, that function would fail to report the error</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:25:33</span>Fixing an error in OpenNextFile: If the platform layer failed to allocate the file handle, that function would fail to report the error</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:25:33</span>Fixing an error in OpenNextFile: If the platform layer failed to allocate the file handle, that function would fail to report the error</div>
+                    </div>
+                </div>
+                <div data-timestamp="2148" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:35:48</span>Working with asset files containing Unicode characters</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:35:48</span>Working with asset files containing Unicode characters</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:35:48</span>Working with asset files containing Unicode characters</div>
+                    </div>
+                </div>
+                <div data-timestamp="2281" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:38:01</span>On the importance of not exposing the concept of filenames to the game code</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:38:01</span>On the importance of not exposing the concept of filenames to the game code</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:38:01</span>On the importance of not exposing the concept of filenames to the game code</div>
+                    </div>
+                </div>
+                <div data-timestamp="2426" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:40:26</span>Making the code work properly with Unicode file names</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:40:26</span>Making the code work properly with Unicode file names</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:40:26</span>Making the code work properly with Unicode file names</div>
+                    </div>
+                </div>
+                <div data-timestamp="2548" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:42:28</span>wchar_t</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:42:28</span>wchar_t</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:42:28</span>wchar_t</div>
+                    </div>
+                </div>
+                <div data-timestamp="2861" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">00:47:41</span>Isolating the game code from the concept of file extensions</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:47:41</span>Isolating the game code from the concept of file extensions</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:47:41</span>Isolating the game code from the concept of file extensions</div>
+                    </div>
+                </div>
+                <div data-timestamp="3184" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">00:53:04</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:53:04</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:53:04</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3206" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">00:53:26</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> First rays of Moscow sun bid you Good Evening, Casey. I humbly request to be granted two off-topic questions (maybe near the end?)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:53:26</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> First rays of Moscow sun bid you Good Evening, Casey. I humbly request to be granted two off-topic questions (maybe near the end?)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:53:26</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> First rays of Moscow sun bid you Good Evening, Casey. I humbly request to be granted two off-topic questions (maybe near the end?)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3235" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">00:53:55</span><span class="author" data-hue="72" data-saturation="83%">blah238</span> I asked a similar question yesterday, but I guess it wasn&#39;t clear. Have you thought about how the asset system could work with 3rd party mods? Say someone wants to make a mod that adds new graphics, sounds and/or game logic. How hard would it be to implement a mod loader, Steam Workshop support, etc?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:53:55</span><span class="author" data-hue="72" data-saturation="83%">blah238</span> I asked a similar question yesterday, but I guess it wasn&#39;t clear. Have you thought about how the asset system could work with 3rd party mods? Say someone wants to make a mod that adds new graphics, sounds and/or game logic. How hard would it be to implement a mod loader, Steam Workshop support, etc?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:53:55</span><span class="author" data-hue="72" data-saturation="83%">blah238</span> I asked a similar question yesterday, but I guess it wasn&#39;t clear. Have you thought about how the asset system could work with 3rd party mods? Say someone wants to make a mod that adds new graphics, sounds and/or game logic. How hard would it be to implement a mod loader, Steam Workshop support, etc?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3323" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">00:55:23</span><span class="author" data-hue="141" data-saturation="92%">ttbjm</span> Should there be a way to say if one of the hero assets are loaded then they all should be loaded and not evicted?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:55:23</span><span class="author" data-hue="141" data-saturation="92%">ttbjm</span> Should there be a way to say if one of the hero assets are loaded then they all should be loaded and not evicted?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:55:23</span><span class="author" data-hue="141" data-saturation="92%">ttbjm</span> Should there be a way to say if one of the hero assets are loaded then they all should be loaded and not evicted?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3390" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">00:56:30</span><span class="author" data-hue="168" data-saturation="82%">cubercaleb</span> Might be off topic, but why exactly do you have typedef&#39;ed functions in the code?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:56:30</span><span class="author" data-hue="168" data-saturation="82%">cubercaleb</span> Might be off topic, but why exactly do you have typedef&#39;ed functions in the code?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:56:30</span><span class="author" data-hue="168" data-saturation="82%">cubercaleb</span> Might be off topic, but why exactly do you have typedef&#39;ed functions in the code?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3458" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">00:57:38</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> Did you see this Nostalgia Critic Wicker Man (Cage in a bear suit) review? www.youtube.com/watch?v=vj_CRnwJTk8<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:57:38</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> Did you see this Nostalgia Critic Wicker Man (Cage in a bear suit) review? www.youtube.com/watch?v=vj_CRnwJTk8<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:57:38</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> Did you see this Nostalgia Critic Wicker Man (Cage in a bear suit) review? www.youtube.com/watch?v=vj_CRnwJTk8<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3474" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">00:57:54</span><span class="author" data-hue="257" data-saturation="87%">insofaras</span> Can we get a visual display of the loaded / unloaded chunks of asset memory when we do the debug stuff?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:57:54</span><span class="author" data-hue="257" data-saturation="87%">insofaras</span> Can we get a visual display of the loaded / unloaded chunks of asset memory when we do the debug stuff?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:57:54</span><span class="author" data-hue="257" data-saturation="87%">insofaras</span> Can we get a visual display of the loaded / unloaded chunks of asset memory when we do the debug stuff?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3490" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">00:58:10</span><span class="author" data-hue="11" data-saturation="79%">echoy0</span> I would like to hear what your definition of enumeration is, if you will<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:58:10</span><span class="author" data-hue="11" data-saturation="79%">echoy0</span> I would like to hear what your definition of enumeration is, if you will<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:58:10</span><span class="author" data-hue="11" data-saturation="79%">echoy0</span> I would like to hear what your definition of enumeration is, if you will<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3524" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">00:58:44</span><span class="author" data-hue="22" data-saturation="88%">neitchzehrer</span> Good evening Casey. Does Windows 10 change the coding (if you know)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:58:44</span><span class="author" data-hue="22" data-saturation="88%">neitchzehrer</span> Good evening Casey. Does Windows 10 change the coding (if you know)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:58:44</span><span class="author" data-hue="22" data-saturation="88%">neitchzehrer</span> Good evening Casey. Does Windows 10 change the coding (if you know)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3572" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">00:59:32</span><span class="author" data-hue="296" data-saturation="90%">ifingerbangedurcat</span> On MergeIfPossible, when you pass the checks and do the merge, you add the size of the header plus the size, but on the line before that you check that the (size + header) matches, but the size should already include the header. Can you explain why that is?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">00:59:32</span><span class="author" data-hue="296" data-saturation="90%">ifingerbangedurcat</span> On MergeIfPossible, when you pass the checks and do the merge, you add the size of the header plus the size, but on the line before that you check that the (size + header) matches, but the size should already include the header. Can you explain why that is?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">00:59:32</span><span class="author" data-hue="296" data-saturation="90%">ifingerbangedurcat</span> On MergeIfPossible, when you pass the checks and do the merge, you add the size of the header plus the size, but on the line before that you check that the (size + header) matches, but the size should already include the header. Can you explain why that is?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3796" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:03:16</span><span class="author" data-hue="281" data-saturation="93%">zouchk42</span> What&#39;s the cause of the depth error you get on rendering?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:03:16</span><span class="author" data-hue="281" data-saturation="93%">zouchk42</span> What&#39;s the cause of the depth error you get on rendering?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:03:16</span><span class="author" data-hue="281" data-saturation="93%">zouchk42</span> What&#39;s the cause of the depth error you get on rendering?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3826" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:03:46</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> You know I&#39;m the biggest fan of the series, but I suspect for complete newbies the current way you construct the game makes little sense. Consider this: you know how to make a game, so you methodically cross over a check-list of components you know by heart (mostly). What would probably be easier and more graphic for larvas to grasp is to make a little functional game(title screen, game loop, game over, start over, etc) and THEN iterate upon it. It&#39;s more visual and having a little game that evolves every day little by little keeps the maker motivated, as opposed to a pro that knows what the game should look like in the end<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:03:46</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> You know I&#39;m the biggest fan of the series, but I suspect for complete newbies the current way you construct the game makes little sense. Consider this: you know how to make a game, so you methodically cross over a check-list of components you know by heart (mostly). What would probably be easier and more graphic for larvas to grasp is to make a little functional game(title screen, game loop, game over, start over, etc) and THEN iterate upon it. It&#39;s more visual and having a little game that evolves every day little by little keeps the maker motivated, as opposed to a pro that knows what the game should look like in the end<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:03:46</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> You know I&#39;m the biggest fan of the series, but I suspect for complete newbies the current way you construct the game makes little sense. Consider this: you know how to make a game, so you methodically cross over a check-list of components you know by heart (mostly). What would probably be easier and more graphic for larvas to grasp is to make a little functional game(title screen, game loop, game over, start over, etc) and THEN iterate upon it. It&#39;s more visual and having a little game that evolves every day little by little keeps the maker motivated, as opposed to a pro that knows what the game should look like in the end<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4054" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:07:34</span><span class="author" data-hue="240" data-saturation="84%">jonks1234</span> Did you ever play Freelancer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:07:34</span><span class="author" data-hue="240" data-saturation="84%">jonks1234</span> Did you ever play Freelancer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:07:34</span><span class="author" data-hue="240" data-saturation="84%">jonks1234</span> Did you ever play Freelancer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4081" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:08:01</span><span class="author" data-hue="196" data-saturation="77%">ciastek3214</span> Have you seen Kung Pow?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:08:01</span><span class="author" data-hue="196" data-saturation="77%">ciastek3214</span> Have you seen Kung Pow?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:08:01</span><span class="author" data-hue="196" data-saturation="77%">ciastek3214</span> Have you seen Kung Pow?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4113" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:08:33</span><span class="author" data-hue="168" data-saturation="82%">cubercaleb</span> Which version of Visual Studio are you using at work?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:08:33</span><span class="author" data-hue="168" data-saturation="82%">cubercaleb</span> Which version of Visual Studio are you using at work?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:08:33</span><span class="author" data-hue="168" data-saturation="82%">cubercaleb</span> Which version of Visual Studio are you using at work?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4140" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:09:00</span><span class="author" data-hue="69" data-saturation="78%">kelimion</span> Will that point in time see a new intro trailer with an old motherboard being pulled from the attic, engine booting up and Handmade Hero announcing the completion of the engine, perhaps with a nice sine scroller and particle effects?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:09:00</span><span class="author" data-hue="69" data-saturation="78%">kelimion</span> Will that point in time see a new intro trailer with an old motherboard being pulled from the attic, engine booting up and Handmade Hero announcing the completion of the engine, perhaps with a nice sine scroller and particle effects?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:09:00</span><span class="author" data-hue="69" data-saturation="78%">kelimion</span> Will that point in time see a new intro trailer with an old motherboard being pulled from the attic, engine booting up and Handmade Hero announcing the completion of the engine, perhaps with a nice sine scroller and particle effects?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4166" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:09:26</span><span class="author" data-hue="23" data-saturation="88%">breadthofhair</span> Is font rendering around the corner?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:09:26</span><span class="author" data-hue="23" data-saturation="88%">breadthofhair</span> Is font rendering around the corner?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:09:26</span><span class="author" data-hue="23" data-saturation="88%">breadthofhair</span> Is font rendering around the corner?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4191" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:09:51</span><span class="author" data-hue="133" data-saturation="80%">plain_flavored</span> How do you render without instantiating a brush object?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:09:51</span><span class="author" data-hue="133" data-saturation="80%">plain_flavored</span> How do you render without instantiating a brush object?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:09:51</span><span class="author" data-hue="133" data-saturation="80%">plain_flavored</span> How do you render without instantiating a brush object?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4260" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:11:00</span><span class="author" data-hue="123" data-saturation="90%">manicthenobody</span> Will you be going the easy way and using Bitmap fonts, or will you be implementing TTF?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:11:00</span><span class="author" data-hue="123" data-saturation="90%">manicthenobody</span> Will you be going the easy way and using Bitmap fonts, or will you be implementing TTF?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:11:00</span><span class="author" data-hue="123" data-saturation="90%">manicthenobody</span> Will you be going the easy way and using Bitmap fonts, or will you be implementing TTF?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4328" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:12:08</span><span class="author" data-hue="174" data-saturation="81%">sharlock93</span> Do you know anyone by the name of Andre Lamothe?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:12:08</span><span class="author" data-hue="174" data-saturation="81%">sharlock93</span> Do you know anyone by the name of Andre Lamothe?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:12:08</span><span class="author" data-hue="174" data-saturation="81%">sharlock93</span> Do you know anyone by the name of Andre Lamothe?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4359" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:12:39</span><span class="author" data-hue="173" data-saturation="76%">imbatman314</span> Are you going to implement distance field font?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:12:39</span><span class="author" data-hue="173" data-saturation="76%">imbatman314</span> Are you going to implement distance field font?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:12:39</span><span class="author" data-hue="173" data-saturation="76%">imbatman314</span> Are you going to implement distance field font?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4511" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:15:11</span><span class="author" data-hue="126" data-saturation="82%">powerc9k</span> Is it worthwhile to try to make a game only using pure functions, i.e. no side effects<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:15:11</span><span class="author" data-hue="126" data-saturation="82%">powerc9k</span> Is it worthwhile to try to make a game only using pure functions, i.e. no side effects<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:15:11</span><span class="author" data-hue="126" data-saturation="82%">powerc9k</span> Is it worthwhile to try to make a game only using pure functions, i.e. no side effects<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4633" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:17:13</span><span class="author" data-hue="168" data-saturation="82%">cubercaleb</span> Will you cover non-mono-spaced fonts and font kerning?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:17:13</span><span class="author" data-hue="168" data-saturation="82%">cubercaleb</span> Will you cover non-mono-spaced fonts and font kerning?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:17:13</span><span class="author" data-hue="168" data-saturation="82%">cubercaleb</span> Will you cover non-mono-spaced fonts and font kerning?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4733" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:18:53</span><span class="author" data-hue="39" data-saturation="97%">madprocess</span> (Referring to Q at 01:15:11) Functional game: The state is an argument and a new state is returned<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:18:53</span><span class="author" data-hue="39" data-saturation="97%">madprocess</span> (Referring to Q at 01:15:11) Functional game: The state is an argument and a new state is returned<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:18:53</span><span class="author" data-hue="39" data-saturation="97%">madprocess</span> (Referring to Q at 01:15:11) Functional game: The state is an argument and a new state is returned<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4905" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:21:45</span><span class="author" data-hue="174" data-saturation="81%">sharlock93</span> How much of the code you have written so far can be ported to 3D easily?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:21:45</span><span class="author" data-hue="174" data-saturation="81%">sharlock93</span> How much of the code you have written so far can be ported to 3D easily?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:21:45</span><span class="author" data-hue="174" data-saturation="81%">sharlock93</span> How much of the code you have written so far can be ported to 3D easily?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4949" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:22:29</span><span class="author" data-hue="39" data-saturation="97%">madprocess</span> (Referring to Q at 01:18:53) At least in Haskell, the &quot;pure functional&quot; part is hidden away from the IO stuff via a mathematical concept called &quot;Monads&quot;<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:22:29</span><span class="author" data-hue="39" data-saturation="97%">madprocess</span> (Referring to Q at 01:18:53) At least in Haskell, the &quot;pure functional&quot; part is hidden away from the IO stuff via a mathematical concept called &quot;Monads&quot;<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:22:29</span><span class="author" data-hue="39" data-saturation="97%">madprocess</span> (Referring to Q at 01:18:53) At least in Haskell, the &quot;pure functional&quot; part is hidden away from the IO stuff via a mathematical concept called &quot;Monads&quot;<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5037" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">01:23:57</span><span class="author" data-hue="123" data-saturation="90%">manicthenobody</span> What do you think of a graphics system that intentionally simulates Mode 7?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">01:23:57</span><span class="author" data-hue="123" data-saturation="90%">manicthenobody</span> What do you think of a graphics system that intentionally simulates Mode 7?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">01:23:57</span><span class="author" data-hue="123" data-saturation="90%">manicthenobody</span> What do you think of a graphics system that intentionally simulates Mode 7?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day162/"><div>&#9196;</div><div>Next: 'Introduction to Fonts'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

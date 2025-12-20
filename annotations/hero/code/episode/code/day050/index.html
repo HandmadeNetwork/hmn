@@ -1,0 +1,562 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Basic Minkowski-based Collision Detection</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://zetafleet.com/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Colin Snover</div>
+                        </a>
+                    </span>
+                    <span class="credit">
+                        <div class="person">
+                            <div class="role">Indexer</div>
+                            <div class="name">Kasper Sauramo</div>
+                        </div>
+                    </span>
+                    <span class="credit">
+                        <div class="person">
+                            <div class="role">Indexer</div>
+                            <div class="name">Ben Craddock</div>
+                        </div>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="_g8DLrNyVsQ"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day049/"><div>&#9195;</div><div>Previous: 'Debugging Canonical Coordinates'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Intro</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Intro</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Intro</div>
+                    </div>
+                </div>
+                <div data-timestamp="33" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">0:33</span>Recap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:33</span>Recap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:33</span>Recap</div>
+                    </div>
+                </div>
+                <div data-timestamp="159" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:39</span>To do today: Gliding/skating and area-based collision detection</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:39</span>To do today: Gliding/skating and area-based collision detection</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:39</span>To do today: Gliding/skating and area-based collision detection</div>
+                    </div>
+                </div>
+                <div data-timestamp="227" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">3:47</span>Review of collision detection up to this point</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:47</span>Review of collision detection up to this point</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:47</span>Review of collision detection up to this point</div>
+                    </div>
+                </div>
+                <div data-timestamp="306" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">5:06</span>Area-based collision detection (Minkowski sum/difference)</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:06</span>Area-based collision detection (Minkowski sum/difference)</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:06</span>Area-based collision detection (Minkowski sum/difference)</div>
+                    </div>
+                </div>
+                <div data-timestamp="415" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">6:55</span>Example: A player with size passing through two blocks</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:55</span>Example: A player with size passing through two blocks</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:55</span>Example: A player with size passing through two blocks</div>
+                    </div>
+                </div>
+                <div data-timestamp="530" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">8:50</span>Introduction of Minkowski algebra: algebra with shapes</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:50</span>Introduction of Minkowski algebra: algebra with shapes</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:50</span>Introduction of Minkowski algebra: algebra with shapes</div>
+                    </div>
+                </div>
+                <div data-timestamp="741" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">12:21</span>Chumped by Krita</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:21</span>Chumped by Krita</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:21</span>Chumped by Krita</div>
+                    </div>
+                </div>
+                <div data-timestamp="924" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">15:24</span>Back to the Minkowski sum: rectangle + circle</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:24</span>Back to the Minkowski sum: rectangle + circle</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:24</span>Back to the Minkowski sum: rectangle + circle</div>
+                    </div>
+                </div>
+                <div data-timestamp="1005" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">16:45</span>Similar shapes</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:45</span>Similar shapes</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:45</span>Similar shapes</div>
+                    </div>
+                </div>
+                <div data-timestamp="1065" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">17:45</span>Dissimilar &amp; complex convex shapes: GJK algorithm</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:45</span>Dissimilar &amp; complex convex shapes: GJK algorithm</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:45</span>Dissimilar &amp; complex convex shapes: GJK algorithm</div>
+                    </div>
+                </div>
+                <div data-timestamp="1258" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">20:58</span>Rectangles-only collision detection</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:58</span>Rectangles-only collision detection</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:58</span>Rectangles-only collision detection</div>
+                    </div>
+                </div>
+                <div data-timestamp="1555" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">25:55</span>Taking entity size into account</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:55</span>Taking entity size into account</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:55</span>Taking entity size into account</div>
+                    </div>
+                </div>
+                <div data-timestamp="2025" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">33:45</span>Sticky walls appear</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:45</span>Sticky walls appear</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:45</span>Sticky walls appear</div>
+                    </div>
+                </div>
+                <div data-timestamp="2165" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">36:05</span>Changing the origin point of the player</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:05</span>Changing the origin point of the player</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:05</span>Changing the origin point of the player</div>
+                    </div>
+                </div>
+                <div data-timestamp="2280" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">38:00</span>More sticking walls debugging</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:00</span>More sticking walls debugging</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:00</span>More sticking walls debugging</div>
+                    </div>
+                </div>
+                <div data-timestamp="2625" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">43:45</span>Implementing gliding</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:45</span>Implementing gliding</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:45</span>Implementing gliding</div>
+                    </div>
+                </div>
+                <div data-timestamp="2880" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">48:00</span>Correcting velocity during collision</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:00</span>Correcting velocity during collision</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:00</span>Correcting velocity during collision</div>
+                    </div>
+                </div>
+                <div data-timestamp="3370" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">56:10</span>Debugging final sticking bug</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:10</span>Debugging final sticking bug</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:10</span>Debugging final sticking bug</div>
+                    </div>
+                </div>
+                <div data-timestamp="3640" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:00:40</span>Moving the epsilon to stop directly on the wall</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:40</span>Moving the epsilon to stop directly on the wall</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:40</span>Moving the epsilon to stop directly on the wall</div>
+                    </div>
+                </div>
+                <div data-timestamp="3800" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:03:20</span>Or not…</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:20</span>Or not…</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:20</span>Or not…</div>
+                    </div>
+                </div>
+                <div data-timestamp="3860" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:04:20</span>Debugging first loop through the wall collision loop</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:20</span>Debugging first loop through the wall collision loop</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:20</span>Debugging first loop through the wall collision loop</div>
+                    </div>
+                </div>
+                <div data-timestamp="4198" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:09:58</span>Debugging the second loop through the wall collision loop</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:58</span>Debugging the second loop through the wall collision loop</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:58</span>Debugging the second loop through the wall collision loop</div>
+                    </div>
+                </div>
+                <div data-timestamp="4685" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:18:05</span>Moment of enlightenment</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:05</span>Moment of enlightenment</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:05</span>Moment of enlightenment</div>
+                    </div>
+                </div>
+                <div data-timestamp="4762" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:19:22</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:22</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:22</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4865" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:21:05</span>Why is the heros head 1.5 meters in diameter?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:05</span>Why is the heros head 1.5 meters in diameter?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:05</span>Why is the heros head 1.5 meters in diameter?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4889" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:21:29</span>How would you handle concave objects with Minkowski?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:29</span>How would you handle concave objects with Minkowski?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:29</span>How would you handle concave objects with Minkowski?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4961" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:22:41</span>Why isn&#39;t the game split up in smaller, more modular files?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:41</span>Why isn&#39;t the game split up in smaller, more modular files?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:41</span>Why isn&#39;t the game split up in smaller, more modular files?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5091" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:24:51</span>Is the alpha channel in the art assets created by the artist?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:51</span>Is the alpha channel in the art assets created by the artist?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:51</span>Is the alpha channel in the art assets created by the artist?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5121" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:25:21</span>How many years since you started doing games?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:21</span>How many years since you started doing games?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:21</span>How many years since you started doing games?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5197" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:26:37</span>I usually just hope the framerate stays high enough for the velocity not to get too high</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:37</span>I usually just hope the framerate stays high enough for the velocity not to get too high</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:37</span>I usually just hope the framerate stays high enough for the velocity not to get too high</div>
+                    </div>
+                </div>
+                <div data-timestamp="5337" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:28:57</span>Can&#39;t you have multiple views of the same file with emacs?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:57</span>Can&#39;t you have multiple views of the same file with emacs?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:57</span>Can&#39;t you have multiple views of the same file with emacs?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5366" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:29:26</span>Will you be able to use minkowski with rotating and diagonal objects?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:26</span>Will you be able to use minkowski with rotating and diagonal objects?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:26</span>Will you be able to use minkowski with rotating and diagonal objects?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5610" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:33:30</span>How long have you been working on this game?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:30</span>How long have you been working on this game?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:30</span>How long have you been working on this game?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5637" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:33:57</span>Is it possible to make an assert that lets you continue on failure?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:57</span>Is it possible to make an assert that lets you continue on failure?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:57</span>Is it possible to make an assert that lets you continue on failure?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5657" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:34:17</span>Are you doing any cyclomatic complexity analysis?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:17</span>Are you doing any cyclomatic complexity analysis?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:17</span>Are you doing any cyclomatic complexity analysis?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5683" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:34:43</span>How would you represent a large sidescroller 2D world?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:43</span>How would you represent a large sidescroller 2D world?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:43</span>How would you represent a large sidescroller 2D world?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5743" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:35:43</span>Is it possible to determine the point of collision?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:43</span>Is it possible to determine the point of collision?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:43</span>Is it possible to determine the point of collision?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5771" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:36:11</span>Seems like the inability to represent convex objects is a major for problem for physics</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:11</span>Seems like the inability to represent convex objects is a major for problem for physics</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:11</span>Seems like the inability to represent convex objects is a major for problem for physics</div>
+                    </div>
+                </div>
+                <div data-timestamp="5835" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:37:15</span>I meant determining the point of collision with the general GJK algorithm</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:15</span>I meant determining the point of collision with the general GJK algorithm</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:15</span>I meant determining the point of collision with the general GJK algorithm</div>
+                    </div>
+                </div>
+                <div data-timestamp="5907" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:38:27</span>Are we doing a Raspberry Pi port just for the heck of it?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:27</span>Are we doing a Raspberry Pi port just for the heck of it?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:27</span>Are we doing a Raspberry Pi port just for the heck of it?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5964" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:39:24</span>Cyclomatic complexity: a direct measure of the number of linearly independent paths through the code</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:24</span>Cyclomatic complexity: a direct measure of the number of linearly independent paths through the code</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:24</span>Cyclomatic complexity: a direct measure of the number of linearly independent paths through the code</div>
+                    </div>
+                </div>
+                <div data-timestamp="5990" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:39:50</span>BeagleBone black is better than Raspberry Pi I think</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:50</span>BeagleBone black is better than Raspberry Pi I think</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:50</span>BeagleBone black is better than Raspberry Pi I think</div>
+                    </div>
+                </div>
+                <div data-timestamp="6061" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:41:01</span>Can&#39;t you do straight on hardware on the PC?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:01</span>Can&#39;t you do straight on hardware on the PC?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:01</span>Can&#39;t you do straight on hardware on the PC?</div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day051/"><div>&#9196;</div><div>Next: 'Separating Entities By Update Frequency'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

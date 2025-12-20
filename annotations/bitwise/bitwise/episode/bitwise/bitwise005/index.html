@@ -1,0 +1,498 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="data structure, language, memory, parsing, Administrivia, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__bitwise.css?r=c4e77686">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus bitwise">
+            <span class="episode_name">Ion Parser/AST Code Review</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://bitwise.handmade.network/episode/bitwise/bitwise004_2/" href="https://bitwise.handmade.network/episode/bitwise/bitwise004_2/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Bitwise</div>
+                            <div class="ref_title">Ion Grammar &amp; AST (Extra)</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="197" class="timecode"><span class="ref_index">[1]</span><span class="time">3:17</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://github.com/pervognsen/bitwise/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Per Vognsen</div>
+                        </a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="YvoyKQYNy20"></div>
+            <div class="markers_container bitwise">
+                <a class="episodeMarker prev" href="https://bitwise.handmade.network/episode/bitwise/bitwise004_2/"><div>&#9195;</div><div>Previous: 'Ion Grammar & AST (Extra)'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="8" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:08</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:08</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:08</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="197" class="marker cat_data-structure research" data-ref="https://bitwise.handmade.network/episode/bitwise/bitwise004_2/">
+                    <div class="cineraContent"><span class="timecode">3:17</span>Review the work done in Day 4 Extra<sup>1</sup> with an explanation of tagged and discriminated unions<span class="cineraCategories"><div title="data structure" class="category data-structure"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:17</span>Review the work done in Day 4 Extra<sup>1</sup> with an explanation of tagged and discriminated unions<span class="cineraCategories"><div title="data structure" class="category data-structure"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:17</span>Review the work done in Day 4 Extra<sup>1</sup> with an explanation of tagged and discriminated unions<span class="cineraCategories"><div title="data structure" class="category data-structure"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="966" class="marker cat_data-structure research">
+                    <div class="cineraContent"><span class="timecode">16:06</span>Review the AST printing<span class="cineraCategories"><div title="data structure" class="category data-structure"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:06</span>Review the AST printing<span class="cineraCategories"><div title="data structure" class="category data-structure"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:06</span>Review the AST printing<span class="cineraCategories"><div title="data structure" class="category data-structure"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1202" class="marker cat_data-structure run">
+                    <div class="cineraContent"><span class="timecode">20:02</span>Run the program to see our AST printout<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:02</span>Run the program to see our AST printout<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:02</span>Run the program to see our AST printout<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1394" class="marker cat_language cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">23:14</span>Review the work on the EBNF grammar<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:14</span>Review the work on the EBNF grammar<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:14</span>Review the work on the EBNF grammar<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2046" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">34:06</span>Note that parse_expr_base() parses function calls and arrays similarly to a left-associativity binary operator<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:06</span>Note that parse_expr_base() parses function calls and arrays similarly to a left-associativity binary operator<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:06</span>Note that parse_expr_base() parses function calls and arrays similarly to a left-associativity binary operator<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2292" class="marker cat_language cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">38:12</span>Note how Ion distinguishes between expressions and type-specifiers<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:12</span>Note how Ion distinguishes between expressions and type-specifiers<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:12</span>Note how Ion distinguishes between expressions and type-specifiers<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2545" class="marker cat_language cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">42:25</span>Describe types in Ion<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:25</span>Describe types in Ion<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:25</span>Describe types in Ion<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2768" class="marker cat_memory cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">46:08</span>Review statement parsing, with a description of the linear memory arena usage<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:08</span>Review statement parsing, with a description of the linear memory arena usage<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:08</span>Review statement parsing, with a description of the linear memory arena usage<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3289" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">54:49</span>Review changes to the existing code, including the introduction of is_keyword_str()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:49</span>Review changes to the existing code, including the introduction of is_keyword_str()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:49</span>Review changes to the existing code, including the introduction of is_keyword_str()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3451" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">57:31</span>Review changes to the string interning<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:31</span>Review changes to the string interning<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:31</span>Review changes to the string interning<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3514" class="marker cat_memory research">
+                    <div class="cineraContent"><span class="timecode">58:34</span>Describe the memory arenas and alignment macros in detail<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:34</span>Describe the memory arenas and alignment macros in detail<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:34</span>Describe the memory arenas and alignment macros in detail<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3939" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:05:39</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:39</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:39</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3997" class="marker cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">1:06:37</span><span class="author" data-hue="48" data-saturation="75%">nothings2</span> Arenas also make frees fast because it doesn&#39;t have to free each individual allocation (which also means you don&#39;t have to keep track of them and worry about leaks)<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:37</span><span class="author" data-hue="48" data-saturation="75%">nothings2</span> Arenas also make frees fast because it doesn&#39;t have to free each individual allocation (which also means you don&#39;t have to keep track of them and worry about leaks)<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:37</span><span class="author" data-hue="48" data-saturation="75%">nothings2</span> Arenas also make frees fast because it doesn&#39;t have to free each individual allocation (which also means you don&#39;t have to keep track of them and worry about leaks)<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4018" class="marker cat_memory speech">
+                    <div class="cineraContent"><span class="timecode">1:06:58</span>A few words on doing small-scale allocations with malloc(), structuring your code such that later replacement of the memory allocator will be easy<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:58</span>A few words on doing small-scale allocations with malloc(), structuring your code such that later replacement of the memory allocator will be easy<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:58</span>A few words on doing small-scale allocations with malloc(), structuring your code such that later replacement of the memory allocator will be easy<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4222" class="marker cat_data-structure cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">1:10:22</span><span class="author" data-hue="53" data-saturation="98%">jakejscott</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> What is ast_dup?<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:22</span><span class="author" data-hue="53" data-saturation="98%">jakejscott</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> What is ast_dup?<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:22</span><span class="author" data-hue="53" data-saturation="98%">jakejscott</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> What is ast_dup?<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4259" class="marker cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">1:10:59</span><span class="author" data-hue="48" data-saturation="75%">nothings2</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Does your parser / grammar actually handle the sizeof(:type) case? If I&#39;m not mistaken you&#39;re requiring compound literal &quot;{ ... }&quot; after seeing (:type)<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:59</span><span class="author" data-hue="48" data-saturation="75%">nothings2</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Does your parser / grammar actually handle the sizeof(:type) case? If I&#39;m not mistaken you&#39;re requiring compound literal &quot;{ ... }&quot; after seeing (:type)<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:59</span><span class="author" data-hue="48" data-saturation="75%">nothings2</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Does your parser / grammar actually handle the sizeof(:type) case? If I&#39;m not mistaken you&#39;re requiring compound literal &quot;{ ... }&quot; after seeing (:type)<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4272" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:11:12</span>Implement support for sizeof<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:12</span>Implement support for sizeof<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:12</span>Implement support for sizeof<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4630" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:17:10</span>Run it to see that that worked<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:10</span>Run it to see that that worked<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:10</span>Run it to see that that worked<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4636" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">1:17:16</span>Add another sizeof test in parse_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:16</span>Add another sizeof test in parse_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:16</span>Add another sizeof test in parse_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4664" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:17:44</span>Run it to see that that works too<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:44</span>Run it to see that that works too<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:44</span>Run it to see that that works too<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4684" class="marker cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">1:18:04</span><span class="author" data-hue="126" data-saturation="87%">croepha</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> For the trick that you are using to tell if the string is a keyword by range-testing the pointer value, are you relying on them being in the same arena block? If you were doing something a bit bigger would there be danger of the other block not having a greater pointer value?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:04</span><span class="author" data-hue="126" data-saturation="87%">croepha</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> For the trick that you are using to tell if the string is a keyword by range-testing the pointer value, are you relying on them being in the same arena block? If you were doing something a bit bigger would there be danger of the other block not having a greater pointer value?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:04</span><span class="author" data-hue="126" data-saturation="87%">croepha</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> For the trick that you are using to tell if the string is a keyword by range-testing the pointer value, are you relying on them being in the same arena block? If you were doing something a bit bigger would there be danger of the other block not having a greater pointer value?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4800" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">1:20:00</span>Commit &quot;Code from stream day 5&quot;<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:00</span>Commit &quot;Code from stream day 5&quot;<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:00</span>Commit &quot;Code from stream day 5&quot;<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4852" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:20:52</span><span class="author" data-hue="57" data-saturation="91%">iain</span> There&#39;s an occasional audio glitch that you can fix by updating OBS to 21.1<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:52</span><span class="author" data-hue="57" data-saturation="91%">iain</span> There&#39;s an occasional audio glitch that you can fix by updating OBS to 21.1<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:52</span><span class="author" data-hue="57" data-saturation="91%">iain</span> There&#39;s an occasional audio glitch that you can fix by updating OBS to 21.1<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4862" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:21:02</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Did you learn this from books and experimenting on your own?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:02</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Did you learn this from books and experimenting on your own?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:02</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Did you learn this from books and experimenting on your own?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5060" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:24:20</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Is there something that you feel you&#39;ve become exceptional at in the realm of programming?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:20</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Is there something that you feel you&#39;ve become exceptional at in the realm of programming?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:20</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Is there something that you feel you&#39;ve become exceptional at in the realm of programming?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5132" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:25:32</span><span class="author" data-hue="99" data-saturation="85%">zjbxiii</span> Have you ever developed an operating system?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:32</span><span class="author" data-hue="99" data-saturation="85%">zjbxiii</span> Have you ever developed an operating system?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:32</span><span class="author" data-hue="99" data-saturation="85%">zjbxiii</span> Have you ever developed an operating system?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5243" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:27:23</span><span class="author" data-hue="312" data-saturation="74%">cr88192</span> I think I saw designated initializers used; so MSVC / VS supports them now?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:23</span><span class="author" data-hue="312" data-saturation="74%">cr88192</span> I think I saw designated initializers used; so MSVC / VS supports them now?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:23</span><span class="author" data-hue="312" data-saturation="74%">cr88192</span> I think I saw designated initializers used; so MSVC / VS supports them now?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5309" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:28:29</span><span class="author" data-hue="225" data-saturation="84%">twicetimes</span> Only thing it&#39;s lacking now from C99 is VLAs, I think<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:29</span><span class="author" data-hue="225" data-saturation="84%">twicetimes</span> Only thing it&#39;s lacking now from C99 is VLAs, I think<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:29</span><span class="author" data-hue="225" data-saturation="84%">twicetimes</span> Only thing it&#39;s lacking now from C99 is VLAs, I think<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5354" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:29:14</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> Does Clang have any issues with C99?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:14</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> Does Clang have any issues with C99?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:14</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> Does Clang have any issues with C99?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5426" class="marker cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">1:30:26</span><span class="author" data-hue="292" data-saturation="79%">faranwath_</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> I think the value of MUL_ASSIGN is the same as ADD_ASSIGN in the array you showed before<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:26</span><span class="author" data-hue="292" data-saturation="79%">faranwath_</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> I think the value of MUL_ASSIGN is the same as ADD_ASSIGN in the array you showed before<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:26</span><span class="author" data-hue="292" data-saturation="79%">faranwath_</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> I think the value of MUL_ASSIGN is the same as ADD_ASSIGN in the array you showed before<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5437" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:30:37</span>Fix the TOKEN_MUL_ASSIGN in token_kind_names[]<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:37</span>Fix the TOKEN_MUL_ASSIGN in token_kind_names[]<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:37</span>Fix the TOKEN_MUL_ASSIGN in token_kind_names[]<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5449" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:30:49</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> Thanks Per. This project has been a blast so far<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:49</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> Thanks Per. This project has been a blast so far<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:49</span><span class="author" data-hue="112" data-saturation="94%">captainkraft</span> Thanks Per. This project has been a blast so far<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5520" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:32:00</span>Stop streaming<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:00</span>Stop streaming<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:00</span>Stop streaming<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://bitwise.handmade.network/episode/bitwise/bitwise006/"><div>&#9196;</div><div>Next: 'Order-Independent Declarations'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

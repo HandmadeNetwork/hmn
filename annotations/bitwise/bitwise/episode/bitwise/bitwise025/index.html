@@ -1,0 +1,591 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asm, code generation, emulation, input handling, memory, peripheral, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__bitwise.css?r=c4e77686">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus bitwise">
+            <span class="episode_name">RISC-V Dynamic Assembler, Part 2</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf" href="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Andrew Waterman and Krste Asanović</div>
+                            <div class="ref_title">The RISC-V Instruction Set Manual - Volume 1: User-Level ISA</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1119" class="timecode"><span class="ref_index">[1]</span><span class="time">18:39</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/mamedev/mame" href="https://github.com/mamedev/mame" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">GitHub</div>
+                            <div class="ref_title">mamedev /&#8203; mame</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2808" class="timecode"><span class="ref_index">[2]</span><span class="time">46:48</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://segaretro.org/Sega_X_Board" href="https://segaretro.org/Sega_X_Board" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Sega Retro</div>
+                            <div class="ref_title">Sega X Board</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2808" class="timecode"><span class="ref_index">[3]</span><span class="time">46:48</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content code-generation">
+                                <span class="icon category code-generation"></span><span class="cineraText">code generation</span>
+                            </div>
+                            <div class="filter_content emulation">
+                                <span class="icon category emulation"></span><span class="cineraText">emulation</span>
+                            </div>
+                            <div class="filter_content input-handling">
+                                <span class="icon category input-handling"></span><span class="cineraText">input handling</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content peripheral">
+                                <span class="icon category peripheral"></span><span class="cineraText">peripheral</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://github.com/pervognsen/bitwise/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Per Vognsen</div>
+                        </a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="ISNB7ARzUiE"></div>
+            <div class="markers_container bitwise">
+                <a class="episodeMarker prev" href="https://bitwise.handmade.network/episode/bitwise/bitwise024_2/"><div>&#9195;</div><div>Previous: 'RISC-V Dynamic Assembler (Extra)'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="7" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:07</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="63" class="marker cat_asm research">
+                    <div class="cineraContent"><span class="timecode">1:03</span>Review the current functionality of our dynamic assembler<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03</span>Review the current functionality of our dynamic assembler<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03</span>Review the current functionality of our dynamic assembler<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="485" class="marker cat_asm cat_memory research">
+                    <div class="cineraContent"><span class="timecode">8:05</span>Explain symbol allocation and back-patching<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:05</span>Explain symbol allocation and back-patching<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:05</span>Explain symbol allocation and back-patching<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1119" class="marker cat_asm research" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">18:39</span>Review bug fix in S-immediate encoding, and the introduction of asm_la() asm_branch() and asm_j()<sup>1</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:39</span>Review bug fix in S-immediate encoding, and the introduction of asm_la() asm_branch() and asm_j()<sup>1</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:39</span>Review bug fix in S-immediate encoding, and the introduction of asm_la() asm_branch() and asm_j()<sup>1</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1358" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">22:38</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:38</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:38</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1369" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">22:49</span><span class="author" data-hue="171" data-saturation="80%">xanatos387</span> Hum is coming and going, when you move your head around, I think<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:49</span><span class="author" data-hue="171" data-saturation="80%">xanatos387</span> Hum is coming and going, when you move your head around, I think<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:49</span><span class="author" data-hue="171" data-saturation="80%">xanatos387</span> Hum is coming and going, when you move your head around, I think<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1423" class="marker cat_emulation cat_peripheral speech">
+                    <div class="cineraContent"><span class="timecode">23:43</span>Determine to implement basic memory-mapped I/O<span class="cineraCategories"><div title="emulation" class="category emulation"></div><div title="peripheral" class="category peripheral"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:43</span>Determine to implement basic memory-mapped I/O<span class="cineraCategories"><div title="emulation" class="category emulation"></div><div title="peripheral" class="category peripheral"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:43</span>Determine to implement basic memory-mapped I/O<span class="cineraCategories"><div title="emulation" class="category emulation"></div><div title="peripheral" class="category peripheral"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1494" class="marker cat_emulation cat_peripheral speech">
+                    <div class="cineraContent"><span class="timecode">24:54</span>Memory-mapped I/O in emulators<span class="cineraCategories"><div title="emulation" class="category emulation"></div><div title="peripheral" class="category peripheral"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:54</span>Memory-mapped I/O in emulators<span class="cineraCategories"><div title="emulation" class="category emulation"></div><div title="peripheral" class="category peripheral"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:54</span>Memory-mapped I/O in emulators<span class="cineraCategories"><div title="emulation" class="category emulation"></div><div title="peripheral" class="category peripheral"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1699" class="marker cat_asm cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">28:19</span>Abstract out the RAM handling from Hart into a new Bus struct, and propagate this change<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:19</span>Abstract out the RAM handling from Hart into a new Bus struct, and propagate this change<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:19</span>Abstract out the RAM handling from Hart into a new Bus struct, and propagate this change<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2168" class="marker cat_asm cat_memory run">
+                    <div class="cineraContent"><span class="timecode">36:08</span>Run it to see that it still works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:08</span>Run it to see that it still works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:08</span>Run it to see that it still works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2187" class="marker cat_asm cat_peripheral programming">
+                    <div class="cineraContent"><span class="timecode">36:27</span>Implement memory-mapped I/O, hard-coded for now, enabling bus_load_word() and bus_store_word() to call getchar() and putchar() respectively<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:27</span>Implement memory-mapped I/O, hard-coded for now, enabling bus_load_word() and bus_store_word() to call getchar() and putchar() respectively<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:27</span>Implement memory-mapped I/O, hard-coded for now, enabling bus_load_word() and bus_store_word() to call getchar() and putchar() respectively<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2436" class="marker cat_asm cat_peripheral programming">
+                    <div class="cineraContent"><span class="timecode">40:36</span>Try to perform a asm_lw_imm(asm, X5, GETCHAR_ADDR)<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:36</span>Try to perform a asm_lw_imm(asm, X5, GETCHAR_ADDR)<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:36</span>Try to perform a asm_lw_imm(asm, X5, GETCHAR_ADDR)<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2471" class="marker cat_asm cat_peripheral run">
+                    <div class="cineraContent"><span class="timecode">41:11</span>Run it to see what it does<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:11</span>Run it to see what it does<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:11</span>Run it to see what it does<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2506" class="marker cat_asm cat_input-handling cat_peripheral programming">
+                    <div class="cineraContent"><span class="timecode">41:46</span>Remove the get_char() from main() and introduce pseudo-instructions asm_get_char() and asm_put_char() to exercise our memory-mapped I/O<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:46</span>Remove the get_char() from main() and introduce pseudo-instructions asm_get_char() and asm_put_char() to exercise our memory-mapped I/O<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:46</span>Remove the get_char() from main() and introduce pseudo-instructions asm_get_char() and asm_put_char() to exercise our memory-mapped I/O<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2658" class="marker cat_asm cat_input-handling cat_peripheral programming">
+                    <div class="cineraContent"><span class="timecode">44:18</span>Add asm_getchar() and asm_putchar() calls in main()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:18</span>Add asm_getchar() and asm_putchar() calls in main()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:18</span>Add asm_getchar() and asm_putchar() calls in main()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2685" class="marker cat_asm cat_input-handling cat_peripheral run">
+                    <div class="cineraContent"><span class="timecode">44:45</span>Run the simulator to see its infinite output<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:45</span>Run the simulator to see its infinite output<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:45</span>Run the simulator to see its infinite output<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2702" class="marker cat_asm cat_input-handling cat_peripheral programming">
+                    <div class="cineraContent"><span class="timecode">45:02</span>Call get_char() in the main loop<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:02</span>Call get_char() in the main loop<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:02</span>Call get_char() in the main loop<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2708" class="marker cat_asm cat_input-handling cat_peripheral run">
+                    <div class="cineraContent"><span class="timecode">45:08</span>Run it, press &#39;x&#39; and see X5 get populated with 120<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:08</span>Run it, press &#39;x&#39; and see X5 get populated with 120<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:08</span>Run it, press &#39;x&#39; and see X5 get populated with 120<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2733" class="marker cat_asm cat_input-handling cat_peripheral programming">
+                    <div class="cineraContent"><span class="timecode">45:33</span>Remove both getchar() and print_hart_state() from the main loop, and add a repeat label and asm_j() to our assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:33</span>Remove both getchar() and print_hart_state() from the main loop, and add a repeat label and asm_j() to our assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:33</span>Remove both getchar() and print_hart_state() from the main loop, and add a repeat label and asm_j() to our assembly<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2797" class="marker cat_asm cat_input-handling cat_peripheral run">
+                    <div class="cineraContent"><span class="timecode">46:37</span>Run it to try our echo-loop<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:37</span>Run it to try our echo-loop<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:37</span>Run it to try our echo-loop<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2808" class="marker cat_asm cat_input-handling cat_peripheral speech" data-ref="https://github.com/mamedev/mame,https://segaretro.org/Sega_X_Board">
+                    <div class="cineraContent"><span class="timecode">46:48</span>A few words on our memory-mapped I/O, with a mention of mame<sup>2</sup> and the Sega X Board<sup>3</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:48</span>A few words on our memory-mapped I/O, with a mention of mame<sup>2</sup> and the Sega X Board<sup>3</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:48</span>A few words on our memory-mapped I/O, with a mention of mame<sup>2</sup> and the Sega X Board<sup>3</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="input handling" class="category input-handling"></div><div title="peripheral" class="category peripheral"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3286" class="marker cat_asm cat_code-generation speech">
+                    <div class="cineraContent"><span class="timecode">54:46</span>Consider moving on to doing an RPN (Reverse Polish notation) to RISC-V code generator<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:46</span>Consider moving on to doing an RPN (Reverse Polish notation) to RISC-V code generator<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:46</span>Consider moving on to doing an RPN (Reverse Polish notation) to RISC-V code generator<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3406" class="marker cat_asm cat_code-generation speech">
+                    <div class="cineraContent"><span class="timecode">56:46</span>RPN to RISC-V code generation<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:46</span>RPN to RISC-V code generation<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:46</span>RPN to RISC-V code generation<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3486" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">58:06</span>Introduce gen_rpn() (and necessary functions) as an RPN to RISC-V code generator<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:06</span>Introduce gen_rpn() (and necessary functions) as an RPN to RISC-V code generator<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:06</span>Introduce gen_rpn() (and necessary functions) as an RPN to RISC-V code generator<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4710" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:18:30</span>Try out our gen_rpn()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:30</span>Try out our gen_rpn()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:30</span>Try out our gen_rpn()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4811" class="marker cat_asm cat_code-generation run">
+                    <div class="cineraContent"><span class="timecode">1:20:11</span>Step through gen_rpn() to see what it does<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:11</span>Step through gen_rpn() to see what it does<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:11</span>Step through gen_rpn() to see what it does<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4945" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">1:22:25</span>Print out the registers in the main loop<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:25</span>Print out the registers in the main loop<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:25</span>Print out the registers in the main loop<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4951" class="marker cat_asm cat_code-generation run">
+                    <div class="cineraContent"><span class="timecode">1:22:31</span>Run it to follow what gen_rpn() does<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:31</span>Run it to follow what gen_rpn() does<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:31</span>Run it to follow what gen_rpn() does<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5087" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:24:47</span>Enable gen_rpn() to push the correct decimal values of our ASCII characters<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:47</span>Enable gen_rpn() to push the correct decimal values of our ASCII characters<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:47</span>Enable gen_rpn() to push the correct decimal values of our ASCII characters<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5241" class="marker cat_asm cat_code-generation run">
+                    <div class="cineraContent"><span class="timecode">1:27:21</span>Run it to see that it pushes the correct values<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:21</span>Run it to see that it pushes the correct values<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:21</span>Run it to see that it pushes the correct values<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5264" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:27:44</span>Try to make gen_rpn() generate the code for a +2<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:44</span>Try to make gen_rpn() generate the code for a +2<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:44</span>Try to make gen_rpn() generate the code for a +2<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5281" class="marker cat_asm cat_code-generation run">
+                    <div class="cineraContent"><span class="timecode">1:28:01</span>Run it to see that it computes it correctly, but prints out an extra character<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:01</span>Run it to see that it computes it correctly, but prints out an extra character<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:01</span>Run it to see that it computes it correctly, but prints out an extra character<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5349" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:29:09</span>Make bus_load_word() eat &#39;\n&#39;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:09</span>Make bus_load_word() eat &#39;\n&#39;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:09</span>Make bus_load_word() eat &#39;\n&#39;<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5400" class="marker cat_asm cat_code-generation run">
+                    <div class="cineraContent"><span class="timecode">1:30:00</span>Run it to see that it looks good<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:00</span>Run it to see that it looks good<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:00</span>Run it to see that it looks good<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5426" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:30:26</span>Make gen_rpn() insert &#39;\n&#39; after each digit<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:26</span>Make gen_rpn() insert &#39;\n&#39; after each digit<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:26</span>Make gen_rpn() insert &#39;\n&#39; after each digit<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5472" class="marker cat_asm cat_code-generation run">
+                    <div class="cineraContent"><span class="timecode">1:31:12</span>Run it to see that nicer printout<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:12</span>Run it to see that nicer printout<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:12</span>Run it to see that nicer printout<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5476" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:31:16</span>Introduce a duplication character in gen_rpn()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:16</span>Introduce a duplication character in gen_rpn()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:16</span>Introduce a duplication character in gen_rpn()<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5519" class="marker cat_asm cat_code-generation run">
+                    <div class="cineraContent"><span class="timecode">1:31:59</span>Run it to see how that works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:59</span>Run it to see how that works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:59</span>Run it to see how that works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5533" class="marker cat_asm cat_code-generation speech">
+                    <div class="cineraContent"><span class="timecode">1:32:13</span>Reflect on our RPN to RISC-V generator<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:13</span>Reflect on our RPN to RISC-V generator<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:13</span>Reflect on our RPN to RISC-V generator<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5577" class="marker cat_asm cat_code-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:32:57</span>Try to make gen_rpn() calculate the digit-wise complement<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:57</span>Try to make gen_rpn() calculate the digit-wise complement<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:57</span>Try to make gen_rpn() calculate the digit-wise complement<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5602" class="marker cat_asm cat_code-generation run">
+                    <div class="cineraContent"><span class="timecode">1:33:22</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:22</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:22</span>Run it to see that it works<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="code generation" class="category code-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5612" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:33:32</span>That&#39;s it for today, and likely also next week to write articles<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:32</span>That&#39;s it for today, and likely also next week to write articles<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:32</span>That&#39;s it for today, and likely also next week to write articles<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://bitwise.handmade.network/episode/bitwise/bitwise026/"><div>&#9196;</div><div>Next: 'RISC-V Static Assembler'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

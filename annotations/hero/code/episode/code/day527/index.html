@@ -1,0 +1,598 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asset system, font, language, platform layer, profiling, rendering, ui, Administrivia, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Making a Stand-Alone Font Extractor</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-addfontresourceexa" href="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-addfontresourceexa" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Windows Dev Center</div>
+                            <div class="ref_title">AddFontResourceExA function</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1511" class="timecode"><span class="ref_index">[1]</span><span class="time">25:11</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta" href="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Windows Dev Center</div>
+                            <div class="ref_title">CreateFontA function</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1511" class="timecode"><span class="ref_index">[2]</span><span class="time">25:11</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-gettextmetrics" href="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-gettextmetrics" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Windows Dev Center</div>
+                            <div class="ref_title">GetTextMetrics function</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="3083" class="timecode"><span class="ref_index">[3]</span><span class="time">51:23</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://docs.microsoft.com/en-gb/windows/desktop/api/wingdi/ns-wingdi-tagtextmetrica" href="https://docs.microsoft.com/en-gb/windows/desktop/api/wingdi/ns-wingdi-tagtextmetrica" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Windows Dev Center</div>
+                            <div class="ref_title">TEXTMETRICA structure</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="3083" class="timecode"><span class="ref_index">[4]</span><span class="time">51:23</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://en.wikipedia.org/wiki/Hungarian_notation" href="https://en.wikipedia.org/wiki/Hungarian_notation" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Wikipedia</div>
+                            <div class="ref_title">Hungarian notation</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6792" class="timecode"><span class="ref_index">[5]</span><span class="time">1:53:12</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asset-system">
+                                <span class="icon category asset-system"></span><span class="cineraText">asset system</span>
+                            </div>
+                            <div class="filter_content font">
+                                <span class="icon category font"></span><span class="cineraText">font</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content platform-layer">
+                                <span class="icon category platform-layer"></span><span class="cineraText">platform layer</span>
+                            </div>
+                            <div class="filter_content profiling">
+                                <span class="icon category profiling"></span><span class="cineraText">profiling</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content ui">
+                                <span class="icon category ui"></span><span class="cineraText">ui</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="n8zn2DYjTbU"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day526/"><div>&#9195;</div><div>Previous: 'Single-Buffer Sound Streaming'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_asset-system cat_font speech">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Note our capability to rebuild all of our assets except fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Note our capability to rebuild all of our assets except fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Note our capability to rebuild all of our assets except fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="124" class="marker cat_font cat_platform-layer speech">
+                    <div class="cineraContent"><span class="timecode">2:04</span>Cross-platform font processing<span class="cineraCategories"><div title="font" class="category font"></div><div title="platform layer" class="category platform-layer"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04</span>Cross-platform font processing<span class="cineraCategories"><div title="font" class="category font"></div><div title="platform layer" class="category platform-layer"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04</span>Cross-platform font processing<span class="cineraCategories"><div title="font" class="category font"></div><div title="platform layer" class="category platform-layer"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="308" class="marker cat_asset-system cat_font research">
+                    <div class="cineraContent"><span class="timecode">5:08</span>Reacquaint ourselves with our current .hha representation of fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:08</span>Reacquaint ourselves with our current .hha representation of fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:08</span>Reacquaint ourselves with our current .hha representation of fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="485" class="marker cat_asset-system cat_font research">
+                    <div class="cineraContent"><span class="timecode">8:05</span>Exporting fonts to .png format for packing into .hha<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:05</span>Exporting fonts to .png format for packing into .hha<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:05</span>Exporting fonts to .png format for packing into .hha<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="608" class="marker cat_asset-system cat_font admin">
+                    <div class="cineraContent"><span class="timecode">10:08</span>Spec out a directory structure for developer resources such as fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:08</span>Spec out a directory structure for developer resources such as fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:08</span>Spec out a directory structure for developer resources such as fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="698" class="marker cat_asset-system cat_font research">
+                    <div class="cineraContent"><span class="timecode">11:38</span>Set up to write fonts out to .png and then into .hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:38</span>Set up to write fonts out to .png and then into .hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:38</span>Set up to write fonts out to .png and then into .hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="923" class="marker cat_asset-system cat_font speech">
+                    <div class="cineraContent"><span class="timecode">15:23</span>General thoughts on complexity in asset processing systems deriving from complex inter-relationships and structure, as we will find in fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:23</span>General thoughts on complexity in asset processing systems deriving from complex inter-relationships and structure, as we will find in fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:23</span>General thoughts on complexity in asset processing systems deriving from complex inter-relationships and structure, as we will find in fonts<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1098" class="marker cat_asset-system cat_font programming">
+                    <div class="cineraContent"><span class="timecode">18:18</span>Create hha_font.cpp based on test_asset_builder.cpp<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:18</span>Create hha_font.cpp based on test_asset_builder.cpp<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:18</span>Create hha_font.cpp based on test_asset_builder.cpp<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1511" class="marker cat_asset-system cat_font programming" data-ref="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-addfontresourceexa,https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-createfonta">
+                    <div class="cineraContent"><span class="timecode">25:11</span>Handle command-line arguments and respecify WriteFonts() as ExtractFont()<sup>1</sup><sup>,2</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:11</span>Handle command-line arguments and respecify WriteFonts() as ExtractFont()<sup>1</sup><sup>,2</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:11</span>Handle command-line arguments and respecify WriteFonts() as ExtractFont()<sup>1</sup><sup>,2</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2382" class="marker cat_asset-system cat_font programming">
+                    <div class="cineraContent"><span class="timecode">39:42</span>Introduce the notion of a CHAR_SET_CREATOR to facilitate the creation of various character-set extraction procedures, for localisation<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:42</span>Introduce the notion of a CHAR_SET_CREATOR to facilitate the creation of various character-set extraction procedures, for localisation<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:42</span>Introduce the notion of a CHAR_SET_CREATOR to facilitate the creation of various character-set extraction procedures, for localisation<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3083" class="marker cat_asset-system cat_font programming" data-ref="https://docs.microsoft.com/en-us/windows/desktop/api/wingdi/nf-wingdi-gettextmetrics,https://docs.microsoft.com/en-gb/windows/desktop/api/wingdi/ns-wingdi-tagtextmetrica">
+                    <div class="cineraContent"><span class="timecode">51:23</span>Enable ExtractFont() to call LoadGlyphBitmap() on all the glyphs, making the latter operate on passed in dimensions retrieved from a GetTextMetrics() system call,<sup>3</sup><sup>,4</sup> and return a glyph_result<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:23</span>Enable ExtractFont() to call LoadGlyphBitmap() on all the glyphs, making the latter operate on passed in dimensions retrieved from a GetTextMetrics() system call,<sup>3</sup><sup>,4</sup> and return a glyph_result<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:23</span>Enable ExtractFont() to call LoadGlyphBitmap() on all the glyphs, making the latter operate on passed in dimensions retrieved from a GetTextMetrics() system call,<sup>3</sup><sup>,4</sup> and return a glyph_result<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4841" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:20:41</span>Clean up compile errors</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:41</span>Clean up compile errors</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:41</span>Clean up compile errors</div>
+                    </div>
+                </div>
+                <div data-timestamp="5357" class="marker cat_asset-system cat_font programming">
+                    <div class="cineraContent"><span class="timecode">1:29:17</span>Introduce Include() and IncludeRange() for CHAR_SET_CREATOR functions to call, and a codepoint_mask for ExtractFont() to take<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:17</span>Introduce Include() and IncludeRange() for CHAR_SET_CREATOR functions to call, and a codepoint_mask for ExtractFont() to take<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:17</span>Introduce Include() and IncludeRange() for CHAR_SET_CREATOR functions to call, and a codepoint_mask for ExtractFont() to take<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6063" class="marker cat_asset-system cat_font run">
+                    <div class="cineraContent"><span class="timecode">1:41:03</span>Run hhfont for the first time<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:03</span>Run hhfont for the first time<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:03</span>Run hhfont for the first time<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6175" class="marker cat_asset-system cat_font programming">
+                    <div class="cineraContent"><span class="timecode">1:42:55</span>Print out some font extraction information<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:55</span>Print out some font extraction information<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:55</span>Print out some font extraction information<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6262" class="marker cat_asset-system cat_font run">
+                    <div class="cineraContent"><span class="timecode">1:44:22</span>Run hhafont on some real input, and crash beautifully<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:22</span>Run hhafont on some real input, and crash beautifully<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:22</span>Run hhafont on some real input, and crash beautifully<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6306" class="marker cat_asset-system cat_font run">
+                    <div class="cineraContent"><span class="timecode">1:45:06</span>Add hhfont to <span class="project" data-hue="298" data-saturation="95%">remedybg</span> and step through it to a crash on fprintf()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:06</span>Add hhfont to <span class="project" data-hue="298" data-saturation="95%">remedybg</span> and step through it to a crash on fprintf()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:06</span>Add hhfont to <span class="project" data-hue="298" data-saturation="95%">remedybg</span> and step through it to a crash on fprintf()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6530" class="marker cat_asset-system cat_font programming">
+                    <div class="cineraContent"><span class="timecode">1:48:50</span>Clear the Mask.CodepointFromGlyph, and prevent Include() from doubly-incrementing through its loop<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:50</span>Clear the Mask.CodepointFromGlyph, and prevent Include() from doubly-incrementing through its loop<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:50</span>Clear the Mask.CodepointFromGlyph, and prevent Include() from doubly-incrementing through its loop<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6602" class="marker cat_asset-system cat_font run">
+                    <div class="cineraContent"><span class="timecode">1:50:02</span>Run hhafont successfully<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:02</span>Run hhafont successfully<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:02</span>Run hhafont successfully<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6624" class="marker cat_asset-system cat_font programming">
+                    <div class="cineraContent"><span class="timecode">1:50:24</span>Fix Include() to only add glyphs whose code point is not 0<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:24</span>Fix Include() to only add glyphs whose code point is not 0<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:24</span>Fix Include() to only add glyphs whose code point is not 0<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6670" class="marker cat_asset-system cat_font run">
+                    <div class="cineraContent"><span class="timecode">1:51:10</span>Run hhafont to see a more likely glyph count<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:10</span>Run hhafont to see a more likely glyph count<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:10</span>Run hhafont to see a more likely glyph count<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="font" class="category font"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6685" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:51:25</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:25</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:25</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6711" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:51:51</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Are you going to implement the PNG writer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:51</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Are you going to implement the PNG writer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:51</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Are you going to implement the PNG writer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6792" class="marker cat_language authored" data-ref="https://en.wikipedia.org/wiki/Hungarian_notation">
+                    <div class="cineraContent"><span class="timecode">1:53:12</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Does the Windows API use Hungarian notation?<sup>5</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:12</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Does the Windows API use Hungarian notation?<sup>5</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:12</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Does the Windows API use Hungarian notation?<sup>5</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6844" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:54:04</span><span class="author" data-hue="52" data-saturation="98%">recyrillic</span> Q: We had a yellow <span class="project" data-hue="13" data-saturation="79%">4coder</span> flash today. Did we know about that color of flash already?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:04</span><span class="author" data-hue="52" data-saturation="98%">recyrillic</span> Q: We had a yellow <span class="project" data-hue="13" data-saturation="79%">4coder</span> flash today. Did we know about that color of flash already?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:04</span><span class="author" data-hue="52" data-saturation="98%">recyrillic</span> Q: We had a yellow <span class="project" data-hue="13" data-saturation="79%">4coder</span> flash today. Did we know about that color of flash already?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6893" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:54:53</span><span class="author" data-hue="61" data-saturation="83%">lucid_frost</span> Q: Do you think you still improve a lot as a programmer (as opposed to when you first started)? I&#39;d be curious to know if there are specific things you work on to keep improving<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:53</span><span class="author" data-hue="61" data-saturation="83%">lucid_frost</span> Q: Do you think you still improve a lot as a programmer (as opposed to when you first started)? I&#39;d be curious to know if there are specific things you work on to keep improving<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:53</span><span class="author" data-hue="61" data-saturation="83%">lucid_frost</span> Q: Do you think you still improve a lot as a programmer (as opposed to when you first started)? I&#39;d be curious to know if there are specific things you work on to keep improving<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7170" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:59:30</span><span class="author" data-hue="199" data-saturation="86%">skytrias</span> Q: Is it hard to write a level editor? What are the steps? I just want to set positions via mouse, save them so that they&#39;re used once exited<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:30</span><span class="author" data-hue="199" data-saturation="86%">skytrias</span> Q: Is it hard to write a level editor? What are the steps? I just want to set positions via mouse, save them so that they&#39;re used once exited<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:30</span><span class="author" data-hue="199" data-saturation="86%">skytrias</span> Q: Is it hard to write a level editor? What are the steps? I just want to set positions via mouse, save them so that they&#39;re used once exited<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7210" class="marker cat_asset-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">2:00:10</span>Demo the game&#39;s asset editing UI<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:10</span>Demo the game&#39;s asset editing UI<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:10</span>Demo the game&#39;s asset editing UI<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7354" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:02:34</span><span class="author" data-hue="343" data-saturation="98%">gayonara</span> Q: What do you mean by better language?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:34</span><span class="author" data-hue="343" data-saturation="98%">gayonara</span> Q: What do you mean by better language?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:34</span><span class="author" data-hue="343" data-saturation="98%">gayonara</span> Q: What do you mean by better language?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7496" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:04:56</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: I really like your programming style of returning a struct from a function and I have been using it a lot. Is it true that it was not possible to return a struct from a function in the early days of C?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:56</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: I really like your programming style of returning a struct from a function and I have been using it a lot. Is it true that it was not possible to return a struct from a function in the early days of C?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:56</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: I really like your programming style of returning a struct from a function and I have been using it a lot. Is it true that it was not possible to return a struct from a function in the early days of C?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7612" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:06:52</span><span class="author" data-hue="170" data-saturation="86%">basedyam</span> Q: If you were making a game with a lot of text on-screen, what text rendering technique do you think you&#39;d go for?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:52</span><span class="author" data-hue="170" data-saturation="86%">basedyam</span> Q: If you were making a game with a lot of text on-screen, what text rendering technique do you think you&#39;d go for?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:52</span><span class="author" data-hue="170" data-saturation="86%">basedyam</span> Q: If you were making a game with a lot of text on-screen, what text rendering technique do you think you&#39;d go for?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7723" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:08:43</span><span class="author" data-hue="168" data-saturation="84%">spranklz1</span> Q: How do you visualize your logic so easily? Sometimes I&#39;ll write a complicated function and it will take me, potentially, hours to debug (or fully understand); but that never seems to be a problem for you<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:43</span><span class="author" data-hue="168" data-saturation="84%">spranklz1</span> Q: How do you visualize your logic so easily? Sometimes I&#39;ll write a complicated function and it will take me, potentially, hours to debug (or fully understand); but that never seems to be a problem for you<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:43</span><span class="author" data-hue="168" data-saturation="84%">spranklz1</span> Q: How do you visualize your logic so easily? Sometimes I&#39;ll write a complicated function and it will take me, potentially, hours to debug (or fully understand); but that never seems to be a problem for you<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7882" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:11:22</span><span class="author" data-hue="196" data-saturation="96%">se5a1</span> Q: I keep running into problems that I cannot figure out, but if I drop it and come back to it at a later date (weeks / months), I can sometimes figure out what&#39;s going wrong within 10 minutes. Any suggestions on how to improve my problem solving in this regard?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:22</span><span class="author" data-hue="196" data-saturation="96%">se5a1</span> Q: I keep running into problems that I cannot figure out, but if I drop it and come back to it at a later date (weeks / months), I can sometimes figure out what&#39;s going wrong within 10 minutes. Any suggestions on how to improve my problem solving in this regard?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:22</span><span class="author" data-hue="196" data-saturation="96%">se5a1</span> Q: I keep running into problems that I cannot figure out, but if I drop it and come back to it at a later date (weeks / months), I can sometimes figure out what&#39;s going wrong within 10 minutes. Any suggestions on how to improve my problem solving in this regard?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8099" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:14:59</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: What font do you recommend for a native desktop app? A font that looks pleasant to the eye. I have a hard time finding one. Thanks for your help!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:59</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: What font do you recommend for a native desktop app? A font that looks pleasant to the eye. I have a hard time finding one. Thanks for your help!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:59</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: What font do you recommend for a native desktop app? A font that looks pleasant to the eye. I have a hard time finding one. Thanks for your help!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8143" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:15:43</span><span class="author" data-hue="225" data-saturation="92%">flightlesshippo</span> Q: What&#39;s the hardest programming problem you&#39;ve found yourself dealing with?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:43</span><span class="author" data-hue="225" data-saturation="92%">flightlesshippo</span> Q: What&#39;s the hardest programming problem you&#39;ve found yourself dealing with?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:43</span><span class="author" data-hue="225" data-saturation="92%">flightlesshippo</span> Q: What&#39;s the hardest programming problem you&#39;ve found yourself dealing with?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8163" class="marker cat_profiling authored">
+                    <div class="cineraContent"><span class="timecode">2:16:03</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Do you ever use Valgrind? Would you recommend it for C (or maybe C++) code? Is there a decent Windows alternative?<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:03</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Do you ever use Valgrind? Would you recommend it for C (or maybe C++) code? Is there a decent Windows alternative?<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:03</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Do you ever use Valgrind? Would you recommend it for C (or maybe C++) code? Is there a decent Windows alternative?<span class="cineraCategories"><div title="profiling" class="category profiling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8262" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:17:42</span><span class="author" data-hue="151" data-saturation="87%">ud_0</span> Q: What language / environment do you recommend for introducing young kids to programming?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:42</span><span class="author" data-hue="151" data-saturation="87%">ud_0</span> Q: What language / environment do you recommend for introducing young kids to programming?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:42</span><span class="author" data-hue="151" data-saturation="87%">ud_0</span> Q: What language / environment do you recommend for introducing young kids to programming?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8483" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:21:23</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Do you think learning to program with C is a bad idea?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:21:23</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Do you think learning to program with C is a bad idea?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:21:23</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Q: Do you think learning to program with C is a bad idea?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8520" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:22:00</span><span class="author" data-hue="106" data-saturation="90%">overture2112</span> Q: How often do you work on random small projects that aren&#39;t work-related (i.e. not <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>, Molly Rocket stuff, etc)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:00</span><span class="author" data-hue="106" data-saturation="90%">overture2112</span> Q: How often do you work on random small projects that aren&#39;t work-related (i.e. not <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>, Molly Rocket stuff, etc)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:00</span><span class="author" data-hue="106" data-saturation="90%">overture2112</span> Q: How often do you work on random small projects that aren&#39;t work-related (i.e. not <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>, Molly Rocket stuff, etc)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8560" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:22:40</span>Close it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:40</span>Close it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:40</span>Close it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day528/"><div>&#9196;</div><div>Next: 'Writing HHTs from HHFont'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

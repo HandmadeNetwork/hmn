@@ -1,0 +1,815 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="camera, debug visualisation, geometry, lighting, performance, profiling, rendering, simulation, Chat Comment, In-Game, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Improving Camera Placement and Room Alignment</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content camera">
+                                <span class="icon category camera"></span><span class="cineraText">camera</span>
+                            </div>
+                            <div class="filter_content debug-visualisation">
+                                <span class="icon category debug-visualisation"></span><span class="cineraText">debug visualisation</span>
+                            </div>
+                            <div class="filter_content geometry">
+                                <span class="icon category geometry"></span><span class="cineraText">geometry</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content profiling">
+                                <span class="icon category profiling"></span><span class="cineraText">profiling</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content simulation">
+                                <span class="icon category simulation"></span><span class="cineraText">simulation</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="4EdDZlVH8bY"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day451/"><div>&#9195;</div><div>Previous: 'Updating Unproject'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="90" class="marker cat_camera cat_simulation run">
+                    <div class="cineraContent"><span class="timecode">1:30</span>Run the game with the determination to position and zoom the camera to focus on a given rectangle, and retain the simulation region until the camera transitions are complete<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30</span>Run the game with the determination to position and zoom the camera to focus on a given rectangle, and retain the simulation region until the camera transitions are complete<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30</span>Run the game with the determination to position and zoom the camera to focus on a given rectangle, and retain the simulation region until the camera transitions are complete<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="459" class="marker cat_camera cat_simulation programming">
+                    <div class="cineraContent"><span class="timecode">7:39</span>Make UpdateAndRenderWorld() merge the camera bounds into the simulation region<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:39</span>Make UpdateAndRenderWorld() merge the camera bounds into the simulation region<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:39</span>Make UpdateAndRenderWorld() merge the camera bounds into the simulation region<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="522" class="marker cat_simulation run">
+                    <div class="cineraContent"><span class="timecode">8:42</span>Run the game to still see entities drop out of the simulation region<span class="cineraCategories"><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:42</span>Run the game to still see entities drop out of the simulation region<span class="cineraCategories"><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:42</span>Run the game to still see entities drop out of the simulation region<span class="cineraCategories"><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="545" class="marker cat_camera cat_simulation programming">
+                    <div class="cineraContent"><span class="timecode">9:05</span>Enlarge the SimBounds in UpdateAndRenderWorld()<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:05</span>Enlarge the SimBounds in UpdateAndRenderWorld()<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:05</span>Enlarge the SimBounds in UpdateAndRenderWorld()<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="600" class="marker cat_simulation run">
+                    <div class="cineraContent"><span class="timecode">10:00</span>Run the game and no longer see entities drop out of the simulation region<span class="cineraCategories"><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:00</span>Run the game and no longer see entities drop out of the simulation region<span class="cineraCategories"><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:00</span>Run the game and no longer see entities drop out of the simulation region<span class="cineraCategories"><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="649" class="marker cat_camera cat_simulation programming">
+                    <div class="cineraContent"><span class="timecode">10:49</span>Note the risks to allowing the simulation region to be determined by the camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:49</span>Note the risks to allowing the simulation region to be determined by the camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:49</span>Note the risks to allowing the simulation region to be determined by the camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="simulation" class="category simulation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="973" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">16:13</span>Run the game and set up to implement our dynamically zooming camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:13</span>Run the game and set up to implement our dynamically zooming camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:13</span>Run the game and set up to implement our dynamically zooming camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1312" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">21:52</span>Determine to hand-code camera zoom levels per room<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:52</span>Determine to hand-code camera zoom levels per room<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:52</span>Determine to hand-code camera zoom levels per room<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1404" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">23:24</span>Work towards enabling UpdateCameraForEntityMovement() to set the TargetOffsetZ from the stored CameraOffset.z<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:24</span>Work towards enabling UpdateCameraForEntityMovement() to set the TargetOffsetZ from the stored CameraOffset.z<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:24</span>Work towards enabling UpdateCameraForEntityMovement() to set the TargetOffsetZ from the stored CameraOffset.z<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1581" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">26:21</span>Run the game to see nothing<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:21</span>Run the game to see nothing<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:21</span>Run the game to see nothing<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1606" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">26:46</span>Make GenerateRoom() initialise the CameraOffset.z to 16<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:46</span>Make GenerateRoom() initialise the CameraOffset.z to 16<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:46</span>Make GenerateRoom() initialise the CameraOffset.z to 16<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1641" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">27:21</span>Run the game to see our usual camera view<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:21</span>Run the game to see our usual camera view<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:21</span>Run the game to see our usual camera view<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1657" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">27:37</span>Introduce GetCameraOffsetZForDim() to dynamically zoom the camera<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:37</span>Introduce GetCameraOffsetZForDim() to dynamically zoom the camera<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:37</span>Introduce GetCameraOffsetZForDim() to dynamically zoom the camera<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2083" class="marker cat_profiling programming">
+                    <div class="cineraContent"><span class="timecode">34:43</span>Make UpdateAndRenderWorld() write out the Camera.OffsetZ<span class="cineraCategories"><div title="profiling" class="category profiling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:43</span>Make UpdateAndRenderWorld() write out the Camera.OffsetZ<span class="cineraCategories"><div title="profiling" class="category profiling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:43</span>Make UpdateAndRenderWorld() write out the Camera.OffsetZ<span class="cineraCategories"><div title="profiling" class="category profiling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2123" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">35:23</span>Run the game and watch that Camera.OffsetZ change while traversing the orphanage<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:23</span>Run the game and watch that Camera.OffsetZ change while traversing the orphanage<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:23</span>Run the game and watch that Camera.OffsetZ change while traversing the orphanage<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2290" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">38:10</span>Determine to fix the camera&#39;s room selection bug<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:10</span>Determine to fix the camera&#39;s room selection bug<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:10</span>Determine to fix the camera&#39;s room selection bug<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2409" class="marker cat_debug-visualisation programming">
+                    <div class="cineraContent"><span class="timecode">40:09</span>Make UpdateAndRenderEntities() draw the room boundaries<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:09</span>Make UpdateAndRenderEntities() draw the room boundaries<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:09</span>Make UpdateAndRenderEntities() draw the room boundaries<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2468" class="marker cat_debug-visualisation run">
+                    <div class="cineraContent"><span class="timecode">41:08</span>Run the game to see those room boundaries<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:08</span>Run the game to see those room boundaries<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:08</span>Run the game to see those room boundaries<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2503" class="marker cat_camera cat_geometry programming">
+                    <div class="cineraContent"><span class="timecode">41:43</span>Fix GenerateRoom() to correctly align the collision volumes of both even- and odd-sized rooms, removing the world_room_camera struct and making ChunkPositionFromTilePosition() take a world_generator that contains the TileDim<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:43</span>Fix GenerateRoom() to correctly align the collision volumes of both even- and odd-sized rooms, removing the world_room_camera struct and making ChunkPositionFromTilePosition() take a world_generator that contains the TileDim<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:43</span>Fix GenerateRoom() to correctly align the collision volumes of both even- and odd-sized rooms, removing the world_room_camera struct and making ChunkPositionFromTilePosition() take a world_generator that contains the TileDim<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3303" class="marker cat_camera cat_geometry run">
+                    <div class="cineraContent"><span class="timecode">55:03</span>Run the game to see that the room alignment is off-by-one<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:03</span>Run the game to see that the room alignment is off-by-one<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:03</span>Run the game to see that the room alignment is off-by-one<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3331" class="marker cat_camera cat_geometry programming">
+                    <div class="cineraContent"><span class="timecode">55:31</span>Fix GenerateRoom() to correctly align the room collision volumes<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:31</span>Fix GenerateRoom() to correctly align the room collision volumes<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:31</span>Fix GenerateRoom() to correctly align the room collision volumes<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3346" class="marker cat_camera cat_geometry run">
+                    <div class="cineraContent"><span class="timecode">55:46</span>Run the game to see that the rooms are correctly aligned in X and Y, and consider how to align them in Z<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:46</span>Run the game to see that the rooms are correctly aligned in X and Y, and consider how to align them in Z<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:46</span>Run the game to see that the rooms are correctly aligned in X and Y, and consider how to align them in Z<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3432" class="marker cat_geometry programming">
+                    <div class="cineraContent"><span class="timecode">57:12</span>Temporarily prevent ChunkPositionFromTilePosition() from offsetting the room collision volumes in Z<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:12</span>Temporarily prevent ChunkPositionFromTilePosition() from offsetting the room collision volumes in Z<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:12</span>Temporarily prevent ChunkPositionFromTilePosition() from offsetting the room collision volumes in Z<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3481" class="marker cat_geometry run">
+                    <div class="cineraContent"><span class="timecode">58:01</span>Run the game to see how this change aligns the rooms<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:01</span>Run the game to see how this change aligns the rooms<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:01</span>Run the game to see how this change aligns the rooms<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3541" class="marker cat_geometry programming">
+                    <div class="cineraContent"><span class="timecode">59:01</span>Make GenerateRoom() compute the RoomCenter along all axes<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:01</span>Make GenerateRoom() compute the RoomCenter along all axes<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:01</span>Make GenerateRoom() compute the RoomCenter along all axes<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3711" class="marker cat_geometry run">
+                    <div class="cineraContent"><span class="timecode">1:01:51</span>Step in to GenerateRoom() to see that MakeSimpleGroundedCollision() may be busted<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:51</span>Step in to GenerateRoom() to see that MakeSimpleGroundedCollision() may be busted<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:51</span>Step in to GenerateRoom() to see that MakeSimpleGroundedCollision() may be busted<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3808" class="marker cat_geometry programming">
+                    <div class="cineraContent"><span class="timecode">1:03:28</span>Change GenerateRoom() to align the room collision volumes using MapIntoSimSpace() renamed from GetSimRelativePosition()<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:28</span>Change GenerateRoom() to align the room collision volumes using MapIntoSimSpace() renamed from GetSimRelativePosition()<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:28</span>Change GenerateRoom() to align the room collision volumes using MapIntoSimSpace() renamed from GetSimRelativePosition()<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4077" class="marker cat_geometry run">
+                    <div class="cineraContent"><span class="timecode">1:07:57</span>Run the game to see how our rooms are now aligned, and consider peeking into rooms<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:57</span>Run the game to see how our rooms are now aligned, and consider peeking into rooms<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:57</span>Run the game to see how our rooms are now aligned, and consider peeking into rooms<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4340" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:12:20</span>Introduce AddLamp() for GenerateRoom() to call and add a lamp to every room<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:20</span>Introduce AddLamp() for GenerateRoom() to call and add a lamp to every room<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:20</span>Introduce AddLamp() for GenerateRoom() to call and add a lamp to every room<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4564" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:16:04</span>Run the game to see the bright lights<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:04</span>Run the game to see the bright lights<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:04</span>Run the game to see the bright lights<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4603" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:16:43</span>Prevent UpdateAndRenderWorld() from adding a light at the hero&#39;s location<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:43</span>Prevent UpdateAndRenderWorld() from adding a light at the hero&#39;s location<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:43</span>Prevent UpdateAndRenderWorld() from adding a light at the hero&#39;s location<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4621" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:17:01</span>Run the game to see our unlit hero<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:01</span>Run the game to see our unlit hero<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:01</span>Run the game to see our unlit hero<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4651" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:17:31</span>Reduce the lamp brightness in GenerateRoom()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:31</span>Reduce the lamp brightness in GenerateRoom()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:31</span>Reduce the lamp brightness in GenerateRoom()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4666" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:17:46</span>Run the game to see our dimmer lights<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:46</span>Run the game to see our dimmer lights<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:46</span>Run the game to see our dimmer lights<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4693" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:18:13</span>Make AddLamp() reposition the lamps, and GenerateRoom() generate them in the four corners of the rooms<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:13</span>Make AddLamp() reposition the lamps, and GenerateRoom() generate them in the four corners of the rooms<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:13</span>Make AddLamp() reposition the lamps, and GenerateRoom() generate them in the four corners of the rooms<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5006" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:23:26</span>Run the game to see our lights in the corners of rooms<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:26</span>Run the game to see our lights in the corners of rooms<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:26</span>Run the game to see our lights in the corners of rooms<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5076" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:24:36</span>Enable GenerateRoom() to randomise the light colours<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:36</span>Enable GenerateRoom() to randomise the light colours<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:36</span>Enable GenerateRoom() to randomise the light colours<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5194" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:26:34</span>Run the game to see our differently coloured lights<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:34</span>Run the game to see our differently coloured lights<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:34</span>Run the game to see our differently coloured lights<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5240" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:27:20</span><span class="author" data-hue="170" data-saturation="89%">insobot</span> 4 minutes into the Q&amp;A, 11 until end. (based on NOTE)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:20</span><span class="author" data-hue="170" data-saturation="89%">insobot</span> 4 minutes into the Q&amp;A, 11 until end. (based on NOTE)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:20</span><span class="author" data-hue="170" data-saturation="89%">insobot</span> 4 minutes into the Q&amp;A, 11 until end. (based on NOTE)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5290" class="marker cat_geometry programming">
+                    <div class="cineraContent"><span class="timecode">1:28:10</span>Make PushCube() take a v3 Radius to uniformly size cubes, and propagate this change<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:10</span>Make PushCube() take a v3 Radius to uniformly size cubes, and propagate this change<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:10</span>Make PushCube() take a v3 Radius to uniformly size cubes, and propagate this change<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5770" class="marker cat_geometry run">
+                    <div class="cineraContent"><span class="timecode">1:36:10</span>Run the game to find that the walls are suddenly taller<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:10</span>Run the game to find that the walls are suddenly taller<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:10</span>Run the game to find that the walls are suddenly taller<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5854" class="marker cat_geometry programming">
+                    <div class="cineraContent"><span class="timecode">1:37:34</span>Make GenerateRoom() align the rooms in Z as they were before<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:34</span>Make GenerateRoom() align the rooms in Z as they were before<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:34</span>Make GenerateRoom() align the rooms in Z as they were before<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5937" class="marker cat_geometry run">
+                    <div class="cineraContent"><span class="timecode">1:38:57</span>Run the game to see the room alignment<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:57</span>Run the game to see the room alignment<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:57</span>Run the game to see the room alignment<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6034" class="marker cat_geometry programming">
+                    <div class="cineraContent"><span class="timecode">1:40:34</span>Prevent GenerateRoom() from offsetting the HalfTileDim.z<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:34</span>Prevent GenerateRoom() from offsetting the HalfTileDim.z<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:34</span>Prevent GenerateRoom() from offsetting the HalfTileDim.z<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6120" class="marker cat_geometry run">
+                    <div class="cineraContent"><span class="timecode">1:42:00</span>Run the game to see the room alignment<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:00</span>Run the game to see the room alignment<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:00</span>Run the game to see the room alignment<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6204" class="marker cat_geometry speech">
+                    <div class="cineraContent"><span class="timecode">1:43:24</span>Consider our alignment scheme<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:24</span>Consider our alignment scheme<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:24</span>Consider our alignment scheme<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6330" class="marker cat_debug-visualisation programming">
+                    <div class="cineraContent"><span class="timecode">1:45:30</span>Draw the chunk locations in UpdateAndRenderWorld()<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:30</span>Draw the chunk locations in UpdateAndRenderWorld()<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:30</span>Draw the chunk locations in UpdateAndRenderWorld()<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6510" class="marker cat_debug-visualisation run">
+                    <div class="cineraContent"><span class="timecode">1:48:30</span>Run the game to see our chunk boundary<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:30</span>Run the game to see our chunk boundary<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:30</span>Run the game to see our chunk boundary<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6527" class="marker cat_geometry programming">
+                    <div class="cineraContent"><span class="timecode">1:48:47</span>Prevent ChunkPositionFromTilePosition() from adjusting the Offset.z<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:47</span>Prevent ChunkPositionFromTilePosition() from adjusting the Offset.z<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:47</span>Prevent ChunkPositionFromTilePosition() from adjusting the Offset.z<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6543" class="marker cat_geometry run">
+                    <div class="cineraContent"><span class="timecode">1:49:03</span>Run the game to see that the chunk boundary lines up with the floor<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:03</span>Run the game to see that the chunk boundary lines up with the floor<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:03</span>Run the game to see that the chunk boundary lines up with the floor<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6554" class="marker cat_debug-visualisation run programming">
+                    <div class="cineraContent"><span class="timecode">1:49:14</span>Disable most of the debug visualisation and take a walk about the orphanage<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:14</span>Disable most of the debug visualisation and take a walk about the orphanage<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:14</span>Disable most of the debug visualisation and take a walk about the orphanage<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6634" class="marker cat_debug-visualisation programming">
+                    <div class="cineraContent"><span class="timecode">1:50:34</span>Disable the room boundary debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:34</span>Disable the room boundary debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:34</span>Disable the room boundary debug visualisation<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6659" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:50:59</span>Run the game and consider our dynamic camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:59</span>Run the game and consider our dynamic camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:59</span>Run the game and consider our dynamic camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6705" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:51:45</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:45</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:45</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6722" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">1:52:02</span><span class="author" data-hue="298" data-saturation="81%">joshuadolman</span> Q: Is there a particular reason why the sim region and / or lighting region are based on &quot;world space&quot; rather than connected rooms? I know that&#39;s how it was originally put together but are there any benefits / disadvantages either way? Also, if you place the lighting boundary right before a lamp and then move so it enters the light region, doesn&#39;t it kind of pop-in a little? (It&#39;s more of a fade but hopefully you know what I mean, entering the big square room does what I mean with the lamps at the top)<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:02</span><span class="author" data-hue="298" data-saturation="81%">joshuadolman</span> Q: Is there a particular reason why the sim region and / or lighting region are based on &quot;world space&quot; rather than connected rooms? I know that&#39;s how it was originally put together but are there any benefits / disadvantages either way? Also, if you place the lighting boundary right before a lamp and then move so it enters the light region, doesn&#39;t it kind of pop-in a little? (It&#39;s more of a fade but hopefully you know what I mean, entering the big square room does what I mean with the lamps at the top)<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:02</span><span class="author" data-hue="298" data-saturation="81%">joshuadolman</span> Q: Is there a particular reason why the sim region and / or lighting region are based on &quot;world space&quot; rather than connected rooms? I know that&#39;s how it was originally put together but are there any benefits / disadvantages either way? Also, if you place the lighting boundary right before a lamp and then move so it enters the light region, doesn&#39;t it kind of pop-in a little? (It&#39;s more of a fade but hopefully you know what I mean, entering the big square room does what I mean with the lamps at the top)<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6881" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:54:41</span><span class="author" data-hue="11" data-saturation="99%">sahfortv</span> Q: I think there were two typos: 1. GetCameraOffsetZForDim() had XCount; typo 2. PushLight() PushCube() had x, x, z<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:41</span><span class="author" data-hue="11" data-saturation="99%">sahfortv</span> Q: I think there were two typos: 1. GetCameraOffsetZForDim() had XCount; typo 2. PushLight() PushCube() had x, x, z<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:41</span><span class="author" data-hue="11" data-saturation="99%">sahfortv</span> Q: I think there were two typos: 1. GetCameraOffsetZForDim() had XCount; typo 2. PushLight() PushCube() had x, x, z<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6915" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:55:15</span>Fix typo in GetCameraOffsetZForDim()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:15</span>Fix typo in GetCameraOffsetZForDim()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:15</span>Fix typo in GetCameraOffsetZForDim()<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7006" class="marker cat_lighting cat_performance cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">1:56:46</span><span class="author" data-hue="153" data-saturation="78%">lorymaster</span> Q: Haven&#39;t really followed much, but are those static lights simulated? If yes, would it be a good idea to make their lighting pre-calculated to improve performance?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:46</span><span class="author" data-hue="153" data-saturation="78%">lorymaster</span> Q: Haven&#39;t really followed much, but are those static lights simulated? If yes, would it be a good idea to make their lighting pre-calculated to improve performance?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:46</span><span class="author" data-hue="153" data-saturation="78%">lorymaster</span> Q: Haven&#39;t really followed much, but are those static lights simulated? If yes, would it be a good idea to make their lighting pre-calculated to improve performance?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7050" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">1:57:30</span><span class="author" data-hue="283" data-saturation="83%">pragmascrypt</span> Q: Will the up-facing sprite cards be affected by the lighting in the future?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:30</span><span class="author" data-hue="283" data-saturation="83%">pragmascrypt</span> Q: Will the up-facing sprite cards be affected by the lighting in the future?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:30</span><span class="author" data-hue="283" data-saturation="83%">pragmascrypt</span> Q: Will the up-facing sprite cards be affected by the lighting in the future?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7085" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">1:58:05</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Q: Will we do shadow maps?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:05</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Q: Will we do shadow maps?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:05</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Q: Will we do shadow maps?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7105" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:58:25</span>Consider how shadow maps could work with sprite cards, and making stairwells<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:25</span>Consider how shadow maps could work with sprite cards, and making stairwells<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:25</span>Consider how shadow maps could work with sprite cards, and making stairwells<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7211" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:00:11</span><span class="author" data-hue="141" data-saturation="92%">ttbjm</span> Q: It looks like rooms below you can be outside of the lighting volume<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:11</span><span class="author" data-hue="141" data-saturation="92%">ttbjm</span> Q: It looks like rooms below you can be outside of the lighting volume<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:11</span><span class="author" data-hue="141" data-saturation="92%">ttbjm</span> Q: It looks like rooms below you can be outside of the lighting volume<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7343" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:02:23</span><span class="author" data-hue="327" data-saturation="97%">cvaucher</span> Q: I&#39;m cleaning up the color handling to track down rendering differences between my OpenGL and Metal backends. Is there a generally accepted way to pass / store colors in the pipeline, i.e. pre-convert everything in the asset packer to linear or widest color space? The world generation code is currently linearizing the sRGB color inputs so that they can then be reconverted to sRGB by OpenGL during blending. This seems inefficient?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:23</span><span class="author" data-hue="327" data-saturation="97%">cvaucher</span> Q: I&#39;m cleaning up the color handling to track down rendering differences between my OpenGL and Metal backends. Is there a generally accepted way to pass / store colors in the pipeline, i.e. pre-convert everything in the asset packer to linear or widest color space? The world generation code is currently linearizing the sRGB color inputs so that they can then be reconverted to sRGB by OpenGL during blending. This seems inefficient?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:23</span><span class="author" data-hue="327" data-saturation="97%">cvaucher</span> Q: I&#39;m cleaning up the color handling to track down rendering differences between my OpenGL and Metal backends. Is there a generally accepted way to pass / store colors in the pipeline, i.e. pre-convert everything in the asset packer to linear or widest color space? The world generation code is currently linearizing the sRGB color inputs so that they can then be reconverted to sRGB by OpenGL during blending. This seems inefficient?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7539" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:05:39</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Q: Should we change the color of the hero sprite depending on the surrounding light? He looks too bright in the darker areas<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:39</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Q: Should we change the color of the hero sprite depending on the surrounding light? He looks too bright in the darker areas<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:39</span><span class="author" data-hue="40" data-saturation="98%">alexkelbo</span> Q: Should we change the color of the hero sprite depending on the surrounding light? He looks too bright in the darker areas<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7642" class="marker cat_lighting cat_rendering cat_simulation authored">
+                    <div class="cineraContent"><span class="timecode">2:07:22</span><span class="author" data-hue="200" data-saturation="97%">0lpbm</span> Q: Shouldn&#39;t lights behave as other entities in regards to the sim region?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="simulation" class="category simulation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:22</span><span class="author" data-hue="200" data-saturation="97%">0lpbm</span> Q: Shouldn&#39;t lights behave as other entities in regards to the sim region?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="simulation" class="category simulation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:22</span><span class="author" data-hue="200" data-saturation="97%">0lpbm</span> Q: Shouldn&#39;t lights behave as other entities in regards to the sim region?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="simulation" class="category simulation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7686" class="marker cat_lighting cat_rendering cat_simulation authored">
+                    <div class="cineraContent"><span class="timecode">2:08:06</span><span class="author" data-hue="200" data-saturation="97%">0lpbm</span> Q: I thought they are visible when outside?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="simulation" class="category simulation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:06</span><span class="author" data-hue="200" data-saturation="97%">0lpbm</span> Q: I thought they are visible when outside?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="simulation" class="category simulation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:06</span><span class="author" data-hue="200" data-saturation="97%">0lpbm</span> Q: I thought they are visible when outside?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="simulation" class="category simulation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7696" class="marker cat_lighting cat_rendering cat_simulation run">
+                    <div class="cineraContent"><span class="timecode">2:08:16</span>Understanding the simulation region in terms of the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:16</span>Understanding the simulation region in terms of the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:16</span>Understanding the simulation region in terms of the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="simulation" class="category simulation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7847" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:10:47</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: Will you be adding fire-flies and will you call them lighting-bugs?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:47</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: Will you be adding fire-flies and will you call them lighting-bugs?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:47</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: Will you be adding fire-flies and will you call them lighting-bugs?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7855" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:10:55</span>That&#39;s all, folks<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:55</span>That&#39;s all, folks<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:55</span>That&#39;s all, folks<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day453/"><div>&#9196;</div><div>Next: 'Parsing PNG Headers'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

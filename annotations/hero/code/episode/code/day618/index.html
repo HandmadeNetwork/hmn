@@ -1,0 +1,791 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="abi, dsp, filtering, language, lighting, optimisation, performance, simd, Administrivia, Away from Keyboard, Blackboard, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Analyzing the Diffuse Blur</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content abi">
+                                <span class="icon category abi"></span><span class="cineraText">abi</span>
+                            </div>
+                            <div class="filter_content dsp">
+                                <span class="icon category dsp"></span><span class="cineraText">dsp</span>
+                            </div>
+                            <div class="filter_content filtering">
+                                <span class="icon category filtering"></span><span class="cineraText">filtering</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content optimisation">
+                                <span class="icon category optimisation"></span><span class="cineraText">optimisation</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content simd">
+                                <span class="icon category simd"></span><span class="cineraText">simd</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content afk off">
+                                <span class="icon">&#8230;</span><span class="cineraText">Away from Keyboard</span>
+                            </div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="vwi-Tq0c64w"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day617/"><div>&#9195;</div><div>Previous: 'Half-resolution Spatial Grid'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="2" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:02</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:02</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:02</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="40" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">0:40</span>Demo the lighting with different resolution spatial and lighting grids<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:40</span>Demo the lighting with different resolution spatial and lighting grids<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:40</span>Demo the lighting with different resolution spatial and lighting grids<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="142" class="marker cat_lighting cat_optimisation run">
+                    <div class="cineraContent"><span class="timecode">2:22</span>Determine to optimise the lighting pipeline, and work on quality, smoothing out the rectilinear pattern and reducing flicker<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22</span>Determine to optimise the lighting pipeline, and work on quality, smoothing out the rectilinear pattern and reducing flicker<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22</span>Determine to optimise the lighting pipeline, and work on quality, smoothing out the rectilinear pattern and reducing flicker<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="302" class="marker cat_lighting cat_performance cat_simd run">
+                    <div class="cineraContent"><span class="timecode">5:02</span>Determine to compile at least the lighting in clang, to gauge the SIMD performance<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:02</span>Determine to compile at least the lighting in clang, to gauge the SIMD performance<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:02</span>Determine to compile at least the lighting in clang, to gauge the SIMD performance<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="simd" class="category simd"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="410" class="marker cat_abi cat_simd speech">
+                    <div class="cineraContent"><span class="timecode">6:50</span>How the ABI works on Microsoft Windows, in terms of register use<span class="cineraCategories"><div title="abi" class="category abi"></div><div title="simd" class="category simd"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:50</span>How the ABI works on Microsoft Windows, in terms of register use<span class="cineraCategories"><div title="abi" class="category abi"></div><div title="simd" class="category simd"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:50</span>How the ABI works on Microsoft Windows, in terms of register use<span class="cineraCategories"><div title="abi" class="category abi"></div><div title="simd" class="category simd"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="601" class="marker cat_language speech">
+                    <div class="cineraContent"><span class="timecode">10:01</span>On the possible work getting the code to compile with clang, including its exploitation of undefined behaviour<span class="cineraCategories"><div title="language" class="category language"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:01</span>On the possible work getting the code to compile with clang, including its exploitation of undefined behaviour<span class="cineraCategories"><div title="language" class="category language"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:01</span>On the possible work getting the code to compile with clang, including its exploitation of undefined behaviour<span class="cineraCategories"><div title="language" class="category language"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="826" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">13:46</span>hhlightprof total seconds elapsed: 4.221848<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:46</span>hhlightprof total seconds elapsed: 4.221848<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:46</span>hhlightprof total seconds elapsed: 4.221848<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="832" class="marker cat_lighting cat_optimisation research">
+                    <div class="cineraContent"><span class="timecode">13:52</span>Determine to optimise the diffuse blur<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:52</span>Determine to optimise the diffuse blur<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:52</span>Determine to optimise the diffuse blur<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="871" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">14:31</span>Toggle off the diffuse blur in ComputeLightPropagationWork()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:31</span>Toggle off the diffuse blur in ComputeLightPropagationWork()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:31</span>Toggle off the diffuse blur in ComputeLightPropagationWork()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="890" class="marker cat_lighting cat_performance run">
+                    <div class="cineraContent"><span class="timecode">14:50</span>hhlightprof total seconds elapsed: 3.233531<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:50</span>hhlightprof total seconds elapsed: 3.233531<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:50</span>hhlightprof total seconds elapsed: 3.233531<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="915" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">15:15</span>Briefly describe our diffuse blur in ComputeLightPropagationWork()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:15</span>Briefly describe our diffuse blur in ComputeLightPropagationWork()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:15</span>Briefly describe our diffuse blur in ComputeLightPropagationWork()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="959" class="marker cat_dsp cat_filtering blackboard">
+                    <div class="cineraContent"><span class="timecode">15:59</span>&quot;Seperable&quot; Filters<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:59</span>&quot;Seperable&quot; Filters<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:59</span>&quot;Seperable&quot; Filters<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1135" class="marker cat_dsp cat_filtering blackboard">
+                    <div class="cineraContent"><span class="timecode">18:55</span>Example filter: Linear blend<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:55</span>Example filter: Linear blend<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:55</span>Example filter: Linear blend<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1433" class="marker cat_dsp cat_filtering blackboard">
+                    <div class="cineraContent"><span class="timecode">23:53</span>Example filter: Bilinear blend<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:53</span>Example filter: Bilinear blend<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:53</span>Example filter: Bilinear blend<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1640" class="marker cat_dsp cat_filtering blackboard">
+                    <div class="cineraContent"><span class="timecode">27:20</span>Example seperable filter: two-pass, one-dimensional blends<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:20</span>Example seperable filter: two-pass, one-dimensional blends<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:20</span>Example seperable filter: two-pass, one-dimensional blends<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1756" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">29:16</span>Get some tissues<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:16</span>Get some tissues<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:16</span>Get some tissues<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1760" class="marker cat_nullTopic off_afk skip">
+                    <div class="cineraContent"><span class="timecode">29:20</span>afk<span class="cineraCategories"></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:20</span>afk<span class="cineraCategories"></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:20</span>afk<span class="cineraCategories"></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1801" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">30:01</span>Return with tissues<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:01</span>Return with tissues<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:01</span>Return with tissues<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1820" class="marker cat_dsp cat_filtering blackboard">
+                    <div class="cineraContent"><span class="timecode">30:20</span>Our current cosine-weighted falloff equation<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:20</span>Our current cosine-weighted falloff equation<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:20</span>Our current cosine-weighted falloff equation<span class="cineraCategories"><div title="dsp" class="category dsp"></div><div title="filtering" class="category filtering"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2147" class="marker cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">35:47</span>Walk through UnitVectorFromOctahedral()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:47</span>Walk through UnitVectorFromOctahedral()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:47</span>Walk through UnitVectorFromOctahedral()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2258" class="marker cat_filtering cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">37:38</span>Determine to print the weight map table<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:38</span>Determine to print the weight map table<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:38</span>Determine to print the weight map table<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2351" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">39:11</span>Regular tea break<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:11</span>Regular tea break<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:11</span>Regular tea break<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2360" class="marker cat_nullTopic off_afk skip">
+                    <div class="cineraContent"><span class="timecode">39:20</span>afk<span class="cineraCategories"></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:20</span>afk<span class="cineraCategories"></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:20</span>afk<span class="cineraCategories"></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2406" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">40:06</span>Return with the realisation that we&#39;re at risk of infringing <span class="member" data-hue="277" data-saturation="88%">Jon Blow</span>&#39;s on-stream tea-making patent<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:06</span>Return with the realisation that we&#39;re at risk of infringing <span class="member" data-hue="277" data-saturation="88%">Jon Blow</span>&#39;s on-stream tea-making patent<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:06</span>Return with the realisation that we&#39;re at risk of infringing <span class="member" data-hue="277" data-saturation="88%">Jon Blow</span>&#39;s on-stream tea-making patent<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2427" class="marker cat_filtering cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">40:27</span>Make ProfileRun() print the DiffuseWeightMap to stdout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:27</span>Make ProfileRun() print the DiffuseWeightMap to stdout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:27</span>Make ProfileRun() print the DiffuseWeightMap to stdout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2789" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">46:29</span>hhlightprof DiffuseWeightMap: Many 0s<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:29</span>hhlightprof DiffuseWeightMap: Many 0s<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:29</span>hhlightprof DiffuseWeightMap: Many 0s<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2811" class="marker cat_filtering cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">46:51</span>Reacquaint ourselves with the use of DiffuseWeightMap in ComputeLightPropagationWork<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:51</span>Reacquaint ourselves with the use of DiffuseWeightMap in ComputeLightPropagationWork<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:51</span>Reacquaint ourselves with the use of DiffuseWeightMap in ComputeLightPropagationWork<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2926" class="marker cat_filtering cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">48:46</span>Make ProfileRun() print out the DiffuseWeightMap, based on BuildDiffuseLightMaps()<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:46</span>Make ProfileRun() print out the DiffuseWeightMap, based on BuildDiffuseLightMaps()<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:46</span>Make ProfileRun() print out the DiffuseWeightMap, based on BuildDiffuseLightMaps()<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3116" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">51:56</span>hhlightprof DiffuseWeightMap: Sensibly populated<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:56</span>hhlightprof DiffuseWeightMap: Sensibly populated<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:56</span>hhlightprof DiffuseWeightMap: Sensibly populated<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3140" class="marker cat_filtering cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">52:20</span>Make ProfileRun() print dashes when the Entry is 0<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:20</span>Make ProfileRun() print dashes when the Entry is 0<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:20</span>Make ProfileRun() print dashes when the Entry is 0<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3169" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">52:49</span>hhlightprof DiffuseWeightMap: More visible shape<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:49</span>hhlightprof DiffuseWeightMap: More visible shape<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:49</span>hhlightprof DiffuseWeightMap: More visible shape<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3190" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">53:10</span>Regular tea break<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:10</span>Regular tea break<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:10</span>Regular tea break<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3194" class="marker cat_nullTopic off_afk skip">
+                    <div class="cineraContent"><span class="timecode">53:14</span>afk<span class="cineraCategories"></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:14</span>afk<span class="cineraCategories"></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:14</span>afk<span class="cineraCategories"></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3280" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">54:40</span>Return, with the tea now steeping<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:40</span>Return, with the tea now steeping<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:40</span>Return, with the tea now steeping<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3285" class="marker cat_filtering cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">54:45</span>Analyse the DiffuseWeightMap printout for reused values<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:45</span>Analyse the DiffuseWeightMap printout for reused values<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:45</span>Analyse the DiffuseWeightMap printout for reused values<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3523" class="marker cat_filtering cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">58:43</span>Approaches to making the cosine falloff seperable: 1) Produce a somewhat similar, but regular pattern; 2) Classify values by their position<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:43</span>Approaches to making the cosine falloff seperable: 1) Produce a somewhat similar, but regular pattern; 2) Classify values by their position<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:43</span>Approaches to making the cosine falloff seperable: 1) Produce a somewhat similar, but regular pattern; 2) Classify values by their position<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3572" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">59:32</span>There&#39;s the tea<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:32</span>There&#39;s the tea<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:32</span>There&#39;s the tea<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3577" class="marker cat_nullTopic off_afk skip">
+                    <div class="cineraContent"><span class="timecode">59:37</span>afk<span class="cineraCategories"></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:37</span>afk<span class="cineraCategories"></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:37</span>afk<span class="cineraCategories"></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3617" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">1:00:17</span>Return and pour the tea<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:17</span>Return and pour the tea<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:17</span>Return and pour the tea<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3650" class="marker cat_filtering cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:00:50</span>Try making ProfileRun() print out the DiffuseWeightMap 16×16, to see the shape when it wraps<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:50</span>Try making ProfileRun() print out the DiffuseWeightMap 16×16, to see the shape when it wraps<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:50</span>Try making ProfileRun() print out the DiffuseWeightMap 16×16, to see the shape when it wraps<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3723" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:02:03</span>hhlightprof DiffuseWeightMap: 16×16 shapes, and identical rows between maps<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:03</span>hhlightprof DiffuseWeightMap: 16×16 shapes, and identical rows between maps<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:03</span>hhlightprof DiffuseWeightMap: 16×16 shapes, and identical rows between maps<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3917" class="marker cat_filtering cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:05:17</span>Consider changing the cosine falloff function to a basic blur<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:17</span>Consider changing the cosine falloff function to a basic blur<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:17</span>Consider changing the cosine falloff function to a basic blur<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3988" class="marker cat_filtering cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:06:28</span>Accidentally add a threshold of 0.01f to BuildDiffuseLightMaps()<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:28</span>Accidentally add a threshold of 0.01f to BuildDiffuseLightMaps()<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:28</span>Accidentally add a threshold of 0.01f to BuildDiffuseLightMaps()<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4040" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:07:20</span>hhlightprof DiffuseWeightMap: Without threshold<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:20</span>hhlightprof DiffuseWeightMap: Without threshold<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:20</span>hhlightprof DiffuseWeightMap: Without threshold<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4058" class="marker cat_filtering cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:07:38</span>Add a threshold to the DiffuseWeightMap printout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:38</span>Add a threshold to the DiffuseWeightMap printout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:38</span>Add a threshold to the DiffuseWeightMap printout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4093" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:08:13</span>hhlightprof DiffuseWeightMap: Still without threshold<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:13</span>hhlightprof DiffuseWeightMap: Still without threshold<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:13</span>hhlightprof DiffuseWeightMap: Still without threshold<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4104" class="marker cat_filtering cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:08:24</span>Eyeball ProfileRun() for threshold bugs<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:24</span>Eyeball ProfileRun() for threshold bugs<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:24</span>Eyeball ProfileRun() for threshold bugs<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4192" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:09:52</span>Step in to ProfileRun() and inspect W<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:52</span>Step in to ProfileRun() and inspect W<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:52</span>Step in to ProfileRun() and inspect W<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4235" class="marker cat_filtering cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:10:35</span>Fix the DiffuseWeightMap printout threshold in ProfileRun()<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:35</span>Fix the DiffuseWeightMap printout threshold in ProfileRun()<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:35</span>Fix the DiffuseWeightMap printout threshold in ProfileRun()<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4285" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:11:25</span>hhlightprof DiffuseWeightMap: With threshold, blank columns<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:25</span>hhlightprof DiffuseWeightMap: With threshold, blank columns<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:25</span>hhlightprof DiffuseWeightMap: With threshold, blank columns<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4425" class="marker cat_filtering cat_lighting run programming">
+                    <div class="cineraContent"><span class="timecode">1:13:45</span>Try various thresholds for the DiffuseWeightMap printout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:45</span>Try various thresholds for the DiffuseWeightMap printout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:45</span>Try various thresholds for the DiffuseWeightMap printout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4494" class="marker cat_filtering cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:14:54</span>Make ProfileRun() print out the DiffuseWeightMap 8×8<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:54</span>Make ProfileRun() print out the DiffuseWeightMap 8×8<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:54</span>Make ProfileRun() print out the DiffuseWeightMap 8×8<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4505" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:15:05</span>hhlightprof DiffuseWeightMap: 8×8 shapes, with threshold<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:05</span>hhlightprof DiffuseWeightMap: 8×8 shapes, with threshold<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:05</span>hhlightprof DiffuseWeightMap: 8×8 shapes, with threshold<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4547" class="marker cat_filtering cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:15:47</span>Make ProfileRun() print out the X, Y and Z directions of a DiffuseWeightMap Element<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:47</span>Make ProfileRun() print out the X, Y and Z directions of a DiffuseWeightMap Element<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:47</span>Make ProfileRun() print out the X, Y and Z directions of a DiffuseWeightMap Element<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4695" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:18:15</span>hhlightprof DiffuseWeightMap: Element directions<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:15</span>hhlightprof DiffuseWeightMap: Element directions<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:15</span>hhlightprof DiffuseWeightMap: Element directions<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4722" class="marker cat_filtering cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:18:42</span>Make ProfileRun() add a dash to its 0 printout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:42</span>Make ProfileRun() add a dash to its 0 printout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:42</span>Make ProfileRun() add a dash to its 0 printout<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4736" class="marker cat_filtering cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">1:18:56</span>hhlightprof DiffuseWeightMap: Element directions, completely symmetric<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:56</span>hhlightprof DiffuseWeightMap: Element directions, completely symmetric<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:56</span>hhlightprof DiffuseWeightMap: Element directions, completely symmetric<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4955" class="marker cat_filtering cat_lighting blackboard">
+                    <div class="cineraContent"><span class="timecode">1:22:35</span>Our cosine falloff equation, and its reusable terms<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:35</span>Our cosine falloff equation, and its reusable terms<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:35</span>Our cosine falloff equation, and its reusable terms<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5513" class="marker cat_filtering cat_lighting blackboard">
+                    <div class="cineraContent"><span class="timecode">1:31:53</span>Rephrasing the DiffuseWeightMap generation in a seperable way<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:53</span>Rephrasing the DiffuseWeightMap generation in a seperable way<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:53</span>Rephrasing the DiffuseWeightMap generation in a seperable way<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6028" class="marker cat_filtering cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:40:28</span>Determine to ruminate on the DiffuseWeightMap<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:28</span>Determine to ruminate on the DiffuseWeightMap<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:28</span>Determine to ruminate on the DiffuseWeightMap<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6055" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:40:55</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:55</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:55</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6095" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">1:41:35</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Couldn&#39;t at least the tetrahedron unit vector function use a lookup table and lerp?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:35</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Couldn&#39;t at least the tetrahedron unit vector function use a lookup table and lerp?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:35</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Couldn&#39;t at least the tetrahedron unit vector function use a lookup table and lerp?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6158" class="marker cat_lighting cat_performance authored">
+                    <div class="cineraContent"><span class="timecode">1:42:38</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Speed up that function, if it gets called a lot<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:38</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Speed up that function, if it gets called a lot<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:38</span><span class="author" data-hue="237" data-saturation="85%">mindmark42</span> Q: Speed up that function, if it gets called a lot<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6227" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">1:43:47</span>Toggle on the diffuse blur in ComputeLightPropagationWork()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:47</span>Toggle on the diffuse blur in ComputeLightPropagationWork()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:47</span>Toggle on the diffuse blur in ComputeLightPropagationWork()<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6232" class="marker cat_filtering cat_lighting research">
+                    <div class="cineraContent"><span class="timecode">1:43:52</span>Our desire to do the cosine falloff seperable, if we can<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:52</span>Our desire to do the cosine falloff seperable, if we can<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:52</span>Our desire to do the cosine falloff seperable, if we can<span class="cineraCategories"><div title="filtering" class="category filtering"></div><div title="lighting" class="category lighting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6321" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:45:21</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:21</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:21</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day619/"><div>&#9196;</div><div>Next: 'Adding Asset Tag Hashes'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

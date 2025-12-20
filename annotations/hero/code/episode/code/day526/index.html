@@ -1,0 +1,811 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asset system, entity system, hardware, isa, language, mathematics, memory, performance, Administrivia, Blackboard, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Single-Buffer Sound Streaming</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://www.agner.org/optimize/instruction_tables.pdf" href="https://www.agner.org/optimize/instruction_tables.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Agner Fog</div>
+                            <div class="ref_title">Optimization manuals: 4. Instruction tables</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2036" class="timecode"><span class="ref_index">[1]</span><span class="time">33:56</span></span><span data-timestamp="2299" class="timecode"><span class="ref_index">[2]</span><span class="time">38:19</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.7-cpu.com/cpu/Skylake.html" href="https://www.7-cpu.com/cpu/Skylake.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">7-Zip LZMA Benchmark</div>
+                            <div class="ref_title">Intel Skylake</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2543" class="timecode"><span class="ref_index">[3]</span><span class="time">42:23</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel</div>
+                            <div class="ref_title">Intel Intrinsics Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8373" class="timecode"><span class="ref_index">[4]</span><span class="time">2:19:33</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://en.wikipedia.org/wiki/Finite_field_arithmetic" href="https://en.wikipedia.org/wiki/Finite_field_arithmetic" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Wikipedia</div>
+                            <div class="ref_title">Finite field arithmetic</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8373" class="timecode"><span class="ref_index">[5]</span><span class="time">2:19:33</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asset-system">
+                                <span class="icon category asset-system"></span><span class="cineraText">asset system</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content isa">
+                                <span class="icon category isa"></span><span class="cineraText">isa</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="sU56s8w878Q"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day525/"><div>&#9195;</div><div>Previous: 'Cleaning Up Import Tag Grids'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="5" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:05</span>Note the upgrade to <span class="project" data-hue="298" data-saturation="95%">remedybg</span> 0.2.2.0 with thanks to <span class="member" data-hue="187" data-saturation="84%">x13pixels</span><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:05</span>Note the upgrade to <span class="project" data-hue="298" data-saturation="95%">remedybg</span> 0.2.2.0 with thanks to <span class="member" data-hue="187" data-saturation="84%">x13pixels</span><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:05</span>Note the upgrade to <span class="project" data-hue="298" data-saturation="95%">remedybg</span> 0.2.2.0 with thanks to <span class="member" data-hue="187" data-saturation="84%">x13pixels</span><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="78" class="marker cat_asset-system admin">
+                    <div class="cineraContent"><span class="timecode">1:18</span>Set up to get our audio streaming into the game, checking out intro_cutscene.hha in TabView<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18</span>Set up to get our audio streaming into the game, checking out intro_cutscene.hha in TabView<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18</span>Set up to get our audio streaming into the game, checking out intro_cutscene.hha in TabView<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="246" class="marker cat_asset-system speech">
+                    <div class="cineraContent"><span class="timecode">4:06</span>Streaming audio into 256KiB fixed-size chunks, with thoughts on audio-visual budgetary considerations<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:06</span>Streaming audio into 256KiB fixed-size chunks, with thoughts on audio-visual budgetary considerations<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:06</span>Streaming audio into 256KiB fixed-size chunks, with thoughts on audio-visual budgetary considerations<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="526" class="marker cat_asset-system cat_memory speech">
+                    <div class="cineraContent"><span class="timecode">8:46</span>Streaming audio into a crazy sound buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:46</span>Streaming audio into a crazy sound buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:46</span>Streaming audio into a crazy sound buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="752" class="marker cat_asset-system cat_memory blackboard">
+                    <div class="cineraContent"><span class="timecode">12:32</span>Crazy Sound Buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:32</span>Crazy Sound Buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:32</span>Crazy Sound Buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1065" class="marker cat_asset-system cat_memory blackboard">
+                    <div class="cineraContent"><span class="timecode">17:45</span>Crazy sound buffer vs fixed-chunk scheme<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:45</span>Crazy sound buffer vs fixed-chunk scheme<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:45</span>Crazy sound buffer vs fixed-chunk scheme<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1222" class="marker cat_asset-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">20:22</span>Implement our crazy sound buffer in LoadSound()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:22</span>Implement our crazy sound buffer in LoadSound()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:22</span>Implement our crazy sound buffer in LoadSound()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1698" class="marker cat_asset-system cat_memory speech">
+                    <div class="cineraContent"><span class="timecode">28:18</span>Note a subtlety that could cause an incorrect sound to be played back<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:18</span>Note a subtlety that could cause an incorrect sound to be played back<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:18</span>Note a subtlety that could cause an incorrect sound to be played back<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1824" class="marker cat_asset-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">30:24</span>Continue to implement our crazy sound buffer in LoadSound(), independent of sample bit-depth<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:24</span>Continue to implement our crazy sound buffer in LoadSound(), independent of sample bit-depth<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:24</span>Continue to implement our crazy sound buffer in LoadSound(), independent of sample bit-depth<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2036" class="marker cat_isa cat_performance research" data-ref="https://www.agner.org/optimize/instruction_tables.pdf">
+                    <div class="cineraContent"><span class="timecode">33:56</span>Introduce Agner Fog&#39;s instruction tables<sup>1</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:56</span>Introduce Agner Fog&#39;s instruction tables<sup>1</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:56</span>Introduce Agner Fog&#39;s instruction tables<sup>1</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2299" class="marker cat_isa cat_performance research" data-ref="https://www.agner.org/optimize/instruction_tables.pdf">
+                    <div class="cineraContent"><span class="timecode">38:19</span>Consult Agner Fog&#39;s Skylake instruction table for the performance of DIV instructions<sup>2</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:19</span>Consult Agner Fog&#39;s Skylake instruction table for the performance of DIV instructions<sup>2</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:19</span>Consult Agner Fog&#39;s Skylake instruction table for the performance of DIV instructions<sup>2</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2419" class="marker cat_asset-system cat_mathematics cat_memory cat_performance programming">
+                    <div class="cineraContent"><span class="timecode">40:19</span>Add a SampleBufferMappingMask to the game_assets with which LoadSound() may set the SampleBufferIndex using bitwise AND, rather than the less performant modulus<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="mathematics" class="category mathematics"></div><div title="memory" class="category memory"></div><div title="performance" class="category performance"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:19</span>Add a SampleBufferMappingMask to the game_assets with which LoadSound() may set the SampleBufferIndex using bitwise AND, rather than the less performant modulus<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="mathematics" class="category mathematics"></div><div title="memory" class="category memory"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:19</span>Add a SampleBufferMappingMask to the game_assets with which LoadSound() may set the SampleBufferIndex using bitwise AND, rather than the less performant modulus<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="mathematics" class="category mathematics"></div><div title="memory" class="category memory"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2543" class="marker cat_hardware cat_performance research" data-ref="https://www.7-cpu.com/cpu/Skylake.html">
+                    <div class="cineraContent"><span class="timecode">42:23</span>Check the L2 cache latency of an Intel Skylake CPU<sup>3</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:23</span>Check the L2 cache latency of an Intel Skylake CPU<sup>3</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:23</span>Check the L2 cache latency of an Intel Skylake CPU<sup>3</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2619" class="marker cat_asset-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">43:39</span>Continue to implement our crazy sound buffer in LoadSound()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:39</span>Continue to implement our crazy sound buffer in LoadSound()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:39</span>Continue to implement our crazy sound buffer in LoadSound()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2882" class="marker cat_asset-system cat_memory speech">
+                    <div class="cineraContent"><span class="timecode">48:02</span>Reflect on the simplicity of our crazy sound buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:02</span>Reflect on the simplicity of our crazy sound buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:02</span>Reflect on the simplicity of our crazy sound buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2904" class="marker cat_asset-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">48:24</span>Introduce ReserveSoundMemory() for LoadSound() (and the playback function) to know about the area of the crazy sound buffer that should not get evicted<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:24</span>Introduce ReserveSoundMemory() for LoadSound() (and the playback function) to know about the area of the crazy sound buffer that should not get evicted<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:24</span>Introduce ReserveSoundMemory() for LoadSound() (and the playback function) to know about the area of the crazy sound buffer that should not get evicted<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3093" class="marker cat_asset-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">51:33</span>Enable GetSoundSamples() to play back from our crazy sound buffer, introducing GetSoundBufferMemory()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:33</span>Enable GetSoundSamples() to play back from our crazy sound buffer, introducing GetSoundBufferMemory()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:33</span>Enable GetSoundSamples() to play back from our crazy sound buffer, introducing GetSoundBufferMemory()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3708" class="marker cat_asset-system cat_memory blackboard">
+                    <div class="cineraContent"><span class="timecode">1:01:48</span>Awareness of overlap in a circular buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:48</span>Awareness of overlap in a circular buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:48</span>Awareness of overlap in a circular buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3829" class="marker cat_asset-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">1:03:49</span>Make ReserveSoundMemory() return a more informative sound_buffer_memory for LoadSound() and GetSoundSamples() to use<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:49</span>Make ReserveSoundMemory() return a more informative sound_buffer_memory for LoadSound() and GetSoundSamples() to use<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:49</span>Make ReserveSoundMemory() return a more informative sound_buffer_memory for LoadSound() and GetSoundSamples() to use<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4299" class="marker cat_asset-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">1:11:39</span>Implement GetSoundBufferRanges()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:39</span>Implement GetSoundBufferRanges()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:39</span>Implement GetSoundBufferRanges()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4373" class="marker cat_asset-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">1:12:53</span>Introduce InitSoundMemory() for AllocateGameAssets() to call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:53</span>Introduce InitSoundMemory() for AllocateGameAssets() to call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:53</span>Introduce InitSoundMemory() for AllocateGameAssets() to call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4693" class="marker cat_asset-system research">
+                    <div class="cineraContent"><span class="timecode">1:18:13</span>Reacquaint ourselves with the audio playing code<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:13</span>Reacquaint ourselves with the audio playing code<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:13</span>Reacquaint ourselves with the audio playing code<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4893" class="marker cat_asset-system programming">
+                    <div class="cineraContent"><span class="timecode">1:21:33</span>Enable GameUpdateAndRender() to call ChangeVolume() and PlaySound() on our piano music_test.wav<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:33</span>Enable GameUpdateAndRender() to call ChangeVolume() and PlaySound() on our piano music_test.wav<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:33</span>Enable GameUpdateAndRender() to call ChangeVolume() and PlaySound() on our piano music_test.wav<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5259" class="marker cat_asset-system run">
+                    <div class="cineraContent"><span class="timecode">1:27:39</span>Listen to our piano music_test.wav in-game, to find that only the first chunk plays<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:39</span>Listen to our piano music_test.wav in-game, to find that only the first chunk plays<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:39</span>Listen to our piano music_test.wav in-game, to find that only the first chunk plays<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5344" class="marker cat_asset-system cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">1:29:04</span>Make PrefetchSound() call GetSoundSamples() to pull samples into the non-eviction region of our crazy sound buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:04</span>Make PrefetchSound() call GetSoundSamples() to pull samples into the non-eviction region of our crazy sound buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:04</span>Make PrefetchSound() call GetSoundSamples() to pull samples into the non-eviction region of our crazy sound buffer<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5504" class="marker cat_asset-system research">
+                    <div class="cineraContent"><span class="timecode">1:31:44</span>Continue to reacquaint ourselves with OutputPlayingSounds()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:44</span>Continue to reacquaint ourselves with OutputPlayingSounds()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:44</span>Continue to reacquaint ourselves with OutputPlayingSounds()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5704" class="marker cat_asset-system programming">
+                    <div class="cineraContent"><span class="timecode">1:35:04</span>Make OutputPlayingSounds() correctly compute the SampleCount and retrieve a full hha_asset * from GetSoundInfo()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:04</span>Make OutputPlayingSounds() correctly compute the SampleCount and retrieve a full hha_asset * from GetSoundInfo()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:04</span>Make OutputPlayingSounds() correctly compute the SampleCount and retrieve a full hha_asset * from GetSoundInfo()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5980" class="marker cat_asset-system run">
+                    <div class="cineraContent"><span class="timecode">1:39:40</span>Listen to our piano music_test.wav in-game, to find that we get choppy playback when we miss our framerate<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:40</span>Listen to our piano music_test.wav in-game, to find that we get choppy playback when we miss our framerate<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:40</span>Listen to our piano music_test.wav in-game, to find that we get choppy playback when we miss our framerate<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6103" class="marker cat_asset-system research">
+                    <div class="cineraContent"><span class="timecode">1:41:43</span>Reacquaint ourselves with the single-play audio code<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:43</span>Reacquaint ourselves with the single-play audio code<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:43</span>Reacquaint ourselves with the single-play audio code<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6302" class="marker cat_asset-system cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:45:02</span>Make ExecuteBrainHero() call PlaySound() on the Glove<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:02</span>Make ExecuteBrainHero() call PlaySound() on the Glove<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:02</span>Make ExecuteBrainHero() call PlaySound() on the Glove<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6379" class="marker cat_asset-system cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:46:19</span>Find that we cannot hear the glove<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:19</span>Find that we cannot hear the glove<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:19</span>Find that we cannot hear the glove<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6462" class="marker cat_asset-system cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:47:42</span>Step through ExecuteBrain() to PlaySound() to find that we passed a bogus SoundID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:42</span>Step through ExecuteBrain() to PlaySound() to find that we passed a bogus SoundID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:42</span>Step through ExecuteBrain() to PlaySound() to find that we passed a bogus SoundID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6503" class="marker cat_asset-system cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:48:23</span>Fix ExecuteBrainHero() to only call PlaySound() on attack, rebuild and crash <span class="project" data-hue="298" data-saturation="95%">remedybg</span><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:23</span>Fix ExecuteBrainHero() to only call PlaySound() on attack, rebuild and crash <span class="project" data-hue="298" data-saturation="95%">remedybg</span><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:23</span>Fix ExecuteBrainHero() to only call PlaySound() on attack, rebuild and crash <span class="project" data-hue="298" data-saturation="95%">remedybg</span><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6613" class="marker cat_asset-system cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:50:13</span>Step in to ExecuteBrainHero()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:13</span>Step in to ExecuteBrainHero()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:13</span>Step in to ExecuteBrainHero()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6649" class="marker cat_asset-system cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:50:49</span>Make ExecuteBrainHero() set the Weight for our bloop sound asset, rebuild and crash <span class="project" data-hue="298" data-saturation="95%">remedybg</span><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:49</span>Make ExecuteBrainHero() set the Weight for our bloop sound asset, rebuild and crash <span class="project" data-hue="298" data-saturation="95%">remedybg</span><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:49</span>Make ExecuteBrainHero() set the Weight for our bloop sound asset, rebuild and crash <span class="project" data-hue="298" data-saturation="95%">remedybg</span><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6676" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">1:51:16</span>Try to figure out the repro case for this <span class="project" data-hue="298" data-saturation="95%">remedybg</span> crash<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:16</span>Try to figure out the repro case for this <span class="project" data-hue="298" data-saturation="95%">remedybg</span> crash<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:16</span>Try to figure out the repro case for this <span class="project" data-hue="298" data-saturation="95%">remedybg</span> crash<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6783" class="marker cat_asset-system cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:53:03</span>Step in to ExecuteBrainHero() to determine that GetBestMatchSoundFrom() fails to find a sound<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:03</span>Step in to ExecuteBrainHero() to determine that GetBestMatchSoundFrom() fails to find a sound<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:03</span>Step in to ExecuteBrainHero() to determine that GetBestMatchSoundFrom() fails to find a sound<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6836" class="marker cat_language admin">
+                    <div class="cineraContent"><span class="timecode">1:53:56</span><span class="project" data-hue="298" data-saturation="95%">remedybg</span> feature request: Casting to an enum<span class="cineraCategories"><div title="language" class="category language"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:56</span><span class="project" data-hue="298" data-saturation="95%">remedybg</span> feature request: Casting to an enum<span class="cineraCategories"><div title="language" class="category language"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:56</span><span class="project" data-hue="298" data-saturation="95%">remedybg</span> feature request: Casting to an enum<span class="cineraCategories"><div title="language" class="category language"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6920" class="marker cat_asset-system run">
+                    <div class="cineraContent"><span class="timecode">1:55:20</span>Step through GetBestMatchAssetFrom() to see how it&#39;s handling our request for the bloop asset<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:20</span>Step through GetBestMatchAssetFrom() to see how it&#39;s handling our request for the bloop asset<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:20</span>Step through GetBestMatchAssetFrom() to see how it&#39;s handling our request for the bloop asset<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7076" class="marker cat_asset-system admin">
+                    <div class="cineraContent"><span class="timecode">1:57:56</span>Check out base_game.hha in TabView to find that our bloop audio assets are absent<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:56</span>Check out base_game.hha in TabView to find that our bloop audio assets are absent<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:56</span>Check out base_game.hha in TabView to find that our bloop audio assets are absent<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7244" class="marker cat_asset-system run">
+                    <div class="cineraContent"><span class="timecode">2:00:44</span>Check out our import errors<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:44</span>Check out our import errors<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:44</span>Check out our import errors<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7271" class="marker cat_asset-system admin">
+                    <div class="cineraContent"><span class="timecode">2:01:11</span>Fix typos in base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:11</span>Fix typos in base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:11</span>Fix typos in base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7290" class="marker cat_asset-system cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:01:30</span>Reimport our assets, step through ExecuteBrainHero() and successfully hear our glove bloop<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:30</span>Reimport our assets, step through ExecuteBrainHero() and successfully hear our glove bloop<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:30</span>Reimport our assets, step through ExecuteBrainHero() and successfully hear our glove bloop<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7349" class="marker cat_asset-system cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">2:02:29</span>Investigate why we hear the glove bloop on repeat<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:29</span>Investigate why we hear the glove bloop on repeat<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:29</span>Investigate why we hear the glove bloop on repeat<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7440" class="marker cat_asset-system cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:04:00</span>Listen to the repeated audio<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:00</span>Listen to the repeated audio<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:00</span>Listen to the repeated audio<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7480" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:04:40</span>Temporarily reduce the Entity-&gt;tMovement of our glove swipe in UpdateAndRenderEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:40</span>Temporarily reduce the Entity-&gt;tMovement of our glove swipe in UpdateAndRenderEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:40</span>Temporarily reduce the Entity-&gt;tMovement of our glove swipe in UpdateAndRenderEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7485" class="marker cat_asset-system cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:04:45</span>Find that the bloop audio continues to repeat<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:45</span>Find that the bloop audio continues to repeat<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:45</span>Find that the bloop audio continues to repeat<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7540" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:05:40</span>Fix ExecuteBrainHero() to correctly perform a single attack<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:40</span>Fix ExecuteBrainHero() to correctly perform a single attack<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:40</span>Fix ExecuteBrainHero() to correctly perform a single attack<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7627" class="marker cat_asset-system cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:07:07</span>See and hear our non-repeated glove attack bloop<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:07</span>See and hear our non-repeated glove attack bloop<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:07</span>See and hear our non-repeated glove attack bloop<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7634" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:07:14</span>Revert the Entity-&gt;tMovement of our glove swipe in UpdateAndRenderEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:14</span>Revert the Entity-&gt;tMovement of our glove swipe in UpdateAndRenderEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:14</span>Revert the Entity-&gt;tMovement of our glove swipe in UpdateAndRenderEntities()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7647" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:07:27</span>Find that our glove is absent<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:27</span>Find that our glove is absent<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:27</span>Find that our glove is absent<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7662" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:07:42</span>Fix ExecuteBrainHero() to float our glove when we&#39;re not attacking, rebuild and crash <span class="project" data-hue="298" data-saturation="95%">remedybg</span><span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:42</span>Fix ExecuteBrainHero() to float our glove when we&#39;re not attacking, rebuild and crash <span class="project" data-hue="298" data-saturation="95%">remedybg</span><span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:42</span>Fix ExecuteBrainHero() to float our glove when we&#39;re not attacking, rebuild and crash <span class="project" data-hue="298" data-saturation="95%">remedybg</span><span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7690" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:08:10</span>See and hear our glove in-game, and hear some clicking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:10</span>See and hear our glove in-game, and hear some clicking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:10</span>See and hear our glove in-game, and hear some clicking<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7741" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:09:01</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:01</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:01</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7780" class="marker cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">2:09:40</span><span class="author" data-hue="328" data-saturation="78%">mtsmox</span> Q: In the LRU copy path you might have forgotten to set Result?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:40</span><span class="author" data-hue="328" data-saturation="78%">mtsmox</span> Q: In the LRU copy path you might have forgotten to set Result?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:40</span><span class="author" data-hue="328" data-saturation="78%">mtsmox</span> Q: In the LRU copy path you might have forgotten to set Result?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7825" class="marker cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">2:10:25</span>Fix GetSoundSamples() to set the correct Result<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:25</span>Fix GetSoundSamples() to set the correct Result<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:25</span>Fix GetSoundSamples() to set the correct Result<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7855" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:10:55</span><span class="author" data-hue="2" data-saturation="78%">guybru5h_vi</span> Q: Just started at a new job that has a gargantuan codebase (in the millions of lines of code) and it&#39;s very hard to follow what&#39;s going on. Do you have any general advice or approach to gaining an understanding of what&#39;s going on in files that are part of very large codebases? Also thanks! It&#39;s in a large part thanks to <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> that I managed to land the job!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:55</span><span class="author" data-hue="2" data-saturation="78%">guybru5h_vi</span> Q: Just started at a new job that has a gargantuan codebase (in the millions of lines of code) and it&#39;s very hard to follow what&#39;s going on. Do you have any general advice or approach to gaining an understanding of what&#39;s going on in files that are part of very large codebases? Also thanks! It&#39;s in a large part thanks to <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> that I managed to land the job!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:55</span><span class="author" data-hue="2" data-saturation="78%">guybru5h_vi</span> Q: Just started at a new job that has a gargantuan codebase (in the millions of lines of code) and it&#39;s very hard to follow what&#39;s going on. Do you have any general advice or approach to gaining an understanding of what&#39;s going on in files that are part of very large codebases? Also thanks! It&#39;s in a large part thanks to <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> that I managed to land the job!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8105" class="marker cat_memory authored">
+                    <div class="cineraContent"><span class="timecode">2:15:05</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Is there a name for that type of buffer?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:05</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Is there a name for that type of buffer?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:05</span><span class="author" data-hue="263" data-saturation="92%">nickito97</span> Is there a name for that type of buffer?<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8194" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:16:34</span><span class="author" data-hue="287" data-saturation="99%">jkfsda</span> Q: John Carmack likes Rust, is Rust &gt; C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:34</span><span class="author" data-hue="287" data-saturation="99%">jkfsda</span> Q: John Carmack likes Rust, is Rust &gt; C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:34</span><span class="author" data-hue="287" data-saturation="99%">jkfsda</span> Q: John Carmack likes Rust, is Rust &gt; C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8321" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:18:41</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: On an interview I was given a debugging task on a new piece of code (it was a web scraper written in Python). This company was actually generous enough to provide feedback on performance and said I would have done better if I had &quot;debugged more systematically&quot;. Do you have any tips on better debugging practices?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:41</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: On an interview I was given a debugging task on a new piece of code (it was a web scraper written in Python). This company was actually generous enough to provide feedback on performance and said I would have done better if I had &quot;debugged more systematically&quot;. Do you have any tips on better debugging practices?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:41</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: On an interview I was given a debugging task on a new piece of code (it was a web scraper written in Python). This company was actually generous enough to provide feedback on performance and said I would have done better if I had &quot;debugged more systematically&quot;. Do you have any tips on better debugging practices?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8373" class="marker cat_isa cat_mathematics authored" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/,https://en.wikipedia.org/wiki/Finite_field_arithmetic">
+                    <div class="cineraContent"><span class="timecode">2:19:33</span><span class="author" data-hue="228" data-saturation="97%">vtlmks</span> Q: &lt;joke question&gt; Why can&#39;t we use the GF2P8AFFINEINVQB instruction all the time?<sup>4</sup><sup>,5</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:19:33</span><span class="author" data-hue="228" data-saturation="97%">vtlmks</span> Q: &lt;joke question&gt; Why can&#39;t we use the GF2P8AFFINEINVQB instruction all the time?<sup>4</sup><sup>,5</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:19:33</span><span class="author" data-hue="228" data-saturation="97%">vtlmks</span> Q: &lt;joke question&gt; Why can&#39;t we use the GF2P8AFFINEINVQB instruction all the time?<sup>4</sup><sup>,5</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8700" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:25:00</span><span class="author" data-hue="82" data-saturation="74%">panthalassadigital</span> Q: After reading your &quot;About&quot; on your website, <span class="member" data-hue="125" data-saturation="81%">Casey</span>, what does it mean to be in gaming research and development? What&#39;s your company&#39;s bread and butter? Are you basically a consultant for other game companies?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:25:00</span><span class="author" data-hue="82" data-saturation="74%">panthalassadigital</span> Q: After reading your &quot;About&quot; on your website, <span class="member" data-hue="125" data-saturation="81%">Casey</span>, what does it mean to be in gaming research and development? What&#39;s your company&#39;s bread and butter? Are you basically a consultant for other game companies?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:25:00</span><span class="author" data-hue="82" data-saturation="74%">panthalassadigital</span> Q: After reading your &quot;About&quot; on your website, <span class="member" data-hue="125" data-saturation="81%">Casey</span>, what does it mean to be in gaming research and development? What&#39;s your company&#39;s bread and butter? Are you basically a consultant for other game companies?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8997" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:29:57</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: Regarding story engines: what sort of advancements are in yours, if you can mention anything? What does it achieve?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:29:57</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: Regarding story engines: what sort of advancements are in yours, if you can mention anything? What does it achieve?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:29:57</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: Regarding story engines: what sort of advancements are in yours, if you can mention anything? What does it achieve?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9043" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:30:43</span>Close it down with an exercise for the reader: preventing the sound from skipping when we miss our frame rate<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30:43</span>Close it down with an exercise for the reader: preventing the sound from skipping when we miss our frame rate<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30:43</span>Close it down with an exercise for the reader: preventing the sound from skipping when we miss our frame rate<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day527/"><div>&#9196;</div><div>Next: 'Making a Stand-Alone Font Extractor'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

@@ -1,0 +1,861 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asm, hardware, isa, language, lighting, math, optimisation, performance, prng, rendering, timing, Administrivia, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Replacing rand() and Preparing for SIMD</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="http://www.pcg-random.org/" href="http://www.pcg-random.org/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">PCG, A Family of Better Random Number Generators</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="951" class="timecode"><span class="ref_index">[1]</span><span class="time">15:51</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://www.pcg-random.org/pdf/hmc-cs-2014-0905.pdf" href="http://www.pcg-random.org/pdf/hmc-cs-2014-0905.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Melissa E. O’Neill</div>
+                            <div class="ref_title">PCG: A Family of Simple Fast Space-Efficient Statistically Good Algorithms for Random Number Generation</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="951" class="timecode"><span class="ref_index">[2]</span><span class="time">15:51</span></span><span data-timestamp="1679" class="timecode"><span class="ref_index">[4]</span><span class="time">27:59</span></span><span data-timestamp="1875" class="timecode"><span class="ref_index">[7]</span><span class="time">31:15</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel</div>
+                            <div class="ref_title">Intel Intrinsics Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1453" class="timecode"><span class="ref_index">[3]</span><span class="time">24:13</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://en.wikipedia.org/wiki/Xorshift" href="https://en.wikipedia.org/wiki/Xorshift" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Wikipedia</div>
+                            <div class="ref_title">Xorshift</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1679" class="timecode"><span class="ref_index">[5]</span><span class="time">27:59</span></span><span data-timestamp="1875" class="timecode"><span class="ref_index">[6]</span><span class="time">31:15</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://en.wikipedia.org/wiki/RdRand" href="https://en.wikipedia.org/wiki/RdRand" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Wikipedia</div>
+                            <div class="ref_title">RdRand</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="9991" class="timecode"><span class="ref_index">[8]</span><span class="time">2:46:31</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content isa">
+                                <span class="icon category isa"></span><span class="cineraText">isa</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content math">
+                                <span class="icon category math"></span><span class="cineraText">math</span>
+                            </div>
+                            <div class="filter_content optimisation">
+                                <span class="icon category optimisation"></span><span class="cineraText">optimisation</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content prng">
+                                <span class="icon category prng"></span><span class="cineraText">prng</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content timing">
+                                <span class="icon category timing"></span><span class="cineraText">timing</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="xBBEkn1x7So"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/ray/ray01/"><div>&#9195;</div><div>Previous: 'Multithreading'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="6" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:06</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:06</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:06</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="98" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:38</span>Note that we&#39;re building in optimised mode<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38</span>Note that we&#39;re building in optimised mode<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38</span>Note that we&#39;re building in optimised mode<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="135" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">2:15</span>Run and see our output image<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15</span>Run and see our output image<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15</span>Run and see our output image<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="219" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">3:39</span>ray.cpp: Walk through the code<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:39</span>ray.cpp: Walk through the code<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:39</span>ray.cpp: Walk through the code<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="323" class="marker cat_optimisation speech">
+                    <div class="cineraContent"><span class="timecode">5:23</span>Consider two areas of optimisation: 1) Bounding Volume Hierarchy<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:23</span>Consider two areas of optimisation: 1) Bounding Volume Hierarchy<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:23</span>Consider two areas of optimisation: 1) Bounding Volume Hierarchy<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="417" class="marker cat_math cat_optimisation speech">
+                    <div class="cineraContent"><span class="timecode">6:57</span>2) Using better math operations<span class="cineraCategories"><div title="math" class="category math"></div><div title="optimisation" class="category optimisation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:57</span>2) Using better math operations<span class="cineraCategories"><div title="math" class="category math"></div><div title="optimisation" class="category optimisation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:57</span>2) Using better math operations<span class="cineraCategories"><div title="math" class="category math"></div><div title="optimisation" class="category optimisation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="462" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">7:42</span>Step into RenderTile() and inspect the asm, noting down routines to improve<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:42</span>Step into RenderTile() and inspect the asm, noting down routines to improve<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:42</span>Step into RenderTile() and inspect the asm, noting down routines to improve<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="951" class="marker cat_prng research" data-ref="http://www.pcg-random.org/,http://www.pcg-random.org/pdf/hmc-cs-2014-0905.pdf">
+                    <div class="cineraContent"><span class="timecode">15:51</span>Check out PCG, A Family of Better Random Number Generators<sup>1</sup> with a recommendation to read the full paper<sup>2</sup><span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:51</span>Check out PCG, A Family of Better Random Number Generators<sup>1</sup> with a recommendation to read the full paper<sup>2</sup><span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:51</span>Check out PCG, A Family of Better Random Number Generators<sup>1</sup> with a recommendation to read the full paper<sup>2</sup><span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1453" class="marker cat_isa research" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">24:13</span>Check out the x86 SSE2 shift-left instructions<sup>3</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:13</span>Check out the x86 SSE2 shift-left instructions<sup>3</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:13</span>Check out the x86 SSE2 shift-left instructions<sup>3</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1679" class="marker cat_prng research" data-ref="http://www.pcg-random.org/pdf/hmc-cs-2014-0905.pdf,https://en.wikipedia.org/wiki/Xorshift">
+                    <div class="cineraContent"><span class="timecode">27:59</span>Read 6.3 - Specific Implementations<sup>4</sup> and the Xorshift wiki article<sup>5</sup><span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:59</span>Read 6.3 - Specific Implementations<sup>4</sup> and the Xorshift wiki article<sup>5</sup><span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:59</span>Read 6.3 - Specific Implementations<sup>4</sup> and the Xorshift wiki article<sup>5</sup><span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1875" class="marker cat_nullTopic programming" data-ref="https://en.wikipedia.org/wiki/Xorshift,http://www.pcg-random.org/pdf/hmc-cs-2014-0905.pdf">
+                    <div class="cineraContent"><span class="timecode">31:15</span>Introduce XOrShift32() from Wikipedia<sup>6</sup> with a check into doing this in a 64-bit<sup>7</sup></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:15</span>Introduce XOrShift32() from Wikipedia<sup>6</sup> with a check into doing this in a 64-bit<sup>7</sup></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:15</span>Introduce XOrShift32() from Wikipedia<sup>6</sup> with a check into doing this in a 64-bit<sup>7</sup></div>
+                    </div>
+                </div>
+                <div data-timestamp="2265" class="marker cat_timing run">
+                    <div class="cineraContent"><span class="timecode">37:45</span>Run our program to get a benchmark timing<span class="cineraCategories"><div title="timing" class="category timing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:45</span>Run our program to get a benchmark timing<span class="cineraCategories"><div title="timing" class="category timing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:45</span>Run our program to get a benchmark timing<span class="cineraCategories"><div title="timing" class="category timing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2339" class="marker cat_optimisation cat_prng programming">
+                    <div class="cineraContent"><span class="timecode">38:59</span>Replace rand() with our new XOrShift32(), packing Entropy in the work_order struct<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="prng" class="category prng"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:59</span>Replace rand() with our new XOrShift32(), packing Entropy in the work_order struct<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="prng" class="category prng"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:59</span>Replace rand() with our new XOrShift32(), packing Entropy in the work_order struct<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="prng" class="category prng"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2799" class="marker cat_performance run">
+                    <div class="cineraContent"><span class="timecode">46:39</span>Run to see no obvious problems with our output, and note our dramatically improved performance<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:39</span>Run to see no obvious problems with our output, and note our dramatically improved performance<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:39</span>Run to see no obvious problems with our output, and note our dramatically improved performance<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2927" class="marker cat_asm programming">
+                    <div class="cineraContent"><span class="timecode">48:47</span>Step into the code and inspect the asm to see a lot of mulss calls<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:47</span>Step into the code and inspect the asm to see a lot of mulss calls<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:47</span>Step into the code and inspect the asm to see a lot of mulss calls<span class="cineraCategories"><div title="asm" class="category asm"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3090" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">51:30</span>Introduce CastSampleRays() to do some of the work of RenderTile()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:30</span>Introduce CastSampleRays() to do some of the work of RenderTile()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:30</span>Introduce CastSampleRays() to do some of the work of RenderTile()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3501" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">58:21</span>Run to see that we lose some speed<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:21</span>Run to see that we lose some speed<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:21</span>Run to see that we lose some speed<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3552" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">59:12</span>Make RenderTile() only use a random_series in its inner loop<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:12</span>Make RenderTile() only use a random_series in its inner loop<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:12</span>Make RenderTile() only use a random_series in its inner loop<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3607" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:00:07</span>Run to see that that&#39;s a little bit better<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:07</span>Run to see that that&#39;s a little bit better<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:07</span>Run to see that that&#39;s a little bit better<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3667" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:01:07</span>Rename cast_result to cast_state which contains both the input and output data<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:07</span>Rename cast_result to cast_state which contains both the input and output data<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:07</span>Rename cast_result to cast_state which contains both the input and output data<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4092" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:08:12</span>Run to see some busted imagery<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:12</span>Run to see some busted imagery<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:12</span>Run to see some busted imagery<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4138" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:08:58</span>Fix RenderTile() to correctly fill out the cast_state State<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:58</span>Fix RenderTile() to correctly fill out the cast_state State<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:58</span>Fix RenderTile() to correctly fill out the cast_state State<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4340" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:12:20</span>Run to see that that helps<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:20</span>Run to see that that helps<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:20</span>Run to see that that helps<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4385" class="marker cat_lighting cat_optimisation cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:13:05</span>Consider how to perform this ray casting wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:05</span>Consider how to perform this ray casting wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:05</span>Consider how to perform this ray casting wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4684" class="marker cat_lighting cat_optimisation cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:18:04</span>Transform CastSampleRays() to handle the notion of operating wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:04</span>Transform CastSampleRays() to handle the notion of operating wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:04</span>Transform CastSampleRays() to handle the notion of operating wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4746" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:19:06</span>Run to see that it runs roughly four times faster, and that the image now contains tile-boundary artifacts<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:06</span>Run to see that it runs roughly four times faster, and that the image now contains tile-boundary artifacts<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:06</span>Run to see that it runs roughly four times faster, and that the image now contains tile-boundary artifacts<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4868" class="marker cat_prng programming">
+                    <div class="cineraContent"><span class="timecode">1:21:08</span>Temporarily revert RandomUnlateral() to use rand()<span class="cineraCategories"><div title="prng" class="category prng"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:08</span>Temporarily revert RandomUnlateral() to use rand()<span class="cineraCategories"><div title="prng" class="category prng"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:08</span>Temporarily revert RandomUnlateral() to use rand()<span class="cineraCategories"><div title="prng" class="category prng"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4898" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:21:38</span>Run to see no artifacts, and note that the XOrShift32() needs improving<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:38</span>Run to see no artifacts, and note that the XOrShift32() needs improving<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:38</span>Run to see no artifacts, and note that the XOrShift32() needs improving<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4966" class="marker cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:22:46</span>Sketch in the code to enable CastSampleRays() to operate wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:46</span>Sketch in the code to enable CastSampleRays() to operate wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:46</span>Sketch in the code to enable CastSampleRays() to operate wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5597" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:33:17</span>Describe our current situation<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:17</span>Describe our current situation<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:17</span>Describe our current situation<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5651" class="marker cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:34:11</span>Set up CastSampleRays() to let all rays in all lanes finish<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:11</span>Set up CastSampleRays() to let all rays in all lanes finish<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:11</span>Set up CastSampleRays() to let all rays in all lanes finish<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5901" class="marker cat_lighting cat_optimisation cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:38:21</span>Consider how to track the materials wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:21</span>Consider how to track the materials wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:21</span>Consider how to track the materials wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6008" class="marker cat_lighting cat_optimisation cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:40:08</span>Set up CastSampleRays() to track the materials wide and collate all the computations<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:08</span>Set up CastSampleRays() to track the materials wide and collate all the computations<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:08</span>Set up CastSampleRays() to track the materials wide and collate all the computations<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="optimisation" class="category optimisation"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6749" class="marker cat_optimisation cat_prng programming">
+                    <div class="cineraContent"><span class="timecode">1:52:29</span>Create ray_lane.h to #define the lanes, and introduce RandomBilateralLane(), various permutations of ConditionalAssign(), a Max(), MaskIsZeroed() and versions of HorizontalAdd()<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="prng" class="category prng"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:29</span>Create ray_lane.h to #define the lanes, and introduce RandomBilateralLane(), various permutations of ConditionalAssign(), a Max(), MaskIsZeroed() and versions of HorizontalAdd()<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="prng" class="category prng"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:29</span>Create ray_lane.h to #define the lanes, and introduce RandomBilateralLane(), various permutations of ConditionalAssign(), a Max(), MaskIsZeroed() and versions of HorizontalAdd()<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="prng" class="category prng"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7419" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">2:03:39</span>Run and see totally busted imagery<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:39</span>Run and see totally busted imagery<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:39</span>Run and see totally busted imagery<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7463" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:04:23</span>Build in debug mode and on one core</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:23</span>Build in debug mode and on one core</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:23</span>Build in debug mode and on one core</div>
+                    </div>
+                </div>
+                <div data-timestamp="7540" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:05:40</span>Step in to CastSampleRays() and inspect its values</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:40</span>Step in to CastSampleRays() and inspect its values</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:40</span>Step in to CastSampleRays() and inspect its values</div>
+                    </div>
+                </div>
+                <div data-timestamp="7556" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:05:56</span>Make CastSampleRays() set FilmX and FilmY to their centres<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:56</span>Make CastSampleRays() set FilmX and FilmY to their centres<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:56</span>Make CastSampleRays() set FilmX and FilmY to their centres<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7634" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:07:14</span>Step in to CastSampleRays() and see that the State-&gt;Series and Order-&gt;Entropy are both 0</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:14</span>Step in to CastSampleRays() and see that the State-&gt;Series and Order-&gt;Entropy are both 0</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:14</span>Step in to CastSampleRays() and see that the State-&gt;Series and Order-&gt;Entropy are both 0</div>
+                    </div>
+                </div>
+                <div data-timestamp="7716" class="marker cat_prng programming">
+                    <div class="cineraContent"><span class="timecode">2:08:36</span>Make CastSampleRays() offset the Entropy and use different random series per ray<span class="cineraCategories"><div title="prng" class="category prng"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:08:36</span>Make CastSampleRays() offset the Entropy and use different random series per ray<span class="cineraCategories"><div title="prng" class="category prng"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:08:36</span>Make CastSampleRays() offset the Entropy and use different random series per ray<span class="cineraCategories"><div title="prng" class="category prng"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7767" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:09:27</span>Step in to CastSampleRays() and note that the ConditionalAssign() is wrong</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:27</span>Step in to CastSampleRays() and note that the ConditionalAssign() is wrong</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:27</span>Step in to CastSampleRays() and note that the ConditionalAssign() is wrong</div>
+                    </div>
+                </div>
+                <div data-timestamp="7844" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:10:44</span>Make ConditionalAssign() zero the Mask if there is nothing set in it</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:44</span>Make ConditionalAssign() zero the Mask if there is nothing set in it</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:44</span>Make ConditionalAssign() zero the Mask if there is nothing set in it</div>
+                    </div>
+                </div>
+                <div data-timestamp="7880" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:11:20</span>Step in to ConditionalAssign() to see that that is better</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:20</span>Step in to ConditionalAssign() to see that that is better</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:20</span>Step in to ConditionalAssign() to see that that is better</div>
+                    </div>
+                </div>
+                <div data-timestamp="7901" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">2:11:41</span>Run to see how the picture looks<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:41</span>Run to see how the picture looks<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:41</span>Run to see how the picture looks<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8004" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">2:13:24</span>View the image<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:24</span>View the image<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:24</span>View the image<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8029" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:13:49</span>Reduce the RayCount and increase the CoreCount<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:49</span>Reduce the RayCount and increase the CoreCount<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:49</span>Reduce the RayCount and increase the CoreCount<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8089" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:14:49</span>Investigate the summation<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:49</span>Investigate the summation<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:49</span>Investigate the summation<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8273" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:17:53</span>Make CastSampleRays() correctly set the LaneMask<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:53</span>Make CastSampleRays() correctly set the LaneMask<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:53</span>Make CastSampleRays() correctly set the LaneMask<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8315" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">2:18:35</span>Run and see a more correct image<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:35</span>Run and see a more correct image<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:35</span>Run and see a more correct image<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8332" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:18:52</span>Switch back to the optimised version, with more RaysPerPixel</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:52</span>Switch back to the optimised version, with more RaysPerPixel</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:52</span>Switch back to the optimised version, with more RaysPerPixel</div>
+                    </div>
+                </div>
+                <div data-timestamp="8349" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">2:19:09</span>Run to see that we&#39;re darker<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:19:09</span>Run to see that we&#39;re darker<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:19:09</span>Run to see that we&#39;re darker<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8413" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">2:20:13</span>Correctly set the LaneWidth<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:20:13</span>Correctly set the LaneWidth<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:20:13</span>Correctly set the LaneWidth<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8480" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">2:21:20</span>Run and see that the images are basically indistinguishable<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:21:20</span>Run and see that the images are basically indistinguishable<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:21:20</span>Run and see that the images are basically indistinguishable<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8532" class="marker cat_optimisation programming">
+                    <div class="cineraContent"><span class="timecode">2:22:12</span>Set up to support a constrained set of LANE_WIDTH values<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:12</span>Set up to support a constrained set of LANE_WIDTH values<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:12</span>Set up to support a constrained set of LANE_WIDTH values<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9005" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">2:30:05</span>Run to see that XOrShift32() is actually fine<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30:05</span>Run to see that XOrShift32() is actually fine<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30:05</span>Run to see that XOrShift32() is actually fine<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9105" class="marker cat_optimisation programming">
+                    <div class="cineraContent"><span class="timecode">2:31:45</span>Do LANE_WIDTH==8 too<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:31:45</span>Do LANE_WIDTH==8 too<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:31:45</span>Do LANE_WIDTH==8 too<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9163" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:32:43</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:32:43</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:32:43</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9226" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:33:46</span><span class="author" data-hue="155" data-saturation="78%">yurasniper</span> Q: How would one implement something like bloom effect in a raytracer?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:33:46</span><span class="author" data-hue="155" data-saturation="78%">yurasniper</span> Q: How would one implement something like bloom effect in a raytracer?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:33:46</span><span class="author" data-hue="155" data-saturation="78%">yurasniper</span> Q: How would one implement something like bloom effect in a raytracer?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9586" class="marker cat_performance run">
+                    <div class="cineraContent"><span class="timecode">2:39:46</span>Run our program to capture its performance statistics<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:39:46</span>Run our program to capture its performance statistics<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:39:46</span>Run our program to capture its performance statistics<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9727" class="marker cat_prng authored">
+                    <div class="cineraContent"><span class="timecode">2:42:07</span><span class="author" data-hue="213" data-saturation="90%">macielda</span> Q: Is the Halton 2,3 sequence a good way to generate sample positions? I&#39;ve heard about some people using it. It is a low discrepancy series<span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:42:07</span><span class="author" data-hue="213" data-saturation="90%">macielda</span> Q: Is the Halton 2,3 sequence a good way to generate sample positions? I&#39;ve heard about some people using it. It is a low discrepancy series<span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:42:07</span><span class="author" data-hue="213" data-saturation="90%">macielda</span> Q: Is the Halton 2,3 sequence a good way to generate sample positions? I&#39;ve heard about some people using it. It is a low discrepancy series<span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9791" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">2:43:11</span>Rename our image and stat files<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:43:11</span>Rename our image and stat files<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:43:11</span>Rename our image and stat files<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9870" class="marker cat_optimisation authored">
+                    <div class="cineraContent"><span class="timecode">2:44:30</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: When you learn this way of doing SIMD? I remember in <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> when we had optimized the renderer we use __m128 every way<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:44:30</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: When you learn this way of doing SIMD? I remember in <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> when we had optimized the renderer we use __m128 every way<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:44:30</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: When you learn this way of doing SIMD? I remember in <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> when we had optimized the renderer we use __m128 every way<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9965" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:46:05</span><span class="author" data-hue="213" data-saturation="90%">macielda</span> Q: What is your take on AA methods? I&#39;m currently looking for one for my game. I see The Witness has MSAA option only (no FXAA, TXAA and friends)?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:46:05</span><span class="author" data-hue="213" data-saturation="90%">macielda</span> Q: What is your take on AA methods? I&#39;m currently looking for one for my game. I see The Witness has MSAA option only (no FXAA, TXAA and friends)?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:46:05</span><span class="author" data-hue="213" data-saturation="90%">macielda</span> Q: What is your take on AA methods? I&#39;m currently looking for one for my game. I see The Witness has MSAA option only (no FXAA, TXAA and friends)?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9991" class="marker cat_hardware cat_prng authored" data-ref="https://en.wikipedia.org/wiki/RdRand">
+                    <div class="cineraContent"><span class="timecode">2:46:31</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Are there any machines with hardware RNG that just puts random values into a register with one instruction?<sup>8</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="prng" class="category prng"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:46:31</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Are there any machines with hardware RNG that just puts random values into a register with one instruction?<sup>8</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="prng" class="category prng"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:46:31</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Are there any machines with hardware RNG that just puts random values into a register with one instruction?<sup>8</sup><span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="prng" class="category prng"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10124" class="marker cat_prng authored">
+                    <div class="cineraContent"><span class="timecode">2:48:44</span><span class="author" data-hue="8" data-saturation="89%">pseudonym73</span> Q: G&#39;day, long time no stream. Low-discrepancy sequences do exhibit blue noise behaviours if you do them right, but their main advantage is that you can access the quasi-random streams in an arbitrary order. Not really relevant yet. Also, you can do better than 2,3 Halton<span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:48:44</span><span class="author" data-hue="8" data-saturation="89%">pseudonym73</span> Q: G&#39;day, long time no stream. Low-discrepancy sequences do exhibit blue noise behaviours if you do them right, but their main advantage is that you can access the quasi-random streams in an arbitrary order. Not really relevant yet. Also, you can do better than 2,3 Halton<span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:48:44</span><span class="author" data-hue="8" data-saturation="89%">pseudonym73</span> Q: G&#39;day, long time no stream. Low-discrepancy sequences do exhibit blue noise behaviours if you do them right, but their main advantage is that you can access the quasi-random streams in an arbitrary order. Not really relevant yet. Also, you can do better than 2,3 Halton<span class="cineraCategories"><div title="prng" class="category prng"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10177" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:49:37</span><span class="author" data-hue="213" data-saturation="90%">macielda</span> Q: Do shader languages expose things like &quot;Conditional Assign&quot;?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:49:37</span><span class="author" data-hue="213" data-saturation="90%">macielda</span> Q: Do shader languages expose things like &quot;Conditional Assign&quot;?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:49:37</span><span class="author" data-hue="213" data-saturation="90%">macielda</span> Q: Do shader languages expose things like &quot;Conditional Assign&quot;?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10274" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">2:51:14</span>Ensure that everything is in good shape<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:51:14</span>Ensure that everything is in good shape<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:51:14</span>Ensure that everything is in good shape<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="10334" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:52:14</span>Shut down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:52:14</span>Shut down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:52:14</span>Shut down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/ray/ray03/"><div>&#9196;</div><div>Next: 'Optimizing with SSE2 and AVX2'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

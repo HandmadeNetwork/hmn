@@ -1,0 +1,586 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="language, lighting, mathematics, performance, Blackboard, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">SIMD Raycast Point and Normal Computations</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" href="https://software.intel.com/sites/landingpage/IntrinsicsGuide/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Intel</div>
+                            <div class="ref_title">Intel Intrinsics Guide</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2417" class="timecode"><span class="ref_index">[1]</span><span class="time">40:17</span></span><span data-timestamp="2665" class="timecode"><span class="ref_index">[4]</span><span class="time">44:25</span></span><span data-timestamp="4069" class="timecode"><span class="ref_index">[5]</span><span class="time">1:07:49</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://store.steampowered.com/hwsurvey" href="https://store.steampowered.com/hwsurvey" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Valve</div>
+                            <div class="ref_title">Steam Hardware &amp; Software Survey</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2417" class="timecode"><span class="ref_index">[2]</span><span class="time">40:17</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://uops.info/table.html" href="https://uops.info/table.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">uops.info</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2417" class="timecode"><span class="ref_index">[3]</span><span class="time">40:17</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/HandmadeHero/cpp/issues/109" href="https://github.com/HandmadeHero/cpp/issues/109" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">GitHub</div>
+                            <div class="ref_title">HandmadeHero /&#8203; cpp /&#8203; Linux Problems</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="5557" class="timecode"><span class="ref_index">[6]</span><span class="time">1:32:37</span></span><span data-timestamp="5789" class="timecode"><span class="ref_index">[7]</span><span class="time">1:36:29</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.siggraph.org/" href="https://www.siggraph.org/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">SIGGRAPH</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6554" class="timecode"><span class="ref_index">[8]</span><span class="time">1:49:14</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://www.pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models.html" href="http://www.pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models.html" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Matt Pharr and Greg Humphreys</div>
+                            <div class="ref_title">Physically Based Rendering /&#8203; 8.4 Microfacet Models</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="6660" class="timecode"><span class="ref_index">[9]</span><span class="time">1:51:00</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://twitch.tv/naysayer88" href="https://twitch.tv/naysayer88" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Twitch</div>
+                            <div class="ref_title">Naysayer88</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7082" class="timecode"><span class="ref_index">[10]</span><span class="time">1:58:02</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.handmade-seattle.com/" href="https://www.handmade-seattle.com/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">Handmade Seattle</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="7082" class="timecode"><span class="ref_index">[11]</span><span class="time">1:58:02</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="BzrMiEVa3gs"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day549/"><div>&#9195;</div><div>Previous: 'Removing Old Lighting Lookups'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="134" class="marker cat_lighting speech">
+                    <div class="cineraContent"><span class="timecode">2:14</span>Putting six-rayed light probes into the lighting system<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14</span>Putting six-rayed light probes into the lighting system<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14</span>Putting six-rayed light probes into the lighting system<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="196" class="marker cat_lighting speech">
+                    <div class="cineraContent"><span class="timecode">3:16</span>Our old box-intersection testing in RayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:16</span>Our old box-intersection testing in RayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:16</span>Our old box-intersection testing in RayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="294" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">4:54</span>Our box lighting primitives<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:54</span>Our box lighting primitives<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:54</span>Our box lighting primitives<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="420" class="marker cat_lighting speech">
+                    <div class="cineraContent"><span class="timecode">7:00</span>Our old box-intersection testing and reporting in RayCast(), continued<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:00</span>Our old box-intersection testing and reporting in RayCast(), continued<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:00</span>Our old box-intersection testing and reporting in RayCast(), continued<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="631" class="marker cat_lighting blackboard">
+                    <div class="cineraContent"><span class="timecode">10:31</span>Ways of Getting Intersection Normals for AABB<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:31</span>Ways of Getting Intersection Normals for AABB<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:31</span>Ways of Getting Intersection Normals for AABB<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="871" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">14:31</span>Consider storing the BoxMin and BoxMax in lighting_box<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:31</span>Consider storing the BoxMin and BoxMax in lighting_box<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:31</span>Consider storing the BoxMin and BoxMax in lighting_box<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="939" class="marker cat_lighting blackboard">
+                    <div class="cineraContent"><span class="timecode">15:39</span>Getting an Approximate Normal from an Ellipsoid-like AABB<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:39</span>Getting an Approximate Normal from an Ellipsoid-like AABB<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:39</span>Getting an Approximate Normal from an Ellipsoid-like AABB<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1130" class="marker cat_lighting blackboard">
+                    <div class="cineraContent"><span class="timecode">18:50</span>Getting Accurate AABB Intersection Normals<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:50</span>Getting Accurate AABB Intersection Normals<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:50</span>Getting Accurate AABB Intersection Normals<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1492" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">24:52</span>Set up RayCast() to compute the intersection normal for a unit cube lighting_box<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:52</span>Set up RayCast() to compute the intersection normal for a unit cube lighting_box<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:52</span>Set up RayCast() to compute the intersection normal for a unit cube lighting_box<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1779" class="marker cat_lighting blackboard">
+                    <div class="cineraContent"><span class="timecode">29:39</span>Could we compute our intersection normal more efficiently?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:39</span>Could we compute our intersection normal more efficiently?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:39</span>Could we compute our intersection normal more efficiently?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1946" class="marker cat_lighting cat_performance research">
+                    <div class="cineraContent"><span class="timecode">32:26</span>Consider the cost of our intersection normal computation in RayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:26</span>Consider the cost of our intersection normal computation in RayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:26</span>Consider the cost of our intersection normal computation in RayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2071" class="marker cat_lighting blackboard">
+                    <div class="cineraContent"><span class="timecode">34:31</span>Computing the intersection normal only of box hits, saving the box scale and centre<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:31</span>Computing the intersection normal only of box hits, saving the box scale and centre<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:31</span>Computing the intersection normal only of box hits, saving the box scale and centre<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2253" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">37:33</span>Let RayCast() only set the box centre and scale, making ComputeLightPropagation() compute the intersection normal<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:33</span>Let RayCast() only set the box centre and scale, making ComputeLightPropagation() compute the intersection normal<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:33</span>Let RayCast() only set the box centre and scale, making ComputeLightPropagation() compute the intersection normal<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2417" class="marker cat_performance research" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/,https://store.steampowered.com/hwsurvey,https://uops.info/table.html">
+                    <div class="cineraContent"><span class="timecode">40:17</span>The cost and availability of _mm_blend_ps<sup>1</sup><sup>,2</sup><sup>,3</sup><span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:17</span>The cost and availability of _mm_blend_ps<sup>1</sup><sup>,2</sup><sup>,3</sup><span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:17</span>The cost and availability of _mm_blend_ps<sup>1</sup><sup>,2</sup><sup>,3</sup><span class="cineraCategories"><div title="performance" class="category performance"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2665" class="marker cat_lighting programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">44:25</span>Make RayCast() select the RefColor and at the end compute the Result, augmenting raycast_result with P, Normal and RefColor<sup>4</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:25</span>Make RayCast() select the RefColor and at the end compute the Result, augmenting raycast_result with P, Normal and RefColor<sup>4</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:25</span>Make RayCast() select the RefColor and at the end compute the Result, augmenting raycast_result with P, Normal and RefColor<sup>4</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3457" class="marker cat_mathematics programming">
+                    <div class="cineraContent"><span class="timecode">57:37</span>Introduce SignBitFrom()<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:37</span>Introduce SignBitFrom()<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:37</span>Introduce SignBitFrom()<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3577" class="marker cat_lighting programming">
+                    <div class="cineraContent"><span class="timecode">59:37</span>Finish making RayCast() set the HitNormal from Masks<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:37</span>Finish making RayCast() set the HitNormal from Masks<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:37</span>Finish making RayCast() set the HitNormal from Masks<span class="cineraCategories"><div title="lighting" class="category lighting"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4069" class="marker cat_lighting cat_mathematics cat_performance programming" data-ref="https://software.intel.com/sites/landingpage/IntrinsicsGuide/">
+                    <div class="cineraContent"><span class="timecode">1:07:49</span>Clean up compile errors, making RayCast() compute BoxRadius and its approximate inverse, introducing ApproxOneOver()<sup>5</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="mathematics" class="category mathematics"></div><div title="performance" class="category performance"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:49</span>Clean up compile errors, making RayCast() compute BoxRadius and its approximate inverse, introducing ApproxOneOver()<sup>5</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="mathematics" class="category mathematics"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:49</span>Clean up compile errors, making RayCast() compute BoxRadius and its approximate inverse, introducing ApproxOneOver()<sup>5</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="mathematics" class="category mathematics"></div><div title="performance" class="category performance"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4953" class="marker cat_lighting cat_performance speech">
+                    <div class="cineraContent"><span class="timecode">1:22:33</span>Consider the potential speed improvement of RayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:33</span>Consider the potential speed improvement of RayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:33</span>Consider the potential speed improvement of RayCast()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5019" class="marker cat_lighting speech">
+                    <div class="cineraContent"><span class="timecode">1:23:39</span>Determine to make ComputeLightPropagation() operate wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:39</span>Determine to make ComputeLightPropagation() operate wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:39</span>Determine to make ComputeLightPropagation() operate wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5092" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:24:52</span>Lament SIMD&#39;s lack of fetching instructions<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:52</span>Lament SIMD&#39;s lack of fetching instructions<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:52</span>Lament SIMD&#39;s lack of fetching instructions<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5169" class="marker cat_lighting speech">
+                    <div class="cineraContent"><span class="timecode">1:26:09</span>Consider how to make our lighting operate wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:09</span>Consider how to make our lighting operate wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:09</span>Consider how to make our lighting operate wide<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5408" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:30:08</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:08</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:08</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5472" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">1:31:12</span><span class="author" data-hue="253" data-saturation="91%">ellesar1</span> Q: Origin, BoxCenter, and HitP are on the same line. Why do we use HitP – Center for the normal computation, and not Origin – Center? The direction should be the same. Problems could arise if origin is within the box (esp if origin = center), but I don&#39;t think that&#39;s a use case. I understand the HitP is useful for other purposes, just wondering if it&#39;s actually necessary for the normals computation<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:12</span><span class="author" data-hue="253" data-saturation="91%">ellesar1</span> Q: Origin, BoxCenter, and HitP are on the same line. Why do we use HitP – Center for the normal computation, and not Origin – Center? The direction should be the same. Problems could arise if origin is within the box (esp if origin = center), but I don&#39;t think that&#39;s a use case. I understand the HitP is useful for other purposes, just wondering if it&#39;s actually necessary for the normals computation<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:12</span><span class="author" data-hue="253" data-saturation="91%">ellesar1</span> Q: Origin, BoxCenter, and HitP are on the same line. Why do we use HitP – Center for the normal computation, and not Origin – Center? The direction should be the same. Problems could arise if origin is within the box (esp if origin = center), but I don&#39;t think that&#39;s a use case. I understand the HitP is useful for other purposes, just wondering if it&#39;s actually necessary for the normals computation<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5557" class="marker cat_language authored" data-ref="https://github.com/HandmadeHero/cpp/issues/109">
+                    <div class="cineraContent"><span class="timecode">1:32:37</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: I&#39;ve just added the C++ standard reference to the issue type-name member-name, issue.<sup>6</sup> I agree it&#39;s a stupid warning, but there seems to be no way to disable it in GCC<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:37</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: I&#39;ve just added the C++ standard reference to the issue type-name member-name, issue.<sup>6</sup> I agree it&#39;s a stupid warning, but there seems to be no way to disable it in GCC<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:37</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: I&#39;ve just added the C++ standard reference to the issue type-name member-name, issue.<sup>6</sup> I agree it&#39;s a stupid warning, but there seems to be no way to disable it in GCC<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5586" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">1:33:06</span><span class="author" data-hue="253" data-saturation="91%">ellesar1</span> Ahh, thanks for explaining it once more. I get it now<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:06</span><span class="author" data-hue="253" data-saturation="91%">ellesar1</span> Ahh, thanks for explaining it once more. I get it now<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:06</span><span class="author" data-hue="253" data-saturation="91%">ellesar1</span> Ahh, thanks for explaining it once more. I get it now<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5722" class="marker cat_lighting authored">
+                    <div class="cineraContent"><span class="timecode">1:35:22</span><span class="author" data-hue="313" data-saturation="74%">rooctag</span> Q: Why are the light probes cubes and not spheres?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:22</span><span class="author" data-hue="313" data-saturation="74%">rooctag</span> Q: Why are the light probes cubes and not spheres?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:22</span><span class="author" data-hue="313" data-saturation="74%">rooctag</span> Q: Why are the light probes cubes and not spheres?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5789" class="marker cat_language authored" data-ref="https://github.com/HandmadeHero/cpp/issues/109">
+                    <div class="cineraContent"><span class="timecode">1:36:29</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: GCC is following the standard. It&#39;s just that the standard is stupid<sup>7</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:29</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: GCC is following the standard. It&#39;s just that the standard is stupid<sup>7</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:29</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: GCC is following the standard. It&#39;s just that the standard is stupid<sup>7</sup><span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6333" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:45:33</span><span class="author" data-hue="139" data-saturation="90%">mr4thdimention</span> The good idea in C++ was &quot;Let&#39;s start with C&quot;<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:33</span><span class="author" data-hue="139" data-saturation="90%">mr4thdimention</span> The good idea in C++ was &quot;Let&#39;s start with C&quot;<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:33</span><span class="author" data-hue="139" data-saturation="90%">mr4thdimention</span> The good idea in C++ was &quot;Let&#39;s start with C&quot;<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6372" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:46:12</span><span class="author" data-hue="169" data-saturation="80%">maliusarth</span> Q: Should I work on a game engine in C / C++ or just put out games in Unity / Unreal until Jai comes out?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:12</span><span class="author" data-hue="169" data-saturation="80%">maliusarth</span> Q: Should I work on a game engine in C / C++ or just put out games in Unity / Unreal until Jai comes out?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:12</span><span class="author" data-hue="169" data-saturation="80%">maliusarth</span> Q: Should I work on a game engine in C / C++ or just put out games in Unity / Unreal until Jai comes out?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6554" class="marker cat_lighting authored" data-ref="https://www.siggraph.org/">
+                    <div class="cineraContent"><span class="timecode">1:49:14</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Q: Is there any reading material you recommend for more serious real-time lighting like this (Papers, books, even blog posts etc.)? I&#39;ve done simple diffuse lighting before but nothing beyond that<sup>8</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:14</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Q: Is there any reading material you recommend for more serious real-time lighting like this (Papers, books, even blog posts etc.)? I&#39;ve done simple diffuse lighting before but nothing beyond that<sup>8</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:14</span><span class="author" data-hue="97" data-saturation="75%">bulmanator</span> Q: Is there any reading material you recommend for more serious real-time lighting like this (Papers, books, even blog posts etc.)? I&#39;ve done simple diffuse lighting before but nothing beyond that<sup>8</sup><span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6660" class="marker cat_nullTopic authored" data-ref="http://www.pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models.html">
+                    <div class="cineraContent"><span class="timecode">1:51:00</span><span class="author" data-hue="74" data-saturation="99%">saidwho12</span> The PBR book is good book<sup>9</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:00</span><span class="author" data-hue="74" data-saturation="99%">saidwho12</span> The PBR book is good book<sup>9</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:00</span><span class="author" data-hue="74" data-saturation="99%">saidwho12</span> The PBR book is good book<sup>9</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6803" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:53:23</span><span class="author" data-hue="251" data-saturation="94%">oliverthebestcat</span> What do you think is a good idea in games? I feel like I tune into so many programmer streams telling me this and that is terrible, but not really giving me another option. I don&#39;t want the answer to be &quot;wait for Jai&quot;! What is good today?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:23</span><span class="author" data-hue="251" data-saturation="94%">oliverthebestcat</span> What do you think is a good idea in games? I feel like I tune into so many programmer streams telling me this and that is terrible, but not really giving me another option. I don&#39;t want the answer to be &quot;wait for Jai&quot;! What is good today?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:23</span><span class="author" data-hue="251" data-saturation="94%">oliverthebestcat</span> What do you think is a good idea in games? I feel like I tune into so many programmer streams telling me this and that is terrible, but not really giving me another option. I don&#39;t want the answer to be &quot;wait for Jai&quot;! What is good today?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6921" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:55:21</span><span class="author" data-hue="152" data-saturation="78%">sapper123</span> Jai demo on Macros is in an hour and a half. Just a reminder for chat<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:21</span><span class="author" data-hue="152" data-saturation="78%">sapper123</span> Jai demo on Macros is in an hour and a half. Just a reminder for chat<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:21</span><span class="author" data-hue="152" data-saturation="78%">sapper123</span> Jai demo on Macros is in an hour and a half. Just a reminder for chat<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7013" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:56:53</span><span class="author" data-hue="251" data-saturation="94%">oliverthebestcat</span> But it&#39;s pretty difficult to listen to you or <span class="member" data-hue="277" data-saturation="88%">Jon</span>&#39;s stream when it&#39;s all just &quot;this is bad, that is bad&quot;. But hey, maybe it&#39;s true?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:53</span><span class="author" data-hue="251" data-saturation="94%">oliverthebestcat</span> But it&#39;s pretty difficult to listen to you or <span class="member" data-hue="277" data-saturation="88%">Jon</span>&#39;s stream when it&#39;s all just &quot;this is bad, that is bad&quot;. But hey, maybe it&#39;s true?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:53</span><span class="author" data-hue="251" data-saturation="94%">oliverthebestcat</span> But it&#39;s pretty difficult to listen to you or <span class="member" data-hue="277" data-saturation="88%">Jon</span>&#39;s stream when it&#39;s all just &quot;this is bad, that is bad&quot;. But hey, maybe it&#39;s true?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7082" class="marker cat_nullTopic speech" data-ref="https://twitch.tv/naysayer88,https://www.handmade-seattle.com/">
+                    <div class="cineraContent"><span class="timecode">1:58:02</span>Shut down, with a plug of <span class="member" data-hue="277" data-saturation="88%">Jon</span>&#39;s stream<sup>10</sup> and Handmade Seattle<sup>11</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:02</span>Shut down, with a plug of <span class="member" data-hue="277" data-saturation="88%">Jon</span>&#39;s stream<sup>10</sup> and Handmade Seattle<sup>11</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:02</span>Shut down, with a plug of <span class="member" data-hue="277" data-saturation="88%">Jon</span>&#39;s stream<sup>10</sup> and Handmade Seattle<sup>11</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day551/"><div>&#9196;</div><div>Next: 'Computing Probe to Probe Transmission'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

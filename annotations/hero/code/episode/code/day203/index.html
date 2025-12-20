@@ -1,0 +1,635 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="Chat Comment, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Debug UI State Caching</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="6gBJ9f5tUV4"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day202/"><div>&#9195;</div><div>Previous: 'Multiply Appearing Debug Values'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="59" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">0:59</span>Recap our current situation</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:59</span>Recap our current situation</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:59</span>Recap our current situation</div>
+                    </div>
+                </div>
+                <div data-timestamp="139" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:19</span>Blackboard: Breadth-first vs depth-first tree traversal</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:19</span>Blackboard: Breadth-first vs depth-first tree traversal</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:19</span>Blackboard: Breadth-first vs depth-first tree traversal</div>
+                    </div>
+                </div>
+                <div data-timestamp="526" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">8:46</span>Debugger: Step into DEBUGDrawMainMenu and hunt for the hierarchy</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:46</span>Debugger: Step into DEBUGDrawMainMenu and hunt for the hierarchy</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:46</span>Debugger: Step into DEBUGDrawMainMenu and hunt for the hierarchy</div>
+                    </div>
+                </div>
+                <div data-timestamp="805" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">13:25</span>handmade_debug_variables.h: Make DEBUGAddVariable call the correct Context</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:25</span>handmade_debug_variables.h: Make DEBUGAddVariable call the correct Context</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:25</span>handmade_debug_variables.h: Make DEBUGAddVariable call the correct Context</div>
+                    </div>
+                </div>
+                <div data-timestamp="818" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">13:38</span>handmade_config.h: Manually rewrite the config</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:38</span>handmade_config.h: Manually rewrite the config</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:38</span>handmade_config.h: Manually rewrite the config</div>
+                    </div>
+                </div>
+                <div data-timestamp="882" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">14:42</span>Debugger: Step through and hit a first-chance exception</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:42</span>Debugger: Step through and hit a first-chance exception</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:42</span>Debugger: Step through and hit a first-chance exception</div>
+                    </div>
+                </div>
+                <div data-timestamp="920" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">15:20</span>Debugger: Inspect the DebugState-&gt;RootGroup</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:20</span>Debugger: Inspect the DebugState-&gt;RootGroup</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:20</span>Debugger: Inspect the DebugState-&gt;RootGroup</div>
+                    </div>
+                </div>
+                <div data-timestamp="993" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">16:33</span>handmade_debug_variables.h: Set Link-&gt;Var in DEBUGAddVariableToGroup</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:33</span>handmade_debug_variables.h: Set Link-&gt;Var in DEBUGAddVariableToGroup</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:33</span>handmade_debug_variables.h: Set Link-&gt;Var in DEBUGAddVariableToGroup</div>
+                    </div>
+                </div>
+                <div data-timestamp="1009" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">16:49</span>Run the game and find it&#39;s looking a little bit better</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:49</span>Run the game and find it&#39;s looking a little bit better</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:49</span>Run the game and find it&#39;s looking a little bit better</div>
+                    </div>
+                </div>
+                <div data-timestamp="1039" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">17:19</span>handmade_config.h: Ensure that the write-out worked correctly</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:19</span>handmade_config.h: Ensure that the write-out worked correctly</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:19</span>handmade_config.h: Ensure that the write-out worked correctly</div>
+                    </div>
+                </div>
+                <div data-timestamp="1063" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">17:43</span>handmade_debug.cpp: Test for View-&gt;Collapsible.ExpandedAlways to be true</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:43</span>handmade_debug.cpp: Test for View-&gt;Collapsible.ExpandedAlways to be true</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:43</span>handmade_debug.cpp: Test for View-&gt;Collapsible.ExpandedAlways to be true</div>
+                    </div>
+                </div>
+                <div data-timestamp="1157" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">19:17</span>Run the game and find that everything is collapsed</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:17</span>Run the game and find that everything is collapsed</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:17</span>Run the game and find that everything is collapsed</div>
+                    </div>
+                </div>
+                <div data-timestamp="1177" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">19:37</span>handmade_debug.h and handmade_debug.cpp: Add debug_view Dummy to debug_state and make GetDebugViewFor return it</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:37</span>handmade_debug.h and handmade_debug.cpp: Add debug_view Dummy to debug_state and make GetDebugViewFor return it</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:37</span>handmade_debug.h and handmade_debug.cpp: Add debug_view Dummy to debug_state and make GetDebugViewFor return it</div>
+                    </div>
+                </div>
+                <div data-timestamp="1210" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">20:10</span>Run the game and see the debug menu expand briefly</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:10</span>Run the game and see the debug menu expand briefly</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:10</span>Run the game and see the debug menu expand briefly</div>
+                    </div>
+                </div>
+                <div data-timestamp="1228" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">20:28</span>handmade_debug.cpp: Finish implementing GetDebugViewFor</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:28</span>handmade_debug.cpp: Finish implementing GetDebugViewFor</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:28</span>handmade_debug.cpp: Finish implementing GetDebugViewFor</div>
+                    </div>
+                </div>
+                <div data-timestamp="1469" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">24:29</span>Run the game and see that it&#39;s almost working fine</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:29</span>Run the game and see that it&#39;s almost working fine</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:29</span>Run the game and see that it&#39;s almost working fine</div>
+                    </div>
+                </div>
+                <div data-timestamp="1485" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">24:45</span>handmade_debug.h: Consider storing the debug_view in debug_variable_link</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:45</span>handmade_debug.h: Consider storing the debug_view in debug_variable_link</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:45</span>handmade_debug.h: Consider storing the debug_view in debug_variable_link</div>
+                    </div>
+                </div>
+                <div data-timestamp="1615" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">26:55</span>handmade_debug.h: Introduce debug_id</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:55</span>handmade_debug.h: Introduce debug_id</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:55</span>handmade_debug.h: Introduce debug_id</div>
+                    </div>
+                </div>
+                <div data-timestamp="1671" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">27:51</span>handmade_debug.cpp: Pass ViewID to GetDebugViewFor</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:51</span>handmade_debug.cpp: Pass ViewID to GetDebugViewFor</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:51</span>handmade_debug.cpp: Pass ViewID to GetDebugViewFor</div>
+                    </div>
+                </div>
+                <div data-timestamp="1701" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">28:21</span>handmade_debug.cpp: Introduce DebugIDFromLink</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:21</span>handmade_debug.cpp: Introduce DebugIDFromLink</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:21</span>handmade_debug.cpp: Introduce DebugIDFromLink</div>
+                    </div>
+                </div>
+                <div data-timestamp="1755" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">29:15</span>handmade_debug.h: Add debug_id ID and debug_variable *Var to debug_interaction</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:15</span>handmade_debug.h: Add debug_id ID and debug_variable *Var to debug_interaction</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:15</span>handmade_debug.h: Add debug_id ID and debug_variable *Var to debug_interaction</div>
+                    </div>
+                </div>
+                <div data-timestamp="1812" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">30:12</span>handmade_debug.cpp: Revert the code in DEBUGEndInteract and DEBUGInteract</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:12</span>handmade_debug.cpp: Revert the code in DEBUGEndInteract and DEBUGInteract</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:12</span>handmade_debug.cpp: Revert the code in DEBUGEndInteract and DEBUGInteract</div>
+                    </div>
+                </div>
+                <div data-timestamp="1867" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">31:07</span>handmade_debug.cpp: Introduce VarLinkInteraction in order to compress these routines</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:07</span>handmade_debug.cpp: Introduce VarLinkInteraction in order to compress these routines</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:07</span>handmade_debug.cpp: Introduce VarLinkInteraction in order to compress these routines</div>
+                    </div>
+                </div>
+                <div data-timestamp="2028" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">33:48</span>handmade_debug.h: Add debug_view *ViewHash to debug_state</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:48</span>handmade_debug.h: Add debug_view *ViewHash to debug_state</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:48</span>handmade_debug.h: Add debug_view *ViewHash to debug_state</div>
+                    </div>
+                </div>
+                <div data-timestamp="2140" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">35:40</span>handmade_debug.cpp: Implement a hash function in GetDebugViewFor</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:40</span>handmade_debug.cpp: Implement a hash function in GetDebugViewFor</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:40</span>handmade_debug.cpp: Implement a hash function in GetDebugViewFor</div>
+                    </div>
+                </div>
+                <div data-timestamp="2433" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">40:33</span>handmade_debug.cpp: Introduce DebugIDsAreEqual</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:33</span>handmade_debug.cpp: Introduce DebugIDsAreEqual</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:33</span>handmade_debug.cpp: Introduce DebugIDsAreEqual</div>
+                    </div>
+                </div>
+                <div data-timestamp="2485" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">41:25</span>Run the game and see that our stuff works, except for indentation</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:25</span>Run the game and see that our stuff works, except for indentation</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:25</span>Run the game and see that our stuff works, except for indentation</div>
+                    </div>
+                </div>
+                <div data-timestamp="2549" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">42:29</span>handmade_debug.cpp: Set the Layout.Depth in order to fix the indentation</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:29</span>handmade_debug.cpp: Set the Layout.Depth in order to fix the indentation</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:29</span>handmade_debug.cpp: Set the Layout.Depth in order to fix the indentation</div>
+                    </div>
+                </div>
+                <div data-timestamp="2628" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">43:48</span>Run the game and see that the indentation is working pretty well</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:48</span>Run the game and see that the indentation is working pretty well</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:48</span>Run the game and see that the indentation is working pretty well</div>
+                    </div>
+                </div>
+                <div data-timestamp="2682" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">44:42</span>handmade_debug_variables.h: Investigate why the Real32 isn&#39;t working correctly</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:42</span>handmade_debug_variables.h: Investigate why the Real32 isn&#39;t working correctly</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:42</span>handmade_debug_variables.h: Investigate why the Real32 isn&#39;t working correctly</div>
+                    </div>
+                </div>
+                <div data-timestamp="2768" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">46:08</span>handmade_config.h: Try manually adding .0f to DebugCameraDistance</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:08</span>handmade_config.h: Try manually adding .0f to DebugCameraDistance</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:08</span>handmade_config.h: Try manually adding .0f to DebugCameraDistance</div>
+                    </div>
+                </div>
+                <div data-timestamp="2795" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">46:35</span>Run the game and find that DebugCameraDistance is working</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:35</span>Run the game and find that DebugCameraDistance is working</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:35</span>Run the game and find that DebugCameraDistance is working</div>
+                    </div>
+                </div>
+                <div data-timestamp="2827" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">47:07</span>handmade_debug.cpp: Reimplement tear-offs</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:07</span>handmade_debug.cpp: Reimplement tear-offs</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:07</span>handmade_debug.cpp: Reimplement tear-offs</div>
+                    </div>
+                </div>
+                <div data-timestamp="3027" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">50:27</span>handmade_debug_variables.h: Introduce DEBUGAddVariableToDefaultGroup</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:27</span>handmade_debug_variables.h: Introduce DEBUGAddVariableToDefaultGroup</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:27</span>handmade_debug_variables.h: Introduce DEBUGAddVariableToDefaultGroup</div>
+                    </div>
+                </div>
+                <div data-timestamp="3090" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">51:30</span>Run the game and find that the tear-off behaves as it did before</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:30</span>Run the game and find that the tear-off behaves as it did before</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:30</span>Run the game and find that the tear-off behaves as it did before</div>
+                    </div>
+                </div>
+                <div data-timestamp="3138" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">52:18</span>handmade_debug.cpp: Grab the correct group in DEBUGDrawMainMenu</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:18</span>handmade_debug.cpp: Grab the correct group in DEBUGDrawMainMenu</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:18</span>handmade_debug.cpp: Grab the correct group in DEBUGDrawMainMenu</div>
+                    </div>
+                </div>
+                <div data-timestamp="3218" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">53:38</span>Run the game and tear off specific values</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:38</span>Run the game and tear off specific values</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:38</span>Run the game and tear off specific values</div>
+                    </div>
+                </div>
+                <div data-timestamp="3258" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">54:18</span>handmade_debug.h: Make DebugIDFromLink and VarLinkInteraction take the Tree</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:18</span>handmade_debug.h: Make DebugIDFromLink and VarLinkInteraction take the Tree</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:18</span>handmade_debug.h: Make DebugIDFromLink and VarLinkInteraction take the Tree</div>
+                    </div>
+                </div>
+                <div data-timestamp="3335" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">55:35</span>Run the game and see that the state is isolated</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:35</span>Run the game and see that the state is isolated</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:35</span>Run the game and see that the state is isolated</div>
+                    </div>
+                </div>
+                <div data-timestamp="3398" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">56:38</span>Recap today&#39;s work</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:38</span>Recap today&#39;s work</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:38</span>Recap today&#39;s work</div>
+                    </div>
+                </div>
+                <div data-timestamp="3470" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">57:50</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:50</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:50</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3494" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">58:14</span><span class="author" data-hue="68" data-saturation="77%">mykevelli</span> Pure design question. In GetDebugViewFor() your method is named such that it&#39;s a query but it appears to be a command in some cases (in that it changes the state of the system). I&#39;ve heard that you typically want to avoid this. Do you agree? Is there a reason you did this?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:14</span><span class="author" data-hue="68" data-saturation="77%">mykevelli</span> Pure design question. In GetDebugViewFor() your method is named such that it&#39;s a query but it appears to be a command in some cases (in that it changes the state of the system). I&#39;ve heard that you typically want to avoid this. Do you agree? Is there a reason you did this?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:14</span><span class="author" data-hue="68" data-saturation="77%">mykevelli</span> Pure design question. In GetDebugViewFor() your method is named such that it&#39;s a query but it appears to be a command in some cases (in that it changes the state of the system). I&#39;ve heard that you typically want to avoid this. Do you agree? Is there a reason you did this?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3593" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">59:53</span><span class="author" data-hue="69" data-saturation="74%">elxenoaizd</span> Do you think learning all the algorithms and data structures is a must, or is it OK to learn them when the need for one of them rises? Or is it one of those things that you have to learn beforehand in order to know if you need them or not?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:53</span><span class="author" data-hue="69" data-saturation="74%">elxenoaizd</span> Do you think learning all the algorithms and data structures is a must, or is it OK to learn them when the need for one of them rises? Or is it one of those things that you have to learn beforehand in order to know if you need them or not?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:53</span><span class="author" data-hue="69" data-saturation="74%">elxenoaizd</span> Do you think learning all the algorithms and data structures is a must, or is it OK to learn them when the need for one of them rises? Or is it one of those things that you have to learn beforehand in order to know if you need them or not?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3721" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:02:01</span><span class="author" data-hue="170" data-saturation="89%">Insobot</span> 4bugger... No libraries. You need a new game maker?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:01</span><span class="author" data-hue="170" data-saturation="89%">Insobot</span> 4bugger... No libraries. You need a new game maker?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:01</span><span class="author" data-hue="170" data-saturation="89%">Insobot</span> 4bugger... No libraries. You need a new game maker?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3736" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:02:16</span><span class="author" data-hue="81" data-saturation="94%">quartertron</span> Q: Binary search tree is a subset of BTree, I think<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:16</span><span class="author" data-hue="81" data-saturation="94%">quartertron</span> Q: Binary search tree is a subset of BTree, I think<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:16</span><span class="author" data-hue="81" data-saturation="94%">quartertron</span> Q: Binary search tree is a subset of BTree, I think<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3787" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:03:07</span><span class="author" data-hue="56" data-saturation="86%">Rfh666</span> About your memory allocation (way back when): Shouldn&#39;t the amount of memory you allocate depend on the size of the world chosen by the user? As it is, it is fixed at compile time (if I understand correctly)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:07</span><span class="author" data-hue="56" data-saturation="86%">Rfh666</span> About your memory allocation (way back when): Shouldn&#39;t the amount of memory you allocate depend on the size of the world chosen by the user? As it is, it is fixed at compile time (if I understand correctly)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:07</span><span class="author" data-hue="56" data-saturation="86%">Rfh666</span> About your memory allocation (way back when): Shouldn&#39;t the amount of memory you allocate depend on the size of the world chosen by the user? As it is, it is fixed at compile time (if I understand correctly)<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3929" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:05:29</span><span class="author" data-hue="69" data-saturation="74%">elxenoaizd</span> I would like to be a tools programmer / game tech writer like you, but I&#39;m still learning things so I&#39;m not fully qualified to work as one. I&#39;m thinking of working in a simple game company where the qualifications aren&#39;t so hardcore (maybe they use Unity or whatever), and at the same time do my private low-level self-learning. Good idea? Yes / No<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:29</span><span class="author" data-hue="69" data-saturation="74%">elxenoaizd</span> I would like to be a tools programmer / game tech writer like you, but I&#39;m still learning things so I&#39;m not fully qualified to work as one. I&#39;m thinking of working in a simple game company where the qualifications aren&#39;t so hardcore (maybe they use Unity or whatever), and at the same time do my private low-level self-learning. Good idea? Yes / No<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:29</span><span class="author" data-hue="69" data-saturation="74%">elxenoaizd</span> I would like to be a tools programmer / game tech writer like you, but I&#39;m still learning things so I&#39;m not fully qualified to work as one. I&#39;m thinking of working in a simple game company where the qualifications aren&#39;t so hardcore (maybe they use Unity or whatever), and at the same time do my private low-level self-learning. Good idea? Yes / No<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4115" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:08:35</span><span class="author" data-hue="240" data-saturation="77%">bewbilicious</span> What are your plans for streaming once you complete this game?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:35</span><span class="author" data-hue="240" data-saturation="77%">bewbilicious</span> What are your plans for streaming once you complete this game?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:35</span><span class="author" data-hue="240" data-saturation="77%">bewbilicious</span> What are your plans for streaming once you complete this game?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4126" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:08:46</span><span class="author" data-hue="253" data-saturation="79%">abnercoimbre</span> You&#39;ve discussed using Blender. Are you a 3D modeller of some sort? More specifically, what operations do you do with that software package?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:46</span><span class="author" data-hue="253" data-saturation="79%">abnercoimbre</span> You&#39;ve discussed using Blender. Are you a 3D modeller of some sort? More specifically, what operations do you do with that software package?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:46</span><span class="author" data-hue="253" data-saturation="79%">abnercoimbre</span> You&#39;ve discussed using Blender. Are you a 3D modeller of some sort? More specifically, what operations do you do with that software package?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4209" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:10:09</span><span class="author" data-hue="81" data-saturation="94%">quartertron</span> I&#39;d like to see a Blender pre-stream demo<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:09</span><span class="author" data-hue="81" data-saturation="94%">quartertron</span> I&#39;d like to see a Blender pre-stream demo<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:09</span><span class="author" data-hue="81" data-saturation="94%">quartertron</span> I&#39;d like to see a Blender pre-stream demo<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4230" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:10:30</span><span class="author" data-hue="343" data-saturation="98%">TheSizik</span> Would you consider doing a short off-hours stream to show people how you do things (like metaprogramming) that you won&#39;t get to touch on in Handmade Hero?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:30</span><span class="author" data-hue="343" data-saturation="98%">TheSizik</span> Would you consider doing a short off-hours stream to show people how you do things (like metaprogramming) that you won&#39;t get to touch on in Handmade Hero?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:30</span><span class="author" data-hue="343" data-saturation="98%">TheSizik</span> Would you consider doing a short off-hours stream to show people how you do things (like metaprogramming) that you won&#39;t get to touch on in Handmade Hero?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4268" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:11:08</span><span class="author" data-hue="221" data-saturation="92%">Roots2D</span> Hey, love catching the stream when I can. What language do you recommend as a beginner programmer looking to get into game development?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:08</span><span class="author" data-hue="221" data-saturation="92%">Roots2D</span> Hey, love catching the stream when I can. What language do you recommend as a beginner programmer looking to get into game development?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:08</span><span class="author" data-hue="221" data-saturation="92%">Roots2D</span> Hey, love catching the stream when I can. What language do you recommend as a beginner programmer looking to get into game development?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4491" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:14:51</span>Stream is over<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:51</span>Stream is over<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:51</span>Stream is over<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day204/"><div>&#9196;</div><div>Next: 'Unprojecting the Mouse Cursor'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

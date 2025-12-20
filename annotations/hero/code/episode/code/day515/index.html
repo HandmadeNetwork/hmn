@@ -1,0 +1,822 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="api, asset system, data structure, entity system, file format, file io, ipc, library, parsing, rendering, string manipulation, timing, ui, Administrivia, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Debugging HHT to HHA Packing</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://meowtheinfinite.com/" href="https://meowtheinfinite.com/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">Meow the Infinite</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1" class="timecode"><span class="ref_index">[1]</span><span class="time">0:01</span></span><span data-timestamp="8555" class="timecode"><span class="ref_index">[4]</span><span class="time">2:22:35</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/HandmadeHero/cpp/issues/87" href="https://github.com/HandmadeHero/cpp/issues/87" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">GitHub</div>
+                            <div class="ref_title">HandmadeHero /&#8203; cpp /&#8203; Authors swapped in cutscene.hht</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1325" class="timecode"><span class="ref_index">[2]</span><span class="time">22:05</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://twitter.com/AlenL" href="https://twitter.com/AlenL" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Twitter</div>
+                            <div class="ref_title">Alen Ladavac</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8227" class="timecode"><span class="ref_index">[3]</span><span class="time">2:17:07</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content api">
+                                <span class="icon category api"></span><span class="cineraText">api</span>
+                            </div>
+                            <div class="filter_content asset-system">
+                                <span class="icon category asset-system"></span><span class="cineraText">asset system</span>
+                            </div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content file-format">
+                                <span class="icon category file-format"></span><span class="cineraText">file format</span>
+                            </div>
+                            <div class="filter_content file-io">
+                                <span class="icon category file-io"></span><span class="cineraText">file io</span>
+                            </div>
+                            <div class="filter_content ipc">
+                                <span class="icon category ipc"></span><span class="cineraText">ipc</span>
+                            </div>
+                            <div class="filter_content library">
+                                <span class="icon category library"></span><span class="cineraText">library</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content string-manipulation">
+                                <span class="icon category string-manipulation"></span><span class="cineraText">string manipulation</span>
+                            </div>
+                            <div class="filter_content timing">
+                                <span class="icon category timing"></span><span class="cineraText">timing</span>
+                            </div>
+                            <div class="filter_content ui">
+                                <span class="icon category ui"></span><span class="cineraText">ui</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="SWdM5MdSCbc"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day514/"><div>&#9195;</div><div>Previous: 'Separating Image and Metadata Imports'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_nullTopic research" data-ref="https://meowtheinfinite.com/">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Meow the Infinite<sup>1</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Meow the Infinite<sup>1</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Meow the Infinite<sup>1</sup><span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="112" class="marker cat_asset-system speech">
+                    <div class="cineraContent"><span class="timecode">1:52</span>Recap and set the stage for the day debugging HHT to HHA packing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52</span>Recap and set the stage for the day debugging HHT to HHA packing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52</span>Recap and set the stage for the day debugging HHT to HHA packing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="374" class="marker cat_asset-system run">
+                    <div class="cineraContent"><span class="timecode">6:14</span>Plan to delete and rebuild our current .hha file<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:14</span>Plan to delete and rebuild our current .hha file<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:14</span>Plan to delete and rebuild our current .hha file<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="468" class="marker cat_asset-system speech">
+                    <div class="cineraContent"><span class="timecode">7:48</span>Continue to plan our .hha deletion and rebuild<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:48</span>Continue to plan our .hha deletion and rebuild<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:48</span>Continue to plan our .hha deletion and rebuild<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="648" class="marker cat_asset-system programming">
+                    <div class="cineraContent"><span class="timecode">10:48</span>Create handmade_import.cpp and .h to house the non-runtime asset system code<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:48</span>Create handmade_import.cpp and .h to house the non-runtime asset system code<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:48</span>Create handmade_import.cpp and .h to house the non-runtime asset system code<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="977" class="marker cat_asset-system programming">
+                    <div class="cineraContent"><span class="timecode">16:17</span>Make AllocateGameAsssets() call ImportChangedAssets() just before returning<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:17</span>Make AllocateGameAsssets() call ImportChangedAssets() just before returning<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:17</span>Make AllocateGameAsssets() call ImportChangedAssets() just before returning<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1162" class="marker cat_asset-system admin">
+                    <div class="cineraContent"><span class="timecode">19:22</span>Delete base_game.hha and step in to ImportChangedAssets()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:22</span>Delete base_game.hha and step in to ImportChangedAssets()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:22</span>Delete base_game.hha and step in to ImportChangedAssets()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1203" class="marker cat_ui speech">
+                    <div class="cineraContent"><span class="timecode">20:03</span>On Visual Studio&#39;s incorrect display of #if blocks<span class="cineraCategories"><div title="ui" class="category ui"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:03</span>On Visual Studio&#39;s incorrect display of #if blocks<span class="cineraCategories"><div title="ui" class="category ui"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:03</span>On Visual Studio&#39;s incorrect display of #if blocks<span class="cineraCategories"><div title="ui" class="category ui"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1256" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">20:56</span>Step through ImportChangedAssets()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:56</span>Step through ImportChangedAssets()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:56</span>Step through ImportChangedAssets()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1325" class="marker cat_asset-system admin" data-ref="https://github.com/HandmadeHero/cpp/issues/87">
+                    <div class="cineraContent"><span class="timecode">22:05</span>Fix the Author settings in cutscene.hht<sup>2</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:05</span>Fix the Author settings in cutscene.hht<sup>2</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:05</span>Fix the Author settings in cutscene.hht<sup>2</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1442" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">24:02</span>Continue to step through ImportChangedAssets() to ParseHHT() until we detect an error<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:02</span>Continue to step through ImportChangedAssets() to ParseHHT() until we detect an error<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:02</span>Continue to step through ImportChangedAssets() to ParseHHT() until we detect an error<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1533" class="marker cat_asset-system admin">
+                    <div class="cineraContent"><span class="timecode">25:33</span>Change cutscene.hht to use our #hha directive<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:33</span>Change cutscene.hht to use our #hha directive<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:33</span>Change cutscene.hht to use our #hha directive<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1562" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">26:02</span>Continue to step through ParseHHT(), until we spot a bug exhibited in InitSourceHHA()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:02</span>Continue to step through ParseHHT(), until we spot a bug exhibited in InitSourceHHA()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:02</span>Continue to step through ParseHHT(), until we spot a bug exhibited in InitSourceHHA()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1734" class="marker cat_asset-system cat_file-io programming">
+                    <div class="cineraContent"><span class="timecode">28:54</span>Make GetOrCreateHHAByStem() refresh the file info after creating a new .hha, to get its correct file size<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:54</span>Make GetOrCreateHHAByStem() refresh the file info after creating a new .hha, to get its correct file size<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:54</span>Make GetOrCreateHHAByStem() refresh the file info after creating a new .hha, to get its correct file size<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1797" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">29:57</span>Delete intro_cutscene.hha and successfully step through ImportChangedAssets() to CopyAllInputUpToAndIncluding()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:57</span>Delete intro_cutscene.hha and successfully step through ImportChangedAssets() to CopyAllInputUpToAndIncluding()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:57</span>Delete intro_cutscene.hha and successfully step through ImportChangedAssets() to CopyAllInputUpToAndIncluding()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1957" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">32:37</span>Comment out the unimplemented CopyAllInputUpToAndIncluding()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:37</span>Comment out the unimplemented CopyAllInputUpToAndIncluding()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:37</span>Comment out the unimplemented CopyAllInputUpToAndIncluding()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1969" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">32:49</span>Continue to step through ImportChangedAssets() after the CopyAllInputUpToAndIncluding() call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:49</span>Continue to step through ImportChangedAssets() after the CopyAllInputUpToAndIncluding() call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:49</span>Continue to step through ImportChangedAssets() after the CopyAllInputUpToAndIncluding() call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2110" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">35:10</span>Fix the .hha directory Path in ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:10</span>Fix the .hha directory Path in ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:10</span>Fix the .hha directory Path in ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2144" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">35:44</span>Continue to step through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:44</span>Continue to step through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:44</span>Continue to step through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2381" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">39:41</span>Fix ParseTagList() to check the next token after pulling off the closing parenthesis<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:41</span>Fix ParseTagList() to check the next token after pulling off the closing parenthesis<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:41</span>Fix ParseTagList() to check the next token after pulling off the closing parenthesis<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2435" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">40:35</span>Continue to step through ParseTagList()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:35</span>Continue to step through ParseTagList()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:35</span>Continue to step through ParseTagList()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2515" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">41:55</span>Make StampAssets() pass the Tags.TypeID to EndTags() and prevent the latter from calling AddTag() if passed an Asset_None<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:55</span>Make StampAssets() pass the Tags.TypeID to EndTags() and prevent the latter from calling AddTag() if passed an Asset_None<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:55</span>Make StampAssets() pass the Tags.TypeID to EndTags() and prevent the latter from calling AddTag() if passed an Asset_None<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2631" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">43:51</span>Continue to step through ParseTagList() to find that we parsed the correct number of tags<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:51</span>Continue to step through ParseTagList() to find that we parsed the correct number of tags<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:51</span>Continue to step through ParseTagList() to find that we parsed the correct number of tags<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2703" class="marker cat_asset-system admin">
+                    <div class="cineraContent"><span class="timecode">45:03</span>Just insert the missing semicolons in intro_cutscene.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:03</span>Just insert the missing semicolons in intro_cutscene.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:03</span>Just insert the missing semicolons in intro_cutscene.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2806" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">46:46</span>Continue to step carefully through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:46</span>Continue to step carefully through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:46</span>Continue to step carefully through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2908" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">48:28</span>Make PeekToken() pass the duplicated Temp tokenizer to GetToken()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:28</span>Make PeekToken() pass the duplicated Temp tokenizer to GetToken()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:28</span>Make PeekToken() pass the duplicated Temp tokenizer to GetToken()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2942" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">49:02</span>Continue to step through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">49:02</span>Continue to step through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">49:02</span>Continue to step through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3008" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">50:08</span>Fix ParseTagList() to use PeekToken() rather than GetToken() wherever we operate conditionally on tokens<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:08</span>Fix ParseTagList() to use PeekToken() rather than GetToken() wherever we operate conditionally on tokens<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:08</span>Fix ParseTagList() to use PeekToken() rather than GetToken() wherever we operate conditionally on tokens<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3104" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">51:44</span>Continue to step through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:44</span>Continue to step through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:44</span>Continue to step through ParseTopLevelBlock()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3243" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">54:03</span>Respecify StampAssets() as UpdateAssetMetadata() which itself determines if the metadata tags differ, changing ParseTopLevelBlock() to call it always<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:03</span>Respecify StampAssets() as UpdateAssetMetadata() which itself determines if the metadata tags differ, changing ParseTopLevelBlock() to call it always<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:03</span>Respecify StampAssets() as UpdateAssetMetadata() which itself determines if the metadata tags differ, changing ParseTopLevelBlock() to call it always<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4013" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:06:53</span>Introduce GetTagCount() and TagsAreEqual(), and fix compile errors<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:53</span>Introduce GetTagCount() and TagsAreEqual(), and fix compile errors<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:53</span>Introduce GetTagCount() and TagsAreEqual(), and fix compile errors<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4451" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:14:11</span>Delete intro_cutscene.hha and step through UpdateAssetMetadata()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:11</span>Delete intro_cutscene.hha and step through UpdateAssetMetadata()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:11</span>Delete intro_cutscene.hha and step through UpdateAssetMetadata()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4564" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:16:04</span>Make ParsePieces() tag plates as Asset_Plate<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:04</span>Make ParsePieces() tag plates as Asset_Plate<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:04</span>Make ParsePieces() tag plates as Asset_Plate<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4644" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:17:24</span>Continue to step through UpdateAssetMetadata() until the image extraction phase<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:24</span>Continue to step through UpdateAssetMetadata() until the image extraction phase<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:24</span>Continue to step through UpdateAssetMetadata() until the image extraction phase<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4907" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:21:47</span>Make UpdateAssetMetadata() mark the file as Modified if the tags differ<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:47</span>Make UpdateAssetMetadata() mark the file as Modified if the tags differ<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:47</span>Make UpdateAssetMetadata() mark the file as Modified if the tags differ<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5040" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:24:00</span>Hit an error while importing base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:00</span>Hit an error while importing base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:00</span>Hit an error while importing base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5152" class="marker cat_asset-system admin">
+                    <div class="cineraContent"><span class="timecode">1:25:52</span>Comment out the item and obstacles and cover settings in base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:52</span>Comment out the item and obstacles and cover settings in base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:52</span>Comment out the item and obstacles and cover settings in base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5200" class="marker cat_asset-system admin">
+                    <div class="cineraContent"><span class="timecode">1:26:40</span>Find that our generated intro_cutscene.hha file is empty<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:40</span>Find that our generated intro_cutscene.hha file is empty<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:40</span>Find that our generated intro_cutscene.hha file is empty<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5256" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:27:36</span>Introduce WriteModificationsToAllHHAs() for ImportChangedAssets() to call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:36</span>Introduce WriteModificationsToAllHHAs() for ImportChangedAssets() to call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:36</span>Introduce WriteModificationsToAllHHAs() for ImportChangedAssets() to call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5445" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:30:45</span>Delete and regenerate base_game.hha and intro_cutscene.hha<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:45</span>Delete and regenerate base_game.hha and intro_cutscene.hha<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:45</span>Delete and regenerate base_game.hha and intro_cutscene.hha<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5536" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:32:16</span>Find that the hero&#39;s head is missing, but the intro cutscene displays okay<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:16</span>Find that the hero&#39;s head is missing, but the intro cutscene displays okay<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:16</span>Find that the hero&#39;s head is missing, but the intro cutscene displays okay<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5649" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:34:09</span>Move intro_art_v2.hha to a new directory, and find that the intro cutscene now fails to display<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:09</span>Move intro_art_v2.hha to a new directory, and find that the intro cutscene now fails to display<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:09</span>Move intro_art_v2.hha to a new directory, and find that the intro cutscene now fails to display<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5722" class="marker cat_asset-system admin">
+                    <div class="cineraContent"><span class="timecode">1:35:22</span>Check out our intro_cutscene.hha in TabView<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:22</span>Check out our intro_cutscene.hha in TabView<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:22</span>Check out our intro_cutscene.hha in TabView<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5896" class="marker cat_asset-system programming">
+                    <div class="cineraContent"><span class="timecode">1:38:16</span>Add an -extract command to hhaedit<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:16</span>Add an -extract command to hhaedit<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:16</span>Add an -extract command to hhaedit<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6304" class="marker cat_asset-system programming">
+                    <div class="cineraContent"><span class="timecode">1:45:04</span>Copy WriteImageTopDownRGBA() and bitmap_header into hhaedit.cpp and introduce ExtractBitmapAsset()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:04</span>Copy WriteImageTopDownRGBA() and bitmap_header into hhaedit.cpp and introduce ExtractBitmapAsset()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:04</span>Copy WriteImageTopDownRGBA() and bitmap_header into hhaedit.cpp and introduce ExtractBitmapAsset()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6787" class="marker cat_asset-system run">
+                    <div class="cineraContent"><span class="timecode">1:53:07</span>Try to extract test1_v2.hha with partial success<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:07</span>Try to extract test1_v2.hha with partial success<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:07</span>Try to extract test1_v2.hha with partial success<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6853" class="marker cat_asset-system research">
+                    <div class="cineraContent"><span class="timecode">1:54:13</span>Comb through WriteImageTopDownRGBA() for any clear bugs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:13</span>Comb through WriteImageTopDownRGBA() for any clear bugs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:13</span>Comb through WriteImageTopDownRGBA() for any clear bugs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7003" class="marker cat_asset-system run">
+                    <div class="cineraContent"><span class="timecode">1:56:43</span>Step through an extract of test1_v2.hha<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:43</span>Step through an extract of test1_v2.hha<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:43</span>Step through an extract of test1_v2.hha<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7140" class="marker cat_asset-system programming">
+                    <div class="cineraContent"><span class="timecode">1:59:00</span>Remove the colour Mask values from hhaedit&#39;s bitmap_header<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:00</span>Remove the colour Mask values from hhaedit&#39;s bitmap_header<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:00</span>Remove the colour Mask values from hhaedit&#39;s bitmap_header<span class="cineraCategories"><div title="asset system" class="category asset-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7186" class="marker cat_asset-system run">
+                    <div class="cineraContent"><span class="timecode">1:59:46</span>Try again to extract test1_v2.hha with full success<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:46</span>Try again to extract test1_v2.hha with full success<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:46</span>Try again to extract test1_v2.hha with full success<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7218" class="marker cat_asset-system admin">
+                    <div class="cineraContent"><span class="timecode">2:00:18</span>Extract intro_cutscene.hha to see that all is correct<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:18</span>Extract intro_cutscene.hha to see that all is correct<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:18</span>Extract intro_cutscene.hha to see that all is correct<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7271" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:01:11</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:11</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:11</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7339" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:02:19</span><span class="author" data-hue="25" data-saturation="80%">wheeel</span> Q: What&#39;s your first major gameplay programming topic going to be?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:19</span><span class="author" data-hue="25" data-saturation="80%">wheeel</span> Q: What&#39;s your first major gameplay programming topic going to be?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:19</span><span class="author" data-hue="25" data-saturation="80%">wheeel</span> Q: What&#39;s your first major gameplay programming topic going to be?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7372" class="marker cat_library cat_string-manipulation authored">
+                    <div class="cineraContent"><span class="timecode">2:02:52</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Do you use string library from CRT? I though we wrote our own version?<span class="cineraCategories"><div title="library" class="category library"></div><div title="string manipulation" class="category string-manipulation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:52</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Do you use string library from CRT? I though we wrote our own version?<span class="cineraCategories"><div title="library" class="category library"></div><div title="string manipulation" class="category string-manipulation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:52</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Do you use string library from CRT? I though we wrote our own version?<span class="cineraCategories"><div title="library" class="category library"></div><div title="string manipulation" class="category string-manipulation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7407" class="marker cat_ipc authored">
+                    <div class="cineraContent"><span class="timecode">2:03:27</span><span class="author" data-hue="137" data-saturation="85%">letambourinroyal</span> Q: Have you every programmed non-blocking TCP sockets? I wonder what is the cost of directly calling recv() / send() vs select()<span class="cineraCategories"><div title="ipc" class="category ipc"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:27</span><span class="author" data-hue="137" data-saturation="85%">letambourinroyal</span> Q: Have you every programmed non-blocking TCP sockets? I wonder what is the cost of directly calling recv() / send() vs select()<span class="cineraCategories"><div title="ipc" class="category ipc"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:27</span><span class="author" data-hue="137" data-saturation="85%">letambourinroyal</span> Q: Have you every programmed non-blocking TCP sockets? I wonder what is the cost of directly calling recv() / send() vs select()<span class="cineraCategories"><div title="ipc" class="category ipc"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7514" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:05:14</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Could you improve the assert macro such that it prints the stringized expression which failed? On Linux the debugger does not always show which assert failed where<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:14</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Could you improve the assert macro such that it prints the stringized expression which failed? On Linux the debugger does not always show which assert failed where<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:14</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Could you improve the assert macro such that it prints the stringized expression which failed? On Linux the debugger does not always show which assert failed where<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7580" class="marker cat_file-format authored">
+                    <div class="cineraContent"><span class="timecode">2:06:20</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: What is your thought on the structure of config files in Windows (.ini files) that have sections in the close brackets? Do you think it is a good structure for the game config file?<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:20</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: What is your thought on the structure of config files in Windows (.ini files) that have sections in the close brackets? Do you think it is a good structure for the game config file?<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:20</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: What is your thought on the structure of config files in Windows (.ini files) that have sections in the close brackets? Do you think it is a good structure for the game config file?<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7610" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:06:50</span><span class="author" data-hue="13" data-saturation="83%">s0imn</span> Q: How would you implement immediate mode-esque functionality for rendering anti-aliased polygons? I am currently rendering n-gons with a geometry shader, but I am unable to implement anti-aliasing<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:50</span><span class="author" data-hue="13" data-saturation="83%">s0imn</span> Q: How would you implement immediate mode-esque functionality for rendering anti-aliased polygons? I am currently rendering n-gons with a geometry shader, but I am unable to implement anti-aliasing<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:50</span><span class="author" data-hue="13" data-saturation="83%">s0imn</span> Q: How would you implement immediate mode-esque functionality for rendering anti-aliased polygons? I am currently rendering n-gons with a geometry shader, but I am unable to implement anti-aliasing<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7834" class="marker cat_data-structure cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">2:10:34</span><span class="author" data-hue="25" data-saturation="80%">wheeel</span> Q: When trying to manage entities in my own game engine / game (just me on my own), do you think the Entity-Component structure is worth considering, or am I just giving myself too much work when it&#39;s just my own code?<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:34</span><span class="author" data-hue="25" data-saturation="80%">wheeel</span> Q: When trying to manage entities in my own game engine / game (just me on my own), do you think the Entity-Component structure is worth considering, or am I just giving myself too much work when it&#39;s just my own code?<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:34</span><span class="author" data-hue="25" data-saturation="80%">wheeel</span> Q: When trying to manage entities in my own game engine / game (just me on my own), do you think the Entity-Component structure is worth considering, or am I just giving myself too much work when it&#39;s just my own code?<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8049" class="marker cat_data-structure cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">2:14:09</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> I am here as the ambassador of DON&#39;T BOTHER WITH COMPONENT SYSTEMS<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:09</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> I am here as the ambassador of DON&#39;T BOTHER WITH COMPONENT SYSTEMS<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:09</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> I am here as the ambassador of DON&#39;T BOTHER WITH COMPONENT SYSTEMS<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8085" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:14:45</span><span class="author" data-hue="242" data-saturation="95%">toideng</span> Q: What should I choose: Xlib or XCB?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:45</span><span class="author" data-hue="242" data-saturation="95%">toideng</span> Q: What should I choose: Xlib or XCB?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:45</span><span class="author" data-hue="242" data-saturation="95%">toideng</span> Q: What should I choose: Xlib or XCB?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8108" class="marker cat_data-structure cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">2:15:08</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Yeah, I haven&#39;t thought in a while to explain the &quot;walling yourself in&quot; thing, but that is 100% true. It&#39;s like playing Go... when you build a strategic structure, you are also filling the board and ruling out possibilities for yourself<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:08</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Yeah, I haven&#39;t thought in a while to explain the &quot;walling yourself in&quot; thing, but that is 100% true. It&#39;s like playing Go... when you build a strategic structure, you are also filling the board and ruling out possibilities for yourself<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:08</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Yeah, I haven&#39;t thought in a while to explain the &quot;walling yourself in&quot; thing, but that is 100% true. It&#39;s like playing Go... when you build a strategic structure, you are also filling the board and ruling out possibilities for yourself<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8227" class="marker cat_timing authored" data-ref="https://twitter.com/AlenL">
+                    <div class="cineraContent"><span class="timecode">2:17:07</span><span class="author" data-hue="270" data-saturation="88%">devsigner</span> Q: I&#39;ve been writing my own game / render loop but I&#39;ve been having trouble getting the loop timing to be constant. I seem to get a stutter or skip in motion, but it&#39;s not because the render procedure takes too long. Any ideas on what could be the issue? Sorry, I know it&#39;s not much to go on, but any ideas would be helpful<sup>3</sup><span class="cineraCategories"><div title="timing" class="category timing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:07</span><span class="author" data-hue="270" data-saturation="88%">devsigner</span> Q: I&#39;ve been writing my own game / render loop but I&#39;ve been having trouble getting the loop timing to be constant. I seem to get a stutter or skip in motion, but it&#39;s not because the render procedure takes too long. Any ideas on what could be the issue? Sorry, I know it&#39;s not much to go on, but any ideas would be helpful<sup>3</sup><span class="cineraCategories"><div title="timing" class="category timing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:07</span><span class="author" data-hue="270" data-saturation="88%">devsigner</span> Q: I&#39;ve been writing my own game / render loop but I&#39;ve been having trouble getting the loop timing to be constant. I seem to get a stutter or skip in motion, but it&#39;s not because the render procedure takes too long. Any ideas on what could be the issue? Sorry, I know it&#39;s not much to go on, but any ideas would be helpful<sup>3</sup><span class="cineraCategories"><div title="timing" class="category timing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8527" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:22:07</span><span class="author" data-hue="293" data-saturation="79%">ideas_guy</span> lada-vatz<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:07</span><span class="author" data-hue="293" data-saturation="79%">ideas_guy</span> lada-vatz<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:07</span><span class="author" data-hue="293" data-saturation="79%">ideas_guy</span> lada-vatz<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8555" class="marker cat_nullTopic speech" data-ref="https://meowtheinfinite.com/">
+                    <div class="cineraContent"><span class="timecode">2:22:35</span>Call it a day with a plug of Meow the Infinite<sup>4</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:35</span>Call it a day with a plug of Meow the Infinite<sup>4</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:35</span>Call it a day with a plug of Meow the Infinite<sup>4</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day516/"><div>&#9196;</div><div>Next: 'Rewriting HHTs'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

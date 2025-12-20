@@ -1,0 +1,773 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="Chat Comment, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Push Buffer Rendering</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <div class="person">
+                            <div class="role">Indexer</div>
+                            <div class="name">Dustin Specht</div>
+                        </div>
+                    </span>
+                    <span class="credit">
+                        <div class="person">
+                            <div class="role">Indexer</div>
+                            <div class="name">Jay Waggle</div>
+                        </div>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="zbufcZ_JBbU"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day087/"><div>&#9195;</div><div>Previous: 'Seamless Ground Textures'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="37" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">0:37</span>Investigate possible bug in the collision detector</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:37</span>Investigate possible bug in the collision detector</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:37</span>Investigate possible bug in the collision detector</div>
+                    </div>
+                </div>
+                <div data-timestamp="182" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">3:02</span>Pass TestP to SpeculativeCollide and also base MoverGroundPoint off TestP</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:02</span>Pass TestP to SpeculativeCollide and also base MoverGroundPoint off TestP</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:02</span>Pass TestP to SpeculativeCollide and also base MoverGroundPoint off TestP</div>
+                    </div>
+                </div>
+                <div data-timestamp="207" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">3:27</span>Make a version of GetEntityGroundPoint that takes ForEntityP</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:27</span>Make a version of GetEntityGroundPoint that takes ForEntityP</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:27</span>Make a version of GetEntityGroundPoint that takes ForEntityP</div>
+                    </div>
+                </div>
+                <div data-timestamp="276" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">4:36</span>Walk around in-game</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:36</span>Walk around in-game</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:36</span>Walk around in-game</div>
+                    </div>
+                </div>
+                <div data-timestamp="300" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">5:00</span>Put the stairs back in and try colliding with them</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:00</span>Put the stairs back in and try colliding with them</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:00</span>Put the stairs back in and try colliding with them</div>
+                    </div>
+                </div>
+                <div data-timestamp="359" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">5:59</span>Increase GroundBufferCount from 32 to 64</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:59</span>Increase GroundBufferCount from 32 to 64</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:59</span>Increase GroundBufferCount from 32 to 64</div>
+                    </div>
+                </div>
+                <div data-timestamp="422" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">7:02</span>Think about sorting entities in a render list and scaling bitmaps</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:02</span>Think about sorting entities in a render list and scaling bitmaps</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:02</span>Think about sorting entities in a render list and scaling bitmaps</div>
+                    </div>
+                </div>
+                <div data-timestamp="528" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">8:48</span>Look at the TODO list</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:48</span>Look at the TODO list</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:48</span>Look at the TODO list</div>
+                    </div>
+                </div>
+                <div data-timestamp="571" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">9:31</span>Create handmade_render_group.h</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:31</span>Create handmade_render_group.h</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:31</span>Create handmade_render_group.h</div>
+                    </div>
+                </div>
+                <div data-timestamp="593" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">9:53</span>Consider sorting and translating the coordinate systems</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:53</span>Consider sorting and translating the coordinate systems</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:53</span>Consider sorting and translating the coordinate systems</div>
+                    </div>
+                </div>
+                <div data-timestamp="653" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">10:53</span>Take a look at how the buffering currently works</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:53</span>Take a look at how the buffering currently works</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:53</span>Take a look at how the buffering currently works</div>
+                    </div>
+                </div>
+                <div data-timestamp="682" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">11:22</span>Pull out entity_visible_piece and entity_visible_piece_group into handmade_render_group.h</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:22</span>Pull out entity_visible_piece and entity_visible_piece_group into handmade_render_group.h</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:22</span>Pull out entity_visible_piece and entity_visible_piece_group into handmade_render_group.h</div>
+                    </div>
+                </div>
+                <div data-timestamp="743" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">12:23</span>#include handmade_render_group.h and handmade_render_group.cpp in handmade.cpp</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:23</span>#include handmade_render_group.h and handmade_render_group.cpp in handmade.cpp</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:23</span>#include handmade_render_group.h and handmade_render_group.cpp in handmade.cpp</div>
+                    </div>
+                </div>
+                <div data-timestamp="770" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">12:50</span>Expand the notion of the PieceGroup so that it tracks everything</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:50</span>Expand the notion of the PieceGroup so that it tracks everything</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:50</span>Expand the notion of the PieceGroup so that it tracks everything</div>
+                    </div>
+                </div>
+                <div data-timestamp="871" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">14:31</span>Move the rendering outside</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:31</span>Move the rendering outside</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:31</span>Move the rendering outside</div>
+                    </div>
+                </div>
+                <div data-timestamp="935" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">15:35</span>Now all the pieces are in one giant buffer, and we have no idea which one goes with which entity</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:35</span>Now all the pieces are in one giant buffer, and we have no idea which one goes with which entity</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:35</span>Now all the pieces are in one giant buffer, and we have no idea which one goes with which entity</div>
+                    </div>
+                </div>
+                <div data-timestamp="967" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">16:07</span>Introduce render_basis</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:07</span>Introduce render_basis</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:07</span>Introduce render_basis</div>
+                    </div>
+                </div>
+                <div data-timestamp="1026" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">17:06</span>Enable setting the render_basis after moving the entities around</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:06</span>Enable setting the render_basis after moving the entities around</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:06</span>Enable setting the render_basis after moving the entities around</div>
+                    </div>
+                </div>
+                <div data-timestamp="1216" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">20:16</span>Set the DefaultBasis and point to it</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:16</span>Set the DefaultBasis and point to it</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:16</span>Set the DefaultBasis and point to it</div>
+                    </div>
+                </div>
+                <div data-timestamp="1308" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">21:48</span>View the results in-game</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:48</span>View the results in-game</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:48</span>View the results in-game</div>
+                    </div>
+                </div>
+                <div data-timestamp="1395" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">23:15</span>Move PieceGroup up and give it its own memory</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:15</span>Move PieceGroup up and give it its own memory</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:15</span>Move PieceGroup up and give it its own memory</div>
+                    </div>
+                </div>
+                <div data-timestamp="1480" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">24:40</span>Change all of the draw calls to operate off the PieceGroup</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:40</span>Change all of the draw calls to operate off the PieceGroup</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:40</span>Change all of the draw calls to operate off the PieceGroup</div>
+                    </div>
+                </div>
+                <div data-timestamp="1579" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">26:19</span>Check it out in-game</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:19</span>Check it out in-game</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:19</span>Check it out in-game</div>
+                    </div>
+                </div>
+                <div data-timestamp="1599" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">26:39</span>The inversion and scaling is all still happening erroneously</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:39</span>The inversion and scaling is all still happening erroneously</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:39</span>The inversion and scaling is all still happening erroneously</div>
+                    </div>
+                </div>
+                <div data-timestamp="1639" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">27:19</span>Look at what the Push functions are doing</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:19</span>Look at what the Push functions are doing</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:19</span>Look at what the Push functions are doing</div>
+                    </div>
+                </div>
+                <div data-timestamp="1685" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">28:05</span>Try and regularise how the rendering works</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:05</span>Try and regularise how the rendering works</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:05</span>Try and regularise how the rendering works</div>
+                    </div>
+                </div>
+                <div data-timestamp="1780" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">29:40</span>See how it looks in-game</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:40</span>See how it looks in-game</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:40</span>See how it looks in-game</div>
+                    </div>
+                </div>
+                <div data-timestamp="1816" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">30:16</span>Investigate why the Bitmaps aren&#39;t being drawn in the correct places</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:16</span>Investigate why the Bitmaps aren&#39;t being drawn in the correct places</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:16</span>Investigate why the Bitmaps aren&#39;t being drawn in the correct places</div>
+                    </div>
+                </div>
+                <div data-timestamp="2100" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">35:00</span>It&#39;s drawing the same Bitmap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:00</span>It&#39;s drawing the same Bitmap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:00</span>It&#39;s drawing the same Bitmap</div>
+                    </div>
+                </div>
+                <div data-timestamp="2121" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">35:21</span>Moment of realisation: Rather than sending the whole loaded_bitmap down, we were using one on the stack</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:21</span>Moment of realisation: Rather than sending the whole loaded_bitmap down, we were using one on the stack</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:21</span>Moment of realisation: Rather than sending the whole loaded_bitmap down, we were using one on the stack</div>
+                    </div>
+                </div>
+                <div data-timestamp="2192" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">36:32</span>Consider ways to pass the correct Bitmaps</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:32</span>Consider ways to pass the correct Bitmaps</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:32</span>Consider ways to pass the correct Bitmaps</div>
+                    </div>
+                </div>
+                <div data-timestamp="2233" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">37:13</span>Send the whole Bitmap to ground_buffer</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:13</span>Send the whole Bitmap to ground_buffer</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:13</span>Send the whole Bitmap to ground_buffer</div>
+                    </div>
+                </div>
+                <div data-timestamp="2335" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">38:55</span>See if that fixes our problem</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:55</span>See if that fixes our problem</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:55</span>See if that fixes our problem</div>
+                    </div>
+                </div>
+                <div data-timestamp="2380" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">39:40</span>Get rid of that other DrawRectangle call</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:40</span>Get rid of that other DrawRectangle call</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:40</span>Get rid of that other DrawRectangle call</div>
+                    </div>
+                </div>
+                <div data-timestamp="2431" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">40:31</span>Rename entity_visible_piece_group to render_group</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:31</span>Rename entity_visible_piece_group to render_group</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:31</span>Rename entity_visible_piece_group to render_group</div>
+                    </div>
+                </div>
+                <div data-timestamp="2477" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">41:17</span>Consider how we want to extend the notion of render_group so that you can have multiple things pushed onto this render stack</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:17</span>Consider how we want to extend the notion of render_group so that you can have multiple things pushed onto this render stack</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:17</span>Consider how we want to extend the notion of render_group so that you can have multiple things pushed onto this render stack</div>
+                    </div>
+                </div>
+                <div data-timestamp="2516" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">41:56</span>Consider linked list vs packed set</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:56</span>Consider linked list vs packed set</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:56</span>Consider linked list vs packed set</div>
+                    </div>
+                </div>
+                <div data-timestamp="2563" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">42:43</span>Add PushBufferBase, PushBufferSize and MaxPushBufferSize to render_group</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:43</span>Add PushBufferBase, PushBufferSize and MaxPushBufferSize to render_group</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:43</span>Add PushBufferBase, PushBufferSize and MaxPushBufferSize to render_group</div>
+                    </div>
+                </div>
+                <div data-timestamp="2632" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">43:52</span>Introduce AllocateRenderGroup in handmade_render_group.cpp</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:52</span>Introduce AllocateRenderGroup in handmade_render_group.cpp</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:52</span>Introduce AllocateRenderGroup in handmade_render_group.cpp</div>
+                    </div>
+                </div>
+                <div data-timestamp="2718" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">45:18</span>#define PushSize macro</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:18</span>#define PushSize macro</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:18</span>#define PushSize macro</div>
+                    </div>
+                </div>
+                <div data-timestamp="2740" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">45:40</span>Allocate MaxPushBufferSize and store it in PushBufferBase</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:40</span>Allocate MaxPushBufferSize and store it in PushBufferBase</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:40</span>Allocate MaxPushBufferSize and store it in PushBufferBase</div>
+                    </div>
+                </div>
+                <div data-timestamp="2755" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">45:55</span>Initialise all of the fields of the render_group</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:55</span>Initialise all of the fields of the render_group</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:55</span>Initialise all of the fields of the render_group</div>
+                    </div>
+                </div>
+                <div data-timestamp="2776" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">46:16</span>Call AllocateRenderGroup and set MaxPushBufferSize to 4MB</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:16</span>Call AllocateRenderGroup and set MaxPushBufferSize to 4MB</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:16</span>Call AllocateRenderGroup and set MaxPushBufferSize to 4MB</div>
+                    </div>
+                </div>
+                <div data-timestamp="2812" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">46:52</span>Make the DefaultBasis get allocated and initialise it</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:52</span>Make the DefaultBasis get allocated and initialise it</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:52</span>Make the DefaultBasis get allocated and initialise it</div>
+                    </div>
+                </div>
+                <div data-timestamp="2841" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">47:21</span>Store MetersToPixels rather than GameState and pass it to AllocateRenderGroup</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:21</span>Store MetersToPixels rather than GameState and pass it to AllocateRenderGroup</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:21</span>Store MetersToPixels rather than GameState and pass it to AllocateRenderGroup</div>
+                    </div>
+                </div>
+                <div data-timestamp="2886" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">48:06</span>Initialise MaxPushBufferSize and PushBufferSize</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:06</span>Initialise MaxPushBufferSize and PushBufferSize</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:06</span>Initialise MaxPushBufferSize and PushBufferSize</div>
+                    </div>
+                </div>
+                <div data-timestamp="2916" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">48:36</span>Now we&#39;ve got a problem: When we do PushPiece we can&#39;t get one because we don&#39;t know where that piece is anymore</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:36</span>Now we&#39;ve got a problem: When we do PushPiece we can&#39;t get one because we don&#39;t know where that piece is anymore</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:36</span>Now we&#39;ve got a problem: When we do PushPiece we can&#39;t get one because we don&#39;t know where that piece is anymore</div>
+                    </div>
+                </div>
+                <div data-timestamp="2924" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">48:44</span>Attend to the other issues</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:44</span>Attend to the other issues</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:44</span>Attend to the other issues</div>
+                    </div>
+                </div>
+                <div data-timestamp="3011" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">50:11</span>Straighten out the PushBuffer situation</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:11</span>Straighten out the PushBuffer situation</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:11</span>Straighten out the PushBuffer situation</div>
+                    </div>
+                </div>
+                <div data-timestamp="3247" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">54:07</span>See if it works in-game</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:07</span>See if it works in-game</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:07</span>See if it works in-game</div>
+                    </div>
+                </div>
+                <div data-timestamp="3286" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">54:46</span>Blackboard: PieceGroup</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:46</span>Blackboard: PieceGroup</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:46</span>Blackboard: PieceGroup</div>
+                    </div>
+                </div>
+                <div data-timestamp="3383" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">56:23</span>Blackboard: Compression Oriented Programming</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:23</span>Blackboard: Compression Oriented Programming</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:23</span>Blackboard: Compression Oriented Programming</div>
+                    </div>
+                </div>
+                <div data-timestamp="3417" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">56:57</span>Blackboard: render_group</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:57</span>Blackboard: render_group</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:57</span>Blackboard: render_group</div>
+                    </div>
+                </div>
+                <div data-timestamp="3499" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">58:19</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:19</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:19</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3556" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">59:16</span><span class="author" data-hue="300" data-saturation="78%">miblo</span> Will things like filters end up in the render_group?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:16</span><span class="author" data-hue="300" data-saturation="78%">miblo</span> Will things like filters end up in the render_group?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:16</span><span class="author" data-hue="300" data-saturation="78%">miblo</span> Will things like filters end up in the render_group?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3655" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:00:55</span><span class="author" data-hue="255" data-saturation="92%">cezonezor</span> How long will the renderer take?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:55</span><span class="author" data-hue="255" data-saturation="92%">cezonezor</span> How long will the renderer take?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:55</span><span class="author" data-hue="255" data-saturation="92%">cezonezor</span> How long will the renderer take?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3749" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:02:29</span><span class="author" data-hue="154" data-saturation="83%">poohshoes</span> Could you give us examples of what some of the simpler things will be in the render_group?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:29</span><span class="author" data-hue="154" data-saturation="83%">poohshoes</span> Could you give us examples of what some of the simpler things will be in the render_group?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:29</span><span class="author" data-hue="154" data-saturation="83%">poohshoes</span> Could you give us examples of what some of the simpler things will be in the render_group?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3767" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:02:47</span><span class="author" data-hue="241" data-saturation="90%">gplwhite</span> Are there any static code analysis tools for C / Visual Studio that will help pick up bugs like unused variables, etc?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:47</span><span class="author" data-hue="241" data-saturation="90%">gplwhite</span> Are there any static code analysis tools for C / Visual Studio that will help pick up bugs like unused variables, etc?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:47</span><span class="author" data-hue="241" data-saturation="90%">gplwhite</span> Are there any static code analysis tools for C / Visual Studio that will help pick up bugs like unused variables, etc?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3878" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:04:38</span><span class="author" data-hue="321" data-saturation="92%">d7samurai</span> So are you planning on abstracting away the renderer as a layer, similar to how we separated the platform from the game code, so that the various renderers will be operating on the same data structures?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:38</span><span class="author" data-hue="321" data-saturation="92%">d7samurai</span> So are you planning on abstracting away the renderer as a layer, similar to how we separated the platform from the game code, so that the various renderers will be operating on the same data structures?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:38</span><span class="author" data-hue="321" data-saturation="92%">d7samurai</span> So are you planning on abstracting away the renderer as a layer, similar to how we separated the platform from the game code, so that the various renderers will be operating on the same data structures?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3948" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:05:48</span><span class="author" data-hue="296" data-saturation="97%">ezioauditorerevs</span> If you were going to write an algorithm to generate Sudoku puzzles, how would it work?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:48</span><span class="author" data-hue="296" data-saturation="97%">ezioauditorerevs</span> If you were going to write an algorithm to generate Sudoku puzzles, how would it work?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:48</span><span class="author" data-hue="296" data-saturation="97%">ezioauditorerevs</span> If you were going to write an algorithm to generate Sudoku puzzles, how would it work?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3963" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:06:03</span><span class="author" data-hue="139" data-saturation="90%">mr4thdimention</span> Unused variables are a warning on my compiler. Did you turn that warning off? I use an allow local macro when I want it to ignore the variable<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:03</span><span class="author" data-hue="139" data-saturation="90%">mr4thdimention</span> Unused variables are a warning on my compiler. Did you turn that warning off? I use an allow local macro when I want it to ignore the variable<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:03</span><span class="author" data-hue="139" data-saturation="90%">mr4thdimention</span> Unused variables are a warning on my compiler. Did you turn that warning off? I use an allow local macro when I want it to ignore the variable<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4016" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:06:56</span><span class="author" data-hue="127" data-saturation="79%">jfcatalan</span> Would it make sense for the render_group to contain render groups itself?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:56</span><span class="author" data-hue="127" data-saturation="79%">jfcatalan</span> Would it make sense for the render_group to contain render groups itself?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:56</span><span class="author" data-hue="127" data-saturation="79%">jfcatalan</span> Would it make sense for the render_group to contain render groups itself?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4064" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:07:44</span><span class="author" data-hue="321" data-saturation="92%">d7samurai</span> I meant whether you plan for the data describing what needs to be rendered to be in a format such that it&#39;s suitable for both software and hardware rendering<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:44</span><span class="author" data-hue="321" data-saturation="92%">d7samurai</span> I meant whether you plan for the data describing what needs to be rendered to be in a format such that it&#39;s suitable for both software and hardware rendering<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:44</span><span class="author" data-hue="321" data-saturation="92%">d7samurai</span> I meant whether you plan for the data describing what needs to be rendered to be in a format such that it&#39;s suitable for both software and hardware rendering<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4125" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:08:45</span><span class="author" data-hue="34" data-saturation="88%">boondoggle42</span> Will our hero always be taller than the treetops?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:45</span><span class="author" data-hue="34" data-saturation="88%">boondoggle42</span> Will our hero always be taller than the treetops?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:45</span><span class="author" data-hue="34" data-saturation="88%">boondoggle42</span> Will our hero always be taller than the treetops?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4198" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:09:58</span>We&#39;ve finished early... or have we?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:58</span>We&#39;ve finished early... or have we?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:58</span>We&#39;ve finished early... or have we?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4219" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:10:19</span><span class="author" data-hue="253" data-saturation="79%">abnercoimbre</span> Are we keeping the 5PM schedule?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:19</span><span class="author" data-hue="253" data-saturation="79%">abnercoimbre</span> Are we keeping the 5PM schedule?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:19</span><span class="author" data-hue="253" data-saturation="79%">abnercoimbre</span> Are we keeping the 5PM schedule?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4326" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:12:06</span>Wrap it up with a recap and closing remarks<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:06</span>Wrap it up with a recap and closing remarks<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:06</span>Wrap it up with a recap and closing remarks<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day089/"><div>&#9196;</div><div>Next: 'Renderer Push Buffer Entry Types'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

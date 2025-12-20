@@ -1,0 +1,499 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asm, code generation, emulation, hardware, language, memory, parsing, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__bitwise.css?r=c4e77686">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus bitwise">
+            <span class="episode_name">More Compiler Hacking</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content code-generation">
+                                <span class="icon category code-generation"></span><span class="cineraText">code generation</span>
+                            </div>
+                            <div class="filter_content emulation">
+                                <span class="icon category emulation"></span><span class="cineraText">emulation</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://github.com/pervognsen/bitwise/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Per Vognsen</div>
+                        </a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="UvYeis032Ok"></div>
+            <div class="markers_container bitwise">
+                <a class="episodeMarker prev" href="https://bitwise.handmade.network/episode/bitwise/bitwise033/"><div>&#9195;</div><div>Previous: 'Compiler Hacking'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="30" class="marker cat_language cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">0:30</span>Review the newly explicit package namespace semantics, and the current status of anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:30</span>Review the newly explicit package namespace semantics, and the current status of anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:30</span>Review the newly explicit package namespace semantics, and the current status of anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="193" class="marker cat_language cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">3:13</span>Review the changed implementation of anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:13</span>Review the changed implementation of anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:13</span>Review the changed implementation of anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="309" class="marker cat_language cat_memory research">
+                    <div class="cineraContent"><span class="timecode">5:09</span>Demo the shortcoming of the current implementation, regarding incorrect layout of anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:09</span>Demo the shortcoming of the current implementation, regarding incorrect layout of anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:09</span>Demo the shortcoming of the current implementation, regarding incorrect layout of anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="372" class="marker cat_language cat_memory research">
+                    <div class="cineraContent"><span class="timecode">6:12</span>Review bug fix in type_complete_union() regarding struct member alignment<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:12</span>Review bug fix in type_complete_union() regarding struct member alignment<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:12</span>Review bug fix in type_complete_union() regarding struct member alignment<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="468" class="marker cat_language cat_memory speech">
+                    <div class="cineraContent"><span class="timecode">7:48</span>Set up to correctly lay out anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:48</span>Set up to correctly lay out anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:48</span>Set up to correctly lay out anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="701" class="marker cat_language cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">11:41</span>Dive into enabling our aggregate code to produce correctly aligned anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:41</span>Dive into enabling our aggregate code to produce correctly aligned anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:41</span>Dive into enabling our aggregate code to produce correctly aligned anonymous structs / unions<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1876" class="marker cat_language cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">31:16</span>Set up to add some anonymous structs / unions test cases to test1.ion<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:16</span>Set up to add some anonymous structs / unions test cases to test1.ion<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:16</span>Set up to add some anonymous structs / unions test cases to test1.ion<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1933" class="marker cat_language cat_memory run">
+                    <div class="cineraContent"><span class="timecode">32:13</span>Run it and hit our assertion in cdecl_name()<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:13</span>Run it and hit our assertion in cdecl_name()<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:13</span>Run it and hit our assertion in cdecl_name()<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1954" class="marker cat_language cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">32:34</span>Temporarily skip gen_typeinfos() and introduce test_token()<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:34</span>Temporarily skip gen_typeinfos() and introduce test_token()<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:34</span>Temporarily skip gen_typeinfos() and introduce test_token()<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2004" class="marker cat_language cat_memory run">
+                    <div class="cineraContent"><span class="timecode">33:24</span>Step through complete_aggregate() to type_complete_union() to see that they correctly align our test anonymous struct / union<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:24</span>Step through complete_aggregate() to type_complete_union() to see that they correctly align our test anonymous struct / union<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:24</span>Step through complete_aggregate() to type_complete_union() to see that they correctly align our test anonymous struct / union<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2065" class="marker cat_language cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">34:25</span>Enable complete_aggregate() to push a subaggregate_type<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:25</span>Enable complete_aggregate() to push a subaggregate_type<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:25</span>Enable complete_aggregate() to push a subaggregate_type<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2118" class="marker cat_language cat_memory run">
+                    <div class="cineraContent"><span class="timecode">35:18</span>Step through type_complete_struct() to see that it completes our type, but is not inlining the fields into the parent struct<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:18</span>Step through type_complete_struct() to see that it completes our type, but is not inlining the fields into the parent struct<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:18</span>Step through type_complete_struct() to see that it completes our type, but is not inlining the fields into the parent struct<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2194" class="marker cat_language cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">36:34</span>Introduce add_type_fields() to inline the fields of anonymous struct / unions into the parent<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:34</span>Introduce add_type_fields() to inline the fields of anonymous struct / unions into the parent<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:34</span>Introduce add_type_fields() to inline the fields of anonymous struct / unions into the parent<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2872" class="marker cat_language cat_memory run programming">
+                    <div class="cineraContent"><span class="timecode">47:52</span>Test our anonymous struct alignment, to see that it is not correct<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:52</span>Test our anonymous struct alignment, to see that it is not correct<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:52</span>Test our anonymous struct alignment, to see that it is not correct<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2936" class="marker cat_language cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">48:56</span>Fix add_type_fields(), type_complete_struct() and type_complete_union() to correctly offset our fields<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:56</span>Fix add_type_fields(), type_complete_struct() and type_complete_union() to correctly offset our fields<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:56</span>Fix add_type_fields(), type_complete_struct() and type_complete_union() to correctly offset our fields<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3237" class="marker cat_language cat_memory run programming">
+                    <div class="cineraContent"><span class="timecode">53:57</span>Test our anonymous struct field alignment to find that it is not correct<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:57</span>Test our anonymous struct field alignment to find that it is not correct<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:57</span>Test our anonymous struct field alignment to find that it is not correct<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3370" class="marker cat_language cat_memory run programming">
+                    <div class="cineraContent"><span class="timecode">56:10</span>Step into type_complete_union() to inspect its data<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:10</span>Step into type_complete_union() to inspect its data<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:10</span>Step into type_complete_union() to inspect its data<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3406" class="marker cat_language cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">56:46</span>Fix type_complete_union() and type_complete_struct() to align and size our fields after inlining them into the parent<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:46</span>Fix type_complete_union() and type_complete_struct() to align and size our fields after inlining them into the parent<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:46</span>Fix type_complete_union() and type_complete_struct() to align and size our fields after inlining them into the parent<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3489" class="marker cat_language cat_memory run programming">
+                    <div class="cineraContent"><span class="timecode">58:09</span>Test it to find that it all works<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:09</span>Test it to find that it all works<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:09</span>Test it to find that it all works<span class="cineraCategories"><div title="language" class="category language"></div><div title="memory" class="category memory"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3544" class="marker cat_code-generation cat_language cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">59:04</span>Enable gen_typeinfos() to generate type info for anonymous structs / unions<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:04</span>Enable gen_typeinfos() to generate type info for anonymous structs / unions<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:04</span>Enable gen_typeinfos() to generate type info for anonymous structs / unions<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3623" class="marker cat_code-generation cat_language research">
+                    <div class="cineraContent"><span class="timecode">1:00:23</span>Check out our generated type info to see that our typeinfo_table[] is wrong<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:23</span>Check out our generated type info to see that our typeinfo_table[] is wrong<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:23</span>Check out our generated type info to see that our typeinfo_table[] is wrong<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3667" class="marker cat_code-generation cat_language cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:01:07</span>Enable is_excluded_typeinfo() to handle defined and anonymous structs / unions differently<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:07</span>Enable is_excluded_typeinfo() to handle defined and anonymous structs / unions differently<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:07</span>Enable is_excluded_typeinfo() to handle defined and anonymous structs / unions differently<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3706" class="marker cat_code-generation cat_language research">
+                    <div class="cineraContent"><span class="timecode">1:01:46</span>Check out our generated type info to see that our anonymous types don&#39;t show up<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:46</span>Check out our generated type info to see that our anonymous types don&#39;t show up<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:46</span>Check out our generated type info to see that our anonymous types don&#39;t show up<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3830" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:03:50</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:50</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:50</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3838" class="marker cat_emulation cat_hardware authored">
+                    <div class="cineraContent"><span class="timecode">1:03:58</span><span class="author" data-hue="171" data-saturation="80%">xanatos387</span> So, what is the general plan for the next few weeks? We were working on the simulator for a bit; we still need to create our own HDL as well? Will creating the HDL be the start of the hardware / FPGA section? How far do we plan to take the simulator in the near term?<span class="cineraCategories"><div title="emulation" class="category emulation"></div><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:58</span><span class="author" data-hue="171" data-saturation="80%">xanatos387</span> So, what is the general plan for the next few weeks? We were working on the simulator for a bit; we still need to create our own HDL as well? Will creating the HDL be the start of the hardware / FPGA section? How far do we plan to take the simulator in the near term?<span class="cineraCategories"><div title="emulation" class="category emulation"></div><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:58</span><span class="author" data-hue="171" data-saturation="80%">xanatos387</span> So, what is the general plan for the next few weeks? We were working on the simulator for a bit; we still need to create our own HDL as well? Will creating the HDL be the start of the hardware / FPGA section? How far do we plan to take the simulator in the near term?<span class="cineraCategories"><div title="emulation" class="category emulation"></div><div title="hardware" class="category hardware"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4138" class="marker cat_code-generation cat_language research">
+                    <div class="cineraContent"><span class="timecode">1:08:58</span>Read through our anonymous struct / union code<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:58</span>Read through our anonymous struct / union code<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:58</span>Read through our anonymous struct / union code<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4197" class="marker cat_code-generation cat_language cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:09:57</span>Demo the bug in complete_aggregate() regarding undetected duplicate fields when anonymous structs / unions are in the mix<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:57</span>Demo the bug in complete_aggregate() regarding undetected duplicate fields when anonymous structs / unions are in the mix<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:57</span>Demo the bug in complete_aggregate() regarding undetected duplicate fields when anonymous structs / unions are in the mix<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4226" class="marker cat_code-generation cat_language cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:10:26</span>Fix has_duplicate_fields() to handle anonymous types<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:26</span>Fix has_duplicate_fields() to handle anonymous types<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:26</span>Fix has_duplicate_fields() to handle anonymous types<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4304" class="marker cat_code-generation cat_language cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:11:44</span>Run it to see that it detects duplicate fields across subtypes<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:44</span>Run it to see that it detects duplicate fields across subtypes<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:44</span>Run it to see that it detects duplicate fields across subtypes<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4382" class="marker cat_language programming">
+                    <div class="cineraContent"><span class="timecode">1:13:02</span>Rename subaggregate_type to item_type in complete_type()<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:02</span>Rename subaggregate_type to item_type in complete_type()<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:02</span>Rename subaggregate_type to item_type in complete_type()<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4400" class="marker cat_code-generation cat_language research">
+                    <div class="cineraContent"><span class="timecode">1:13:20</span>Glance over the new anonymous struct / union code one more time, to see that it looks reasonable<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:20</span>Glance over the new anonymous struct / union code one more time, to see that it looks reasonable<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:20</span>Glance over the new anonymous struct / union code one more time, to see that it looks reasonable<span class="cineraCategories"><div title="code generation" class="category code-generation"></div><div title="language" class="category language"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4495" class="marker cat_asm cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:14:55</span><span class="author" data-hue="141" data-saturation="82%">miotatsu</span> The forth implementation is going to be fun. I&#39;ve been planning to translate jonesforth to RISC-V asm on my own series as an early exercise<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:55</span><span class="author" data-hue="141" data-saturation="82%">miotatsu</span> The forth implementation is going to be fun. I&#39;ve been planning to translate jonesforth to RISC-V asm on my own series as an early exercise<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:55</span><span class="author" data-hue="141" data-saturation="82%">miotatsu</span> The forth implementation is going to be fun. I&#39;ve been planning to translate jonesforth to RISC-V asm on my own series as an early exercise<span class="cineraCategories"><div title="asm" class="category asm"></div><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4593" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:16:33</span><span class="author" data-hue="141" data-saturation="82%">miotatsu</span> It seems like a pretty ideal language to me for bootstrapping more complex things<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:33</span><span class="author" data-hue="141" data-saturation="82%">miotatsu</span> It seems like a pretty ideal language to me for bootstrapping more complex things<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:33</span><span class="author" data-hue="141" data-saturation="82%">miotatsu</span> It seems like a pretty ideal language to me for bootstrapping more complex things<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4677" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:17:57</span>That&#39;s it for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:57</span>That&#39;s it for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:57</span>That&#39;s it for today<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://bitwise.handmade.network/episode/bitwise/bitwise035/"><div>&#9196;</div><div>Next: 'Implementing Forth'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

@@ -1,0 +1,1036 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="animation, collision, data structure, debug visualisation, entity system, input handling, lighting, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Implementing Move Queues</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="0026065002" href="https://isbndb.com/book/0026065002" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Thomas Joseph Ryan (Macmillan Publishing)</div>
+                            <div class="ref_title">The Adolescence of P-1</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="5176" class="timecode"><span class="ref_index">[1]</span><span class="time">1:26:16</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content animation">
+                                <span class="icon category animation"></span><span class="cineraText">animation</span>
+                            </div>
+                            <div class="filter_content collision">
+                                <span class="icon category collision"></span><span class="cineraText">collision</span>
+                            </div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content debug-visualisation">
+                                <span class="icon category debug-visualisation"></span><span class="cineraText">debug visualisation</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content input-handling">
+                                <span class="icon category input-handling"></span><span class="cineraText">input handling</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="Ax5vU4mXJ48"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day656/"><div>&#9195;</div><div>Previous: 'Sketching Out Move Queues'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day moving the glove<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day moving the glove<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day moving the glove<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="34" class="marker cat_data-structure cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">0:34</span>Describe our sketched out move patterns and queues, and stats<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:34</span>Describe our sketched out move patterns and queues, and stats<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:34</span>Describe our sketched out move patterns and queues, and stats<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="325" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">5:25</span>Walk through our move queue enqueuing code in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:25</span>Walk through our move queue enqueuing code in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:25</span>Walk through our move queue enqueuing code in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="458" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">7:38</span>Demo the brain-directed movement synchronisation<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:38</span>Demo the brain-directed movement synchronisation<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:38</span>Demo the brain-directed movement synchronisation<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="539" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">8:59</span>Consider move queue-directed movement integrity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:59</span>Consider move queue-directed movement integrity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:59</span>Consider move queue-directed movement integrity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="701" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">11:41</span>Our facing direction is wrong when pressing Up<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:41</span>Our facing direction is wrong when pressing Up<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:41</span>Our facing direction is wrong when pressing Up<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="717" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">11:57</span>Investigate why our facing direction is wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:57</span>Investigate why our facing direction is wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:57</span>Investigate why our facing direction is wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="750" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">12:30</span>Make ExecuteBrainHero() compute the FacingDirection with the ATan2 of the X vector<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:30</span>Make ExecuteBrainHero() compute the FacingDirection with the ATan2 of the X vector<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:30</span>Make ExecuteBrainHero() compute the FacingDirection with the ATan2 of the X vector<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="771" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">12:51</span>Our facing direction remains wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:51</span>Our facing direction remains wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:51</span>Our facing direction remains wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="785" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">13:05</span>Investigate why our facing direction is wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:05</span>Investigate why our facing direction is wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:05</span>Investigate why our facing direction is wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="822" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">13:42</span>Make ExecuteBrainHero() compute the FacingDirection with the ATan2 of y / x of the X vector<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:42</span>Make ExecuteBrainHero() compute the FacingDirection with the ATan2 of y / x of the X vector<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:42</span>Make ExecuteBrainHero() compute the FacingDirection with the ATan2 of y / x of the X vector<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="834" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">13:54</span>Our facing direction is now correct<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:54</span>Our facing direction is now correct<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:54</span>Our facing direction is now correct<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="847" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">14:07</span>Consider where the glove should sit<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:07</span>Consider where the glove should sit<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:07</span>Consider where the glove should sit<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1003" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">16:43</span>Determine to put the glove on the hero&#39;s tile, and not occupy tiles it passes through<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:43</span>Determine to put the glove on the hero&#39;s tile, and not occupy tiles it passes through<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:43</span>Determine to put the glove on the hero&#39;s tile, and not occupy tiles it passes through<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1492" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">24:52</span>Make ExecuteBrainHero() move the glove without transactionally occupying tiles<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:52</span>Make ExecuteBrainHero() move the glove without transactionally occupying tiles<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:52</span>Make ExecuteBrainHero() move the glove without transactionally occupying tiles<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1589" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">26:29</span>Our glove doesn&#39;t move with us<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:29</span>Our glove doesn&#39;t move with us<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:29</span>Our glove doesn&#39;t move with us<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1615" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">26:55</span>Investigate why the glove doesn&#39;t move<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:55</span>Investigate why the glove doesn&#39;t move<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:55</span>Investigate why the glove doesn&#39;t move<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1680" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">28:00</span>Move without hitting extra keys, and the glove still not following us<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:00</span>Move without hitting extra keys, and the glove still not following us<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:00</span>Move without hitting extra keys, and the glove still not following us<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1691" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">28:11</span>Break into the &quot;glove at rest&quot; branch in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:11</span>Break into the &quot;glove at rest&quot; branch in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:11</span>Break into the &quot;glove at rest&quot; branch in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1798" class="marker cat_animation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">29:58</span>Step through UpdateAnimation()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:58</span>Step through UpdateAnimation()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:58</span>Step through UpdateAnimation()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1983" class="marker cat_animation cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">33:03</span>Reacquaint ourselves with UpdateAnimation()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">33:03</span>Reacquaint ourselves with UpdateAnimation()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">33:03</span>Reacquaint ourselves with UpdateAnimation()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2063" class="marker cat_animation cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">34:23</span>Check that the glove&#39;s animation data doesn&#39;t get overwritten<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">34:23</span>Check that the glove&#39;s animation data doesn&#39;t get overwritten<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">34:23</span>Check that the glove&#39;s animation data doesn&#39;t get overwritten<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2206" class="marker cat_animation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">36:46</span>Break into AddPlayer() for the glove&#39;s entity ID (10845), then see what UpdateAnimation() does to that entity<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:46</span>Break into AddPlayer() for the glove&#39;s entity ID (10845), then see what UpdateAnimation() does to that entity<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:46</span>Break into AddPlayer() for the glove&#39;s entity ID (10845), then see what UpdateAnimation() does to that entity<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2678" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">44:38</span>Find that UpdateAndRenderEntities() sets Entity-&gt;GroundP<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:38</span>Find that UpdateAndRenderEntities() sets Entity-&gt;GroundP<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:38</span>Find that UpdateAndRenderEntities() sets Entity-&gt;GroundP<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2843" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">47:23</span>Remove GroundP from entity<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:23</span>Remove GroundP from entity<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:23</span>Remove GroundP from entity<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2968" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">49:28</span>Entities are now in different locations<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">49:28</span>Entities are now in different locations<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">49:28</span>Entities are now in different locations<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2994" class="marker cat_animation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">49:54</span>Our glove follows us, but does not animate<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">49:54</span>Our glove follows us, but does not animate<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">49:54</span>Our glove follows us, but does not animate<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3063" class="marker cat_animation cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">51:03</span>Investigate why the glove does not animate<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:03</span>Investigate why the glove does not animate<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:03</span>Investigate why the glove does not animate<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3170" class="marker cat_animation cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">52:50</span>Fix ExecuteBrainHero() to set the Glove&#39;s tMovement to 0<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">52:50</span>Fix ExecuteBrainHero() to set the Glove&#39;s tMovement to 0<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">52:50</span>Fix ExecuteBrainHero() to set the Glove&#39;s tMovement to 0<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3190" class="marker cat_animation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">53:10</span>Our glove follows us, animating smoothly<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:10</span>Our glove follows us, animating smoothly<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:10</span>Our glove follows us, animating smoothly<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3226" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">53:46</span>Determine to offset the glove&#39;s location relative to the player<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:46</span>Determine to offset the glove&#39;s location relative to the player<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:46</span>Determine to offset the glove&#39;s location relative to the player<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3280" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">54:40</span>Try making AddPlayer() offset the glove in X<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:40</span>Try making AddPlayer() offset the glove in X<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:40</span>Try making AddPlayer() offset the glove in X<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3313" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">55:13</span>Our glove is offset in X<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:13</span>Our glove is offset in X<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:13</span>Our glove is offset in X<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3326" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">55:26</span>Try making AddPlayer() offset the glove in Z<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:26</span>Try making AddPlayer() offset the glove in Z<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:26</span>Try making AddPlayer() offset the glove in Z<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3356" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">55:56</span>Our glove is offset in Z<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:56</span>Our glove is offset in Z<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:56</span>Our glove is offset in Z<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3370" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">56:10</span>Increase the glove&#39;s X offset from 0.25 to 0.5 in AddPlayer()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:10</span>Increase the glove&#39;s X offset from 0.25 to 0.5 in AddPlayer()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:10</span>Increase the glove&#39;s X offset from 0.25 to 0.5 in AddPlayer()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3378" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">56:18</span>Our glove offsetting doesn&#39;t respect its parent entity&#39;s facing direction<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:18</span>Our glove offsetting doesn&#39;t respect its parent entity&#39;s facing direction<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:18</span>Our glove offsetting doesn&#39;t respect its parent entity&#39;s facing direction<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3587" class="marker cat_lighting run">
+                    <div class="cineraContent"><span class="timecode">59:47</span>Traverse the dungeon admiring the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:47</span>Traverse the dungeon admiring the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:47</span>Traverse the dungeon admiring the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3688" class="marker cat_animation cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">1:01:28</span><span class="author" data-hue="356" data-saturation="90%">mallesbixie</span> With a fixed offset from the actual position, animating would get hard, I guess<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:28</span><span class="author" data-hue="356" data-saturation="90%">mallesbixie</span> With a fixed offset from the actual position, animating would get hard, I guess<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:28</span><span class="author" data-hue="356" data-saturation="90%">mallesbixie</span> With a fixed offset from the actual position, animating would get hard, I guess<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3739" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:02:19</span>Determine to dequeue moves off the move queue<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:19</span>Determine to dequeue moves off the move queue<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:19</span>Determine to dequeue moves off the move queue<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3822" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:03:42</span>Enable UpdateAndRenderEntities() to dequeue moves off the move queue, augmenting entity with a MoveQueueIndex<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:42</span>Enable UpdateAndRenderEntities() to dequeue moves off the move queue, augmenting entity with a MoveQueueIndex<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:42</span>Enable UpdateAndRenderEntities() to dequeue moves off the move queue, augmenting entity with a MoveQueueIndex<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4111" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:08:31</span>The game still runs<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:31</span>The game still runs<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:31</span>The game still runs<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4123" class="marker cat_debug-visualisation cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:08:43</span>Make UpdateAndRenderEntities() draw move queues<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:43</span>Make UpdateAndRenderEntities() draw move queues<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:43</span>Make UpdateAndRenderEntities() draw move queues<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4252" class="marker cat_debug-visualisation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:10:52</span>See no move queue drawings<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:52</span>See no move queue drawings<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:52</span>See no move queue drawings<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4262" class="marker cat_debug-visualisation cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:11:02</span>Make UpdateAndRenderEntities() elevate the move queue drawing above the ground<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:02</span>Make UpdateAndRenderEntities() elevate the move queue drawing above the ground<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:02</span>Make UpdateAndRenderEntities() elevate the move queue drawing above the ground<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4288" class="marker cat_debug-visualisation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:11:28</span>Still see no move queue drawings<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:28</span>Still see no move queue drawings<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:28</span>Still see no move queue drawings<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4290" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:11:30</span>Make AddPlayer() set the Glove-&gt;Stats.MaxMoveGroupCount to 1, and ExecuteBrainHero() reset Glove-&gt;MoveQueueIndex to 0 when with the body<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:30</span>Make AddPlayer() set the Glove-&gt;Stats.MaxMoveGroupCount to 1, and ExecuteBrainHero() reset Glove-&gt;MoveQueueIndex to 0 when with the body<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:30</span>Make AddPlayer() set the Glove-&gt;Stats.MaxMoveGroupCount to 1, and ExecuteBrainHero() reset Glove-&gt;MoveQueueIndex to 0 when with the body<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4421" class="marker cat_debug-visualisation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:13:41</span>Still see no move queue drawings<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:41</span>Still see no move queue drawings<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:41</span>Still see no move queue drawings<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4430" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:13:50</span>Scour ExecuteBrainHero() for bugs<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:50</span>Scour ExecuteBrainHero() for bugs<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:50</span>Scour ExecuteBrainHero() for bugs<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4463" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:14:23</span>Break in to ExecuteBrainHero() to find the glove&#39;s stats are not set<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:23</span>Break in to ExecuteBrainHero() to find the glove&#39;s stats are not set<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:23</span>Break in to ExecuteBrainHero() to find the glove&#39;s stats are not set<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4507" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:15:07</span>Change AddPlayer() to set the Glove-&gt;BaseStats.MaxMoveGroupCount to 1<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:07</span>Change AddPlayer() to set the Glove-&gt;BaseStats.MaxMoveGroupCount to 1<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:07</span>Change AddPlayer() to set the Glove-&gt;BaseStats.MaxMoveGroupCount to 1<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4535" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:15:35</span>Break in to ExecuteBrainHero() to find the glove&#39;s stats remain not set<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:35</span>Break in to ExecuteBrainHero() to find the glove&#39;s stats remain not set<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:35</span>Break in to ExecuteBrainHero() to find the glove&#39;s stats remain not set<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4551" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:15:51</span>accumulate entity stats</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:51</span>accumulate entity stats</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:51</span>accumulate entity stats</div>
+                    </div>
+                </div>
+                <div data-timestamp="4580" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:16:20</span>Love <span class="member" data-hue="170" data-saturation="89%">insobot</span>, and feel like <span class="member" data-hue="257" data-saturation="87%">insofaras</span> needs to use GPT-3 and have <span class="member" data-hue="170" data-saturation="89%">insobot</span> do everything<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:20</span>Love <span class="member" data-hue="170" data-saturation="89%">insobot</span>, and feel like <span class="member" data-hue="257" data-saturation="87%">insofaras</span> needs to use GPT-3 and have <span class="member" data-hue="170" data-saturation="89%">insobot</span> do everything<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:20</span>Love <span class="member" data-hue="170" data-saturation="89%">insobot</span>, and feel like <span class="member" data-hue="257" data-saturation="87%">insofaras</span> needs to use GPT-3 and have <span class="member" data-hue="170" data-saturation="89%">insobot</span> do everything<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4625" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:17:05</span>Make AdvanceEntityStats() acquire the Entity-&gt;BaseStats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:05</span>Make AdvanceEntityStats() acquire the Entity-&gt;BaseStats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:05</span>Make AdvanceEntityStats() acquire the Entity-&gt;BaseStats<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4651" class="marker cat_debug-visualisation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:17:31</span>Break in to ExecuteBrainHero() to find the glove&#39;s stats are now set, and move queue boxes are drawn<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:31</span>Break in to ExecuteBrainHero() to find the glove&#39;s stats are now set, and move queue boxes are drawn<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:31</span>Break in to ExecuteBrainHero() to find the glove&#39;s stats are now set, and move queue boxes are drawn<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4691" class="marker cat_debug-visualisation cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:18:11</span>Make ExecuteBrainHero() locate the move queue drawings relative to its entity&#39;s occupying position<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:11</span>Make ExecuteBrainHero() locate the move queue drawings relative to its entity&#39;s occupying position<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:11</span>Make ExecuteBrainHero() locate the move queue drawings relative to its entity&#39;s occupying position<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4775" class="marker cat_debug-visualisation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:19:35</span>Our move queue drawings work pretty well<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:35</span>Our move queue drawings work pretty well<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:35</span>Our move queue drawings work pretty well<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4784" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:19:44</span>Determine to make the glove return to the body after punching<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:44</span>Determine to make the glove return to the body after punching<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:44</span>Determine to make the glove return to the body after punching<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4874" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:21:14</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> People always wonder when <span class="member" data-hue="170" data-saturation="89%">insobot</span> is going to become sentient<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:14</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> People always wonder when <span class="member" data-hue="170" data-saturation="89%">insobot</span> is going to become sentient<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:14</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> People always wonder when <span class="member" data-hue="170" data-saturation="89%">insobot</span> is going to become sentient<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4908" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:21:48</span>Our move pattern rotates properly<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:48</span>Our move pattern rotates properly<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:48</span>Our move pattern rotates properly<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4915" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:21:55</span>Investigate why the glove doesn&#39;t return to the body after punching<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:55</span>Investigate why the glove doesn&#39;t return to the body after punching<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:55</span>Investigate why the glove doesn&#39;t return to the body after punching<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4938" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:22:18</span>Fix the glove reset condition in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:18</span>Fix the glove reset condition in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:18</span>Fix the glove reset condition in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4954" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:22:34</span>Our glove now returns after punching<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:34</span>Our glove now returns after punching<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:34</span>Our glove now returns after punching<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4975" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:22:55</span>Increase Glove-&gt;BaseStats.MaxMoveGroupCount from 1 to 2 in AddPlayer()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:55</span>Increase Glove-&gt;BaseStats.MaxMoveGroupCount from 1 to 2 in AddPlayer()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:55</span>Increase Glove-&gt;BaseStats.MaxMoveGroupCount from 1 to 2 in AddPlayer()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4991" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:23:11</span>We can chain punches, but the pattern direction is off<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:11</span>We can chain punches, but the pattern direction is off<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:11</span>We can chain punches, but the pattern direction is off<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5010" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:23:30</span>Investigate why the second punch&#39;s direction is off<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:30</span>Investigate why the second punch&#39;s direction is off<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:30</span>Investigate why the second punch&#39;s direction is off<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5103" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:25:03</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> Have fun reading it, if you can find a copy. It&#39;s gotta be, what, 40 years old at least by now?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:03</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> Have fun reading it, if you can find a copy. It&#39;s gotta be, what, 40 years old at least by now?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:03</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> Have fun reading it, if you can find a copy. It&#39;s gotta be, what, 40 years old at least by now?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5112" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:25:12</span>Gain insight into the chained punching direction<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:12</span>Gain insight into the chained punching direction<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:12</span>Gain insight into the chained punching direction<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5132" class="marker cat_input-handling programming">
+                    <div class="cineraContent"><span class="timecode">1:25:32</span>Try using a WentDown input event in ExecuteBrainHero()<span class="cineraCategories"><div title="input handling" class="category input-handling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:32</span>Try using a WentDown input event in ExecuteBrainHero()<span class="cineraCategories"><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:32</span>Try using a WentDown input event in ExecuteBrainHero()<span class="cineraCategories"><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5176" class="marker cat_nullTopic authored" data-ref="0026065002">
+                    <div class="cineraContent"><span class="timecode">1:26:16</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> The Adolescence of P-1<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:16</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> The Adolescence of P-1<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:16</span><span class="author" data-hue="311" data-saturation="88%">technicbeam</span> The Adolescence of P-1<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5189" class="marker cat_data-structure cat_input-handling programming">
+                    <div class="cineraContent"><span class="timecode">1:26:29</span>We have HalfTransitionCount but not WentDown in game_button_state<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="input handling" class="category input-handling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:29</span>We have HalfTransitionCount but not WentDown in game_button_state<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:29</span>We have HalfTransitionCount but not WentDown in game_button_state<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5240" class="marker cat_entity-system cat_input-handling programming">
+                    <div class="cineraContent"><span class="timecode">1:27:20</span>Make ExecuteBrainHero() also factor in the HalfTransitionCount to its attack checks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="input handling" class="category input-handling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:20</span>Make ExecuteBrainHero() also factor in the HalfTransitionCount to its attack checks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:20</span>Make ExecuteBrainHero() also factor in the HalfTransitionCount to its attack checks<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="input handling" class="category input-handling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5275" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:27:55</span>We can chain punches in the correct directions<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:55</span>We can chain punches in the correct directions<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:55</span>We can chain punches in the correct directions<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5355" class="marker cat_collision cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:29:15</span>Consider the definition of collision<span class="cineraCategories"><div title="collision" class="category collision"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:15</span>Consider the definition of collision<span class="cineraCategories"><div title="collision" class="category collision"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:15</span>Consider the definition of collision<span class="cineraCategories"><div title="collision" class="category collision"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5431" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:30:31</span>Change ExecuteBrainHero() to give the glove a 1-step attack pattern<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:31</span>Change ExecuteBrainHero() to give the glove a 1-step attack pattern<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:31</span>Change ExecuteBrainHero() to give the glove a 1-step attack pattern<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5453" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:30:53</span>Try our simple punch<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:53</span>Try our simple punch<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:53</span>Try our simple punch<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5467" class="marker cat_animation cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:31:07</span>Introduce SetAnimation() for the ExecuteBrain*() functions to call, augmenting entity with a dtMovement<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:07</span>Introduce SetAnimation() for the ExecuteBrain*() functions to call, augmenting entity with a dtMovement<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:07</span>Introduce SetAnimation() for the ExecuteBrain*() functions to call, augmenting entity with a dtMovement<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5810" class="marker cat_animation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:36:50</span>That all looks fine<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:50</span>That all looks fine<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:50</span>That all looks fine<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5824" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:37:04</span>Switch UpdateAndRenderEntities() to use the new Entity-&gt;dtMovement<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:04</span>Switch UpdateAndRenderEntities() to use the new Entity-&gt;dtMovement<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:04</span>Switch UpdateAndRenderEntities() to use the new Entity-&gt;dtMovement<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5846" class="marker cat_animation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:37:26</span>Our glove doesn&#39;t move<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:26</span>Our glove doesn&#39;t move<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:26</span>Our glove doesn&#39;t move<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5860" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:37:40</span>Consider where and how to set the glove&#39;s dtMovement<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:40</span>Consider where and how to set the glove&#39;s dtMovement<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:40</span>Consider where and how to set the glove&#39;s dtMovement<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6058" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:40:58</span>Let UpdateAndRenderEntities() also move entities if their dtMovement is 0<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:58</span>Let UpdateAndRenderEntities() also move entities if their dtMovement is 0<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:58</span>Let UpdateAndRenderEntities() also move entities if their dtMovement is 0<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6083" class="marker cat_animation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:41:23</span>Our glove now moves<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:23</span>Our glove now moves<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:23</span>Our glove now moves<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6093" class="marker cat_animation cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:41:33</span>Increase the glove&#39;s animation speed from 4 to 8 in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:33</span>Increase the glove&#39;s animation speed from 4 to 8 in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:33</span>Increase the glove&#39;s animation speed from 4 to 8 in ExecuteBrainHero()<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6113" class="marker cat_animation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:41:53</span>Our glove punches faster<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:53</span>Our glove punches faster<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:53</span>Our glove punches faster<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6164" class="marker cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">1:42:44</span><span class="author" data-hue="356" data-saturation="90%">mallesbixie</span> Would the attack pattern define the speed?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:44</span><span class="author" data-hue="356" data-saturation="90%">mallesbixie</span> Would the attack pattern define the speed?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:44</span><span class="author" data-hue="356" data-saturation="90%">mallesbixie</span> Would the attack pattern define the speed?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6203" class="marker cat_animation cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:43:23</span>Make UpdateAndRenderEntities() set the Entity-&gt;dtMovement, and AddPlayer() the glove&#39;s BaseStats.Speed<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:23</span>Make UpdateAndRenderEntities() set the Entity-&gt;dtMovement, and AddPlayer() the glove&#39;s BaseStats.Speed<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:23</span>Make UpdateAndRenderEntities() set the Entity-&gt;dtMovement, and AddPlayer() the glove&#39;s BaseStats.Speed<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6313" class="marker cat_animation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:45:13</span>Our glove still punches faster<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:13</span>Our glove still punches faster<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:13</span>Our glove still punches faster<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6316" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:45:16</span>Toggle to the 3-step attack pattern in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:16</span>Toggle to the 3-step attack pattern in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:16</span>Toggle to the 3-step attack pattern in ExecuteBrainHero()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6343" class="marker cat_animation cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:45:43</span>Try out our fast-slow-fast punch<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:43</span>Try out our fast-slow-fast punch<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:43</span>Try out our fast-slow-fast punch<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6384" class="marker cat_input-handling authored">
+                    <div class="cineraContent"><span class="timecode">1:46:24</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> There is a function to determine if the button was pressed this frame (named WasPressed)<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:24</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> There is a function to determine if the button was pressed this frame (named WasPressed)<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:24</span><span class="author" data-hue="227" data-saturation="81%">spacenaming</span> There is a function to determine if the button was pressed this frame (named WasPressed)<span class="cineraCategories"><div title="input handling" class="category input-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6389" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:46:29</span>Call it for today with a glimpse into the future doing damage and collapsing down to grid<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:29</span>Call it for today with a glimpse into the future doing damage and collapsing down to grid<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:29</span>Call it for today with a glimpse into the future doing damage and collapsing down to grid<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day659/"><div>&#9196;</div><div>Next: 'Immediate-mode Level Generation'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

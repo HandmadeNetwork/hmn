@@ -1,0 +1,464 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="art, asset loading, asset system, file io, game design, hashing, parsing, Chat Comment, In-Game, Programming, Speech, Trivia">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Separating Image and Metadata Imports</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content art">
+                                <span class="icon category art"></span><span class="cineraText">art</span>
+                            </div>
+                            <div class="filter_content asset-loading">
+                                <span class="icon category asset-loading"></span><span class="cineraText">asset loading</span>
+                            </div>
+                            <div class="filter_content asset-system">
+                                <span class="icon category asset-system"></span><span class="cineraText">asset system</span>
+                            </div>
+                            <div class="filter_content file-io">
+                                <span class="icon category file-io"></span><span class="cineraText">file io</span>
+                            </div>
+                            <div class="filter_content game-design">
+                                <span class="icon category game-design"></span><span class="cineraText">game design</span>
+                            </div>
+                            <div class="filter_content hashing">
+                                <span class="icon category hashing"></span><span class="cineraText">hashing</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                            <div class="filter_content trivia">
+                                <span class="icon">&#127922;</span><span class="cineraText">Trivia</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="Kbw67tdiaHo"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day513/"><div>&#9195;</div><div>Previous: 'Adding Raw Tokens and Alignment Point Parsing'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_asset-system speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day communicating asset data between the .hht and .hha files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day communicating asset data between the .hht and .hha files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day communicating asset data between the .hht and .hha files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="251" class="marker cat_asset-system speech">
+                    <div class="cineraContent"><span class="timecode">4:11</span>Merging alignment points into .hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:11</span>Merging alignment points into .hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:11</span>Merging alignment points into .hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="438" class="marker cat_asset-system speech">
+                    <div class="cineraContent"><span class="timecode">7:18</span>Our options for merging in alignment points<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:18</span>Our options for merging in alignment points<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:18</span>Our options for merging in alignment points<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="589" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">9:49</span>Pair up the .hht and .hha files by removing the &quot;HHA&quot; identifier, and make ParseTopLevelBlock() parse in alignment points from .hha up front for rebuilding while parsing the .hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:49</span>Pair up the .hht and .hha files by removing the &quot;HHA&quot; identifier, and make ParseTopLevelBlock() parse in alignment points from .hha up front for rebuilding while parsing the .hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:49</span>Pair up the .hht and .hha files by removing the &quot;HHA&quot; identifier, and make ParseTopLevelBlock() parse in alignment points from .hha up front for rebuilding while parsing the .hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1356" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">22:36</span>Enable ParseTopLevelBlock() to perform our full and metadata rebuilds<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:36</span>Enable ParseTopLevelBlock() to perform our full and metadata rebuilds<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:36</span>Enable ParseTopLevelBlock() to perform our full and metadata rebuilds<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2574" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">42:54</span>Introduce #hha and #include preprocessor directives to re-allow decoupling of .hht and .hha files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:54</span>Introduce #hha and #include preprocessor directives to re-allow decoupling of .hht and .hha files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:54</span>Introduce #hha and #include preprocessor directives to re-allow decoupling of .hht and .hha files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2796" class="marker cat_nullTopic speech trivia">
+                    <div class="cineraContent"><span class="timecode">46:36</span>About <span class="member" data-hue="314" data-saturation="78%">Molly</span>&#39;s feeder<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div><div title="Trivia" class="categoryMedium trivia">&#127922;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:36</span>About <span class="member" data-hue="314" data-saturation="78%">Molly</span>&#39;s feeder<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div><div title="Trivia" class="categoryMedium trivia">&#127922;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:36</span>About <span class="member" data-hue="314" data-saturation="78%">Molly</span>&#39;s feeder<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div><div title="Trivia" class="categoryMedium trivia">&#127922;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2859" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">47:39</span>Make ParseHHT() handle the #hha directive<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:39</span>Make ParseHHT() handle the #hha directive<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:39</span>Make ParseHHT() handle the #hha directive<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3075" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">51:15</span>Make ParseHHT() and ImportChangedAssets() handle the #include directive<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:15</span>Make ParseHHT() and ImportChangedAssets() handle the #include directive<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:15</span>Make ParseHHT() and ImportChangedAssets() handle the #include directive<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3479" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">57:59</span>Relieve ParsePieces() of appending tags and WriteImageToHHA() of writing out annotations<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:59</span>Relieve ParsePieces() of appending tags and WriteImageToHHA() of writing out annotations<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:59</span>Relieve ParsePieces() of appending tags and WriteImageToHHA() of writing out annotations<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4842" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:20:42</span>Introduce StampAssets() to merge tags and write out annotations<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:42</span>Introduce StampAssets() to merge tags and write out annotations<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:42</span>Introduce StampAssets() to merge tags and write out annotations<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5913" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:38:33</span>Run the parser for the first time<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:33</span>Run the parser for the first time<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:33</span>Run the parser for the first time<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5958" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:39:18</span>Fix the sense of the Asset-&gt;Type assertion in SetAssetType()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:18</span>Fix the sense of the Asset-&gt;Type assertion in SetAssetType()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:18</span>Fix the sense of the Asset-&gt;Type assertion in SetAssetType()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6106" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:41:46</span>Trigger an asset reimport and step through the .hht parser<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:46</span>Trigger an asset reimport and step through the .hht parser<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:46</span>Trigger an asset reimport and step through the .hht parser<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6271" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:44:31</span>Trigger another asset reimport and step through GetTokenRaw() to find that we fail to tokenize multi-line comments<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:31</span>Trigger another asset reimport and step through GetTokenRaw() to find that we fail to tokenize multi-line comments<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:31</span>Trigger another asset reimport and step through GetTokenRaw() to find that we fail to tokenize multi-line comments<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6326" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:45:26</span>Fix GetTokenRaw() to account for its character advancement<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:26</span>Fix GetTokenRaw() to account for its character advancement<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:26</span>Fix GetTokenRaw() to account for its character advancement<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6463" class="marker cat_asset-system cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:47:43</span>Step through GetTokenRaw() to find that we correctly tokenize the whole intro_cutscene.hht and base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:43</span>Step through GetTokenRaw() to find that we correctly tokenize the whole intro_cutscene.hht and base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:43</span>Step through GetTokenRaw() to find that we correctly tokenize the whole intro_cutscene.hht and base_game.hht<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6726" class="marker cat_asset-system cat_file-io cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:52:06</span>Enable GetOrCreateHHAByStem() to create a .hha if it doesn&#39;t exist, introducing InitSourceHHA()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:06</span>Enable GetOrCreateHHAByStem() to create a .hha if it doesn&#39;t exist, introducing InitSourceHHA()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:06</span>Enable GetOrCreateHHAByStem() to create a .hha if it doesn&#39;t exist, introducing InitSourceHHA()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8206" class="marker cat_asset-system cat_file-io cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">2:16:46</span>Trigger an import and step through GetOrCreateHHAByStem() until InitSourceHHA() fails to open our newly created file<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:46</span>Trigger an import and step through GetOrCreateHHAByStem() until InitSourceHHA() fails to open our newly created file<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:46</span>Trigger an import and step through GetOrCreateHHAByStem() until InitSourceHHA() fails to open our newly created file<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8356" class="marker cat_asset-system cat_file-io programming">
+                    <div class="cineraContent"><span class="timecode">2:19:16</span>Fix GetOrCreateHHAByStem() to close the file before calling InitSourceHHA()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:19:16</span>Fix GetOrCreateHHAByStem() to close the file before calling InitSourceHHA()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:19:16</span>Fix GetOrCreateHHAByStem() to close the file before calling InitSourceHHA()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8414" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:20:14</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:20:14</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:20:14</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8458" class="marker cat_asset-system cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">2:20:58</span><span class="author" data-hue="53" data-saturation="94%">jasonoftheb</span> Q: You still parse At[1] in one of the newline cases instead of At[0]<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:20:58</span><span class="author" data-hue="53" data-saturation="94%">jasonoftheb</span> Q: You still parse At[1] in one of the newline cases instead of At[0]<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:20:58</span><span class="author" data-hue="53" data-saturation="94%">jasonoftheb</span> Q: You still parse At[1] in one of the newline cases instead of At[0]<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8470" class="marker cat_asset-system cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">2:21:10</span>Fix typo in GetTokenRaw()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:21:10</span>Fix typo in GetTokenRaw()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:21:10</span>Fix typo in GetTokenRaw()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8489" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:21:29</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: You had a NOTE you changed to a TODO, but what if by &quot;with the right data!&quot; indicated the code wasn&#39;t or isn&#39;t using the right data (yet)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:21:29</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: You had a NOTE you changed to a TODO, but what if by &quot;with the right data!&quot; indicated the code wasn&#39;t or isn&#39;t using the right data (yet)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:21:29</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: You had a NOTE you changed to a TODO, but what if by &quot;with the right data!&quot; indicated the code wasn&#39;t or isn&#39;t using the right data (yet)?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8568" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:22:48</span><span class="author" data-hue="285" data-saturation="94%">aidsjorb</span> Q: You using a KVM in that setup? Do you like it?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:48</span><span class="author" data-hue="285" data-saturation="94%">aidsjorb</span> Q: You using a KVM in that setup? Do you like it?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:48</span><span class="author" data-hue="285" data-saturation="94%">aidsjorb</span> Q: You using a KVM in that setup? Do you like it?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8671" class="marker cat_game-design authored">
+                    <div class="cineraContent"><span class="timecode">2:24:31</span><span class="author" data-hue="270" data-saturation="88%">devsigner</span> Q: Do you have an idea as to what the gameplay of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> will be, or are you just doing more of that design exploration?<span class="cineraCategories"><div title="game design" class="category game-design"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:24:31</span><span class="author" data-hue="270" data-saturation="88%">devsigner</span> Q: Do you have an idea as to what the gameplay of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> will be, or are you just doing more of that design exploration?<span class="cineraCategories"><div title="game design" class="category game-design"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:24:31</span><span class="author" data-hue="270" data-saturation="88%">devsigner</span> Q: Do you have an idea as to what the gameplay of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> will be, or are you just doing more of that design exploration?<span class="cineraCategories"><div title="game design" class="category game-design"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8754" class="marker cat_asset-loading cat_asset-system authored">
+                    <div class="cineraContent"><span class="timecode">2:25:54</span><span class="author" data-hue="298" data-saturation="86%">rebelavalon</span> Q: (Repeating my question) What makes asset importing special the way you&#39;re doing it, compared to other ways in other game libs?<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:25:54</span><span class="author" data-hue="298" data-saturation="86%">rebelavalon</span> Q: (Repeating my question) What makes asset importing special the way you&#39;re doing it, compared to other ways in other game libs?<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:25:54</span><span class="author" data-hue="298" data-saturation="86%">rebelavalon</span> Q: (Repeating my question) What makes asset importing special the way you&#39;re doing it, compared to other ways in other game libs?<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8932" class="marker cat_hashing authored">
+                    <div class="cineraContent"><span class="timecode">2:28:52</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Is CheckSumOf() based on murmur hash?<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:28:52</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Is CheckSumOf() based on murmur hash?<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:28:52</span><span class="author" data-hue="39" data-saturation="92%">centhusiast</span> Q: Is CheckSumOf() based on murmur hash?<span class="cineraCategories"><div title="hashing" class="category hashing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8943" class="marker cat_asset-loading cat_asset-system authored">
+                    <div class="cineraContent"><span class="timecode">2:29:03</span><span class="author" data-hue="298" data-saturation="86%">rebelavalon</span> Q: When you import assets, do they go into some kind of target? Like a texture atlas? I&#39;m new at this game stuff<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:29:03</span><span class="author" data-hue="298" data-saturation="86%">rebelavalon</span> Q: When you import assets, do they go into some kind of target? Like a texture atlas? I&#39;m new at this game stuff<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:29:03</span><span class="author" data-hue="298" data-saturation="86%">rebelavalon</span> Q: When you import assets, do they go into some kind of target? Like a texture atlas? I&#39;m new at this game stuff<span class="cineraCategories"><div title="asset loading" class="category asset-loading"></div><div title="asset system" class="category asset-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9004" class="marker cat_art cat_asset-loading speech">
+                    <div class="cineraContent"><span class="timecode">2:30:04</span>Spritesheets and texture atlases<span class="cineraCategories"><div title="art" class="category art"></div><div title="asset loading" class="category asset-loading"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30:04</span>Spritesheets and texture atlases<span class="cineraCategories"><div title="art" class="category art"></div><div title="asset loading" class="category asset-loading"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30:04</span>Spritesheets and texture atlases<span class="cineraCategories"><div title="art" class="category art"></div><div title="asset loading" class="category asset-loading"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9228" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:33:48</span>Wrap it up with an announcement of next weekend&#39;s <span class="project" data-hue="13" data-saturation="79%">4coder</span> Jam with <span class="member" data-hue="139" data-saturation="90%">Allen</span><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:33:48</span>Wrap it up with an announcement of next weekend&#39;s <span class="project" data-hue="13" data-saturation="79%">4coder</span> Jam with <span class="member" data-hue="139" data-saturation="90%">Allen</span><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:33:48</span>Wrap it up with an announcement of next weekend&#39;s <span class="project" data-hue="13" data-saturation="79%">4coder</span> Jam with <span class="member" data-hue="139" data-saturation="90%">Allen</span><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day515/"><div>&#9196;</div><div>Next: 'Debugging HHT to HHA Packing'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

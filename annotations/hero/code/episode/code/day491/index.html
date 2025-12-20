@@ -1,0 +1,878 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="api, asm, asset system, debug system, entity system, input handling, language, sorting, ui, undo / redo, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Debugging the Basic Editor UI</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content api">
+                                <span class="icon category api"></span><span class="cineraText">api</span>
+                            </div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content asset-system">
+                                <span class="icon category asset-system"></span><span class="cineraText">asset system</span>
+                            </div>
+                            <div class="filter_content debug-system">
+                                <span class="icon category debug-system"></span><span class="cineraText">debug system</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content input-handling">
+                                <span class="icon category input-handling"></span><span class="cineraText">input handling</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content sorting">
+                                <span class="icon category sorting"></span><span class="cineraText">sorting</span>
+                            </div>
+                            <div class="filter_content ui">
+                                <span class="icon category ui"></span><span class="cineraText">ui</span>
+                            </div>
+                            <div class="filter_content undo---redo">
+                                <span class="icon category undo---redo"></span><span class="cineraText">undo / redo</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="1vq8sVOzGRQ"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day490/"><div>&#9195;</div><div>Previous: 'Merging Debug and Developer UI'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_asset-system cat_ui speech">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day wiring up our asset editor<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day wiring up our asset editor<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day wiring up our asset editor<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="63" class="marker cat_asset-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:03</span>Run the game to show our current asset editor UI<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03</span>Run the game to show our current asset editor UI<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03</span>Run the game to show our current asset editor UI<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="156" class="marker cat_ui speech">
+                    <div class="cineraContent"><span class="timecode">2:36</span>A few words on our immediate-mode user interface<span class="cineraCategories"><div title="ui" class="category ui"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:36</span>A few words on our immediate-mode user interface<span class="cineraCategories"><div title="ui" class="category ui"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:36</span>A few words on our immediate-mode user interface<span class="cineraCategories"><div title="ui" class="category ui"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="522" class="marker cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">8:42</span>Introduce the notion of an Immediate Button<span class="cineraCategories"><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:42</span>Introduce the notion of an Immediate Button<span class="cineraCategories"><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:42</span>Introduce the notion of an Immediate Button<span class="cineraCategories"><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="922" class="marker cat_asset-system cat_debug-system cat_ui research">
+                    <div class="cineraContent"><span class="timecode">15:22</span>See if there&#39;s anything of DEBUGInteract() that could be shared between the asset and debug systems<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="debug system" class="category debug-system"></div><div title="ui" class="category ui"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:22</span>See if there&#39;s anything of DEBUGInteract() that could be shared between the asset and debug systems<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="debug system" class="category debug-system"></div><div title="ui" class="category ui"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:22</span>See if there&#39;s anything of DEBUGInteract() that could be shared between the asset and debug systems<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="debug system" class="category debug-system"></div><div title="ui" class="category ui"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1104" class="marker cat_asset-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">18:24</span>Introduce EditorInteract() for GameUpdateAndRender() to call, guided by DEBUGInteract()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:24</span>Introduce EditorInteract() for GameUpdateAndRender() to call, guided by DEBUGInteract()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:24</span>Introduce EditorInteract() for GameUpdateAndRender() to call, guided by DEBUGInteract()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1790" class="marker cat_asset-system cat_input-handling cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">29:50</span>Enable EditorInteract() to handle mouse input<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="input handling" class="category input-handling"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:50</span>Enable EditorInteract() to handle mouse input<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="input handling" class="category input-handling"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:50</span>Enable EditorInteract() to handle mouse input<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="input handling" class="category input-handling"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2560" class="marker cat_asset-system cat_undo---redo run">
+                    <div class="cineraContent"><span class="timecode">42:40</span>Run the game and crash in Undo()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:40</span>Run the game and crash in Undo()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:40</span>Run the game and crash in Undo()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2585" class="marker cat_asset-system cat_ui cat_undo---redo programming">
+                    <div class="cineraContent"><span class="timecode">43:05</span>Introduce IsValid() for Button() to call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:05</span>Introduce IsValid() for Button() to call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:05</span>Introduce IsValid() for Button() to call<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2699" class="marker cat_asset-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">44:59</span>Run the game to see all our UI buttons lighting up because they share the same ID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:59</span>Run the game to see all our UI buttons lighting up because they share the same ID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:59</span>Run the game to see all our UI buttons lighting up because they share the same ID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2736" class="marker cat_asset-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">45:36</span>Try making Button() set the ID from the passed LabelText<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:36</span>Try making Button() set the ID from the passed LabelText<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:36</span>Try making Button() set the ID from the passed LabelText<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2801" class="marker cat_asset-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">46:41</span>Run the game to see that buttons with the same label light up, due to our compiler doing string pooling<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:41</span>Run the game to see that buttons with the same label light up, due to our compiler doing string pooling<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:41</span>Run the game to see that buttons with the same label light up, due to our compiler doing string pooling<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2834" class="marker cat_language speech">
+                    <div class="cineraContent"><span class="timecode">47:14</span>String pooling<span class="cineraCategories"><div title="language" class="category language"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:14</span>String pooling<span class="cineraCategories"><div title="language" class="category language"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:14</span>String pooling<span class="cineraCategories"><div title="language" class="category language"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2891" class="marker cat_asset-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">48:11</span>Make Button() take a dev_id ID which AssetEditor() is responsible for constructing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:11</span>Make Button() take a dev_id ID which AssetEditor() is responsible for constructing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:11</span>Make Button() take a dev_id ID which AssetEditor() is responsible for constructing<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2997" class="marker cat_asset-system cat_debug-system programming">
+                    <div class="cineraContent"><span class="timecode">49:57</span>Introduce DevIDFromPointer() calling a newly introduced FILE_AND_LINE(), and rename UniqueFileCounterString() to DEBUG_NAME()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">49:57</span>Introduce DevIDFromPointer() calling a newly introduced FILE_AND_LINE(), and rename UniqueFileCounterString() to DEBUG_NAME()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">49:57</span>Introduce DevIDFromPointer() calling a newly introduced FILE_AND_LINE(), and rename UniqueFileCounterString() to DEBUG_NAME()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3462" class="marker cat_asset-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">57:42</span>Make AssetEditor() and UpdateAndRenderEditor() call DevIDFromPointer()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:42</span>Make AssetEditor() and UpdateAndRenderEditor() call DevIDFromPointer()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:42</span>Make AssetEditor() and UpdateAndRenderEditor() call DevIDFromPointer()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3521" class="marker cat_asset-system cat_ui cat_undo---redo run">
+                    <div class="cineraContent"><span class="timecode">58:41</span>Run the game to find that our UI buttons light up individually, and that Undo() crashes<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:41</span>Run the game to find that our UI buttons light up individually, and that Undo() crashes<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:41</span>Run the game to find that our UI buttons light up individually, and that Undo() crashes<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3574" class="marker cat_asset-system cat_undo---redo programming">
+                    <div class="cineraContent"><span class="timecode">59:34</span>Introduce Sentinelize() to initialise the Undo and Redo lists<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:34</span>Introduce Sentinelize() to initialise the Undo and Redo lists<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:34</span>Introduce Sentinelize() to initialise the Undo and Redo lists<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3707" class="marker cat_asset-system cat_ui cat_undo---redo run">
+                    <div class="cineraContent"><span class="timecode">1:01:47</span>Run the game to find that Undo and Redo are unavailable<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:47</span>Run the game to find that Undo and Redo are unavailable<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:47</span>Run the game to find that Undo and Redo are unavailable<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3727" class="marker cat_asset-system cat_undo---redo programming">
+                    <div class="cineraContent"><span class="timecode">1:02:07</span>Make AllocateEditorEdit() call PushFirst()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:07</span>Make AllocateEditorEdit() call PushFirst()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:07</span>Make AllocateEditorEdit() call PushFirst()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3872" class="marker cat_asset-system cat_ui cat_undo---redo run">
+                    <div class="cineraContent"><span class="timecode">1:04:32</span>Run the game and crash in Undo()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:32</span>Run the game and crash in Undo()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:32</span>Run the game and crash in Undo()<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3895" class="marker cat_asset-system cat_ui cat_undo---redo programming">
+                    <div class="cineraContent"><span class="timecode">1:04:55</span>Make EndUIFrame() clear the UI-&gt;IDToExecute to prevent Undo from operating forever<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:04:55</span>Make EndUIFrame() clear the UI-&gt;IDToExecute to prevent Undo from operating forever<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:04:55</span>Make EndUIFrame() clear the UI-&gt;IDToExecute to prevent Undo from operating forever<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3933" class="marker cat_asset-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:05:33</span>Run the game to find that our button clicks do not perform an edit<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:33</span>Run the game to find that our button clicks do not perform an edit<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:33</span>Run the game to find that our button clicks do not perform an edit<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3946" class="marker cat_asset-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:05:46</span>Augment dev_ui with a NextIDToExecute so that EndUIFrame() may set an IDToExecute that is valid for the current frame only<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:46</span>Augment dev_ui with a NextIDToExecute so that EndUIFrame() may set an IDToExecute that is valid for the current frame only<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:46</span>Augment dev_ui with a NextIDToExecute so that EndUIFrame() may set an IDToExecute that is valid for the current frame only<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4069" class="marker cat_asset-system cat_ui cat_undo---redo run">
+                    <div class="cineraContent"><span class="timecode">1:07:49</span>Run the game to find that edits, Undo and Redo all work, but Revert crashes<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:49</span>Run the game to find that edits, Undo and Redo all work, but Revert crashes<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:49</span>Run the game to find that edits, Undo and Redo all work, but Revert crashes<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4091" class="marker cat_asset-system cat_ui cat_undo---redo programming">
+                    <div class="cineraContent"><span class="timecode">1:08:11</span>Make InitializeEditor() initialise the CleanUndoSentinalNext<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:11</span>Make InitializeEditor() initialise the CleanUndoSentinalNext<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:11</span>Make InitializeEditor() initialise the CleanUndoSentinalNext<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4142" class="marker cat_asset-system cat_ui cat_undo---redo run">
+                    <div class="cineraContent"><span class="timecode">1:09:02</span>Run the game to find that Revert now works, but Delete does not<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:02</span>Run the game to find that Revert now works, but Delete does not<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:02</span>Run the game to find that Revert now works, but Delete does not<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="undo / redo" class="category undo---redo"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4200" class="marker cat_asset-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:10:00</span>Fix AssetEditor() to correctly delete edits<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:00</span>Fix AssetEditor() to correctly delete edits<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:00</span>Fix AssetEditor() to correctly delete edits<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4315" class="marker cat_asset-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:11:55</span>Run the game to find that deletion works, and prioritise our next steps: 1) Asset selection; 2) UI positioning; 3) UI edit interaction<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:55</span>Run the game to find that deletion works, and prioritise our next steps: 1) Asset selection; 2) UI positioning; 3) UI edit interaction<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:55</span>Run the game to find that deletion works, and prioritise our next steps: 1) Asset selection; 2) UI positioning; 3) UI edit interaction<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4435" class="marker cat_asset-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:13:55</span>Enable EditorInteract() to handle asset picking on click<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:55</span>Enable EditorInteract() to handle asset picking on click<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:55</span>Enable EditorInteract() to handle asset picking on click<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4888" class="marker cat_asset-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:21:28</span>Run the game to find that asset picking works<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:28</span>Run the game to find that asset picking works<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:28</span>Run the game to find that asset picking works<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4967" class="marker cat_entity-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:22:47</span>Dive into making UpdateAndRenderEntities() only highlight the selected entity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:47</span>Dive into making UpdateAndRenderEntities() only highlight the selected entity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:47</span>Dive into making UpdateAndRenderEntities() only highlight the selected entity<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5314" class="marker cat_asset-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:28:34</span>Introduce DevIDFromU32s() and a dev_id_value union to enable even 32-bit systems to use 64-bit IDs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:34</span>Introduce DevIDFromU32s() and a dev_id_value union to enable even 32-bit systems to use 64-bit IDs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:34</span>Introduce DevIDFromU32s() and a dev_id_value union to enable even 32-bit systems to use 64-bit IDs<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5678" class="marker cat_asset-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:34:38</span>Replace the u32 HighlightAssetIndex in editable_hit_test with a dev_id HighlightID, and make AssetEditor() set this HighlightID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:38</span>Replace the u32 HighlightAssetIndex in editable_hit_test with a dev_id HighlightID, and make AssetEditor() set this HighlightID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:38</span>Replace the u32 HighlightAssetIndex in editable_hit_test with a dev_id HighlightID, and make AssetEditor() set this HighlightID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5828" class="marker cat_asset-system cat_entity-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:37:08</span>Run the game to find that the highlighting still occurs on hover<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:08</span>Run the game to find that the highlighting still occurs on hover<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:08</span>Run the game to find that the highlighting still occurs on hover<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5841" class="marker cat_asset-system cat_entity-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:37:21</span>Make UpdateAndRenderEntities() only call PushVolumeOutline() to highlight the entity whose DevID matches the HighlightID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:21</span>Make UpdateAndRenderEntities() only call PushVolumeOutline() to highlight the entity whose DevID matches the HighlightID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:21</span>Make UpdateAndRenderEntities() only call PushVolumeOutline() to highlight the entity whose DevID matches the HighlightID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5923" class="marker cat_asset-system cat_entity-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:38:43</span>Run the game to find that everyone highlights<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:43</span>Run the game to find that everyone highlights<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:43</span>Run the game to find that everyone highlights<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5961" class="marker cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:39:21</span>Fix typo in DevIDFromU32s()<span class="cineraCategories"><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:21</span>Fix typo in DevIDFromU32s()<span class="cineraCategories"><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:21</span>Fix typo in DevIDFromU32s()<span class="cineraCategories"><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5984" class="marker cat_asset-system cat_entity-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:39:44</span>Run the game to find that selection / highlighting works<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:44</span>Run the game to find that selection / highlighting works<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:44</span>Run the game to find that selection / highlighting works<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6001" class="marker cat_asset-system cat_entity-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:40:01</span>Enable EditorInteract() to clear highlighting when clicking on no asset<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:01</span>Enable EditorInteract() to clear highlighting when clicking on no asset<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:01</span>Enable EditorInteract() to clear highlighting when clicking on no asset<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6060" class="marker cat_asset-system cat_entity-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:41:00</span>Run the game to find that highlight clearing works, but certain entities are tough to pick<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:00</span>Run the game to find that highlight clearing works, but certain entities are tough to pick<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:00</span>Run the game to find that highlight clearing works, but certain entities are tough to pick<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6131" class="marker cat_entity-system cat_sorting research">
+                    <div class="cineraContent"><span class="timecode">1:42:11</span>Investigate the sorting in RayInterectsBox()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="sorting" class="category sorting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:11</span>Investigate the sorting in RayInterectsBox()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="sorting" class="category sorting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:11</span>Investigate the sorting in RayInterectsBox()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="sorting" class="category sorting"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6247" class="marker cat_asset-system cat_entity-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:44:07</span>Run the game to find that our currently picked entity seems to affect which entity we may pick next<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:07</span>Run the game to find that our currently picked entity seems to affect which entity we may pick next<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:07</span>Run the game to find that our currently picked entity seems to affect which entity we may pick next<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6339" class="marker cat_asset-system cat_entity-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:45:39</span>Make EditorInteract() straight up set the HighlightID to the first asset in the hot group<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:39</span>Make EditorInteract() straight up set the HighlightID to the first asset in the hot group<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:39</span>Make EditorInteract() straight up set the HighlightID to the first asset in the hot group<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6377" class="marker cat_asset-system cat_entity-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:46:17</span>Run the game and move the cursor around the scene to see which entity gets highlighted<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:17</span>Run the game and move the cursor around the scene to see which entity gets highlighted<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:17</span>Run the game and move the cursor around the scene to see which entity gets highlighted<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6460" class="marker cat_asset-system cat_entity-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:47:40</span>Make UpdateAndRenderEditor() set the HighlightID on every update<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:40</span>Make UpdateAndRenderEditor() set the HighlightID on every update<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:40</span>Make UpdateAndRenderEditor() set the HighlightID on every update<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6476" class="marker cat_asset-system cat_entity-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:47:56</span>Run the game to still see stickiness on some entities<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:56</span>Run the game to still see stickiness on some entities<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:56</span>Run the game to still see stickiness on some entities<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6618" class="marker cat_asset-system cat_entity-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:50:18</span>Make UpdateAndRenderEntities() highlight whichever entity our ray cast hits<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:18</span>Make UpdateAndRenderEntities() highlight whichever entity our ray cast hits<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:18</span>Make UpdateAndRenderEntities() highlight whichever entity our ray cast hits<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6662" class="marker cat_asset-system cat_entity-system cat_sorting cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:51:02</span>Run the game to find that our cursor does not get stuck, which suggests that either our hit sorting routine or ID setting may be incorrect<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="sorting" class="category sorting"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:02</span>Run the game to find that our cursor does not get stuck, which suggests that either our hit sorting routine or ID setting may be incorrect<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="sorting" class="category sorting"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:02</span>Run the game to find that our cursor does not get stuck, which suggests that either our hit sorting routine or ID setting may be incorrect<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="sorting" class="category sorting"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6735" class="marker cat_asset-system cat_entity-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:52:15</span>Make UpdateAndRenderEntities() highlight both our ray hits and the entity the asset system told us to highlight<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:15</span>Make UpdateAndRenderEntities() highlight both our ray hits and the entity the asset system told us to highlight<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:15</span>Make UpdateAndRenderEntities() highlight both our ray hits and the entity the asset system told us to highlight<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6763" class="marker cat_asset-system cat_entity-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:52:43</span>Run the game to see these different highlights<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:43</span>Run the game to see these different highlights<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:43</span>Run the game to see these different highlights<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6857" class="marker cat_asset-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:54:17</span>Fix AddHit() to set the ID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:17</span>Fix AddHit() to set the ID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:17</span>Fix AddHit() to set the ID<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6882" class="marker cat_asset-system cat_entity-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:54:42</span>Run the game to find that our asset picking works perfectly<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:42</span>Run the game to find that our asset picking works perfectly<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:42</span>Run the game to find that our asset picking works perfectly<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6891" class="marker cat_asset-system cat_entity-system cat_ui programming">
+                    <div class="cineraContent"><span class="timecode">1:54:51</span>Revert UpdateAndRenderEditor() to only set the HighlightID on click<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:51</span>Revert UpdateAndRenderEditor() to only set the HighlightID on click<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:51</span>Revert UpdateAndRenderEditor() to only set the HighlightID on click<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6912" class="marker cat_asset-system cat_entity-system cat_ui run">
+                    <div class="cineraContent"><span class="timecode">1:55:12</span>Run the game to find that all is good, and consider our next steps<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:12</span>Run the game to find that all is good, and consider our next steps<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:12</span>Run the game to find that all is good, and consider our next steps<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="entity system" class="category entity-system"></div><div title="ui" class="category ui"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6979" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:56:19</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:19</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:19</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7048" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:57:28</span><span class="author" data-hue="2" data-saturation="78%">guybru5h_vi</span> Q: How long do you think it would have taken you to get to this level in the project if you were working on it 8 hours a day?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:28</span><span class="author" data-hue="2" data-saturation="78%">guybru5h_vi</span> Q: How long do you think it would have taken you to get to this level in the project if you were working on it 8 hours a day?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:28</span><span class="author" data-hue="2" data-saturation="78%">guybru5h_vi</span> Q: How long do you think it would have taken you to get to this level in the project if you were working on it 8 hours a day?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7147" class="marker cat_undo---redo authored">
+                    <div class="cineraContent"><span class="timecode">1:59:07</span><span class="author" data-hue="327" data-saturation="97%">cvaucher</span> Q: Is there a reason for making two lists for undo / redo rather than one?<span class="cineraCategories"><div title="undo / redo" class="category undo---redo"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:07</span><span class="author" data-hue="327" data-saturation="97%">cvaucher</span> Q: Is there a reason for making two lists for undo / redo rather than one?<span class="cineraCategories"><div title="undo / redo" class="category undo---redo"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:07</span><span class="author" data-hue="327" data-saturation="97%">cvaucher</span> Q: Is there a reason for making two lists for undo / redo rather than one?<span class="cineraCategories"><div title="undo / redo" class="category undo---redo"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7222" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:00:22</span><span class="author" data-hue="285" data-saturation="97%">montify</span> Q: Big engines support multiple render paths (D3D, OpenGL), but why do these engines not use only OpenGL instead of D3D?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:22</span><span class="author" data-hue="285" data-saturation="97%">montify</span> Q: Big engines support multiple render paths (D3D, OpenGL), but why do these engines not use only OpenGL instead of D3D?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:22</span><span class="author" data-hue="285" data-saturation="97%">montify</span> Q: Big engines support multiple render paths (D3D, OpenGL), but why do these engines not use only OpenGL instead of D3D?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7354" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:02:34</span><span class="author" data-hue="243" data-saturation="94%">euphius</span> Q: Which parts of C++ do you use?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:34</span><span class="author" data-hue="243" data-saturation="94%">euphius</span> Q: Which parts of C++ do you use?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:34</span><span class="author" data-hue="243" data-saturation="94%">euphius</span> Q: Which parts of C++ do you use?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7401" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:03:21</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Follow-up question regarding OpenGL: Can you name some of the stuff of the subset they should have marked as OpenGL v5?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:21</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Follow-up question regarding OpenGL: Can you name some of the stuff of the subset they should have marked as OpenGL v5?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:21</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Follow-up question regarding OpenGL: Can you name some of the stuff of the subset they should have marked as OpenGL v5?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7450" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:04:10</span><span class="author" data-hue="328" data-saturation="76%">mekagem</span> Q: Then do you think Vulkan would not have this type of problem with bugs because it&#39;s more low level?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:10</span><span class="author" data-hue="328" data-saturation="76%">mekagem</span> Q: Then do you think Vulkan would not have this type of problem with bugs because it&#39;s more low level?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:10</span><span class="author" data-hue="328" data-saturation="76%">mekagem</span> Q: Then do you think Vulkan would not have this type of problem with bugs because it&#39;s more low level?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7573" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:06:13</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: So will we switch to D3D before shipping this game, or for simplicity will we stay with OpenGL?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:13</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: So will we switch to D3D before shipping this game, or for simplicity will we stay with OpenGL?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:13</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: So will we switch to D3D before shipping this game, or for simplicity will we stay with OpenGL?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7673" class="marker cat_api cat_asm authored">
+                    <div class="cineraContent"><span class="timecode">2:07:53</span><span class="author" data-hue="24" data-saturation="85%">easylovingyou</span> Q: Can you program shaders in asm on Vulkan, or any of the other graphics APIs?<span class="cineraCategories"><div title="api" class="category api"></div><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:53</span><span class="author" data-hue="24" data-saturation="85%">easylovingyou</span> Q: Can you program shaders in asm on Vulkan, or any of the other graphics APIs?<span class="cineraCategories"><div title="api" class="category api"></div><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:53</span><span class="author" data-hue="24" data-saturation="85%">easylovingyou</span> Q: Can you program shaders in asm on Vulkan, or any of the other graphics APIs?<span class="cineraCategories"><div title="api" class="category api"></div><div title="asm" class="category asm"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7857" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:10:57</span><span class="author" data-hue="52" data-saturation="98%">craterlord</span> Q: Doesn&#39;t that same problem – APIs growing old and unsuitable for current graphics cards – also apply to DX12?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:57</span><span class="author" data-hue="52" data-saturation="98%">craterlord</span> Q: Doesn&#39;t that same problem – APIs growing old and unsuitable for current graphics cards – also apply to DX12?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:57</span><span class="author" data-hue="52" data-saturation="98%">craterlord</span> Q: Doesn&#39;t that same problem – APIs growing old and unsuitable for current graphics cards – also apply to DX12?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8159" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:15:59</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: In <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> I saw this concept of BeginRender / EndRender (I believe it is called) which reminds me of fixed function OpenGL glBegin, glEnd. Can you say how these functions in <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> roughly work or what is the concept behind it?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:59</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: In <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> I saw this concept of BeginRender / EndRender (I believe it is called) which reminds me of fixed function OpenGL glBegin, glEnd. Can you say how these functions in <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> roughly work or what is the concept behind it?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:59</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: In <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> I saw this concept of BeginRender / EndRender (I believe it is called) which reminds me of fixed function OpenGL glBegin, glEnd. Can you say how these functions in <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> roughly work or what is the concept behind it?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8209" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:16:49</span><span class="author" data-hue="1" data-saturation="87%">l04d</span> Q: Shouldn&#39;t these graphics APIs be made by GPU vendors, or can they not do that?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:16:49</span><span class="author" data-hue="1" data-saturation="87%">l04d</span> Q: Shouldn&#39;t these graphics APIs be made by GPU vendors, or can they not do that?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:16:49</span><span class="author" data-hue="1" data-saturation="87%">l04d</span> Q: Shouldn&#39;t these graphics APIs be made by GPU vendors, or can they not do that?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8289" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:18:09</span><span class="author" data-hue="24" data-saturation="85%">easylovingyou</span> Q: I mean current APIs. I know DX9 supports it up to 3.x or 4.0<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:09</span><span class="author" data-hue="24" data-saturation="85%">easylovingyou</span> Q: I mean current APIs. I know DX9 supports it up to 3.x or 4.0<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:09</span><span class="author" data-hue="24" data-saturation="85%">easylovingyou</span> Q: I mean current APIs. I know DX9 supports it up to 3.x or 4.0<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8301" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:18:21</span><span class="author" data-hue="318" data-saturation="95%">gaius_is_best_colossus</span> Q: What do you expect people to learn with this series, other than how to make a game?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:21</span><span class="author" data-hue="318" data-saturation="95%">gaius_is_best_colossus</span> Q: What do you expect people to learn with this series, other than how to make a game?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:21</span><span class="author" data-hue="318" data-saturation="95%">gaius_is_best_colossus</span> Q: What do you expect people to learn with this series, other than how to make a game?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8378" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:19:38</span><span class="author" data-hue="2" data-saturation="78%">guybru5h_vi</span> Q: Do you think next generation consoles will adopt raytracing extensions, even if just to avoid using shadow maps?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:19:38</span><span class="author" data-hue="2" data-saturation="78%">guybru5h_vi</span> Q: Do you think next generation consoles will adopt raytracing extensions, even if just to avoid using shadow maps?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:19:38</span><span class="author" data-hue="2" data-saturation="78%">guybru5h_vi</span> Q: Do you think next generation consoles will adopt raytracing extensions, even if just to avoid using shadow maps?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8469" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:21:09</span><span class="author" data-hue="284" data-saturation="90%">blamebauer</span> Q: Why are most AAA games still running on DX11? Is DX12 too new and still not well supported?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:21:09</span><span class="author" data-hue="284" data-saturation="90%">blamebauer</span> Q: Why are most AAA games still running on DX11? Is DX12 too new and still not well supported?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:21:09</span><span class="author" data-hue="284" data-saturation="90%">blamebauer</span> Q: Why are most AAA games still running on DX11? Is DX12 too new and still not well supported?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8505" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:21:45</span><span class="author" data-hue="269" data-saturation="77%">serioussennaw</span> Q: What would make a graphics API great?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:21:45</span><span class="author" data-hue="269" data-saturation="77%">serioussennaw</span> Q: What would make a graphics API great?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:21:45</span><span class="author" data-hue="269" data-saturation="77%">serioussennaw</span> Q: What would make a graphics API great?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8524" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:22:04</span><span class="author" data-hue="307" data-saturation="84%">yoshimoto555</span> Q: How often do you read other people&#39;s code bases? Do you have any recommendations of good examples of well architected code bases to learn from?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:22:04</span><span class="author" data-hue="307" data-saturation="84%">yoshimoto555</span> Q: How often do you read other people&#39;s code bases? Do you have any recommendations of good examples of well architected code bases to learn from?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:22:04</span><span class="author" data-hue="307" data-saturation="84%">yoshimoto555</span> Q: How often do you read other people&#39;s code bases? Do you have any recommendations of good examples of well architected code bases to learn from?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8595" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:23:15</span><span class="author" data-hue="36" data-saturation="89%">cacheoverride</span> Q: Was OpenGL 2.1 a great API?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:15</span><span class="author" data-hue="36" data-saturation="89%">cacheoverride</span> Q: Was OpenGL 2.1 a great API?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:15</span><span class="author" data-hue="36" data-saturation="89%">cacheoverride</span> Q: Was OpenGL 2.1 a great API?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8605" class="marker cat_api cat_ui authored">
+                    <div class="cineraContent"><span class="timecode">2:23:25</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Is there a good API for GUI applications on Windows that you would suggest?<span class="cineraCategories"><div title="api" class="category api"></div><div title="ui" class="category ui"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:25</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Is there a good API for GUI applications on Windows that you would suggest?<span class="cineraCategories"><div title="api" class="category api"></div><div title="ui" class="category ui"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:25</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Is there a good API for GUI applications on Windows that you would suggest?<span class="cineraCategories"><div title="api" class="category api"></div><div title="ui" class="category ui"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8627" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:23:47</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:47</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:47</span>Wrap it up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day492/"><div>&#9196;</div><div>Next: 'Adding More Editor Interactions'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

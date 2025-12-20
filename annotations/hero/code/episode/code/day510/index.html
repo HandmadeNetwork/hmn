@@ -1,0 +1,579 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="api, asset system, error handling, file format, file io, language, parsing, string manipulation, Administrivia, Chat Comment, In-Game, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Making a Parser for HHTs</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://steamcommunity.com/app/272230" href="https://steamcommunity.com/app/272230" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Steam</div>
+                            <div class="ref_title">Sub Rosa</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="33" class="timecode"><span class="ref_index">[1]</span><span class="time">0:33</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://twitter.com/crypticsea" href="https://twitter.com/crypticsea" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Twitter</div>
+                            <div class="ref_title">Alex Austin</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="33" class="timecode"><span class="ref_index">[2]</span><span class="time">0:33</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://github.com/HandmadeHero/cpp/issues/85" href="https://github.com/HandmadeHero/cpp/issues/85" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">GitHub</div>
+                            <div class="ref_title">HandmadeHero /&#8203; cpp /&#8203; Typo&#39;s in tags file</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="371" class="timecode"><span class="ref_index">[3]</span><span class="time">6:11</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://meldmerge.org/" href="https://meldmerge.org/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">Meld</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1470" class="timecode"><span class="ref_index">[4]</span><span class="time">24:30</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content api">
+                                <span class="icon category api"></span><span class="cineraText">api</span>
+                            </div>
+                            <div class="filter_content asset-system">
+                                <span class="icon category asset-system"></span><span class="cineraText">asset system</span>
+                            </div>
+                            <div class="filter_content error-handling">
+                                <span class="icon category error-handling"></span><span class="cineraText">error handling</span>
+                            </div>
+                            <div class="filter_content file-format">
+                                <span class="icon category file-format"></span><span class="cineraText">file format</span>
+                            </div>
+                            <div class="filter_content file-io">
+                                <span class="icon category file-io"></span><span class="cineraText">file io</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div class="filter_content string-manipulation">
+                                <span class="icon category string-manipulation"></span><span class="cineraText">string manipulation</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="Ha3NbEhXAtU"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day509/"><div>&#9195;</div><div>Previous: 'Creating Tags Files'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="3" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:03</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:03</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:03</span>Welcome to the stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="33" class="marker cat_nullTopic speech" data-ref="https://steamcommunity.com/app/272230,https://twitter.com/crypticsea">
+                    <div class="cineraContent"><span class="timecode">0:33</span>Announce a job opening on the game Sub Rosa<sup>1</sup> by <span class="member" data-hue="125" data-saturation="77%">Alex Austin</span><sup>2</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:33</span>Announce a job opening on the game Sub Rosa<sup>1</sup> by <span class="member" data-hue="125" data-saturation="77%">Alex Austin</span><sup>2</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:33</span>Announce a job opening on the game Sub Rosa<sup>1</sup> by <span class="member" data-hue="125" data-saturation="77%">Alex Austin</span><sup>2</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="371" class="marker cat_asset-system admin" data-ref="https://github.com/HandmadeHero/cpp/issues/85">
+                    <div class="cineraContent"><span class="timecode">6:11</span>Fix typos in base_game.hht<sup>3</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:11</span>Fix typos in base_game.hht<sup>3</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:11</span>Fix typos in base_game.hht<sup>3</sup><span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="524" class="marker cat_asset-system speech">
+                    <div class="cineraContent"><span class="timecode">8:44</span>Note the need to search for asset files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:44</span>Note the need to search for asset files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:44</span>Note the need to search for asset files<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="704" class="marker cat_asset-system speech">
+                    <div class="cineraContent"><span class="timecode">11:44</span>Consider allowing for placeholder stubs of nonexistent assets<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:44</span>Consider allowing for placeholder stubs of nonexistent assets<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:44</span>Consider allowing for placeholder stubs of nonexistent assets<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="937" class="marker cat_parsing speech">
+                    <div class="cineraContent"><span class="timecode">15:37</span>Set up to make our existing parsing code usable by multiple routines<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:37</span>Set up to make our existing parsing code usable by multiple routines<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:37</span>Set up to make our existing parsing code usable by multiple routines<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1150" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">19:10</span>Get the simple_preprocessor building<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:10</span>Get the simple_preprocessor building<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:10</span>Get the simple_preprocessor building<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1470" class="marker cat_parsing admin" data-ref="https://meldmerge.org/">
+                    <div class="cineraContent"><span class="timecode">24:30</span>Save off handmade_generated.h as handmade_generated_original.h and diff them with Meld<sup>4</sup><span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:30</span>Save off handmade_generated.h as handmade_generated_original.h and diff them with Meld<sup>4</sup><span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:30</span>Save off handmade_generated.h as handmade_generated_original.h and diff them with Meld<sup>4</sup><span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1598" class="marker cat_parsing admin">
+                    <div class="cineraContent"><span class="timecode">26:38</span>Intentionally break the tokenizer and see the diff in Meld<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:38</span>Intentionally break the tokenizer and see the diff in Meld<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:38</span>Intentionally break the tokenizer and see the diff in Meld<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1679" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">27:59</span>Pull out the tokenizing code from the simple_preprocessor into handmade_tokenizer.cpp and .h<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:59</span>Pull out the tokenizing code from the simple_preprocessor into handmade_tokenizer.cpp and .h<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:59</span>Pull out the tokenizing code from the simple_preprocessor into handmade_tokenizer.cpp and .h<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1817" class="marker cat_parsing cat_string-manipulation programming">
+                    <div class="cineraContent"><span class="timecode">30:17</span>Convert the token struct to contain a length-string<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:17</span>Convert the token struct to contain a length-string<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:17</span>Convert the token struct to contain a length-string<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2171" class="marker cat_string-manipulation admin">
+                    <div class="cineraContent"><span class="timecode">36:11</span>Organise the string manipulation code into handmade_shared.h<span class="cineraCategories"><div title="string manipulation" class="category string-manipulation"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:11</span>Organise the string manipulation code into handmade_shared.h<span class="cineraCategories"><div title="string manipulation" class="category string-manipulation"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:11</span>Organise the string manipulation code into handmade_shared.h<span class="cineraCategories"><div title="string manipulation" class="category string-manipulation"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2554" class="marker cat_file-io cat_parsing cat_string-manipulation programming">
+                    <div class="cineraContent"><span class="timecode">42:34</span>Convert the whole tokenizer over to use length-strings, introducing Tokenizer()<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:34</span>Convert the whole tokenizer over to use length-strings, introducing Tokenizer()<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:34</span>Convert the whole tokenizer over to use length-strings, introducing Tokenizer()<span class="cineraCategories"><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2858" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">47:38</span>Update EatAllWhitespace() and GetToken() to use length-strings, noting that hand-coded token checking is the one thing made harder by length-strings vs null-terminated ones<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:38</span>Update EatAllWhitespace() and GetToken() to use length-strings, noting that hand-coded token checking is the one thing made harder by length-strings vs null-terminated ones<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:38</span>Update EatAllWhitespace() and GetToken() to use length-strings, noting that hand-coded token checking is the one thing made harder by length-strings vs null-terminated ones<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3369" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">56:09</span>Introduce AdvanceChars() and Refill()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:09</span>Introduce AdvanceChars() and Refill()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:09</span>Introduce AdvanceChars() and Refill()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3637" class="marker cat_parsing admin">
+                    <div class="cineraContent"><span class="timecode">1:00:37</span>Find that our generated files are identical<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:37</span>Find that our generated files are identical<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:37</span>Find that our generated files are identical<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3721" class="marker cat_file-format cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:02:01</span>Introduce ParseHHT() in a newly created handmade_hht.cpp, augmenting the tokenizer to handle all the single-character tokens in our .hht file format<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:01</span>Introduce ParseHHT() in a newly created handmade_hht.cpp, augmenting the tokenizer to handle all the single-character tokens in our .hht file format<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:01</span>Introduce ParseHHT() in a newly created handmade_hht.cpp, augmenting the tokenizer to handle all the single-character tokens in our .hht file format<span class="cineraCategories"><div title="file format" class="category file-format"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4580" class="marker cat_error-handling cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:16:20</span>Make ParseTopLevelBlock() use RequireToken() and add systemic error handling in the tokenizer<span class="cineraCategories"><div title="error handling" class="category error-handling"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:20</span>Make ParseTopLevelBlock() use RequireToken() and add systemic error handling in the tokenizer<span class="cineraCategories"><div title="error handling" class="category error-handling"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:20</span>Make ParseTopLevelBlock() use RequireToken() and add systemic error handling in the tokenizer<span class="cineraCategories"><div title="error handling" class="category error-handling"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5197" class="marker cat_parsing admin">
+                    <div class="cineraContent"><span class="timecode">1:26:37</span>Verify that our generated files are identical<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:37</span>Verify that our generated files are identical<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:37</span>Verify that our generated files are identical<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5214" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:26:54</span>Enable ParseTopLevelBlock() to parse all the fields of a block, introducing ParseTagList()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:54</span>Enable ParseTopLevelBlock() to parse all the fields of a block, introducing ParseTagList()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:54</span>Enable ParseTopLevelBlock() to parse all the fields of a block, introducing ParseTagList()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5618" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:33:38</span>Include handmade_hht.cpp everywhere necessary, and clean up compile errors<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:33:38</span>Include handmade_hht.cpp everywhere necessary, and clean up compile errors<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:33:38</span>Include handmade_hht.cpp everywhere necessary, and clean up compile errors<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5983" class="marker cat_asset-system cat_file-io cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:39:43</span>Make hhaedit call ParseHHT() on intro_cutscene.hht, changing ReadEntireFile() to return a string<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:43</span>Make hhaedit call ParseHHT() on intro_cutscene.hht, changing ReadEntireFile() to return a string<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:43</span>Make hhaedit call ParseHHT() on intro_cutscene.hht, changing ReadEntireFile() to return a string<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="file io" class="category file-io"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6481" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:48:01</span>Step through ParseHHT() to see what it does<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:01</span>Step through ParseHHT() to see what it does<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:01</span>Step through ParseHHT() to see what it does<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6553" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:49:13</span>Add the &quot;plate&quot; keyword to ParseTopLevelBlock()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:13</span>Add the &quot;plate&quot; keyword to ParseTopLevelBlock()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:13</span>Add the &quot;plate&quot; keyword to ParseTopLevelBlock()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6569" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:49:29</span>Continue to step through ParseHHT()<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:29</span>Continue to step through ParseHHT()<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:29</span>Continue to step through ParseHHT()<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6608" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">1:50:08</span>Encounter an apparent <span class="project" data-hue="13" data-saturation="79%">4coder</span> bug in which some contents of intro_cutscene.hht is missing<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:08</span>Encounter an apparent <span class="project" data-hue="13" data-saturation="79%">4coder</span> bug in which some contents of intro_cutscene.hht is missing<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:08</span>Encounter an apparent <span class="project" data-hue="13" data-saturation="79%">4coder</span> bug in which some contents of intro_cutscene.hht is missing<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6746" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:52:26</span>Continue to step through ParseHHT() to completion<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:26</span>Continue to step through ParseHHT() to completion<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:26</span>Continue to step through ParseHHT() to completion<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6796" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:53:16</span>Run the parser on base_game.hht and hit a (correctly handled) error<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:16</span>Run the parser on base_game.hht and hit a (correctly handled) error<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:16</span>Run the parser on base_game.hht and hit a (correctly handled) error<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6830" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:53:50</span>Enable ParseTopLevelBlock() to handle the &quot;default&quot; block specially<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:50</span>Enable ParseTopLevelBlock() to handle the &quot;default&quot; block specially<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:50</span>Enable ParseTopLevelBlock() to handle the &quot;default&quot; block specially<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6898" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:54:58</span>Run the parser to completion<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:58</span>Run the parser to completion<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:58</span>Run the parser to completion<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6912" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:55:12</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:12</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:12</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6946" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:55:46</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: Could the <span class="project" data-hue="13" data-saturation="79%">4coder</span> bug be at all related to your in-comment calculator?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:46</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: Could the <span class="project" data-hue="13" data-saturation="79%">4coder</span> bug be at all related to your in-comment calculator?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:46</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: Could the <span class="project" data-hue="13" data-saturation="79%">4coder</span> bug be at all related to your in-comment calculator?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6956" class="marker cat_asset-system cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">1:55:56</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Now that we are using this method to assign tags, does this change how you plan to organize lots of little items on a sheet that may have differing, non sheet-wide tags, and in cases where using significance of positioning in the sprite sheet is too limiting? For example, maybe a collection of different fauna, each plant may have different tags for attributes, but can not be easily put into categories<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:56</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Now that we are using this method to assign tags, does this change how you plan to organize lots of little items on a sheet that may have differing, non sheet-wide tags, and in cases where using significance of positioning in the sprite sheet is too limiting? For example, maybe a collection of different fauna, each plant may have different tags for attributes, but can not be easily put into categories<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:56</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: Now that we are using this method to assign tags, does this change how you plan to organize lots of little items on a sheet that may have differing, non sheet-wide tags, and in cases where using significance of positioning in the sprite sheet is too limiting? For example, maybe a collection of different fauna, each plant may have different tags for attributes, but can not be easily put into categories<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7015" class="marker cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">1:56:55</span><span class="author" data-hue="113" data-saturation="86%">jessef</span> Q: What are some advanced parsing features that are interesting to you but may be too much work / not necessary for <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:55</span><span class="author" data-hue="113" data-saturation="86%">jessef</span> Q: What are some advanced parsing features that are interesting to you but may be too much work / not necessary for <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:55</span><span class="author" data-hue="113" data-saturation="86%">jessef</span> Q: What are some advanced parsing features that are interesting to you but may be too much work / not necessary for <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7179" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:59:39</span><span class="author" data-hue="11" data-saturation="99%">sgtrumbi</span> Q: Wnat<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:39</span><span class="author" data-hue="11" data-saturation="99%">sgtrumbi</span> Q: Wnat<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:39</span><span class="author" data-hue="11" data-saturation="99%">sgtrumbi</span> Q: Wnat<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7196" class="marker cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">1:59:56</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Are there things that recursive descent is not good for, or does it cut it for most of the parsing stuff?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:56</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Are there things that recursive descent is not good for, or does it cut it for most of the parsing stuff?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:56</span><span class="author" data-hue="82" data-saturation="94%">xxthebigfoxx</span> Q: Are there things that recursive descent is not good for, or does it cut it for most of the parsing stuff?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7299" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">2:01:39</span><span class="author" data-hue="13" data-saturation="83%">s0imn</span> Q: What is your opinion of the Vulkan API, and its future?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:39</span><span class="author" data-hue="13" data-saturation="83%">s0imn</span> Q: What is your opinion of the Vulkan API, and its future?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:39</span><span class="author" data-hue="13" data-saturation="83%">s0imn</span> Q: What is your opinion of the Vulkan API, and its future?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7319" class="marker cat_language cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">2:01:59</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: I wasn&#39;t here for all of today&#39;s stream, but is RequireToken() what you&#39;d use for lookahead (or a peektoken), ensuring you have an upcoming series of tokens to be of a specific form before you process those tokens?<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:59</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: I wasn&#39;t here for all of today&#39;s stream, but is RequireToken() what you&#39;d use for lookahead (or a peektoken), ensuring you have an upcoming series of tokens to be of a specific form before you process those tokens?<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:59</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: I wasn&#39;t here for all of today&#39;s stream, but is RequireToken() what you&#39;d use for lookahead (or a peektoken), ensuring you have an upcoming series of tokens to be of a specific form before you process those tokens?<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7617" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:06:57</span>Bow out gracefully<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:57</span>Bow out gracefully<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:57</span>Bow out gracefully<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day511/"><div>&#9196;</div><div>Next: 'Merging HHT Parsing into the Asset System'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

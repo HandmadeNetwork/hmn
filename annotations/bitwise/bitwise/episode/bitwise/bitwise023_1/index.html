@@ -1,0 +1,393 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="isa, language, parsing, Administrivia, Chat Comment, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__bitwise.css?r=c4e77686">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus bitwise">
+            <span class="episode_name">RISC-V Toolchain Implementation</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf" href="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Andrew Waterman and Krste Asanović</div>
+                            <div class="ref_title">The RISC-V Instruction Set Manual - Volume 1: User-Level ISA</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="344" class="timecode"><span class="ref_index">[1]</span><span class="time">5:44</span></span><span data-timestamp="485" class="timecode"><span class="ref_index">[2]</span><span class="time">8:05</span></span><span data-timestamp="810" class="timecode"><span class="ref_index">[3]</span><span class="time">13:30</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="1247" class="timecode"><span class="ref_index">[4]</span><span class="time">20:47</span></span><span data-timestamp="2376" class="timecode"><span class="ref_index">[5]</span><span class="time">39:36</span></span><span data-timestamp="2667" class="timecode"><span class="ref_index">[6]</span><span class="time">44:27</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="3537" class="timecode"><span class="ref_index">[7]</span><span class="time">58:57</span></span><span data-timestamp="3806" class="timecode"><span class="ref_index">[8]</span><span class="time">1:03:26</span></span><span data-timestamp="4140" class="timecode"><span class="ref_index">[9]</span><span class="time">1:09:00</span></span>
+                        </div>
+                        <div class="ref_indices">
+                            <span data-timestamp="4707" class="timecode"><span class="ref_index">[10]</span><span class="time">1:18:27</span></span><span data-timestamp="4945" class="timecode"><span class="ref_index">[11]</span><span class="time">1:22:25</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content isa">
+                                <span class="icon category isa"></span><span class="cineraText">isa</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://github.com/pervognsen/bitwise/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Per Vognsen</div>
+                        </a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="zDOd3inaOsY"></div>
+            <div class="markers_container bitwise">
+                <a class="episodeMarker prev" href="https://bitwise.handmade.network/episode/bitwise/bitwise022/"><div>&#9195;</div><div>Previous: 'RISC-V Toolchain'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="9" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:09</span>Recap and set the stage for the day, with a note that off-stream work will now be covered in write-ups, rather than on stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:09</span>Recap and set the stage for the day, with a note that off-stream work will now be covered in write-ups, rather than on stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:09</span>Recap and set the stage for the day, with a note that off-stream work will now be covered in write-ups, rather than on stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="125" class="marker cat_isa speech">
+                    <div class="cineraContent"><span class="timecode">2:05</span>Plan to create two tools: assembler and simulator<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05</span>Plan to create two tools: assembler and simulator<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05</span>Plan to create two tools: assembler and simulator<span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="344" class="marker cat_isa research" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">5:44</span>Chapter 19 - RV32/64G Instruction Set Listings<sup>1</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:44</span>Chapter 19 - RV32/64G Instruction Set Listings<sup>1</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:44</span>Chapter 19 - RV32/64G Instruction Set Listings<sup>1</sup><span class="cineraCategories"><div title="isa" class="category isa"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="485" class="marker cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">8:05</span>Dive into writing our RISC-V assembler, starting with an Instruction struct<sup>2</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:05</span>Dive into writing our RISC-V assembler, starting with an Instruction struct<sup>2</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:05</span>Dive into writing our RISC-V assembler, starting with an Instruction struct<sup>2</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="810" class="marker cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">13:30</span>Introduce decode_instruction() and encode_instruction() and declare our immediate field masks<sup>3</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:30</span>Introduce decode_instruction() and encode_instruction() and declare our immediate field masks<sup>3</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:30</span>Introduce decode_instruction() and encode_instruction() and declare our immediate field masks<sup>3</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1247" class="marker cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">20:47</span>Add cases for LUI, AUIPC, JAL, JALR and the branch instructions in decode_instruction()<sup>4</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:47</span>Add cases for LUI, AUIPC, JAL, JALR and the branch instructions in decode_instruction()<sup>4</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:47</span>Add cases for LUI, AUIPC, JAL, JALR and the branch instructions in decode_instruction()<sup>4</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2145" class="marker cat_isa programming">
+                    <div class="cineraContent"><span class="timecode">35:45</span>Introduce empty decode_u_instruction(), decode_j_instruction(), decode_b_instruction() and decode_i_instruction()<span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:45</span>Introduce empty decode_u_instruction(), decode_j_instruction(), decode_b_instruction() and decode_i_instruction()<span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:45</span>Introduce empty decode_u_instruction(), decode_j_instruction(), decode_b_instruction() and decode_i_instruction()<span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2181" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">36:21</span>Look into handling the &quot;&#39;riscv_Op&#39;: undeclared identifier&quot; error</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:21</span>Look into handling the &quot;&#39;riscv_Op&#39;: undeclared identifier&quot; error</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:21</span>Look into handling the &quot;&#39;riscv_Op&#39;: undeclared identifier&quot; error</div>
+                    </div>
+                </div>
+                <div data-timestamp="2334" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">38:54</span>Just disable typeinfo for now<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:54</span>Just disable typeinfo for now<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:54</span>Just disable typeinfo for now<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2376" class="marker cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">39:36</span>Add cases for the load and store instructions in decode_instruction(), also introducing an empty decode_s_instruction()<sup>5</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:36</span>Add cases for the load and store instructions in decode_instruction(), also introducing an empty decode_s_instruction()<sup>5</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:36</span>Add cases for the load and store instructions in decode_instruction(), also introducing an empty decode_s_instruction()<sup>5</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2667" class="marker cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">44:27</span>Add a case for the integer register-immediate instructions in decode_instruction()<sup>6</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:27</span>Add a case for the integer register-immediate instructions in decode_instruction()<sup>6</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:27</span>Add a case for the integer register-immediate instructions in decode_instruction()<sup>6</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3537" class="marker cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">58:57</span>Add a case for the FENCE / FENCE.I instructions in decode_instruction()<sup>7</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:57</span>Add a case for the FENCE / FENCE.I instructions in decode_instruction()<sup>7</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:57</span>Add a case for the FENCE / FENCE.I instructions in decode_instruction()<sup>7</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3638" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:00:38</span>Enable Ion&#39;s scan_int() to skip _ delimiters in int declarations<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:38</span>Enable Ion&#39;s scan_int() to skip _ delimiters in int declarations<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:38</span>Enable Ion&#39;s scan_int() to skip _ delimiters in int declarations<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3806" class="marker cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">1:03:26</span>Finish up the FENCE / FENCE.I case in decode_instruction()<sup>8</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:26</span>Finish up the FENCE / FENCE.I case in decode_instruction()<sup>8</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:26</span>Finish up the FENCE / FENCE.I case in decode_instruction()<sup>8</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4140" class="marker cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">1:09:00</span>Add a case for the integer register-register instructions in decode_instruction()<sup>9</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:00</span>Add a case for the integer register-register instructions in decode_instruction()<sup>9</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:00</span>Add a case for the integer register-register instructions in decode_instruction()<sup>9</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4707" class="marker cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">1:18:27</span>Add a case for the environment call and breakpoints instructions ECALL and EBREAK in decode_instruction()<sup>10</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:27</span>Add a case for the environment call and breakpoints instructions ECALL and EBREAK in decode_instruction()<sup>10</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:27</span>Add a case for the environment call and breakpoints instructions ECALL and EBREAK in decode_instruction()<sup>10</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4945" class="marker cat_isa programming" data-ref="https://github.com/riscv/riscv-isa-manual/blob/master/release/riscv-spec-v2.2.pdf">
+                    <div class="cineraContent"><span class="timecode">1:22:25</span>Include the CSR (Control and Status Register) instructions in the ECALL / EBREAK case in decode_instruction(), introducing decode_csr_instruction()<sup>11</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:25</span>Include the CSR (Control and Status Register) instructions in the ECALL / EBREAK case in decode_instruction(), introducing decode_csr_instruction()<sup>11</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:25</span>Include the CSR (Control and Status Register) instructions in the ECALL / EBREAK case in decode_instruction(), introducing decode_csr_instruction()<sup>11</sup><span class="cineraCategories"><div title="isa" class="category isa"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5135" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:25:35</span>Reflect on the day&#39;s work<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:35</span>Reflect on the day&#39;s work<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:35</span>Reflect on the day&#39;s work<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5215" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:26:55</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:55</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:55</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5283" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:28:03</span><span class="author" data-hue="22" data-saturation="81%">arbitraryslayer</span> Hi <span class="member" data-hue="356" data-saturation="93%">pervognsen</span>, I have a quick question. Why do you think C is preferred over C++ for system level when C++ has more features than C?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:03</span><span class="author" data-hue="22" data-saturation="81%">arbitraryslayer</span> Hi <span class="member" data-hue="356" data-saturation="93%">pervognsen</span>, I have a quick question. Why do you think C is preferred over C++ for system level when C++ has more features than C?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:03</span><span class="author" data-hue="22" data-saturation="81%">arbitraryslayer</span> Hi <span class="member" data-hue="356" data-saturation="93%">pervognsen</span>, I have a quick question. Why do you think C is preferred over C++ for system level when C++ has more features than C?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5351" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:29:11</span><span class="author" data-hue="48" data-saturation="75%">nothings2</span> Also I wonder if bitfields would make instruction decoding cleaner<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:11</span><span class="author" data-hue="48" data-saturation="75%">nothings2</span> Also I wonder if bitfields would make instruction decoding cleaner<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:11</span><span class="author" data-hue="48" data-saturation="75%">nothings2</span> Also I wonder if bitfields would make instruction decoding cleaner<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5391" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:29:51</span>Cut over to the extra stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:29:51</span>Cut over to the extra stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:29:51</span>Cut over to the extra stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://bitwise.handmade.network/episode/bitwise/bitwise023_2/"><div>&#9196;</div><div>Next: 'RISC-V Toolchain Implementation (Extra)'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

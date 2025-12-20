@@ -1,0 +1,403 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Basic Tile Map Collision Checking</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <div class="person">
+                            <div class="role">Indexer</div>
+                            <div class="name">Kasper Sauramo</div>
+                        </div>
+                    </span>
+                    <span class="credit">
+                        <div class="person">
+                            <div class="role">Indexer</div>
+                            <div class="name">Ben Craddock</div>
+                        </div>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="EwhVulgF16g"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day028/"><div>&#9195;</div><div>Previous: 'Drawing a Tile Map'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="150" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:30</span>Review of what&#39;s currently been done</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:30</span>Review of what&#39;s currently been done</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:30</span>Review of what&#39;s currently been done</div>
+                    </div>
+                </div>
+                <div data-timestamp="197" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">3:17</span>Clearing the screen to black and offsetting the drawable area</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:17</span>Clearing the screen to black and offsetting the drawable area</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:17</span>Clearing the screen to black and offsetting the drawable area</div>
+                    </div>
+                </div>
+                <div data-timestamp="409" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">6:49</span>Player collision with the tilemap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:49</span>Player collision with the tilemap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:49</span>Player collision with the tilemap</div>
+                    </div>
+                </div>
+                <div data-timestamp="1043" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">17:23</span>Moving player initial position inside the map</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:23</span>Moving player initial position inside the map</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:23</span>Moving player initial position inside the map</div>
+                    </div>
+                </div>
+                <div data-timestamp="1231" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">20:31</span>Clearing only the parts of the screen not drawn on</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:31</span>Clearing only the parts of the screen not drawn on</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:31</span>Clearing only the parts of the screen not drawn on</div>
+                    </div>
+                </div>
+                <div data-timestamp="1390" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">23:10</span>Function for checking if a point is occupied and tile_map struct</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">23:10</span>Function for checking if a point is occupied and tile_map struct</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">23:10</span>Function for checking if a point is occupied and tile_map struct</div>
+                    </div>
+                </div>
+                <div data-timestamp="1625" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">27:05</span>Accessing tilemap data as 1-dimensional array</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:05</span>Accessing tilemap data as 1-dimensional array</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:05</span>Accessing tilemap data as 1-dimensional array</div>
+                    </div>
+                </div>
+                <div data-timestamp="2116" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">35:16</span>Adding player width to the collision</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:16</span>Adding player width to the collision</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:16</span>Adding player width to the collision</div>
+                    </div>
+                </div>
+                <div data-timestamp="2270" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">37:50</span>Making player change the map when walking through a door</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">37:50</span>Making player change the map when walking through a door</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">37:50</span>Making player change the map when walking through a door</div>
+                    </div>
+                </div>
+                <div data-timestamp="2636" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">43:56</span>About storing all tilemaps in one big structure</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:56</span>About storing all tilemaps in one big structure</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:56</span>About storing all tilemaps in one big structure</div>
+                    </div>
+                </div>
+                <div data-timestamp="3028" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">50:28</span>Start on storing and accessing multiple tilemaps and the world struct</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:28</span>Start on storing and accessing multiple tilemaps and the world struct</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:28</span>Start on storing and accessing multiple tilemaps and the world struct</div>
+                    </div>
+                </div>
+                <div data-timestamp="3660" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:01:00</span>Short recap on where we are</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:00</span>Short recap on where we are</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:00</span>Short recap on where we are</div>
+                    </div>
+                </div>
+                <div data-timestamp="3736" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:02:16</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:16</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:16</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3790" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:03:10</span>John Blow points out we haven&#39;t initialised the world struct members</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:10</span>John Blow points out we haven&#39;t initialised the world struct members</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:10</span>John Blow points out we haven&#39;t initialised the world struct members</div>
+                    </div>
+                </div>
+                <div data-timestamp="3823" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:03:43</span>Question: Why does player sometimes stop a pixel before the wall?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:43</span>Question: Why does player sometimes stop a pixel before the wall?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:43</span>Question: Why does player sometimes stop a pixel before the wall?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4476" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:14:36</span>Question: Are your variables for tilemaps too similar to each other or am I just easily confused?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:36</span>Question: Are your variables for tilemaps too similar to each other or am I just easily confused?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:36</span>Question: Are your variables for tilemaps too similar to each other or am I just easily confused?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4572" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:16:12</span>Question: Is there an advantage on using bool32 instead of using bool 8-bit?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:12</span>Question: Is there an advantage on using bool32 instead of using bool 8-bit?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:12</span>Question: Is there an advantage on using bool32 instead of using bool 8-bit?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4627" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:17:07</span>Question: Can you go over briefly how to encode the tile data in a single uint32?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:07</span>Question: Can you go over briefly how to encode the tile data in a single uint32?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:07</span>Question: Can you go over briefly how to encode the tile data in a single uint32?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4675" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:17:55</span>Question: Why does left and right side collision work but not the top and bottom?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:55</span>Question: Why does left and right side collision work but not the top and bottom?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:55</span>Question: Why does left and right side collision work but not the top and bottom?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4843" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:20:43</span>Question: Why save TileWidth and Height if those values never change?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:43</span>Question: Why save TileWidth and Height if those values never change?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:43</span>Question: Why save TileWidth and Height if those values never change?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4862" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:21:02</span>Question: What are the differences between structs and classes?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:02</span>Question: What are the differences between structs and classes?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:02</span>Question: What are the differences between structs and classes?</div>
+                    </div>
+                </div>
+                <div data-timestamp="4994" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:23:14</span>Question: Do you always put int32 or can you use only int?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:14</span>Question: Do you always put int32 or can you use only int?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:14</span>Question: Do you always put int32 or can you use only int?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5085" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:24:45</span>Question: So int32 is because you want to make the game for 32bit computers?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:45</span>Question: So int32 is because you want to make the game for 32bit computers?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:45</span>Question: So int32 is because you want to make the game for 32bit computers?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5165" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:26:05</span>The player moves faster diagonally than it&#39;s supposed to. Are you planning on fixing that?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:05</span>The player moves faster diagonally than it&#39;s supposed to. Are you planning on fixing that?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:05</span>The player moves faster diagonally than it&#39;s supposed to. Are you planning on fixing that?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5230" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:27:10</span>Question: I&#39;m not familiar with #define, what is it used for?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:10</span>Question: I&#39;m not familiar with #define, what is it used for?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:10</span>Question: I&#39;m not familiar with #define, what is it used for?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5314" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:28:34</span>Question: When you use int32 does it have a different influence on the code than normal ints?</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:28:34</span>Question: When you use int32 does it have a different influence on the code than normal ints?</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:28:34</span>Question: When you use int32 does it have a different influence on the code than normal ints?</div>
+                    </div>
+                </div>
+                <div data-timestamp="5405" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">1:30:05</span>Making the platform header C compliant</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:05</span>Making the platform header C compliant</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:05</span>Making the platform header C compliant</div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day030/"><div>&#9196;</div><div>Next: 'Moving Between Tile Maps'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

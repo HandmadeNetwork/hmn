@@ -1,0 +1,613 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="language, parsing, Administrivia, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__bitwise.css?r=c4e77686">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus bitwise">
+            <span class="episode_name">Type Checking/Inference, Constant Evaluation</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://github.com/pervognsen/bitwise/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Per Vognsen</div>
+                        </a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="-eCwBwTbjAI"></div>
+            <div class="markers_container bitwise">
+                <a class="episodeMarker prev" href="https://bitwise.handmade.network/episode/bitwise/bitwise007/"><div>&#9195;</div><div>Previous: 'More Order-Independent Declarations'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="13" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">0:13</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:13</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:13</span>Recap and set the stage for the day<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="47" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">0:47</span>Explain why the approach to ordering the dependency graph implemented on the last stream didn&#39;t work<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:47</span>Explain why the approach to ordering the dependency graph implemented on the last stream didn&#39;t work<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:47</span>Explain why the approach to ordering the dependency graph implemented on the last stream didn&#39;t work<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="317" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">5:17</span>Describe the new approach, installing and resolving entities<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:17</span>Describe the new approach, installing and resolving entities<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:17</span>Describe the new approach, installing and resolving entities<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="647" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">10:47</span>The new ingredient: the notion of incomplete types, much like C<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">10:47</span>The new ingredient: the notion of incomplete types, much like C<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">10:47</span>The new ingredient: the notion of incomplete types, much like C<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="729" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">12:09</span>Describe complete_type() and related functions, with usage examples<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:09</span>Describe complete_type() and related functions, with usage examples<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:09</span>Describe complete_type() and related functions, with usage examples<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="985" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">16:25</span>Describe resolve_expr() and related functions<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:25</span>Describe resolve_expr() and related functions<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:25</span>Describe resolve_expr() and related functions<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1244" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">20:44</span>Show how it ends up working<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:44</span>Show how it ends up working<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:44</span>Show how it ends up working<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1524" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">25:24</span>Note the pleasant absence of on-demand dependency resolution<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">25:24</span>Note the pleasant absence of on-demand dependency resolution<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">25:24</span>Note the pleasant absence of on-demand dependency resolution<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1617" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">26:57</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:57</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:57</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1642" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">27:22</span><span class="author" data-hue="92" data-saturation="99%">ws_ubi</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Are you recording the videos so I could watch it later?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:22</span><span class="author" data-hue="92" data-saturation="99%">ws_ubi</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Are you recording the videos so I could watch it later?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:22</span><span class="author" data-hue="92" data-saturation="99%">ws_ubi</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Are you recording the videos so I could watch it later?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1675" class="marker cat_parsing research">
+                    <div class="cineraContent"><span class="timecode">27:55</span>Summarise our notion of incomplete types, and its difference from that of C<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:55</span>Summarise our notion of incomplete types, and its difference from that of C<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:55</span>Summarise our notion of incomplete types, and its difference from that of C<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1717" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">28:37</span><span class="author" data-hue="20" data-saturation="79%">orcnz29</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Would you be able to push the code you just explained?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:37</span><span class="author" data-hue="20" data-saturation="79%">orcnz29</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Would you be able to push the code you just explained?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:37</span><span class="author" data-hue="20" data-saturation="79%">orcnz29</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> Would you be able to push the code you just explained?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1746" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">29:06</span>Commit &quot;Code for day 8 prestream&quot;<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:06</span>Commit &quot;Code for day 8 prestream&quot;<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:06</span>Commit &quot;Code for day 8 prestream&quot;<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1790" class="marker cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">29:50</span><span class="author" data-hue="249" data-saturation="81%">dr_kegel</span> Only one question where you asserted on lvalue only expr and you return a token-rvalue, I think it was a deref<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:50</span><span class="author" data-hue="249" data-saturation="81%">dr_kegel</span> Only one question where you asserted on lvalue only expr and you return a token-rvalue, I think it was a deref<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:50</span><span class="author" data-hue="249" data-saturation="81%">dr_kegel</span> Only one question where you asserted on lvalue only expr and you return a token-rvalue, I think it was a deref<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1850" class="marker cat_parsing speech">
+                    <div class="cineraContent"><span class="timecode">30:50</span>Consider enabling the type resolver to handle compound literals<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:50</span>Consider enabling the type resolver to handle compound literals<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:50</span>Consider enabling the type resolver to handle compound literals<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1948" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">32:28</span>Introduce resolve_expr_compound()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:28</span>Introduce resolve_expr_compound()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:28</span>Introduce resolve_expr_compound()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2342" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">39:02</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:02</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:02</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2346" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">39:06</span>Add an incorrect type test in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:06</span>Add an incorrect type test in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:06</span>Add an incorrect type test in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2364" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">39:24</span>Run it to see that this gets caught<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:24</span>Run it to see that this gets caught<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:24</span>Run it to see that this gets caught<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2372" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">39:32</span>Add tests in resolve_test() for fewer and more arguments provided in a compound literal declaration than there are values in the type<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:32</span>Add tests in resolve_test() for fewer and more arguments provided in a compound literal declaration than there are values in the type<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:32</span>Add tests in resolve_test() for fewer and more arguments provided in a compound literal declaration than there are values in the type<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2392" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">39:52</span>Run it to see that it works as expected<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:52</span>Run it to see that it works as expected<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:52</span>Run it to see that it works as expected<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2406" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">40:06</span>Enable resolve_expr_compound() to handle arrays<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:06</span>Enable resolve_expr_compound() to handle arrays<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:06</span>Enable resolve_expr_compound() to handle arrays<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2644" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">44:04</span>Run it to see that it works as expected<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:04</span>Run it to see that it works as expected<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:04</span>Run it to see that it works as expected<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2666" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">44:26</span>Add a test for arrays in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:26</span>Add a test for arrays in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:26</span>Add a test for arrays in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2675" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">44:35</span>Run it and crash in resolve_expr_compound()<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:35</span>Run it and crash in resolve_expr_compound()<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:35</span>Run it and crash in resolve_expr_compound()<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2686" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">44:46</span>Fix the crash in resolve_expr_compound(), double-check that it&#39;s correct and rewrite the compound literal array test case in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:46</span>Fix the crash in resolve_expr_compound(), double-check that it&#39;s correct and rewrite the compound literal array test case in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:46</span>Fix the crash in resolve_expr_compound(), double-check that it&#39;s correct and rewrite the compound literal array test case in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2853" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">47:33</span>Run it to see that that does the trick<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:33</span>Run it to see that that does the trick<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:33</span>Run it to see that that does the trick<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2862" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">47:42</span>Add tests in resolve_test() for fewer and more arguments provided in a compound literal array declaration than there are values in the type<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:42</span>Add tests in resolve_test() for fewer and more arguments provided in a compound literal array declaration than there are values in the type<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:42</span>Add tests in resolve_test() for fewer and more arguments provided in a compound literal array declaration than there are values in the type<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2878" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">47:58</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:58</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:58</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2886" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">48:06</span>Add a test in resolve_test() that types unify<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:06</span>Add a test in resolve_test() that types unify<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:06</span>Add a test in resolve_test() that types unify<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2908" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">48:28</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:28</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:28</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2916" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">48:36</span>Enable resolve_expr_compound() to handle expected types<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:36</span>Enable resolve_expr_compound() to handle expected types<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:36</span>Enable resolve_expr_compound() to handle expected types<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3377" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">56:17</span>Add a test of our expected type code in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:17</span>Add a test of our expected type code in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:17</span>Add a test of our expected type code in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3404" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">56:44</span>Step through resolve_expr_compound() to see how it handles our expected type<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:44</span>Step through resolve_expr_compound() to see how it handles our expected type<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:44</span>Step through resolve_expr_compound() to see how it handles our expected type<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3446" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">57:26</span>Add an expected struct type test in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:26</span>Add an expected struct type test in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:26</span>Add an expected struct type test in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3460" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">57:40</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">57:40</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">57:40</span>Run it to see that it works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3496" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">58:16</span>Add a test for unhandled resolving of expected function arguments in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:16</span>Add a test for unhandled resolving of expected function arguments in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:16</span>Add a test for unhandled resolving of expected function arguments in resolve_test()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3595" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">59:55</span>Run it to see that it parses but doesn&#39;t resolve<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">59:55</span>Run it to see that it parses but doesn&#39;t resolve<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">59:55</span>Run it to see that it parses but doesn&#39;t resolve<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3613" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:00:13</span>Introduce resolve_decl_func()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:13</span>Introduce resolve_decl_func()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:13</span>Introduce resolve_decl_func()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3788" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:03:08</span>Run it to see that it correctly resolves the function declaration<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:08</span>Run it to see that it correctly resolves the function declaration<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:08</span>Run it to see that it correctly resolves the function declaration<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3837" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:03:57</span>Introduce resolve_expr_call()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:57</span>Introduce resolve_expr_call()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:57</span>Introduce resolve_expr_call()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4343" class="marker cat_parsing run programming">
+                    <div class="cineraContent"><span class="timecode">1:12:23</span>Add function call tests in resolve_test(), and find that they work<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:23</span>Add function call tests in resolve_test(), and find that they work<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:23</span>Add function call tests in resolve_test(), and find that they work<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4459" class="marker cat_parsing speech">
+                    <div class="cineraContent"><span class="timecode">1:14:19</span>Note that we&#39;re not yet traversing the function body, and recap the day&#39;s work<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:14:19</span>Note that we&#39;re not yet traversing the function body, and recap the day&#39;s work<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:14:19</span>Note that we&#39;re not yet traversing the function body, and recap the day&#39;s work<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4548" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:15:48</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:48</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:48</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4651" class="marker cat_parsing speech">
+                    <div class="cineraContent"><span class="timecode">1:17:31</span>A few words on type inference<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:31</span>A few words on type inference<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:31</span>A few words on type inference<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4682" class="marker cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">1:18:02</span><span class="author" data-hue="169" data-saturation="82%">buzzfizz64</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> What’s the expected type thing again? I missed it<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:02</span><span class="author" data-hue="169" data-saturation="82%">buzzfizz64</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> What’s the expected type thing again? I missed it<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:02</span><span class="author" data-hue="169" data-saturation="82%">buzzfizz64</span> <span class="member" data-hue="356" data-saturation="93%">pervognsen</span> What’s the expected type thing again? I missed it<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4798" class="marker cat_language cat_parsing speech">
+                    <div class="cineraContent"><span class="timecode">1:19:58</span>How C handles expected types<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:58</span>How C handles expected types<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:58</span>How C handles expected types<span class="cineraCategories"><div title="language" class="category language"></div><div title="parsing" class="category parsing"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4913" class="marker cat_language speech">
+                    <div class="cineraContent"><span class="timecode">1:21:53</span>Passing separate data vs packed structs in C<span class="cineraCategories"><div title="language" class="category language"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:53</span>Passing separate data vs packed structs in C<span class="cineraCategories"><div title="language" class="category language"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:53</span>Passing separate data vs packed structs in C<span class="cineraCategories"><div title="language" class="category language"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5032" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:23:52</span>Wrap up the main stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:23:52</span>Wrap up the main stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:23:52</span>Wrap up the main stream<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://bitwise.handmade.network/episode/bitwise/bitwise008_2/"><div>&#9196;</div><div>Next: 'Type Checking/Inference, Constant Evaluation (Extra)'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

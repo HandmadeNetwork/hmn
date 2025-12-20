@@ -1,0 +1,515 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="Chat Comment, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Handling Traversables in the Collision Loop</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <div class="person">
+                            <div class="role">Indexer</div>
+                            <div class="name">Dustin Specht</div>
+                        </div>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="QxxVwnE8V1c"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day079/"><div>&#9195;</div><div>Previous: 'Defining the Ground'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="269" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">4:29</span>Blackboard: Augmenting the collision loop to loop over two types of t value</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:29</span>Blackboard: Augmenting the collision loop to loop over two types of t value</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:29</span>Blackboard: Augmenting the collision loop to loop over two types of t value</div>
+                    </div>
+                </div>
+                <div data-timestamp="310" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">5:10</span>handmade_sim_region.cpp: Introduce tMax</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:10</span>handmade_sim_region.cpp: Introduce tMax</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:10</span>handmade_sim_region.cpp: Introduce tMax</div>
+                    </div>
+                </div>
+                <div data-timestamp="358" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">5:58</span>handmade_sim_region.cpp: Consider how best to modify this routine</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">5:58</span>handmade_sim_region.cpp: Consider how best to modify this routine</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">5:58</span>handmade_sim_region.cpp: Consider how best to modify this routine</div>
+                    </div>
+                </div>
+                <div data-timestamp="663" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">11:03</span>handmade_sim_region.cpp: Loop over the Walls to get all of the data taken by TestWall</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:03</span>handmade_sim_region.cpp: Loop over the Walls to get all of the data taken by TestWall</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:03</span>handmade_sim_region.cpp: Loop over the Walls to get all of the data taken by TestWall</div>
+                    </div>
+                </div>
+                <div data-timestamp="915" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">15:15</span>handmade_sim_region.cpp: Introduce test_wall</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:15</span>handmade_sim_region.cpp: Introduce test_wall</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:15</span>handmade_sim_region.cpp: Introduce test_wall</div>
+                    </div>
+                </div>
+                <div data-timestamp="956" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">15:56</span>Run the game and make sure it&#39;s still working</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">15:56</span>Run the game and make sure it&#39;s still working</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">15:56</span>Run the game and make sure it&#39;s still working</div>
+                    </div>
+                </div>
+                <div data-timestamp="974" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">16:14</span>handmade_sim_region.cpp: Embed TestWall directly in the collision loop</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:14</span>handmade_sim_region.cpp: Embed TestWall directly in the collision loop</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:14</span>handmade_sim_region.cpp: Embed TestWall directly in the collision loop</div>
+                    </div>
+                </div>
+                <div data-timestamp="1065" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">17:45</span>Run the game and test the collision</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:45</span>Run the game and test the collision</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:45</span>Run the game and test the collision</div>
+                    </div>
+                </div>
+                <div data-timestamp="1132" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">18:52</span>handmade_sim_region.cpp: Test tMax</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:52</span>handmade_sim_region.cpp: Test tMax</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:52</span>handmade_sim_region.cpp: Test tMax</div>
+                    </div>
+                </div>
+                <div data-timestamp="1323" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">22:03</span>handmade_sim_region.cpp: Massage the routine</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:03</span>handmade_sim_region.cpp: Massage the routine</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:03</span>handmade_sim_region.cpp: Massage the routine</div>
+                    </div>
+                </div>
+                <div data-timestamp="1467" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">24:27</span>handmade_sim_region.cpp: Implement the tMin vs. tMax logic</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:27</span>handmade_sim_region.cpp: Implement the tMin vs. tMax logic</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:27</span>handmade_sim_region.cpp: Implement the tMin vs. tMax logic</div>
+                    </div>
+                </div>
+                <div data-timestamp="1587" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">26:27</span>handmade_sim_region.cpp: Write the tests for Overlap and EntityFlag_Traversable</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:27</span>handmade_sim_region.cpp: Write the tests for Overlap and EntityFlag_Traversable</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:27</span>handmade_sim_region.cpp: Write the tests for Overlap and EntityFlag_Traversable</div>
+                    </div>
+                </div>
+                <div data-timestamp="1689" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">28:09</span>Encourage us not to be scared of solving complex problems</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:09</span>Encourage us not to be scared of solving complex problems</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:09</span>Encourage us not to be scared of solving complex problems</div>
+                    </div>
+                </div>
+                <div data-timestamp="1969" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">32:49</span>handmade_sim_region.cpp: Improve the overlap test</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:49</span>handmade_sim_region.cpp: Improve the overlap test</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:49</span>handmade_sim_region.cpp: Improve the overlap test</div>
+                    </div>
+                </div>
+                <div data-timestamp="2157" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">35:57</span>handmade_sim_region.cpp: Introduce EntitiesOverlap for this overlap test</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:57</span>handmade_sim_region.cpp: Introduce EntitiesOverlap for this overlap test</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:57</span>handmade_sim_region.cpp: Introduce EntitiesOverlap for this overlap test</div>
+                    </div>
+                </div>
+                <div data-timestamp="2322" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">38:42</span>handmade_sim_region.cpp: Make EntitiesOverlap take an Epsilon enlargement region</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">38:42</span>handmade_sim_region.cpp: Make EntitiesOverlap take an Epsilon enlargement region</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">38:42</span>handmade_sim_region.cpp: Make EntitiesOverlap take an Epsilon enlargement region</div>
+                    </div>
+                </div>
+                <div data-timestamp="2406" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">40:06</span>handmade_sim_region.cpp: Reenable the EntityFlag_Traversable test and use EntitiesOverlap</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">40:06</span>handmade_sim_region.cpp: Reenable the EntityFlag_Traversable test and use EntitiesOverlap</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">40:06</span>handmade_sim_region.cpp: Reenable the EntityFlag_Traversable test and use EntitiesOverlap</div>
+                    </div>
+                </div>
+                <div data-timestamp="2512" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">41:52</span>Run the game and find that we can&#39;t get past our tMax</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:52</span>Run the game and find that we can&#39;t get past our tMax</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:52</span>Run the game and find that we can&#39;t get past our tMax</div>
+                    </div>
+                </div>
+                <div data-timestamp="2547" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">42:27</span>handmade_sim_region.cpp: Move tMin, tMax and HitThis inside the loop</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">42:27</span>handmade_sim_region.cpp: Move tMin, tMax and HitThis inside the loop</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">42:27</span>handmade_sim_region.cpp: Move tMin, tMax and HitThis inside the loop</div>
+                    </div>
+                </div>
+                <div data-timestamp="2643" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">44:03</span>handmade_sim_region.cpp: Rethink the logic of the collision routine</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:03</span>handmade_sim_region.cpp: Rethink the logic of the collision routine</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:03</span>handmade_sim_region.cpp: Rethink the logic of the collision routine</div>
+                    </div>
+                </div>
+                <div data-timestamp="2785" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">46:25</span>Run the game and find that we&#39;re working a little more properly</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:25</span>Run the game and find that we&#39;re working a little more properly</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:25</span>Run the game and find that we&#39;re working a little more properly</div>
+                    </div>
+                </div>
+                <div data-timestamp="2804" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">46:44</span>handmade.cpp: Only create walls in the first room in order to test the new world definition</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:44</span>handmade.cpp: Only create walls in the first room in order to test the new world definition</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:44</span>handmade.cpp: Only create walls in the first room in order to test the new world definition</div>
+                    </div>
+                </div>
+                <div data-timestamp="2827" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">47:07</span>Run the game and test the collision detection</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">47:07</span>Run the game and test the collision detection</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">47:07</span>Run the game and test the collision detection</div>
+                    </div>
+                </div>
+                <div data-timestamp="3004" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">50:04</span>handmade_sim_region.cpp: Increase the size of the overlap Epsilon</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:04</span>handmade_sim_region.cpp: Increase the size of the overlap Epsilon</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:04</span>handmade_sim_region.cpp: Increase the size of the overlap Epsilon</div>
+                    </div>
+                </div>
+                <div data-timestamp="3115" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">51:55</span>Debugger: Step into the collision routine</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">51:55</span>Debugger: Step into the collision routine</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">51:55</span>Debugger: Step into the collision routine</div>
+                    </div>
+                </div>
+                <div data-timestamp="3243" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">54:03</span>handmade_sim_region.cpp: Initialise tMaxTest to our current tMax</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:03</span>handmade_sim_region.cpp: Initialise tMaxTest to our current tMax</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:03</span>handmade_sim_region.cpp: Initialise tMaxTest to our current tMax</div>
+                    </div>
+                </div>
+                <div data-timestamp="3274" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">54:34</span>Run the game and find that everything seems pretty good, but still a little janky</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:34</span>Run the game and find that everything seems pretty good, but still a little janky</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:34</span>Run the game and find that everything seems pretty good, but still a little janky</div>
+                    </div>
+                </div>
+                <div data-timestamp="3295" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">54:55</span>Set the stage for next week</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:55</span>Set the stage for next week</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:55</span>Set the stage for next week</div>
+                    </div>
+                </div>
+                <div data-timestamp="3333" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">55:33</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:33</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:33</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3343" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">55:43</span>Consult the TODO list</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">55:43</span>Consult the TODO list</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">55:43</span>Consult the TODO list</div>
+                    </div>
+                </div>
+                <div data-timestamp="3494" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">58:14</span><span class="author" data-hue="184" data-saturation="99%">a_pulsing_mage</span> Can you explain the LengthOf(array) macro, and the sizeof pointers?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:14</span><span class="author" data-hue="184" data-saturation="99%">a_pulsing_mage</span> Can you explain the LengthOf(array) macro, and the sizeof pointers?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:14</span><span class="author" data-hue="184" data-saturation="99%">a_pulsing_mage</span> Can you explain the LengthOf(array) macro, and the sizeof pointers?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3979" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:06:19</span><span class="author" data-hue="141" data-saturation="92%">ttbjm</span> Will the space entities be used for the collision optimization you were talking about in an earlier stream? o(n^2) stuff<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:19</span><span class="author" data-hue="141" data-saturation="92%">ttbjm</span> Will the space entities be used for the collision optimization you were talking about in an earlier stream? o(n^2) stuff<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:19</span><span class="author" data-hue="141" data-saturation="92%">ttbjm</span> Will the space entities be used for the collision optimization you were talking about in an earlier stream? o(n^2) stuff<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4038" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:07:18</span><span class="author" data-hue="257" data-saturation="87%">insofaras</span> sizeof(game_input::Controllers) works for me with g++<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:18</span><span class="author" data-hue="257" data-saturation="87%">insofaras</span> sizeof(game_input::Controllers) works for me with g++<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:18</span><span class="author" data-hue="257" data-saturation="87%">insofaras</span> sizeof(game_input::Controllers) works for me with g++<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4089" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:08:09</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> I noticed that you tend to mostly skip over questions past the first question mark. Is it because you just parse that way or the rest tends to be not much interesting?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:09</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> I noticed that you tend to mostly skip over questions past the first question mark. Is it because you just parse that way or the rest tends to be not much interesting?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:09</span><span class="author" data-hue="26" data-saturation="74%">kknewkles</span> I noticed that you tend to mostly skip over questions past the first question mark. Is it because you just parse that way or the rest tends to be not much interesting?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4143" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:09:03</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> For things like the projectiles, are we going to extend their bounding boxes in the Z axis so they will always hit enemies that are below them? Or are we going to handle that in screen space somehow?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:09:03</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> For things like the projectiles, are we going to extend their bounding boxes in the Z axis so they will always hit enemies that are below them? Or are we going to handle that in screen space somehow?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:09:03</span><span class="author" data-hue="225" data-saturation="76%">garlandobloom</span> For things like the projectiles, are we going to extend their bounding boxes in the Z axis so they will always hit enemies that are below them? Or are we going to handle that in screen space somehow?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4204" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:10:04</span><span class="author" data-hue="329" data-saturation="96%">dmitsuki</span> Do you dislike templates?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:04</span><span class="author" data-hue="329" data-saturation="96%">dmitsuki</span> Do you dislike templates?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:04</span><span class="author" data-hue="329" data-saturation="96%">dmitsuki</span> Do you dislike templates?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4277" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:11:17</span><span class="author" data-hue="24" data-saturation="87%">samfosteriam</span> How will you handle something like an explosion that affects all things in an area? Then it&#39;s not 1 entity colliding with another<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:17</span><span class="author" data-hue="24" data-saturation="87%">samfosteriam</span> How will you handle something like an explosion that affects all things in an area? Then it&#39;s not 1 entity colliding with another<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:17</span><span class="author" data-hue="24" data-saturation="87%">samfosteriam</span> How will you handle something like an explosion that affects all things in an area? Then it&#39;s not 1 entity colliding with another<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4329" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:12:09</span><span class="author" data-hue="285" data-saturation="83%">flynnspixel</span> What do you think about the new Vulkan API?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:09</span><span class="author" data-hue="285" data-saturation="83%">flynnspixel</span> What do you think about the new Vulkan API?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:09</span><span class="author" data-hue="285" data-saturation="83%">flynnspixel</span> What do you think about the new Vulkan API?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4395" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:13:15</span>Wrap things up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:13:15</span>Wrap things up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:13:15</span>Wrap things up<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day081/"><div>&#9196;</div><div>Next: 'Creating Ground with Overlapping Bitmaps'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

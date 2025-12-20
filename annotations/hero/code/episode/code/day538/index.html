@@ -1,0 +1,638 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="ai, animation, audio, camera, collision, debug visualisation, entity system, geometry, language, library, mathematics, particle system, pathfinding, procedural generation, searching, threading, vcs, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Making a Grid-based Layout Helper</span>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content ai">
+                                <span class="icon category ai"></span><span class="cineraText">ai</span>
+                            </div>
+                            <div class="filter_content animation">
+                                <span class="icon category animation"></span><span class="cineraText">animation</span>
+                            </div>
+                            <div class="filter_content audio">
+                                <span class="icon category audio"></span><span class="cineraText">audio</span>
+                            </div>
+                            <div class="filter_content camera">
+                                <span class="icon category camera"></span><span class="cineraText">camera</span>
+                            </div>
+                            <div class="filter_content collision">
+                                <span class="icon category collision"></span><span class="cineraText">collision</span>
+                            </div>
+                            <div class="filter_content debug-visualisation">
+                                <span class="icon category debug-visualisation"></span><span class="cineraText">debug visualisation</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content geometry">
+                                <span class="icon category geometry"></span><span class="cineraText">geometry</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content library">
+                                <span class="icon category library"></span><span class="cineraText">library</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content particle-system">
+                                <span class="icon category particle-system"></span><span class="cineraText">particle system</span>
+                            </div>
+                            <div class="filter_content pathfinding">
+                                <span class="icon category pathfinding"></span><span class="cineraText">pathfinding</span>
+                            </div>
+                            <div class="filter_content procedural-generation">
+                                <span class="icon category procedural-generation"></span><span class="cineraText">procedural generation</span>
+                            </div>
+                            <div class="filter_content searching">
+                                <span class="icon category searching"></span><span class="cineraText">searching</span>
+                            </div>
+                            <div class="filter_content threading">
+                                <span class="icon category threading"></span><span class="cineraText">threading</span>
+                            </div>
+                            <div class="filter_content vcs">
+                                <span class="icon category vcs"></span><span class="cineraText">vcs</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key unavailable">r</span> <span class="help_text unavailable">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and References Menus</span></h2>
+                    <span class="help_key word unavailable">Enter</span> <span class="help_text unavailable">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes, References and</span> Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="GcvTZVc4glw"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day537/"><div>&#9195;</div><div>Previous: 'Filling Areas Around Rooms'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_procedural-generation speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="34" class="marker cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">0:34</span>Demo the current state of our world apron, with the determination to semantically codify our world tiles to help produce that apron<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:34</span>Demo the current state of our world apron, with the determination to semantically codify our world tiles to help produce that apron<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:34</span>Demo the current state of our world apron, with the determination to semantically codify our world tiles to help produce that apron<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="390" class="marker cat_geometry research">
+                    <div class="cineraContent"><span class="timecode">6:30</span>Codifying world tiles such that they may be queried in a more semantic fashion<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:30</span>Codifying world tiles such that they may be queried in a more semantic fashion<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:30</span>Codifying world tiles such that they may be queried in a more semantic fashion<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="594" class="marker cat_geometry programming">
+                    <div class="cineraContent"><span class="timecode">9:54</span>Begin to semantically codify world tiles, tentatively introducing gen_tile_volume<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:54</span>Begin to semantically codify world tiles, tentatively introducing gen_tile_volume<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:54</span>Begin to semantically codify world tiles, tentatively introducing gen_tile_volume<span class="cineraCategories"><div title="geometry" class="category geometry"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="973" class="marker cat_geometry cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">16:13</span>Work on the semantic codification of world tiles, backwards from the usage code in GenerateApron(), introducing an edit_grid struct, BeginGridEdit() and EndGridEdit()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:13</span>Work on the semantic codification of world tiles, backwards from the usage code in GenerateApron(), introducing an edit_grid struct, BeginGridEdit() and EndGridEdit()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:13</span>Work on the semantic codification of world tiles, backwards from the usage code in GenerateApron(), introducing an edit_grid struct, BeginGridEdit() and EndGridEdit()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1866" class="marker cat_geometry cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">31:06</span>Create handmade_edit_grid.h, and introduce MakeRelative(), GetMinZCenterP(), and stubbed out GetVolumeFromMinZ(), IterateTiles(), IsValid() and Advance() for edit grids and tiles<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:06</span>Create handmade_edit_grid.h, and introduce MakeRelative(), GetMinZCenterP(), and stubbed out GetVolumeFromMinZ(), IterateTiles(), IsValid() and Advance() for edit grids and tiles<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:06</span>Create handmade_edit_grid.h, and introduce MakeRelative(), GetMinZCenterP(), and stubbed out GetVolumeFromMinZ(), IterateTiles(), IsValid() and Advance() for edit grids and tiles<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2157" class="marker cat_geometry cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">35:57</span>Implement BeginGridEdit(), augmenting edit_grid as required<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">35:57</span>Implement BeginGridEdit(), augmenting edit_grid as required<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">35:57</span>Implement BeginGridEdit(), augmenting edit_grid as required<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2791" class="marker cat_geometry cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">46:31</span>Respecify IterateTiles() as IterateAsPlanarTiles()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:31</span>Respecify IterateTiles() as IterateAsPlanarTiles()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:31</span>Respecify IterateTiles() as IterateAsPlanarTiles()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2960" class="marker cat_geometry cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">49:20</span>Implement the edit_tile version of IsValid(), introducing a version of IsInVolume() that takes a gen_v3, and IsInArrayBounds()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">49:20</span>Implement the edit_tile version of IsValid(), introducing a version of IsInVolume() that takes a gen_v3, and IsInArrayBounds()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">49:20</span>Implement the edit_tile version of IsValid(), introducing a version of IsInVolume() that takes a gen_v3, and IsInArrayBounds()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3240" class="marker cat_geometry cat_procedural-generation cat_searching programming">
+                    <div class="cineraContent"><span class="timecode">54:00</span>Implement the edit_tile version of Advance(), IterateAsPlanarTiles() and GetMinZCenterP()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div><div title="searching" class="category searching"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">54:00</span>Implement the edit_tile version of Advance(), IterateAsPlanarTiles() and GetMinZCenterP()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div><div title="searching" class="category searching"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">54:00</span>Implement the edit_tile version of Advance(), IterateAsPlanarTiles() and GetMinZCenterP()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div><div title="searching" class="category searching"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3400" class="marker cat_geometry cat_procedural-generation cat_searching research">
+                    <div class="cineraContent"><span class="timecode">56:40</span>Consider our options for codifying the offsetting of room volumes vs their entities<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div><div title="searching" class="category searching"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:40</span>Consider our options for codifying the offsetting of room volumes vs their entities<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div><div title="searching" class="category searching"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:40</span>Consider our options for codifying the offsetting of room volumes vs their entities<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div><div title="searching" class="category searching"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3530" class="marker cat_geometry cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">58:50</span>Specify that room volumes are not offset from 0, 0, 0, introducing GetTotalVolume()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:50</span>Specify that room volumes are not offset from 0, 0, 0, introducing GetTotalVolume()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:50</span>Specify that room volumes are not offset from 0, 0, 0, introducing GetTotalVolume()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3771" class="marker cat_geometry cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:02:51</span>#include handmade_edit_grid.cpp and handmade_edit_grid.h, finish up the edit_grid struct and fix compile errors in the new edit_grid code<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:51</span>#include handmade_edit_grid.cpp and handmade_edit_grid.h, finish up the edit_grid struct and fix compile errors in the new edit_grid code<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:51</span>#include handmade_edit_grid.cpp and handmade_edit_grid.h, finish up the edit_grid struct and fix compile errors in the new edit_grid code<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4139" class="marker cat_geometry cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:08:59</span>Port the existing GenerateRoom() code over to the new codified tile edit_grid scheme, introducing a version of GetTile() that takes an edit_tile, IsOnEdge() and GetAbsoluteTileIndex()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:59</span>Port the existing GenerateRoom() code over to the new codified tile edit_grid scheme, introducing a version of GetTile() that takes an edit_tile, IsOnEdge() and GetAbsoluteTileIndex()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:59</span>Port the existing GenerateRoom() code over to the new codified tile edit_grid scheme, introducing a version of GetTile() that takes an edit_tile, IsOnEdge() and GetAbsoluteTileIndex()<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4840" class="marker cat_geometry cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:20:40</span>Introduce GetRoomVolume(), GetRoomMinWorldP() and GetRoomMaxWorldP() for GenerateRoom() to call<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:40</span>Introduce GetRoomVolume(), GetRoomMinWorldP() and GetRoomMaxWorldP() for GenerateRoom() to call<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:40</span>Introduce GetRoomVolume(), GetRoomMinWorldP() and GetRoomMaxWorldP() for GenerateRoom() to call<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5070" class="marker cat_geometry cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:24:30</span>Find that our tile grid codification enables our world apron generation to work perfectly first time, but that rooms are failing to be paged in<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:30</span>Find that our tile grid codification enables our world apron generation to work perfectly first time, but that rooms are failing to be paged in<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:30</span>Find that our tile grid codification enables our world apron generation to work perfectly first time, but that rooms are failing to be paged in<span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5185" class="marker cat_camera cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:26:25</span>Change GenerateRoom() to position the camera in the center of rooms, to enable correct paging in of rooms as we traverse the world<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:25</span>Change GenerateRoom() to position the camera in the center of rooms, to enable correct paging in of rooms as we traverse the world<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:25</span>Change GenerateRoom() to position the camera in the center of rooms, to enable correct paging in of rooms as we traverse the world<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5216" class="marker cat_camera cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:26:56</span>Find that our camera is now fixed<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:56</span>Find that our camera is now fixed<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:56</span>Find that our camera is now fixed<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5256" class="marker cat_collision cat_debug-visualisation programming">
+                    <div class="cineraContent"><span class="timecode">1:27:36</span>Disable the collision box debug visualisation<span class="cineraCategories"><div title="collision" class="category collision"></div><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:36</span>Disable the collision box debug visualisation<span class="cineraCategories"><div title="collision" class="category collision"></div><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:36</span>Disable the collision box debug visualisation<span class="cineraCategories"><div title="collision" class="category collision"></div><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5276" class="marker cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:27:56</span>Traverse the world, and see gaps in our world&#39;s apron<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:27:56</span>Traverse the world, and see gaps in our world&#39;s apron<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:27:56</span>Traverse the world, and see gaps in our world&#39;s apron<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5434" class="marker cat_mathematics cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:30:34</span>Make GenerateApron() shrink the test tile when checking for overlapping entities, to try and avoid floating-point precision issues<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:34</span>Make GenerateApron() shrink the test tile when checking for overlapping entities, to try and avoid floating-point precision issues<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:34</span>Make GenerateApron() shrink the test tile when checking for overlapping entities, to try and avoid floating-point precision issues<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5472" class="marker cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:31:12</span>Find that those gaps in our apron are now filled<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:12</span>Find that those gaps in our apron are now filled<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:12</span>Find that those gaps in our apron are now filled<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5565" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:32:45</span>Relieve GenerateRoom(), GenerateApron() and Layout() of taking a world<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:45</span>Relieve GenerateRoom(), GenerateApron() and Layout() of taking a world<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:45</span>Relieve GenerateRoom(), GenerateApron() and Layout() of taking a world<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5665" class="marker cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:34:25</span>Make sure that we run okay, and glimpse into the future implementing ground cover, finishing lighting and cleaning up the tag system<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:34:25</span>Make sure that we run okay, and glimpse into the future implementing ground cover, finishing lighting and cleaning up the tag system<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:34:25</span>Make sure that we run okay, and glimpse into the future implementing ground cover, finishing lighting and cleaning up the tag system<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5734" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:35:34</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:34</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:34</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5763" class="marker cat_audio authored">
+                    <div class="cineraContent"><span class="timecode">1:36:03</span><span class="author" data-hue="41" data-saturation="80%">vapenir</span> Q: Do you plan to implement any fancy 3D audio stuff?<span class="cineraCategories"><div title="audio" class="category audio"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:03</span><span class="author" data-hue="41" data-saturation="80%">vapenir</span> Q: Do you plan to implement any fancy 3D audio stuff?<span class="cineraCategories"><div title="audio" class="category audio"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:03</span><span class="author" data-hue="41" data-saturation="80%">vapenir</span> Q: Do you plan to implement any fancy 3D audio stuff?<span class="cineraCategories"><div title="audio" class="category audio"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5806" class="marker cat_library authored">
+                    <div class="cineraContent"><span class="timecode">1:36:46</span><span class="author" data-hue="192" data-saturation="86%">2hstrike</span> Q: When you code in pure C do you have our own string library or do you always use a subset of C++ and their std string library?<span class="cineraCategories"><div title="library" class="category library"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:46</span><span class="author" data-hue="192" data-saturation="86%">2hstrike</span> Q: When you code in pure C do you have our own string library or do you always use a subset of C++ and their std string library?<span class="cineraCategories"><div title="library" class="category library"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:46</span><span class="author" data-hue="192" data-saturation="86%">2hstrike</span> Q: When you code in pure C do you have our own string library or do you always use a subset of C++ and their std string library?<span class="cineraCategories"><div title="library" class="category library"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5828" class="marker cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">1:37:08</span><span class="author" data-hue="200" data-saturation="97%">0lpbm</span> Q: Will you at any point remove the double walls between rooms?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:08</span><span class="author" data-hue="200" data-saturation="97%">0lpbm</span> Q: Will you at any point remove the double walls between rooms?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:08</span><span class="author" data-hue="200" data-saturation="97%">0lpbm</span> Q: Will you at any point remove the double walls between rooms?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5881" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:38:01</span><span class="author" data-hue="311" data-saturation="82%">rationalcoder</span> Q: See jeffrey&#39;s comment<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:01</span><span class="author" data-hue="311" data-saturation="82%">rationalcoder</span> Q: See jeffrey&#39;s comment<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:01</span><span class="author" data-hue="311" data-saturation="82%">rationalcoder</span> Q: See jeffrey&#39;s comment<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5888" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:38:08</span><span class="author" data-hue="217" data-saturation="81%">jeffrey_hullekes</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span> your AddWorldRoom() call contains two Mins, not Min and Max!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:08</span><span class="author" data-hue="217" data-saturation="81%">jeffrey_hullekes</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span> your AddWorldRoom() call contains two Mins, not Min and Max!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:08</span><span class="author" data-hue="217" data-saturation="81%">jeffrey_hullekes</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span> your AddWorldRoom() call contains two Mins, not Min and Max!<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5895" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:38:15</span>Fix typo in the call to AddWorldRoom() in GenerateRoom()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:15</span>Fix typo in the call to AddWorldRoom() in GenerateRoom()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:15</span>Fix typo in the call to AddWorldRoom() in GenerateRoom()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5930" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">1:38:50</span><span class="author" data-hue="313" data-saturation="95%">reductum</span> Q: Handmade sin / cos?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:50</span><span class="author" data-hue="313" data-saturation="95%">reductum</span> Q: Handmade sin / cos?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:50</span><span class="author" data-hue="313" data-saturation="95%">reductum</span> Q: Handmade sin / cos?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5955" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:39:15</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: I have a feeling you will find more engine work to do once you start the gameplay stuff<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:39:15</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: I have a feeling you will find more engine work to do once you start the gameplay stuff<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:39:15</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: I have a feeling you will find more engine work to do once you start the gameplay stuff<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6001" class="marker cat_animation authored">
+                    <div class="cineraContent"><span class="timecode">1:40:01</span><span class="author" data-hue="262" data-saturation="92%">ormone88</span> Q: What about implementing a tiny animation tool in the editor? It would delay the part of gameplay programming, at least<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:01</span><span class="author" data-hue="262" data-saturation="92%">ormone88</span> Q: What about implementing a tiny animation tool in the editor? It would delay the part of gameplay programming, at least<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:01</span><span class="author" data-hue="262" data-saturation="92%">ormone88</span> Q: What about implementing a tiny animation tool in the editor? It would delay the part of gameplay programming, at least<span class="cineraCategories"><div title="animation" class="category animation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6026" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">1:40:26</span><span class="author" data-hue="342" data-saturation="87%">sluddytypie</span> Q: Would you recommend any books for learning C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:26</span><span class="author" data-hue="342" data-saturation="87%">sluddytypie</span> Q: Would you recommend any books for learning C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:26</span><span class="author" data-hue="342" data-saturation="87%">sluddytypie</span> Q: Would you recommend any books for learning C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6049" class="marker cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">1:40:49</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: Does the apron cover everything we need now? I&#39;m just wondering if there may be any point in using our elevation and camera angle to figure out the necessary extents of the apron for floors far below us<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:40:49</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: Does the apron cover everything we need now? I&#39;m just wondering if there may be any point in using our elevation and camera angle to figure out the necessary extents of the apron for floors far below us<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:40:49</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: Does the apron cover everything we need now? I&#39;m just wondering if there may be any point in using our elevation and camera angle to figure out the necessary extents of the apron for floors far below us<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6106" class="marker cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">1:41:46</span><span class="author" data-hue="255" data-saturation="83%">darkenderio</span> Q: The world apron is meant to make the outside of the world not look so empty. Could there be entities inside the world apron as ambient entities, to make it look like there is life outside of the playing area? They could just wander around<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:46</span><span class="author" data-hue="255" data-saturation="83%">darkenderio</span> Q: The world apron is meant to make the outside of the world not look so empty. Could there be entities inside the world apron as ambient entities, to make it look like there is life outside of the playing area? They could just wander around<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:46</span><span class="author" data-hue="255" data-saturation="83%">darkenderio</span> Q: The world apron is meant to make the outside of the world not look so empty. Could there be entities inside the world apron as ambient entities, to make it look like there is life outside of the playing area? They could just wander around<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6162" class="marker cat_particle-system authored">
+                    <div class="cineraContent"><span class="timecode">1:42:42</span><span class="author" data-hue="228" data-saturation="97%">vtlmks</span> Q: Is the particle system complete?<span class="cineraCategories"><div title="particle system" class="category particle-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:42</span><span class="author" data-hue="228" data-saturation="97%">vtlmks</span> Q: Is the particle system complete?<span class="cineraCategories"><div title="particle system" class="category particle-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:42</span><span class="author" data-hue="228" data-saturation="97%">vtlmks</span> Q: Is the particle system complete?<span class="cineraCategories"><div title="particle system" class="category particle-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6245" class="marker cat_vcs authored">
+                    <div class="cineraContent"><span class="timecode">1:44:05</span><span class="author" data-hue="41" data-saturation="80%">vapenir</span> Q: Have you used git, svn or other VCS&#39;s for actual collaboration? What did you think about them?<span class="cineraCategories"><div title="vcs" class="category vcs"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:05</span><span class="author" data-hue="41" data-saturation="80%">vapenir</span> Q: Have you used git, svn or other VCS&#39;s for actual collaboration? What did you think about them?<span class="cineraCategories"><div title="vcs" class="category vcs"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:05</span><span class="author" data-hue="41" data-saturation="80%">vapenir</span> Q: Have you used git, svn or other VCS&#39;s for actual collaboration? What did you think about them?<span class="cineraCategories"><div title="vcs" class="category vcs"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6500" class="marker cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">1:48:20</span><span class="author" data-hue="255" data-saturation="83%">darkenderio</span> Q: What about simple ambience, like birds flying from tree to tree?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:20</span><span class="author" data-hue="255" data-saturation="83%">darkenderio</span> Q: What about simple ambience, like birds flying from tree to tree?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:20</span><span class="author" data-hue="255" data-saturation="83%">darkenderio</span> Q: What about simple ambience, like birds flying from tree to tree?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6530" class="marker cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">1:48:50</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: And in theory you could have the composition of elements / theme of the apron be visibly different yet still complimentary so that it is clear that it is in fact an apron<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:50</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: And in theory you could have the composition of elements / theme of the apron be visibly different yet still complimentary so that it is clear that it is in fact an apron<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:50</span><span class="author" data-hue="10" data-saturation="91%">longboolean</span> Q: And in theory you could have the composition of elements / theme of the apron be visibly different yet still complimentary so that it is clear that it is in fact an apron<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6596" class="marker cat_ai cat_pathfinding cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">1:49:56</span><span class="author" data-hue="262" data-saturation="92%">ormone88</span> Q: Do you consider any AI-related code as gameplay programming? Is there anything you could implement, engine-wise, in order to ease the coding process of these topics? For example, I could see pathfinding and world generation as a possible candidate<span class="cineraCategories"><div title="ai" class="category ai"></div><div title="pathfinding" class="category pathfinding"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:56</span><span class="author" data-hue="262" data-saturation="92%">ormone88</span> Q: Do you consider any AI-related code as gameplay programming? Is there anything you could implement, engine-wise, in order to ease the coding process of these topics? For example, I could see pathfinding and world generation as a possible candidate<span class="cineraCategories"><div title="ai" class="category ai"></div><div title="pathfinding" class="category pathfinding"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:56</span><span class="author" data-hue="262" data-saturation="92%">ormone88</span> Q: Do you consider any AI-related code as gameplay programming? Is there anything you could implement, engine-wise, in order to ease the coding process of these topics? For example, I could see pathfinding and world generation as a possible candidate<span class="cineraCategories"><div title="ai" class="category ai"></div><div title="pathfinding" class="category pathfinding"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6651" class="marker cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">1:50:51</span><span class="author" data-hue="84" data-saturation="83%">culdevu</span> Q: What about rolling fog cloud entities out there? Just a bunch of trees in a large grid sounds kinda weird<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:50:51</span><span class="author" data-hue="84" data-saturation="83%">culdevu</span> Q: What about rolling fog cloud entities out there? Just a bunch of trees in a large grid sounds kinda weird<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:50:51</span><span class="author" data-hue="84" data-saturation="83%">culdevu</span> Q: What about rolling fog cloud entities out there? Just a bunch of trees in a large grid sounds kinda weird<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6664" class="marker cat_threading authored">
+                    <div class="cineraContent"><span class="timecode">1:51:04</span><span class="author" data-hue="192" data-saturation="86%">2hstrike</span> Q: How do you write thread safe code in C or do you use C++ std::atomic in that case?<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:04</span><span class="author" data-hue="192" data-saturation="86%">2hstrike</span> Q: How do you write thread safe code in C or do you use C++ std::atomic in that case?<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:04</span><span class="author" data-hue="192" data-saturation="86%">2hstrike</span> Q: How do you write thread safe code in C or do you use C++ std::atomic in that case?<span class="cineraCategories"><div title="threading" class="category threading"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6704" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:51:44</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: But what if the birds don&#39;t fly in a straight line, as the crow flies?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:44</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: But what if the birds don&#39;t fly in a straight line, as the crow flies?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:44</span><span class="author" data-hue="300" data-saturation="78%">Miblo</span> Q: But what if the birds don&#39;t fly in a straight line, as the crow flies?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6715" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:51:55</span><span class="author" data-hue="205" data-saturation="89%">printf_armin</span> Q: How would you implement a game like Diggles? Like in terms of the structure for the landscape?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:55</span><span class="author" data-hue="205" data-saturation="89%">printf_armin</span> Q: How would you implement a game like Diggles? Like in terms of the structure for the landscape?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:55</span><span class="author" data-hue="205" data-saturation="89%">printf_armin</span> Q: How would you implement a game like Diggles? Like in terms of the structure for the landscape?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6845" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:54:05</span>Close it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:05</span>Close it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:05</span>Close it down<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day539/"><div>&#9196;</div><div>Next: 'Capturing Source Information for Memory Allocations'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

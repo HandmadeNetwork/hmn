@@ -1,0 +1,615 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="api, hardware, language, lighting, memory, platform layer, rendering, string manipulation, Administrivia, Chat Comment, In-Game, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Separating the Renderer Completely (Part 1)</span>
+            <div class="menu quotes">
+                <span>Quotes &#9660;</span>
+                <div class="refs quotes_container">
+                    <a target="_blank" class="ref" href="https://dev.abaines.me.uk/quotes/handmade_hero/624">
+                        <span data-id="&#945;">
+                            <span class="ref_content">
+                                <div class="source">Quote 624</div>
+                                <div class="ref_title">Welcome to Handmade Hero, the game where we code a complete show on stream</div>
+                                <div class="quote_byline">&mdash;handmade_hero, 11th August, 2018</div>
+                            </span>
+                            <div class="ref_indices">
+                                <span data-timestamp="0" class="timecode"><span class="ref_index">[&#945;]</span><span class="time">0:00</span></span>
+                            </div>
+                        </span>
+                    </a>
+                </div>
+            </div>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://msdn.microsoft.com/en-us/library/windows/desktop/ms633559.aspx" href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms633559.aspx" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">WinMain entry point</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="514" class="timecode"><span class="ref_index">[1]</span><span class="time">8:34</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://msdn.microsoft.com/en-us/library/ce3zzk1k.aspx" href="https://msdn.microsoft.com/en-us/library/ce3zzk1k.aspx" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">sprintf_s, _sprintf_s_l, swprintf_s, _swprintf_s_l</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="2351" class="timecode"><span class="ref_index">[2]</span><span class="time">39:11</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://msdn.microsoft.com/en-us/library/y13z34da.aspx" href="https://msdn.microsoft.com/en-us/library/y13z34da.aspx" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">MSDN</div>
+                            <div class="ref_title">isspace, iswspace, _isspace_l, _iswspace_l</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="4311" class="timecode"><span class="ref_index">[3]</span><span class="time">1:11:51</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content api">
+                                <span class="icon category api"></span><span class="cineraText">api</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content platform-layer">
+                                <span class="icon category platform-layer"></span><span class="cineraText">platform layer</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content string-manipulation">
+                                <span class="icon category string-manipulation"></span><span class="cineraText">string manipulation</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key">q</span> <span class="help_text">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2>Quotes and References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2>Quotes, References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="q6VHxmGoAuc"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day469/"><div>&#9195;</div><div>Previous: 'Downsampling Imported Assets'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic speech" data-ref="&#945;">
+                    <div class="cineraContent"><span class="timecode">0:00</span>&#8220;Welcome to Handmade Hero, the game where we code a complete show on stream&#8221;<sup>&#945;</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>&#8220;Welcome to Handmade Hero, the game where we code a complete show on stream&#8221;<sup>&#945;</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>&#8220;Welcome to Handmade Hero, the game where we code a complete show on stream&#8221;<sup>&#945;</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="12" class="marker cat_api speech">
+                    <div class="cineraContent"><span class="timecode">0:12</span>Set up for the special two-stream day separating out and finalising the renderer for use in a new project<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:12</span>Set up for the special two-stream day separating out and finalising the renderer for use in a new project<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:12</span>Set up for the special two-stream day separating out and finalising the renderer for use in a new project<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="284" class="marker cat_api speech">
+                    <div class="cineraContent"><span class="timecode">4:44</span>Determine to perform Snuffleupagus-Oriented Programming, creating our dream sample program to drive API development<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:44</span>Determine to perform Snuffleupagus-Oriented Programming, creating our dream sample program to drive API development<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:44</span>Determine to perform Snuffleupagus-Oriented Programming, creating our dream sample program to drive API development<span class="cineraCategories"><div title="api" class="category api"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="386" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">6:26</span>Add a renderer test bed compilation line to build.bat<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">6:26</span>Add a renderer test bed compilation line to build.bat<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">6:26</span>Add a renderer test bed compilation line to build.bat<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="514" class="marker cat_platform-layer programming" data-ref="https://msdn.microsoft.com/en-us/library/windows/desktop/ms633559.aspx">
+                    <div class="cineraContent"><span class="timecode">8:34</span>Create win32_renderer_test.cpp as a trimmed down version of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>&#39;s Windows platform layer<sup>1</sup><span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:34</span>Create win32_renderer_test.cpp as a trimmed down version of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>&#39;s Windows platform layer<sup>1</sup><span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:34</span>Create win32_renderer_test.cpp as a trimmed down version of <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span>&#39;s Windows platform layer<sup>1</sup><span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1183" class="marker cat_language programming">
+                    <div class="cineraContent"><span class="timecode">19:43</span>Create handmade_types.h, replacing global_variable with global<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:43</span>Create handmade_types.h, replacing global_variable with global<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:43</span>Create handmade_types.h, replacing global_variable with global<span class="cineraCategories"><div title="language" class="category language"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1450" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">24:10</span>Run the game just as normal<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:10</span>Run the game just as normal<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:10</span>Run the game just as normal<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1458" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">24:18</span>Set up new win32_renderer_test project<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:18</span>Set up new win32_renderer_test project<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:18</span>Set up new win32_renderer_test project<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1671" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">27:51</span>Run Handmade Hero Renderer Test to see nothing happen, as expected<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">27:51</span>Run Handmade Hero Renderer Test to see nothing happen, as expected<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">27:51</span>Run Handmade Hero Renderer Test to see nothing happen, as expected<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1684" class="marker cat_platform-layer programming">
+                    <div class="cineraContent"><span class="timecode">28:04</span>Incorporate a trimmed down Win32ProcessPendingMessages() in to win32_renderer_test.cpp<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:04</span>Incorporate a trimmed down Win32ProcessPendingMessages() in to win32_renderer_test.cpp<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:04</span>Incorporate a trimmed down Win32ProcessPendingMessages() in to win32_renderer_test.cpp<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1762" class="marker cat_platform-layer run">
+                    <div class="cineraContent"><span class="timecode">29:22</span>Run the Renderer Test and successfully resize and close the window<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:22</span>Run the Renderer Test and successfully resize and close the window<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:22</span>Run the Renderer Test and successfully resize and close the window<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1776" class="marker cat_hardware cat_platform-layer cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">29:36</span>Create win32_handmade_opengl.cpp to consolidate all our OpenGL code<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="platform layer" class="category platform-layer"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:36</span>Create win32_handmade_opengl.cpp to consolidate all our OpenGL code<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="platform layer" class="category platform-layer"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:36</span>Create win32_handmade_opengl.cpp to consolidate all our OpenGL code<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="platform layer" class="category platform-layer"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2351" class="marker cat_string-manipulation programming" data-ref="https://msdn.microsoft.com/en-us/library/ce3zzk1k.aspx">
+                    <div class="cineraContent"><span class="timecode">39:11</span>Temporarily make win32_renderer_test.cpp use stdio.h string functions in place of the game&#39;s custom ones<sup>2</sup><span class="cineraCategories"><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:11</span>Temporarily make win32_renderer_test.cpp use stdio.h string functions in place of the game&#39;s custom ones<sup>2</sup><span class="cineraCategories"><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:11</span>Temporarily make win32_renderer_test.cpp use stdio.h string functions in place of the game&#39;s custom ones<sup>2</sup><span class="cineraCategories"><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2596" class="marker cat_hardware cat_language cat_platform-layer cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">43:16</span>Continue to consolidate our types and OpenGL code<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="language" class="category language"></div><div title="platform layer" class="category platform-layer"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:16</span>Continue to consolidate our types and OpenGL code<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="language" class="category language"></div><div title="platform layer" class="category platform-layer"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:16</span>Continue to consolidate our types and OpenGL code<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="language" class="category language"></div><div title="platform layer" class="category platform-layer"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2898" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">48:18</span>Include handmade_math.h and handmade_intrinsics.h in win32_renderer_test.cpp<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">48:18</span>Include handmade_math.h and handmade_intrinsics.h in win32_renderer_test.cpp<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">48:18</span>Include handmade_math.h and handmade_intrinsics.h in win32_renderer_test.cpp<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3185" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">53:05</span>Create handmade_software_renderer.cpp to contain all the software renderer code<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:05</span>Create handmade_software_renderer.cpp to contain all the software renderer code<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:05</span>Create handmade_software_renderer.cpp to contain all the software renderer code<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3393" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">56:33</span>Rename our render files in a more organised fashion<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:33</span>Rename our render files in a more organised fashion<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:33</span>Rename our render files in a more organised fashion<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3516" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">58:36</span>Merge handmade_render.{cpp,h} and handmade_render_group.{cpp,h} into handmade_renderer.{cpp,h}<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:36</span>Merge handmade_render.{cpp,h} and handmade_render_group.{cpp,h} into handmade_renderer.{cpp,h}<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:36</span>Merge handmade_render.{cpp,h} and handmade_render_group.{cpp,h} into handmade_renderer.{cpp,h}<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3909" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:05:09</span>Run the game okay<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:09</span>Run the game okay<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:09</span>Run the game okay<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3926" class="marker cat_platform-layer programming">
+                    <div class="cineraContent"><span class="timecode">1:05:26</span>Pull out the parts of the renderer that are wedded to the platform layer<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:26</span>Pull out the parts of the renderer that are wedded to the platform layer<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:26</span>Pull out the parts of the renderer that are wedded to the platform layer<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4311" class="marker cat_string-manipulation programming" data-ref="https://msdn.microsoft.com/en-us/library/y13z34da.aspx">
+                    <div class="cineraContent"><span class="timecode">1:11:51</span>Temporarily make win32_renderer_test.cpp use further stdio.h string functions in place of the game&#39;s custom ones<sup>3</sup><span class="cineraCategories"><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:51</span>Temporarily make win32_renderer_test.cpp use further stdio.h string functions in place of the game&#39;s custom ones<sup>3</sup><span class="cineraCategories"><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:51</span>Temporarily make win32_renderer_test.cpp use further stdio.h string functions in place of the game&#39;s custom ones<sup>3</sup><span class="cineraCategories"><div title="string manipulation" class="category string-manipulation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4599" class="marker cat_platform-layer programming">
+                    <div class="cineraContent"><span class="timecode">1:16:39</span>Consider cleaning up the lighting box data<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:39</span>Consider cleaning up the lighting box data<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:39</span>Consider cleaning up the lighting box data<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4912" class="marker cat_nullTopic admin speech">
+                    <div class="cineraContent"><span class="timecode">1:21:52</span>Return from OBS crash<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:21:52</span>Return from OBS crash<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:21:52</span>Return from OBS crash<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4929" class="marker cat_memory cat_platform-layer programming">
+                    <div class="cineraContent"><span class="timecode">1:22:09</span>Move the LightBoxes from game_render_commands to render_group and relieve the operating system of allocating them for us<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="platform layer" class="category platform-layer"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:09</span>Move the LightBoxes from game_render_commands to render_group and relieve the operating system of allocating them for us<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:09</span>Move the LightBoxes from game_render_commands to render_group and relieve the operating system of allocating them for us<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="platform layer" class="category platform-layer"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5503" class="marker cat_memory admin">
+                    <div class="cineraContent"><span class="timecode">1:31:43</span>Prevent PushLighting() from being called twice, also moving handmade_render.{cpp,h} and handmade_render_group.{cpp,h} into the &quot;retired&quot; directory<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:43</span>Prevent PushLighting() from being called twice, also moving handmade_render.{cpp,h} and handmade_render_group.{cpp,h} into the &quot;retired&quot; directory<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:43</span>Prevent PushLighting() from being called twice, also moving handmade_render.{cpp,h} and handmade_render_group.{cpp,h} into the &quot;retired&quot; directory<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5712" class="marker cat_lighting cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:35:12</span>Run the game to see the lighting working just fine<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:12</span>Run the game to see the lighting working just fine<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:12</span>Run the game to see the lighting working just fine<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5748" class="marker cat_api cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">1:35:48</span>Determine to generalise texture management<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:35:48</span>Determine to generalise texture management<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:35:48</span>Determine to generalise texture management<span class="cineraCategories"><div title="api" class="category api"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5849" class="marker cat_hardware cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:37:29</span>Change win32_renderer_test.cpp to be OpenGL only<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:37:29</span>Change win32_renderer_test.cpp to be OpenGL only<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:37:29</span>Change win32_renderer_test.cpp to be OpenGL only<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6064" class="marker cat_memory speech">
+                    <div class="cineraContent"><span class="timecode">1:41:04</span>Set up to test the OpenGL memory allocation<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:04</span>Set up to test the OpenGL memory allocation<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:04</span>Set up to test the OpenGL memory allocation<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6152" class="marker cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">1:42:32</span>Enable win32_renderer_test.cpp to allocate OpenGL buffers<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:42:32</span>Enable win32_renderer_test.cpp to allocate OpenGL buffers<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:42:32</span>Enable win32_renderer_test.cpp to allocate OpenGL buffers<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6376" class="marker cat_hardware cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">1:46:16</span>Step through win32_renderer_test.cpp to see that all is okay<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:16</span>Step through win32_renderer_test.cpp to see that all is okay<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:16</span>Step through win32_renderer_test.cpp to see that all is okay<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6585" class="marker cat_hardware cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">1:49:45</span>Make win32_renderer_test.cpp call PushFullClear() and hit the situation where we need to talk to the renderer<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:45</span>Make win32_renderer_test.cpp call PushFullClear() and hit the situation where we need to talk to the renderer<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:45</span>Make win32_renderer_test.cpp call PushFullClear() and hit the situation where we need to talk to the renderer<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6762" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:52:42</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:42</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:42</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6804" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:53:24</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: Are you going to check the recording that ended in an app crash?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:24</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: Are you going to check the recording that ended in an app crash?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:24</span><span class="author" data-hue="77" data-saturation="99%">jim0_o</span> Q: Are you going to check the recording that ended in an app crash?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6857" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">1:54:17</span><span class="author" data-hue="190" data-saturation="91%">genos3</span> Q: Is Vulkan worthwhile for the performance gain over OpenGL?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:17</span><span class="author" data-hue="190" data-saturation="91%">genos3</span> Q: Is Vulkan worthwhile for the performance gain over OpenGL?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:17</span><span class="author" data-hue="190" data-saturation="91%">genos3</span> Q: Is Vulkan worthwhile for the performance gain over OpenGL?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6932" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">1:55:32</span><span class="author" data-hue="257" data-saturation="74%">sratke</span> Q: Will you take this opportunity to implement the d3d backend?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:55:32</span><span class="author" data-hue="257" data-saturation="74%">sratke</span> Q: Will you take this opportunity to implement the d3d backend?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:55:32</span><span class="author" data-hue="257" data-saturation="74%">sratke</span> Q: Will you take this opportunity to implement the d3d backend?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6966" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:56:06</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> How long is lunch break?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:06</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> How long is lunch break?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:06</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> How long is lunch break?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6983" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">1:56:23</span><span class="author" data-hue="190" data-saturation="91%">genos3</span> Q: Are there practical solutions to reducing the fill rate in the software renderer?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:23</span><span class="author" data-hue="190" data-saturation="91%">genos3</span> Q: Are there practical solutions to reducing the fill rate in the software renderer?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:23</span><span class="author" data-hue="190" data-saturation="91%">genos3</span> Q: Are there practical solutions to reducing the fill rate in the software renderer?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7019" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">1:56:59</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Isn&#39;t every graphics API just a middleman?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:59</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Isn&#39;t every graphics API just a middleman?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:59</span><span class="author" data-hue="241" data-saturation="81%">uplinkcoder</span> Q: Isn&#39;t every graphics API just a middleman?<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7144" class="marker cat_platform-layer authored">
+                    <div class="cineraContent"><span class="timecode">1:59:04</span><span class="author" data-hue="225" data-saturation="84%">joesweeney</span> Q: How do you recommend a beginner get better at writing platform layers? Is the only way to just write a bunch of them to figure out the common patterns?<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:04</span><span class="author" data-hue="225" data-saturation="84%">joesweeney</span> Q: How do you recommend a beginner get better at writing platform layers? Is the only way to just write a bunch of them to figure out the common patterns?<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:04</span><span class="author" data-hue="225" data-saturation="84%">joesweeney</span> Q: How do you recommend a beginner get better at writing platform layers? Is the only way to just write a bunch of them to figure out the common patterns?<span class="cineraCategories"><div title="platform layer" class="category platform-layer"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7164" class="marker cat_api authored">
+                    <div class="cineraContent"><span class="timecode">1:59:24</span><span class="author" data-hue="142" data-saturation="91%">Rounin</span> Q: I&#39;m one of the Linux people. Please don&#39;t give us Vulkan<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:24</span><span class="author" data-hue="142" data-saturation="91%">Rounin</span> Q: I&#39;m one of the Linux people. Please don&#39;t give us Vulkan<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:24</span><span class="author" data-hue="142" data-saturation="91%">Rounin</span> Q: I&#39;m one of the Linux people. Please don&#39;t give us Vulkan<span class="cineraCategories"><div title="api" class="category api"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7253" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:00:53</span>Close it down for a timezone-appropriate meal<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:00:53</span>Close it down for a timezone-appropriate meal<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:00:53</span>Close it down for a timezone-appropriate meal<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day471/"><div>&#9196;</div><div>Next: 'Separating the Renderer Completely (Part 2)'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

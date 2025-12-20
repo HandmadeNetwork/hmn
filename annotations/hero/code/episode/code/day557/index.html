@@ -1,0 +1,859 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="asm, asset system, caching, camera, data structure, debug system, entity system, geometry, hardware, language, lighting, mathematics, performance, rendering, Chat Comment, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Basic Dynamic Quad Output Optimizations</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://discord.gg/mollyrocket" href="https://discord.gg/mollyrocket" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Discord</div>
+                            <div class="ref_title">MollyRocket</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="0" class="timecode"><span class="ref_index">[1]</span><span class="time">0:00</span></span><span data-timestamp="8005" class="timecode"><span class="ref_index">[2]</span><span class="time">2:13:25</span></span><span data-timestamp="9229" class="timecode"><span class="ref_index">[5]</span><span class="time">2:33:49</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://pastebin.com/ML2TLeAf" href="https://pastebin.com/ML2TLeAf" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">pastebin</div>
+                            <div class="ref_title">ML2TLeAf</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8323" class="timecode"><span class="ref_index">[3]</span><span class="time">2:18:43</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.youtube.com/watch?v=iBpolaB4DqA" href="https://www.youtube.com/watch?v=iBpolaB4DqA" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">TeranGroup (YouTube)</div>
+                            <div class="ref_title">A Thermomechanical Material Point Method for Baking and Cooking</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="8792" class="timecode"><span class="ref_index">[4]</span><span class="time">2:26:32</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content asm">
+                                <span class="icon category asm"></span><span class="cineraText">asm</span>
+                            </div>
+                            <div class="filter_content asset-system">
+                                <span class="icon category asset-system"></span><span class="cineraText">asset system</span>
+                            </div>
+                            <div class="filter_content caching">
+                                <span class="icon category caching"></span><span class="cineraText">caching</span>
+                            </div>
+                            <div class="filter_content camera">
+                                <span class="icon category camera"></span><span class="cineraText">camera</span>
+                            </div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content debug-system">
+                                <span class="icon category debug-system"></span><span class="cineraText">debug system</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content geometry">
+                                <span class="icon category geometry"></span><span class="cineraText">geometry</span>
+                            </div>
+                            <div class="filter_content hardware">
+                                <span class="icon category hardware"></span><span class="cineraText">hardware</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="4RQ8fMyN4Tw"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day556/"><div>&#9195;</div><div>Previous: 'Optimizing Depth Peeling and Multisample Resolves'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_nullTopic speech" data-ref="https://discord.gg/mollyrocket">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Plug Molly Rocket&#39;s Discord channel<sup>1</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Plug Molly Rocket&#39;s Discord channel<sup>1</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Plug Molly Rocket&#39;s Discord channel<sup>1</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="123" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:03</span>Recap our multisampling improvements<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03</span>Recap our multisampling improvements<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03</span>Recap our multisampling improvements<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="251" class="marker cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">4:11</span>A few words on deferred rendering<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:11</span>A few words on deferred rendering<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:11</span>A few words on deferred rendering<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="430" class="marker cat_lighting cat_rendering speech">
+                    <div class="cineraContent"><span class="timecode">7:10</span>Lessening the bandwidth requirements of the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:10</span>Lessening the bandwidth requirements of the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:10</span>Lessening the bandwidth requirements of the lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="518" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">8:38</span>Determine to optimise our ground cover output<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">8:38</span>Determine to optimise our ground cover output<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">8:38</span>Determine to optimise our ground cover output<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="579" class="marker cat_performance run">
+                    <div class="cineraContent"><span class="timecode">9:39</span>Check out our time per frame: 10ms<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:39</span>Check out our time per frame: 10ms<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:39</span>Check out our time per frame: 10ms<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="676" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">11:16</span>Reacquaint ourselves with DrawGroundCover()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:16</span>Reacquaint ourselves with DrawGroundCover()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:16</span>Reacquaint ourselves with DrawGroundCover()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="737" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">12:17</span>Enable DrawGroundCover()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:17</span>Enable DrawGroundCover()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:17</span>Enable DrawGroundCover()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="744" class="marker cat_entity-system cat_performance cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">12:24</span>RenderGroundCover took 0.3%, and now takes 17% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">12:24</span>RenderGroundCover took 0.3%, and now takes 17% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">12:24</span>RenderGroundCover took 0.3%, and now takes 17% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="815" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">13:35</span>Hit our MaxVertexCount assertion<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:35</span>Hit our MaxVertexCount assertion<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:35</span>Hit our MaxVertexCount assertion<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="845" class="marker cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">14:05</span>Increase MaxQuadCountPerFrame fourfold<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:05</span>Increase MaxQuadCountPerFrame fourfold<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:05</span>Increase MaxQuadCountPerFrame fourfold<span class="cineraCategories"><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="892" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">14:52</span>Again consult the Frames breakdown and hit our MaxVertexCount assertion<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:52</span>Again consult the Frames breakdown and hit our MaxVertexCount assertion<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:52</span>Again consult the Frames breakdown and hit our MaxVertexCount assertion<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="982" class="marker cat_debug-system cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">16:22</span>Remove entity timing blocks<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">16:22</span>Remove entity timing blocks<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">16:22</span>Remove entity timing blocks<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1032" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">17:12</span>Again consult the Frames breakdown and hit our MaxVertexCount assertion<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:12</span>Again consult the Frames breakdown and hit our MaxVertexCount assertion<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:12</span>Again consult the Frames breakdown and hit our MaxVertexCount assertion<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1130" class="marker cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">18:50</span>Investigate why we are hitting the MaxVertexCount<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">18:50</span>Investigate why we are hitting the MaxVertexCount<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">18:50</span>Investigate why we are hitting the MaxVertexCount<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1224" class="marker cat_asset-system cat_debug-system programming">
+                    <div class="cineraContent"><span class="timecode">20:24</span>Stop GetBestMatchAssetFrom() being a TIMED_FUNCTION<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:24</span>Stop GetBestMatchAssetFrom() being a TIMED_FUNCTION<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:24</span>Stop GetBestMatchAssetFrom() being a TIMED_FUNCTION<span class="cineraCategories"><div title="asset system" class="category asset-system"></div><div title="debug system" class="category debug-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1300" class="marker cat_performance cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">21:40</span>Consult the Frames breakdown without hitting our MaxVertexCount assertion<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">21:40</span>Consult the Frames breakdown without hitting our MaxVertexCount assertion<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">21:40</span>Consult the Frames breakdown without hitting our MaxVertexCount assertion<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1346" class="marker cat_debug-system cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">22:26</span>Rather than timing UpdateAndRenderEntities() entirely, just time DrawGroundCover<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:26</span>Rather than timing UpdateAndRenderEntities() entirely, just time DrawGroundCover<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:26</span>Rather than timing UpdateAndRenderEntities() entirely, just time DrawGroundCover<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1458" class="marker cat_entity-system cat_performance cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">24:18</span>DrawGroundCover takes 26% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:18</span>DrawGroundCover takes 26% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:18</span>DrawGroundCover takes 26% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1492" class="marker cat_performance cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">24:52</span>Capture a frame to see that the GPU is not struggling to render our ground cover<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">24:52</span>Capture a frame to see that the GPU is not struggling to render our ground cover<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">24:52</span>Capture a frame to see that the GPU is not struggling to render our ground cover<span class="cineraCategories"><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1593" class="marker cat_caching cat_debug-system cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">26:33</span>Plan to time DrawGroundCover(), and maybe cache PushQuad()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">26:33</span>Plan to time DrawGroundCover(), and maybe cache PushQuad()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">26:33</span>Plan to time DrawGroundCover(), and maybe cache PushQuad()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1774" class="marker cat_debug-system cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">29:34</span>Time the &quot;Computation&quot; code in DrawGroundCover()<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">29:34</span>Time the &quot;Computation&quot; code in DrawGroundCover()<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">29:34</span>Time the &quot;Computation&quot; code in DrawGroundCover()<span class="cineraCategories"><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1840" class="marker cat_entity-system cat_performance run">
+                    <div class="cineraContent"><span class="timecode">30:40</span>DrawGroundCover takes 4% and the Computation takes 19% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">30:40</span>DrawGroundCover takes 4% and the Computation takes 19% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">30:40</span>DrawGroundCover takes 4% and the Computation takes 19% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1891" class="marker cat_caching cat_debug-system cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">31:31</span>Endeavour to speed up our DrawGroundCover Computation, using caching<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:31</span>Endeavour to speed up our DrawGroundCover Computation, using caching<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:31</span>Endeavour to speed up our DrawGroundCover Computation, using caching<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="debug system" class="category debug-system"></div><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2192" class="marker cat_data-structure cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">36:32</span>Rework ground_cover to facilitate faster ground cover generation<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">36:32</span>Rework ground_cover to facilitate faster ground cover generation<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">36:32</span>Rework ground_cover to facilitate faster ground cover generation<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2395" class="marker cat_caching cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">39:55</span>Enable DrawGroundCover() to operate on cached quads, calling OutputQuads()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">39:55</span>Enable DrawGroundCover() to operate on cached quads, calling OutputQuads()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">39:55</span>Enable DrawGroundCover() to operate on cached quads, calling OutputQuads()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2741" class="marker cat_hardware cat_language cat_performance speech">
+                    <div class="cineraContent"><span class="timecode">45:41</span>The freeness of the CPU moving a value into a destination + offset vs incrementing the destination itself<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="language" class="category language"></div><div title="performance" class="category performance"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">45:41</span>The freeness of the CPU moving a value into a destination + offset vs incrementing the destination itself<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="language" class="category language"></div><div title="performance" class="category performance"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">45:41</span>The freeness of the CPU moving a value into a destination + offset vs incrementing the destination itself<span class="cineraCategories"><div title="hardware" class="category hardware"></div><div title="language" class="category language"></div><div title="performance" class="category performance"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3058" class="marker cat_caching cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">50:58</span>Make DrawGroundCover() call explicitly indexed VertexOut() and IndexOut()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">50:58</span>Make DrawGroundCover() call explicitly indexed VertexOut() and IndexOut()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">50:58</span>Make DrawGroundCover() call explicitly indexed VertexOut() and IndexOut()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3217" class="marker cat_caching cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">53:37</span>Make DrawGroundCover() acquire the TextureIndex, and relieve it of getting the bitmap info<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:37</span>Make DrawGroundCover() acquire the TextureIndex, and relieve it of getting the bitmap info<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:37</span>Make DrawGroundCover() acquire the TextureIndex, and relieve it of getting the bitmap info<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3384" class="marker cat_caching cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">56:24</span>Make FillUnpackedEntity() get the bitmap info, introducing v4 and v3 versions of FinalizeColor()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:24</span>Make FillUnpackedEntity() get the bitmap info, introducing v4 and v3 versions of FinalizeColor()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:24</span>Make FillUnpackedEntity() get the bitmap info, introducing v4 and v3 versions of FinalizeColor()<span class="cineraCategories"><div title="caching" class="category caching"></div><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3714" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:01:54</span>Clean up PushSprite()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:01:54</span>Clean up PushSprite()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:01:54</span>Clean up PushSprite()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3735" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:02:15</span>Consider making PushSprite() work with pre-calculated values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:15</span>Consider making PushSprite() work with pre-calculated values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:15</span>Consider making PushSprite() work with pre-calculated values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3911" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:05:11</span>Make FillUnpackedEntity() compute the ground cover&#39;s P and UV values previously done by PushSprite() and PushQuad(), introducing GetUVScaleForBitmap(), GetUVScaleForRegularTexture() and GetUVScaleForSpecialTexture()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:11</span>Make FillUnpackedEntity() compute the ground cover&#39;s P and UV values previously done by PushSprite() and PushQuad(), introducing GetUVScaleForBitmap(), GetUVScaleForRegularTexture() and GetUVScaleForSpecialTexture()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:11</span>Make FillUnpackedEntity() compute the ground cover&#39;s P and UV values previously done by PushSprite() and PushQuad(), introducing GetUVScaleForBitmap(), GetUVScaleForRegularTexture() and GetUVScaleForSpecialTexture()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4707" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:18:27</span>Consider why SpriteValuesForUpright() problematically takes a RenderGroup<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:27</span>Consider why SpriteValuesForUpright() problematically takes a RenderGroup<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:27</span>Consider why SpriteValuesForUpright() problematically takes a RenderGroup<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4821" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:20:21</span>Introduce a version of SpriteValuesForUpright() that takes a WorldUp, CameraUp and XAxisH, instead of a RenderGroup, for FillUnpackedEntity() to call<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:20:21</span>Introduce a version of SpriteValuesForUpright() that takes a WorldUp, CameraUp and XAxisH, instead of a RenderGroup, for FillUnpackedEntity() to call<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:20:21</span>Introduce a version of SpriteValuesForUpright() that takes a WorldUp, CameraUp and XAxisH, instead of a RenderGroup, for FillUnpackedEntity() to call<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5160" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:26:00</span>Introduce indexed_vertex_output, OutputQuads(), VertexOut(), QuadIndexOut() and a version of Advance that takes an indexed_vertex_output<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:26:00</span>Introduce indexed_vertex_output, OutputQuads(), VertexOut(), QuadIndexOut() and a version of Advance that takes an indexed_vertex_output<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:26:00</span>Introduce indexed_vertex_output, OutputQuads(), VertexOut(), QuadIndexOut() and a version of Advance that takes an indexed_vertex_output<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6450" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:47:30</span>Hit our assertion in the SafeTruncateToU16() call in OutputQuads()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:30</span>Hit our assertion in the SafeTruncateToU16() call in OutputQuads()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:30</span>Hit our assertion in the SafeTruncateToU16() call in OutputQuads()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6489" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:48:09</span>Let OutputQuads() early-out if the VertexCount and IndexCount are both 0<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:09</span>Let OutputQuads() early-out if the VertexCount and IndexCount are both 0<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:09</span>Let OutputQuads() early-out if the VertexCount and IndexCount are both 0<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6532" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:48:52</span>Again hit our assertion in the SafeTruncateToU16() call in OutputQuads(), and investigate why<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:52</span>Again hit our assertion in the SafeTruncateToU16() call in OutputQuads(), and investigate why<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:52</span>Again hit our assertion in the SafeTruncateToU16() call in OutputQuads(), and investigate why<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6764" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:52:44</span>Understanding the batch-fitting check in GetCurrentQuads()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:44</span>Understanding the batch-fitting check in GetCurrentQuads()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:44</span>Understanding the batch-fitting check in GetCurrentQuads()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6836" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:53:56</span>Step in to OutputQuads() to see a QuadCount of 7670, which suggests we should have sunk fewer than 65752 vertices<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:56</span>Step in to OutputQuads() to see a QuadCount of 7670, which suggests we should have sunk fewer than 65752 vertices<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:56</span>Step in to OutputQuads() to see a QuadCount of 7670, which suggests we should have sunk fewer than 65752 vertices<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6891" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">1:54:51</span>Scrutinise the indexed_vertex_output versions of Advance(), and OutputQuads() and DrawGroundCover()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:54:51</span>Scrutinise the indexed_vertex_output versions of Advance(), and OutputQuads() and DrawGroundCover()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:54:51</span>Scrutinise the indexed_vertex_output versions of Advance(), and OutputQuads() and DrawGroundCover()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7053" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:57:33</span>Fix DrawGroundCover() to Advance() by 1 quad<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:33</span>Fix DrawGroundCover() to Advance() by 1 quad<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:33</span>Fix DrawGroundCover() to Advance() by 1 quad<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7069" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:57:49</span>Again hit our assertion in the SafeTruncateToU16() call in OutputQuads(), and investigate why<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:57:49</span>Again hit our assertion in the SafeTruncateToU16() call in OutputQuads(), and investigate why<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:57:49</span>Again hit our assertion in the SafeTruncateToU16() call in OutputQuads(), and investigate why<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7169" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">1:59:29</span>Step through OutputQuads() successfully for a while, concluding that it and GetCurrentQuads() may not be agreeing<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:29</span>Step through OutputQuads() successfully for a while, concluding that it and GetCurrentQuads() may not be agreeing<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:29</span>Step through OutputQuads() successfully for a while, concluding that it and GetCurrentQuads() may not be agreeing<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7303" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:01:43</span>Fix OutputQuads() to increment the QuadCount<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:43</span>Fix OutputQuads() to increment the QuadCount<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:43</span>Fix OutputQuads() to increment the QuadCount<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7386" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:03:06</span>Find that we are running okay, but not seeing the expected ground cover<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:06</span>Find that we are running okay, but not seeing the expected ground cover<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:06</span>Find that we are running okay, but not seeing the expected ground cover<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7408" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:03:28</span>Step in to DrawGroundCover() and inspect its values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:28</span>Step in to DrawGroundCover() and inspect its values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:28</span>Step in to DrawGroundCover() and inspect its values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7538" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:05:38</span>Fix FillUnpackedEntity() to set the ground cover&#39;s correct P values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:38</span>Fix FillUnpackedEntity() to set the ground cover&#39;s correct P values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:38</span>Fix FillUnpackedEntity() to set the ground cover&#39;s correct P values<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7588" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:06:28</span>See our ground cover, just with an incorrect camera up vector<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:28</span>See our ground cover, just with an incorrect camera up vector<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:28</span>See our ground cover, just with an incorrect camera up vector<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7612" class="marker cat_entity-system cat_performance cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">2:06:52</span>DrawGroundCover takes 12% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:06:52</span>DrawGroundCover takes 12% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:06:52</span>DrawGroundCover takes 12% of our frame time<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7676" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">2:07:56</span>Step it to UpdateAndRenderWorld() to get the camera&#39;s up vector<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:56</span>Step it to UpdateAndRenderWorld() to get the camera&#39;s up vector<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:56</span>Step it to UpdateAndRenderWorld() to get the camera&#39;s up vector<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7746" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">2:09:06</span>Fix the DEFAULT_CAMERA_UP<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:06</span>Fix the DEFAULT_CAMERA_UP<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:06</span>Fix the DEFAULT_CAMERA_UP<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7771" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:09:31</span>See that our ground cover is sheared<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:31</span>See that our ground cover is sheared<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:31</span>See that our ground cover is sheared<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7803" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:10:03</span>Try to fix the winding in QuadIndexOut()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:03</span>Try to fix the winding in QuadIndexOut()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:03</span>Try to fix the winding in QuadIndexOut()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7841" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:10:41</span>See that our ground cover remains wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:41</span>See that our ground cover remains wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:41</span>See that our ground cover remains wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7851" class="marker cat_entity-system research">
+                    <div class="cineraContent"><span class="timecode">2:10:51</span>Scrutinise QuadIndexOut(), and wonder if a P value is wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:51</span>Scrutinise QuadIndexOut(), and wonder if a P value is wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:51</span>Scrutinise QuadIndexOut(), and wonder if a P value is wrong<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7928" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">2:12:08</span>Fix FillUnpackedEntity() to set the ground cover&#39;s correct P[3]<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:12:08</span>Fix FillUnpackedEntity() to set the ground cover&#39;s correct P[3]<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:12:08</span>Fix FillUnpackedEntity() to set the ground cover&#39;s correct P[3]<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7936" class="marker cat_entity-system run">
+                    <div class="cineraContent"><span class="timecode">2:12:16</span>Admire our more performant ground cover<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:12:16</span>Admire our more performant ground cover<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:12:16</span>Admire our more performant ground cover<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8005" class="marker cat_nullTopic speech" data-ref="https://discord.gg/mollyrocket">
+                    <div class="cineraContent"><span class="timecode">2:13:25</span>Q&amp;A<sup>2</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:25</span>Q&amp;A<sup>2</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:25</span>Q&amp;A<sup>2</sup><span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8040" class="marker cat_entity-system authored">
+                    <div class="cineraContent"><span class="timecode">2:14:00</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Q: Should OutputQuads() (line ~1078) use a &#39;&amp;&amp;&#39; rather than &#39;||&#39; to check that both vertex / index counts are nonzero?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:14:00</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Q: Should OutputQuads() (line ~1078) use a &#39;&amp;&amp;&#39; rather than &#39;||&#39; to check that both vertex / index counts are nonzero?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:14:00</span><span class="author" data-hue="187" data-saturation="84%">x13pixels</span> Q: Should OutputQuads() (line ~1078) use a &#39;&amp;&amp;&#39; rather than &#39;||&#39; to check that both vertex / index counts are nonzero?<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8111" class="marker cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:15:11</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: So next step to optimize that is to do instancing rendering for the ground cover?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:15:11</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: So next step to optimize that is to do instancing rendering for the ground cover?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:15:11</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: So next step to optimize that is to do instancing rendering for the ground cover?<span class="cineraCategories"><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8267" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:17:47</span><span class="author" data-hue="358" data-saturation="78%">pragma</span> Q: Maybe it would be easier to do the upright sprite calculaiton in the vertex shader instead?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:47</span><span class="author" data-hue="358" data-saturation="78%">pragma</span> Q: Maybe it would be easier to do the upright sprite calculaiton in the vertex shader instead?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:47</span><span class="author" data-hue="358" data-saturation="78%">pragma</span> Q: Maybe it would be easier to do the upright sprite calculaiton in the vertex shader instead?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8323" class="marker cat_asm cat_language authored" data-ref="https://pastebin.com/ML2TLeAf">
+                    <div class="cineraContent"><span class="timecode">2:18:43</span><span class="author" data-hue="56" data-saturation="90%">Ryan</span> Q: Speaking of getting the compiler to output the right instructions, I have been toying with a lower level &#39;language&#39; (assembly without the friction really). Would love to hear your thoughts (super simple example)<sup>3</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:43</span><span class="author" data-hue="56" data-saturation="90%">Ryan</span> Q: Speaking of getting the compiler to output the right instructions, I have been toying with a lower level &#39;language&#39; (assembly without the friction really). Would love to hear your thoughts (super simple example)<sup>3</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:43</span><span class="author" data-hue="56" data-saturation="90%">Ryan</span> Q: Speaking of getting the compiler to output the right instructions, I have been toying with a lower level &#39;language&#39; (assembly without the friction really). Would love to hear your thoughts (super simple example)<sup>3</sup><span class="cineraCategories"><div title="asm" class="category asm"></div><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8613" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:23:33</span><span class="author" data-hue="212" data-saturation="78%">frostyNinja</span> Q: Do you ever feel like the verbosity of passing around an often-used pointer like game_assets in <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> is too much hassle or do you find it&#39;s more beneficial in the long run over a global?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:33</span><span class="author" data-hue="212" data-saturation="78%">frostyNinja</span> Q: Do you ever feel like the verbosity of passing around an often-used pointer like game_assets in <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> is too much hassle or do you find it&#39;s more beneficial in the long run over a global?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:33</span><span class="author" data-hue="212" data-saturation="78%">frostyNinja</span> Q: Do you ever feel like the verbosity of passing around an often-used pointer like game_assets in <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span> is too much hassle or do you find it&#39;s more beneficial in the long run over a global?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8787" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:26:27</span><span class="author" data-hue="201" data-saturation="79%">ssd</span> Q: I think you might have missed <span class="member" data-hue="358" data-saturation="78%">pragma</span>&#39;s question above? Or maybe I missed the answer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:26:27</span><span class="author" data-hue="201" data-saturation="79%">ssd</span> Q: I think you might have missed <span class="member" data-hue="358" data-saturation="78%">pragma</span>&#39;s question above? Or maybe I missed the answer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:26:27</span><span class="author" data-hue="201" data-saturation="79%">ssd</span> Q: I think you might have missed <span class="member" data-hue="358" data-saturation="78%">pragma</span>&#39;s question above? Or maybe I missed the answer?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8792" class="marker cat_geometry authored" data-ref="https://www.youtube.com/watch?v=iBpolaB4DqA">
+                    <div class="cineraContent"><span class="timecode">2:26:32</span><span class="author" data-hue="349" data-saturation="97%">platin21</span> Q: How would you go about breakable surfaces, not like in a voxel style?<sup>4</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:26:32</span><span class="author" data-hue="349" data-saturation="97%">platin21</span> Q: How would you go about breakable surfaces, not like in a voxel style?<sup>4</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:26:32</span><span class="author" data-hue="349" data-saturation="97%">platin21</span> Q: How would you go about breakable surfaces, not like in a voxel style?<sup>4</sup><span class="cineraCategories"><div title="geometry" class="category geometry"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9167" class="marker cat_mathematics authored">
+                    <div class="cineraContent"><span class="timecode">2:32:47</span><span class="author" data-hue="156" data-saturation="83%">simpalaxy</span> Q: Early in the series, you said you wanted to try to make your own math functions. Have you gotten around to doing that yet?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:32:47</span><span class="author" data-hue="156" data-saturation="83%">simpalaxy</span> Q: Early in the series, you said you wanted to try to make your own math functions. Have you gotten around to doing that yet?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:32:47</span><span class="author" data-hue="156" data-saturation="83%">simpalaxy</span> Q: Early in the series, you said you wanted to try to make your own math functions. Have you gotten around to doing that yet?<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="9229" class="marker cat_lighting speech" data-ref="https://discord.gg/mollyrocket">
+                    <div class="cineraContent"><span class="timecode">2:33:49</span>Wrap it up with a plug of Molly Rocket&#39;s Discord channel<sup>5</sup> and glimpse into the future of lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:33:49</span>Wrap it up with a plug of Molly Rocket&#39;s Discord channel<sup>5</sup> and glimpse into the future of lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:33:49</span>Wrap it up with a plug of Molly Rocket&#39;s Discord channel<sup>5</sup> and glimpse into the future of lighting<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day558/"><div>&#9196;</div><div>Next: 'Assigning Lighting Probe Slots'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

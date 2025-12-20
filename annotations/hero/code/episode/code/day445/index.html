@@ -1,0 +1,712 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="camera, data structure, debug visualisation, entity system, graph topology, language, lighting, memory, optimisation, performance, procedural generation, rendering, simulation, Administrivia, Chat Comment, In-Game, Programming, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Cleaning Up Entity Creation</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="9781558601901" href="https://isbndb.com/book/9781558601901" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Jim Gray and Andreas Reuter</div>
+                            <div class="ref_title">Transaction Processing: Concepts and Techniques</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="796" class="timecode"><span class="ref_index">[1]</span><span class="time">13:16</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content camera">
+                                <span class="icon category camera"></span><span class="cineraText">camera</span>
+                            </div>
+                            <div class="filter_content data-structure">
+                                <span class="icon category data-structure"></span><span class="cineraText">data structure</span>
+                            </div>
+                            <div class="filter_content debug-visualisation">
+                                <span class="icon category debug-visualisation"></span><span class="cineraText">debug visualisation</span>
+                            </div>
+                            <div class="filter_content entity-system">
+                                <span class="icon category entity-system"></span><span class="cineraText">entity system</span>
+                            </div>
+                            <div class="filter_content graph-topology">
+                                <span class="icon category graph-topology"></span><span class="cineraText">graph topology</span>
+                            </div>
+                            <div class="filter_content language">
+                                <span class="icon category language"></span><span class="cineraText">language</span>
+                            </div>
+                            <div class="filter_content lighting">
+                                <span class="icon category lighting"></span><span class="cineraText">lighting</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content optimisation">
+                                <span class="icon category optimisation"></span><span class="cineraText">optimisation</span>
+                            </div>
+                            <div class="filter_content performance">
+                                <span class="icon category performance"></span><span class="cineraText">performance</span>
+                            </div>
+                            <div class="filter_content procedural-generation">
+                                <span class="icon category procedural-generation"></span><span class="cineraText">procedural generation</span>
+                            </div>
+                            <div class="filter_content rendering">
+                                <span class="icon category rendering"></span><span class="cineraText">rendering</span>
+                            </div>
+                            <div class="filter_content simulation">
+                                <span class="icon category simulation"></span><span class="cineraText">simulation</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="hhrb6g2OPLI"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day444/"><div>&#9195;</div><div>Previous: 'Stubbing Out the World Generator'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="1" class="marker cat_graph-topology cat_procedural-generation speech">
+                    <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day, laying out rooms in a constraint- or evaluation-based manner<span class="cineraCategories"><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day, laying out rooms in a constraint- or evaluation-based manner<span class="cineraCategories"><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:01</span>Recap and set the stage for the day, laying out rooms in a constraint- or evaluation-based manner<span class="cineraCategories"><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="432" class="marker cat_lighting cat_rendering programming">
+                    <div class="cineraContent"><span class="timecode">7:12</span>Toggle off superfluous test code in GenerateLightingPattern()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:12</span>Toggle off superfluous test code in GenerateLightingPattern()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:12</span>Toggle off superfluous test code in GenerateLightingPattern()<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="566" class="marker cat_lighting cat_performance cat_rendering run">
+                    <div class="cineraContent"><span class="timecode">9:26</span>Run the game to see that we load up faster<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:26</span>Run the game to see that we load up faster<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:26</span>Run the game to see that we load up faster<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="performance" class="category performance"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="589" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">9:49</span>Toggle off the existing test world generation code in CreateWorld()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:49</span>Toggle off the existing test world generation code in CreateWorld()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:49</span>Toggle off the existing test world generation code in CreateWorld()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="670" class="marker cat_data-structure cat_graph-topology cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">11:10</span>Begin to implement gen_connection<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">11:10</span>Begin to implement gen_connection<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">11:10</span>Begin to implement gen_connection<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="796" class="marker cat_data-structure speech" data-ref="9781558601901">
+                    <div class="cineraContent"><span class="timecode">13:16</span>The distinction between Database and Winged-Edge Data Structure, with a recommendation to read &#39;Transaction Processing&#39; by Jim Gray<sup>1</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:16</span>The distinction between Database and Winged-Edge Data Structure, with a recommendation to read &#39;Transaction Processing&#39; by Jim Gray<sup>1</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:16</span>The distinction between Database and Winged-Edge Data Structure, with a recommendation to read &#39;Transaction Processing&#39; by Jim Gray<sup>1</sup><span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1064" class="marker cat_data-structure cat_graph-topology cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">17:44</span>Spec out gen_room_connection as a linked list of connections to a single room<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:44</span>Spec out gen_room_connection as a linked list of connections to a single room<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:44</span>Spec out gen_room_connection as a linked list of connections to a single room<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1204" class="marker cat_data-structure cat_graph-topology cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">20:04</span>Spec out gen_connection itself as a linked list of its two connected rooms, with gen_room_connection as a linked list of these connections<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:04</span>Spec out gen_connection itself as a linked list of its two connected rooms, with gen_room_connection as a linked list of these connections<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:04</span>Spec out gen_connection itself as a linked list of its two connected rooms, with gen_room_connection as a linked list of these connections<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1330" class="marker cat_data-structure cat_graph-topology cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">22:10</span>Implement this more verbose version, introducing AddConnection() for Connect() to call, and making GenRoom() link up the rooms<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:10</span>Implement this more verbose version, introducing AddConnection() for Connect() to call, and making GenRoom() link up the rooms<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:10</span>Implement this more verbose version, introducing AddConnection() for Connect() to call, and making GenRoom() link up the rooms<span class="cineraCategories"><div title="data structure" class="category data-structure"></div><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1726" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">28:46</span>Implement GenerateWorld(), and GenerateRoom() to do the old work of AddStandardRoom()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:46</span>Implement GenerateWorld(), and GenerateRoom() to do the old work of AddStandardRoom()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:46</span>Implement GenerateWorld(), and GenerateRoom() to do the old work of AddStandardRoom()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2491" class="marker cat_entity-system cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">41:31</span>Make GenerateRoom() call BeginWorldChange() and EndWorldChange(), and begin to systematise the entity system inside the world generator working off a sim_region, respecifying BeginEntity() and EndEntity() as AddEntity() and PlaceEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:31</span>Make GenerateRoom() call BeginWorldChange() and EndWorldChange(), and begin to systematise the entity system inside the world generator working off a sim_region, respecifying BeginEntity() and EndEntity() as AddEntity() and PlaceEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:31</span>Make GenerateRoom() call BeginWorldChange() and EndWorldChange(), and begin to systematise the entity system inside the world generator working off a sim_region, respecifying BeginEntity() and EndEntity() as AddEntity() and PlaceEntity()<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3532" class="marker cat_entity-system cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">58:52</span>Relieve EndSim() and EndWorldChange() of taking the World, and create handmade_room_gen.cpp<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">58:52</span>Relieve EndSim() and EndWorldChange() of taking the World, and create handmade_room_gen.cpp<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">58:52</span>Relieve EndSim() and EndWorldChange() of taking the World, and create handmade_room_gen.cpp<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3736" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">1:02:16</span>Disable transparency compositing in GNOME 3<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:02:16</span>Disable transparency compositing in GNOME 3<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:02:16</span>Disable transparency compositing in GNOME 3<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3814" class="marker cat_entity-system programming">
+                    <div class="cineraContent"><span class="timecode">1:03:34</span>Pull the entity creation code from handmade_world_gen.cpp into handmade_room_gen.cpp<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:03:34</span>Pull the entity creation code from handmade_world_gen.cpp into handmade_room_gen.cpp<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:03:34</span>Pull the entity creation code from handmade_world_gen.cpp into handmade_room_gen.cpp<span class="cineraCategories"><div title="entity system" class="category entity-system"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3984" class="marker cat_entity-system cat_memory cat_procedural-generation cat_simulation programming">
+                    <div class="cineraContent"><span class="timecode">1:06:24</span>Add TempMemory to the world_generator struct for GenerateRoom() to use, and setup the room&#39;s position and dimensions for entity simulation purposes<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="procedural generation" class="category procedural-generation"></div><div title="simulation" class="category simulation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:06:24</span>Add TempMemory to the world_generator struct for GenerateRoom() to use, and setup the room&#39;s position and dimensions for entity simulation purposes<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="procedural generation" class="category procedural-generation"></div><div title="simulation" class="category simulation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:06:24</span>Add TempMemory to the world_generator struct for GenerateRoom() to use, and setup the room&#39;s position and dimensions for entity simulation purposes<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="memory" class="category memory"></div><div title="procedural generation" class="category procedural-generation"></div><div title="simulation" class="category simulation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4545" class="marker cat_entity-system cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:15:45</span>Enable AddPlayer() to create a player entity, calling AddEntity() directly on the SimRegion<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:15:45</span>Enable AddPlayer() to create a player entity, calling AddEntity() directly on the SimRegion<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:15:45</span>Enable AddPlayer() to create a player entity, calling AddEntity() directly on the SimRegion<span class="cineraCategories"><div title="entity system" class="category entity-system"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4750" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:19:10</span>Implement Layout(), initially stamping down rooms in a row<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:19:10</span>Implement Layout(), initially stamping down rooms in a row<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:19:10</span>Implement Layout(), initially stamping down rooms in a row<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5143" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:25:43</span>Make CreateWorld() initialise the camera position, introducing gen_result struct<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:25:43</span>Make CreateWorld() initialise the camera position, introducing gen_result struct<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:25:43</span>Make CreateWorld() initialise the camera position, introducing gen_result struct<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5455" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:30:55</span>Run the game to see nothing<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:30:55</span>Run the game to see nothing<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:30:55</span>Run the game to see nothing<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5505" class="marker cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:31:45</span>Step through CreateWorld() into GenerateRoom() and beyond to see what happens<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:31:45</span>Step through CreateWorld() into GenerateRoom() and beyond to see what happens<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:31:45</span>Step through CreateWorld() into GenerateRoom() and beyond to see what happens<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5779" class="marker cat_camera programming">
+                    <div class="cineraContent"><span class="timecode">1:36:19</span>Make GenerateRoom() place its camera entity<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:36:19</span>Make GenerateRoom() place its camera entity<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:36:19</span>Make GenerateRoom() place its camera entity<span class="cineraCategories"><div title="camera" class="category camera"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6061" class="marker cat_camera run">
+                    <div class="cineraContent"><span class="timecode">1:41:01</span>Run the game to see that we&#39;re getting further, but have no entities<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:41:01</span>Run the game to see that we&#39;re getting further, but have no entities<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:41:01</span>Run the game to see that we&#39;re getting further, but have no entities<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6217" class="marker cat_debug-visualisation programming">
+                    <div class="cineraContent"><span class="timecode">1:43:37</span>Make UpdateAndRenderWorld() outline the screen, sim region and world sim bounds<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:37</span>Make UpdateAndRenderWorld() outline the screen, sim region and world sim bounds<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:37</span>Make UpdateAndRenderWorld() outline the screen, sim region and world sim bounds<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6239" class="marker cat_debug-visualisation run">
+                    <div class="cineraContent"><span class="timecode">1:43:59</span>Run the game to see that the sim region is not in our starting area<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:43:59</span>Run the game to see that the sim region is not in our starting area<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:43:59</span>Run the game to see that the sim region is not in our starting area<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6254" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:44:14</span>Enable CreateWorld() to set the StandardRoomDimension<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:14</span>Enable CreateWorld() to set the StandardRoomDimension<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:14</span>Enable CreateWorld() to set the StandardRoomDimension<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6337" class="marker cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:45:37</span>Run the game to see our world<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:37</span>Run the game to see our world<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:37</span>Run the game to see our world<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6444" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:47:24</span>Introduce gen_volume for gen_room and gen_connection to contain, and specify the geographical location of connections, introducing IsInVolume()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:47:24</span>Introduce gen_volume for gen_room and gen_connection to contain, and specify the geographical location of connections, introducing IsInVolume()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:47:24</span>Introduce gen_volume for gen_room and gen_connection to contain, and specify the geographical location of connections, introducing IsInVolume()<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6811" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:53:31</span>Hardcode Layout() to knock out connection holes in the rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:31</span>Hardcode Layout() to knock out connection holes in the rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:31</span>Hardcode Layout() to knock out connection holes in the rooms<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6985" class="marker cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:56:25</span>Run the game to see a partial knockout<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:25</span>Run the game to see a partial knockout<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:25</span>Run the game to see a partial knockout<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7006" class="marker cat_debug-visualisation cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:56:46</span>Enable GenerateRoom() to colour the connections<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:56:46</span>Enable GenerateRoom() to colour the connections<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:56:46</span>Enable GenerateRoom() to colour the connections<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7141" class="marker cat_debug-visualisation run">
+                    <div class="cineraContent"><span class="timecode">1:59:01</span>Run the game to see the colour<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:01</span>Run the game to see the colour<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:01</span>Run the game to see the colour<span class="cineraCategories"><div title="debug visualisation" class="category debug-visualisation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7162" class="marker cat_procedural-generation programming">
+                    <div class="cineraContent"><span class="timecode">1:59:22</span>Fix GenerateRoom() to enable IsInVolume() to test the correct tiles<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:22</span>Fix GenerateRoom() to enable IsInVolume() to test the correct tiles<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:22</span>Fix GenerateRoom() to enable IsInVolume() to test the correct tiles<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7181" class="marker cat_camera cat_procedural-generation run">
+                    <div class="cineraContent"><span class="timecode">1:59:41</span>Run the game to see our full knockouts with working camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:41</span>Run the game to see our full knockouts with working camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:41</span>Run the game to see our full knockouts with working camera<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="procedural generation" class="category procedural-generation"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7260" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:01:00</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:00</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:00</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7283" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:01:23</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: Can you please fix EndWorldgen?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:23</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: Can you please fix EndWorldgen?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:23</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: Can you please fix EndWorldgen?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7296" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:01:36</span>Make EndWorldgen() clear the TempMemoryClear()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:01:36</span>Make EndWorldgen() clear the TempMemoryClear()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:01:36</span>Make EndWorldgen() clear the TempMemoryClear()</div>
+                    </div>
+                </div>
+                <div data-timestamp="7326" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:02:06</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: The capitalisation<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:06</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: The capitalisation<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:06</span><span class="author" data-hue="212" data-saturation="78%">frostyninja</span> Q: The capitalisation<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7327" class="marker cat_nullTopic programming">
+                    <div class="cineraContent"><span class="timecode">2:02:07</span>Rename EndWorldgen() to EndWorldGen()</div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:07</span>Rename EndWorldgen() to EndWorldGen()</div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:07</span>Rename EndWorldgen() to EndWorldGen()</div>
+                    </div>
+                </div>
+                <div data-timestamp="7341" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:02:21</span><span class="author" data-hue="205" data-saturation="90%">officer_kkona</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> What is &quot;internal&quot; used for in C? Is it like the opposite of &quot;extern&quot; in C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:02:21</span><span class="author" data-hue="205" data-saturation="90%">officer_kkona</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> What is &quot;internal&quot; used for in C? Is it like the opposite of &quot;extern&quot; in C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:02:21</span><span class="author" data-hue="205" data-saturation="90%">officer_kkona</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> What is &quot;internal&quot; used for in C? Is it like the opposite of &quot;extern&quot; in C++?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7417" class="marker cat_camera cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:03:37</span><span class="author" data-hue="215" data-saturation="86%">danzaidan</span> Q: Should the light calculation always be stuck to the camera or something else?<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:37</span><span class="author" data-hue="215" data-saturation="86%">danzaidan</span> Q: Should the light calculation always be stuck to the camera or something else?<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:37</span><span class="author" data-hue="215" data-saturation="86%">danzaidan</span> Q: Should the light calculation always be stuck to the camera or something else?<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7490" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:04:50</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: By the way in some C++ header there is a definition of internal so your code would not work if any C++ file get included. I&#39;m happy with that, it prevent us from get mad<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:50</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: By the way in some C++ header there is a definition of internal so your code would not work if any C++ file get included. I&#39;m happy with that, it prevent us from get mad<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:50</span><span class="author" data-hue="229" data-saturation="89%">vaualbus</span> Q: By the way in some C++ header there is a definition of internal so your code would not work if any C++ file get included. I&#39;m happy with that, it prevent us from get mad<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7520" class="marker cat_camera authored">
+                    <div class="cineraContent"><span class="timecode">2:05:20</span><span class="author" data-hue="10" data-saturation="78%">myrcene</span> Q: What function is camera using to interpolate between two positions right now? Bezier curve? expf?<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:05:20</span><span class="author" data-hue="10" data-saturation="78%">myrcene</span> Q: What function is camera using to interpolate between two positions right now? Bezier curve? expf?<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:05:20</span><span class="author" data-hue="10" data-saturation="78%">myrcene</span> Q: What function is camera using to interpolate between two positions right now? Bezier curve? expf?<span class="cineraCategories"><div title="camera" class="category camera"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7633" class="marker cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">2:07:13</span><span class="author" data-hue="215" data-saturation="86%">danzaidan</span> Q: How much of the world gen can be done in this pass and how much would depend on more gameplay exploration stuff?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:07:13</span><span class="author" data-hue="215" data-saturation="86%">danzaidan</span> Q: How much of the world gen can be done in this pass and how much would depend on more gameplay exploration stuff?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:07:13</span><span class="author" data-hue="215" data-saturation="86%">danzaidan</span> Q: How much of the world gen can be done in this pass and how much would depend on more gameplay exploration stuff?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7778" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:09:38</span><span class="author" data-hue="11" data-saturation="99%">sahfortv</span> Q: Why does the color of the room go as it does without lighting, rather than going black?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:09:38</span><span class="author" data-hue="11" data-saturation="99%">sahfortv</span> Q: Why does the color of the room go as it does without lighting, rather than going black?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:09:38</span><span class="author" data-hue="11" data-saturation="99%">sahfortv</span> Q: Why does the color of the room go as it does without lighting, rather than going black?<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7810" class="marker cat_lighting cat_rendering run programming">
+                    <div class="cineraContent"><span class="timecode">2:10:10</span>Compare the lighting with and without the moonlight<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:10:10</span>Compare the lighting with and without the moonlight<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:10:10</span>Compare the lighting with and without the moonlight<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="In-Game" class="categoryMedium run">&#127939;</div><div title="Programming" class="categoryMedium programming">&#128430;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7870" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:11:10</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Q: Just want to randomly suggest transactional processing as a topic for some future off-topic stream<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:10</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Q: Just want to randomly suggest transactional processing as a topic for some future off-topic stream<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:10</span><span class="author" data-hue="23" data-saturation="86%">garryjohanson</span> Q: Just want to randomly suggest transactional processing as a topic for some future off-topic stream<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7878" class="marker cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">2:11:18</span><span class="author" data-hue="328" data-saturation="97%">jamoflaw</span> Q: Will there be specific locations in the world - I saw you mention an orphanage yesterday - and if so how will they be handled in a generated world?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:18</span><span class="author" data-hue="328" data-saturation="97%">jamoflaw</span> Q: Will there be specific locations in the world - I saw you mention an orphanage yesterday - and if so how will they be handled in a generated world?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:18</span><span class="author" data-hue="328" data-saturation="97%">jamoflaw</span> Q: Will there be specific locations in the world - I saw you mention an orphanage yesterday - and if so how will they be handled in a generated world?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7905" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:11:45</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> Q: How long would it take me to get up to speed on 4coder if I decide to, like, switch off the hell that is emacs?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:45</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> Q: How long would it take me to get up to speed on 4coder if I decide to, like, switch off the hell that is emacs?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:45</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> Q: How long would it take me to get up to speed on 4coder if I decide to, like, switch off the hell that is emacs?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8226" class="marker cat_language authored">
+                    <div class="cineraContent"><span class="timecode">2:17:06</span><span class="author" data-hue="39" data-saturation="92%">vateferfout</span> Q: Is there a reason you don&#39;t use __forceinline?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:06</span><span class="author" data-hue="39" data-saturation="92%">vateferfout</span> Q: Is there a reason you don&#39;t use __forceinline?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:06</span><span class="author" data-hue="39" data-saturation="92%">vateferfout</span> Q: Is there a reason you don&#39;t use __forceinline?<span class="cineraCategories"><div title="language" class="category language"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8278" class="marker cat_graph-topology cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">2:17:58</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Can you go over the architecture of how to generate the rooms (like with this generic config) briefly again?<span class="cineraCategories"><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:17:58</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Can you go over the architecture of how to generate the rooms (like with this generic config) briefly again?<span class="cineraCategories"><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:17:58</span><span class="author" data-hue="242" data-saturation="98%">pythno</span> Q: Can you go over the architecture of how to generate the rooms (like with this generic config) briefly again?<span class="cineraCategories"><div title="graph topology" class="category graph-topology"></div><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8324" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:18:44</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span> Streaming Today would be Very Doubtful<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:18:44</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span> Streaming Today would be Very Doubtful<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:18:44</span><span class="author" data-hue="277" data-saturation="88%">naysayer88</span> <span class="member" data-hue="125" data-saturation="81%">cmuratori</span> Streaming Today would be Very Doubtful<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8340" class="marker cat_lighting cat_rendering authored">
+                    <div class="cineraContent"><span class="timecode">2:19:00</span><span class="author" data-hue="42" data-saturation="88%">nxsy</span> Q: I think they meant the unlit part. The plain diffuse / albedo bit<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:19:00</span><span class="author" data-hue="42" data-saturation="88%">nxsy</span> Q: I think they meant the unlit part. The plain diffuse / albedo bit<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:19:00</span><span class="author" data-hue="42" data-saturation="88%">nxsy</span> Q: I think they meant the unlit part. The plain diffuse / albedo bit<span class="cineraCategories"><div title="lighting" class="category lighting"></div><div title="rendering" class="category rendering"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8381" class="marker cat_optimisation authored">
+                    <div class="cineraContent"><span class="timecode">2:19:41</span><span class="author" data-hue="241" data-saturation="90%">stormblaz</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Can you start optimizing your code as you go or when you reach major milestones, or do you need to wait for near-completion to optimize your code, and make sure you don&#39;t have useless coding lines bulking up?<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:19:41</span><span class="author" data-hue="241" data-saturation="90%">stormblaz</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Can you start optimizing your code as you go or when you reach major milestones, or do you need to wait for near-completion to optimize your code, and make sure you don&#39;t have useless coding lines bulking up?<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:19:41</span><span class="author" data-hue="241" data-saturation="90%">stormblaz</span> <span class="member" data-hue="304" data-saturation="94%">handmade_hero</span> Can you start optimizing your code as you go or when you reach major milestones, or do you need to wait for near-completion to optimize your code, and make sure you don&#39;t have useless coding lines bulking up?<span class="cineraCategories"><div title="optimisation" class="category optimisation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8601" class="marker cat_procedural-generation authored">
+                    <div class="cineraContent"><span class="timecode">2:23:21</span><span class="author" data-hue="11" data-saturation="99%">sahfortv</span> Q: Maybe something for next week, but can you make the boundary wall heights equal?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:21</span><span class="author" data-hue="11" data-saturation="99%">sahfortv</span> Q: Maybe something for next week, but can you make the boundary wall heights equal?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:21</span><span class="author" data-hue="11" data-saturation="99%">sahfortv</span> Q: Maybe something for next week, but can you make the boundary wall heights equal?<span class="cineraCategories"><div title="procedural generation" class="category procedural-generation"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8613" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:23:33</span>Close out<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:23:33</span>Close out<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:23:33</span>Close out<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day446/"><div>&#9196;</div><div>Next: 'Generating Possible Room Volumes'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>

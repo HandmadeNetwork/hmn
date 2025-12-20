@@ -1,0 +1,756 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="generator" content="Cinera 0.7.15">
+        <meta name="keywords" content="art, compression, error handling, file io, mathematics, memory, parsing, Administrivia, Blackboard, Chat Comment, Drawing, In-Game, Programming, Research, Speech">
+
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera.css?r=39c76375">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera__hero.css?r=29c3877c">
+        <link rel="stylesheet" type="text/css" href="https://handmade.network/public/annotations/cinera_topics.css?r=3a3f2a93">
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_pre.js?r=3e2343d1"></script>
+        <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_pre.js?r=5587322c"></script>
+    </head>
+    <body>
+        <div>
+            <div class="cineraMenus hero">
+            <span class="episode_name">Partitioning the PNG Reader for Integration</span>
+            <div class="menu references">
+                <span>References &#9660;</span>
+                <div class="refs references_container">
+                    <a data-id="https://handmadehero.org/game" href="https://handmadehero.org/game" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="ref_title">Handmade Hero</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="188" class="timecode"><span class="ref_index">[1]</span><span class="time">3:08</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.tenforums.com/software-apps/8930-windows-photo-viewer-gone-2.html#post290818" href="https://www.tenforums.com/software-apps/8930-windows-photo-viewer-gone-2.html#post290818" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">Windows 10 Forums</div>
+                            <div class="ref_title">Windows 10: Is Windows Photo Viewer gone?</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="788" class="timecode"><span class="ref_index">[2]</span><span class="time">13:08</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://www.ietf.org/rfc/rfc1951.txt" href="https://www.ietf.org/rfc/rfc1951.txt" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">IETF</div>
+                            <div class="ref_title">DEFLATE Compressed Data Format Specification version 1.3</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1945" class="timecode"><span class="ref_index">[3]</span><span class="time">32:25</span></span>
+                        </div>
+                    </a>
+                    <a data-id="http://www.ietf.org/rfc/rfc1950.txt" href="http://www.ietf.org/rfc/rfc1950.txt" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">IETF</div>
+                            <div class="ref_title">ZLIB Compressed Data Format Specification version 3.3</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1945" class="timecode"><span class="ref_index">[4]</span><span class="time">32:25</span></span>
+                        </div>
+                    </a>
+                    <a data-id="https://w3.org/TR/2003/REC-PNG-20031110/" href="https://w3.org/TR/2003/REC-PNG-20031110/" target="_blank" class="ref">
+                        <span class="ref_content">
+                            <div class="source">W3C</div>
+                            <div class="ref_title">Portable Network Graphics (PNG) Specification (Second Edition)</div>
+                        </span>
+                        <div class="ref_indices">
+                            <span data-timestamp="1945" class="timecode"><span class="ref_index">[5]</span><span class="time">32:25</span></span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <div class="menu filter">
+                <span><img src="https://handmade.network/public/annotations/cinera_icon_filter.png?r=3d831e54"></span>
+                <div class="filter_container">
+                    <div class="filter_mode exclusive">Filter mode: </div>
+                    <div class="filters">
+                        <div class="filter_topics">
+                            <div class="filter_title">Topics</div>
+                            <div class="filter_content art">
+                                <span class="icon category art"></span><span class="cineraText">art</span>
+                            </div>
+                            <div class="filter_content compression">
+                                <span class="icon category compression"></span><span class="cineraText">compression</span>
+                            </div>
+                            <div class="filter_content error-handling">
+                                <span class="icon category error-handling"></span><span class="cineraText">error handling</span>
+                            </div>
+                            <div class="filter_content file-io">
+                                <span class="icon category file-io"></span><span class="cineraText">file io</span>
+                            </div>
+                            <div class="filter_content mathematics">
+                                <span class="icon category mathematics"></span><span class="cineraText">mathematics</span>
+                            </div>
+                            <div class="filter_content memory">
+                                <span class="icon category memory"></span><span class="cineraText">memory</span>
+                            </div>
+                            <div class="filter_content parsing">
+                                <span class="icon category parsing"></span><span class="cineraText">parsing</span>
+                            </div>
+                            <div title="Timestamps that don't fit into the above topic(s) may be filtered using this pseudo-topic" class="filter_content nullTopic">
+                                <span class="icon category nullTopic"></span><span class="cineraText">(null topic)</span>
+                            </div>
+                        </div>
+                        <div class="filter_media">
+                            <div class="filter_title">Media</div>
+                            <div class="filter_content admin">
+                                <span class="icon">&#128505;</span><span class="cineraText">Administrivia</span>
+                            </div>
+                            <div class="filter_content blackboard">
+                                <span class="icon">&#128396;</span><span class="cineraText">Blackboard</span>
+                            </div>
+                            <div class="filter_content authored">
+                                <span class="icon">&#128490;</span><span class="cineraText">Chat Comment</span>
+                            </div>
+                            <div class="filter_content drawing">
+                                <span class="icon">&#127912;</span><span class="cineraText">Drawing</span>
+                            </div>
+                            <div class="filter_content run">
+                                <span class="icon">&#127939;</span><span class="cineraText">In-Game</span>
+                            </div>
+                            <div class="filter_content programming">
+                                <span class="icon">&#128430;</span><span class="cineraText">Programming</span><span class="cineraDefaultMediumIndicator" title="Default medium
+Timestamps lacking a media icon are in this medium">&#128969;</span>
+                            </div>
+                            <div class="filter_content research">
+                                <span class="icon">&#128214;</span><span class="cineraText">Research</span>
+                            </div>
+                            <div class="filter_content speech">
+                                <span class="icon">&#128489;</span><span class="cineraText">Speech</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="menu views">
+                <div class="view" data-id="theatre" title="Theatre mode">&#127917;</div>
+                <div class="views_container">
+                    <div class="view" data-id="super" title="SUPERtheatre mode">&#127967;</div>
+                </div>
+            </div>
+            <div class="menu link">
+                <span>&#128279;</span>
+                <div class="link_container">
+                    <div id="cineraLinkMode">Link to: current timestamp</div>
+                    <textarea title="Click to copy to clipboard" id="cineraLink" readonly spellcheck="false"></textarea>
+                </div>
+            </div>
+            <div class="menu credits">
+                <span>Credits</span>
+                <div class="credits_container">
+                    <span class="credit">
+                        <a class="person" href="https://handmadehero.org/" target="_blank">
+                            <div class="role">Host</div>
+                            <div class="name">Casey Muratori</div>
+                        </a>
+                        <a class="support" href="https://handmadehero.org/fund" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                    <span class="credit">
+                        <a class="person" href="https://miblo.net/" target="_blank">
+                            <div class="role">Indexer</div>
+                            <div class="name">Matt Mascarenhas</div>
+                        </a>
+                        <a class="support" href="https://miblo.net/cinera#pledge" target="_blank"><img src="https://handmade.network/public/annotations/cinera_sprite_sendowl.png?r=6899f6b0"></a>
+                    </span>
+                </div>
+            </div>
+            <div class="help">
+                <span>?</span>
+                <div class="help_container">
+                    <span class="help_key">?</span><h1>Keyboard Navigation</h1>
+
+                    <h2>Global Keys</h2>
+                    <span class="help_key">[</span>, <span class="help_key">&lt;</span> / <span class="help_key">]</span>, <span class="help_key">&gt;</span> <span class="help_text">Jump to previous / next episode</span><br>
+                    <span class="help_key">W</span>, <span class="help_key">K</span>, <span class="help_key">P</span> / <span class="help_key">S</span>, <span class="help_key">J</span>, <span class="help_key">N</span> <span class="help_text">Jump to previous / next marker</span><br>
+                    <span class="help_key">t</span> / <span class="help_key">T</span> <span class="help_text">Toggle theatre / SUPERtheatre mode</span><br>
+                    <span class="help_key">V</span> <span class="help_text">Revert filter to original state</span> <span class="help_key">Y</span> <span class="help_text">Select link (requires manual Ctrl-c)</span>
+
+                    <h2>Menu toggling</h2>
+                    <span class="help_key unavailable">q</span> <span class="help_text unavailable">Quotes</span>
+                    <span class="help_key">r</span> <span class="help_text">References</span>
+                    <span class="help_key">f</span> <span class="help_text">Filter</span>
+                    <span class="help_key">y</span> <span class="help_text">Link</span>
+                    <span class="help_key">c</span> <span class="help_text">Credits</span>
+
+                    <h2>In-Menu Movement</h2>
+                    <div class="help_paragraph">
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">a</span>
+                            </div>
+                            <div>
+                                <span class="help_key">w</span><br>
+                                <span class="help_key">s</span>
+                            </div>
+                            <div>
+                                <span class="help_key">d</span>
+                            </div>
+                        </div>
+                        <div class="key_block">
+                            <span class="help_key">h</span>
+                            <span class="help_key">j</span>
+                            <span class="help_key">k</span>
+                            <span class="help_key">l</span>
+                        </div>
+                        <div class="key_block">
+                            <div>
+                                <span class="help_key">←</span>
+                            </div>
+                            <div>
+                                <span class="help_key">↑</span><br>
+                                <span class="help_key">↓</span>
+                            </div>
+                            <div>
+                                <span class="help_key">→</span>
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <h2><span class="unavailable">Quotes and</span> References Menus</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Jump to timecode</span><br>
+
+                    <h2><span class="unavailable">Quotes,</span> References and Credits Menus</h2>                    <span class="help_key">o</span> <span class="help_text">Open URL (in new tab)</span>
+
+                    <h2>Filter Menu</h2>
+                    <span class="help_key">x</span>, <span class="help_key word">Space</span> <span class="help_text">Toggle category and focus next</span><br>
+                    <span class="help_key">X</span>, <span class="help_key word modifier">Shift</span><span class="help_key word">Space</span> <span class="help_text">Toggle category and focus previous</span><br>
+                    <span class="help_key">v</span> <span class="help_text">Invert topics / media as per focus</span>
+
+                    <h2>Filter and Link Menus</h2>
+                    <span class="help_key">z</span> <span class="help_text">Toggle filter / linking mode</span>
+
+                    <h2>Credits Menu</h2>
+                    <span class="help_key word">Enter</span> <span class="help_text">Open URL (in new tab)</span><br>
+                </div>
+            </div>
+        </div>
+        <div class="cineraPlayerContainer">
+            <div class="video_container" data-videoId="pPP4rn3DEAY"></div>
+            <div class="markers_container hero">
+                <a class="episodeMarker prev" href="https://hero.handmade.network/episode/code/day458/"><div>&#9195;</div><div>Previous: 'Debugging the PNG Reader'</div><div>&#9195;</div></a>
+            <div class="markers">
+                <div data-timestamp="0" class="marker cat_art speech">
+                    <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day working towards putting art into <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span><span class="cineraCategories"><div title="art" class="category art"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day working towards putting art into <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span><span class="cineraCategories"><div title="art" class="category art"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">0:00</span>Recap and set the stage for the day working towards putting art into <span class="project" data-hue="242" data-saturation="78%">Handmade Hero</span><span class="cineraCategories"><div title="art" class="category art"></div><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="188" class="marker cat_nullTopic authored" data-ref="https://handmadehero.org/game">
+                    <div class="cineraContent"><span class="timecode">3:08</span><span class="author" data-hue="298" data-saturation="88%">puremouron</span> Is anyone else mesmerised by the bobbing orphan on the web page<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">3:08</span><span class="author" data-hue="298" data-saturation="88%">puremouron</span> Is anyone else mesmerised by the bobbing orphan on the web page<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">3:08</span><span class="author" data-hue="298" data-saturation="88%">puremouron</span> Is anyone else mesmerised by the bobbing orphan on the web page<sup>1</sup><span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="293" class="marker cat_art admin">
+                    <div class="cineraContent"><span class="timecode">4:53</span>Unpack the new art into a dedicated directory where the artist may dump art<span class="cineraCategories"><div title="art" class="category art"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">4:53</span>Unpack the new art into a dedicated directory where the artist may dump art<span class="cineraCategories"><div title="art" class="category art"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">4:53</span>Unpack the new art into a dedicated directory where the artist may dump art<span class="cineraCategories"><div title="art" class="category art"></div><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="433" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">7:13</span>Show off item_template.png and character_template.png<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">7:13</span>Show off item_template.png and character_template.png<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">7:13</span>Show off item_template.png and character_template.png<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="560" class="marker cat_nullTopic research">
+                    <div class="cineraContent"><span class="timecode">9:20</span>Discover how to switch the default image viewer back to the one that used to be the default<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">9:20</span>Discover how to switch the default image viewer back to the one that used to be the default<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">9:20</span>Discover how to switch the default image viewer back to the one that used to be the default<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="788" class="marker cat_nullTopic admin" data-ref="https://www.tenforums.com/software-apps/8930-windows-photo-viewer-gone-2.html#post290818">
+                    <div class="cineraContent"><span class="timecode">13:08</span>Switch the default image viewer back to Windows Photo viewer<sup>2</sup><span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">13:08</span>Switch the default image viewer back to Windows Photo viewer<sup>2</sup><span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">13:08</span>Switch the default image viewer back to Windows Photo viewer<sup>2</sup><span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="868" class="marker cat_art drawing">
+                    <div class="cineraContent"><span class="timecode">14:28</span>Show off our new art<span class="cineraCategories"><div title="art" class="category art"></div><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">14:28</span>Show off our new art<span class="cineraCategories"><div title="art" class="category art"></div><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">14:28</span>Show off our new art<span class="cineraCategories"><div title="art" class="category art"></div><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1046" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">17:26</span>Set up to read our new PNGs<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">17:26</span>Set up to read our new PNGs<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">17:26</span>Set up to read our new PNGs<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1142" class="marker cat_compression cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">19:02</span>Run our PNG reader on character_hero.png and crash in ConsumeSize()<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">19:02</span>Run our PNG reader on character_hero.png and crash in ConsumeSize()<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">19:02</span>Run our PNG reader on character_hero.png and crash in ConsumeSize()<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1258" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">20:58</span>Note in ParsePNG() the need to handle BTYPE0 blocks that straddle IDAT chunk boundaries<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">20:58</span>Note in ParsePNG() the need to handle BTYPE0 blocks that straddle IDAT chunk boundaries<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">20:58</span>Note in ParsePNG() the need to handle BTYPE0 blocks that straddle IDAT chunk boundaries<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1372" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">22:52</span>Step through ParsePNG() to see that BFINAL does not get set<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">22:52</span>Step through ParsePNG() to see that BFINAL does not get set<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">22:52</span>Step through ParsePNG() to see that BFINAL does not get set<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1708" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">28:28</span>Let it run to completion, writing out our image<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:28</span>Let it run to completion, writing out our image<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:28</span>Let it run to completion, writing out our image<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1735" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">28:55</span>View character_hero.bmp to see that it looks correct but for the alpha channel<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">28:55</span>View character_hero.bmp to see that it looks correct but for the alpha channel<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">28:55</span>View character_hero.bmp to see that it looks correct but for the alpha channel<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1870" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">31:10</span>Inspect the Width and Height values, to see that they are as expected<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">31:10</span>Inspect the Width and Height values, to see that they are as expected<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">31:10</span>Inspect the Width and Height values, to see that they are as expected<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="1945" class="marker cat_nullTopic research" data-ref="https://www.ietf.org/rfc/rfc1951.txt,http://www.ietf.org/rfc/rfc1950.txt,https://w3.org/TR/2003/REC-PNG-20031110/">
+                    <div class="cineraContent"><span class="timecode">32:25</span>Consult the DEFLATE,<sup>3</sup> ZLIB<sup>4</sup> and PNG<sup>5</sup> specifications for information on BFINAL and chunk processing<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">32:25</span>Consult the DEFLATE,<sup>3</sup> ZLIB<sup>4</sup> and PNG<sup>5</sup> specifications for information on BFINAL and chunk processing<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">32:25</span>Consult the DEFLATE,<sup>3</sup> ZLIB<sup>4</sup> and PNG<sup>5</sup> specifications for information on BFINAL and chunk processing<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2512" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">41:52</span>Enable ParsePNG() to break out of its consumption loop once all the expected pixels have been consumed<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">41:52</span>Enable ParsePNG() to break out of its consumption loop once all the expected pixels have been consumed<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">41:52</span>Enable ParsePNG() to break out of its consumption loop once all the expected pixels have been consumed<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2599" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">43:19</span>Run it successfully to see that the output looks correct<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:19</span>Run it successfully to see that the output looks correct<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:19</span>Run it successfully to see that the output looks correct<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2632" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">43:52</span>Run it successfully on hand_skeleton.png<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">43:52</span>Run it successfully on hand_skeleton.png<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">43:52</span>Run it successfully on hand_skeleton.png<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2657" class="marker cat_nullTopic drawing">
+                    <div class="cineraContent"><span class="timecode">44:17</span>Inspect the output image to see that it looks correct, and wonder if Photoshop&#39;s PNG encoder is busted<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">44:17</span>Inspect the output image to see that it looks correct, and wonder if Photoshop&#39;s PNG encoder is busted<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">44:17</span>Inspect the output image to see that it looks correct, and wonder if Photoshop&#39;s PNG encoder is busted<span class="cineraCategories"><div title="Drawing" class="categoryMedium drawing">&#127912;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2815" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">46:55</span>Remove stale code from WriteImageTopDownRGBA() and note in ParsePNG() to figure out why we can&#39;t rely on BFINAL being set to 1 on the last chunk of Photoshop-exported PNG files<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">46:55</span>Remove stale code from WriteImageTopDownRGBA() and note in ParsePNG() to figure out why we can&#39;t rely on BFINAL being set to 1 on the last chunk of Photoshop-exported PNG files<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">46:55</span>Remove stale code from WriteImageTopDownRGBA() and note in ParsePNG() to figure out why we can&#39;t rely on BFINAL being set to 1 on the last chunk of Photoshop-exported PNG files<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="2987" class="marker cat_nullTopic research">
+                    <div class="cineraContent"><span class="timecode">49:47</span>Consult stb_image.h for insight into its consumption loop<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">49:47</span>Consult stb_image.h for insight into its consumption loop<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">49:47</span>Consult stb_image.h for insight into its consumption loop<span class="cineraCategories"><div title="Research" class="categoryMedium research">&#128214;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3231" class="marker cat_compression cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">53:51</span>Set up to test our PNG image with stb_image.h<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">53:51</span>Set up to test our PNG image with stb_image.h<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">53:51</span>Set up to test our PNG image with stb_image.h<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3417" class="marker cat_compression cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">56:57</span>Run stb_png_test successfully on character_hero.png<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">56:57</span>Run stb_png_test successfully on character_hero.png<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">56:57</span>Run stb_png_test successfully on character_hero.png<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3637" class="marker cat_compression cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:00:37</span>Step through stbi__parse_zlib() and into stbi__parse_uncompressed_block() to see that it processes 0-length blocks<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:00:37</span>Step through stbi__parse_zlib() and into stbi__parse_uncompressed_block() to see that it processes 0-length blocks<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:00:37</span>Step through stbi__parse_zlib() and into stbi__parse_uncompressed_block() to see that it processes 0-length blocks<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="3929" class="marker cat_compression cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:05:29</span>Investigate the handling of 0-length blocks by FlushByte() in ParsePNG(), reverting the latter to break out of its consumption loop only if BFINAL is 1<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:05:29</span>Investigate the handling of 0-length blocks by FlushByte() in ParsePNG(), reverting the latter to break out of its consumption loop only if BFINAL is 1<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:05:29</span>Investigate the handling of 0-length blocks by FlushByte() in ParsePNG(), reverting the latter to break out of its consumption loop only if BFINAL is 1<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4044" class="marker cat_nullTopic admin">
+                    <div class="cineraContent"><span class="timecode">1:07:24</span>Set up to test our PNG reader on character_hero.png<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:07:24</span>Set up to test our PNG reader on character_hero.png<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:07:24</span>Set up to test our PNG reader on character_hero.png<span class="cineraCategories"><div title="Administrivia" class="categoryMedium admin">&#128505;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4139" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:08:59</span>Break on the FlushByte() call in ParsePNG() and realise that it may be flushing more than a byte<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:08:59</span>Break on the FlushByte() call in ParsePNG() and realise that it may be flushing more than a byte<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:08:59</span>Break on the FlushByte() call in ParsePNG() and realise that it may be flushing more than a byte<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4202" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:10:02</span>Change ParsePNG() to consume 16-bits for the LEN and NLEN, and FlushByte() to only flush the remainder of the byte<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:10:02</span>Change ParsePNG() to consume 16-bits for the LEN and NLEN, and FlushByte() to only flush the remainder of the byte<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:10:02</span>Change ParsePNG() to consume 16-bits for the LEN and NLEN, and FlushByte() to only flush the remainder of the byte<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4301" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:11:41</span>Run it to see that we correctly parse character_hero.png<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:11:41</span>Run it to see that we correctly parse character_hero.png<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:11:41</span>Run it to see that we correctly parse character_hero.png<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4339" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:12:19</span>Enable ParsePNG() to parse blocks that straddle IDAT chunk boundaries, introducing RefillIfNecessary()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:12:19</span>Enable ParsePNG() to parse blocks that straddle IDAT chunk boundaries, introducing RefillIfNecessary()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:12:19</span>Enable ParsePNG() to parse blocks that straddle IDAT chunk boundaries, introducing RefillIfNecessary()<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4567" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:16:07</span>Run it to see that it still works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:07</span>Run it to see that it still works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:07</span>Run it to see that it still works<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4595" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:16:35</span>Remove the ReversedBits table<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:16:35</span>Remove the ReversedBits table<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:16:35</span>Remove the ReversedBits table<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4639" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:17:19</span>Determine to split up the PNG reader for integration into the game, while retaining the small test app<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:17:19</span>Determine to split up the PNG reader for integration into the game, while retaining the small test app<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:17:19</span>Determine to split up the PNG reader for integration into the game, while retaining the small test app<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4703" class="marker cat_compression cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:18:23</span>Create test_png.cpp to contain everything except the decoding code<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:18:23</span>Create test_png.cpp to contain everything except the decoding code<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:18:23</span>Create test_png.cpp to contain everything except the decoding code<span class="cineraCategories"><div title="compression" class="category compression"></div><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="4927" class="marker cat_error-handling programming">
+                    <div class="cineraContent"><span class="timecode">1:22:07</span>Consider supporting buffered error handling in the PNG decoder<span class="cineraCategories"><div title="error handling" class="category error-handling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:22:07</span>Consider supporting buffered error handling in the PNG decoder<span class="cineraCategories"><div title="error handling" class="category error-handling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:22:07</span>Consider supporting buffered error handling in the PNG decoder<span class="cineraCategories"><div title="error handling" class="category error-handling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5041" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:24:01</span>Create handmade_stream.cpp to contain all the stream consumption code for our PNG reader<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:24:01</span>Create handmade_stream.cpp to contain all the stream consumption code for our PNG reader<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:24:01</span>Create handmade_stream.cpp to contain all the stream consumption code for our PNG reader<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5523" class="marker cat_error-handling programming">
+                    <div class="cineraContent"><span class="timecode">1:32:03</span>Introduce Outf() to write errors into our stream, augmenting the stream struct with Errors and stream_chunk with File and LineNumber<span class="cineraCategories"><div title="error handling" class="category error-handling"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:32:03</span>Introduce Outf() to write errors into our stream, augmenting the stream struct with Errors and stream_chunk with File and LineNumber<span class="cineraCategories"><div title="error handling" class="category error-handling"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:32:03</span>Introduce Outf() to write errors into our stream, augmenting the stream struct with Errors and stream_chunk with File and LineNumber<span class="cineraCategories"><div title="error handling" class="category error-handling"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="5929" class="marker cat_error-handling cat_file-io programming">
+                    <div class="cineraContent"><span class="timecode">1:38:49</span>Make test_png.cpp initialise an Info and Error stream, pass them to ReadEntireFile() and WriteImageTopDownRGBA(), and write those stream to file using a new DumpStreamToCRT()<span class="cineraCategories"><div title="error handling" class="category error-handling"></div><div title="file io" class="category file-io"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:38:49</span>Make test_png.cpp initialise an Info and Error stream, pass them to ReadEntireFile() and WriteImageTopDownRGBA(), and write those stream to file using a new DumpStreamToCRT()<span class="cineraCategories"><div title="error handling" class="category error-handling"></div><div title="file io" class="category file-io"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:38:49</span>Make test_png.cpp initialise an Info and Error stream, pass them to ReadEntireFile() and WriteImageTopDownRGBA(), and write those stream to file using a new DumpStreamToCRT()<span class="cineraCategories"><div title="error handling" class="category error-handling"></div><div title="file io" class="category file-io"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6256" class="marker cat_memory programming">
+                    <div class="cineraContent"><span class="timecode">1:44:16</span>Introduce OnDemandMemoryStream()<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:44:16</span>Introduce OnDemandMemoryStream()<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:44:16</span>Introduce OnDemandMemoryStream()<span class="cineraCategories"><div title="memory" class="category memory"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6302" class="marker cat_nullTopic run">
+                    <div class="cineraContent"><span class="timecode">1:45:02</span>Compile and run and get no output, with a view to addressing that later<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:02</span>Compile and run and get no output, with a view to addressing that later<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:02</span>Compile and run and get no output, with a view to addressing that later<span class="cineraCategories"><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6316" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">1:45:16</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:45:16</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:45:16</span>Q&amp;A<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6389" class="marker cat_error-handling authored">
+                    <div class="cineraContent"><span class="timecode">1:46:29</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: So what is the focus now? This logging / error system?<span class="cineraCategories"><div title="error handling" class="category error-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:46:29</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: So what is the focus now? This logging / error system?<span class="cineraCategories"><div title="error handling" class="category error-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:46:29</span><span class="author" data-hue="137" data-saturation="86%">ivereadthesequel</span> Q: So what is the focus now? This logging / error system?<span class="cineraCategories"><div title="error handling" class="category error-handling"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6498" class="marker cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">1:48:18</span><span class="author" data-hue="255" data-saturation="90%">tonelessr</span> Q: I haven&#39;t been following the PNG streams closely, but how satisfied are you with the code for the reader?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:48:18</span><span class="author" data-hue="255" data-saturation="90%">tonelessr</span> Q: I haven&#39;t been following the PNG streams closely, but how satisfied are you with the code for the reader?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:48:18</span><span class="author" data-hue="255" data-saturation="90%">tonelessr</span> Q: I haven&#39;t been following the PNG streams closely, but how satisfied are you with the code for the reader?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6553" class="marker cat_parsing authored">
+                    <div class="cineraContent"><span class="timecode">1:49:13</span><span class="author" data-hue="114" data-saturation="90%">lvias</span> Q: Could you explain the bug that was solved again?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:49:13</span><span class="author" data-hue="114" data-saturation="90%">lvias</span> Q: Could you explain the bug that was solved again?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:49:13</span><span class="author" data-hue="114" data-saturation="90%">lvias</span> Q: Could you explain the bug that was solved again?<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6682" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:51:22</span><span class="author" data-hue="326" data-saturation="74%">flyinginthedark</span> Q: Is TODO comment still in the code?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:22</span><span class="author" data-hue="326" data-saturation="74%">flyinginthedark</span> Q: Is TODO comment still in the code?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:22</span><span class="author" data-hue="326" data-saturation="74%">flyinginthedark</span> Q: Is TODO comment still in the code?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6717" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:51:57</span><span class="author" data-hue="255" data-saturation="90%">tonelessr</span> Q: Any plans to switch to LLVM anytime in the series?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:51:57</span><span class="author" data-hue="255" data-saturation="90%">tonelessr</span> Q: Any plans to switch to LLVM anytime in the series?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:51:57</span><span class="author" data-hue="255" data-saturation="90%">tonelessr</span> Q: Any plans to switch to LLVM anytime in the series?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6761" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">1:52:41</span><span class="author" data-hue="342" data-saturation="89%">AsafGartner</span> Q: If Visual Studio can load PNG files, maybe it can display BMP files with alpha?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:52:41</span><span class="author" data-hue="342" data-saturation="89%">AsafGartner</span> Q: If Visual Studio can load PNG files, maybe it can display BMP files with alpha?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:52:41</span><span class="author" data-hue="342" data-saturation="89%">AsafGartner</span> Q: If Visual Studio can load PNG files, maybe it can display BMP files with alpha?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="6822" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:53:42</span>Enable WriteImageTopDownRGBA() to conditionally replace the alpha pixels with all black, and the program to output this as an extra BMP file<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:53:42</span>Enable WriteImageTopDownRGBA() to conditionally replace the alpha pixels with all black, and the program to output this as an extra BMP file<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:53:42</span>Enable WriteImageTopDownRGBA() to conditionally replace the alpha pixels with all black, and the program to output this as an extra BMP file<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7118" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">1:58:38</span>Run it and inspect our two output BMP files<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:58:38</span>Run it and inspect our two output BMP files<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:58:38</span>Run it and inspect our two output BMP files<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7140" class="marker cat_parsing programming">
+                    <div class="cineraContent"><span class="timecode">1:59:00</span>Introduce MulAlpha() to composite the alpha and non-alpha pixels<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">1:59:00</span>Introduce MulAlpha() to composite the alpha and non-alpha pixels<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">1:59:00</span>Introduce MulAlpha() to composite the alpha and non-alpha pixels<span class="cineraCategories"><div title="parsing" class="category parsing"></div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7386" class="marker cat_parsing run">
+                    <div class="cineraContent"><span class="timecode">2:03:06</span>Run it to see our premultiplied output<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:06</span>Run it to see our premultiplied output<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:06</span>Run it to see our premultiplied output<span class="cineraCategories"><div title="parsing" class="category parsing"></div><div title="In-Game" class="categoryMedium run">&#127939;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7429" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:03:49</span><span class="author" data-hue="255" data-saturation="90%">tonelessr</span> Q: This is off-topic, but will there be any blog posts on Molly Rocket for any of the projects anytime? Kind of miss those<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:03:49</span><span class="author" data-hue="255" data-saturation="90%">tonelessr</span> Q: This is off-topic, but will there be any blog posts on Molly Rocket for any of the projects anytime? Kind of miss those<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:03:49</span><span class="author" data-hue="255" data-saturation="90%">tonelessr</span> Q: This is off-topic, but will there be any blog posts on Molly Rocket for any of the projects anytime? Kind of miss those<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7445" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:04:05</span><span class="author" data-hue="97" data-saturation="79%">cynokron</span> Q: I am confused why you shift the multiply down by 8 bits. Wouldn&#39;t you want to mask with 0xFF?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:05</span><span class="author" data-hue="97" data-saturation="79%">cynokron</span> Q: I am confused why you shift the multiply down by 8 bits. Wouldn&#39;t you want to mask with 0xFF?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:05</span><span class="author" data-hue="97" data-saturation="79%">cynokron</span> Q: I am confused why you shift the multiply down by 8 bits. Wouldn&#39;t you want to mask with 0xFF?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7484" class="marker cat_mathematics blackboard">
+                    <div class="cineraContent"><span class="timecode">2:04:44</span>Basis in Fixed Point Multiply<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:04:44</span>Basis in Fixed Point Multiply<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:04:44</span>Basis in Fixed Point Multiply<span class="cineraCategories"><div title="mathematics" class="category mathematics"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7865" class="marker cat_nullTopic authored">
+                    <div class="cineraContent"><span class="timecode">2:11:05</span><span class="author" data-hue="31" data-saturation="76%">sneakybob_wot</span> Q: Can you briefly explain how the binary reverse works you implemented last week?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:05</span><span class="author" data-hue="31" data-saturation="76%">sneakybob_wot</span> Q: Can you briefly explain how the binary reverse works you implemented last week?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:05</span><span class="author" data-hue="31" data-saturation="76%">sneakybob_wot</span> Q: Can you briefly explain how the binary reverse works you implemented last week?<span class="cineraCategories"><div title="Chat Comment" class="categoryMedium authored">&#128490;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="7870" class="marker cat_memory blackboard">
+                    <div class="cineraContent"><span class="timecode">2:11:10</span>Bit Reversal<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:11:10</span>Bit Reversal<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:11:10</span>Bit Reversal<span class="cineraCategories"><div title="memory" class="category memory"></div><div title="Blackboard" class="categoryMedium blackboard">&#128396;</div></span></div>
+                    </div>
+                </div>
+                <div data-timestamp="8005" class="marker cat_nullTopic speech">
+                    <div class="cineraContent"><span class="timecode">2:13:25</span>We&#39;re all done<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    <div class="progress faded">
+                        <div class="cineraContent"><span class="timecode">2:13:25</span>We&#39;re all done<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                    <div class="progress main">
+                        <div class="cineraContent"><span class="timecode">2:13:25</span>We&#39;re all done<span class="cineraCategories"><div title="Speech" class="categoryMedium speech">&#128489;</div></span></div>
+                    </div>
+                </div>
+            </div>
+                <a class="episodeMarker next" href="https://hero.handmade.network/episode/code/day460/"><div>&#9196;</div><div>Next: 'Providing Platform File Information to the Game'</div><div>&#9196;</div></a>
+            </div>
+        </div>
+        </div>
+    <script type="text/javascript" src="https://handmade.network/public/annotations/cinera_player_post.js?r=285016ab"></script>
+    </body>
+</html>
