@@ -92,6 +92,8 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 	return nil
 }
 
+var githubRegex = regexp.MustCompile(`^(https:\/\/)?(www\.|gist\.)?github.com`)
+
 func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
 	if msg.ChannelID != config.Config.Discord.ShowcaseChannelID {
 		return false, nil
@@ -121,6 +123,24 @@ func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 		}
 
 		return true, nil
+	} else {
+		if len(msg.Embeds) > 0 {
+			// NOTE(asaf): Remove embeds if all of them are github
+			allGithub := true
+			for _, e := range msg.Embeds {
+				if !(e.Type != nil && *e.Type == "link" && e.Url != nil && githubRegex.Match([]byte(*e.Url))) {
+					allGithub = false
+					break
+				}
+			}
+
+			if !allGithub {
+				_, err := EditMessage(ctx, msg.ChannelID, msg.ID, `{ "flags": 4 }`) // 4 = SUPPRESS_EMBEDS
+				if err != nil {
+					return false, oops.New(err, "Failed to remove embeds from showcase message")
+				}
+			}
+		}
 	}
 
 	return false, nil
