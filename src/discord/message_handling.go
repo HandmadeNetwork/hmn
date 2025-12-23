@@ -128,13 +128,13 @@ func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 			// NOTE(asaf): Remove embeds if all of them are github
 			allGithub := true
 			for _, e := range msg.Embeds {
-				if !(e.Type != nil && *e.Type == "link" && e.Url != nil && githubRegex.Match([]byte(*e.Url))) {
+				if !(e.Url != nil && githubRegex.Match([]byte(*e.Url))) {
 					allGithub = false
 					break
 				}
 			}
 
-			if !allGithub {
+			if allGithub {
 				_, err := EditMessage(ctx, msg.ChannelID, msg.ID, `{ "flags": 4 }`) // 4 = SUPPRESS_EMBEDS
 				if err != nil {
 					return false, oops.New(err, "Failed to remove embeds from showcase message")
