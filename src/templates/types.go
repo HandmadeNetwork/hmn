@@ -180,6 +180,7 @@ type ProjectSettings struct {
 	Tag              string
 	JamParticipation []ProjectJamParticipation
 	JamHidden        bool
+	SortScore        int
 
 	Blurb       string
 	Description string

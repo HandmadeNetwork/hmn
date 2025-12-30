@@ -157,6 +157,7 @@ func ProjectToProjectSettings(
 		Logo:        AssetToTemplate(logo),
 		HeaderImage: AssetToTemplate(headerImage),
 		JamHidden:   p.JamHidden,
+		SortScore:   p.SortScore,
 	}
 }
 

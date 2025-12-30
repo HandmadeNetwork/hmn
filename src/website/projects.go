@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"path"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -65,15 +66,9 @@ func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error)
 
 	defer c.Perf.StartBlock("PROJECT", "Grouping and sorting").End()
 
-	var handmadeHero hmndata.ProjectAndStuff
 	var featuredProjects []hmndata.ProjectAndStuff
 	var restProjects []hmndata.ProjectAndStuff
 	for _, p := range official {
-		if p.Project.Slug == "hero" {
-			// NOTE(asaf): Handmade Hero gets special treatment. Must always be first in the list.
-			handmadeHero = p
-			continue
-		}
 		if p.Project.Featured {
 			featuredProjects = append(featuredProjects, p)
 		} else {
@@ -82,17 +77,13 @@ func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error)
 	}
 
 	sort.Slice(featuredProjects, func(i, j int) bool {
-		return featuredProjects[i].Project.AllLastUpdated.After(featuredProjects[j].Project.AllLastUpdated)
+		return featuredProjects[i].Project.SortScore > featuredProjects[j].Project.SortScore
 	})
 	sort.Slice(restProjects, func(i, j int) bool {
 		return restProjects[i].Project.AllLastUpdated.After(restProjects[j].Project.AllLastUpdated)
 	})
 
-	projects := make([]templates.Project, 0, 1+len(featuredProjects)+len(restProjects))
-	if handmadeHero.Project.ID != 0 {
-		// NOTE(asaf): As mentioned above, inserting HMH first.
-		projects = append(projects, templates.ProjectAndStuffToTemplate(&handmadeHero))
-	}
+	projects := make([]templates.Project, 0, len(featuredProjects)+len(restProjects))
 	for _, p := range featuredProjects {
 		projects = append(projects, templates.ProjectAndStuffToTemplate(&p))
 	}
@@ -662,6 +653,7 @@ type ProjectPayload struct {
 	Tag                   string
 	JamParticipationSlugs []string
 	JamHidden             bool
+	SortScore             int
 
 	Slug        string
 	SlugAliases string // comma-separated
@@ -749,6 +741,9 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	jamParticipationSlugs := c.Req.Form["jam_participation"]
 	jamHidden := c.Req.Form.Has("jam_hidden")
 
+	sortScoreStr := c.Req.Form.Get("sort_score")
+	sortScore, _ := strconv.Atoi(sortScoreStr)
+
 	res.Payload = ProjectPayload{
 		Name:                  projectName,
 		Blurb:                 shortDesc,
@@ -767,6 +762,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		SlugAliases:           slugAliases,
 		Personal:              !official,
 		Featured:              featured,
+		SortScore:             sortScore,
 	}
 
 	return res
@@ -860,7 +856,8 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 				personal = $4,
 				hidden = $5,
 				slug_aliases = $6,
-				jam_hidden = $7
+				jam_hidden = $7,
+				sort_score = $8
 			WHERE
 				id = $1
 			`,
@@ -871,6 +868,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			payload.Hidden,
 			slugAliases,
 			payload.JamHidden,
+			payload.SortScore,
 		)
 		if err != nil {
 			return oops.New(err, "Failed to update project with admin fields")
