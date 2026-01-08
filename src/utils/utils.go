@@ -29,6 +29,14 @@ func OrDefault[T comparable](v T, def T) T {
 	}
 }
 
+func OrDefaultPtr[T any](v *T, def T) T {
+	if v == nil {
+		return def
+	} else {
+		return *v
+	}
+}
+
 // Takes an (error) return and panics if there is an error.
 // Helps avoid `if err != nil` in scripts.
 func Must[E comparableError](err E) {

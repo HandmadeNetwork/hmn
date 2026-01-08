@@ -307,6 +307,10 @@ func init() {
 					OwnerName:  "Test User",
 					OwnerEmail: "test@example.org",
 				})
+			case "thankyou":
+				err = email.SendThankYouEmail(toAddress, toName, nil, "", p)
+			case "cancelled":
+				err = email.SendSubscriptionCancelledEmail(toAddress, toName, nil, p)
 			default:
 				fmt.Printf("You must provide a valid email type\n\n")
 				cmd.Usage()
@@ -576,8 +580,8 @@ func init() {
 				fmt.Printf("%v", err)
 			}
 
-			if len(errorOut.Bytes()) > 0 {
-				fmt.Printf("FFMpeg error:\n%s\n", string(errorOut.Bytes()))
+			if errorOut.Len() > 0 {
+				fmt.Printf("FFMpeg error:\n%s\n", errorOut.String())
 			}
 
 			out, err := os.Create(outFile)
@@ -638,6 +642,63 @@ func init() {
 			recipients := utils.Must1(db.Query[models.NewsletterEmail](ctx, conn, `SELECT $columns FROM newsletter_emails`))
 			for _, r := range recipients {
 				fmt.Println(r.Email)
+			}
+		},
+	})
+
+	adminCommand.AddCommand(&cobra.Command{
+		Use:   "userstripeinfo [username]",
+		Short: "Output all Stripe and payment related data for a user",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 1 {
+				fmt.Printf("You must provide a username.\n\n")
+				cmd.Usage()
+				os.Exit(1)
+			}
+			username := args[0]
+
+			ctx := context.Background()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
+
+			user, err := db.QueryOne[models.User](ctx, conn, "SELECT $columns FROM hmn_user WHERE LOWER(username) = LOWER($1)", username)
+			if err != nil {
+				fmt.Printf("Error: User '%s' not found or error occurred.\n", username)
+				return
+			}
+
+			fmt.Printf("=== Subscription Info for %s ===\n", user.Username)
+			fmt.Printf("Is Subscribed:         %v\n", user.IsSubscribed)
+			fmt.Printf("Subscription Status:   %s\n", utils.OrDefaultPtr(user.SubscriptionStatus, "N/A"))
+			fmt.Printf("Stripe Customer ID:    %s\n", utils.OrDefaultPtr(user.StripeCustomerID, "N/A"))
+			fmt.Printf("Stripe Subscription ID: %s\n", utils.OrDefaultPtr(user.StripeSubscriptionID, "N/A"))
+			if user.CurrentPeriodEnd != nil {
+				fmt.Printf("Current Period End:    %s\n", user.CurrentPeriodEnd.Format(time.RFC3339))
+			} else {
+				fmt.Printf("Current Period End:    N/A\n")
+			}
+			fmt.Printf("Cancel At Period End:  %v\n", user.CancelAtPeriodEnd)
+
+			payments, err := db.Query[models.UserPayment](ctx, conn, "SELECT $columns FROM user_payment WHERE user_id = $1 ORDER BY paid_at DESC", user.ID)
+			if err == nil && len(payments) > 0 {
+				fmt.Printf("\n=== Payment History ===\n")
+				fmt.Printf("%-30s | %-8s | %-8s | %-8s | %-8s | %-8s | %-12s | %-5s | %-20s\n", "Invoice ID", "Amount", "Fee", "Net", "Currency", "Type", "Brand/Bank", "Last4", "Paid At")
+				fmt.Println(strings.Repeat("-", 145))
+				for _, p := range payments {
+					fmt.Printf("%-30s | %-8.2f | %-8.2f | %-8.2f | %-8s | %-8s | %-12s | %-5s | %-20s\n",
+						utils.OrDefaultPtr(p.StripeInvoiceID, "N/A"),
+						float64(p.AmountCents)/100.0,
+						float64(utils.OrDefaultPtr(p.StripeFeeCents, 0))/100.0,
+						float64(utils.OrDefaultPtr(p.NetAmountCents, 0))/100.0,
+						p.Currency,
+						utils.OrDefaultPtr(p.PaymentMethodType, "N/A"),
+						utils.OrDefaultPtr(p.CardBrand, "N/A"),
+						utils.OrDefaultPtr(p.CardLast4, "N/A"),
+						p.PaidAt.Format("2006-01-02 15:04"),
+					)
+				}
+			} else {
+				fmt.Printf("\nNo payment history found.\n")
 			}
 		},
 	})

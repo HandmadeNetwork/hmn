@@ -47,6 +47,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	)
 	apiRoutes := routes.WithMiddleware(panicCatcherMiddleware(true))
 
+
+
 	routes.GET(hmnurl.RegexEsBuild, func(c *RequestContext) ResponseData {
 		if buildcss.ActiveServerPort != 0 {
 			var err error
@@ -148,7 +150,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexHSFAbout, HSFAbout)
 	hmnOnly.GET(hmnurl.RegexHSFLanding, HSFLanding)
 	hmnOnly.GET(hmnurl.RegexHSFManifesto, HSFManifesto)
-	hmnOnly.GET(hmnurl.RegexHSFMembership, HSFMembership)
+	hmnOnly.GET(hmnurl.RegexHSFMembershipInfo, HSFMembershipInfo)
 	hmnOnly.GET(hmnurl.RegexHSFProjects, HSFProjects)
 
 	hmnOnly.GET(hmnurl.RegexTimeMachine, TimeMachine)
@@ -213,6 +215,11 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexUserSettings, needsAuth(UserSettings))
 	hmnOnly.POST(hmnurl.RegexUserSettings, needsAuth(csrfMiddleware(UserSettingsSave)))
 
+	hmnOnly.GET(hmnurl.RegexSubscriptionManage, needsAuth(SubscriptionManage))
+	hmnOnly.POST(hmnurl.RegexSubscriptionSubscribe, needsAuth(csrfMiddleware(SubscriptionSubscribe)))
+	hmnOnly.POST(hmnurl.RegexSubscriptionCancel, needsAuth(csrfMiddleware(SubscriptionCancel)))
+	hmnOnly.POST(hmnurl.RegexSubscriptionResume, needsAuth(csrfMiddleware(SubscriptionResume)))
+
 	hmnOnly.GET(hmnurl.RegexPersonalBlog, BlogPersonalIndex)
 	hmnOnly.GET(hmnurl.RegexPersonalBlogThread, BlogPersonalThread)
 	hmnOnly.GET(hmnurl.RegexPersonalBlogNewThread, needsAuth(BlogPersonalNewThread))
@@ -246,7 +253,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	apiRoutes.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
 	apiRoutes.POST(hmnurl.RegexAPINewsletterSignup, APINewsletterSignup)
-	apiRoutes.POST(hmnurl.RegexStripeWebhook, StripeWebhook)
+	apiRoutes.POST(hmnurl.RegexFoundationWebhook, StripeWebhook)
 
 	hmnOnly.GET(hmnurl.RegexLibraryAny, func(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.BuildEducationIndex(), http.StatusFound)

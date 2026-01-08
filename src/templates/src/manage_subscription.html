@@ -1,0 +1,174 @@
+{{ template "base-2024.html" . }}
+
+{{ define "content" }}
+<div class="mw-site center ph3 pv4 post-content">
+    <h2 class="f3 mb4">Manage your membership</h2>
+
+    <div class="mw7">
+        {{ if .User.IsSubscribed }}
+        <p>Thank you for being a supporter! Your recurring donation helps us maintain the site, host events, and
+            advocate for better software.</p>
+
+        {{ template "supporter_card" . }}
+
+        <div class="bg3 pa4 br2 mv4">
+            <p class="c--dim f6 mb0" style="line-height:1.5;">
+                {{ if .User.CancelAtPeriodEnd }}
+                Your membership will end at the end of the current billing period on <b>{{ .CurrentPeriodEnd }}</b>.
+                {{ else }}
+                {{ if and .LastPaymentAmount .LastPaymentMethod }}
+                Your payment method on file (<b>{{ .LastPaymentMethod }}</b>) will be automatically charged for <b>{{
+                    .LastPaymentAmount }}</b> on <b>{{ .CurrentPeriodEnd }}</b>.
+                {{ else if .LastPaymentAmount }}
+                Your payment method on file will be automatically charged for <b>{{ .LastPaymentAmount }}</b> on <b>{{
+                    .CurrentPeriodEnd }}</b>.
+                {{ else }}
+                Your payment method on file will be automatically charged on <b>{{ .CurrentPeriodEnd }}</b>.
+                {{ end }}
+                {{ end }}
+            </p>
+        </div>
+
+        {{ if .PaymentHistory }}
+        <details class="bg3 pa4 br2 mv4">
+            <summary class="f4 mt0 mb0 pointer flex justify-between items-center" style="list-style: none;">Payment
+                History <small class="c--dim" style="font-weight: normal;">▼</small></summary>
+            <ul class="list pa0 ma0 f6 mt3">
+                {{ range .PaymentHistory }}
+                <li class="flex items-start g3 mb3">
+                    <div class="f4 flex-shrink-0">·</div>
+                    <div>
+                        <div class="b">{{ .Date }}</div>
+                        <div class="c--dim">{{ .Amount }}{{ if .CardInfo }} · {{ .CardInfo }}{{ end }}</div>
+                    </div>
+                </li>
+                {{ end }}
+            </ul>
+        </details>
+        {{ end }}
+
+        {{ else }}
+        <p>The Handmade Network is supported by the community. By becoming a supporter, you help us stay independent and
+            focused on our mission. You'll also get some nice perks on our Discord!</p>
+
+        {{ template "supporter_card" . }}
+        {{ end }}
+    </div>
+</div>
+{{ end }}
+
+{{ define "supporter_card" }}
+<div class="bg3 pa4 br2 mv4">
+    <h3 class="f4 mt0 mb3">Supporter Benefits</h3>
+    <ul class="list pa0 ma0 f6">
+        <li class="flex items-start g3 mb3">
+            <div class="svgicon f4 flex-shrink-0">{{ svg "discord" }}</div>
+            <div>
+                <div class="b">Discord Badge & Role</div>
+                <div class="c--dim">Show off your support with a special role and badge on our Discord.</div>
+            </div>
+        </li>
+        <li class="flex items-start g3 mb3">
+            <div class="svgicon f4 flex-shrink-0">{{ svg "heart" }}</div>
+            <div>
+                <div class="b">Support Handmade</div>
+                <div class="c--dim">Help fund our mission to put the software industry back on the right track.</div>
+            </div>
+        </li>
+        <li class="flex items-start g3">
+            <div class="svgicon f4 flex-shrink-0">{{ svg "arrow-right-up" }}</div>
+            <div>
+                <div class="b">And More</div>
+                <div class="c--dim">Get access to private channels and future supporter-only features.</div>
+            </div>
+        </li>
+    </ul>
+    <hr class="mv3 b--white-10">
+
+    <div class="flex justify-between items-center">
+        <span class="f4 b">
+            {{ if .User.IsSubscribed }}
+            <span id="display-symbol">{{ .CurrentCurrencySymbol }}</span>
+            {{ else }}
+            <span id="currency-dropdown-trigger" class="pointer" title="Change currency"
+                style="position: relative; display: inline-block; border-bottom: 1px dotted rgba(255,255,255,0.3); padding-bottom: 1px;">
+                <span id="display-symbol">{{ .CurrentCurrencySymbol }}</span><small
+                    style="margin-left: 2px; opacity: 0.6; font-size: 0.6em; vertical-align: middle;">▼</small>
+                <div id="currency-dropdown" class="bg3 br2 shadow-2 dn"
+                    style="position: absolute; top: 125%; left: 0; z-index: 100; min-width: 100px; border: 1px solid rgba(255,255,255,0.1); padding: 4px; font-weight: normal;">
+                    <div class="currency-option pointer pv1 ph2 br1 f6" title="Membership in USD"
+                        style="transition: background 0.1s;" data-symbol="$" data-price-id="" data-amount="5.00"
+                        onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
+                        onmouseout="this.style.backgroundColor='transparent'">
+                        $ USD
+                    </div>
+                    <div class="currency-option pointer pv1 ph2 br1 f6" title="Membership in EUR"
+                        style="transition: background 0.1s;" data-symbol="€"
+                        data-price-id="price_1T2GhMC5nzOagkysG5ohH2ex" data-amount="5.00"
+                        onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'"
+                        onmouseout="this.style.backgroundColor='transparent'">
+                        € EUR
+                    </div>
+                </div>
+            </span>
+            {{ end }}
+            <span id="display-amount">{{ if .CurrentAmount }}{{ .CurrentAmount }}{{ else }}5.00{{ end }}</span>/mo
+        </span>
+        {{ if and .User.IsSubscribed .User.CancelAtPeriodEnd }}
+        <form id="resume-subscription-form" method="POST" action="{{ .ResumeSubscriptionUrl }}">
+            {{ csrftoken .Session }}
+            <button type="submit" class="btn btn-primary">
+                Don't cancel
+            </button>
+        </form>
+        {{ else }}
+        <form id="subscribe-form" method="POST"
+            action="{{ if .User.IsSubscribed }}{{ .CancelSubscriptionUrl }}{{ else }}{{ .SubscribeUrl }}{{ end }}">
+            {{ csrftoken .Session }}
+            <input type="hidden" name="price_id" id="price-id-input" value="">
+            <button type="submit" class="btn btn-primary" {{ if .User.IsSubscribed
+                }}onclick="return confirm('Are you sure you want to cancel your membership?');" {{ end }}>
+                {{ if .User.IsSubscribed }}Cancel{{ else }}Support Handmade{{ end }}
+            </button>
+        </form>
+        {{ end }}
+    </div>
+</div>
+
+<script>
+    (function () {
+        const trigger = document.getElementById('currency-dropdown-trigger');
+        const dropdown = document.getElementById('currency-dropdown');
+        const symbolDisplay = document.getElementById('display-symbol');
+        const amountDisplay = document.getElementById('display-amount');
+        const priceInput = document.getElementById('price-id-input');
+        const options = document.querySelectorAll('.currency-option');
+
+        if (!trigger || !dropdown) return;
+
+        trigger.addEventListener('click', function (e) {
+            e.stopPropagation();
+            dropdown.classList.toggle('dn');
+        });
+
+        document.addEventListener('click', function () {
+            dropdown.classList.add('dn');
+        });
+
+        options.forEach(option => {
+            option.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const symbol = this.getAttribute('data-symbol');
+                const priceId = this.getAttribute('data-price-id');
+                const amount = this.getAttribute('data-amount');
+
+                symbolDisplay.textContent = symbol;
+                amountDisplay.textContent = amount;
+                if (priceInput) priceInput.value = priceId;
+
+                dropdown.classList.add('dn');
+            });
+        });
+    })();
+</script>
+{{ end }}
