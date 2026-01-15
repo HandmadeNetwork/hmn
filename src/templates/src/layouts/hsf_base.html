@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en-US">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="/public/hsf/hsf.css">
+
+        <title>Handmade Software Foundation</title>
+
+        {{ if .EsBuildSSEUrl }}
+        <script>
+            new EventSource("{{ .EsBuildSSEUrl }}").addEventListener('change', e => {
+                const { added, removed, updated } = JSON.parse(e.data)
+
+                console.log("EsBuild", added, removed, updated);
+                if (!added.length && !removed.length && updated.length === 1) {
+                    for (const link of document.getElementsByTagName("link")) {
+                        const url = new URL(link.href)
+
+                        if (url.host === location.host && url.pathname === updated[0]) {
+                            const next = link.cloneNode()
+                            next.href = updated[0] + '?' + Math.random().toString(36).slice(2)
+                            next.onload = () => link.remove()
+                            link.parentNode.insertBefore(next, link.nextSibling)
+                            return
+                        }
+                    }
+                }
+            })
+        </script>
+        {{ end }}
+
+        {{ block "extrahead" . }}{{ end }}
+    </head>
+    <body class="flex flex-column ph2 ph0-ns">
+        {{ template "hsf_header.html" . }}
+        <div class="flex-grow-1">
+            {{ block "content" . }}{{ end }}
+        </div>
+        {{ template "hsf_footer.html" . }}
+    </body>
+</html>
+

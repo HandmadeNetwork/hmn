@@ -99,6 +99,17 @@ type Footer struct {
 	SearchActionUrl            string
 }
 
+type HSFBaseData struct {
+	HomeUrl       string
+	ManifestoUrl  string
+	ValuesUrl     string
+	ProjectsUrl   string
+	AboutUrl      string
+	MembershipUrl string
+
+	EsBuildSSEUrl string
+}
+
 type Thread struct {
 	Title string
 

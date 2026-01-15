@@ -968,6 +968,46 @@ func BuildFollowProject() string {
 }
 
 /*
+* Foundation
+ */
+
+var RegexHSFLanding = regexp.MustCompile(`^/foundation$`)
+
+func BuildHSFLanding() string {
+	return Url("/foundation/", nil)
+}
+
+var RegexHSFManifesto = regexp.MustCompile(`^/foundation/manifesto$`)
+
+func BuildHSFManifesto() string {
+	return Url("/foundation/manifesto", nil)
+}
+
+var RegexHSFValues = regexp.MustCompile(`^/foundation/values$`)
+
+func BuildHSFValues() string {
+	return Url("/foundation/values", nil)
+}
+
+var RegexHSFProjects = regexp.MustCompile(`^/foundation/projects$`)
+
+func BuildHSFProjects() string {
+	return Url("/foundation/projects", nil)
+}
+
+var RegexHSFAbout = regexp.MustCompile(`^/foundation/about$`)
+
+func BuildHSFAbout() string {
+	return Url("/foundation/about", nil)
+}
+
+var RegexHSFMembership = regexp.MustCompile(`^/foundation/membership$`)
+
+func BuildHSFMembership() string {
+	return Url("/foundation/membership", nil)
+}
+
+/*
 * Perf
  */
 

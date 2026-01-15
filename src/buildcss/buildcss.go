@@ -50,6 +50,7 @@ func BuildContext() (api.BuildContext, *api.ContextError) {
 			"src/rawdata/css/style.css",
 			"src/rawdata/css/force-light.css",
 			"src/rawdata/css/force-dark.css",
+			"src/rawdata/css/hsf/hsf.css",
 		},
 		Outbase:  "src/rawdata/css",
 		Outdir:   "public",

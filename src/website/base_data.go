@@ -155,3 +155,19 @@ func buildDefaultOpenGraphItems(project *models.Project, projectLogoUrl string, 
 		{Property: "og:image", Value: image},
 	}
 }
+
+func getHSFBaseData() templates.HSFBaseData {
+	baseData := templates.HSFBaseData{}
+	if buildcss.ActiveServerPort != 0 {
+		baseData.EsBuildSSEUrl = hmnurl.BuildEsBuild()
+	}
+
+	baseData.HomeUrl = hmnurl.BuildHSFLanding()
+	baseData.ManifestoUrl = hmnurl.BuildHSFManifesto()
+	baseData.ValuesUrl = hmnurl.BuildHSFValues()
+	baseData.ProjectsUrl = hmnurl.BuildHSFProjects()
+	baseData.AboutUrl = hmnurl.BuildHSFAbout()
+	baseData.MembershipUrl = hmnurl.BuildHSFMembership()
+
+	return baseData
+}
