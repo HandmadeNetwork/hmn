@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 
 	"git.handmade.network/hmn/hmn/src/db"
@@ -18,6 +19,8 @@ const SlashCommandProfile = "profile"
 const ProfileOptionUser = "user"
 
 const SlashCommandManifesto = "manifesto"
+const SlashCommandHMHReplay = "hmhreplay"
+const HMHReplayOptionToggle = "toggle"
 
 // User command names
 const UserCommandProfile = "HMN Profile"
@@ -54,6 +57,22 @@ func (bot *botInstance) createApplicationCommands(ctx context.Context) {
 		Name:        SlashCommandManifesto,
 		Description: "Read the Handmade manifesto",
 	}))
+
+	dmPermission := false
+	doOrWarn(CreateGuildApplicationCommand(ctx, CreateGuildApplicationCommandRequest{
+		Type:         ApplicationCommandTypeChatInput,
+		Name:         SlashCommandHMHReplay,
+		Description:  "Join the Handmade Hero Replay",
+		DMPermission: &dmPermission,
+		Options: []ApplicationCommandOption{
+			{
+				Type:        ApplicationCommandOptionTypeBoolean,
+				Name:        HMHReplayOptionToggle,
+				Description: "Add or remove the HMH replay role",
+				Required:    false,
+			},
+		},
+	}))
 }
 
 func (bot *botInstance) doInteraction(ctx context.Context, i *Interaction) {
@@ -86,6 +105,41 @@ func (bot *botInstance) doInteraction(ctx context.Context, i *Interaction) {
 		})
 		if err != nil {
 			logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to send manifesto response")
+		}
+	case SlashCommandHMHReplay:
+		join := true
+		toggleOpt, ok := getInteractionOption(i.Data.Options, HMHReplayOptionToggle)
+		if ok {
+			join = toggleOpt.Value.(bool)
+		}
+
+		if join {
+			logging.ExtractLogger(ctx).Debug().Interface("interaction", i).Msg("Got hmh replay")
+			err := AddGuildMemberRole(ctx, i.Member.User.ID, config.Config.Discord.HMHReplayRoleID)
+			if err != nil {
+				err = sendEphemeralMessageForInteraction(ctx, i, "We failed to set the role. Please inform an admin.")
+				if err != nil {
+					logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to send hmh replay add failure response")
+				}
+			} else {
+				err = sendEphemeralMessageForInteraction(ctx, i, "You're in!")
+				if err != nil {
+					logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to send hmh replay add response")
+				}
+			}
+		} else {
+			err := RemoveGuildMemberRole(ctx, i.Member.User.ID, config.Config.Discord.HMHReplayRoleID)
+			if err != nil {
+				err = sendEphemeralMessageForInteraction(ctx, i, "We failed to remove the role. Please inform an admin.")
+				if err != nil {
+					logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to send hmh replay remove failure response")
+				}
+			} else {
+				err = sendEphemeralMessageForInteraction(ctx, i, "You're out!")
+				if err != nil {
+					logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to send hmh replay remove response")
+				}
+			}
 		}
 	default:
 		logging.ExtractLogger(ctx).Warn().Str("name", i.Data.Name).Msg("didn't recognize Discord interaction name")
@@ -171,6 +225,18 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 	if err != nil {
 		logging.ExtractLogger(ctx).Error().Err(err).Msg("failed to send profile response")
 	}
+}
+
+func sendEphemeralMessageForInteraction(ctx context.Context, i *Interaction, content string) error {
+	err := CreateInteractionResponse(ctx, i.ID, i.Token, InteractionResponse{
+		Type: InteractionCallbackTypeChannelMessageWithSource,
+		Data: &InteractionCallbackData{
+			Content: content,
+			Flags:   FlagEphemeral,
+		},
+	})
+
+	return err
 }
 
 func getInteractionOption(opts []ApplicationCommandInteractionDataOption, name string) (ApplicationCommandInteractionDataOption, bool) {

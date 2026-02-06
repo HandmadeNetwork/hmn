@@ -410,9 +410,10 @@ func GuildFromMap(m interface{}, k string) *Guild {
 
 // https://discord.com/developers/docs/resources/guild#guild-member-object
 type GuildMember struct {
-	User   *User   `json:"user"`
-	Nick   *string `json:"nick"`
-	Avatar *string `json:"avatar"`
+	User   *User     `json:"user"`
+	Nick   *string   `json:"nick"`
+	Avatar *string   `json:"avatar"`
+	Roles  *[]string `json:"roles"`
 	// more fields not yet handled here
 }
 
@@ -433,9 +434,10 @@ func GuildMemberFromMap(m interface{}, k string) *GuildMember {
 	}
 
 	gm := &GuildMember{
-		User:   UserFromMap(m, "user"),
+		User:   UserFromMap(mmap, "user"),
 		Nick:   maybeStringP(mmap, "nick"),
 		Avatar: maybeStringP(mmap, "avatar"),
+		Roles:  maybeStringArray(mmap, "roles"),
 	}
 
 	return gm
@@ -1032,4 +1034,18 @@ func maybeArray(m map[string]any, k string) []any {
 		return nil
 	}
 	return val.([]any)
+}
+
+func maybeStringArray(m map[string]any, k string) *[]string {
+	val, ok := m[k]
+	if ok {
+		var result []string
+		for _, v := range val.([]any) {
+			result = append(result, v.(string))
+		}
+
+		return &result
+	} else {
+		return nil
+	}
 }

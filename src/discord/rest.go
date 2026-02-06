@@ -556,6 +556,7 @@ type CreateGuildApplicationCommandRequest struct {
 	Options           []ApplicationCommandOption `json:"options"`            // the parameters for the command
 	DefaultPermission *bool                      `json:"default_permission"` // whether the command is enabled by default when the app is added to a guild
 	Type              ApplicationCommandType     `json:"type"`               // the type of command, defaults 1 if not set
+	DMPermission      *bool                      `json:"dm_permission"`      // Technically deprecated, but needs to be set to false in order to get member info in the interaction object
 }
 
 // See https://discord.com/developers/docs/interactions/application-commands#create-guild-application-command
