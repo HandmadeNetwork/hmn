@@ -286,13 +286,13 @@ func UpdateInternedMessage(
 			return err
 		}
 	} else {
-		err = SaveMessageContents(ctx, tx, interned, msg, notifyUser)
+		contentChanged, err := SaveMessageContents(ctx, tx, interned, msg, notifyUser)
 		if err != nil {
 			return err
 		}
 
 		createSnippet := canCreateSnippet && shouldAutomaticallyCreateSnippet(interned)
-		err = UpdateSnippetForInternedMessage(ctx, tx, interned, createSnippet, notifyUser)
+		err = UpdateSnippetForInternedMessage(ctx, tx, interned, createSnippet, notifyUser && contentChanged)
 		if err != nil {
 			return err
 		}
@@ -357,6 +357,9 @@ Processes a single Discord message, saving as much of the message's content
 and attachments as allowed by our rules and user settings. Does NOT create
 snippets.
 
+contentChanged is true if we have no stored content or the new content is different from the stored version.
+Only checks content! Not attachments/embeds.
+
 Idempotent; can be called any time whether the contents exist or not.
 
 NOTE!!: Replaces interned.MessageContent if it was created or updated!!
@@ -367,7 +370,7 @@ func SaveMessageContents(
 	interned *InternedMessage,
 	msg *Message,
 	notifyUser bool,
-) error {
+) (contentChanged bool, err error) {
 	if interned.DiscordUser == nil {
 		// We do not save message contents unless a Discord account is linked.
 
@@ -383,16 +386,19 @@ func SaveMessageContents(
 				),
 			)
 			if err != nil {
-				return oops.New(err, "failed to send unlinked account warning message")
+				return true, oops.New(err, "failed to send unlinked account warning message")
 			}
 		}
 
-		return nil
+		return true, nil
 	}
 
 	// We have a linked Discord account, so save the message contents (regardless of
 	// whether we create a snippet or not).
 	if msg.OriginalHasFields("content") {
+		newContent := CleanUpMarkdown(ctx, msg.Content)
+		contentChanged = interned.MessageContent == nil || interned.MessageContent.LastContent != newContent
+
 		_, err := dbConn.Exec(ctx,
 			`
 			INSERT INTO discord_message_content (message_id, discord_id, last_content)
@@ -403,10 +409,10 @@ func SaveMessageContents(
 			`,
 			interned.Message.ID,
 			interned.DiscordUser.ID,
-			CleanUpMarkdown(ctx, msg.Content),
+			newContent,
 		)
 		if err != nil {
-			return oops.New(err, "failed to create or update message contents")
+			return contentChanged, oops.New(err, "failed to create or update message contents")
 		}
 
 		content, err := db.QueryOne[models.DiscordMessageContent](ctx, dbConn,
@@ -420,7 +426,7 @@ func SaveMessageContents(
 			interned.Message.ID,
 		)
 		if err != nil {
-			return oops.New(err, "failed to fetch message contents")
+			return contentChanged, oops.New(err, "failed to fetch message contents")
 		}
 		interned.MessageContent = content
 	}
@@ -430,7 +436,7 @@ func SaveMessageContents(
 		for _, attachment := range msg.Attachments {
 			_, err := saveAttachment(ctx, dbConn, &attachment, interned.DiscordUser.HMNUserId, msg.ID)
 			if err != nil {
-				return oops.New(err, "failed to save attachment")
+				return contentChanged, oops.New(err, "failed to save attachment")
 			}
 		}
 	}
@@ -446,14 +452,14 @@ func SaveMessageContents(
 			msg.ID,
 		)
 		if err != nil {
-			return oops.New(err, "failed to count existing embeds")
+			return contentChanged, oops.New(err, "failed to count existing embeds")
 		}
 		if numSavedEmbeds == 0 {
 			// No embeds yet, so save new ones
 			for _, embed := range msg.Embeds {
 				_, err := saveEmbed(ctx, dbConn, &embed, interned.DiscordUser.HMNUserId, msg.ID)
 				if err != nil {
-					return oops.New(err, "failed to save embed")
+					return contentChanged, oops.New(err, "failed to save embed")
 				}
 			}
 		} else if len(msg.Embeds) > 0 {
@@ -466,12 +472,12 @@ func SaveMessageContents(
 				msg.ID,
 			)
 			if err != nil {
-				return oops.New(err, "failed to delete embeds")
+				return contentChanged, oops.New(err, "failed to delete embeds")
 			}
 		}
 	}
 
-	return nil
+	return contentChanged, nil
 }
 
 var discordDownloadClient = &http.Client{
