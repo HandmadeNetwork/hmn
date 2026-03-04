@@ -306,7 +306,7 @@ func CreateDM(ctx context.Context, recipientID string) (*Channel, error) {
 	const name = "Create DM"
 
 	path := "/users/@me/channels"
-	body := []byte(fmt.Sprintf(`{"recipient_id":"%s"}`, recipientID))
+	body := fmt.Appendf(nil, `{"recipient_id":"%s"}`, recipientID)
 	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
 		req := makeRequest(ctx, http.MethodPost, path, body)
 		req.Header.Add("Content-Type", "application/json")

@@ -47,10 +47,10 @@ const (
 )
 
 type GatewayMessage struct {
-	Opcode         Opcode      `json:"op"`
-	Data           interface{} `json:"d"`
-	SequenceNumber *int        `json:"s,omitempty"`
-	EventName      *string     `json:"t,omitempty"`
+	Opcode         Opcode  `json:"op"`
+	Data           any     `json:"d"`
+	SequenceNumber *int    `json:"s,omitempty"`
+	EventName      *string `json:"t,omitempty"`
 }
 
 func (m *GatewayMessage) ToJSON() []byte {
@@ -66,9 +66,9 @@ type Hello struct {
 	HeartbeatIntervalMs int `json:"heartbeat_interval"`
 }
 
-func HelloFromMap(m interface{}) Hello {
+func HelloFromMap(m any) Hello {
 	return Hello{
-		HeartbeatIntervalMs: int(m.(map[string]interface{})["heartbeat_interval"].(float64)),
+		HeartbeatIntervalMs: int(m.(map[string]any)["heartbeat_interval"].(float64)),
 	}
 }
 
@@ -90,8 +90,8 @@ type Ready struct {
 	SessionID      string `json:"session_id"`
 }
 
-func ReadyFromMap(m interface{}) Ready {
-	mmap := m.(map[string]interface{})
+func ReadyFromMap(m any) Ready {
+	mmap := m.(map[string]any)
 
 	return Ready{
 		GatewayVersion: int(mmap["v"].(float64)),
@@ -113,8 +113,8 @@ type MessageDelete struct {
 	GuildID   string `json:"guild_id"`
 }
 
-func MessageDeleteFromMap(m interface{}) MessageDelete {
-	mmap := m.(map[string]interface{})
+func MessageDeleteFromMap(m any) MessageDelete {
+	mmap := m.(map[string]any)
 
 	return MessageDelete{
 		ID:        mmap["id"].(string),
@@ -130,10 +130,10 @@ type MessageBulkDelete struct {
 	GuildID   string   `json:"guild_id"`
 }
 
-func MessageBulkDeleteFromMap(m interface{}) MessageBulkDelete {
-	mmap := m.(map[string]interface{})
+func MessageBulkDeleteFromMap(m any) MessageBulkDelete {
+	mmap := m.(map[string]any)
 
-	iids := mmap["ids"].([]interface{})
+	iids := mmap["ids"].([]any)
 	ids := make([]string, len(iids))
 	for i, iid := range iids {
 		ids[i] = iid.(string)
@@ -170,7 +170,7 @@ type Role struct {
 	// more fields not yet present
 }
 
-func RoleFromMap(m interface{}, k string) *Role {
+func RoleFromMap(m any, k string) *Role {
 	mmap := maybeGetKey(m, k)
 	if mmap == nil {
 		return nil
@@ -193,7 +193,7 @@ type Channel struct {
 	// More fields not yet present
 }
 
-func ChannelFromMap(m interface{}, k string) *Channel {
+func ChannelFromMap(m any, k string) *Channel {
 	mmap := maybeGetKey(m, k)
 	if mmap == nil {
 		return nil
@@ -278,7 +278,7 @@ type Message struct {
 	// received from a scrape instead of from the gateway.
 	Backfilled bool
 
-	originalMap map[string]interface{}
+	originalMap map[string]any
 }
 
 func (m *Message) JumpURL() string {
@@ -318,7 +318,7 @@ func (m *Message) OriginalHasFields(fields ...string) bool {
 	return true
 }
 
-func MessageFromMap(m interface{}, k string) *Message {
+func MessageFromMap(m any, k string) *Message {
 	/*
 		Some gateway events, like MESSAGE_UPDATE, do not contain the
 		entire message body. So we need to be defensive on all fields here,
@@ -344,14 +344,14 @@ func MessageFromMap(m interface{}, k string) *Message {
 	}
 
 	if iattachments, ok := mmap["attachments"]; ok {
-		attachments := iattachments.([]interface{})
+		attachments := iattachments.([]any)
 		for _, iattachment := range attachments {
 			msg.Attachments = append(msg.Attachments, *AttachmentFromMap(iattachment, ""))
 		}
 	}
 
 	if iembeds, ok := mmap["embeds"]; ok {
-		embeds := iembeds.([]interface{})
+		embeds := iembeds.([]any)
 		for _, iembed := range embeds {
 			msg.Embeds = append(msg.Embeds, *EmbedFromMap(iembed))
 		}
@@ -371,7 +371,7 @@ type User struct {
 	Email         string  `json:"email"`
 }
 
-func UserFromMap(m interface{}, k string) *User {
+func UserFromMap(m any, k string) *User {
 	mmap := maybeGetKey(m, k)
 	if mmap == nil {
 		return nil
@@ -395,7 +395,7 @@ type Guild struct {
 	// Who cares about the rest tbh
 }
 
-func GuildFromMap(m interface{}, k string) *Guild {
+func GuildFromMap(m any, k string) *Guild {
 	mmap := maybeGetKey(m, k)
 	if mmap == nil {
 		return nil
@@ -427,7 +427,7 @@ func (gm *GuildMember) DisplayName() string {
 	return "<UNKNOWN USER>"
 }
 
-func GuildMemberFromMap(m interface{}, k string) *GuildMember {
+func GuildMemberFromMap(m any, k string) *GuildMember {
 	mmap := maybeGetKey(m, k)
 	if mmap == nil {
 		return nil
@@ -455,7 +455,7 @@ type Attachment struct {
 	Width       *int    `json:"width"`
 }
 
-func AttachmentFromMap(m interface{}, k string) *Attachment {
+func AttachmentFromMap(m any, k string) *Attachment {
 	mmap := maybeGetKey(m, k)
 	if mmap == nil {
 		return nil
@@ -535,8 +535,8 @@ type EmbedField struct {
 	Inline *bool  `json:"inline"`
 }
 
-func EmbedFromMap(m interface{}) *Embed {
-	mmap := m.(map[string]interface{})
+func EmbedFromMap(m any) *Embed {
+	mmap := m.(map[string]any)
 	if mmap == nil {
 		return nil
 	}
@@ -560,12 +560,12 @@ func EmbedFromMap(m interface{}) *Embed {
 	return &e
 }
 
-func EmbedFooterFromMap(m map[string]interface{}, k string) *EmbedFooter {
+func EmbedFooterFromMap(m map[string]any, k string) *EmbedFooter {
 	f, ok := m[k]
 	if !ok {
 		return nil
 	}
-	fMap, ok := f.(map[string]interface{})
+	fMap, ok := f.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -577,12 +577,12 @@ func EmbedFooterFromMap(m map[string]interface{}, k string) *EmbedFooter {
 	}
 }
 
-func EmbedImageFromMap(m map[string]interface{}, k string) *EmbedImage {
+func EmbedImageFromMap(m map[string]any, k string) *EmbedImage {
 	val, ok := m[k]
 	if !ok {
 		return nil
 	}
-	valMap, ok := val.(map[string]interface{})
+	valMap, ok := val.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -597,12 +597,12 @@ func EmbedImageFromMap(m map[string]interface{}, k string) *EmbedImage {
 	}
 }
 
-func EmbedThumbnailFromMap(m map[string]interface{}, k string) *EmbedThumbnail {
+func EmbedThumbnailFromMap(m map[string]any, k string) *EmbedThumbnail {
 	val, ok := m[k]
 	if !ok {
 		return nil
 	}
-	valMap, ok := val.(map[string]interface{})
+	valMap, ok := val.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -617,12 +617,12 @@ func EmbedThumbnailFromMap(m map[string]interface{}, k string) *EmbedThumbnail {
 	}
 }
 
-func EmbedVideoFromMap(m map[string]interface{}, k string) *EmbedVideo {
+func EmbedVideoFromMap(m map[string]any, k string) *EmbedVideo {
 	val, ok := m[k]
 	if !ok {
 		return nil
 	}
-	valMap, ok := val.(map[string]interface{})
+	valMap, ok := val.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -637,12 +637,12 @@ func EmbedVideoFromMap(m map[string]interface{}, k string) *EmbedVideo {
 	}
 }
 
-func EmbedProviderFromMap(m map[string]interface{}, k string) *EmbedProvider {
+func EmbedProviderFromMap(m map[string]any, k string) *EmbedProvider {
 	val, ok := m[k]
 	if !ok {
 		return nil
 	}
-	valMap, ok := val.(map[string]interface{})
+	valMap, ok := val.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -653,12 +653,12 @@ func EmbedProviderFromMap(m map[string]interface{}, k string) *EmbedProvider {
 	}
 }
 
-func EmbedAuthorFromMap(m map[string]interface{}, k string) *EmbedAuthor {
+func EmbedAuthorFromMap(m map[string]any, k string) *EmbedAuthor {
 	val, ok := m[k]
 	if !ok {
 		return nil
 	}
-	valMap, ok := val.(map[string]interface{})
+	valMap, ok := val.(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -669,19 +669,19 @@ func EmbedAuthorFromMap(m map[string]interface{}, k string) *EmbedAuthor {
 	}
 }
 
-func EmbedFieldsFromMap(m map[string]interface{}, k string) []EmbedField {
+func EmbedFieldsFromMap(m map[string]any, k string) []EmbedField {
 	val, ok := m[k]
 	if !ok {
 		return nil
 	}
-	valSlice, ok := val.([]interface{})
+	valSlice, ok := val.([]any)
 	if !ok {
 		return nil
 	}
 
 	var result []EmbedField
 	for _, innerVal := range valSlice {
-		valMap, ok := innerVal.(map[string]interface{})
+		valMap, ok := innerVal.(map[string]any)
 		if !ok {
 			continue
 		}
@@ -818,8 +818,8 @@ const (
 
 // If you specify `choices` for an option, they are the only valid values for a user to pick
 type ApplicationCommandOptionChoice struct {
-	Name  string      `json:"name"`  // 1-100 character choice name
-	Value interface{} `json:"value"` // value of the choice, up to 100 characters if string
+	Name  string `json:"name"`  // 1-100 character choice name
+	Value any    `json:"value"` // value of the choice, up to 100 characters if string
 }
 
 // All options have names, and an option can either be a parameter and input
@@ -831,11 +831,11 @@ type ApplicationCommandOptionChoice struct {
 type ApplicationCommandInteractionDataOption struct {
 	Name    string                                    `json:"name"`
 	Type    ApplicationCommandOptionType              `json:"type"`
-	Value   interface{}                               `json:"value"`   // the value of the pair
+	Value   any                                       `json:"value"`   // the value of the pair
 	Options []ApplicationCommandInteractionDataOption `json:"options"` // present if this option is a group or subcommand
 }
 
-func InteractionFromMap(m interface{}, k string) *Interaction {
+func InteractionFromMap(m any, k string) *Interaction {
 	mmap := maybeGetKey(m, k)
 	if mmap == nil {
 		return nil
@@ -858,7 +858,7 @@ func InteractionFromMap(m interface{}, k string) *Interaction {
 	return i
 }
 
-func InteractionDataFromMap(m interface{}, k string) *InteractionData {
+func InteractionDataFromMap(m any, k string) *InteractionData {
 	mmap := maybeGetKey(m, k)
 	if mmap == nil {
 		return nil
@@ -873,7 +873,7 @@ func InteractionDataFromMap(m interface{}, k string) *InteractionData {
 	}
 
 	if ioptions, ok := mmap["options"]; ok {
-		options := ioptions.([]interface{})
+		options := ioptions.([]any)
 		for _, ioption := range options {
 			d.Options = append(d.Options, *ApplicationCommandInteractionDataOptionFromMap(ioption, ""))
 		}
@@ -882,7 +882,7 @@ func InteractionDataFromMap(m interface{}, k string) *InteractionData {
 	return d
 }
 
-func ResolvedDataFromMap(m interface{}, k string) *ResolvedData {
+func ResolvedDataFromMap(m any, k string) *ResolvedData {
 	mmap := maybeGetKey(m, k)
 	if mmap == nil {
 		return nil
@@ -891,7 +891,7 @@ func ResolvedDataFromMap(m interface{}, k string) *ResolvedData {
 	d := &ResolvedData{}
 
 	if iusers, ok := mmap["users"]; ok {
-		users := iusers.(map[string]interface{})
+		users := iusers.(map[string]any)
 		d.Users = make(map[string]User)
 		for id, iuser := range users {
 			d.Users[id] = *UserFromMap(iuser, "")
@@ -899,7 +899,7 @@ func ResolvedDataFromMap(m interface{}, k string) *ResolvedData {
 	}
 
 	if imembers, ok := mmap["members"]; ok {
-		members := imembers.(map[string]interface{})
+		members := imembers.(map[string]any)
 		d.Members = make(map[string]GuildMember)
 		for id, imember := range members {
 			member := *GuildMemberFromMap(imember, "")
@@ -910,7 +910,7 @@ func ResolvedDataFromMap(m interface{}, k string) *ResolvedData {
 	}
 
 	if iroles, ok := mmap["roles"]; ok {
-		roles := iroles.(map[string]interface{})
+		roles := iroles.(map[string]any)
 		d.Roles = make(map[string]Role)
 		for id, irole := range roles {
 			d.Roles[id] = *RoleFromMap(irole, "")
@@ -918,7 +918,7 @@ func ResolvedDataFromMap(m interface{}, k string) *ResolvedData {
 	}
 
 	if ichannels, ok := mmap["channels"]; ok {
-		channels := ichannels.(map[string]interface{})
+		channels := ichannels.(map[string]any)
 		d.Channels = make(map[string]Channel)
 		for id, ichannel := range channels {
 			d.Channels[id] = *ChannelFromMap(ichannel, "")
@@ -926,7 +926,7 @@ func ResolvedDataFromMap(m interface{}, k string) *ResolvedData {
 	}
 
 	if imessages, ok := mmap["messages"]; ok {
-		messages := imessages.(map[string]interface{})
+		messages := imessages.(map[string]any)
 		d.Messages = make(map[string]Message)
 		for id, imessage := range messages {
 			d.Messages[id] = *MessageFromMap(imessage, "")
@@ -936,7 +936,7 @@ func ResolvedDataFromMap(m interface{}, k string) *ResolvedData {
 	return d
 }
 
-func ApplicationCommandInteractionDataOptionFromMap(m interface{}, k string) *ApplicationCommandInteractionDataOption {
+func ApplicationCommandInteractionDataOptionFromMap(m any, k string) *ApplicationCommandInteractionDataOption {
 	mmap := maybeGetKey(m, k)
 	if mmap == nil {
 		return nil
@@ -949,7 +949,7 @@ func ApplicationCommandInteractionDataOptionFromMap(m interface{}, k string) *Ap
 	}
 
 	if ioptions, ok := mmap["options"]; ok {
-		options := ioptions.([]interface{})
+		options := ioptions.([]any)
 		for _, ioption := range options {
 			o.Options = append(o.Options, *ApplicationCommandInteractionDataOptionFromMap(ioption, ""))
 		}
@@ -964,20 +964,20 @@ func ApplicationCommandInteractionDataOptionFromMap(m interface{}, k string) *Ap
 // The intent is to allow the ThingFromMap functions to be flexibly called,
 // either with the data in question as the root (no key) or as a child of
 // another object (with a key).
-func maybeGetKey(m interface{}, k string) map[string]interface{} {
+func maybeGetKey(m any, k string) map[string]any {
 	if k == "" {
-		return m.(map[string]interface{})
+		return m.(map[string]any)
 	} else {
-		mmap := m.(map[string]interface{})
+		mmap := m.(map[string]any)
 		if mk, ok := mmap[k]; ok {
-			return mk.(map[string]interface{})
+			return mk.(map[string]any)
 		} else {
 			return nil
 		}
 	}
 }
 
-func maybeString(m map[string]interface{}, k string) string {
+func maybeString(m map[string]any, k string) string {
 	val, ok := m[k]
 	if !ok {
 		return ""
@@ -985,7 +985,7 @@ func maybeString(m map[string]interface{}, k string) string {
 	return val.(string)
 }
 
-func maybeStringP(m map[string]interface{}, k string) *string {
+func maybeStringP(m map[string]any, k string) *string {
 	val, ok := m[k]
 	if !ok || val == nil {
 		return nil
@@ -994,7 +994,7 @@ func maybeStringP(m map[string]interface{}, k string) *string {
 	return &strval
 }
 
-func maybeInt(m map[string]interface{}, k string) int {
+func maybeInt(m map[string]any, k string) int {
 	val, ok := m[k]
 	if !ok {
 		return 0
@@ -1002,7 +1002,7 @@ func maybeInt(m map[string]interface{}, k string) int {
 	return int(val.(float64))
 }
 
-func maybeIntP(m map[string]interface{}, k string) *int {
+func maybeIntP(m map[string]any, k string) *int {
 	val, ok := m[k]
 	if !ok || val == nil {
 		return nil
@@ -1011,7 +1011,7 @@ func maybeIntP(m map[string]interface{}, k string) *int {
 	return &intval
 }
 
-func maybeBool(m map[string]interface{}, k string) bool {
+func maybeBool(m map[string]any, k string) bool {
 	val, ok := m[k]
 	if !ok {
 		return false
@@ -1019,7 +1019,7 @@ func maybeBool(m map[string]interface{}, k string) bool {
 	return val.(bool)
 }
 
-func maybeBoolP(m map[string]interface{}, k string) *bool {
+func maybeBoolP(m map[string]any, k string) *bool {
 	val, ok := m[k]
 	if !ok || val == nil {
 		return nil

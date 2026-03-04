@@ -68,7 +68,7 @@ func TestSharlock(t *testing.T) {
 	t.Run("sanity check", func(t *testing.T) {
 		result := ParseMarkdown(sharlock, ForumRealMarkdown)
 
-		for _, line := range strings.Split(result, "\n") {
+		for line := range strings.SplitSeq(result, "\n") {
 			assert.NotContains(t, line, "[b]")
 			assert.NotContains(t, line, "[/b]")
 			assert.NotContains(t, line, "[ul]")

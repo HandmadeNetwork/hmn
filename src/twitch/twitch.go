@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
@@ -1197,17 +1198,13 @@ var RelevantTags = []string{
 }
 
 func isStreamRelevant(catID string, tags []string) bool {
-	for _, cat := range RelevantCategories {
-		if cat == catID {
-			return true
-		}
+	if slices.Contains(RelevantCategories, catID) {
+		return true
 	}
 
 	for _, tag := range RelevantTags {
-		for _, streamTag := range tags {
-			if tag == streamTag {
-				return true
-			}
+		if slices.Contains(tags, tag) {
+			return true
 		}
 	}
 	return false

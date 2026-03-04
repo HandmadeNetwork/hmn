@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/hmndata"
@@ -202,23 +203,24 @@ func (bot *botInstance) handleProfileCommand(ctx context.Context, i *Interaction
 	}
 
 	url := hmnurl.BuildUserProfile(hmnUser.Username)
-	msg := fmt.Sprintf("<@%s>'s profile can be viewed at %s.", member.User.ID, url)
+	var msg strings.Builder
+	msg.WriteString(fmt.Sprintf("<@%s>'s profile can be viewed at %s.", member.User.ID, url))
 	if len(projectsAndStuff) > 0 {
 		projectNoun := "projects"
 		if len(projectsAndStuff) == 1 {
 			projectNoun = "project"
 		}
-		msg += fmt.Sprintf(" They have %d %s:\n", len(projectsAndStuff), projectNoun)
+		msg.WriteString(fmt.Sprintf(" They have %d %s:\n", len(projectsAndStuff), projectNoun))
 
 		for _, p := range projectsAndStuff {
-			msg += fmt.Sprintf("- %s: %s\n", p.Project.Name, hmndata.UrlContextForProject(&p.Project).BuildHomepage())
+			msg.WriteString(fmt.Sprintf("- %s: %s\n", p.Project.Name, hmndata.UrlContextForProject(&p.Project).BuildHomepage()))
 		}
 	}
 
 	err = CreateInteractionResponse(ctx, i.ID, i.Token, InteractionResponse{
 		Type: InteractionCallbackTypeChannelMessageWithSource,
 		Data: &InteractionCallbackData{
-			Content: msg,
+			Content: msg.String(),
 			Flags:   FlagEphemeral,
 		},
 	})

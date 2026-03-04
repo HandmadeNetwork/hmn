@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -176,11 +177,8 @@ func ExtractEmbedFromOpenGraph(partialHtml []byte) string {
 			key := attr[keyIdx]
 			value := attr[valueIdx]
 			if key == "name" || key == "property" {
-				for _, ogKey := range OGKeys {
-					if value == ogKey {
-						relevantProp = true
-						break
-					}
+				if slices.Contains(OGKeys, value) {
+					relevantProp = true
 				}
 			} else if key == "content" {
 				content = value

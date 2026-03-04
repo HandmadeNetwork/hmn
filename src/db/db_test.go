@@ -38,7 +38,7 @@ func TestPaths(t *testing.T) {
 		Nested   // field 1
 	}
 
-	names, paths := getColumnNamesAndPaths(reflect.TypeOf(Embedded{}), nil, nil)
+	names, paths := getColumnNamesAndPaths(reflect.TypeFor[Embedded](), nil, nil)
 	assert.Equal(t, []columnName{
 		{"S", "I"}, {"S", "PI"},
 		{"S", "CI"}, {"S", "PCI"},
@@ -77,7 +77,7 @@ func TestCompileQuery(t *testing.T) {
 			Nope string // no tag
 		}
 
-		compiled := compileQuery("SELECT $columns FROM greeblies", reflect.TypeOf(Dest{}))
+		compiled := compileQuery("SELECT $columns FROM greeblies", reflect.TypeFor[Dest]())
 		assert.Equal(t, "SELECT foo, bar FROM greeblies", compiled.query)
 	})
 	t.Run("complex structs", func(t *testing.T) {
@@ -109,7 +109,7 @@ func TestCompileQuery(t *testing.T) {
 			Nested
 		}
 
-		compiled := compileQuery("SELECT $columns FROM greeblies", reflect.TypeOf(Dest{}))
+		compiled := compileQuery("SELECT $columns FROM greeblies", reflect.TypeFor[Dest]())
 		assert.Equal(t, "SELECT S.I, S.PI, S.CI, S.PCI, S_S2.B, S_S2.PB, S_PS2.B, S_PS2.PB, PS.I, PS.PI, PS.CI, PS.PCI, PS_S2.B, PS_S2.PB, PS_PS2.B, PS_PS2.PB FROM greeblies", compiled.query)
 	})
 	t.Run("int", func(t *testing.T) {
@@ -118,7 +118,7 @@ func TestCompileQuery(t *testing.T) {
 		// There should be no error here because we do not need to extract columns from
 		// the destination type. There may be errors down the line in value iteration, but
 		// that is always the case if the Go types don't match the query.
-		compiled := compileQuery("SELECT id FROM greeblies", reflect.TypeOf(Dest(0)))
+		compiled := compileQuery("SELECT id FROM greeblies", reflect.TypeFor[Dest]())
 		assert.Equal(t, "SELECT id FROM greeblies", compiled.query)
 	})
 	t.Run("just one table", func(t *testing.T) {
@@ -134,7 +134,7 @@ func TestCompileQuery(t *testing.T) {
 		// don't actually care about any of the data we joined to.
 		compiled := compileQuery(
 			"SELECT $columns{greeblies} FROM greeblies NATURAL JOIN props",
-			reflect.TypeOf(Dest{}),
+			reflect.TypeFor[Dest](),
 		)
 		assert.Equal(t, "SELECT greeblies.foo, greeblies.bar FROM greeblies NATURAL JOIN props", compiled.query)
 	})
@@ -143,7 +143,7 @@ func TestCompileQuery(t *testing.T) {
 		type Dest int
 
 		assert.Panics(t, func() {
-			compileQuery("SELECT $columns FROM greeblies", reflect.TypeOf(Dest(0)))
+			compileQuery("SELECT $columns FROM greeblies", reflect.TypeFor[Dest]())
 		})
 	})
 }
@@ -155,7 +155,7 @@ func TestQueryBuilder(t *testing.T) {
 		qb.Add("AND (baz = $?)", true)
 
 		assert.Equal(t, "SELECT stuff FROM thing WHERE foo = $1 AND bar = $2\nAND (baz = $3)\n", qb.String())
-		assert.Equal(t, []interface{}{3, "hello", true}, qb.Args())
+		assert.Equal(t, []any{3, "hello", true}, qb.Args())
 	})
 	t.Run("too few arguments", func(t *testing.T) {
 		var qb QueryBuilder
@@ -210,7 +210,7 @@ func TestSetValueFromDB(t *testing.T) {
 		})
 		t.Run("interface nil to *int", func(t *testing.T) {
 			var dest *int
-			var value interface{} = nil
+			var value any = nil
 
 			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
 			assert.Nil(t, dest)
@@ -256,7 +256,7 @@ func TestSetValueFromDB(t *testing.T) {
 		})
 		t.Run("interface nil to *string", func(t *testing.T) {
 			var dest *string
-			var value interface{} = nil
+			var value any = nil
 
 			setValueFromDB(reflectPtr(&dest), reflect.ValueOf(value))
 			assert.Nil(t, dest)

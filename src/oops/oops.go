@@ -46,7 +46,7 @@ func (f StackFrame) MarshalZerologObject(e *zerolog.Event) {
 		Str("function", f.Function)
 }
 
-var ZerologStackMarshaler = func(err error) interface{} {
+var ZerologStackMarshaler = func(err error) any {
 	if asOops, ok := err.(*Error); ok {
 		return asOops.Stack
 	}
@@ -55,7 +55,7 @@ var ZerologStackMarshaler = func(err error) interface{} {
 	return Trace()[2:]
 }
 
-func New(wrapped error, format string, args ...interface{}) error {
+func New(wrapped error, format string, args ...any) error {
 	return &Error{
 		Message: fmt.Sprintf(format, args...),
 		Wrapped: wrapped,

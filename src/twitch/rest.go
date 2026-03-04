@@ -44,7 +44,7 @@ func getTwitchUsersByLogin(ctx context.Context, logins []string) ([]twitchUser, 
 
 	result := make([]twitchUser, 0, len(logins))
 	numChunks := len(logins)/100 + 1
-	for i := 0; i < numChunks; i++ {
+	for i := range numChunks {
 		query := url.Values{}
 		query.Add("first", "100")
 		for _, login := range logins[i*100 : utils.Min((i+1)*100, len(logins))] {
@@ -96,7 +96,7 @@ func getStreamStatus(ctx context.Context, twitchIDs []string) ([]streamStatus, e
 
 	result := make([]streamStatus, 0, len(twitchIDs))
 	numChunks := len(twitchIDs)/100 + 1
-	for i := 0; i < numChunks; i++ {
+	for i := range numChunks {
 		query := url.Values{}
 		query.Add("first", "100")
 		for _, tid := range twitchIDs[i*100 : utils.Min((i+1)*100, len(twitchIDs))] {

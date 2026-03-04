@@ -68,7 +68,7 @@ func _TestRouteCoverage(t *testing.T) {
 	}
 }
 
-func outputAndAssert(t *testing.T, cmd *exec.Cmd, args ...interface{}) []byte {
+func outputAndAssert(t *testing.T, cmd *exec.Cmd, args ...any) []byte {
 	t.Helper()
 
 	var stdout bytes.Buffer

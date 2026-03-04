@@ -171,7 +171,7 @@ func IsEmail(address string) bool {
 	return EmailRegex.Match([]byte(address))
 }
 
-func renderTemplate(name string, data interface{}) (string, error) {
+func renderTemplate(name string, data any) (string, error) {
 	var buffer bytes.Buffer
 	template, hasTemplate := templates.GetTemplate(name)
 	if !hasTemplate {

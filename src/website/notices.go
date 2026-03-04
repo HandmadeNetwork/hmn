@@ -78,8 +78,8 @@ func serializeNoticesForCookie(c *RequestContext, notices []templates.Notice) st
 
 func deserializeNoticesFromCookie(cookieVal string) []templates.Notice {
 	var result []templates.Notice
-	notices := strings.Split(cookieVal, "\t")
-	for _, notice := range notices {
+	notices := strings.SplitSeq(cookieVal, "\t")
+	for notice := range notices {
 		parts := strings.SplitN(notice, "|", 2)
 		if len(parts) == 2 {
 			result = append(result, templates.Notice{

@@ -68,14 +68,14 @@ type PrettyLogEntry struct {
 	Level      string
 	Message    string
 	Error      string
-	StackTrace []interface{}
+	StackTrace []any
 
 	OtherFields []PrettyField
 }
 
 type PrettyField struct {
 	Name  string
-	Value interface{}
+	Value any
 }
 
 var ColorFromLevel = map[string]string{
@@ -97,7 +97,7 @@ func NewPrettyZerologWriter() *PrettyZerologWriter {
 }
 
 func (w *PrettyZerologWriter) Write(p []byte) (int, error) {
-	var fields map[string]interface{}
+	var fields map[string]any
 	err := json.Unmarshal(p, &fields)
 	if err != nil {
 		return os.Stderr.Write(p)
@@ -115,7 +115,7 @@ func (w *PrettyZerologWriter) Write(p []byte) (int, error) {
 		case zerolog.ErrorFieldName:
 			pretty.Error = val.(string)
 		case zerolog.ErrorStackFieldName:
-			pretty.StackTrace = val.([]interface{})
+			pretty.StackTrace = val.([]any)
 		default:
 			pretty.OtherFields = append(pretty.OtherFields, PrettyField{
 				Name:  name,
@@ -164,7 +164,7 @@ func (w *PrettyZerologWriter) Write(p []byte) (int, error) {
 	if pretty.StackTrace != nil {
 		b.WriteString("  " + color.Bold + color.Blue + "Stack trace:" + color.Reset + "\n")
 		for _, frame := range pretty.StackTrace {
-			frameMap := frame.(map[string]interface{})
+			frameMap := frame.(map[string]any)
 			file := frameMap["file"].(string)
 			file = strings.Replace(file, w.wd, ".", 1)
 
@@ -189,7 +189,7 @@ func LogPanics(logger *zerolog.Logger) {
 	}
 }
 
-func LogPanicValue(logger *zerolog.Logger, val interface{}, msg string) {
+func LogPanicValue(logger *zerolog.Logger, val any, msg string) {
 	if logger == nil {
 		logger = GlobalLogger()
 	}

@@ -178,7 +178,7 @@ func EducationArticle(c *RequestContext) ResponseData {
 func EducationArticleNew(c *RequestContext) ResponseData {
 	type adminData struct {
 		editorData
-		Article map[string]interface{}
+		Article map[string]any
 	}
 
 	tmpl := adminData{

@@ -444,7 +444,7 @@ func (rd *ResponseData) AddFutureNotice(class string, content string) {
 	rd.FutureNotices = append(rd.FutureNotices, templates.Notice{Class: class, Content: template.HTML(content)})
 }
 
-func (rd *ResponseData) WriteTemplate(name string, data interface{}, rp *perf.RequestPerf) error {
+func (rd *ResponseData) WriteTemplate(name string, data any, rp *perf.RequestPerf) error {
 	if rp != nil {
 		b := rp.StartBlock("TEMPLATE", name)
 		defer b.End()
@@ -456,7 +456,7 @@ func (rd *ResponseData) WriteTemplate(name string, data interface{}, rp *perf.Re
 	return template.Execute(rd, data)
 }
 
-func (rd *ResponseData) MustWriteTemplate(name string, data interface{}, rp *perf.RequestPerf) {
+func (rd *ResponseData) MustWriteTemplate(name string, data any, rp *perf.RequestPerf) {
 	err := rd.WriteTemplate(name, data, rp)
 	if err != nil {
 		panic(err)

@@ -37,7 +37,7 @@ type SafeError struct {
 	Msg     string
 }
 
-func NewSafeError(err error, msg string, args ...interface{}) error {
+func NewSafeError(err error, msg string, args ...any) error {
 	return &SafeError{
 		Wrapped: err,
 		Msg:     fmt.Sprintf(msg, args...),

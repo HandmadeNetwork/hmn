@@ -104,7 +104,7 @@ func SampleSeed() {
 	fmt.Println("Creating starter projects...")
 	hero := seedProject(ctx, tx, seedHandmadeHero, []*models.User{admin})
 	fourcoder := seedProject(ctx, tx, seed4coder, []*models.User{bob})
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		name := fmt.Sprintf("%s %s", lorem.Word(1, 10), lorem.Word(1, 10))
 		slug := strings.ReplaceAll(strings.ToLower(name), " ", "-")
 
@@ -137,7 +137,7 @@ func SampleSeed() {
 	}, []*models.User{spammer})
 
 	fmt.Println("Creating some forum threads...")
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		for _, project := range []*models.Project{hmn, hero, fourcoder} {
 			thread := seedThread(ctx, tx, project, models.Thread{})
 			populateThread(ctx, tx, thread, users, rand.Intn(5)+1)
@@ -152,13 +152,13 @@ func SampleSeed() {
 	fmt.Println("Creating news posts...")
 	{
 		// Main site news posts
-		for i := 0; i < 3; i++ {
+		for range 3 {
 			thread := seedThread(ctx, tx, hmn, models.Thread{Type: models.ThreadTypeProjectBlogPost})
 			populateThread(ctx, tx, thread, []*models.User{admin, alice, bob, charlie}, rand.Intn(5)+1)
 		}
 
 		// 4coder
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			thread := seedThread(ctx, tx, fourcoder, models.Thread{Type: models.ThreadTypeProjectBlogPost})
 			populateThread(ctx, tx, thread, []*models.User{bob}, 1)
 		}
@@ -240,7 +240,7 @@ func seedThread(ctx context.Context, tx pgx.Tx, project *models.Project, input m
 
 func populateThread(ctx context.Context, tx pgx.Tx, thread *models.Thread, users []*models.User, numPosts int) {
 	var lastPostId int
-	for i := 0; i < numPosts; i++ {
+	for i := range numPosts {
 		user := users[i%len(users)]
 
 		var replyId *int

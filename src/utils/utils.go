@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -88,18 +89,12 @@ func NumPages(numThings, thingsPerPage int) int {
 }
 
 func DaysUntilT(targetTime time.Time, referenceTime time.Time) int {
-	d := targetTime.Sub(referenceTime)
-	if d < 0 {
-		d = 0
-	}
+	d := max(targetTime.Sub(referenceTime), 0)
 	return int(DurationRoundUp(d, 24*time.Hour) / (24 * time.Hour))
 }
 
 func DaysUntil(t time.Time) int {
-	d := t.Sub(time.Now())
-	if d < 0 {
-		d = 0
-	}
+	d := max(t.Sub(time.Now()), 0)
 	return int(DurationRoundUp(d, 24*time.Hour) / (24 * time.Hour))
 }
 
@@ -150,14 +145,14 @@ func SleepContext(ctx context.Context, d time.Duration) error {
 func Assert[T comparable](value T, msg ...any) {
 	var zero T
 	if value == zero {
-		finalMsg := ""
+		var finalMsg strings.Builder
 		for i, arg := range msg {
 			if i > 0 {
-				finalMsg += " "
+				finalMsg.WriteString(" ")
 			}
-			finalMsg += fmt.Sprintf("%v", arg)
+			fmt.Fprintf(&finalMsg, "%v", arg)
 		}
-		panic(finalMsg)
+		panic(finalMsg.String())
 	}
 }
 

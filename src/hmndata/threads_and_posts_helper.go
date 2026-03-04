@@ -906,10 +906,10 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 		panic(oops.New(err, "failed to get assets matching keys"))
 	}
 
-	var values [][]interface{}
+	var values [][]any
 
 	for _, assetID := range assetIDs {
-		values = append(values, []interface{}{postId, assetID})
+		values = append(values, []any{postId, assetID})
 	}
 
 	_, err = tx.CopyFrom(ctx, pgx.Identifier{"post_asset_usage"}, []string{"post_id", "asset_id"}, pgx.CopyFromRows(values))

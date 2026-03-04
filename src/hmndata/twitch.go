@@ -3,6 +3,7 @@ package hmndata
 import (
 	"context"
 	"regexp"
+	"slices"
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/db"
@@ -109,13 +110,7 @@ func FetchTwitchStreamers(ctx context.Context, dbConn db.ConnOrTx, q TwitchStrea
 					break
 				}
 			}
-			ignored := false
-			for _, ignoredStreamer := range ignoredStreamers {
-				if ignoredStreamer == streamer.TwitchLogin {
-					ignored = true
-					break
-				}
-			}
+			ignored := slices.Contains(ignoredStreamers, streamer.TwitchLogin)
 			if !duplicate && !ignored {
 				result = append(result, streamer)
 			}

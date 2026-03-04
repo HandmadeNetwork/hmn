@@ -3,6 +3,7 @@ package website
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"git.handmade.network/hmn/hmn/src/models"
 )
@@ -24,9 +25,9 @@ func ParseLinks(text string) []ParsedLink {
 
 // TODO: Clean up use in user profiles I guess
 func LinksToText(links []*models.Link) string {
-	linksText := ""
+	var linksText strings.Builder
 	for _, link := range links {
-		linksText += fmt.Sprintf("%s %s\n", link.URL, link.Name)
+		linksText.WriteString(fmt.Sprintf("%s %s\n", link.URL, link.Name))
 	}
-	return linksText
+	return linksText.String()
 }

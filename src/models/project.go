@@ -3,6 +3,7 @@ package models
 import (
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 )
@@ -12,7 +13,7 @@ const (
 	HMNProjectSlug = "hmn"
 )
 
-var ProjectType = reflect.TypeOf(Project{})
+var ProjectType = reflect.TypeFor[Project]()
 
 type ProjectLifecycle int
 
@@ -45,12 +46,7 @@ var VisibleProjectLifecycles = []ProjectLifecycle{
 }
 
 func (lc ProjectLifecycle) In(lcs []ProjectLifecycle) bool {
-	for _, v := range lcs {
-		if lc == v {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(lcs, lc)
 }
 
 type Project struct {

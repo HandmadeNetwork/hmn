@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -334,7 +335,7 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix []str
 	var columnNames []columnName
 	var fieldPaths []fieldPath
 
-	if destType.Kind() == reflect.Ptr {
+	if destType.Kind() == reflect.Pointer {
 		destType = destType.Elem()
 	}
 
@@ -376,7 +377,7 @@ func getColumnNamesAndPaths(destType reflect.Type, pathSoFar []int, prefix []str
 				}
 			}
 			fieldType := field.Type
-			if fieldType.Kind() == reflect.Ptr {
+			if fieldType.Kind() == reflect.Pointer {
 				fieldType = fieldType.Elem()
 			}
 
@@ -420,19 +421,13 @@ func typeIsQueryable(t reflect.Type) bool {
 
 	if isRecognizedByPgtype {
 		return true
-	} else if t == reflect.TypeOf(uuid.UUID{}) {
+	} else if t == reflect.TypeFor[uuid.UUID]() {
 		return true
 	}
 
 	// pgtype doesn't recognize it, but maybe it's a primitive type we can deal with
 	k := t.Kind()
-	for _, qk := range queryableKinds {
-		if k == qk {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(queryableKinds, k)
 }
 
 type columnName []string
@@ -508,7 +503,7 @@ func (it *Iterator[T]) Next() (*T, bool) {
 
 			var field reflect.Value
 			field, currentField = followPathThroughStructs(result, it.fieldPaths[i])
-			if field.Kind() == reflect.Ptr {
+			if field.Kind() == reflect.Pointer {
 				field.Set(reflect.New(field.Type().Elem()))
 				field = field.Elem()
 			}
@@ -516,7 +511,7 @@ func (it *Iterator[T]) Next() (*T, bool) {
 			// Some actual values still come through as pointers (like net.IPNet). Dunno why.
 			// Regardless, we know it's not nil, so we can get at the contents.
 			valReflected := reflect.ValueOf(val)
-			if valReflected.Kind() == reflect.Ptr {
+			if valReflected.Kind() == reflect.Pointer {
 				valReflected = valReflected.Elem()
 			}
 			currentValue = valReflected
@@ -540,7 +535,7 @@ func (it *Iterator[T]) Err() error {
 // will initialize the destination before assigning.
 func setValueFromDB(dest reflect.Value, value reflect.Value) {
 	if dest.Kind() == reflect.Pointer {
-		valueIsNilPointer := value.Kind() == reflect.Ptr && value.IsNil()
+		valueIsNilPointer := value.Kind() == reflect.Pointer && value.IsNil()
 		if !value.IsValid() || valueIsNilPointer {
 			dest.Set(reflect.Zero(dest.Type())) // nil to nil, the end
 			return
@@ -560,7 +555,7 @@ func setValueFromDB(dest reflect.Value, value reflect.Value) {
 		valLen := value.Len()
 		if valLen > 0 {
 			destTemp := reflect.MakeSlice(dest.Type(), 0, valLen)
-			for i := 0; i < valLen; i++ {
+			for i := range valLen {
 				destTemp = reflect.Append(destTemp, value.Index(i).Elem())
 			}
 			dest.Set(destTemp)
@@ -604,7 +599,7 @@ func followPathThroughStructs(structPtrVal reflect.Value, path []int) (reflect.V
 		panic(oops.New(nil, "can't follow an empty path"))
 	}
 
-	if structPtrVal.Kind() != reflect.Ptr || structPtrVal.Elem().Kind() != reflect.Struct {
+	if structPtrVal.Kind() != reflect.Pointer || structPtrVal.Elem().Kind() != reflect.Struct {
 		panic(oops.New(nil, "structPtrVal must be a pointer to a struct; got value of type %s", structPtrVal.Type()))
 	}
 
@@ -618,7 +613,7 @@ func followPathThroughStructs(structPtrVal reflect.Value, path []int) (reflect.V
 
 	val := structPtrVal
 	for _, i := range path {
-		if val.Kind() == reflect.Ptr && val.Type().Elem().Kind() == reflect.Struct {
+		if val.Kind() == reflect.Pointer && val.Type().Elem().Kind() == reflect.Struct {
 			if val.IsNil() {
 				val.Set(reflect.New(val.Type().Elem()))
 			}

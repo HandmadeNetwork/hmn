@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var UserType = reflect.TypeOf(User{})
+var UserType = reflect.TypeFor[User]()
 
 type UserStatus int
 

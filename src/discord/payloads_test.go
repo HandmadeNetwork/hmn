@@ -9,7 +9,7 @@ import (
 
 func TestMessageFromMap(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
-		var m interface{}
+		var m any
 		assert.Nil(t, json.Unmarshal([]byte(testMessageCreate), &m))
 
 		message := MessageFromMap(m, "")
@@ -17,7 +17,7 @@ func TestMessageFromMap(t *testing.T) {
 		assert.Equal(t, "bvisness", message.Author.Username)
 	})
 	t.Run("update", func(t *testing.T) {
-		var m interface{}
+		var m any
 		assert.Nil(t, json.Unmarshal([]byte(testMessageUpdate), &m))
 
 		message := MessageFromMap(m, "")
@@ -25,13 +25,13 @@ func TestMessageFromMap(t *testing.T) {
 		assert.Equal(t, "bvisness", message.Author.Username)
 	})
 	t.Run("delete", func(t *testing.T) {
-		var m interface{}
+		var m any
 		assert.Nil(t, json.Unmarshal([]byte(testMessageDelete), &m))
 
 		MessageDeleteFromMap(m)
 	})
 	t.Run("create with attachment", func(t *testing.T) {
-		var m interface{}
+		var m any
 		assert.Nil(t, json.Unmarshal([]byte(testMessageCreate_Attachment), &m))
 
 		message := MessageFromMap(m, "")
@@ -39,21 +39,21 @@ func TestMessageFromMap(t *testing.T) {
 		assert.Equal(t, "legobrick.png", message.Attachments[0].Filename)
 	})
 	t.Run("delete attachment", func(t *testing.T) {
-		var m interface{}
+		var m any
 		assert.Nil(t, json.Unmarshal([]byte(testMessageUpdate_Attachment), &m))
 
 		message := MessageFromMap(m, "")
 		assert.Len(t, message.Attachments, 0)
 	})
 	t.Run("create with embed", func(t *testing.T) {
-		var m interface{}
+		var m any
 		assert.Nil(t, json.Unmarshal([]byte(testMessageCreate_Embed), &m))
 
 		message := MessageFromMap(m, "")
 		assert.Len(t, message.Embeds, 0) // no embeds in original message
 	})
 	t.Run("update with new embeds", func(t *testing.T) {
-		var m interface{}
+		var m any
 		assert.Nil(t, json.Unmarshal([]byte(testMessageCreate_AddEmbed), &m))
 
 		message := MessageFromMap(m, "")
@@ -61,7 +61,7 @@ func TestMessageFromMap(t *testing.T) {
 		assert.Equal(t, "https://handmade.network/jam", *message.Embeds[0].Url)
 	})
 	t.Run("delete embeds", func(t *testing.T) {
-		var m interface{}
+		var m any
 		assert.Nil(t, json.Unmarshal([]byte(testMessageCreate_DeleteEmbed), &m))
 
 		message := MessageFromMap(m, "")
@@ -71,7 +71,7 @@ func TestMessageFromMap(t *testing.T) {
 
 func TestInteractionFromMap(t *testing.T) {
 	t.Run("slash command", func(t *testing.T) {
-		var m interface{}
+		var m any
 		assert.Nil(t, json.Unmarshal([]byte(testInteractionCreate_Slash), &m))
 
 		i := InteractionFromMap(m, "")
@@ -85,7 +85,7 @@ func TestInteractionFromMap(t *testing.T) {
 		assert.Equal(t, "132715550571888640", i.Data.Resolved.Members[userID].User.ID)
 	})
 	t.Run("user command", func(t *testing.T) {
-		var m interface{}
+		var m any
 		assert.Nil(t, json.Unmarshal([]byte(testInteractionCreate_User), &m))
 
 		i := InteractionFromMap(m, "")

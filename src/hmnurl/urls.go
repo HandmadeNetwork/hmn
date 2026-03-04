@@ -1067,8 +1067,8 @@ func BuildPublic(filepath string, cachebust bool) string {
 	}
 	var builder strings.Builder
 	builder.WriteString("/public")
-	pathParts := strings.Split(filepath, "/")
-	for _, part := range pathParts {
+	pathParts := strings.SplitSeq(filepath, "/")
+	for part := range pathParts {
 		part = strings.TrimSpace(part)
 		if len(part) == 0 {
 			panic(oops.New(nil, "Attempted to build a /public url with blank path segments: %s", filepath))

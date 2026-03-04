@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -365,13 +366,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		return c.RejectRequest("Episode number can't be parsed")
 	}
 	episodeFile := c.Req.Form.Get("episode_file")
-	found = false
-	for _, ef := range episodeFiles {
-		if episodeFile == ef {
-			found = true
-			break
-		}
-	}
+	found = slices.Contains(episodeFiles, episodeFile)
 
 	if !found {
 		return c.RejectRequest("Requested episode file not found")

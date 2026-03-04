@@ -873,10 +873,7 @@ func JamFeed2022(c *RequestContext) ResponseData {
 func JamIndex2021(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	daysUntilJam := utils.DaysUntil(hmndata.WRJ2021.StartTime)
-	if daysUntilJam < 0 {
-		daysUntilJam = 0
-	}
+	daysUntilJam := max(utils.DaysUntil(hmndata.WRJ2021.StartTime), 0)
 
 	tagId := -1
 	jamTag, err := hmndata.FetchTag(c, c.Conn, hmndata.TagQuery{

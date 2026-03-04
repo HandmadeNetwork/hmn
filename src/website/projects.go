@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"path"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1013,13 +1014,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	}
 
 	for _, jamSlug := range payload.JamParticipationSlugs {
-		found := false
-		for _, possibleSlug := range possibleJamSlugs {
-			if possibleSlug == jamSlug {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(possibleJamSlugs, jamSlug)
 		if found {
 			_, err = tx.Exec(ctx,
 				`
