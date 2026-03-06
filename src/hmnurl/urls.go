@@ -293,25 +293,11 @@ func BuildContactPage() string {
 	return Url("/contact", nil)
 }
 
-var RegexNewsletterSignup = regexp.MustCompile("^/newsletter$")
+var RegexOldNewsletterSignup = regexp.MustCompile("^/newsletter$")
 
-func BuildNewsletterSignup() string {
+func BuildOldNewsletterSignup() string {
 	defer CatchPanic()
 	return Url("/newsletter", nil)
-}
-
-var RegexMonthlyUpdatePolicy = regexp.MustCompile("^/monthly-update-policy$")
-
-func BuildMonthlyUpdatePolicy() string {
-	defer CatchPanic()
-	return Url("/monthly-update-policy", nil)
-}
-
-var RegexProjectSubmissionGuidelines = regexp.MustCompile("^/project-guidelines$")
-
-func BuildProjectSubmissionGuidelines() string {
-	defer CatchPanic()
-	return Url("/project-guidelines", nil)
 }
 
 /*
@@ -1232,50 +1218,6 @@ func buildBlogPostPath(threadId int, postId int) *strings.Builder {
 	builder.WriteString(strconv.Itoa(postId))
 
 	return &builder
-}
-
-func buildLibraryResourcePath(resourceId int) *strings.Builder {
-	if resourceId < 1 {
-		panic(oops.New(nil, "Invalid library resource ID (%d), must be >= 1", resourceId))
-	}
-
-	var builder strings.Builder
-	builder.WriteString("/library/resource/")
-	builder.WriteString(strconv.Itoa(resourceId))
-
-	return &builder
-}
-
-func buildLibraryDiscussionPath(resourceId int, threadId int, page int) *strings.Builder {
-	if page < 1 {
-		panic(oops.New(nil, "Invalid page number (%d), must be >= 1", page))
-	}
-	if threadId < 1 {
-		panic(oops.New(nil, "Invalid library thread ID (%d), must be >= 1", threadId))
-	}
-	builder := buildLibraryResourcePath(resourceId)
-	builder.WriteString("/d/")
-	builder.WriteString(strconv.Itoa(threadId))
-	if page > 1 {
-		builder.WriteRune('/')
-		builder.WriteString(strconv.Itoa(page))
-	}
-	return builder
-}
-
-func buildLibraryPostPath(resourceId int, threadId int, postId int) *strings.Builder {
-	if threadId < 1 {
-		panic(oops.New(nil, "Invalid library thread ID (%d), must be >= 1", threadId))
-	}
-	if postId < 1 {
-		panic(oops.New(nil, "Invalid library post ID (%d), must be >= 1", postId))
-	}
-	builder := buildLibraryResourcePath(resourceId)
-	builder.WriteString("/d/")
-	builder.WriteString(strconv.Itoa(threadId))
-	builder.WriteString("/p/")
-	builder.WriteString(strconv.Itoa(postId))
-	return builder
 }
 
 var PathCharsToClear = regexp.MustCompile("[$&`<>{}()\\[\\]\"+#%@;=?\\\\^|~‘]")

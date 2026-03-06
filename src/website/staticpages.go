@@ -47,15 +47,3 @@ func ContactPage(c *RequestContext) ResponseData {
 	res.MustWriteTemplate("contact.html", getBaseData(c, "Contact Us", nil), c.Perf)
 	return res
 }
-
-func MonthlyUpdatePolicy(c *RequestContext) ResponseData {
-	var res ResponseData
-	res.MustWriteTemplate("monthly_update_policy.html", getBaseData(c, "Monthly Update Policy", nil), c.Perf)
-	return res
-}
-
-func ProjectSubmissionGuidelines(c *RequestContext) ResponseData {
-	var res ResponseData
-	res.MustWriteTemplate("project_submission_guidelines.html", getBaseData(c, "Project Submission Guidelines", nil), c.Perf)
-	return res
-}

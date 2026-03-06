@@ -1,31 +1,77 @@
 {{ template "base-2024.html" . }}
 
+{{ define "extrahead" }}
+<script src="{{ static "js/hilbert.js" }}"></script>
+{{ end }}
+
 {{ define "content" }}
-<div class="flex justify-center pa3">
-    <div class="w-100 mw-site-narrow flex flex-column g3">
-        <div class="flex">
-            {{ if .CanCreatePost }}
-                <a class="" href="{{ .NewPostUrl }}">{{ svg "add" }}<span>Create Post</span></a>
-            {{ end }}
-            <div class="flex-grow-1"></div>
-            <div class="">
-                {{ template "pagination.html" .Pagination }}
+{{ if .FirstPost }}
+    <div class="bb">
+        <div class="h3 hilbert hilbert-color" style="--hue: {{ .FirstPost.Hilbert.Hue }}deg"></div>
+        <div class="flex justify-center pv4 ph3">
+            <div class="w-100 mw-site-narrow link-normal flex flex-column g3">
+                {{ with .FirstPost }}
+                    <a href="{{ .Url }}"><h2 class="f4 lh-title">{{ .Title }}</h2></a>
+                    <div class="flex ">
+                        <img class="avatar avatar-user mr2" src="{{ .Author.AvatarUrl }}" />
+                        <div class="flex flex-column g1 flex-grow-1">
+                            <a class="b" href="{{ .Author.ProfileUrl }}">{{ .Author.Name }}</a>
+                            <span class="f6">{{ timehtml (absoluteshortdate .Date) .Date }}</span>
+                        </div>
+                    </div>
+                    {{ if .Content }}
+                        <div class="overflow-hidden maxh-5 relative post-content">
+                            <div>
+                                {{ .Content }}
+                            </div>
+                            <div class="excerpt-fade absolute w-100 h4 bottom-0 z-999"></div>
+                        </div>
+                        <a href="{{ .Url }}" class="f6">Read more<div class="dib svgicon svgicon-nofix f8 ml1">{{ svg "chevron-right" }}</div></a>
+                    {{ end }}
+                {{ end }}
             </div>
         </div>
-        <hr />
-        {{ range .Posts }}
-            {{ template "blog_list_item.html" . }}
+    </div>
+    {{ if not .IsProjectPage }}
+		<div class="bb bg1 pv4 tc">
+			<div class="b pv2">Sign up for our email newsletter:</div>
+			{{ template "newsletter_signup.html" . }}
+		</div>
+	{{ end }}
+{{ end }}
+<div class="flex justify-center pa3">
+    <div class="w-100 mw-site-wide flex flex-column g3">
+        <div class="flex flex-column g2">
+            <div class="flex">
+                {{ if .CanCreatePost }}
+                    <a class="" href="{{ .NewPostUrl }}">{{ svg "add" }}<span>Create Post</span></a>
+                {{ end }}
+                <div class="flex-grow-1"></div>
+                <div class="">
+                    {{ template "pagination.html" .Pagination }}
+                </div>
+            </div>
+            <hr>
+        </div>
+        {{ if .Posts }}
+            <div class="grid grid-3 g3">
+                {{ range .Posts }}
+                    {{ template "blog_list_item.html" . }}
+                {{ end }}
+            </div>
         {{ else }}
             <div class="f3">There are no blog posts for this project yet.</div>
         {{ end }}
-        <hr />
-        <div class="flex">
-            {{ if .CanCreatePost }}
-                <a class="" href="{{ .NewPostUrl }}">{{ svg "add" }}<span>Create Post</span></a>
-            {{ end }}
-            <div class="flex-grow-1"></div>
-            <div class="">
-                {{ template "pagination.html" .Pagination }}
+        <div class="flex flex-column g2">
+            <hr>
+            <div class="flex">
+                {{ if .CanCreatePost }}
+                    <a class="" href="{{ .NewPostUrl }}">{{ svg "add" }}<span>Create Post</span></a>
+                {{ end }}
+                <div class="flex-grow-1"></div>
+                <div class="">
+                    {{ template "pagination.html" .Pagination }}
+                </div>
             </div>
         </div>
     </div>

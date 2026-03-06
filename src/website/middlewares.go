@@ -24,7 +24,7 @@ func panicCatcherMiddleware(h Handler) Handler {
 				if ok {
 					err = *maybeError
 				} else {
-					err = oops.New(nil, fmt.Sprintf("Recovered from panic with value: %v", recovered))
+					err = oops.New(nil, "Recovered from panic with value: %v", recovered)
 				}
 				res = c.ErrorResponse(http.StatusInternalServerError, err)
 			}

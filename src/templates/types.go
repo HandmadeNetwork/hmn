@@ -51,13 +51,14 @@ type Header struct {
 	HMNHomepageUrl  string
 	ProjectIndexUrl string
 	PodcastUrl      string
-	NewsletterUrl   string
+	NewsUrl         string
 	FishbowlUrl     string
 	ForumsUrl       string
 	JamsUrl         string
 	EducationUrl    string
 	CalendarUrl     string
 	ManifestoUrl    string
+	ValuesUrl       string
 	AboutUrl        string
 
 	Project *ProjectHeader
@@ -151,6 +152,7 @@ type BlogIndexEntry struct {
 	Author  User
 	Date    time.Time
 	Content template.HTML
+	Hilbert Hilbert
 }
 
 type Project struct {
@@ -204,6 +206,10 @@ type ProjectSettings struct {
 
 type Flowsnake struct {
 	Angle, Hue, Size int
+}
+
+type Hilbert struct {
+	Hue int
 }
 
 const FlowsnakeMaxAngle = 25    // deg

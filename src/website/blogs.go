@@ -21,6 +21,7 @@ import (
 func BlogIndex(c *RequestContext) ResponseData {
 	type blogIndexData struct {
 		templates.BaseData
+		FirstPost  *templates.BlogIndexEntry
 		Posts      []templates.BlogIndexEntry
 		Pagination templates.Pagination
 
@@ -28,7 +29,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		NewPostUrl    string
 	}
 
-	const postsPerPage = 20
+	const postsPerPage = 21
 
 	numThreads, err := hmndata.CountThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
 		ProjectIDs:  []int{c.CurrentProject.ID},
@@ -55,20 +56,23 @@ func BlogIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
 	}
 
-	showContent := len(threads) <= 5
+	var firstEntry *templates.BlogIndexEntry
 	var entries []templates.BlogIndexEntry
 	for _, thread := range threads {
-		content := template.HTML("")
-		if showContent {
-			content = template.HTML(thread.FirstPostCurrentVersion.TextParsed)
-		}
-		entries = append(entries, templates.BlogIndexEntry{
+		entry := templates.BlogIndexEntry{
 			Title:   thread.Thread.Title,
 			Url:     c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title),
 			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
 			Date:    thread.FirstPost.PostDate,
-			Content: content,
-		})
+			Content: template.HTML(thread.FirstPostCurrentVersion.TextParsed),
+			Hilbert: templates.MakeHilbert(thread.Thread.ID),
+		}
+
+		if page == 1 && firstEntry == nil {
+			firstEntry = &entry
+		} else {
+			entries = append(entries, entry)
+		}
 	}
 
 	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)})
@@ -92,8 +96,9 @@ func BlogIndex(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("blog_index.html", blogIndexData{
-		BaseData: baseData,
-		Posts:    entries,
+		BaseData:  baseData,
+		FirstPost: firstEntry,
+		Posts:     entries,
 		Pagination: templates.Pagination{
 			Current: page,
 			Total:   numPages,

@@ -70,12 +70,29 @@ func ProjectLogoUrl(asset *models.Asset) string {
 	return ""
 }
 
+func MakeFlowsnake(seed int) Flowsnake {
+	src := rand.NewSource(int64(seed))
+	rnd := rand.New(src)
+
+	return Flowsnake{
+		Angle: rnd.Intn(FlowsnakeMaxAngle),
+		Hue:   rnd.Intn(360),
+		Size:  FlowsnakeMinSize + rnd.Intn(FlowsnakeSizeRange),
+	}
+}
+
+func MakeHilbert(seed int) Hilbert {
+	src := rand.NewSource(int64(seed))
+	rnd := rand.New(src)
+
+	return Hilbert{
+		Hue: rnd.Intn(360),
+	}
+}
+
 func ProjectToTemplate(
 	p *models.Project,
 ) Project {
-	src := rand.NewSource(int64(p.ID))
-	rnd := rand.New(src)
-
 	return Project{
 		ID:                p.ID,
 		Name:              p.Name,
@@ -86,11 +103,7 @@ func ProjectToTemplate(
 		Blurb:             p.Blurb,
 		ParsedDescription: template.HTML(p.ParsedDescription),
 
-		Flowsnake: Flowsnake{
-			Angle: rnd.Intn(FlowsnakeMaxAngle),
-			Hue:   rnd.Intn(360),
-			Size:  FlowsnakeMinSize + rnd.Intn(FlowsnakeSizeRange),
-		},
+		Flowsnake: MakeFlowsnake(p.ID),
 
 		LifecycleBadgeClass: LifecycleBadgeClasses[p.Lifecycle],
 		LifecycleString:     LifecycleBadgeStrings[p.Lifecycle],
