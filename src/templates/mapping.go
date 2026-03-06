@@ -200,9 +200,10 @@ func SessionToTemplate(s *models.Session) Session {
 
 func ThreadToTemplate(t *models.Thread) Thread {
 	return Thread{
-		Title:  t.Title,
-		Locked: t.Locked,
-		Sticky: t.Sticky,
+		Title:   t.Title,
+		Hilbert: MakeHilbert(t.ID),
+		Locked:  t.Locked,
+		Sticky:  t.Sticky,
 	}
 }
 

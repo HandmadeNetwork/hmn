@@ -8,7 +8,7 @@ import (
 func Manifesto(c *RequestContext) ResponseData {
 	type TemplateData struct {
 		templates.BaseData
-		AboutUrl string
+		ValuesUrl string
 	}
 	baseData := getBaseData(c, "Handmade Manifesto", nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
@@ -18,6 +18,25 @@ func Manifesto(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("manifesto.html", TemplateData{
+		BaseData:  baseData,
+		ValuesUrl: hmnurl.BuildValues(),
+	}, c.Perf)
+	return res
+}
+
+func Values(c *RequestContext) ResponseData {
+	type TemplateData struct {
+		templates.BaseData
+		AboutUrl string
+	}
+	baseData := getBaseData(c, "Values", nil)
+	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description",
+		Value:    "“What I cannot create, I do not understand.”",
+	})
+
+	var res ResponseData
+	res.MustWriteTemplate("values.html", TemplateData{
 		BaseData: baseData,
 		AboutUrl: hmnurl.BuildAbout(),
 	}, c.Perf)

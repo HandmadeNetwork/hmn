@@ -91,7 +91,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			EducationUrl:    hmnurl.BuildEducationIndex(),
 			CalendarUrl:     hmnurl.BuildCalendarIndex(),
 			ManifestoUrl:    hmnurl.BuildManifesto(),
-			ValuesUrl:       hmnurl.BuildHSFValues(),
+			ValuesUrl:       hmnurl.BuildValues(),
 			AboutUrl:        hmnurl.BuildAbout(),
 
 			Breadcrumbs: breadcrumbs,
@@ -165,7 +165,7 @@ func getHSFBaseData() templates.HSFBaseData {
 
 	baseData.HomeUrl = hmnurl.BuildHSFLanding()
 	baseData.ManifestoUrl = hmnurl.BuildHSFManifesto()
-	baseData.ValuesUrl = hmnurl.BuildHSFValues()
+	baseData.ValuesUrl = hmnurl.BuildValues()
 	baseData.ProjectsUrl = hmnurl.BuildHSFProjects()
 	baseData.AboutUrl = hmnurl.BuildHSFAbout()
 	baseData.MembershipUrl = hmnurl.BuildHSFMembership()

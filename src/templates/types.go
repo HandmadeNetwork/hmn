@@ -112,7 +112,8 @@ type HSFBaseData struct {
 }
 
 type Thread struct {
-	Title string
+	Title   string
+	Hilbert Hilbert
 
 	Locked bool
 	Sticky bool

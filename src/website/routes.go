@@ -103,6 +103,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	// NOTE(asaf): HMN-only routes:
 	hmnOnly.GET(hmnurl.RegexManifesto, Manifesto)
+	hmnOnly.GET(hmnurl.RegexValues, Values)
 	hmnOnly.GET(hmnurl.RegexAbout, About)
 	// hmnOnly.GET(hmnurl.RegexFoundation, Foundation)
 	hmnOnly.GET(hmnurl.RegexCommunicationGuidelines, CommunicationGuidelines)
@@ -133,7 +134,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexHSFManifesto, HSFManifesto)
 	hmnOnly.GET(hmnurl.RegexHSFMembership, HSFMembership)
 	hmnOnly.GET(hmnurl.RegexHSFProjects, HSFProjects)
-	hmnOnly.GET(hmnurl.RegexHSFValues, HSFValues)
 
 	hmnOnly.GET(hmnurl.RegexTimeMachine, TimeMachine)
 	hmnOnly.GET(hmnurl.RegexTimeMachineSubmissions, TimeMachineSubmissions)

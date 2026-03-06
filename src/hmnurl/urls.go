@@ -272,6 +272,13 @@ func BuildManifesto() string {
 	return Url("/manifesto", nil)
 }
 
+var RegexValues = regexp.MustCompile("^/values$")
+
+func BuildValues() string {
+	defer CatchPanic()
+	return Url("/values", nil)
+}
+
 var RegexAbout = regexp.MustCompile("^/about$")
 
 func BuildAbout() string {
@@ -967,12 +974,6 @@ var RegexHSFManifesto = regexp.MustCompile(`^/foundation/manifesto$`)
 
 func BuildHSFManifesto() string {
 	return Url("/foundation/manifesto", nil)
-}
-
-var RegexHSFValues = regexp.MustCompile(`^/foundation/values$`)
-
-func BuildHSFValues() string {
-	return Url("/foundation/values", nil)
 }
 
 var RegexHSFProjects = regexp.MustCompile(`^/foundation/projects$`)
