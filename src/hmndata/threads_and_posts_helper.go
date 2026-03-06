@@ -830,20 +830,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 	}
 
 	htmlContent := parsing.ParseMarkdown(unparsedContent, parsing.PostMarkdown)
-
-	const plaintextPreviewMaxLength = 100
-	const htmlPreviewMaxLength = 600
-	var plaintextPreview, htmlPreview string
-	{
-		plaintextPreview = parsing.ParseMarkdown(unparsedContent, parsing.PlaintextMarkdown)
-		if len(plaintextPreview) > plaintextPreviewMaxLength-1 {
-			plaintextPreview = plaintextPreview[:plaintextPreviewMaxLength-1] + "…"
-		}
-	}
-	{
-		previewMD := unparsedContent[:min(htmlPreviewMaxLength, len(unparsedContent))]
-		htmlPreview = parsing.ParseMarkdown(previewMD, parsing.PostPreviewMarkdown)
-	}
+	plaintextPreview, htmlPreview := GeneratePostPreviews(unparsedContent)
 
 	ip := net.ParseIP(ipString)
 
@@ -926,6 +913,22 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 		panic(oops.New(err, "failed to insert post asset usage"))
 	}
 
+	return
+}
+
+func GeneratePostPreviews(md string) (plain string, html string) {
+	const plaintextPreviewMaxLength = 100
+	const htmlPreviewMaxLength = 600
+	{
+		plain = parsing.ParseMarkdown(md, parsing.PlaintextMarkdown)
+		if len(plain) > plaintextPreviewMaxLength-1 {
+			plain = plain[:plaintextPreviewMaxLength-1] + "…"
+		}
+	}
+	{
+		previewMD := md[:min(htmlPreviewMaxLength, len(md))]
+		html = parsing.ParseMarkdown(previewMD, parsing.PostPreviewMarkdown)
+	}
 	return
 }
 

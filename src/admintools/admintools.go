@@ -636,4 +636,5 @@ func init() {
 	})
 
 	addProjectCommands(adminCommand)
+	addPostCommands(adminCommand)
 }
