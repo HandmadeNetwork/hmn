@@ -132,7 +132,7 @@ func UserProfile(c *RequestContext) ResponseData {
 			Url:     hmnurl.BuildPersonalBlogThread(profileUser.Username, thread.Thread.ID, thread.Thread.Title),
 			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
 			Date:    thread.FirstPost.PostDate,
-			Content: template.HTML(thread.FirstPostCurrentVersion.TextParsed),
+			Content: template.HTML(thread.FirstPost.PreviewHTML),
 		})
 	}
 

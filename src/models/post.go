@@ -19,8 +19,9 @@ type Post struct {
 	PostDate time.Time `db:"postdate"`
 	Deleted  bool      `db:"deleted"`
 
-	Preview  string `db:"preview"`
-	ReadOnly bool   `db:"readonly"`
+	PreviewPlaintext string `db:"preview"`
+	PreviewHTML      string `db:"preview_html"`
+	ReadOnly         bool   `db:"readonly"`
 }
 
 type PostVersion struct {

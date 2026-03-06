@@ -132,7 +132,7 @@ func Index(c *RequestContext) ResponseData {
 		item := PostToTimelineItem(c.UrlContext, lineageBuilder, &t.FirstPost, &t.Thread, t.ThreadOwner, t.FirstPostAuthor)
 		item.Breadcrumbs = nil
 		item.TypeTitle = ""
-		item.Description = template.HTML(t.FirstPostCurrentVersion.TextParsed)
+		item.Description = template.HTML(t.FirstPost.PreviewHTML)
 		item.AllowTitleWrap = true
 		item.TruncateDescription = true
 		item.Unread = t.Unread

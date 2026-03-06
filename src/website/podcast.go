@@ -406,7 +406,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	}
 
 	b := c.Perf.StartBlock("MARKDOWN", "Parsing description")
-	descriptionRendered := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
+	descriptionRendered := parsing.ParseMarkdown(description, parsing.PostMarkdown)
 	b.End()
 
 	guidStr := ""

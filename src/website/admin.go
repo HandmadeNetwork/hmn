@@ -206,7 +206,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 		}
 		timelineItem := PostToTimelineItem(hmndata.UrlContextForProject(&p.Project), lineageBuilder, &p.Post, &p.Thread, p.ThreadOwner, &p.Author)
 		timelineItem.OwnerAvatarUrl = ""
-		timelineItem.Description = template.HTML(p.CurrentVersion.TextParsed)
+		timelineItem.Description = template.HTML(p.Post.PreviewHTML)
 		userData.Timeline = append(userData.Timeline, timelineItem)
 	}
 

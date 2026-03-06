@@ -692,7 +692,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	}
 	links := ParseLinks(c.Req.Form.Get("links"))
 	description := c.Req.Form.Get("full_description")
-	parsedDescription := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
+	parsedDescription := parsing.ParseMarkdown(description, parsing.PostMarkdown)
 
 	lifecycleStr := c.Req.Form.Get("lifecycle")
 	lifecycle, found := templates.ProjectLifecycleFromValue(lifecycleStr)

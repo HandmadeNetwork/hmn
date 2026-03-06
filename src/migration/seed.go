@@ -281,7 +281,7 @@ func seedProject(ctx context.Context, tx pgx.Tx, input models.Project, owners []
 		`,
 		utils.OrDefault(input.ID, latestProjectId+1),
 		input.Slug, input.Name, input.Blurb,
-		input.Description, parsing.ParseMarkdown(input.Description, parsing.ForumRealMarkdown),
+		input.Description, parsing.ParseMarkdown(input.Description, parsing.PostMarkdown),
 		input.Color1, input.Color2,
 		input.Featured, input.Personal, utils.OrDefault(input.Lifecycle, models.ProjectLifecycleActive), input.Hidden,
 		input.ForumEnabled, input.BlogEnabled,

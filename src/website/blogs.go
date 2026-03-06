@@ -64,7 +64,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 			Url:     c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title),
 			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
 			Date:    thread.FirstPost.PostDate,
-			Content: template.HTML(thread.FirstPostCurrentVersion.TextParsed),
+			Content: template.HTML(thread.FirstPost.PreviewHTML),
 			Hilbert: templates.MakeHilbert(thread.Thread.ID),
 		}
 
@@ -176,7 +176,7 @@ func BlogThread(c *RequestContext) ResponseData {
 	baseData := getBaseData(c, thread.Title, BlogThreadBreadcrumbs(c.UrlContext, &thread))
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
-		Value:    posts[0].Post.Preview,
+		Value:    posts[0].Post.PreviewPlaintext,
 	})
 
 	var res ResponseData
@@ -331,7 +331,7 @@ func BlogPersonalIndex(c *RequestContext) ResponseData {
 			Url:     hmnurl.BuildPersonalBlogThread(profileUser.Username, thread.Thread.ID, thread.Thread.Title),
 			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
 			Date:    thread.FirstPost.PostDate,
-			Content: template.HTML(thread.FirstPostCurrentVersion.TextParsed),
+			Content: template.HTML(thread.FirstPost.PreviewHTML),
 		})
 	}
 
@@ -434,7 +434,7 @@ func BlogPersonalThread(c *RequestContext) ResponseData {
 	baseData := getBaseData(c, thread.Title, nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
-		Value:    posts[0].Post.Preview,
+		Value:    posts[0].Post.PreviewPlaintext,
 	})
 
 	var res ResponseData

@@ -12,8 +12,17 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-// Used for rendering real-time previews of post content.
-var ForumPreviewMarkdown = makeGoldmark(
+// Used for rendering HTML previews of posts across the site.
+var PostPreviewMarkdown = makeGoldmark(
+	false,
+	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
+		Previews: true,
+		Embeds:   false,
+	})...),
+)
+
+// Used for rendering real-time previews of post content while editing.
+var PostEditPreviewMarkdown = makeGoldmark(
 	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
 		Previews: true,
@@ -22,7 +31,7 @@ var ForumPreviewMarkdown = makeGoldmark(
 )
 
 // Used for generating the final HTML for a post.
-var ForumRealMarkdown = makeGoldmark(
+var PostMarkdown = makeGoldmark(
 	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
 		Previews: false,

@@ -829,15 +829,23 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 		unparsedContent = unparsedContent[:maxPostContentLength-1]
 	}
 
-	parsed := parsing.ParseMarkdown(unparsedContent, parsing.ForumRealMarkdown)
-	ip := net.ParseIP(ipString)
+	htmlContent := parsing.ParseMarkdown(unparsedContent, parsing.PostMarkdown)
 
-	const previewMaxLength = 100
-	parsedPlaintext := parsing.ParseMarkdown(unparsedContent, parsing.PlaintextMarkdown)
-	preview := parsedPlaintext
-	if len(preview) > previewMaxLength-1 {
-		preview = preview[:previewMaxLength-1] + "…"
+	const plaintextPreviewMaxLength = 100
+	const htmlPreviewMaxLength = 600
+	var plaintextPreview, htmlPreview string
+	{
+		plaintextPreview = parsing.ParseMarkdown(unparsedContent, parsing.PlaintextMarkdown)
+		if len(plaintextPreview) > plaintextPreviewMaxLength-1 {
+			plaintextPreview = plaintextPreview[:plaintextPreviewMaxLength-1] + "…"
+		}
 	}
+	{
+		previewMD := unparsedContent[:min(htmlPreviewMaxLength, len(unparsedContent))]
+		htmlPreview = parsing.ParseMarkdown(previewMD, parsing.PostPreviewMarkdown)
+	}
+
+	ip := net.ParseIP(ipString)
 
 	// Create post version
 	err := tx.QueryRow(ctx,
@@ -849,7 +857,7 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 		`,
 		postId,
 		unparsedContent,
-		parsed,
+		htmlContent,
 		ip,
 		time.Now(),
 		editReason,
@@ -864,11 +872,12 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 		`
 		---- Update post to new version
 		UPDATE post
-		SET current_id = $1, preview = $2
-		WHERE id = $3
+		SET current_id = $1, preview = $2, preview_html = $3
+		WHERE id = $4
 		`,
 		versionId,
-		preview,
+		plaintextPreview,
+		htmlPreview,
 		postId,
 	)
 	if err != nil {

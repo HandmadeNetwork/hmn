@@ -122,7 +122,7 @@ func MakePostListItem(
 	result.Date = post.PostDate
 	result.Unread = unread
 	result.Url = UrlForGenericPost(urlContext, thread, threadOwner, post, lineageBuilder)
-	result.Preview = post.Preview
+	result.Preview = post.PreviewPlaintext
 
 	postType := templates.PostTypeUnknown
 	postTypeOptions, found := PostTypeMap[post.ThreadType]

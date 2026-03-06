@@ -34,7 +34,7 @@ func addCreateProjectCommand(projectCommand *cobra.Command) {
 			personal, _ := cmd.Flags().GetBool("personal")
 			userIDs, _ := cmd.Flags().GetIntSlice("userids")
 
-			descParsed := parsing.ParseMarkdown(description, parsing.ForumRealMarkdown)
+			descParsed := parsing.ParseMarkdown(description, parsing.PostMarkdown)
 
 			ctx := context.Background()
 			conn := db.NewConn()

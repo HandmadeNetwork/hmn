@@ -22,8 +22,9 @@ func PostToTemplate(p *models.Post, author *models.User) Post {
 
 		// Urls not set here. They vary per thread type. Set 'em yourself!
 
-		Preview:  p.Preview,
-		ReadOnly: p.ReadOnly,
+		Preview:     p.PreviewPlaintext,
+		PreviewHTML: template.HTML(p.PreviewHTML),
+		ReadOnly:    p.ReadOnly,
 
 		Author: UserToTemplate(author),
 		// No content. A lot of the time we don't have this handy and don't need it. See AddContentVersion.

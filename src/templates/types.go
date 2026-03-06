@@ -127,6 +127,7 @@ type Post struct {
 	ReplyUrl  string
 
 	Preview      string
+	PreviewHTML  template.HTML
 	ReadOnly     bool
 	ThreadLocked bool
 
