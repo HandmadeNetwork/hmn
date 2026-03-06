@@ -119,6 +119,34 @@ func BuildJamGenericGuidelines(urlSlug string) string {
 	return Url(fmt.Sprintf("/jam/%s/guidelines", urlSlug), nil)
 }
 
+var RegexExpo = regexp.MustCompile("^/expo/(?P<urlslug>[^/]+)$")
+
+func BuildExpo(urlSlug string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/expo/%s", urlSlug), nil)
+}
+
+var RegexTicketsAdmin = regexp.MustCompile("^/tickets/admin$")
+
+func BuildTicketsAdmin() string {
+	defer CatchPanic()
+	return Url("/tickets/admin", nil)
+}
+
+var RegexTicketsAdminEvent = regexp.MustCompile("^/tickets/admin/(?P<urlslug>[^/]+)$")
+
+func BuildTicketsAdminEvent(urlSlug string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/tickets/admin/%s", urlSlug), nil)
+}
+
+var RegexTicketsEventBuy = regexp.MustCompile("^/tickets/(?P<urlslug>[^/]+)/buy$")
+
+func BuildTicketsEventBuy(urlSlug string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/tickets/%s/buy", urlSlug), nil)
+}
+
 var RegexTimeMachine = regexp.MustCompile("^/timemachine$")
 
 func BuildTimeMachine() string {

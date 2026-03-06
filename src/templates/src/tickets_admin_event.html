@@ -1,0 +1,93 @@
+{{ template "base-2024.html" . }}
+
+{{ define "content" }}
+
+<div class="flex justify-center">
+	<div class="pv3 ph3 ph0-ns mw-site flex flex-column g3">
+        <div class="f1 ma3">Ticket Dominator</div>
+
+        <div class="f4">{{ .TicketsEvent.Event.Name }}</div>
+        <div class="f6">{{ .TicketsEvent.Event.Description }}</div>
+
+		<form id="ticket_event_form" class="hmn-form" method="POST" autocomplete="off">
+            {{ csrftoken .Session }}
+
+            <div class="fieldset">
+                <legend>Settings</legend>
+                <div class="pa3 input-group">
+                    <label>Max tickets</label>
+                    <input
+                        required
+                        type="number"
+                        name="max_tickets"
+                        value="{{ .TicketsEvent.Metadata.MaxTickets }}"
+                        />
+                </div>
+
+                <div class="pa3 input-group">
+                    <label>Max reserved tickets</label>
+                    <input
+                        required
+                        type="number"
+                        name="max_reserved_tickets"
+                        value="{{ .TicketsEvent.Metadata.MaxReserved }}"
+                        />
+                </div>
+
+                <div class="pa3 input-group">
+                    <label>Price</label>
+                    <div class="flex items-center">
+                        <input
+                        required
+                        class="flex-grow-1 mr2"
+                        type="text"
+                        name="price_amount"
+                        value="{{ .TicketsEvent.Metadata.PriceAmount }}"
+                        />
+                        {{ .TicketsEvent.Metadata.PriceCurrency }}
+                    </div>
+                </div>
+
+                <div class="pa3 flex justify-end">
+                    <input class="btn-primary" type="submit" value="Save" />
+                </div>
+            </div>
+        </form>
+
+        <div class="f3">Tickets</div>
+        <div>
+            <div><b>Available for sale:</b> {{ sub (sub .TicketsEvent.Metadata.MaxTickets .TicketsEvent.Metadata.SoldTickets) (max .TicketsEvent.Metadata.MaxReserved .TicketsEvent.Metadata.ReservedTickets) }}</div>
+            <div><b>Available for reservation:</b> {{ sub .TicketsEvent.Metadata.MaxReserved .TicketsEvent.Metadata.ReservedTickets }}</div>
+        </div>
+
+        {{ with .TicketsEvent.Tickets }}
+            <table>
+                <thead>
+                    <tr>
+                        <td>User</td>
+                        <td>Name</td>
+                        <td>Email</td>
+                        <td>Notes</td>
+                        <td></td>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range . }}
+                        <tr>
+                            <td>{{ if .User }} <a href="{{ .User.ProfileUrl }}">{{ .User.Username }}</a> {{ else }} No user {{ end }}</td>
+                            <td>{{ .Name }}</td>
+                            <td>{{ .Email }}</td>
+                            <td>{{ .Notes }}</td>
+                            <td><a href="{{ .Url }}">View</a></td>
+                        </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        {{ else }}
+            No tickets assigned yet
+        {{ end }}
+
+    </div>
+</div>
+
+{{ end }}

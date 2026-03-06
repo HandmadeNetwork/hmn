@@ -15,10 +15,6 @@ const JamProjectCreateGracePeriod = 7 * 24 * time.Hour
 
 type Jam struct {
 	Event
-	Name        string
-	Description string // NOTE(asaf): Used by opengraph
-	Slug        string
-	UrlSlug     string
 
 	TemplateName string
 	ForceDark    bool
@@ -30,51 +26,51 @@ var WRJ2021 = Jam{
 	Event: Event{
 		StartTime: time.Date(2021, 9, 27, 0, 0, 0, 0, time.UTC),
 		EndTime:   time.Date(2021, 10, 4, 0, 0, 0, 0, time.UTC),
+		Name:      "Wheel Reinvention Jam 2021",
+		Slug:      "WRJ2021",
+		UrlSlug:   "2021",
 	},
-	Name:    "Wheel Reinvention Jam 2021",
-	Slug:    "WRJ2021",
-	UrlSlug: "2021",
 }
 
 var WRJ2022 = Jam{
 	Event: Event{
 		StartTime: time.Date(2022, 8, 15, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
 		EndTime:   time.Date(2022, 8, 22, 8, 0, 0, 0, utils.Must1(time.LoadLocation("America/Los_Angeles"))),
+		Name:      "Wheel Reinvention Jam 2022",
+		Slug:      "WRJ2022",
+		UrlSlug:   "2022",
 	},
-	Name:    "Wheel Reinvention Jam 2022",
-	Slug:    "WRJ2022",
-	UrlSlug: "2022",
 }
 
 var VJ2023 = Jam{
 	Event: Event{
 		StartTime: time.Date(2023, 4, 14, 0, 0, 0, 0, time.UTC),
 		EndTime:   time.Date(2023, 4, 17, 0, 0, 0, 0, time.UTC),
+		Name:      "Visibility Jam 2023",
+		Slug:      "VJ2023",
+		UrlSlug:   "visibility-2023",
 	},
-	Name:    "Visibility Jam 2023",
-	Slug:    "VJ2023",
-	UrlSlug: "visibility-2023",
 }
 
 var WRJ2023 = Jam{
 	Event: Event{
 		StartTime: time.Date(2023, 9, 25, 10, 0, 0, 0, utils.Must1(time.LoadLocation("Europe/London"))),
 		EndTime:   time.Date(2023, 10, 1, 20, 0, 0, 0, utils.Must1(time.LoadLocation("Europe/London"))),
+		Name:      "Wheel Reinvention Jam 2023",
+		Slug:      "WRJ2023",
+		UrlSlug:   "2023",
 	},
-	Name:    "Wheel Reinvention Jam 2023",
-	Slug:    "WRJ2023",
-	UrlSlug: "2023",
 }
 
 var LJ2024 = Jam{
 	Event: Event{
-		StartTime: time.Date(2024, 3, 15, 17, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(2024, 3, 25, 0, 0, 0, 0, time.UTC),
+		StartTime:   time.Date(2024, 3, 15, 17, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2024, 3, 25, 0, 0, 0, 0, time.UTC),
+		Name:        "Learning Jam 2024",
+		Description: "A two-weekend jam where you dive deep into a topic, then share it with the rest of the community.",
+		Slug:        "LJ2024",
+		UrlSlug:     "learning-2024",
 	},
-	Name:         "Learning Jam 2024",
-	Description:  "A two-weekend jam where you dive deep into a topic, then share it with the rest of the community.",
-	Slug:         "LJ2024",
-	UrlSlug:      "learning-2024",
 	TemplateName: "2024_lj",
 	ForceDark:    true,
 }
@@ -84,50 +80,50 @@ var VJ2024 = Jam{
 	// Start: 6am Seattle / 8am Minneapolis / 1pm UTC / 2pm London / 4pm Jerusalem
 	// End: 10pm Seattle / 12am Minneapolis / 5am UTC / 6am London / 8am Jerusalem
 	Event: Event{
-		StartTime: time.Date(2024, 7, 19, 13, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(2024, 7, 22, 5, 0, 0, 0, time.UTC),
+		StartTime:   time.Date(2024, 7, 19, 13, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2024, 7, 22, 5, 0, 0, 0, time.UTC),
+		Name:        "Visibility Jam 2024",
+		Description: "See things in a new way. July 19 - 21.",
+		Slug:        "VJ2024",
+		UrlSlug:     "visibility-2024",
 	},
-	Name:         "Visibility Jam 2024",
-	Description:  "See things in a new way. July 19 - 21.",
-	Slug:         "VJ2024",
-	UrlSlug:      "visibility-2024",
 	TemplateName: "2024_vj",
 }
 
 var WRJ2024 = Jam{
 	Event: Event{
-		StartTime: time.Date(2024, 9, 23, 13, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(2024, 9, 30, 5, 0, 0, 0, time.UTC),
+		StartTime:   time.Date(2024, 9, 23, 13, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2024, 9, 30, 5, 0, 0, 0, time.UTC),
+		Name:        "Wheel Reinvention Jam 2024",
+		Description: "A one-week jam where we build software from scratch. September 23 - 29 on the Handmade Network.",
+		Slug:        "WRJ2024",
+		UrlSlug:     "wheel-reinvention-2024",
 	},
-	Name:         "Wheel Reinvention Jam 2024",
-	Description:  "A one-week jam where we build software from scratch. September 23 - 29 on the Handmade Network.",
-	Slug:         "WRJ2024",
-	UrlSlug:      "wheel-reinvention-2024",
 	TemplateName: "2024_wrj",
 }
 
 var XRay2025 = Jam{
 	Event: Event{
-		StartTime: time.Date(2025, 6, 9, 13, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(2025, 6, 16, 5, 0, 0, 0, time.UTC),
+		StartTime:   time.Date(2025, 6, 9, 13, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2025, 6, 16, 5, 0, 0, 0, time.UTC),
+		Name:        "X-Ray Jam 2025",
+		Description: "A jam to find out how software works on the inside. June 9 - 15 on the Handmade Network.",
+		Slug:        "XRay2025",
+		UrlSlug:     "x-ray-2025",
 	},
-	Name:         "X-Ray Jam 2025",
-	Description:  "A jam to find out how software works on the inside. June 9 - 15 on the Handmade Network.",
-	Slug:         "XRay2025",
-	UrlSlug:      "x-ray-2025",
 	TemplateName: "2025_xray",
 	ForceDark:    true,
 }
 
 var WRJ2025 = Jam{
 	Event: Event{
-		StartTime: time.Date(2025, 9, 22, 13, 0, 0, 0, time.UTC),
-		EndTime:   time.Date(2025, 9, 29, 5, 0, 0, 0, time.UTC),
+		StartTime:   time.Date(2025, 9, 22, 13, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2025, 9, 29, 5, 0, 0, 0, time.UTC),
+		Name:        "Wheel Reinvention Jam 2025",
+		Description: "A one-week jam to build software from scratch. September 22 - 28 on the Handmade Network.",
+		Slug:        "WRJ2025",
+		UrlSlug:     "wheel-reinvention-2025",
 	},
-	Name:         "Wheel Reinvention Jam 2025",
-	Description:  "A one-week jam to build software from scratch. September 22 - 28 on the Handmade Network.",
-	Slug:         "WRJ2025",
-	UrlSlug:      "wheel-reinvention-2025",
 	TemplateName: "2025_wrj",
 }
 
@@ -181,7 +177,7 @@ func JamBySlug(slug string) Jam {
 			return jam
 		}
 	}
-	return Jam{Slug: slug}
+	return Jam{Event: Event{Slug: slug}}
 }
 
 func FetchJamsForProject(ctx context.Context, dbConn db.ConnOrTx, user *models.User, projectId int) ([]*models.JamProject, error) {

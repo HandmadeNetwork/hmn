@@ -1,0 +1,32 @@
+package hmndata
+
+import (
+	"time"
+
+	"git.handmade.network/hmn/hmn/src/utils"
+)
+
+type Expo struct {
+	Event
+
+	TemplateName string
+}
+
+var HMNExpo2026 = Expo{
+	Event: Event{
+		StartTime:   time.Date(2026, 6, 6, 9, 30, 0, 0, utils.Must1(time.LoadLocation("America/Vancouver"))),
+		EndTime:     time.Date(2026, 6, 7, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Vancouver"))),
+		Name:        "Handmade Network Expo 2026",
+		Description: "Cool event in vancouver",
+		Slug:        "EXPO2026",
+		UrlSlug:     "vancouver-2026",
+	},
+
+	TemplateName: "2026",
+}
+
+var AllExpos = []Expo{
+	HMNExpo2026,
+}
+
+var LatestExpo = HMNExpo2026
