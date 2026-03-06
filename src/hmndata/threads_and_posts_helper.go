@@ -918,15 +918,16 @@ func CreatePostVersion(ctx context.Context, tx pgx.Tx, postId int, unparsedConte
 
 func GeneratePostPreviews(md string) (plain string, html string) {
 	const plaintextPreviewMaxLength = 100
-	const htmlPreviewMaxLength = 600
+	const htmlPreviewMaxLength = 1000
 	{
 		plain = parsing.ParseMarkdown(md, parsing.PlaintextMarkdown)
 		if len(plain) > plaintextPreviewMaxLength-1 {
-			plain = plain[:plaintextPreviewMaxLength-1] + "…"
+			plain = strings.ToValidUTF8(plain[:plaintextPreviewMaxLength-1], "")
+			plain += "…"
 		}
 	}
 	{
-		previewMD := md[:min(htmlPreviewMaxLength, len(md))]
+		previewMD := strings.ToValidUTF8(md[:min(htmlPreviewMaxLength, len(md))], "")
 		html = parsing.ParseMarkdown(previewMD, parsing.PostPreviewMarkdown)
 	}
 	return
