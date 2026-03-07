@@ -130,11 +130,12 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexJamGenericGuidelines, JamGenericGuidelines)
 
 	hmnOnly.GET(hmnurl.RegexExpo, ExpoIndex)
+	hmnOnly.GET(hmnurl.RegexExpoTicketPurchaseSuccess, needsAuth(ExpoTicketPurchaseSuccess))
 
+	hmnOnly.GET(hmnurl.RegexTicketsPurchase, needsAuth(TicketsPurchase))
 	hmnOnly.GET(hmnurl.RegexTicketsAdmin, adminsOnly(TicketsAdmin))
 	hmnOnly.GET(hmnurl.RegexTicketsAdminEvent, adminsOnly(TicketsAdminEvent))
 	hmnOnly.POST(hmnurl.RegexTicketsAdminEvent, adminsOnly(TicketsAdminEventSubmit))
-	hmnOnly.GET(hmnurl.RegexTicketsEventBuy, needsAuth(TicketsEventBuy))
 
 	hmnOnly.GET(hmnurl.RegexHSFAbout, HSFAbout)
 	hmnOnly.GET(hmnurl.RegexHSFLanding, HSFLanding)
@@ -245,6 +246,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexUnwind, func(c *RequestContext) ResponseData {
 		return c.Redirect("https://www.youtube.com/playlist?list=PL-IPpPzBYXBGsAd9-c2__x6LJG4Zszs0T", http.StatusFound)
 	})
+
+	hmnOnly.POST(hmnurl.RegexStripeWebhook, StripeWebhook)
 
 	// Project routes can appear either at the root (e.g. hero.handmade.network/edit)
 	// or on a personal project path (e.g. handmade.network/p/123/hero/edit). So, we

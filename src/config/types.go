@@ -34,6 +34,7 @@ type HMNConfig struct {
 	Calendars         []CalendarSource
 	EsBuild           EsBuildConfig
 	Postmark          PostmarkConfig
+	Stripe            StripeConfig
 }
 
 type PostgresConfig struct {
@@ -129,6 +130,11 @@ type EsBuildConfig struct {
 
 type PostmarkConfig struct {
 	TransactionalStreamToken string
+}
+
+type StripeConfig struct {
+	SecretKey     string
+	WebhookSecret string
 }
 
 func init() {

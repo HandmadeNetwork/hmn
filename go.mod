@@ -23,6 +23,7 @@ require (
 	github.com/rs/zerolog v1.28.0
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.8.1
+	github.com/stripe/stripe-go/v84 v84.4.1
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/teacat/noire v1.1.0
 	github.com/yuin/goldmark v1.4.13

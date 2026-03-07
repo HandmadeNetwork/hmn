@@ -121,9 +121,20 @@ func BuildJamGenericGuidelines(urlSlug string) string {
 
 var RegexExpo = regexp.MustCompile("^/expo/(?P<urlslug>[^/]+)$")
 
-func BuildExpo(urlSlug string) string {
+func BuildExpo(urlSlug string, status string) string {
 	defer CatchPanic()
-	return Url(fmt.Sprintf("/expo/%s", urlSlug), nil)
+	var q []Q
+	if status != "" {
+		q = []Q{{"status", status}}
+	}
+	return Url(fmt.Sprintf("/expo/%s", urlSlug), q)
+}
+
+var RegexExpoTicketPurchaseSuccess = regexp.MustCompile("^/expo/(?P<urlslug>[^/]+)$")
+
+func BuildExpoTicketPurchaseSuccess(urlSlug string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/expo/%s/success", urlSlug), nil)
 }
 
 var RegexTicketsAdmin = regexp.MustCompile("^/tickets/admin$")
@@ -140,11 +151,11 @@ func BuildTicketsAdminEvent(urlSlug string) string {
 	return Url(fmt.Sprintf("/tickets/admin/%s", urlSlug), nil)
 }
 
-var RegexTicketsEventBuy = regexp.MustCompile("^/tickets/(?P<urlslug>[^/]+)/buy$")
+var RegexTicketsPurchase = regexp.MustCompile("^/tickets/(?P<urlslug>[^/]+)/purchase$")
 
-func BuildTicketsEventBuy(urlSlug string) string {
+func BuildTicketsPurchase(urlSlug string) string {
 	defer CatchPanic()
-	return Url(fmt.Sprintf("/tickets/%s/buy", urlSlug), nil)
+	return Url(fmt.Sprintf("/tickets/%s/purchase", urlSlug), nil)
 }
 
 var RegexTimeMachine = regexp.MustCompile("^/timemachine$")
@@ -1115,6 +1126,8 @@ func BuildUserFile(filepath string) string {
 	filepath = strings.Trim(filepath, "/")
 	return BuildPublic(fmt.Sprintf("media/%s", filepath), false)
 }
+
+var RegexStripeWebhook = regexp.MustCompile("^/stripe/webhook$")
 
 /*
 * Redirects

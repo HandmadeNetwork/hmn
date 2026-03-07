@@ -15,7 +15,7 @@ func init() {
 type Ticket struct{}
 
 func (m Ticket) Version() types.MigrationVersion {
-	return types.MigrationVersion(time.Date(2026, 2, 12, 14, 53, 47, 0, time.UTC))
+	return types.MigrationVersion(time.Date(2026, 3, 6, 22, 39, 0, 0, time.UTC))
 }
 
 func (m Ticket) Name() string {
@@ -30,16 +30,25 @@ func (m Ticket) Up(ctx context.Context, tx pgx.Tx) error {
 	_, err := tx.Exec(ctx,
 		`
 		CREATE TABLE ticket (
-			id UUID not null,
+			id UUID NOT NULL,
 			event_slug VARCHAR(64) NOT NULL,
-			owner_user_id INT REFERENCES hmn_user (id),
-			name TEXT,
-			email TEXT,
+
+			-- We don't want to delete tickets that have already been paid. We expect that it will be
+			-- quite rare for a user to request deletion after ever paying for a ticket to an HMN event,
+			-- and if they do, we can handle it manually by deleting the ticket.
+			user_id INT REFERENCES hmn_user(id) ON DELETE RESTRICT,
+
+			name TEXT NOT NULL,
+			email TEXT NOT NULL,
+
+			pending BOOLEAN NOT NULL DEFAULT FALSE,
 			reserved BOOLEAN NOT NULL DEFAULT FALSE,
-			allocation_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-			price_amount VARCHAR(10) NOT NULL,
-			price_currency VARCHAR(10) NOT NULL,
-			notes TEXT
+
+			purchase_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+			stripe_cs_id VARCHAR(100) NOT NULL DEFAULT '',
+			price_amount VARCHAR(10) NOT NULL DEFAULT '',
+			price_currency VARCHAR(10) NOT NULL DEFAULT '',
+			notes TEXT NOT NULL DEFAULT ''
 		)
 		`,
 	)

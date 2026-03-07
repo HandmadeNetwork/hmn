@@ -15,7 +15,7 @@ func init() {
 type TicketMetadata struct{}
 
 func (m TicketMetadata) Version() types.MigrationVersion {
-	return types.MigrationVersion(time.Date(2026, 2, 12, 12, 9, 19, 0, time.UTC))
+	return types.MigrationVersion(time.Date(2026, 3, 6, 22, 38, 0, 0, time.UTC))
 }
 
 func (m TicketMetadata) Name() string {

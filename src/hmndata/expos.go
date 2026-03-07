@@ -3,6 +3,7 @@ package hmndata
 import (
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
@@ -20,6 +21,13 @@ var HMNExpo2026 = Expo{
 		Description: "Cool event in vancouver",
 		Slug:        "EXPO2026",
 		UrlSlug:     "vancouver-2026",
+
+		IndexUrl:         hmnurl.BuildExpo("vancouver-2026", ""),
+		TicketSuccessUrl: hmnurl.BuildExpoTicketPurchaseSuccess("vancouver-2026"),
+		TicketCancelUrl:  hmnurl.BuildExpo("vancouver-2026", "cancel"),
+
+		StripeProductID: "prod_U6KKjDV9vuKxIu",
+		StripePriceID:   "price_1T87fdC5nzOagkys6yyx6lUH",
 	},
 
 	TemplateName: "2026",
