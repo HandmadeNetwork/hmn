@@ -28,6 +28,7 @@ func ExpoIndex(c *RequestContext) ResponseData {
 		Expo:         expo,
 		BuyTicketUrl: hmnurl.BuildTicketsPurchase(expo.UrlSlug),
 	}
+	templateData.ForceDark = true
 	templateName := fmt.Sprintf("expo_%s_index.html", expo.TemplateName)
 
 	var res ResponseData
