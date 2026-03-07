@@ -134,6 +134,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexExpoTicketPurchaseSuccess, needsAuth(ExpoTicketPurchaseSuccess))
 
 	hmnOnly.GET(hmnurl.RegexTicketsPurchase, needsAuth(TicketsPurchase))
+	hmnOnly.GET(hmnurl.RegexTicketQRCode, TicketQRCode)
+	hmnOnly.GET(hmnurl.RegexTicketScanned, TicketScanned)
 	hmnOnly.GET(hmnurl.RegexTicketsAdmin, adminsOnly(TicketsAdmin))
 	hmnOnly.GET(hmnurl.RegexTicketsAdminEvent, adminsOnly(TicketsAdminEvent))
 	hmnOnly.POST(hmnurl.RegexTicketsAdminEvent, adminsOnly(TicketsAdminEventSubmit))

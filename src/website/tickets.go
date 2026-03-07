@@ -17,6 +17,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
+	"github.com/skip2/go-qrcode"
 	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/checkout/session"
 	"github.com/stripe/stripe-go/v84/price"
@@ -432,6 +433,20 @@ func fetchTicketMetadataForEvent(ctx context.Context, conn db.ConnOrTx, event *h
 	}, nil
 }
 
+func fetchTicket(ctx context.Context, conn db.ConnOrTx, id string) (*models.Ticket, error) {
+	ticket, err := db.QueryOne[models.Ticket](ctx, conn,
+		`SELECT $columns FROM ticket WHERE id::TEXT = $1`,
+		id,
+	)
+	if err == db.NotFound {
+		return nil, err
+	} else if err != nil {
+		return nil, oops.New(err, "failed to look up ticket")
+	}
+
+	return ticket, nil
+}
+
 func fetchTicketForUser(ctx context.Context, conn db.ConnOrTx, event *hmndata.Event, userID int) (*models.Ticket, error) {
 	ticket, err := db.QueryOne[models.Ticket](ctx, conn,
 		`
@@ -466,4 +481,24 @@ func fetchTicketByCheckoutSessionID(ctx context.Context, conn db.ConnOrTx, id st
 	}
 
 	return ticket, nil
+}
+
+func TicketQRCode(c *RequestContext) ResponseData {
+	ticket, err := fetchTicket(c, c.Conn, c.PathParams["id"])
+	if err == db.NotFound {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket for scanning"))
+	}
+	codePNG := utils.Must1(qrcode.Encode(hmnurl.BuildTicketScanned(ticket.ID.String()), qrcode.Medium, 1024))
+
+	var res ResponseData
+	res.Header().Add("Content-Type", "image/png")
+	res.Write(codePNG)
+	return res
+}
+
+func TicketScanned(c *RequestContext) ResponseData {
+	// TODO(ben): Actually build ticket-scanning logic closer to the time of the event.
+	return ResponseData{}
 }
