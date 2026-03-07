@@ -483,14 +483,49 @@ func fetchTicketByCheckoutSessionID(ctx context.Context, conn db.ConnOrTx, id st
 	return ticket, nil
 }
 
-func TicketQRCode(c *RequestContext) ResponseData {
+func TicketSingle(c *RequestContext) ResponseData {
 	ticket, err := fetchTicket(c, c.Conn, c.PathParams["id"])
 	if err == db.NotFound {
 		return FourOhFour(c)
 	} else if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket for scanning"))
 	}
-	codePNG := utils.Must1(qrcode.Encode(hmnurl.BuildTicketScanned(ticket.ID.String()), qrcode.Medium, 1024))
+
+	event, ok := findTicketEventBySlug(ticket.EventSlug)
+	if !ok {
+		c.Logger.Error().
+			Str("ticketID", ticket.ID.String()).
+			Str("eventSlug", ticket.EventSlug).
+			Msg("Ticket event slug was invalid!")
+		return c.RejectRequest("Your ticket is not associated with a valid event. This is our fault. Sorry.")
+	}
+
+	type TemplateData struct {
+		templates.BaseData
+		TicketID         string
+		TicketCodeURL    string
+		EventName        string
+		EventDescription string
+		EventURL         string
+	}
+	tmpl := TemplateData{
+		BaseData:         getBaseData(c, fmt.Sprintf("%s Ticket", event.Name), nil),
+		TicketID:         ticket.ID.String(),
+		TicketCodeURL:    hmnurl.BuildTicketQRCode(ticket.ID.String()),
+		EventName:        event.Name,
+		EventDescription: event.Description,
+		EventURL:         event.IndexUrl,
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("tickets_single.html", tmpl, c.Perf)
+	return res
+}
+
+func TicketQRCode(c *RequestContext) ResponseData {
+	// NOTE(ben): We don't even bother to do a db lookup here. If someone provides a bad ticket ID,
+	// our scanner will just reject it.
+	codePNG := utils.Must1(qrcode.Encode(hmnurl.BuildTicketScanned(c.PathParams["id"]), qrcode.Medium, 1024))
 
 	var res ResponseData
 	res.Header().Add("Content-Type", "image/png")
@@ -499,6 +534,10 @@ func TicketQRCode(c *RequestContext) ResponseData {
 }
 
 func TicketScanned(c *RequestContext) ResponseData {
+	if !c.CurrentUser.IsStaff {
+		c.Redirect("https://www.youtube.com/watch?v=dQw4w9WgXcQ", http.StatusSeeOther)
+	}
+
 	// TODO(ben): Actually build ticket-scanning logic closer to the time of the event.
 	return ResponseData{}
 }

@@ -158,6 +158,13 @@ func BuildTicketsPurchase(urlSlug string) string {
 	return Url(fmt.Sprintf("/tickets/%s/purchase", urlSlug), nil)
 }
 
+var RegexTicketSingle = regexp.MustCompile("^/tickets/(?P<id>[^.]+)$")
+
+func BuildTicketSingle(id string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/tickets/%s", id), nil)
+}
+
 var RegexTicketQRCode = regexp.MustCompile("^/tickets/(?P<id>[^.]+).png$")
 
 func BuildTicketQRCode(id string) string {

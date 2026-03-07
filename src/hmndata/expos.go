@@ -18,7 +18,7 @@ var HMNExpo2026 = Expo{
 		StartTime:   time.Date(2026, 6, 6, 9, 30, 0, 0, utils.Must1(time.LoadLocation("America/Vancouver"))),
 		EndTime:     time.Date(2026, 6, 7, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Vancouver"))),
 		Name:        "Handmade Network Expo 2026",
-		Description: "Cool event in vancouver",
+		Description: "A day of demos, brainstorming, and socializing in Vancouver, BC.",
 		Slug:        "EXPO2026",
 		UrlSlug:     "vancouver-2026",
 
