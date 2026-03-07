@@ -11,6 +11,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -19,6 +20,8 @@ import (
 	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/checkout/session"
 )
+
+const TicketPendingExpiration = time.Minute * 31 // Stripe sets the minimum at 30 and I am paranoid about errors
 
 type TicketPageCommon struct {
 	TicketDescriptor string
@@ -270,6 +273,11 @@ func TicketsPurchase(c *RequestContext) ResponseData {
 		// We don't allow bank payments for ticket purchases due to the long transaction time.
 		ExcludedPaymentMethodTypes: []*string{stripe.String("us_bank_account")},
 
+		// We use Stripe's checkout session expirations to drive the cancellation of pending tickets.
+		// On checkout session expiration, if the associated ticket is pending, we delete it. This
+		// saves us from running yet another background job.
+		ExpiresAt: stripe.Int64(time.Now().Add(TicketPendingExpiration).Unix()),
+
 		SuccessURL: stripe.String(event.TicketSuccessUrl),
 		CancelURL:  stripe.String(event.TicketCancelUrl),
 	}
@@ -296,11 +304,10 @@ func TicketsPurchase(c *RequestContext) ResponseData {
 	return c.Redirect(result.URL, http.StatusSeeOther)
 }
 
-// This is for the Stripe callback, NOT the user!
-func ticketsEventBuyPurchased_Stripe(c *RequestContext, session *stripe.CheckoutSession, ticket *models.Ticket) error {
+func confirmStripeTicketPurchase(ctx context.Context, conn db.ConnOrTx, session *stripe.CheckoutSession, ticket *models.Ticket) error {
 	event, ok := findTicketEventBySlug(ticket.EventSlug)
 	if !ok {
-		return oops.New(nil, "no event found for paid ticket!! (slug: %s)", ticket.EventSlug)
+		return oops.New(nil, "no event found for paid ticket!! (id: %s, slug: %s)", ticket.ID, ticket.EventSlug)
 	}
 
 	// Sanity checks!
@@ -313,12 +320,12 @@ func ticketsEventBuyPurchased_Stripe(c *RequestContext, session *stripe.Checkout
 		}
 	}
 
-	_, err := c.Conn.Exec(c,
+	_, err := conn.Exec(ctx,
 		`
-		UPDATE ticket SET pending = FALSE, stripe_pi_id = $2
+		UPDATE ticket SET pending = FALSE, stripe_pi_id = $2, price_amount = $3, price_currency = $4
 		WHERE id = $1
 		`,
-		ticket.ID, session.PaymentIntent.ID,
+		ticket.ID, session.PaymentIntent.ID, fmt.Sprintf("%d", session.AmountTotal), session.Currency,
 	)
 	if err != nil {
 		return oops.New(err, "failed to update ticket after payment")
@@ -328,6 +335,27 @@ func ticketsEventBuyPurchased_Stripe(c *RequestContext, session *stripe.Checkout
 	_ = event
 
 	return nil
+}
+
+func cancelPendingTicketsForCheckoutSession(ctx context.Context, conn db.ConnOrTx, session *stripe.CheckoutSession) (int64, error) {
+	logger := logging.ExtractLogger(ctx).With().Str("sessionID", session.ID).Logger()
+
+	foo, err := conn.Exec(ctx,
+		`
+		DELETE FROM ticket
+		WHERE stripe_cs_id = $1 AND pending = TRUE
+		`,
+		session.ID,
+	)
+	if err != nil {
+		return 0, oops.New(err, "failed to delete tickets for checkout session")
+	}
+
+	if foo.RowsAffected() > 1 {
+		logger.Warn().Int64("RowsAffected", foo.RowsAffected()).Msg("had multiple tickets for a single checkout session; this should not be possible")
+	}
+
+	return foo.RowsAffected(), nil
 }
 
 func findTicketEventBySlug(slugOrUrlSlug string) (hmndata.Event, bool) {

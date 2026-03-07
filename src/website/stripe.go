@@ -45,6 +45,13 @@ func StripeWebhook(c *RequestContext) ResponseData {
 			return c.JSONErrorResponse(http.StatusBadRequest, oops.New(err, "bad JSON in stripe webhook"))
 		}
 		return stripeCheckoutSessionCompleted(c, &session)
+	case "checkout.session.expired":
+		var session stripe.CheckoutSession
+		err := json.Unmarshal(event.Data.Raw, &session)
+		if err != nil {
+			return c.JSONErrorResponse(http.StatusBadRequest, oops.New(err, "bad JSON in stripe webhook"))
+		}
+		return stripeCheckoutSessionExpired(c, &session)
 	default:
 		return ResponseData{StatusCode: http.StatusOK}
 	}
@@ -55,12 +62,15 @@ func stripeCheckoutSessionCompleted(c *RequestContext, session *stripe.CheckoutS
 
 	ticket, err := fetchTicketByCheckoutSessionID(c, c.Conn, session.ID)
 	if err == nil {
-		err := ticketsEventBuyPurchased_Stripe(c, session, ticket)
+		err := confirmStripeTicketPurchase(c, c.Conn, session, ticket)
 		if err != nil {
 			return c.JSONErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to process ticket purchase"))
 		}
+		return c.JSONResponse(http.StatusOK, map[string]any{
+			"confirmedTicket": ticket.ID,
+		})
 	} else if err == db.NotFound {
-		// all good
+		// all good, move on to other checkout things
 	} else {
 		return c.JSONErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket for checkout session"))
 	}
@@ -69,6 +79,18 @@ func stripeCheckoutSessionCompleted(c *RequestContext, session *stripe.CheckoutS
 		Str("session ID", session.ID).
 		Str("payment intent ID", session.PaymentIntent.ID).
 		Msg("Unknown checkout session! What could it mean???")
-
 	return ResponseData{StatusCode: http.StatusOK}
+}
+
+func stripeCheckoutSessionExpired(c *RequestContext, session *stripe.CheckoutSession) ResponseData {
+	// Different Stripe checkout flows may dispatch to different things.
+
+	numDeleted, err := cancelPendingTicketsForCheckoutSession(c, c.Conn, session)
+	if err != nil {
+		return c.JSONErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to clear tickets for expired checkout session"))
+	}
+
+	return c.JSONResponse(http.StatusOK, map[string]any{
+		"ticketsDeleted": numDeleted,
+	})
 }
