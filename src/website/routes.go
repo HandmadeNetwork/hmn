@@ -34,7 +34,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			trackRequestPerf(perfCollector),
 			logContextErrorsMiddleware,
 			preventSearchEngineIndexingOfBeta,
-			panicCatcherMiddleware,
+			panicCatcherMiddleware(false),
 		},
 	}
 
@@ -45,6 +45,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly := anyProject.WithMiddleware(
 		redirectToHMN,
 	)
+	apiRoutes := routes.WithMiddleware(panicCatcherMiddleware(true))
 
 	routes.GET(hmnurl.RegexEsBuild, func(c *RequestContext) ResponseData {
 		if buildcss.ActiveServerPort != 0 {
@@ -236,8 +237,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	hmnOnly.GET(hmnurl.RegexStyleTest, StyleTest)
 
-	hmnOnly.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
-	hmnOnly.POST(hmnurl.RegexAPINewsletterSignup, APINewsletterSignup)
+	apiRoutes.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
+	apiRoutes.POST(hmnurl.RegexAPINewsletterSignup, APINewsletterSignup)
+	apiRoutes.POST(hmnurl.RegexStripeWebhook, StripeWebhook)
 
 	hmnOnly.GET(hmnurl.RegexLibraryAny, func(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.BuildEducationIndex(), http.StatusFound)
@@ -246,8 +248,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexUnwind, func(c *RequestContext) ResponseData {
 		return c.Redirect("https://www.youtube.com/playlist?list=PL-IPpPzBYXBGsAd9-c2__x6LJG4Zszs0T", http.StatusFound)
 	})
-
-	hmnOnly.POST(hmnurl.RegexStripeWebhook, StripeWebhook)
 
 	// Project routes can appear either at the root (e.g. hero.handmade.network/edit)
 	// or on a personal project path (e.g. handmade.network/p/123/hero/edit). So, we

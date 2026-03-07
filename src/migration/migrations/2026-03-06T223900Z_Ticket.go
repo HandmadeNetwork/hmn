@@ -45,7 +45,10 @@ func (m Ticket) Up(ctx context.Context, tx pgx.Tx) error {
 			reserved BOOLEAN NOT NULL DEFAULT FALSE,
 
 			purchase_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-			stripe_cs_id VARCHAR(100) NOT NULL DEFAULT '',
+
+			stripe_cs_id VARCHAR(2048) NOT NULL DEFAULT '',
+			stripe_pi_id VARCHAR(2048) NOT NULL DEFAULT '',
+
 			price_amount VARCHAR(10) NOT NULL DEFAULT '',
 			price_currency VARCHAR(10) NOT NULL DEFAULT '',
 			notes TEXT NOT NULL DEFAULT ''

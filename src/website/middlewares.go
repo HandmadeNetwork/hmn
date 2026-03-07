@@ -15,22 +15,28 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-func panicCatcherMiddleware(h Handler) Handler {
-	return func(c *RequestContext) (res ResponseData) {
-		defer func() {
-			if recovered := recover(); recovered != nil {
-				maybeError, ok := recovered.(*error)
-				var err error
-				if ok {
-					err = *maybeError
-				} else {
-					err = oops.New(nil, "Recovered from panic with value: %v", recovered)
+func panicCatcherMiddleware(useJSON bool) func(h Handler) Handler {
+	return func(h Handler) Handler {
+		return func(c *RequestContext) (res ResponseData) {
+			defer func() {
+				if recovered := recover(); recovered != nil {
+					maybeError, ok := recovered.(*error)
+					var err error
+					if ok {
+						err = *maybeError
+					} else {
+						err = oops.New(nil, "Recovered from panic with value: %v", recovered)
+					}
+					if useJSON {
+						res = c.JSONErrorResponse(http.StatusInternalServerError, err)
+					} else {
+						res = c.ErrorResponse(http.StatusInternalServerError, err)
+					}
 				}
-				res = c.ErrorResponse(http.StatusInternalServerError, err)
-			}
-		}()
+			}()
 
-		return h(c)
+			return h(c)
+		}
 	}
 }
 

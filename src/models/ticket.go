@@ -27,8 +27,10 @@ type Ticket struct {
 	PurchaseDate time.Time `db:"purchase_date"`
 
 	CheckoutSessionID string `db:"stripe_cs_id"`
-	PriceAmount       string `db:"price_amount"`
-	PriceCurrency     string `db:"price_currency"`
+	PaymentIntentID   string `db:"stripe_pi_id"`
+
+	PriceAmount   string `db:"price_amount"`
+	PriceCurrency string `db:"price_currency"`
 
 	Notes string `db:"notes"`
 }

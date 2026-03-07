@@ -386,6 +386,31 @@ func (c *RequestContext) ErrorResponse(status int, errs ...error) ResponseData {
 	return res
 }
 
+func (c *RequestContext) JSONResponse(status int, data any) ResponseData {
+	res := ResponseData{StatusCode: status}
+	addCORSHeaders(c, &res)
+	res.WriteJson(data, c.Perf)
+	return res
+}
+
+func (c *RequestContext) JSONErrorResponse(status int, errs ...error) ResponseData {
+	defer func() {
+		if r := recover(); r != nil {
+			logContextErrors(c, errs...)
+			panic(r)
+		}
+	}()
+
+	res := ResponseData{
+		StatusCode: status,
+		Errors:     errs,
+	}
+	res.WriteJson(map[string]any{
+		"errors": errs,
+	}, c.Perf)
+	return res
+}
+
 func (c *RequestContext) RejectRequest(reason string) ResponseData {
 	type RejectData struct {
 		templates.BaseData

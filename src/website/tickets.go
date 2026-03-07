@@ -223,7 +223,7 @@ func TicketsPurchase(c *RequestContext) ResponseData {
 			return c.RejectRequest("We've run out of tickets for this event.")
 		}
 
-		// Create a pending ticket for this user (with no payment intent yet; we will fill that in
+		// Create a pending ticket for this user (with no checkout session ID yet; we will fill that in
 		// later after the transaction succeeds).
 		pendingTicketID, err = db.QueryOne[uuid.UUID](c, tx,
 			`
@@ -297,14 +297,42 @@ func TicketsPurchase(c *RequestContext) ResponseData {
 }
 
 // This is for the Stripe callback, NOT the user!
-func ticketsEventBuyPurchased_Stripe(session *stripe.CheckoutSession, event hmndata.Event) error {
-	// TODO(ben): Send email with official information / QR code?
+func ticketsEventBuyPurchased_Stripe(c *RequestContext, session *stripe.CheckoutSession, ticket *models.Ticket) error {
+	event, ok := findTicketEventBySlug(ticket.EventSlug)
+	if !ok {
+		return oops.New(nil, "no event found for paid ticket!! (slug: %s)", ticket.EventSlug)
+	}
+
+	// Sanity checks!
+	{
+		if ticket.ID.String() != session.ClientReferenceID {
+			return oops.New(nil, "SANITY CHECK FAILED: ticket ID and client reference ID mismatch ('%s' vs. '%s')", ticket.ID.String(), session.ClientReferenceID)
+		}
+		if ticket.CheckoutSessionID != session.ID {
+			return oops.New(nil, "SANITY CHECK FAILED: ticket references other checkout session ('%s' vs. '%s')", ticket.CheckoutSessionID, session.ID)
+		}
+	}
+
+	_, err := c.Conn.Exec(c,
+		`
+		UPDATE ticket SET pending = FALSE, stripe_pi_id = $2
+		WHERE id = $1
+		`,
+		ticket.ID, session.PaymentIntent.ID,
+	)
+	if err != nil {
+		return oops.New(err, "failed to update ticket after payment")
+	}
+
+	// TODO(ben): Send email with official information / QR code
+	_ = event
+
 	return nil
 }
 
-func findTicketEventBySlug(urlSlug string) (hmndata.Event, bool) {
+func findTicketEventBySlug(slugOrUrlSlug string) (hmndata.Event, bool) {
 	for _, e := range hmndata.AllTicketEvents {
-		if e.UrlSlug == urlSlug {
+		if e.Slug == slugOrUrlSlug || e.UrlSlug == slugOrUrlSlug {
 			return e, true
 		}
 	}
@@ -375,6 +403,24 @@ func fetchTicketForUser(ctx context.Context, conn db.ConnOrTx, event *hmndata.Ev
 		return nil, err
 	} else if err != nil {
 		return nil, oops.New(err, "failed to look up user ticket")
+	}
+
+	return ticket, nil
+}
+
+func fetchTicketByCheckoutSessionID(ctx context.Context, conn db.ConnOrTx, id string) (*models.Ticket, error) {
+	ticket, err := db.QueryOne[models.Ticket](ctx, conn,
+		`
+		SELECT $columns
+		FROM ticket
+		WHERE stripe_cs_id = $1
+		`,
+		id,
+	)
+	if err == db.NotFound {
+		return nil, err
+	} else if err != nil {
+		return nil, oops.New(err, "failed to look up ticket by stripe ID")
 	}
 
 	return ticket, nil
