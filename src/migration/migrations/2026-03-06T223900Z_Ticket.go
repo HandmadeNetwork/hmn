@@ -48,9 +48,9 @@ func (m Ticket) Up(ctx context.Context, tx pgx.Tx) error {
 
 			stripe_cs_id VARCHAR(2048) NOT NULL DEFAULT '',
 			stripe_pi_id VARCHAR(2048) NOT NULL DEFAULT '',
+			stripe_price_amount INT8 NOT NULL DEFAULT 0,
+			stripe_price_currency VARCHAR(10) NOT NULL DEFAULT '',
 
-			price_amount VARCHAR(10) NOT NULL DEFAULT '',
-			price_currency VARCHAR(10) NOT NULL DEFAULT '',
 			notes TEXT NOT NULL DEFAULT ''
 		)
 		`,

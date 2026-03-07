@@ -33,8 +33,10 @@ func (m TicketMetadata) Up(ctx context.Context, tx pgx.Tx) error {
 			slug VARCHAR(64) UNIQUE NOT NULL,
 			max_tickets INT NOT NULL DEFAULT 0,
 			max_reserved INT NOT NULL DEFAULT 0,
-			price_amount VARCHAR(10) NOT NULL DEFAULT '',
-			price_currency VARCHAR(10) NOT NULL DEFAULT 'USD'
+
+			stripe_price_id VARCHAR(1024) NOT NULL DEFAULT '',
+			stripe_price_amount INT8 NOT NULL DEFAULT 0,
+			stripe_price_currency VARCHAR(10) NOT NULL DEFAULT ''
 		)
 		`,
 	)

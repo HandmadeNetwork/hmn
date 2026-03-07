@@ -26,19 +26,20 @@ type Ticket struct {
 	// Generally the date when the ticket was purchased / reserved.
 	PurchaseDate time.Time `db:"purchase_date"`
 
-	CheckoutSessionID string `db:"stripe_cs_id"`
-	PaymentIntentID   string `db:"stripe_pi_id"`
-
-	PriceAmount   string `db:"price_amount"`
-	PriceCurrency string `db:"price_currency"`
+	StripeCheckoutSessionID string `db:"stripe_cs_id"`
+	StripePaymentIntentID   string `db:"stripe_pi_id"`
+	StripePriceAmount       int64  `db:"stripe_price_amount"`
+	StripePriceCurrency     string `db:"stripe_price_currency"`
 
 	Notes string `db:"notes"`
 }
 
 type TicketMetadata struct {
-	EventSlug     string `db:"slug"`
-	MaxTickets    int    `db:"max_tickets"`
-	MaxReserved   int    `db:"max_reserved"`
-	PriceAmount   string `db:"price_amount"`
-	PriceCurrency string `db:"price_currency"`
+	EventSlug   string `db:"slug"`
+	MaxTickets  int    `db:"max_tickets"`
+	MaxReserved int    `db:"max_reserved"`
+
+	StripePriceID       string `db:"stripe_price_id"`
+	StripePriceAmount   int64  `db:"stripe_price_amount"`
+	StripePriceCurrency string `db:"stripe_price_currency"`
 }

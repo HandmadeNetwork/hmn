@@ -19,6 +19,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/checkout/session"
+	"github.com/stripe/stripe-go/v84/price"
 )
 
 const TicketPendingExpiration = time.Minute * 31 // Stripe sets the minimum at 30 and I am paranoid about errors
@@ -41,7 +42,7 @@ type TicketTemplateData struct {
 	OwnerName             string
 	OwnerEmail            string
 	PurchasePriceAmount   string
-	PruchasePriceCurrency string
+	PurchasePriceCurrency string
 	Reserved              bool
 	AllocationDate        time.Time
 	Note                  string
@@ -123,12 +124,18 @@ func TicketsAdminEventSubmit(c *RequestContext) ResponseData {
 	eventUrlSlug := c.PathParams["urlslug"]
 	event, found := findTicketEventBySlug(eventUrlSlug)
 	if !found {
-		return c.RejectRequest(fmt.Sprintf("Event with slug %s not found", eventUrlSlug))
+		return FourOhFour(c)
 	}
 
 	maxTicketsStr := c.Req.Form.Get("max_tickets")
 	maxReservedTicketsStr := c.Req.Form.Get("max_reserved_tickets")
-	priceStr := c.Req.Form.Get("price_amount")
+	priceID := c.Req.Form.Get("price_id")
+
+	price, err := price.Get(priceID, &stripe.PriceParams{})
+	if err != nil {
+		c.Logger.Error().Err(err).Msg("Failed to retrieve Stripe price")
+		return c.RejectRequest("Could not load price info from Stripe")
+	}
 
 	maxTickets, err := strconv.Atoi(maxTicketsStr)
 	if err != nil {
@@ -139,26 +146,20 @@ func TicketsAdminEventSubmit(c *RequestContext) ResponseData {
 		return c.RejectRequest("Max reserved tickets must be a number")
 	}
 
-	_, err = strconv.ParseFloat(priceStr, 32)
-	if err != nil {
-		return c.RejectRequest("Price must be a number")
-	}
-
 	_, err = c.Conn.Exec(c,
 		`
 		INSERT INTO ticket_metadata
-		(slug, max_tickets, max_reserved, price_amount, price_currency)
+		(slug, max_tickets, max_reserved, stripe_price_id, stripe_price_amount, stripe_price_currency)
 		VALUES
-		($1, $2, $3, $4, 'USD')
+		($1, $2, $3, $4, $5, $6)
 		ON CONFLICT (slug) DO UPDATE SET
 			max_tickets = EXCLUDED.max_tickets,
 			max_reserved = EXCLUDED.max_reserved,
-			price_amount = EXCLUDED.price_amount
+			stripe_price_id = EXCLUDED.stripe_price_id,
+			stripe_price_amount = EXCLUDED.stripe_price_amount,
+			stripe_price_currency = EXCLUDED.stripe_price_currency
 		`,
-		event.Slug,
-		maxTickets,
-		maxReservedTickets,
-		priceStr,
+		event.Slug, maxTickets, maxReservedTickets, price.ID, price.UnitAmount, price.Currency,
 	)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update event ticket metadata"))
@@ -189,6 +190,7 @@ func TicketsPurchase(c *RequestContext) ResponseData {
 	}
 
 	var pendingTicketID *uuid.UUID
+	var metadata TicketMetadataForEvent
 	tx, err := c.Conn.Begin(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start transaction"))
@@ -218,12 +220,17 @@ func TicketsPurchase(c *RequestContext) ResponseData {
 		}
 
 		// Check if there are any tickets remaining
-		metadata, err := fetchTicketMetadataForEvent(c, tx, &event)
+		metadata, err = fetchTicketMetadataForEvent(c, tx, &event)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch event ticket metadata"))
 		}
 		if metadata.RemainingTicketsForSale() <= 0 {
 			return c.RejectRequest("We've run out of tickets for this event.")
+		}
+
+		// ...and check if we've even configured the event correctly.
+		if metadata.StripePriceID == "" {
+			return c.RejectRequest("The event has not been configured with Stripe yet. This is the admins' fault.")
 		}
 
 		// Create a pending ticket for this user (with no checkout session ID yet; we will fill that in
@@ -259,7 +266,7 @@ func TicketsPurchase(c *RequestContext) ResponseData {
 		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
-				Price:    stripe.String(event.StripePriceID),
+				Price:    stripe.String(metadata.StripePriceID),
 				Quantity: stripe.Int64(1),
 			},
 		},
@@ -315,14 +322,14 @@ func confirmStripeTicketPurchase(ctx context.Context, conn db.ConnOrTx, session 
 		if ticket.ID.String() != session.ClientReferenceID {
 			return oops.New(nil, "SANITY CHECK FAILED: ticket ID and client reference ID mismatch ('%s' vs. '%s')", ticket.ID.String(), session.ClientReferenceID)
 		}
-		if ticket.CheckoutSessionID != session.ID {
-			return oops.New(nil, "SANITY CHECK FAILED: ticket references other checkout session ('%s' vs. '%s')", ticket.CheckoutSessionID, session.ID)
+		if ticket.StripeCheckoutSessionID != session.ID {
+			return oops.New(nil, "SANITY CHECK FAILED: ticket references other checkout session ('%s' vs. '%s')", ticket.StripeCheckoutSessionID, session.ID)
 		}
 	}
 
 	_, err := conn.Exec(ctx,
 		`
-		UPDATE ticket SET pending = FALSE, stripe_pi_id = $2, price_amount = $3, price_currency = $4
+		UPDATE ticket SET pending = FALSE, stripe_pi_id = $2, stripe_price_amount = $3, stripe_price_currency = $4
 		WHERE id = $1
 		`,
 		ticket.ID, session.PaymentIntent.ID, fmt.Sprintf("%d", session.AmountTotal), session.Currency,
@@ -390,7 +397,14 @@ func fetchTicketMetadataForEvent(ctx context.Context, conn db.ConnOrTx, event *h
 		`,
 		event.Slug,
 	)
-	if err != nil {
+	if err == db.NotFound {
+		// Return a default event, suitable for editing
+		return TicketMetadataForEvent{
+			TicketMetadata: models.TicketMetadata{
+				EventSlug: event.Slug,
+			},
+		}, nil
+	} else if err != nil {
 		return TicketMetadataForEvent{}, oops.New(err, "failed to fetch ticket metadata")
 	}
 	utils.Assert(metadata)

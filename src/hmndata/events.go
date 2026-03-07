@@ -17,9 +17,6 @@ type Event struct {
 	IndexUrl         string
 	TicketSuccessUrl string
 	TicketCancelUrl  string
-
-	StripeProductID string
-	StripePriceID   string
 }
 
 func (ev Event) Within(t time.Time) bool {
