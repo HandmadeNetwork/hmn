@@ -151,14 +151,14 @@ func BuildTicketsAdminEvent(urlSlug string) string {
 	return Url(fmt.Sprintf("/tickets/admin/%s", urlSlug), nil)
 }
 
-var RegexTicketsPurchase = regexp.MustCompile("^/tickets/(?P<urlslug>[^/]+)/purchase$")
+var RegexTicketPurchase = regexp.MustCompile("^/tickets/(?P<urlslug>[^/]+)/purchase$")
 
-func BuildTicketsPurchase(urlSlug string) string {
+func BuildTicketPurchase(urlSlug string) string {
 	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/%s/purchase", urlSlug), nil)
 }
 
-var RegexTicketSingle = regexp.MustCompile("^/tickets/(?P<id>[^.]+)$")
+var RegexTicketSingle = regexp.MustCompile("^/tickets/(?P<id>[^/]+)$")
 
 func BuildTicketSingle(id string) string {
 	defer CatchPanic()
@@ -244,11 +244,14 @@ func BuildLoginAction(redirectTo string) string {
 
 var RegexLoginPage = regexp.MustCompile("^/login$")
 
-func BuildLoginPage(redirectTo string) string {
+func BuildLoginPage(redirectTo string, notice string) string {
 	defer CatchPanic()
 	var q []Q
 	if redirectTo != "" {
 		q = append(q, Q{Name: "redirect", Value: redirectTo})
+	}
+	if notice != "" {
+		q = append(q, Q{Name: "notice", Value: notice})
 	}
 	return Url("/login", q)
 }

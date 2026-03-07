@@ -66,9 +66,13 @@ func trackRequestPerf(perfCollector *perf.PerfCollector) func(Handler) Handler {
 }
 
 func needsAuth(h Handler) Handler {
+	return needsAuthWithNotice(h, "")
+}
+
+func needsAuthWithNotice(h Handler, notice string) Handler {
 	return func(c *RequestContext) ResponseData {
 		if c.CurrentUser == nil {
-			return c.Redirect(hmnurl.BuildLoginPage(c.FullUrl()), http.StatusSeeOther)
+			return c.Redirect(hmnurl.BuildLoginPage(c.FullUrl(), notice), http.StatusSeeOther)
 		}
 
 		return h(c)

@@ -81,7 +81,7 @@ func SendExistingAccountEmail(
 		Name:        toName,
 		Username:    username,
 		HomepageUrl: hmnurl.BuildHomepage(),
-		LoginUrl:    hmnurl.BuildLoginPage(destination),
+		LoginUrl:    hmnurl.BuildLoginPage(destination, ""),
 	})
 	if err != nil {
 		return err

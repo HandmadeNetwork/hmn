@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
+	"github.com/stripe/stripe-go/v84"
+	"github.com/stripe/stripe-go/v84/checkout/session"
 )
-
-type ExpoTemplateData struct {
-	templates.BaseData
-	Expo         hmndata.Expo
-	BuyTicketUrl string
-}
 
 func ExpoIndex(c *RequestContext) ResponseData {
 	slug := c.PathParams["urlslug"]
@@ -22,17 +20,58 @@ func ExpoIndex(c *RequestContext) ResponseData {
 	if !ok {
 		return FourOhFour(c)
 	}
+	event, ok := findTicketEventBySlug(slug)
+	utils.Assert(ok)
 
-	templateData := ExpoTemplateData{
+	metadata, err := fetchTicketMetadataForEvent(c, c.Conn, &event)
+	if err != nil {
+		// We continue on from this and just render possibly brokenly
+		c.Logger.Error().Err(err).Msg("Failed to look up event metadata on expo page")
+	}
+
+	type Tmpl struct {
+		templates.BaseData
+		Expo                hmndata.Expo
+		BuyTicketUrl        string
+		ContinuePurchaseUrl string
+		ViewTicketUrl       string
+		SoldOut             bool
+	}
+	tmpl := Tmpl{
 		BaseData:     getBaseData(c, expo.Name, nil),
 		Expo:         expo,
-		BuyTicketUrl: hmnurl.BuildTicketsPurchase(expo.UrlSlug),
+		BuyTicketUrl: hmnurl.BuildTicketPurchase(expo.UrlSlug),
+		SoldOut:      metadata.RemainingTicketsForSale() <= 0,
 	}
-	templateData.ForceDark = true
+
+	if c.CurrentUser != nil {
+		userTicket, err := fetchTicketForUser(c, c.Conn, &event, c.CurrentUser.ID)
+		if err == db.NotFound {
+			// No ticket, no problem
+		} else if err != nil {
+			c.Logger.Error().Err(err).Msg("Failed to look up user ticket on expo home page")
+		} else {
+			if userTicket.Pending {
+				// Not ideal, but we must fetch the checkout session from Stripe to get its URL. Since this
+				// only happens for users who have started (but not finished) the checkout flow, this
+				// shouldn't be a particularly big deal.
+				if sess, err := session.Get(userTicket.StripeCheckoutSessionID, &stripe.CheckoutSessionParams{}); err == nil {
+					tmpl.ContinuePurchaseUrl = sess.URL
+				} else {
+					c.Logger.Warn().Err(err).Msg("Failed to get user checkout session to continue purchase flow")
+				}
+			} else {
+				// The user has already purchased a ticket! Hooray!
+				tmpl.ViewTicketUrl = hmnurl.BuildTicketSingle(userTicket.ID.String())
+			}
+		}
+	}
+
+	tmpl.ForceDark = true
 	templateName := fmt.Sprintf("expo_%s_index.html", expo.TemplateName)
 
 	var res ResponseData
-	res.MustWriteTemplate(templateName, templateData, c.Perf)
+	res.MustWriteTemplate(templateName, tmpl, c.Perf)
 	return res
 }
 

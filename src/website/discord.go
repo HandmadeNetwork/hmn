@@ -106,7 +106,7 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 			if c.CurrentUser == nil {
 				// Send 'em back to the login page for another go, with the
 				// same destination
-				dest = hmnurl.BuildLoginPage(destinationUrl)
+				dest = hmnurl.BuildLoginPage(destinationUrl, "")
 			} else {
 				dest = hmnurl.BuildUserSettings("discord")
 			}

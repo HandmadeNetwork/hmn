@@ -31,6 +31,7 @@ type LoginPageData struct {
 	RegisterUrl         string
 	ForgotPasswordUrl   string
 	LoginWithDiscordUrl string
+	Notice              string
 }
 
 func LoginPage(c *RequestContext) ResponseData {
@@ -47,6 +48,7 @@ func LoginPage(c *RequestContext) ResponseData {
 		RegisterUrl:         hmnurl.BuildRegister(redirect),
 		ForgotPasswordUrl:   hmnurl.BuildRequestPasswordReset(),
 		LoginWithDiscordUrl: hmnurl.BuildLoginWithDiscord(redirect),
+		Notice:              c.URL().Query().Get("notice"),
 	}, c.Perf)
 	return res
 }
@@ -73,7 +75,7 @@ func Login(c *RequestContext) ResponseData {
 	username := form.Get("username")
 	password := form.Get("password")
 	if username == "" || password == "" {
-		return c.Redirect(hmnurl.BuildLoginPage(redirect), http.StatusSeeOther)
+		return c.Redirect(hmnurl.BuildLoginPage(redirect, ""), http.StatusSeeOther)
 	}
 
 	showLoginWithFailure := func(c *RequestContext, redirect string) ResponseData {
@@ -544,7 +546,7 @@ func makeResponseForBadRegistrationTokenValidationResult(c *RequestContext, vali
 	if validationResult.OneTimeToken == nil {
 		// NOTE(asaf): The user exists, but the validation token doesn't.
 		//			   That means the user already validated their email and can just log in normally.
-		return c.Redirect(hmnurl.BuildLoginPage(""), http.StatusSeeOther)
+		return c.Redirect(hmnurl.BuildLoginPage("", ""), http.StatusSeeOther)
 	}
 
 	return c.RejectRequest("Bad token. If you are having problems registering or logging in, please contact the staff.")

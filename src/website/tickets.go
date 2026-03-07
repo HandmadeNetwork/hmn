@@ -179,7 +179,7 @@ func TicketsAdminEventSubmit(c *RequestContext) ResponseData {
 // the PaymentIntent to the pending ticket before sending the user off to the checkout form; that
 // way, if wacky stuff happens with the payment, we can associate it precisely with the specific
 // ticket attempt even if events come in late.
-func TicketsPurchase(c *RequestContext) ResponseData {
+func TicketPurchase(c *RequestContext) ResponseData {
 	urlSlug := c.PathParams["urlslug"]
 	event, found := findTicketEventBySlug(urlSlug)
 	if !found {

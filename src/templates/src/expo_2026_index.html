@@ -9,6 +9,12 @@
   #titles {
     text-shadow: #30152f 0 0 15px;
   }
+
+  @media screen and (min-width: 35em) {
+    #pizza-bio {
+      max-width: 400px;
+    }
+  }
 </style>
 {{ end }}
 
@@ -21,7 +27,15 @@
       <p>One day of demos, brainstorming, and socializing in Vancouver, BC. June 6, 2026.</p>
     </div>
     <div class="flex g3">
-      <a class="btn btn-primary" href="{{ .BuyTicketUrl }}">Get your ticket</a>
+      {{ if .ViewTicketUrl }}
+        <a class="btn btn-primary" href="{{ .ViewTicketUrl }}">View your ticket</a>
+      {{ else if .ContinuePurchaseUrl }}
+        <a class="btn btn-primary" href="{{ .ContinuePurchaseUrl }}">Continue your purchase</a>
+      {{ else if .SoldOut }}
+        <div class="btn btn-primary disabled">Sold out!</div>
+      {{ else }}
+        <a class="btn btn-primary" href="{{ .BuyTicketUrl }}">Get your ticket</a>
+      {{ end }}
     </div>
   </div>
 </div>
@@ -52,22 +66,25 @@
     <h3>How many people can attend?</h3>
     <p>Space is limited: the venue has a hard cap of 100 attendees. If you'd like to attend, don't delay!</p>
     <p>In light of this, some tickets will be reserved for presenters and staff. If any additional seats become available as the event approaches, we will announce this via email, so make sure to sign up for our mailing list below.</p>
-    <p><a href="{{ .BuyTicketUrl }}">Buy your ticket <span class="svgicon f8">{{ svg "chevron-right" }}</span></a></p>
+    {{ if not .SoldOut }}
+      <p><a href="{{ .BuyTicketUrl }}">Buy your ticket <span class="svgicon f8">{{ svg "chevron-right" }}</span></a></p>
+    {{ end }}
   </div>
 </div>
 <div class="flex justify-center bg1 bt bb">
   <div class="ph3 pv4 w-100 mw-site post-content">
-    <div class="flex flex-column flex-row-ns items-center g3">
+    <div class="flex flex-column flex-row-ns justify-center items-center g4">
       <img class="w5-ns" alt="Matthew Currie" src="/public/expos/pizzaman.jpg">
-      <div>
+      <div id="pizza-bio">
         <h3>Who's organizing?</h3>
-        <p>The event is being organized by community member Matthew Currie (AbjMakesAPizza on Discord). Matthew is a game developer and Vancouver native who has been hosting meetups in Vancouver since May 2024. He's done an amazing job putting the event together so far and we're very excited to see it come together.</p>
+        <p>The event is being organized by community member Matthew Currie (AbjMakesAPizza on Discord). Matthew is a professional Technical Artist who develops tools used by artists in Vancouver's gaming industry.</p>
+        <p>In his spare time, he is an active member of Vancouver's tech scene and has been hosting meetups for fans of Handmade software since since May 2024. Matthew cares deeply about connecting like-minded programmers in person, and is excited to bring the Handmade Network together in his home town. Beyond software, he is an avid runner training for his first full marathon.</p>
       </div>
     </div>
   </div>
 </div>
-		<div class="bb pv4 tc">
-			<div class="pv2"><b>Want to hear about more Handmade events?</b> Sign up for our email newsletter:</div>
-			{{ template "newsletter_signup.html" . }}
-		</div>
+<div class="bb ph3 pv4 tc">
+  <div class="pt2 pb3"><b>Want to hear about more Handmade events?</b> Sign up for our email newsletter:</div>
+  {{ template "newsletter_signup.html" . }}
+</div>
 {{ end }}

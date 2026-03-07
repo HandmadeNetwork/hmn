@@ -55,7 +55,7 @@ func TestLoginAction(t *testing.T) {
 }
 
 func TestLoginPage(t *testing.T) {
-	AssertRegexMatch(t, BuildLoginPage(""), RegexLoginPage, nil)
+	AssertRegexMatch(t, BuildLoginPage("", ""), RegexLoginPage, nil)
 }
 
 func TestLoginWithDiscord(t *testing.T) {

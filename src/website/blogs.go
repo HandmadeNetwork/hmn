@@ -186,7 +186,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		MainPost:  templatePosts[0],
 		Comments:  templatePosts[1:],
 		ReplyLink: c.UrlContext.BuildBlogPostReply(cd.ThreadID, posts[0].Post.ID),
-		LoginLink: hmnurl.BuildLoginPage(c.FullUrl()),
+		LoginLink: hmnurl.BuildLoginPage(c.FullUrl(), ""),
 	}, c.Perf)
 	return res
 }
@@ -444,7 +444,7 @@ func BlogPersonalThread(c *RequestContext) ResponseData {
 		MainPost:  templatePosts[0],
 		Comments:  templatePosts[1:],
 		ReplyLink: c.UrlContext.BuildBlogPostReply(cd.ThreadID, posts[0].Post.ID),
-		LoginLink: hmnurl.BuildLoginPage(c.FullUrl()),
+		LoginLink: hmnurl.BuildLoginPage(c.FullUrl(), ""),
 	}, c.Perf)
 	return res
 }
