@@ -539,6 +539,14 @@ func JamToBannerEvent(jam hmndata.Jam) BannerEvent {
 	}
 }
 
+func TicketToTemplate(t *models.Ticket) Ticket {
+	return Ticket{
+		ID:         t.ID.String(),
+		OwnerName:  t.OwnerName,
+		OwnerEmail: t.OwnerEmail,
+	}
+}
+
 func maybeString(s *string) string {
 	if s == nil {
 		return ""

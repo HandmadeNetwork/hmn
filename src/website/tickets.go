@@ -492,16 +492,18 @@ func TicketSingle(c *RequestContext) ResponseData {
 
 	type TemplateData struct {
 		templates.BaseData
-		TicketID         string
+		Ticket           templates.Ticket
 		TicketCodeURL    string
+		TicketEditURL    string
 		EventName        string
 		EventDescription string
 		EventURL         string
 	}
 	tmpl := TemplateData{
 		BaseData:         getBaseData(c, fmt.Sprintf("%s Ticket", event.Name), nil),
-		TicketID:         ticket.ID.String(),
+		Ticket:           templates.TicketToTemplate(ticket),
 		TicketCodeURL:    hmnurl.BuildTicketQRCode(ticket.ID.String()),
+		TicketEditURL:    hmnurl.BuildTicketEdit(ticket.ID.String()),
 		EventName:        event.Name,
 		EventDescription: event.Description,
 		EventURL:         event.IndexUrl,
@@ -513,14 +515,88 @@ func TicketSingle(c *RequestContext) ResponseData {
 }
 
 func TicketQRCode(c *RequestContext) ResponseData {
+	const baseWidth = 256
+	scale, _ := strconv.Atoi(utils.OrDefault(c.URL().Query().Get("scale"), "1"))
+	scale = max(1, min(4, scale))
+
 	// NOTE(ben): We don't even bother to do a db lookup here. If someone provides a bad ticket ID,
 	// our scanner will just reject it.
-	codePNG := utils.Must1(qrcode.Encode(hmnurl.BuildTicketScanned(c.PathParams["id"]), qrcode.Medium, 1024))
+	codePNG := utils.Must1(qrcode.Encode(hmnurl.BuildTicketScanned(c.PathParams["id"]), qrcode.Medium, baseWidth*scale))
 
 	var res ResponseData
 	res.Header().Add("Content-Type", "image/png")
 	res.Write(codePNG)
 	return res
+}
+
+func TicketEdit(c *RequestContext) ResponseData {
+	ticket, err := fetchTicket(c, c.Conn, c.PathParams["id"])
+	if err == db.NotFound {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket for scanning"))
+	}
+
+	if !canEditTicket(c.CurrentUser, ticket) {
+		return FourOhFour(c)
+	}
+
+	type TemplateData struct {
+		templates.BaseData
+		Ticket    templates.Ticket
+		SubmitURL string
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("tickets_single_edit.html", TemplateData{
+		BaseData:  getBaseData(c, "Edit Ticket", nil),
+		Ticket:    templates.TicketToTemplate(ticket),
+		SubmitURL: hmnurl.BuildTicketEdit(ticket.ID.String()),
+	}, c.Perf)
+	return res
+}
+
+func TicketEditSubmit(c *RequestContext) ResponseData {
+	ticket, err := fetchTicket(c, c.Conn, c.PathParams["id"])
+	if err == db.NotFound {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket"))
+	}
+
+	if !canEditTicket(c.CurrentUser, ticket) {
+		return FourOhFour(c)
+	}
+
+	err = c.Req.ParseForm()
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to parse ticket edit form"))
+	}
+
+	newName := c.Req.Form.Get("name")
+	newEmail := c.Req.Form.Get("email")
+
+	// Trim to reasonable length
+	newName = newName[:min(len(newName), 500)]
+	newEmail = newEmail[:min(len(newEmail), 500)]
+
+	_, err = c.Conn.Exec(c,
+		`
+		UPDATE ticket SET name = $1, email = $2
+		WHERE id = $3
+		`,
+		newName, newEmail,
+		ticket.ID,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update ticket"))
+	}
+
+	return c.Redirect(hmnurl.BuildTicketSingle(ticket.ID.String()), http.StatusSeeOther)
+}
+
+func canEditTicket(user *models.User, ticket *models.Ticket) bool {
+	return user.ID == ticket.OwnerUserID || user.IsStaff
 }
 
 func TicketScanned(c *RequestContext) ResponseData {

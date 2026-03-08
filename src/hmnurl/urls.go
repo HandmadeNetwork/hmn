@@ -130,7 +130,7 @@ func BuildExpo(urlSlug string, status string) string {
 	return Url(fmt.Sprintf("/expo/%s", urlSlug), q)
 }
 
-var RegexExpoTicketPurchaseSuccess = regexp.MustCompile("^/expo/(?P<urlslug>[^/]+)$")
+var RegexExpoTicketPurchaseSuccess = regexp.MustCompile("^/expo/(?P<urlslug>[^/]+)/success$")
 
 func BuildExpoTicketPurchaseSuccess(urlSlug string) string {
 	defer CatchPanic()
@@ -170,6 +170,13 @@ var RegexTicketQRCode = regexp.MustCompile("^/tickets/(?P<id>[^.]+).png$")
 func BuildTicketQRCode(id string) string {
 	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/%s.png", id), nil)
+}
+
+var RegexTicketEdit = regexp.MustCompile("^/tickets/(?P<id>[^/]+)/edit$")
+
+func BuildTicketEdit(id string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/tickets/%s/edit", id), nil)
 }
 
 var RegexTicketScanned = regexp.MustCompile("^/tickets/(?P<id>[^/]+)/scanned$")

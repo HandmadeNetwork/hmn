@@ -512,3 +512,9 @@ type CalendarEvent struct {
 	EndTime   time.Time
 	CalName   string
 }
+
+type Ticket struct {
+	ID         string
+	OwnerName  string
+	OwnerEmail string
+}

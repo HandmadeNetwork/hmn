@@ -76,16 +76,29 @@ func ExpoIndex(c *RequestContext) ResponseData {
 }
 
 func ExpoTicketPurchaseSuccess(c *RequestContext) ResponseData {
-	urlSlug := c.PathParams["urlslug"]
-	event, found := hmndata.FindTicketEventBySlug(urlSlug)
-	if !found {
+	slug := c.PathParams["urlslug"]
+	expo, ok := findExpoBySlug(slug)
+	if !ok {
 		return FourOhFour(c)
 	}
+	event, ok := hmndata.FindTicketEventBySlug(slug)
+	utils.Assert(ok)
 
-	// TODO: Render a real nice success page that tells them to check their email or whatever.
-	_ = event
+	type Tmpl struct {
+		templates.BaseData
+		ExpoURL string
+	}
+	tmpl := Tmpl{
+		BaseData: getBaseData(c, event.Name, nil),
+		ExpoURL:  hmnurl.BuildExpo(expo.UrlSlug, ""),
+	}
 
-	return FourOhFour(c)
+	tmpl.ForceDark = true
+	templateName := fmt.Sprintf("expo_%s_success.html", expo.TemplateName)
+
+	var res ResponseData
+	res.MustWriteTemplate(templateName, tmpl, c.Perf)
+	return res
 }
 
 type ExpoAdminTemplateData struct {
