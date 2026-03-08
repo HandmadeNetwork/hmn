@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
@@ -207,14 +208,21 @@ func TicketPurchase(c *RequestContext) ResponseData {
 		} else {
 			if existingTicket.Pending {
 				// This is a weird case where they must have started a new ticket-purchase flow without
-				// completing a previous one. In this case it just makes the most sense to delete their
-				// previous pending ticket and start over.
-				_, err := c.Conn.Exec(c, `DELETE FROM ticket WHERE id = $1`, existingTicket.ID)
-				if err != nil {
-					return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to delete old pending ticket to make room for a new one"))
+				// completing a previous one. In this case we should have a checkout session ID whose URL
+				// we can retrieve and send the user to.
+				if existingTicket.StripeCheckoutSessionID == "" {
+					return c.RejectRequest("You already started purchasing a ticket, but we couldn't redirect you to your existing payment flow.")
 				}
-				// We can now keep falling through the rest of the logic as if there were never a pending
-				// ticket in the first place.
+				if sess, err := session.Get(existingTicket.StripeCheckoutSessionID, &stripe.CheckoutSessionParams{}); err == nil {
+					if sess.PaymentStatus == stripe.CheckoutSessionPaymentStatusPaid {
+						return c.RejectRequest("Your ticket is paid for, but something is messed up in our system. Please contact us and we'll sort it out.")
+					}
+					return c.Redirect(sess.URL, http.StatusSeeOther)
+				} else {
+					// If somehow their checkout session didn't exist, then perhaps it's a race condition
+					// with Stripe about their session expiring. Just reject the request.
+					return c.RejectRequest("Failed to look up your previous checkout session. Please contact us.")
+				}
 			} else {
 				return c.RejectRequest("You already have a ticket for this event.")
 			}
@@ -313,11 +321,6 @@ func TicketPurchase(c *RequestContext) ResponseData {
 }
 
 func confirmStripeTicketPurchase(ctx context.Context, conn db.ConnOrTx, session *stripe.CheckoutSession, ticket *models.Ticket) error {
-	event, ok := hmndata.FindTicketEventBySlug(ticket.EventSlug)
-	if !ok {
-		return oops.New(nil, "no event found for paid ticket!! (id: %s, slug: %s)", ticket.ID, ticket.EventSlug)
-	}
-
 	// Sanity checks!
 	{
 		if ticket.ID.String() != session.ClientReferenceID {
@@ -339,8 +342,10 @@ func confirmStripeTicketPurchase(ctx context.Context, conn db.ConnOrTx, session 
 		return oops.New(err, "failed to update ticket after payment")
 	}
 
-	// TODO(ben): Send email with official information / QR code
-	_ = event
+	err = email.SendTicketPurchaseEmail(ticket.OwnerEmail, ticket.OwnerName, ticket)
+	if err != nil {
+		return oops.New(err, "failed to send ticket email")
+	}
 
 	return nil
 }
