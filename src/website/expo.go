@@ -20,7 +20,7 @@ func ExpoIndex(c *RequestContext) ResponseData {
 	if !ok {
 		return FourOhFour(c)
 	}
-	event, ok := findTicketEventBySlug(slug)
+	event, ok := hmndata.FindTicketEventBySlug(slug)
 	utils.Assert(ok)
 
 	metadata, err := fetchTicketMetadataForEvent(c, c.Conn, &event)
@@ -77,7 +77,7 @@ func ExpoIndex(c *RequestContext) ResponseData {
 
 func ExpoTicketPurchaseSuccess(c *RequestContext) ResponseData {
 	urlSlug := c.PathParams["urlslug"]
-	event, found := findTicketEventBySlug(urlSlug)
+	event, found := hmndata.FindTicketEventBySlug(urlSlug)
 	if !found {
 		return FourOhFour(c)
 	}

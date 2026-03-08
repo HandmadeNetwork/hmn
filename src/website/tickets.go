@@ -91,7 +91,7 @@ func TicketsAdminEvent(c *RequestContext) ResponseData {
 	}
 	urlSlug := c.PathParams["urlslug"]
 
-	event, found := findTicketEventBySlug(urlSlug)
+	event, found := hmndata.FindTicketEventBySlug(urlSlug)
 	if !found {
 		return FourOhFour(c)
 	}
@@ -123,7 +123,7 @@ func TicketsAdminEventSubmit(c *RequestContext) ResponseData {
 	}
 
 	eventUrlSlug := c.PathParams["urlslug"]
-	event, found := findTicketEventBySlug(eventUrlSlug)
+	event, found := hmndata.FindTicketEventBySlug(eventUrlSlug)
 	if !found {
 		return FourOhFour(c)
 	}
@@ -181,7 +181,7 @@ func TicketsAdminEventSubmit(c *RequestContext) ResponseData {
 // ticket attempt even if events come in late.
 func TicketPurchase(c *RequestContext) ResponseData {
 	urlSlug := c.PathParams["urlslug"]
-	event, found := findTicketEventBySlug(urlSlug)
+	event, found := hmndata.FindTicketEventBySlug(urlSlug)
 	if !found {
 		return FourOhFour(c)
 	}
@@ -313,7 +313,7 @@ func TicketPurchase(c *RequestContext) ResponseData {
 }
 
 func confirmStripeTicketPurchase(ctx context.Context, conn db.ConnOrTx, session *stripe.CheckoutSession, ticket *models.Ticket) error {
-	event, ok := findTicketEventBySlug(ticket.EventSlug)
+	event, ok := hmndata.FindTicketEventBySlug(ticket.EventSlug)
 	if !ok {
 		return oops.New(nil, "no event found for paid ticket!! (id: %s, slug: %s)", ticket.ID, ticket.EventSlug)
 	}
@@ -364,16 +364,6 @@ func cancelPendingTicketsForCheckoutSession(ctx context.Context, conn db.ConnOrT
 	}
 
 	return foo.RowsAffected(), nil
-}
-
-func findTicketEventBySlug(slugOrUrlSlug string) (hmndata.Event, bool) {
-	for _, e := range hmndata.AllTicketEvents {
-		if e.Slug == slugOrUrlSlug || e.UrlSlug == slugOrUrlSlug {
-			return e, true
-		}
-	}
-
-	return hmndata.Event{}, false
 }
 
 type TicketMetadataForEvent struct {
@@ -491,7 +481,7 @@ func TicketSingle(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket for scanning"))
 	}
 
-	event, ok := findTicketEventBySlug(ticket.EventSlug)
+	event, ok := hmndata.FindTicketEventBySlug(ticket.EventSlug)
 	if !ok {
 		c.Logger.Error().
 			Str("ticketID", ticket.ID.String()).

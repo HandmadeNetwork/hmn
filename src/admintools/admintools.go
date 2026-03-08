@@ -300,6 +300,13 @@ func init() {
 				err = email.SendRegistrationEmail(toAddress, toName, "test_user", "test_token", "", p)
 			case "passwordreset":
 				err = email.SendPasswordReset(toAddress, toName, "test_user", "test_token", time.Now().Add(time.Hour*24), p)
+			case "ticketpurchased":
+				err = email.SendTicketPurchaseEmail(toAddress, toName, &models.Ticket{
+					ID:         uuid.New(),
+					EventSlug:  hmndata.HMNExpo2026.Slug,
+					OwnerName:  "Test User",
+					OwnerEmail: "test@example.org",
+				})
 			default:
 				fmt.Printf("You must provide a valid email type\n\n")
 				cmd.Usage()

@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -165,36 +167,72 @@ func SendTimeMachineEmail(profileUrl, username, userEmail, discordUsername strin
 	return nil
 }
 
+func SendTicketPurchaseEmail(toAddress string, toName string, ticket *models.Ticket) error {
+	event, ok := hmndata.FindTicketEventBySlug(ticket.EventSlug)
+	if !ok {
+		return oops.New(nil, "failed to find event for ticket in email")
+	}
+
+	type TicketPurchaseEmailData struct {
+		EventName string
+		Name      string
+		Email     string
+		CodeURL   string
+		TicketURL string
+	}
+	contents, err := renderTemplate("email_ticket_purchase.html", TicketPurchaseEmailData{
+		EventName: event.Name,
+		Name:      ticket.OwnerName,
+		Email:     ticket.OwnerEmail,
+		CodeURL:   hmnurl.BuildTicketQRCode(ticket.ID.String()),
+		TicketURL: hmnurl.BuildTicketSingle(ticket.ID.String()),
+	})
+	if err != nil {
+		return err
+	}
+
+	err = sendMail(toAddress, toName, fmt.Sprintf("Your ticket for the %s", event.Name), contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+
+	return nil
+}
+
 var EmailRegex = regexp.MustCompile(`^[^:\p{Cc} ]+@[^:\p{Cc} ]+\.[^:\p{Cc} ]+$`)
 
 func IsEmail(address string) bool {
 	return EmailRegex.Match([]byte(address))
 }
 
-func renderTemplate(name string, data any) (string, error) {
+func renderTemplate(name string, data any) ([]byte, error) {
 	var buffer bytes.Buffer
 	template, hasTemplate := templates.GetTemplate(name)
 	if !hasTemplate {
-		return "", oops.New(nil, "template not found: %s", name)
+		return nil, oops.New(nil, "template not found: %s", name)
 	}
 	err := template.Execute(&buffer, data)
 	if err != nil {
-		return "", oops.New(err, "Failed to render template for email")
+		return nil, oops.New(err, "Failed to render template for email")
 	}
-	contentString := string(buffer.Bytes())
-	contentString = strings.ReplaceAll(contentString, "\n", "\r\n")
+	contentString := buffer.Bytes()
+	contentString = bytes.ReplaceAll(contentString, []byte("\n"), []byte("\r\n"))
 	return contentString, nil
 }
 
-func sendMail(toAddress, toName, subject, contentHtml string) error {
+func sendMail(toAddress, toName, subject string, contentHTML []byte) error {
 	if config.Config.Email.ForceToAddress != "" {
 		toAddress = config.Config.Email.ForceToAddress
+	}
+	processedHTML, err := preprocessEmailHTML(contentHTML)
+	if err != nil {
+		return err
 	}
 	contents := prepMailContents(
 		makeHeaderAddress(toAddress, toName),
 		makeHeaderAddress(config.Config.Email.FromAddress, config.Config.Email.FromName),
 		subject,
-		contentHtml,
+		processedHTML,
 	)
 	return smtp.SendMail(
 		fmt.Sprintf("%s:%d", config.Config.Email.ServerAddress, config.Config.Email.ServerPort),
@@ -218,18 +256,18 @@ func makeHeaderAddress(email, fullname string) string {
 	}
 }
 
-func prepMailContents(toLine string, fromLine string, subject string, contentHtml string) []byte {
+func prepMailContents(toLine string, fromLine string, subject string, contentHtml []byte) []byte {
 	var builder strings.Builder
 
-	builder.WriteString(fmt.Sprintf("To: %s\r\n", toLine))
-	builder.WriteString(fmt.Sprintf("From: %s\r\n", fromLine))
-	builder.WriteString(fmt.Sprintf("Date: %s\r\n", time.Now().UTC().Format(time.RFC1123Z)))
-	builder.WriteString(fmt.Sprintf("Subject: %s\r\n", mime.QEncoding.Encode("utf-8", subject)))
+	fmt.Fprintf(&builder, "To: %s\r\n", toLine)
+	fmt.Fprintf(&builder, "From: %s\r\n", fromLine)
+	fmt.Fprintf(&builder, "Date: %s\r\n", time.Now().UTC().Format(time.RFC1123Z))
+	fmt.Fprintf(&builder, "Subject: %s\r\n", mime.QEncoding.Encode("utf-8", subject))
 	builder.WriteString("Content-Type: text/html; charset=UTF-8\r\n")
 	builder.WriteString("Content-Transfer-Encoding: quoted-printable\r\n")
 	builder.WriteString("\r\n")
 	writer := quotedprintable.NewWriter(&builder)
-	writer.Write([]byte(contentHtml))
+	writer.Write(contentHtml)
 	writer.Close()
 	builder.WriteString("\r\n")
 
