@@ -11,6 +11,7 @@ type Event struct {
 
 	Name        string
 	Description string // NOTE(asaf): Used by opengraph
+	Image       string // NOTE(ben): Used by opengraph
 	Slug        string
 	UrlSlug     string
 

@@ -19,6 +19,7 @@ var HMNExpo2026 = Expo{
 		EndTime:     time.Date(2026, 6, 7, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Vancouver"))),
 		Name:        "Handmade Network Expo 2026",
 		Description: "A day of demos, brainstorming, and socializing in Vancouver, BC.",
+		Image:       hmnurl.BuildPublic("expos/skyline-1080.jpg", true),
 		Slug:        "EXPO2026",
 		UrlSlug:     "vancouver-2026",
 

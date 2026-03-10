@@ -48,6 +48,16 @@ func ExpoIndex(c *RequestContext) ResponseData {
 		CanPurchase:  canPurchase,
 		SoldOut:      soldOut,
 	}
+	tmpl.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		{Property: "og:description", Value: expo.Description},
+	}
+	if expo.Image != "" {
+		tmpl.OpenGraphItems = append(tmpl.OpenGraphItems, templates.OpenGraphItem{
+			Property: "og:image", Value: expo.Image,
+		})
+	}
 
 	if c.CurrentUser != nil {
 		userTicket, err := fetchTicketForUser(c, c.Conn, &event, c.CurrentUser.ID)
