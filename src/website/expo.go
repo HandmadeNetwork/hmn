@@ -48,11 +48,14 @@ func ExpoIndex(c *RequestContext) ResponseData {
 		CanPurchase:  canPurchase,
 		SoldOut:      soldOut,
 	}
-	tmpl.OpenGraphItems = append(tmpl.OpenGraphItems, []templates.OpenGraphItem{
+	tmpl.OpenGraphItems = []templates.OpenGraphItem{
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
 		{Property: "og:description", Value: expo.Description},
-	}...)
+	}
 	if expo.Image != "" {
 		tmpl.OpenGraphItems = append(tmpl.OpenGraphItems, []templates.OpenGraphItem{
+			{Property: "og:image", Value: expo.Image},
 			{Name: "twitter:card", Value: "summary_large_image"},
 			{Name: "twitter:image", Value: expo.Image},
 		}...)
