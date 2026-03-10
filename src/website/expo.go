@@ -35,15 +35,18 @@ func ExpoIndex(c *RequestContext) ResponseData {
 		BuyTicketUrl        string
 		ContinuePurchaseUrl string
 		ViewTicketUrl       string
-		NoTickets           bool
+		CanPurchase         bool
 		SoldOut             bool
 	}
+
+	canPurchase := metadata.MaxTickets > 0 && !metadata.Presale
+	soldOut := canPurchase && metadata.RemainingTicketsForSale() <= 0
 	tmpl := Tmpl{
 		BaseData:     getBaseData(c, expo.Name, nil),
 		Expo:         expo,
 		BuyTicketUrl: hmnurl.BuildTicketPurchase(expo.UrlSlug),
-		NoTickets:    metadata.Presale || metadata.MaxTickets <= 0,
-		SoldOut:      metadata.RemainingTicketsForSale() <= 0,
+		CanPurchase:  canPurchase,
+		SoldOut:      soldOut,
 	}
 
 	if c.CurrentUser != nil {
