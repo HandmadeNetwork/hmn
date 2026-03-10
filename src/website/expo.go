@@ -42,7 +42,7 @@ func ExpoIndex(c *RequestContext) ResponseData {
 		BaseData:     getBaseData(c, expo.Name, nil),
 		Expo:         expo,
 		BuyTicketUrl: hmnurl.BuildTicketPurchase(expo.UrlSlug),
-		NoTickets:    metadata.MaxTickets <= 0,
+		NoTickets:    metadata.Presale || metadata.MaxTickets <= 0,
 		SoldOut:      metadata.RemainingTicketsForSale() <= 0,
 	}
 

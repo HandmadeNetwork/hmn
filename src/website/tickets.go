@@ -131,6 +131,7 @@ func TicketsAdminEventSubmit(c *RequestContext) ResponseData {
 
 	maxTicketsStr := c.Req.Form.Get("max_tickets")
 	maxReservedTicketsStr := c.Req.Form.Get("max_reserved_tickets")
+	presale := c.Req.Form.Get("presale") != ""
 	priceID := c.Req.Form.Get("price_id")
 
 	price, err := price.Get(priceID, &stripe.PriceParams{})
@@ -151,17 +152,18 @@ func TicketsAdminEventSubmit(c *RequestContext) ResponseData {
 	_, err = c.Conn.Exec(c,
 		`
 		INSERT INTO ticket_metadata
-		(slug, max_tickets, max_reserved, stripe_price_id, stripe_price_amount, stripe_price_currency)
+		(slug, max_tickets, max_reserved, presale, stripe_price_id, stripe_price_amount, stripe_price_currency)
 		VALUES
-		($1, $2, $3, $4, $5, $6)
+		($1, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT (slug) DO UPDATE SET
 			max_tickets = EXCLUDED.max_tickets,
 			max_reserved = EXCLUDED.max_reserved,
+			presale = EXCLUDED.presale,
 			stripe_price_id = EXCLUDED.stripe_price_id,
 			stripe_price_amount = EXCLUDED.stripe_price_amount,
 			stripe_price_currency = EXCLUDED.stripe_price_currency
 		`,
-		event.Slug, maxTickets, maxReservedTickets, price.ID, price.UnitAmount, price.Currency,
+		event.Slug, maxTickets, maxReservedTickets, presale, price.ID, price.UnitAmount, price.Currency,
 	)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update event ticket metadata"))

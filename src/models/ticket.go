@@ -39,6 +39,10 @@ type TicketMetadata struct {
 	MaxTickets  int    `db:"max_tickets"`
 	MaxReserved int    `db:"max_reserved"`
 
+	// If a presale is active, then the ticket purchase link will be active but Buy buttons will be
+	// marked "coming soon".
+	Presale bool `db:"presale"`
+
 	StripePriceID       string `db:"stripe_price_id"`
 	StripePriceAmount   int64  `db:"stripe_price_amount"`
 	StripePriceCurrency string `db:"stripe_price_currency"`
