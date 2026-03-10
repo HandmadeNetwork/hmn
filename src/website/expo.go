@@ -49,8 +49,10 @@ func ExpoIndex(c *RequestContext) ResponseData {
 		SoldOut:      soldOut,
 	}
 	tmpl.OpenGraphItems = []templates.OpenGraphItem{
-		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:title", Value: tmpl.Title},
+		{Property: "og:url", Value: hmnurl.BuildExpo(expo.UrlSlug, "")},
 		{Property: "og:type", Value: "website"},
+		{Property: "og:site_name", Value: "Handmade Network"},
 		{Property: "og:description", Value: expo.Description},
 	}
 	if expo.Image != "" {
