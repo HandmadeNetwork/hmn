@@ -175,6 +175,7 @@ func SendTicketPurchaseEmail(toAddress string, toName string, ticket *models.Tic
 
 	type TicketPurchaseEmailData struct {
 		EventName string
+		EventDate time.Time
 		Name      string
 		Email     string
 		CodeURL   string
@@ -182,6 +183,7 @@ func SendTicketPurchaseEmail(toAddress string, toName string, ticket *models.Tic
 	}
 	contents, err := renderTemplate("email_ticket_purchase.html", TicketPurchaseEmailData{
 		EventName: event.Name,
+		EventDate: event.StartTime,
 		Name:      ticket.OwnerName,
 		Email:     ticket.OwnerEmail,
 		CodeURL:   hmnurl.BuildTicketQRCode(ticket.ID.String()),
