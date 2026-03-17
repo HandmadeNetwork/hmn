@@ -520,7 +520,9 @@ type Ticket struct {
 	OwnerUsername string
 	PurchaseDate  time.Time
 	Notes         string
-	Url           string
+
+	Url       string
+	DeleteUrl string
 
 	OwnerProfileUrl string
 }

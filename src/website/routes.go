@@ -140,6 +140,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexTicketQRCode, TicketQRCode)
 	hmnOnly.GET(hmnurl.RegexTicketEdit, needsAuth(TicketEdit))
 	hmnOnly.POST(hmnurl.RegexTicketEdit, needsAuth(csrfMiddleware(TicketEditSubmit)))
+	hmnOnly.GET(hmnurl.RegexTicketDelete, needsAuth(TicketDelete))
+	hmnOnly.POST(hmnurl.RegexTicketDelete, needsAuth(csrfMiddleware(TicketDeleteSubmit)))
 	hmnOnly.GET(hmnurl.RegexTicketScanned, needsAuth(TicketScanned))
 	hmnOnly.GET(hmnurl.RegexTicketSingle, TicketSingle) // Don't put this one first, it likes to capture all the others
 

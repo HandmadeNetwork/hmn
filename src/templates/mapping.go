@@ -547,7 +547,9 @@ func TicketToTemplate(t *models.Ticket) Ticket {
 		OwnerUsername: t.OwnerUsername,
 		PurchaseDate:  t.PurchaseDate,
 		Notes:         t.Notes,
-		Url:           hmnurl.BuildTicketSingle(t.ID.String()),
+
+		Url:       hmnurl.BuildTicketSingle(t.ID.String()),
+		DeleteUrl: hmnurl.BuildTicketDelete(t.ID.String()),
 	}
 	if t.OwnerUserID != nil {
 		utils.Assert(t.OwnerUsername != "")

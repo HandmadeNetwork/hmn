@@ -179,6 +179,13 @@ func BuildTicketEdit(id string) string {
 	return Url(fmt.Sprintf("/tickets/%s/edit", id), nil)
 }
 
+var RegexTicketDelete = regexp.MustCompile("^/tickets/(?P<id>[^/]+)/delete$")
+
+func BuildTicketDelete(id string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/tickets/%s/delete", id), nil)
+}
+
 var RegexTicketScanned = regexp.MustCompile("^/tickets/(?P<id>[^/]+)/scanned$")
 
 func BuildTicketScanned(id string) string {

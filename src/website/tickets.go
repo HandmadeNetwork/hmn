@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
@@ -498,7 +499,7 @@ func TicketEdit(c *RequestContext) ResponseData {
 	if err == db.NotFound {
 		return FourOhFour(c)
 	} else if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket for scanning"))
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket for editing"))
 	}
 
 	if !canEditTicket(c.CurrentUser, ticket) {
@@ -561,12 +562,73 @@ func TicketEditSubmit(c *RequestContext) ResponseData {
 	return c.Redirect(hmnurl.BuildTicketSingle(ticket.ID.String()), http.StatusSeeOther)
 }
 
-func canEditTicket(user *models.User, ticket *models.Ticket) bool {
-	if user.IsStaff {
-		return true
+func TicketDelete(c *RequestContext) ResponseData {
+	if !canDeleteTicket(c.CurrentUser) {
+		return FourOhFour(c)
 	}
 
-	return ticket.OwnerUserID != nil && user.ID == *ticket.OwnerUserID
+	ticket, err := hmndata.FetchTicket(c, c.Conn, hmndata.TicketQuery{
+		ID: c.PathParams["id"],
+	})
+	if err == db.NotFound {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket for deleting"))
+	}
+
+	type TemplateData struct {
+		templates.BaseData
+		Ticket    templates.Ticket
+		SubmitURL string
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("tickets_single_delete.html", TemplateData{
+		BaseData:  getBaseData(c, "Delete Ticket", nil),
+		Ticket:    templates.TicketToTemplate(ticket),
+		SubmitURL: hmnurl.BuildTicketDelete(ticket.ID.String()),
+	}, c.Perf)
+	return res
+}
+
+func TicketDeleteSubmit(c *RequestContext) ResponseData {
+	if !canDeleteTicket(c.CurrentUser) {
+		return FourOhFour(c)
+	}
+
+	ticket, err := hmndata.FetchTicket(c, c.Conn, hmndata.TicketQuery{
+		ID: c.PathParams["id"],
+	})
+	if err == db.NotFound {
+		return FourOhFour(c)
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket"))
+	}
+	event, ok := hmndata.FindTicketEventBySlug(ticket.EventSlug)
+	if !ok {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(nil, "no event found with slug %s", ticket.EventSlug))
+	}
+
+	err = c.Req.ParseForm()
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to parse ticket delete form"))
+	}
+
+	confirmation := c.Req.Form.Get("confirmation")
+	if !strings.EqualFold(ticket.OwnerEmail, confirmation) {
+		return c.RejectRequest("The provided email address did not match the ticket.")
+	}
+
+	res, err := c.Conn.Exec(c,
+		`DELETE FROM ticket WHERE id = $1`,
+		ticket.ID,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update ticket"))
+	}
+	utils.Assert(res.RowsAffected() == 1, "expected to delete 1 ticket, but somehow deleted", res.RowsAffected())
+
+	return c.Redirect(hmnurl.BuildTicketsAdminEvent(event.UrlSlug), http.StatusSeeOther)
 }
 
 func TicketScanned(c *RequestContext) ResponseData {
@@ -576,4 +638,16 @@ func TicketScanned(c *RequestContext) ResponseData {
 
 	// TODO(ben): Actually build ticket-scanning logic closer to the time of the event.
 	return ResponseData{}
+}
+
+func canEditTicket(user *models.User, ticket *models.Ticket) bool {
+	if user.IsStaff {
+		return true
+	}
+
+	return ticket.OwnerUserID != nil && user.ID == *ticket.OwnerUserID
+}
+
+func canDeleteTicket(user *models.User) bool {
+	return user.IsStaff
 }
