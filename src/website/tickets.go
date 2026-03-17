@@ -38,22 +38,10 @@ func getCommonTicketPageData() TicketPageCommon {
 	}
 }
 
-type TicketTemplateData struct {
-	UUID                  string
-	User                  *templates.User
-	OwnerName             string
-	OwnerEmail            string
-	PurchasePriceAmount   string
-	PurchasePriceCurrency string
-	Reserved              bool
-	AllocationDate        time.Time
-	Note                  string
-}
-
 type TicketsAdminEventTemplateData struct {
 	Event    hmndata.Event
 	Metadata TicketMetadataForEvent
-	Tickets  []TicketTemplateData
+	Tickets  []templates.Ticket
 	Url      string
 }
 
@@ -102,6 +90,15 @@ func TicketsAdminEvent(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch ticket metadata"))
 	}
 
+	rawTickets, err := hmndata.FetchTickets(c, c.Conn, &event)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch tickets"))
+	}
+	var tickets []templates.Ticket
+	for _, t := range rawTickets {
+		tickets = append(tickets, templates.TicketToTemplate(&t))
+	}
+
 	data := TicketsEventTemplateData{
 		BaseData:         getBaseData(c, fmt.Sprintf("Admin ticket dashboard - %s", event.Name), nil),
 		TicketPageCommon: getCommonTicketPageData(),
@@ -109,6 +106,7 @@ func TicketsAdminEvent(c *RequestContext) ResponseData {
 			Event:    event,
 			Metadata: metadata,
 			Url:      hmnurl.BuildTicketsAdminEvent(event.UrlSlug),
+			Tickets:  tickets,
 		},
 	}
 
@@ -202,7 +200,10 @@ func TicketPurchase(c *RequestContext) ResponseData {
 	defer tx.Rollback(c)
 	{
 		// Check if the user already has a ticket
-		existingTicket, err := fetchTicketForUser(c, tx, &event, c.CurrentUser.ID)
+		existingTicket, err := hmndata.FetchTicket(c, tx, hmndata.TicketQuery{
+			EventSlug: event.Slug,
+			UserID:    c.CurrentUser.ID,
+		})
 		if err == db.NotFound {
 			// Good, they do not yet have a ticket
 		} else if err != nil {
@@ -430,58 +431,10 @@ func fetchTicketMetadataForEvent(ctx context.Context, conn db.ConnOrTx, event *h
 	}, nil
 }
 
-func fetchTicket(ctx context.Context, conn db.ConnOrTx, id string) (*models.Ticket, error) {
-	ticket, err := db.QueryOne[models.Ticket](ctx, conn,
-		`SELECT $columns FROM ticket WHERE id::TEXT = $1`,
-		id,
-	)
-	if err == db.NotFound {
-		return nil, err
-	} else if err != nil {
-		return nil, oops.New(err, "failed to look up ticket")
-	}
-
-	return ticket, nil
-}
-
-func fetchTicketForUser(ctx context.Context, conn db.ConnOrTx, event *hmndata.Event, userID int) (*models.Ticket, error) {
-	ticket, err := db.QueryOne[models.Ticket](ctx, conn,
-		`
-		SELECT $columns
-		FROM ticket
-		WHERE event_slug = $1 AND user_id = $2
-		`,
-		event.Slug, userID,
-	)
-	if err == db.NotFound {
-		return nil, err
-	} else if err != nil {
-		return nil, oops.New(err, "failed to look up user ticket")
-	}
-
-	return ticket, nil
-}
-
-func fetchTicketByCheckoutSessionID(ctx context.Context, conn db.ConnOrTx, id string) (*models.Ticket, error) {
-	ticket, err := db.QueryOne[models.Ticket](ctx, conn,
-		`
-		SELECT $columns
-		FROM ticket
-		WHERE stripe_cs_id = $1
-		`,
-		id,
-	)
-	if err == db.NotFound {
-		return nil, err
-	} else if err != nil {
-		return nil, oops.New(err, "failed to look up ticket by stripe ID")
-	}
-
-	return ticket, nil
-}
-
 func TicketSingle(c *RequestContext) ResponseData {
-	ticket, err := fetchTicket(c, c.Conn, c.PathParams["id"])
+	ticket, err := hmndata.FetchTicket(c, c.Conn, hmndata.TicketQuery{
+		ID: c.PathParams["id"],
+	})
 	if err == db.NotFound {
 		return FourOhFour(c)
 	} else if err != nil {
@@ -537,7 +490,9 @@ func TicketQRCode(c *RequestContext) ResponseData {
 }
 
 func TicketEdit(c *RequestContext) ResponseData {
-	ticket, err := fetchTicket(c, c.Conn, c.PathParams["id"])
+	ticket, err := hmndata.FetchTicket(c, c.Conn, hmndata.TicketQuery{
+		ID: c.PathParams["id"],
+	})
 	if err == db.NotFound {
 		return FourOhFour(c)
 	} else if err != nil {
@@ -564,7 +519,9 @@ func TicketEdit(c *RequestContext) ResponseData {
 }
 
 func TicketEditSubmit(c *RequestContext) ResponseData {
-	ticket, err := fetchTicket(c, c.Conn, c.PathParams["id"])
+	ticket, err := hmndata.FetchTicket(c, c.Conn, hmndata.TicketQuery{
+		ID: c.PathParams["id"],
+	})
 	if err == db.NotFound {
 		return FourOhFour(c)
 	} else if err != nil {

@@ -32,6 +32,9 @@ type Ticket struct {
 	StripePriceCurrency     string `db:"stripe_price_currency"`
 
 	Notes string `db:"notes"`
+
+	// Not a field on the ticket table. Must be filled in by fetching functions.
+	OwnerUsername string
 }
 
 type TicketMetadata struct {

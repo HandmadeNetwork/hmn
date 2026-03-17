@@ -64,7 +64,10 @@ func ExpoIndex(c *RequestContext) ResponseData {
 	}
 
 	if c.CurrentUser != nil {
-		userTicket, err := fetchTicketForUser(c, c.Conn, &event, c.CurrentUser.ID)
+		userTicket, err := hmndata.FetchTicket(c, c.Conn, hmndata.TicketQuery{
+			EventSlug: event.Slug,
+			UserID:    c.CurrentUser.ID,
+		})
 		if err == db.NotFound {
 			// No ticket, no problem
 		} else if err != nil {

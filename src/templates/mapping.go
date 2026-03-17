@@ -540,10 +540,17 @@ func JamToBannerEvent(jam hmndata.Jam) BannerEvent {
 }
 
 func TicketToTemplate(t *models.Ticket) Ticket {
+	utils.Assert(t.OwnerUsername != "")
 	return Ticket{
-		ID:         t.ID.String(),
-		OwnerName:  t.OwnerName,
-		OwnerEmail: t.OwnerEmail,
+		ID:            t.ID.String(),
+		OwnerName:     t.OwnerName,
+		OwnerEmail:    t.OwnerEmail,
+		OwnerUsername: t.OwnerUsername,
+		PurchaseDate:  t.PurchaseDate,
+		Notes:         t.Notes,
+		Url:           hmnurl.BuildTicketSingle(t.ID.String()),
+
+		OwnerProfileUrl: hmnurl.BuildUserProfile(t.OwnerUsername),
 	}
 }
 

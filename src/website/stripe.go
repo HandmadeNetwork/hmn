@@ -7,6 +7,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/stripe/stripe-go/v84"
 	"github.com/stripe/stripe-go/v84/webhook"
@@ -60,7 +61,9 @@ func StripeWebhook(c *RequestContext) ResponseData {
 func stripeCheckoutSessionCompleted(c *RequestContext, session *stripe.CheckoutSession) ResponseData {
 	// Different Stripe checkout flows may dispatch to different things.
 
-	ticket, err := fetchTicketByCheckoutSessionID(c, c.Conn, session.ID)
+	ticket, err := hmndata.FetchTicket(c, c.Conn, hmndata.TicketQuery{
+		StripeCheckoutSessionID: session.ID,
+	})
 	if err == nil {
 		err := confirmStripeTicketPurchase(c, c.Conn, session, ticket)
 		if err != nil {

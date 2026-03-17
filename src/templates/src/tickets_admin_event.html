@@ -74,40 +74,47 @@
             </div>
         </form>
 
+    </div>
+</div>
+
+<div class="pa3 flex flex-column g3">
+    <div>
         <div class="f3">Tickets</div>
         <div>
             <div><b>Available for sale:</b> {{ sub (sub .TicketsEvent.Metadata.MaxTickets .TicketsEvent.Metadata.SoldTickets) (max .TicketsEvent.Metadata.MaxReserved .TicketsEvent.Metadata.ReservedTickets) }}</div>
             <div><b>Available for reservation:</b> {{ sub .TicketsEvent.Metadata.MaxReserved .TicketsEvent.Metadata.ReservedTickets }}</div>
         </div>
-
-        {{ with .TicketsEvent.Tickets }}
-            <table>
-                <thead>
-                    <tr>
-                        <td>User</td>
-                        <td>Name</td>
-                        <td>Email</td>
-                        <td>Notes</td>
-                        <td></td>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{ range . }}
-                        <tr>
-                            <td>{{ if .User }} <a href="{{ .User.ProfileUrl }}">{{ .User.Username }}</a> {{ else }} No user {{ end }}</td>
-                            <td>{{ .Name }}</td>
-                            <td>{{ .Email }}</td>
-                            <td>{{ .Notes }}</td>
-                            <td><a href="{{ .Url }}">View</a></td>
-                        </tr>
-                    {{ end }}
-                </tbody>
-            </table>
-        {{ else }}
-            No tickets assigned yet
-        {{ end }}
-
     </div>
-</div>
 
+    {{ with .TicketsEvent.Tickets }}
+        <table class="b-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Notes</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range . }}
+                    <tr>
+                        {{/*
+                            NOTE(ben): This will probably have to change back to a conditional
+                            if we actually add unpaid ticket reservations.
+                        */}}
+                        <td><a href="{{ .OwnerProfileUrl }}">{{ .OwnerUsername }}</a></td>
+                        <td>{{ .OwnerName }}</td>
+                        <td>{{ .OwnerEmail }}</td>
+                        <td>{{ .Notes }}</td>
+                        <td><a href="{{ .Url }}">View</a></td>
+                    </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    {{ else }}
+        No tickets assigned yet
+    {{ end }}
+</div>
 {{ end }}
