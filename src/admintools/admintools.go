@@ -301,7 +301,7 @@ func init() {
 			case "passwordreset":
 				err = email.SendPasswordReset(toAddress, toName, "test_user", "test_token", time.Now().Add(time.Hour*24), p)
 			case "ticketpurchased":
-				err = email.SendTicketPurchaseEmail(toAddress, toName, &models.Ticket{
+				err = email.SendExpoTicketPurchaseEmail(toAddress, toName, &models.Ticket{
 					ID:         uuid.New(),
 					EventSlug:  hmndata.HMNExpo2026.Slug,
 					OwnerName:  "Test User",

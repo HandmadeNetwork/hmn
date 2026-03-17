@@ -345,7 +345,9 @@ func confirmStripeTicketPurchase(ctx context.Context, conn db.ConnOrTx, session 
 		return oops.New(err, "failed to update ticket after payment")
 	}
 
-	err = email.SendTicketPurchaseEmail(ticket.OwnerEmail, ticket.OwnerName, ticket)
+	// NOTE(ben): This is hardcoded to expos right now. This has some ramifications for template
+	// names and so on.
+	err = email.SendExpoTicketPurchaseEmail(ticket.OwnerEmail, ticket.OwnerName, ticket)
 	if err != nil {
 		return oops.New(err, "failed to send ticket email")
 	}

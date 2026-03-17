@@ -10,7 +10,7 @@ import (
 )
 
 var AllTicketEvents = []Event{
-	HMNExpo2026.Event,
+	HMNExpo2026,
 }
 
 func FindTicketEventBySlug(slugOrUrlSlug string) (Event, bool) {

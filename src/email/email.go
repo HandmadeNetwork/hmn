@@ -167,22 +167,20 @@ func SendTimeMachineEmail(profileUrl, username, userEmail, discordUsername strin
 	return nil
 }
 
-func SendTicketPurchaseEmail(toAddress string, toName string, ticket *models.Ticket) error {
+func SendExpoTicketPurchaseEmail(toAddress string, toName string, ticket *models.Ticket) error {
 	event, ok := hmndata.FindTicketEventBySlug(ticket.EventSlug)
 	if !ok {
 		return oops.New(nil, "failed to find event for ticket in email")
 	}
 
 	type TicketPurchaseEmailData struct {
-		EventName string
 		EventDate time.Time
 		Name      string
 		Email     string
 		CodeURL   string
 		TicketURL string
 	}
-	contents, err := renderTemplate("email_ticket_purchase.html", TicketPurchaseEmailData{
-		EventName: event.Name,
+	contents, err := renderTemplate(fmt.Sprintf("expo_%s_email_ticket_purchase.html", event.TemplateName), TicketPurchaseEmailData{
 		EventDate: event.StartTime,
 		Name:      ticket.OwnerName,
 		Email:     ticket.OwnerEmail,

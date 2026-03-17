@@ -31,7 +31,7 @@ func ExpoIndex(c *RequestContext) ResponseData {
 
 	type Tmpl struct {
 		templates.BaseData
-		Expo                hmndata.Expo
+		Expo                hmndata.Event
 		BuyTicketUrl        string
 		ContinuePurchaseUrl string
 		ViewTicketUrl       string
@@ -127,7 +127,7 @@ type ExpoAdminTemplateData struct {
 	templates.BaseData
 }
 
-func findExpoBySlug(urlSlug string) (hmndata.Expo, bool) {
+func findExpoBySlug(urlSlug string) (hmndata.Event, bool) {
 	urlSlug = strings.ToLower(urlSlug)
 	for _, e := range hmndata.AllExpos {
 		if strings.ToLower(e.UrlSlug) == urlSlug {
@@ -135,5 +135,5 @@ func findExpoBySlug(urlSlug string) (hmndata.Expo, bool) {
 		}
 	}
 
-	return hmndata.Expo{}, false
+	return hmndata.Event{}, false
 }

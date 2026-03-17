@@ -7,31 +7,23 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-type Expo struct {
-	Event
+var HMNExpo2026 = Event{
+	StartTime:   time.Date(2026, 6, 6, 9, 30, 0, 0, utils.Must1(time.LoadLocation("America/Vancouver"))),
+	EndTime:     time.Date(2026, 6, 7, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Vancouver"))),
+	Name:        "Handmade Network Expo 2026",
+	Description: "A day of demos, brainstorming, and socializing in Vancouver, BC.",
+	Image:       hmnurl.BuildPublic("expos/skyline-1080.jpg", true),
+	Slug:        "EXPO2026",
+	UrlSlug:     "vancouver-2026",
 
-	TemplateName string
-}
-
-var HMNExpo2026 = Expo{
-	Event: Event{
-		StartTime:   time.Date(2026, 6, 6, 9, 30, 0, 0, utils.Must1(time.LoadLocation("America/Vancouver"))),
-		EndTime:     time.Date(2026, 6, 7, 0, 0, 0, 0, utils.Must1(time.LoadLocation("America/Vancouver"))),
-		Name:        "Handmade Network Expo 2026",
-		Description: "A day of demos, brainstorming, and socializing in Vancouver, BC.",
-		Image:       hmnurl.BuildPublic("expos/skyline-1080.jpg", true),
-		Slug:        "EXPO2026",
-		UrlSlug:     "vancouver-2026",
-
-		IndexUrl:         hmnurl.BuildExpo("vancouver-2026", ""),
-		TicketSuccessUrl: hmnurl.BuildExpoTicketPurchaseSuccess("vancouver-2026"),
-		TicketCancelUrl:  hmnurl.BuildExpo("vancouver-2026", "cancel"),
-	},
+	IndexUrl:         hmnurl.BuildExpo("vancouver-2026", ""),
+	TicketSuccessUrl: hmnurl.BuildExpoTicketPurchaseSuccess("vancouver-2026"),
+	TicketCancelUrl:  hmnurl.BuildExpo("vancouver-2026", "cancel"),
 
 	TemplateName: "2026",
 }
 
-var AllExpos = []Expo{
+var AllExpos = []Event{
 	HMNExpo2026,
 }
 

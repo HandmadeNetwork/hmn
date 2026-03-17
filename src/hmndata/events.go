@@ -18,6 +18,9 @@ type Event struct {
 	IndexUrl         string
 	TicketSuccessUrl string
 	TicketCancelUrl  string
+
+	// Some events have specific template patterns that are disambiguated by this slug.
+	TemplateName string
 }
 
 func (ev Event) Within(t time.Time) bool {
