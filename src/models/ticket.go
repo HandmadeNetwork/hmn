@@ -10,7 +10,7 @@ type Ticket struct {
 	ID uuid.UUID `db:"id"`
 
 	EventSlug   string `db:"event_slug"`
-	OwnerUserID int    `db:"user_id"`
+	OwnerUserID *int   `db:"user_id"`
 	OwnerName   string `db:"name"`
 	OwnerEmail  string `db:"email"`
 

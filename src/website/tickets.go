@@ -562,7 +562,11 @@ func TicketEditSubmit(c *RequestContext) ResponseData {
 }
 
 func canEditTicket(user *models.User, ticket *models.Ticket) bool {
-	return user.ID == ticket.OwnerUserID || user.IsStaff
+	if user.IsStaff {
+		return true
+	}
+
+	return ticket.OwnerUserID != nil && user.ID == *ticket.OwnerUserID
 }
 
 func TicketScanned(c *RequestContext) ResponseData {

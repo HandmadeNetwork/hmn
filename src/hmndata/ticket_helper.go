@@ -26,14 +26,14 @@ func FindTicketEventBySlug(slugOrUrlSlug string) (Event, bool) {
 func FetchTickets(ctx context.Context, conn db.ConnOrTx, event *Event) ([]models.Ticket, error) {
 	type row struct {
 		Ticket   models.Ticket `db:"ticket"`
-		Username string        `db:"username"`
+		Username *string       `db:"username"`
 	}
 	rows, err := db.Query[row](ctx, conn,
 		`
 		SELECT $columns
 		FROM
 			ticket
-			JOIN hmn_user AS u ON ticket.user_id = u.id
+			LEFT JOIN hmn_user AS u ON ticket.user_id = u.id
 		WHERE event_slug = $1
 		ORDER BY purchase_date
 		`,
@@ -46,7 +46,9 @@ func FetchTickets(ctx context.Context, conn db.ConnOrTx, event *Event) ([]models
 	res := make([]models.Ticket, len(rows))
 	for i := range rows {
 		res[i] = rows[i].Ticket
-		res[i].OwnerUsername = rows[i].Username
+		if username := rows[i].Username; username != nil {
+			res[i].OwnerUsername = *username
+		}
 	}
 	return res, nil
 }
@@ -63,7 +65,7 @@ type TicketQuery struct {
 func FetchTicket(ctx context.Context, conn db.ConnOrTx, q TicketQuery) (*models.Ticket, error) {
 	type row struct {
 		Ticket   models.Ticket `db:"ticket"`
-		Username string        `db:"username"`
+		Username *string       `db:"username"`
 	}
 
 	var qb db.QueryBuilder
@@ -71,7 +73,7 @@ func FetchTicket(ctx context.Context, conn db.ConnOrTx, q TicketQuery) (*models.
 		SELECT $columns
 		FROM
 			ticket
-			JOIN hmn_user AS u ON ticket.user_id = u.id
+			LEFT JOIN hmn_user AS u ON ticket.user_id = u.id
 		WHERE TRUE
 	`)
 	if q.ID != "" {
@@ -93,6 +95,8 @@ func FetchTicket(ctx context.Context, conn db.ConnOrTx, q TicketQuery) (*models.
 	}
 
 	t := &res.Ticket
-	t.OwnerUsername = res.Username
+	if res.Username != nil {
+		t.OwnerUsername = *res.Username
+	}
 	return t, nil
 }
