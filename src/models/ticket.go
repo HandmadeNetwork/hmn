@@ -14,6 +14,8 @@ type Ticket struct {
 	OwnerName   string `db:"name"`
 	OwnerEmail  string `db:"email"`
 
+	CheckedIn bool
+
 	// Whether the ticket has been reserved ahead of time and therefore has no corresponding payment.
 	Reserved bool `db:"reserved"`
 

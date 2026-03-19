@@ -563,6 +563,27 @@ func TicketEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update ticket"))
 	}
 
+	if c.CurrentUser.IsStaff {
+		// checkedInStr := c.Req.Form.Get("checkedin")
+		reservedStr := c.Req.Form.Get("reserved")
+		notes := c.Req.Form.Get("notes")
+
+		// checkedIn := checkedInStr != ""
+		reserved := reservedStr != ""
+
+		_, err = c.Conn.Exec(c,
+			`
+			UPDATE ticket SET reserved = $1, notes = $2
+			WHERE id = $3
+			`,
+			reserved, notes,
+			ticket.ID,
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update ticket"))
+		}
+	}
+
 	return c.Redirect(hmnurl.BuildTicketSingle(ticket.ID.String()), http.StatusSeeOther)
 }
 

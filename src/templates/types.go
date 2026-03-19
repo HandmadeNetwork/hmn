@@ -522,7 +522,9 @@ type Ticket struct {
 	OwnerEmail    string
 	OwnerUsername string
 	PurchaseDate  time.Time
+	Reserved      bool
 	Notes         string
+	CheckedIn     bool
 
 	Url       string
 	DeleteUrl string
