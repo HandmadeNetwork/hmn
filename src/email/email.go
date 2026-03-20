@@ -174,6 +174,7 @@ func SendExpoTicketPurchaseEmail(toAddress string, toName string, ticket *models
 	}
 
 	type TicketPurchaseEmailData struct {
+		BaseURL   string
 		EventDate time.Time
 		Name      string
 		Email     string
@@ -181,6 +182,7 @@ func SendExpoTicketPurchaseEmail(toAddress string, toName string, ticket *models
 		TicketURL string
 	}
 	contents, err := renderTemplate(fmt.Sprintf("expo_%s_email_ticket_purchase.html", event.TemplateName), TicketPurchaseEmailData{
+		BaseURL:   config.Config.BaseUrl,
 		EventDate: event.StartTime,
 		Name:      ticket.OwnerName,
 		Email:     ticket.OwnerEmail,

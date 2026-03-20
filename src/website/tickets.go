@@ -472,8 +472,12 @@ func TicketSingle(c *RequestContext) ResponseData {
 		EventURL:         event.IndexUrl,
 	}
 
+	// TODO(ben): We really ought to have the event slug be expo_2026, not just a single year, but
+	// this is not a change I am making at this point.
+	templateName := fmt.Sprintf("expo_%s_ticket.html", event.TemplateName)
+
 	var res ResponseData
-	res.MustWriteTemplate("tickets_single.html", tmpl, c.Perf)
+	res.MustWriteTemplate(templateName, tmpl, c.Perf)
 	return res
 }
 
