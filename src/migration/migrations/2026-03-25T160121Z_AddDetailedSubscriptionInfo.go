@@ -15,11 +15,11 @@ func init() {
 type AddDetailedSubscriptionInfo struct{}
 
 func (m AddDetailedSubscriptionInfo) Version() types.MigrationVersion {
-	return types.MigrationVersion(time.Date(2026, 2, 16, 19, 37, 44, 0, time.UTC))
+	return types.MigrationVersion(time.Date(2026, 3, 25, 16, 1, 21, 0, time.UTC))
 }
 
 func (m AddDetailedSubscriptionInfo) Name() string {
-	return "AddDetailedSubscriptionInfo"
+	return "AddDetailedSubscripitionInfo"
 }
 
 func (m AddDetailedSubscriptionInfo) Description() string {

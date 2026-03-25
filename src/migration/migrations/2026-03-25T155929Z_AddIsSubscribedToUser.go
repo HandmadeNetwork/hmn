@@ -15,7 +15,7 @@ func init() {
 type AddIsSubscribedToUser struct{}
 
 func (m AddIsSubscribedToUser) Version() types.MigrationVersion {
-	return types.MigrationVersion(time.Date(2026, 1, 7, 23, 32, 36, 0, time.UTC))
+	return types.MigrationVersion(time.Date(2026, 3, 25, 15, 59, 29, 0, time.UTC))
 }
 
 func (m AddIsSubscribedToUser) Name() string {

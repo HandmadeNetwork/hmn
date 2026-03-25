@@ -15,7 +15,7 @@ func init() {
 type AddThankYouEmailSent struct{}
 
 func (m AddThankYouEmailSent) Version() types.MigrationVersion {
-	return types.MigrationVersion(time.Date(2026, 2, 22, 6, 11, 1, 0, time.UTC))
+	return types.MigrationVersion(time.Date(2026, 3, 25, 16, 24, 27, 0, time.UTC))
 }
 
 func (m AddThankYouEmailSent) Name() string {

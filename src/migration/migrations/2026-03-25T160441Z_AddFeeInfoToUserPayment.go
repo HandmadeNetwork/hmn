@@ -15,7 +15,7 @@ func init() {
 type AddFeeInfoToUserPayment struct{}
 
 func (m AddFeeInfoToUserPayment) Version() types.MigrationVersion {
-	return types.MigrationVersion(time.Date(2026, 2, 16, 19, 57, 42, 0, time.UTC))
+	return types.MigrationVersion(time.Date(2026, 3, 25, 16, 4, 41, 0, time.UTC))
 }
 
 func (m AddFeeInfoToUserPayment) Name() string {

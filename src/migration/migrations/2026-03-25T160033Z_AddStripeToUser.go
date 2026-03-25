@@ -15,7 +15,7 @@ func init() {
 type AddStripeToUser struct{}
 
 func (m AddStripeToUser) Version() types.MigrationVersion {
-	return types.MigrationVersion(time.Date(2026, 1, 8, 5, 23, 37, 0, time.UTC))
+	return types.MigrationVersion(time.Date(2026, 3, 25, 16, 0, 33, 0, time.UTC))
 }
 
 func (m AddStripeToUser) Name() string {
