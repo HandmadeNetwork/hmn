@@ -77,7 +77,8 @@ func TicketsAdminEvent(c *RequestContext) ResponseData {
 	type TicketsEventTemplateData struct {
 		templates.BaseData
 		TicketPageCommon
-		TicketsEvent TicketsAdminEventTemplateData
+		TicketsEvent     TicketsAdminEventTemplateData
+		ReserveActionUrl string
 	}
 	urlSlug := c.PathParams["urlslug"]
 
@@ -109,6 +110,7 @@ func TicketsAdminEvent(c *RequestContext) ResponseData {
 			Url:      hmnurl.BuildTicketsAdminEvent(event.UrlSlug),
 			Tickets:  tickets,
 		},
+		ReserveActionUrl: hmnurl.BuildTicketsAdminReserve(event.UrlSlug),
 	}
 
 	var res ResponseData
@@ -169,6 +171,79 @@ func TicketsAdminEventSubmit(c *RequestContext) ResponseData {
 	}
 
 	return c.Redirect(hmnurl.BuildTicketsAdminEvent(eventUrlSlug), http.StatusSeeOther)
+}
+
+func TicketsAdminReserve(c *RequestContext) ResponseData {
+	err := c.Req.ParseForm()
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to parse tickets admin form"))
+	}
+
+	eventUrlSlug := c.PathParams["urlslug"]
+	event, found := hmndata.FindTicketEventBySlug(eventUrlSlug)
+	if !found {
+		return FourOhFour(c)
+	}
+
+	username := c.Req.Form.Get("username")
+	name := c.Req.Form.Get("name")
+	emailAddress := c.Req.Form.Get("email")
+
+	tx, err := c.Conn.Begin(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to start transaction"))
+	}
+	defer tx.Rollback(c)
+
+	// Check if there are any tickets remaining
+	metadata, err := fetchTicketMetadataForEvent(c, tx, &event)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch event ticket metadata"))
+	}
+	if metadata.RemainingTicketsForReservation() <= 0 {
+		return c.RejectRequest("No more tickets can be reserved.")
+	}
+
+	ticketUser, err := hmndata.FetchUserByUsername(c, tx, c.CurrentUser, username, hmndata.UsersQuery{})
+	if err == db.NotFound {
+		return c.RejectRequest("No user found with that username.")
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch ticket user"))
+	}
+
+	if name == "" {
+		name = ticketUser.BestName()
+	}
+	if emailAddress == "" {
+		emailAddress = ticketUser.Email
+	}
+	newTicketID := uuid.New()
+
+	ticket, err := db.QueryOne[models.Ticket](c, tx,
+		`
+		INSERT INTO ticket (id, event_slug, user_id, name, email, reserved, purchase_date)
+		VALUES ($1, $2, $3, $4, $5, TRUE, $6)
+		RETURNING $columns
+		`,
+		newTicketID, event.Slug, ticketUser.ID, name, emailAddress, time.Now(),
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reserve ticket"))
+	}
+
+	err = tx.Commit(c)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to reserve ticket"))
+	}
+
+	// NOTE(ben): This is hardcoded to expos right now. This has some ramifications for template
+	// names and so on.
+	err = email.SendExpoTicketPurchaseEmail(ticket.OwnerEmail, ticket.OwnerName, ticket)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to send ticket email"))
+	}
+
+	return c.Redirect(hmnurl.BuildTicketsAdminEvent(event.UrlSlug), http.StatusSeeOther)
 }
 
 // A generic handler that takes an event slug and initiates a Stripe transaction for it. Will
@@ -388,6 +463,10 @@ func (metadata *TicketMetadataForEvent) RemainingTicketsForSale() int {
 	reserved := utils.Max(metadata.MaxReserved, metadata.ReservedTickets)
 	remaining := metadata.MaxTickets - reserved - metadata.SoldTickets
 	return remaining
+}
+
+func (metadata *TicketMetadataForEvent) RemainingTicketsForReservation() int {
+	return metadata.MaxReserved - metadata.ReservedTickets
 }
 
 func fetchTicketMetadataForEvent(ctx context.Context, conn db.ConnOrTx, event *hmndata.Event) (TicketMetadataForEvent, error) {

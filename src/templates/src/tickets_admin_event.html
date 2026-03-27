@@ -74,6 +74,45 @@
             </div>
         </form>
 
+        <form id="reserve_form" class="hmn-form" action="{{ .ReserveActionUrl }}" method="POST" autocomplete="off">
+            {{ csrftoken .Session }}
+
+            <div class="fieldset">
+                <legend>Reserve a ticket</legend>
+
+                <div class="pa3 input-group">
+                    <label for="reserve_name">HMN Username</label>
+                    <input
+                        required
+                        id="reserve_username"
+                        name="username"
+                    >
+                </div>
+
+                <div class="pa3 input-group">
+                    <label for="reserve_name">Name</label>
+                    <input
+                        id="reserve_name"
+                        name="name"
+                    >
+                    <div class="f6">Defaults to the HMN username.</div>
+                </div>
+
+                <div class="pa3 input-group">
+                    <label for="reserve_email">Email</label>
+                    <input
+                        type="email"
+                        id="reserve_email"
+                        name="email"
+                    >
+                    <div class="f6">Defaults to the HMN email address.</div>
+                </div>
+
+                <div class="pa3 flex justify-end">
+                    <input class="btn-primary" type="submit" value="Reserve" />
+                </div>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -81,6 +120,9 @@
     <div>
         <div class="f3">Tickets</div>
         <div>
+            <div><b>Total:</b> {{ add .TicketsEvent.Metadata.SoldTickets .TicketsEvent.Metadata.ReservedTickets }}</div>
+            <div><b>Sold:</b> {{ .TicketsEvent.Metadata.SoldTickets }}</div>
+            <div><b>Reserved:</b> {{ .TicketsEvent.Metadata.ReservedTickets }}</div>
             <div><b>Available for sale:</b> {{ sub (sub .TicketsEvent.Metadata.MaxTickets .TicketsEvent.Metadata.SoldTickets) (max .TicketsEvent.Metadata.MaxReserved .TicketsEvent.Metadata.ReservedTickets) }}</div>
             <div><b>Available for reservation:</b> {{ sub .TicketsEvent.Metadata.MaxReserved .TicketsEvent.Metadata.ReservedTickets }}</div>
         </div>
@@ -90,8 +132,8 @@
         <table class="b-table">
             <thead>
                 <tr>
-                    <th>&nbsp;</th>
-                    <th>&nbsp;</th>
+                    <th>Checked in</th>
+                    <th>Reserved</th>
                     <th>User</th>
                     <th>Name</th>
                     <th>Email</th>
