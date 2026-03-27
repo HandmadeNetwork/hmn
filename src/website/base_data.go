@@ -168,7 +168,7 @@ func getHSFBaseData() templates.HSFBaseData {
 	baseData.ValuesUrl = hmnurl.BuildValues()
 	baseData.ProjectsUrl = hmnurl.BuildHSFProjects()
 	baseData.AboutUrl = hmnurl.BuildHSFAbout()
-	baseData.MembershipUrl = hmnurl.BuildHSFMembershipInfo()
+	baseData.MembershipUrl = hmnurl.BuildHSFMembership()
 
 	return baseData
 }

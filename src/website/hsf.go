@@ -18,7 +18,7 @@ func HSFManifesto(c *RequestContext) ResponseData {
 	return res
 }
 
-func HSFMembershipInfo(c *RequestContext) ResponseData {
+func HSFMembership(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("hsf_membership.html", getHSFBaseData(), c.Perf)
 	return res

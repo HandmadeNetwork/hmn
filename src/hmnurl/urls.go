@@ -399,34 +399,9 @@ func BuildUserProfile(username string) string {
 }
 
 var RegexUserSettings = regexp.MustCompile(`^/settings$`)
-var RegexSubscriptionManage = regexp.MustCompile(`^/foundation/membership$`)
-var RegexSubscriptionSubscribe = regexp.MustCompile(`^/foundation/membership/subscribe$`)
-var RegexSubscriptionCancel = regexp.MustCompile(`^/foundation/membership/cancel$`)
-var RegexSubscriptionResume = regexp.MustCompile(`^/foundation/membership/resume$`)
-var RegexFoundationWebhook = regexp.MustCompile(`^/foundation/webhook$`)
 
 func BuildUserSettings(section string) string {
 	return UrlWithFragment("/settings", nil, section)
-}
-
-func BuildSubscriptionManage() string {
-	return Url("/foundation/membership", nil)
-}
-
-func BuildSubscriptionSubscribe() string {
-	return Url("/foundation/membership/subscribe", nil)
-}
-
-func BuildSubscriptionCancel() string {
-	return Url("/foundation/membership/cancel", nil)
-}
-
-func BuildSubscriptionResume() string {
-	return Url("/foundation/membership/resume", nil)
-}
-
-func BuildFoundationWebhook() string {
-	return Url("/foundation/webhook", nil)
 }
 
 /*
@@ -1090,10 +1065,10 @@ func BuildHSFAbout() string {
 	return Url("/foundation/about", nil)
 }
 
-var RegexHSFMembershipInfo = regexp.MustCompile(`^/foundation/membership-info$`)
+var RegexHSFMembership = regexp.MustCompile(`^/foundation/membership$`)
 
-func BuildHSFMembershipInfo() string {
-	return Url("/foundation/membership-info", nil)
+func BuildHSFMembership() string {
+	return Url("/foundation/membership", nil)
 }
 
 /*
@@ -1190,7 +1165,7 @@ func BuildUserFile(filepath string) string {
 	return BuildPublic(fmt.Sprintf("media/%s", filepath), false)
 }
 
-
+var RegexStripeWebhook = regexp.MustCompile("^/stripe/webhook$")
 
 /*
 * Redirects

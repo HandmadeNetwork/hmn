@@ -38,69 +38,27 @@ func StripeWebhook(c *RequestContext) ResponseData {
 
 	c.Logger.Info().Str("type", string(event.Type)).Msg("received Stripe webhook")
 
-	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
-
 	switch event.Type {
 	case "checkout.session.completed":
 		var session stripe.CheckoutSession
-		if err := json.Unmarshal(event.Data.Raw, &session); err == nil {
-			if session.Mode == stripe.CheckoutSessionModeSubscription {
-				handleCheckoutSessionCompleted(c, sc, &session)
-			} else {
-				stripeCheckoutSessionCompleted(c, &session)
-			}
-		} else {
-			c.Logger.Error().Err(err).Msg("failed to unmarshal checkout.session.completed")
+		err := json.Unmarshal(event.Data.Raw, &session)
+		if err != nil {
+			return c.JSONErrorResponse(http.StatusBadRequest, oops.New(err, "bad JSON in stripe webhook"))
 		}
+		return stripeCheckoutSessionCompleted(c, &session)
 	case "checkout.session.expired":
 		var session stripe.CheckoutSession
-		if err := json.Unmarshal(event.Data.Raw, &session); err == nil {
-			stripeCheckoutSessionExpired(c, &session)
-		} else {
-			c.Logger.Error().Err(err).Msg("failed to unmarshal checkout.session.expired")
+		err := json.Unmarshal(event.Data.Raw, &session)
+		if err != nil {
+			return c.JSONErrorResponse(http.StatusBadRequest, oops.New(err, "bad JSON in stripe webhook"))
 		}
-	case "customer.subscription.created":
-		var sub stripe.Subscription
-		if err := json.Unmarshal(event.Data.Raw, &sub); err == nil {
-			handleSubscriptionCreated(c, sc, &sub)
-		} else {
-			c.Logger.Error().Err(err).Msg("failed to unmarshal customer.subscription.created")
-		}
-	case "customer.subscription.updated":
-		var sub stripe.Subscription
-		if err := json.Unmarshal(event.Data.Raw, &sub); err == nil {
-			c.Logger.Trace().RawJSON("sub_json", event.Data.Raw).Msg("received subscription update JSON")
-			handleSubscriptionUpdated(c, sc, &sub)
-		} else {
-			c.Logger.Error().Err(err).Msg("failed to unmarshal customer.subscription.updated")
-		}
-	case "customer.subscription.deleted":
-		var sub stripe.Subscription
-		if err := json.Unmarshal(event.Data.Raw, &sub); err == nil {
-			handleSubscriptionDeleted(c, sc, &sub)
-		} else {
-			c.Logger.Error().Err(err).Msg("failed to unmarshal customer.subscription.deleted")
-		}
-	case "invoice.paid":
-		var inv stripe.Invoice
-		if err := json.Unmarshal(event.Data.Raw, &inv); err == nil {
-			handleInvoicePaid(c, sc, &inv)
-		} else {
-			c.Logger.Error().Err(err).Msg("failed to unmarshal invoice.paid")
-		}
-	case "invoice.payment_failed":
-		var inv stripe.Invoice
-		if err := json.Unmarshal(event.Data.Raw, &inv); err == nil {
-			handleInvoicePaymentFailed(c, sc, &inv)
-		} else {
-			c.Logger.Error().Err(err).Msg("failed to unmarshal invoice.payment_failed")
-		}
+		return stripeCheckoutSessionExpired(c, &session)
+	default:
+		return ResponseData{StatusCode: http.StatusOK}
 	}
-
-	return ResponseData{StatusCode: http.StatusOK}
 }
 
-func stripeCheckoutSessionCompleted(c *RequestContext, session *stripe.CheckoutSession) {
+func stripeCheckoutSessionCompleted(c *RequestContext, session *stripe.CheckoutSession) ResponseData {
 	// Different Stripe checkout flows may dispatch to different things.
 
 	ticket, err := hmndata.FetchTicket(c, c.Conn, hmndata.TicketQuery{
@@ -109,27 +67,33 @@ func stripeCheckoutSessionCompleted(c *RequestContext, session *stripe.CheckoutS
 	if err == nil {
 		err := confirmStripeTicketPurchase(c, c.Conn, session, ticket)
 		if err != nil {
-			c.Logger.Error().Err(err).Msg("failed to process ticket purchase")
+			return c.JSONErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to process ticket purchase"))
 		}
-		return
+		return c.JSONResponse(http.StatusOK, map[string]any{
+			"confirmedTicket": ticket.ID,
+		})
 	} else if err == db.NotFound {
 		// all good, move on to other checkout things
 	} else {
-		c.Logger.Error().Err(err).Msg("failed to look up ticket for checkout session")
-		return
+		return c.JSONErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket for checkout session"))
 	}
 
 	c.Logger.Warn().
 		Str("session ID", session.ID).
 		Str("payment intent ID", session.PaymentIntent.ID).
 		Msg("Unknown checkout session! What could it mean???")
+	return ResponseData{StatusCode: http.StatusOK}
 }
 
-func stripeCheckoutSessionExpired(c *RequestContext, session *stripe.CheckoutSession) {
+func stripeCheckoutSessionExpired(c *RequestContext, session *stripe.CheckoutSession) ResponseData {
 	// Different Stripe checkout flows may dispatch to different things.
 
-	_, err := cancelPendingTicketsForCheckoutSession(c, c.Conn, session)
+	numDeleted, err := cancelPendingTicketsForCheckoutSession(c, c.Conn, session)
 	if err != nil {
-		c.Logger.Error().Err(err).Msg("failed to clear tickets for expired checkout session")
+		return c.JSONErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to clear tickets for expired checkout session"))
 	}
+
+	return c.JSONResponse(http.StatusOK, map[string]any{
+		"ticketsDeleted": numDeleted,
+	})
 }

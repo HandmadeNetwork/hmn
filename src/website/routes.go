@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/buildcss"
-	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/hmndata"
@@ -47,14 +46,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 		redirectToHMN,
 	)
 	apiRoutes := routes.WithMiddleware(panicCatcherMiddleware(true))
-	hsfMembershipRoutes := hmnOnly.WithMiddleware(func(h Handler) Handler {
-		return func(c *RequestContext) ResponseData {
-			if !config.Config.DevConfig.MembershipsActive {
-				return FourOhFour(c)
-			}
-			return h(c)
-		}
-	})
 
 	routes.GET(hmnurl.RegexEsBuild, func(c *RequestContext) ResponseData {
 		if buildcss.ActiveServerPort != 0 {
@@ -157,7 +148,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexHSFAbout, HSFAbout)
 	hmnOnly.GET(hmnurl.RegexHSFLanding, HSFLanding)
 	hmnOnly.GET(hmnurl.RegexHSFManifesto, HSFManifesto)
-	hmnOnly.GET(hmnurl.RegexHSFMembershipInfo, HSFMembershipInfo)
+	hmnOnly.GET(hmnurl.RegexHSFMembership, HSFMembership)
 	hmnOnly.GET(hmnurl.RegexHSFProjects, HSFProjects)
 
 	hmnOnly.GET(hmnurl.RegexTimeMachine, TimeMachine)
@@ -222,11 +213,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexUserSettings, needsAuth(UserSettings))
 	hmnOnly.POST(hmnurl.RegexUserSettings, needsAuth(csrfMiddleware(UserSettingsSave)))
 
-	hsfMembershipRoutes.GET(hmnurl.RegexSubscriptionManage, needsAuth(SubscriptionManage))
-	hsfMembershipRoutes.POST(hmnurl.RegexSubscriptionSubscribe, needsAuth(csrfMiddleware(SubscriptionSubscribe)))
-	hsfMembershipRoutes.POST(hmnurl.RegexSubscriptionCancel, needsAuth(csrfMiddleware(SubscriptionCancel)))
-	hsfMembershipRoutes.POST(hmnurl.RegexSubscriptionResume, needsAuth(csrfMiddleware(SubscriptionResume)))
-
 	hmnOnly.GET(hmnurl.RegexPersonalBlog, BlogPersonalIndex)
 	hmnOnly.GET(hmnurl.RegexPersonalBlogThread, BlogPersonalThread)
 	hmnOnly.GET(hmnurl.RegexPersonalBlogNewThread, needsAuth(BlogPersonalNewThread))
@@ -260,7 +246,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	apiRoutes.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
 	apiRoutes.POST(hmnurl.RegexAPINewsletterSignup, APINewsletterSignup)
-	apiRoutes.POST(hmnurl.RegexFoundationWebhook, StripeWebhook)
+	apiRoutes.POST(hmnurl.RegexStripeWebhook, StripeWebhook)
 
 	hmnOnly.GET(hmnurl.RegexLibraryAny, func(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.BuildEducationIndex(), http.StatusFound)

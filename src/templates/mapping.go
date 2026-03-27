@@ -265,9 +265,6 @@ func UserToTemplate(u *models.User) User {
 		IsEduTester: u.CanSeeUnpublishedEducationContent(),
 		IsEduAuthor: u.CanAuthorEducation(),
 
-		IsSubscribed:      u.IsSubscribed,
-		CancelAtPeriodEnd: u.CancelAtPeriodEnd,
-
 		DiscordUser: discordUser,
 	}
 }

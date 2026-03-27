@@ -11,8 +11,8 @@ type Environment string
 
 const (
 	Live Environment = "live"
-	Beta Environment = "beta"
-	Dev  Environment = "dev"
+	Beta             = "beta"
+	Dev              = "dev"
 )
 
 type HMNConfig struct {
@@ -35,13 +35,6 @@ type HMNConfig struct {
 	EsBuild           EsBuildConfig
 	Postmark          PostmarkConfig
 	Stripe            StripeConfig
-}
-
-type StripeConfig struct {
-	SecretKey      string
-	PublishableKey string
-	WebhookSecret  string
-	PriceID        string
 }
 
 type PostgresConfig struct {
@@ -123,8 +116,7 @@ type AdminConfig struct {
 }
 
 type DevConfig struct {
-	LiveTemplates     bool // load templates live from the filesystem instead of embedding them
-	MembershipsActive bool // Temporary! Remove when shipping HSF memberships.
+	LiveTemplates bool // load templates live from the filesystem instead of embedding them
 }
 
 type PreviewGenerationConfig struct {
@@ -138,6 +130,11 @@ type EsBuildConfig struct {
 
 type PostmarkConfig struct {
 	TransactionalStreamToken string
+}
+
+type StripeConfig struct {
+	SecretKey     string
+	WebhookSecret string
 }
 
 func init() {

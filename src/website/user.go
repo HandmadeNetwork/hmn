@@ -23,7 +23,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/stripe/stripe-go/v84"
 )
 
 type UserProfileTemplateData struct {
@@ -467,17 +466,6 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save user settings"))
-	}
-
-	if c.CurrentUser.Email != email && c.CurrentUser.StripeCustomerID != nil {
-		sc := stripe.NewClient(config.Config.Stripe.SecretKey)
-		params := &stripe.CustomerUpdateParams{
-			Email: stripe.String(email),
-		}
-		_, err := sc.V1Customers.Update(c, *c.CurrentUser.StripeCustomerID, params)
-		if err != nil {
-			c.Logger.Error().Err(err).Msg("failed to update Stripe customer email")
-		}
 	}
 
 	res := c.Redirect(hmnurl.BuildUserSettings(""), http.StatusSeeOther)
