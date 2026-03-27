@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/buildcss"
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/hmndata"
@@ -46,8 +47,14 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 		redirectToHMN,
 	)
 	apiRoutes := routes.WithMiddleware(panicCatcherMiddleware(true))
-
-
+	hsfMembershipRoutes := hmnOnly.WithMiddleware(func(h Handler) Handler {
+		return func(c *RequestContext) ResponseData {
+			if !config.Config.DevConfig.MembershipsActive {
+				return FourOhFour(c)
+			}
+			return h(c)
+		}
+	})
 
 	routes.GET(hmnurl.RegexEsBuild, func(c *RequestContext) ResponseData {
 		if buildcss.ActiveServerPort != 0 {
@@ -215,10 +222,10 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexUserSettings, needsAuth(UserSettings))
 	hmnOnly.POST(hmnurl.RegexUserSettings, needsAuth(csrfMiddleware(UserSettingsSave)))
 
-	hmnOnly.GET(hmnurl.RegexSubscriptionManage, needsAuth(SubscriptionManage))
-	hmnOnly.POST(hmnurl.RegexSubscriptionSubscribe, needsAuth(csrfMiddleware(SubscriptionSubscribe)))
-	hmnOnly.POST(hmnurl.RegexSubscriptionCancel, needsAuth(csrfMiddleware(SubscriptionCancel)))
-	hmnOnly.POST(hmnurl.RegexSubscriptionResume, needsAuth(csrfMiddleware(SubscriptionResume)))
+	hsfMembershipRoutes.GET(hmnurl.RegexSubscriptionManage, needsAuth(SubscriptionManage))
+	hsfMembershipRoutes.POST(hmnurl.RegexSubscriptionSubscribe, needsAuth(csrfMiddleware(SubscriptionSubscribe)))
+	hsfMembershipRoutes.POST(hmnurl.RegexSubscriptionCancel, needsAuth(csrfMiddleware(SubscriptionCancel)))
+	hsfMembershipRoutes.POST(hmnurl.RegexSubscriptionResume, needsAuth(csrfMiddleware(SubscriptionResume)))
 
 	hmnOnly.GET(hmnurl.RegexPersonalBlog, BlogPersonalIndex)
 	hmnOnly.GET(hmnurl.RegexPersonalBlogThread, BlogPersonalThread)

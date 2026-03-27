@@ -123,7 +123,8 @@ type AdminConfig struct {
 }
 
 type DevConfig struct {
-	LiveTemplates bool // load templates live from the filesystem instead of embedding them
+	LiveTemplates     bool // load templates live from the filesystem instead of embedding them
+	MembershipsActive bool // Temporary! Remove when shipping HSF memberships.
 }
 
 type PreviewGenerationConfig struct {
@@ -138,7 +139,6 @@ type EsBuildConfig struct {
 type PostmarkConfig struct {
 	TransactionalStreamToken string
 }
-
 
 func init() {
 	if Config.EpisodeGuide.Projects == nil {
