@@ -958,12 +958,7 @@ func urlIsLocal(url string) bool {
 	return strings.HasSuffix(urlParsed.Host, baseUrl.Host)
 }
 
-var reStupidUsername = regexp.MustCompile(`^[a-z]{10}$`)
-
 func isBlacklisted(ctx context.Context, conn db.ConnOrTx, username, email string) (bool, error) {
-	if reStupidUsername.MatchString(username) {
-		return true, nil
-	}
 	if strings.Count(email, ".") > 5 {
 		return true, nil
 	}
