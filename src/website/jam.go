@@ -85,6 +85,7 @@ type JamGenericTemplateData struct {
 	Assets JamAssets
 
 	Timespans                  hmndata.EventTimespans
+	StartTime, EndTime         time.Time
 	StartTimeUnix, EndTimeUnix int64
 	JamUrl                     string
 	JamFeedUrl                 string
@@ -179,6 +180,8 @@ func getJamGenericTemplateData(c *RequestContext, jam hmndata.Jam, baseData temp
 		BaseData: baseData,
 		Assets:   assets,
 
+		StartTime:     jam.StartTime,
+		EndTime:       jam.EndTime,
 		StartTimeUnix: jam.StartTime.Unix(),
 		EndTimeUnix:   jam.EndTime.Unix(),
 		Timespans:     hmndata.CalcTimespans(jam.Event, now),

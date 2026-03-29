@@ -131,14 +131,17 @@ var WRJ2025 = Jam{
 
 var Essentials2026 = Jam{
 	Event: Event{
-		StartTime:   time.Date(2025, 9, 22, 13, 0, 0, 0, time.UTC),
-		EndTime:     time.Date(2025, 9, 29, 5, 0, 0, 0, time.UTC),
+		StartTime:   time.Date(2026, 4, 13, 13, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2026, 4, 20, 5, 0, 0, 0, time.UTC),
 		Name:        "Handmade Essentials Jam",
-		Description: "TODO TODO TODO",
+		Description: "Build software you would use every day, from scratch, by hand. April 13 - 19, 2026.",
 		Slug:        "Essentials2026",
 		UrlSlug:     "essentials",
 	},
-	TemplateName:  "2026_essentials",
+
+	TemplateName: "2026_essentials",
+	ForceDark:    true,
+
 	DiscordRoleID: "1487450321381757029",
 }
 
