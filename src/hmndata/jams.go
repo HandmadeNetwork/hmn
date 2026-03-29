@@ -20,6 +20,8 @@ type Jam struct {
 	ForceDark    bool
 
 	RecapStreamEmbedUrl string // NOTE(asaf): Youtube video, not twitch
+
+	DiscordRoleID string
 }
 
 var WRJ2021 = Jam{
@@ -127,6 +129,19 @@ var WRJ2025 = Jam{
 	TemplateName: "2025_wrj",
 }
 
+var Essentials2026 = Jam{
+	Event: Event{
+		StartTime:   time.Date(2025, 9, 22, 13, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2025, 9, 29, 5, 0, 0, 0, time.UTC),
+		Name:        "Handmade Essentials Jam",
+		Description: "TODO TODO TODO",
+		Slug:        "Essentials2026",
+		UrlSlug:     "essentials",
+	},
+	TemplateName:  "2026_essentials",
+	DiscordRoleID: "1487450321381757029",
+}
+
 var AllJams = []Jam{
 	WRJ2021,
 	WRJ2022,
@@ -137,9 +152,10 @@ var AllJams = []Jam{
 	WRJ2024,
 	XRay2025,
 	WRJ2025,
+	Essentials2026,
 }
 
-var LatestJam = WRJ2025 // NOTE(asaf): The /jam route will redirect here
+var LatestJam = Essentials2026 // NOTE(asaf): The /jam route will redirect here
 
 func CurrentJam() *Jam {
 	now := time.Now()

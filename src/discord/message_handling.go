@@ -50,7 +50,7 @@ func shouldAutomaticallyCreateSnippet(interned *InternedMessage) bool {
 	case config.Config.Discord.JamChannelID:
 		// Create a snippet for any message that has an explicit project tag.
 		hasTags := len(parseTags(interned.MessageContent.LastContent)) > 0
-		jamIsHappeningMoreOrLessRightNow := true // change to true during/around a jam :P
+		jamIsHappeningMoreOrLessRightNow := hmndata.LatestJam.WithinGrace(time.Now(), hmndata.JamProjectCreateGracePeriod, time.Hour*24)
 		return hasTags && jamIsHappeningMoreOrLessRightNow
 	default:
 		return false
