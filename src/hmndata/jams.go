@@ -145,6 +145,7 @@ var Essentials2026 = Jam{
 
 	DiscordRoleIDs: map[config.Environment]string{
 		config.Dev:  "1488299298188820751",
+		config.Beta: "1488299298188820751",
 		config.Live: "1487450321381757029",
 	},
 }
