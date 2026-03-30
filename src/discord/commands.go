@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/hmndata"
+	"git.handmade.network/hmn/hmn/src/utils"
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
@@ -22,6 +24,8 @@ const ProfileOptionUser = "user"
 const SlashCommandManifesto = "manifesto"
 const SlashCommandHMHReplay = "hmhreplay"
 const HMHReplayOptionToggle = "toggle"
+
+const SlashCommandJoinJam = "joinjam"
 
 // User command names
 const UserCommandProfile = "HMN Profile"
@@ -59,12 +63,11 @@ func (bot *botInstance) createApplicationCommands(ctx context.Context) {
 		Description: "Read the Handmade manifesto",
 	}))
 
-	dmPermission := false
 	doOrWarn(CreateGuildApplicationCommand(ctx, CreateGuildApplicationCommandRequest{
 		Type:         ApplicationCommandTypeChatInput,
 		Name:         SlashCommandHMHReplay,
 		Description:  "Join the Handmade Hero Replay",
-		DMPermission: &dmPermission,
+		DMPermission: utils.P(false),
 		Options: []ApplicationCommandOption{
 			{
 				Type:        ApplicationCommandOptionTypeBoolean,
@@ -73,6 +76,13 @@ func (bot *botInstance) createApplicationCommands(ctx context.Context) {
 				Required:    false,
 			},
 		},
+	}))
+
+	doOrWarn(CreateGuildApplicationCommand(ctx, CreateGuildApplicationCommandRequest{
+		Type:         ApplicationCommandTypeChatInput,
+		Name:         SlashCommandJoinJam,
+		Description:  "Join an upcoming jam",
+		DMPermission: utils.P(false),
 	}))
 }
 
@@ -142,6 +152,67 @@ func (bot *botInstance) doInteraction(ctx context.Context, i *Interaction) {
 				}
 			}
 		}
+
+	case SlashCommandJoinJam:
+		log := logging.ExtractLogger(ctx).With().Str("interaction", i.ID).Logger()
+		log.Debug().Interface("interaction", i).Msg("Got /joinjam")
+
+		conn := db.NewConn()
+
+		// Look up jam, respond if there is none
+		if !hmndata.LatestJam.WithinGrace(time.Now(), hmndata.JamProjectCreateGracePeriod, 0) {
+			sendEphemeralMessageForInteraction(ctx, i, "You are not able to join a jam right now.")
+			return
+		}
+
+		// Look up linked HMN user, respond with settings link if none found
+		_, err := hmndata.FetchUser(ctx, conn, nil, hmndata.UsersQuery{
+			DiscordUserIDs: []string{i.Member.User.ID},
+		})
+		if err == db.NotFound {
+			settingsUrl := hmnurl.BuildUserSettings("discord")
+			loginUrl := hmnurl.BuildLoginPage(settingsUrl, "joinjam")
+			sendEphemeralMessageForInteraction(ctx, i, fmt.Sprintf(
+				"You must link a Handmade Network account to your Discord account. [Sign up](%s) and link your Discord account in settings, then re-run this command.",
+				loginUrl,
+			))
+			return
+		} else if err != nil {
+			log.Error().Err(err).Msg("failed to look up Discord user")
+			sendEphemeralMessageForInteraction(ctx, i, "Failed to look up your linked HMN account. Please contact an admin.")
+			return
+		}
+
+		errOccurred := false
+
+		// Give user the Discord role
+		roleID := hmndata.LatestJam.DiscordRoleIDs[config.Config.Env]
+		utils.Assert(roleID)
+		err = AddGuildMemberRole(ctx, i.Member.User.ID, roleID)
+		if err != nil {
+			log.Error().Err(err).Msg("failed to give user the jam role")
+			errOccurred = true
+		}
+
+		// Ping user in #jam
+		utils.Assert(config.Config.Discord.JamChannelID)
+		err = SendMessages(ctx, conn, MessageToSend{
+			ChannelID: config.Config.Discord.JamChannelID,
+			Req: CreateMessageRequest{
+				Content: fmt.Sprintf("<@%s> has joined the jam!", i.Member.User.ID),
+			},
+		})
+		if err != nil {
+			log.Error().Err(err).Msg("failed to ping the user in the #jam channel")
+			errOccurred = true
+		}
+
+		if errOccurred {
+			sendEphemeralMessageForInteraction(ctx, i, "Something went wrong while signing you up for the jam. Please contact an admin.")
+		} else {
+			sendEphemeralMessageForInteraction(ctx, i, "You are now signed up for the jam! The next step is to create a project to act as your submission. See the pinned message in #jam for more info.")
+		}
+
 	default:
 		logging.ExtractLogger(ctx).Warn().Str("name", i.Data.Name).Msg("didn't recognize Discord interaction name")
 	}

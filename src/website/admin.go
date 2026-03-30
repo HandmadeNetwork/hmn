@@ -290,7 +290,9 @@ func AdminApprovalQueueSubmit(c *RequestContext) ResponseData {
 		return c.RejectRequest("User id can't be parsed")
 	}
 
-	user, err := hmndata.FetchUser(c, c.Conn, c.CurrentUser, userId, hmndata.UsersQuery{})
+	user, err := hmndata.FetchUser(c, c.Conn, c.CurrentUser, hmndata.UsersQuery{
+		UserIDs: []int{userId},
+	})
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
 			return c.RejectRequest("User not found")

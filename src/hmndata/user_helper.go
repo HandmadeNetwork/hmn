@@ -112,12 +112,9 @@ func FetchUser(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
 	currentUser *models.User,
-	userID int,
 	q UsersQuery,
 ) (*models.User, error) {
 	defer perf.StartBlock(ctx, "USER", "Fetch user").End()
-
-	q.UserIDs = []int{userID}
 
 	res, err := FetchUsers(ctx, dbConn, currentUser, q)
 	if err != nil {

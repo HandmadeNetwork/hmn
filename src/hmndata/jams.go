@@ -5,13 +5,14 @@ import (
 	"sort"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-const JamProjectCreateGracePeriod = 7 * 24 * time.Hour
+const JamProjectCreateGracePeriod = 14 * 24 * time.Hour
 
 type Jam struct {
 	Event
@@ -21,7 +22,7 @@ type Jam struct {
 
 	RecapStreamEmbedUrl string // NOTE(asaf): Youtube video, not twitch
 
-	DiscordRoleID string
+	DiscordRoleIDs map[config.Environment]string
 }
 
 var WRJ2021 = Jam{
@@ -142,7 +143,10 @@ var Essentials2026 = Jam{
 	TemplateName: "2026_essentials",
 	ForceDark:    true,
 
-	DiscordRoleID: "1487450321381757029",
+	DiscordRoleIDs: map[config.Environment]string{
+		config.Dev:  "1488299298188820751",
+		config.Live: "1487450321381757029",
+	},
 }
 
 var AllJams = []Jam{

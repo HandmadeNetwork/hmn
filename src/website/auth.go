@@ -35,11 +35,15 @@ type LoginPageData struct {
 }
 
 func LoginPage(c *RequestContext) ResponseData {
-	if c.CurrentUser != nil {
-		return c.RejectRequest("You are already logged in.")
-	}
-
 	redirect := c.Req.URL.Query().Get("redirect")
+
+	// If already logged in, immediately redirect to the destination. This allows
+	// us to use the login page as a general auth gate on external links, e.g. in
+	// Discord messages.
+	if c.CurrentUser != nil {
+		destination := safeLoginRedirectUrl(redirect)
+		return c.Redirect(destination, http.StatusSeeOther)
+	}
 
 	var res ResponseData
 	res.MustWriteTemplate("auth_login.html", LoginPageData{
@@ -53,18 +57,14 @@ func LoginPage(c *RequestContext) ResponseData {
 	return res
 }
 
-func Login(c *RequestContext) ResponseData {
+func LoginAction(c *RequestContext) ResponseData {
 	form, err := c.GetFormValues()
 	if err != nil {
 		return c.ErrorResponse(http.StatusBadRequest, NewSafeError(err, "request must contain form data"))
 	}
 
 	redirect := form.Get("redirect")
-
-	destination := hmnurl.BuildHomepage()
-	if redirect != "" && urlIsLocal(redirect) {
-		destination = redirect
-	}
+	destination := safeLoginRedirectUrl(redirect)
 
 	if c.CurrentUser != nil {
 		res := c.Redirect(destination, http.StatusSeeOther)
@@ -127,6 +127,14 @@ func Login(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 	return res
+}
+
+func safeLoginRedirectUrl(redirect string) string {
+	if redirect != "" && urlIsLocal(redirect) {
+		return redirect
+	} else {
+		return hmnurl.BuildHomepage()
+	}
 }
 
 func LoginWithDiscord(c *RequestContext) ResponseData {

@@ -11,8 +11,8 @@ type Environment string
 
 const (
 	Live Environment = "live"
-	Beta             = "beta"
-	Dev              = "dev"
+	Beta Environment = "beta"
+	Dev  Environment = "dev"
 )
 
 type HMNConfig struct {
