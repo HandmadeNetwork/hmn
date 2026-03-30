@@ -791,6 +791,9 @@ func UpdateSnippetForInternedMessage(
 		if shouldCreate {
 			// Get an asset ID or URL to make a snippet from
 			assetId, url, err := getSnippetAssetOrUrl(ctx, tx, &interned.Message)
+			if err != nil {
+				return oops.New(err, "failed to fetch assets for snippet creation")
+			}
 
 			contentMarkdown := interned.MessageContent.LastContent
 			contentHTML := parsing.ParseMarkdown(contentMarkdown, parsing.DiscordMarkdown)
