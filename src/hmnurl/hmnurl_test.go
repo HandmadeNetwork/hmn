@@ -67,7 +67,7 @@ func TestLogoutAction(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
-	AssertRegexMatch(t, BuildRegister(""), RegexRegister, nil)
+	AssertRegexMatch(t, BuildRegister("", ""), RegexRegister, nil)
 }
 
 func TestRegistrationSuccess(t *testing.T) {

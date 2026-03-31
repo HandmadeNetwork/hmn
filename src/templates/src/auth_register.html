@@ -1,64 +1,91 @@
 {{ template "base-2024.html" . }}
 
+{{ define "extrahead" }}
+<style>
+	@media screen and (min-width: 35em) {
+		#login-container {
+			width: 24rem;
+		}
+	}
+</style>
+{{ end }}
+
 {{ define "content" }}
-<div class="mw5-ns pt3 ph3 ph0-ns m-center">
-	<form method="POST" class="flex flex-column g3 hmn-form">
-		<h1>Create Account</h1>
-		
-		{{/* NOTE(asaf): No CSRF on register. We don't have a user session yet and I don't think we would gain anything from a pre-login session here */}}
-		
-		<input type="hidden" name="destination" value="{{ .DestinationURL }}" />
+<div id="login-container" class="pt3 ph3 ph0-ns m-center">
+	<div class="flex flex-column g4">
+		{{ template "auth_notices.html" . }}
+		<form method="POST" class="flex flex-column g3 hmn-form">
+			<h1>Create account</h1>
+			
+			{{/* NOTE(asaf): No CSRF on register. We don't have a user session yet and I don't think we would gain anything from a pre-login session here */}}
+			
+			<input type="hidden" name="destination" value="{{ .DestinationURL }}" />
+
+			<div class="flex flex-column g2">
+				<input class="db w-100"
+					name="username"
+					type="text"
+					minlength="3" maxlength="30"
+					pattern="^[0-9a-zA-Z][\w-]{2,29}$"
+					placeholder="Username"
+					required
+				/>
+				<input class="db w-100"
+					name="displayname"
+					placeholder="Display name (optional)"
+					type="text"
+				/>
+				<input class="db w-100"
+					name="email"
+					type="email"
+					placeholder="Email"
+					required
+				/>
+				<input class="db w-100"
+					name="password"
+					type="password"
+					minlength="8"
+					placeholder="Password"
+					required
+				/>
+				<input class="db w-100"
+					name="password_confirmation"
+					type="password"
+					minlength="8"
+					placeholder="Password again"
+					required
+				/>
+			</div>
+
+			<script>
+				let passwordInput = document.querySelector("input[name=password]");
+				document.querySelector("input[name=password_confirmation]").addEventListener("input", function() {
+					if (passwordInput.value == this.value) {
+						this.setCustomValidity("");
+					} else {
+						this.setCustomValidity("This must match the password you entered in the password field");
+					}
+				});
+			</script>
+
+			{{/* TODO(asaf): Consider adding some bot-mitigation thing here */}}
+
+			<div class="flex flex-column g2">
+				<input class="w-100 btn-primary" type="submit" value="Register" />
+				<div class="tc f6">
+					Already have an account? <a href="{{ .LoginUrl }}">Log in.</a>
+				</div>
+			</div>
+		</form>
 
 		<div class="flex flex-column g2">
-			<input class="db w-100 w5-ns"
-				name="username"
-				type="text"
-				minlength="3" maxlength="30"
-				pattern="^[0-9a-zA-Z][\w-]{2,29}$"
-				placeholder="Username"
-				required
-			/>
-			<input class="db w-100 w5-ns"
-				name="displayname"
-				placeholder="Display name (optional)"
-				type="text"
-			/>
-			<input class="db w-100 w5-ns"
-				name="email"
-				type="email"
-				placeholder="Email"
-				required
-			/>
-			<input class="db w-100 w5-ns"
-				name="password"
-				type="password"
-				minlength="8"
-				placeholder="Password"
-				required
-			/>
-			<input class="db w-100 w5-ns"
-				name="password_confirmation"
-				type="password"
-				minlength="8"
-				placeholder="Password again"
-				required
-			/>
+			<div class="b">Third-party signup</div>
+			<div class="flex flex-column g1">
+				<a href="{{ .LoginWithDiscordUrl }}" class="db overflow-hidden flex" title="Log in with Discord">
+					<img src="{{ static "discord-login.svg" }}" alt="Log in with Discord">
+				</a>
+			</div>
 		</div>
-
-        <script>
-            let passwordInput = document.querySelector("input[name=password]");
-            document.querySelector("input[name=password_confirmation]").addEventListener("input", function() {
-                if (passwordInput.value == this.value) {
-                    this.setCustomValidity("");
-                } else {
-                    this.setCustomValidity("This must match the password you entered in the password field");
-                }
-            });
-        </script>
-
-		{{/* TODO(asaf): Consider adding some bot-mitigation thing here */}}
-
-		<input class="w-100 btn-primary" type="submit" value="Register" />
-	</form>
+	</div>
 </div>
 {{ end }}

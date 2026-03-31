@@ -79,7 +79,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			UserSettingsUrl:       hmnurl.BuildUserSettings(""),
 			LogoutUrl:             hmnurl.BuildLogoutAction(c.FullUrl()),
 			ForgotPasswordUrl:     hmnurl.BuildRequestPasswordReset(),
-			RegisterUrl:           hmnurl.BuildRegister(""),
+			RegisterUrl:           hmnurl.BuildRegister("", ""),
 
 			HMNHomepageUrl:  hmnurl.BuildHomepage(),
 			ProjectIndexUrl: hmnurl.BuildProjectIndex(),

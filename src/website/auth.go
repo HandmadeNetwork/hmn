@@ -45,14 +45,16 @@ func LoginPage(c *RequestContext) ResponseData {
 		return c.Redirect(destination, http.StatusSeeOther)
 	}
 
+	notice := c.URL().Query().Get("notice")
+
 	var res ResponseData
 	res.MustWriteTemplate("auth_login.html", LoginPageData{
 		BaseData:            getBaseData(c, "Log in", nil),
 		RedirectUrl:         redirect,
-		RegisterUrl:         hmnurl.BuildRegister(redirect),
+		RegisterUrl:         hmnurl.BuildRegister(redirect, notice),
 		ForgotPasswordUrl:   hmnurl.BuildRequestPasswordReset(),
 		LoginWithDiscordUrl: hmnurl.BuildLoginWithDiscord(redirect),
-		Notice:              c.URL().Query().Get("notice"),
+		Notice:              notice,
 	}, c.Perf)
 	return res
 }
@@ -182,12 +184,22 @@ func RegisterNewUser(c *RequestContext) ResponseData {
 
 	type RegisterPageData struct {
 		templates.BaseData
-		DestinationURL string
+		DestinationURL      string
+		Notice              string
+		LoginUrl            string
+		LoginWithDiscordUrl string
 	}
 
+	notice := c.URL().Query().Get("notice")
+	rawDest := c.Req.URL.Query().Get("destination")
+	dest := safeLoginRedirectUrl(rawDest)
+
 	tmpl := RegisterPageData{
-		BaseData:       getBaseData(c, "Register", nil),
-		DestinationURL: c.Req.URL.Query().Get("destination"),
+		BaseData:            getBaseData(c, "Register", nil),
+		DestinationURL:      dest,
+		Notice:              notice,
+		LoginUrl:            hmnurl.BuildLoginPage(rawDest, notice),
+		LoginWithDiscordUrl: hmnurl.BuildLoginWithDiscord(dest),
 	}
 
 	var res ResponseData

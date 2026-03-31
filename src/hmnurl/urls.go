@@ -296,11 +296,14 @@ func BuildLogoutAction(redir string) string {
 
 var RegexRegister = regexp.MustCompile("^/register$")
 
-func BuildRegister(destination string) string {
+func BuildRegister(destination string, notice string) string {
 	defer CatchPanic()
 	var query []Q
 	if destination != "" {
 		query = append(query, Q{"destination", destination})
+	}
+	if notice != "" {
+		query = append(query, Q{"notice", notice})
 	}
 	return Url("/register", query)
 }
