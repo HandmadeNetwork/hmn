@@ -135,7 +135,7 @@ var Essentials2026 = Jam{
 		StartTime:   time.Date(2026, 4, 13, 13, 0, 0, 0, time.UTC),
 		EndTime:     time.Date(2026, 4, 20, 5, 0, 0, 0, time.UTC),
 		Name:        "Handmade Essentials Jam",
-		Description: "Build software you would use every day, from scratch, by hand. April 13 - 19, 2026.",
+		Description: "Build simple programs you would use every day, from scratch, by hand. April 13 - 19, 2026.",
 		Slug:        "Essentials2026",
 		UrlSlug:     "essentials",
 	},
