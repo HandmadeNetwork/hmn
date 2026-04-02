@@ -115,8 +115,12 @@ func csrfMiddleware(h Handler) Handler {
 	return func(c *RequestContext) ResponseData {
 		c.Req.ParseMultipartForm(100 * 1024 * 1024)
 		csrfToken := c.Req.Form.Get(auth.CSRFFieldName)
-		if csrfToken != c.CurrentSession.CSRFToken {
-			c.Logger.Warn().Str("userId", c.CurrentUser.Username).Msg("user failed CSRF validation - potential attack?")
+		if c.CurrentSession == nil || csrfToken != c.CurrentSession.CSRFToken {
+			username := "Unknown user"
+			if c.CurrentUser != nil {
+				username = c.CurrentUser.Username
+			}
+			c.Logger.Warn().Str("userId", username).Msg("user failed CSRF validation - potential attack?")
 
 			res := c.Redirect("/", http.StatusSeeOther)
 			logoutUser(c, &res)

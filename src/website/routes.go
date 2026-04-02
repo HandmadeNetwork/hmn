@@ -245,7 +245,8 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	hmnOnly.GET(hmnurl.RegexStyleTest, StyleTest)
 
-	apiRoutes.POST(hmnurl.RegexAPICheckUsername, csrfMiddleware(APICheckUsername))
+	// NOTE(asaf): CheckUsername requires a logged-in user, so it can't use the apiRoutes middleware.
+	hmnOnly.POST(hmnurl.RegexAPICheckUsername, needsAuth(csrfMiddleware(APICheckUsername)))
 	apiRoutes.POST(hmnurl.RegexAPINewsletterSignup, APINewsletterSignup)
 	apiRoutes.POST(hmnurl.RegexStripeWebhook, StripeWebhook)
 
