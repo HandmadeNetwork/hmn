@@ -94,8 +94,13 @@ func DaysUntilT(targetTime time.Time, referenceTime time.Time) int {
 }
 
 func DaysUntil(t time.Time) int {
-	d := max(t.Sub(time.Now()), 0)
+	d := max(time.Until(t), 0)
 	return int(DurationRoundUp(d, 24*time.Hour) / (24 * time.Hour))
+}
+
+// Checks if the given time t is in the range [min, max).
+func TimeIsBetween(min, t, max time.Time) bool {
+	return (min.Equal(t) || min.Before(t)) && t.Before(max)
 }
 
 /*

@@ -215,7 +215,7 @@ func doWithRateLimiting(ctx context.Context, routeName string, getReq func(ctx c
 
 		if globalRateLimitTime.After(time.Now()) {
 			// oh boy, global rate limit, pause until the coast is clear
-			err := utils.SleepContext(ctx, globalRateLimitTime.Sub(time.Now())+1*time.Second)
+			err := utils.SleepContext(ctx, time.Until(globalRateLimitTime)+1*time.Second)
 			if err != nil {
 				return nil, err
 			}

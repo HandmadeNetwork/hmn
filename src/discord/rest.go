@@ -18,6 +18,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 const (
@@ -184,12 +185,72 @@ func GetGuildMember(ctx context.Context, guildID, userID string) (*GuildMember, 
 	return &msg, nil
 }
 
+// WARNING: This function is very expensive, as it must make several paginated requests. It will
+// block while doing so. It will also allocate memory for all of the guild members too. Please
+// consider whether you actually need to do this, and take appropriate precautions if you must.
+func ListGuildMembers(ctx context.Context, guildID string) ([]GuildMember, error) {
+	const name = "List Guild Members"
+	path := fmt.Sprintf("/guilds/%s/members", guildID)
+	const limit = 1000
+
+	var allMembers []GuildMember
+	var lastID string
+	for {
+		res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+			req := makeRequest(ctx, http.MethodGet, path, nil)
+			q := req.URL.Query()
+			q.Add("limit", strconv.Itoa(limit))
+			if lastID != "" {
+				q.Add("after", lastID)
+			}
+			req.URL.RawQuery = q.Encode()
+
+			return req
+		})
+		if err != nil {
+			return nil, err
+		}
+		defer res.Body.Close()
+
+		if res.StatusCode == http.StatusNotFound {
+			return nil, NotFound
+		} else if res.StatusCode >= 400 {
+			logErrorResponse(ctx, name, res, "")
+			return nil, oops.New(nil, "received error from Discord")
+		}
+
+		bodyBytes, err := io.ReadAll(res.Body)
+		if err != nil {
+			panic(err)
+		}
+
+		var msg []GuildMember
+		err = json.Unmarshal(bodyBytes, &msg)
+		if err != nil {
+			return nil, oops.New(err, "failed to unmarshal Discord message")
+		}
+
+		if len(msg) > 0 {
+			lastMember := msg[len(msg)-1]
+			utils.Assert(lastMember.User, "all guild members from this endpoint should have users")
+			lastID = lastMember.User.ID
+		}
+		allMembers = append(allMembers, msg...)
+
+		if len(msg) < limit {
+			break
+		}
+	}
+
+	return allMembers, nil
+}
+
 type MentionType string
 
 const (
 	MentionTypeUsers    MentionType = "users"
-	MentionTypeRoles                = "roles"
-	MentionTypeEveryone             = "everyone"
+	MentionTypeRoles    MentionType = "roles"
+	MentionTypeEveryone MentionType = "everyone"
 )
 
 type MessageAllowedMentions struct {

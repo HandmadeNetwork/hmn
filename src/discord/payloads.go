@@ -410,10 +410,10 @@ func GuildFromMap(m any, k string) *Guild {
 
 // https://discord.com/developers/docs/resources/guild#guild-member-object
 type GuildMember struct {
-	User   *User     `json:"user"`
-	Nick   *string   `json:"nick"`
-	Avatar *string   `json:"avatar"`
-	Roles  *[]string `json:"roles"`
+	User   *User    `json:"user"`
+	Nick   *string  `json:"nick"`
+	Avatar *string  `json:"avatar"`
+	Roles  []string `json:"roles"`
 	// more fields not yet handled here
 }
 
@@ -437,7 +437,7 @@ func GuildMemberFromMap(m any, k string) *GuildMember {
 		User:   UserFromMap(mmap, "user"),
 		Nick:   maybeStringP(mmap, "nick"),
 		Avatar: maybeStringP(mmap, "avatar"),
-		Roles:  maybeStringArray(mmap, "roles"),
+		Roles:  mmap["roles"].([]string),
 	}
 
 	return gm

@@ -54,7 +54,7 @@ func CleanUpMarkdown(ctx context.Context, original string) string {
 			if err != nil {
 				if errors.Is(err, NotFound) {
 					// not a problem
-				} else if err != nil {
+				} else {
 					logging.ExtractLogger(ctx).Warn().Err(err).Msg("failed to fetch guild member for markdown")
 				}
 				return
