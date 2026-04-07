@@ -139,7 +139,7 @@ func TwitchDebugPage(c *RequestContext) ResponseData {
 		"Hook",
 		"REST",
 	}
-	data.Logs = make([]dataLog, 0, 0)
+	data.Logs = make([]dataLog, 0)
 	for _, l := range logs {
 		var log dataLog
 		log.ID = l.ID

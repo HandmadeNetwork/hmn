@@ -261,7 +261,7 @@ func (c *RequestContext) GetIP() *netip.Prefix {
 	ipString := ""
 
 	if ipString == "" {
-		cf, hasCf := c.Req.Header["CF-Connecting-IP"]
+		cf, hasCf := c.Req.Header["Cf-Connecting-Ip"]
 		if hasCf {
 			ipString = cf[0]
 		}

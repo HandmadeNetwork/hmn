@@ -104,11 +104,6 @@ const (
 	ApprovalQueueActionSpammer string = "spammer"
 )
 
-type postWithTitle struct {
-	templates.Post
-	Title string
-}
-
 type adminApprovalQueueData struct {
 	templates.BaseData
 

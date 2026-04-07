@@ -176,7 +176,7 @@ func topicsForProject(projectSlug string, requestedTopic string) ([]string, stri
 		if entry.IsDir() {
 			t := entry.Name()
 			allTopics = append(allTopics, t)
-			if strings.ToLower(t) == strings.ToLower(requestedTopic) {
+			if strings.EqualFold(t, requestedTopic) {
 				foundTopic = t
 			}
 		}
@@ -195,7 +195,7 @@ func findEpisode(projectSlug string, topic string, requestedEpisode string) stri
 	for _, entry := range entries {
 		if entry.IsDir() {
 			episode := entry.Name()
-			if strings.ToLower(episode) == strings.ToLower(requestedEpisode) {
+			if strings.EqualFold(episode, requestedEpisode) {
 				return episode
 			}
 		}

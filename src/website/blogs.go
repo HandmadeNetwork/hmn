@@ -394,7 +394,7 @@ func BlogPersonalThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	if strings.ToLower(posts[0].Author.Username) != strings.ToLower(profileUser.Username) {
+	if !strings.EqualFold(posts[0].Author.Username, profileUser.Username) {
 		return c.Redirect(hmnurl.BuildPersonalBlogThread(profileUser.Username, thread.ID, thread.Title), http.StatusSeeOther)
 	}
 
@@ -452,7 +452,7 @@ func BlogPersonalThread(c *RequestContext) ResponseData {
 func BlogPersonalNewThread(c *RequestContext) ResponseData {
 	username, _ := c.PathParams["username"]
 
-	if strings.ToLower(username) != strings.ToLower(c.CurrentUser.Username) {
+	if !strings.EqualFold(username, c.CurrentUser.Username) {
 		return c.Redirect(hmnurl.BuildPersonalBlogNewThread(c.CurrentUser.Username), http.StatusSeeOther)
 	}
 
@@ -543,7 +543,7 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 	if post.Thread.FirstID == post.Post.ID {
 		title = fmt.Sprintf(`Editing "%s"`, post.Thread.Title)
 	} else {
-		title = fmt.Sprintf("Editing Post")
+		title = "Editing Post"
 	}
 	if post.Thread.Type == models.ThreadTypeProjectBlogPost {
 		title += fmt.Sprintf(" | %s", c.CurrentProject.Name)
