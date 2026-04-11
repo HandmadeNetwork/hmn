@@ -30,7 +30,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-const maxPersonalProjects = 10
+const maxPersonalProjects = 20
 const maxProjectOwners = 5
 
 type ProjectTemplateData struct {
