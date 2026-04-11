@@ -157,7 +157,7 @@ func HashPassword(password string) HashedPassword {
 	// https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
 
 	salt := make([]byte, saltLength)
-	io.ReadFull(rand.Reader, salt)
+	utils.Must1(io.ReadFull(rand.Reader, salt))
 	saltEnc := base64.StdEncoding.EncodeToString(salt)
 
 	cfg := Argon2idConfig{
