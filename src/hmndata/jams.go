@@ -149,7 +149,7 @@ var Essentials2026 = Jam{
 		config.Beta: "1488299298188820751",
 		config.Live: "1487450321381757029",
 	},
-	NagTime: time.Date(2026, 4, 11, 13, 0, 0, 0, time.UTC),
+	NagTime: time.Date(2026, 4, 11, 14, 0, 0, 0, time.UTC),
 }
 
 var AllJams = []Jam{
@@ -197,13 +197,13 @@ func RecentJam(window time.Duration) *Jam {
 	return nil
 }
 
-func JamBySlug(slug string) Jam {
+func JamBySlug(slug string) (Jam, bool) {
 	for _, jam := range AllJams {
 		if jam.Slug == slug {
-			return jam
+			return jam, true
 		}
 	}
-	return Jam{Event: Event{Slug: slug}}
+	return Jam{Event: Event{Slug: slug}}, false
 }
 
 func FetchJamsForProject(ctx context.Context, dbConn db.ConnOrTx, user *models.User, projectId int) ([]*models.JamProject, error) {
@@ -223,7 +223,7 @@ func FetchJamsForProject(ctx context.Context, dbConn db.ConnOrTx, user *models.U
 	currentJam := UpcomingJam(JamProjectCreateGracePeriod)
 	foundCurrent := false
 	for i := range jamProjects {
-		jam := JamBySlug(jamProjects[i].JamSlug)
+		jam, _ := JamBySlug(jamProjects[i].JamSlug)
 		jamProjects[i].JamName = jam.Name
 		jamProjects[i].JamStartTime = jam.StartTime
 
