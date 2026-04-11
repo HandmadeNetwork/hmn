@@ -233,19 +233,13 @@ func (c *RequestContext) URL() *url.URL {
 func (c *RequestContext) FullUrl() string {
 	var scheme string
 
-	if scheme == "" {
-		proto, hasProto := c.Req.Header["X-Forwarded-Proto"]
-		if hasProto {
-			scheme = fmt.Sprintf("%s://", proto[0])
-		}
-	}
-
-	if scheme == "" {
-		if c.Req.TLS != nil {
-			scheme = "https://"
-		} else {
-			scheme = "http://"
-		}
+	proto, hasProto := c.Req.Header["X-Forwarded-Proto"]
+	if hasProto && (proto[0] == "http" || proto[0] == "https") {
+		scheme = fmt.Sprintf("%s://", proto[0])
+	} else if c.Req.TLS != nil {
+		scheme = "https://"
+	} else {
+		scheme = "http://"
 	}
 
 	return scheme + c.Req.Host + c.Req.URL.String()
