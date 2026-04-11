@@ -47,7 +47,7 @@ func trackRequestPerf(perfCollector *perf.PerfCollector) func(Handler) Handler {
 			c.PerfCollector = perfCollector
 			defer func() {
 				c.Perf.EndRequest()
-				log := logging.Info()
+				log := logging.Debug()
 				blockStack := make([]time.Time, 0)
 				for i, block := range c.Perf.Blocks {
 					for len(blockStack) > 0 && block.End.After(blockStack[len(blockStack)-1]) {
