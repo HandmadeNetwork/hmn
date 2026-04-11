@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -125,7 +125,7 @@ func CheckPassword(password string, hashedPassword HashedPassword) (bool, error)
 		newHash := argon2.IDKey([]byte(password), []byte(salt), cfg.Time, cfg.Memory, cfg.Threads, cfg.KeyLength)
 		newHashEnc := base64.StdEncoding.EncodeToString(newHash)
 
-		return bytes.Equal([]byte(newHashEnc), []byte(hashedPassword.Hash)), nil
+		return subtle.ConstantTimeCompare([]byte(newHashEnc), []byte(hashedPassword.Hash)) == 1, nil
 	case Django_PBKDF2SHA256:
 		decoded, err := base64.StdEncoding.DecodeString(hashedPassword.Hash)
 		if err != nil {
@@ -146,7 +146,7 @@ func CheckPassword(password string, hashedPassword HashedPassword) (bool, error)
 		)
 		newHashEncoded := base64.StdEncoding.EncodeToString(newHash)
 
-		return bytes.Equal([]byte(newHashEncoded), []byte(hashedPassword.Hash)), nil
+		return subtle.ConstantTimeCompare([]byte(newHashEncoded), []byte(hashedPassword.Hash)) == 1, nil
 	default:
 		return false, oops.New(nil, "unrecognized password hash algorithm: %s", hashedPassword.Algorithm)
 	}
