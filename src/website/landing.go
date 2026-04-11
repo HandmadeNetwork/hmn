@@ -3,6 +3,7 @@ package website
 import (
 	"html/template"
 	"net/http"
+	"time"
 
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmndata"
@@ -36,6 +37,9 @@ func Index(c *RequestContext) ResponseData {
 		AtomFeedUrl    string
 		MarkAllReadUrl string
 		NewProjectUrl  string
+		ExpoUrl        string
+
+		ShowExpoPromo bool
 	}
 
 	var err error
@@ -161,6 +165,13 @@ func Index(c *RequestContext) ResponseData {
 		}
 	}
 
+	expoUrl := ""
+	showExpo := false
+	if time.Now().Before(hmndata.LatestExpo.EndTime) {
+		expoUrl = hmnurl.BuildExpo(hmndata.LatestExpo.UrlSlug, "")
+		showExpo = true
+	}
+
 	baseData := getBaseData(c, "", nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
@@ -185,6 +196,9 @@ func Index(c *RequestContext) ResponseData {
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),
 		MarkAllReadUrl: hmnurl.HMNProjectContext.BuildForumMarkRead(0),
 		NewProjectUrl:  hmnurl.BuildProjectNew(),
+		ExpoUrl:        expoUrl,
+
+		ShowExpoPromo: showExpo,
 	}, c.Perf)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render landing page template"))
