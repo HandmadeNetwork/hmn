@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/oops"
-	"golang.org/x/exp/constraints"
 )
 
 // We have this because otherwise passing a nil *SomeError through Must or
@@ -58,21 +58,21 @@ func Must2[T1 any, T2 any, E comparableError](v1 T1, v2 T2, err E) (T1, T2) {
 	return v1, v2
 }
 
-func Min[T constraints.Ordered](a, b T) T {
+func Min[T cmp.Ordered](a, b T) T {
 	if a < b {
 		return a
 	}
 	return b
 }
 
-func Max[T constraints.Ordered](a, b T) T {
+func Max[T cmp.Ordered](a, b T) T {
 	if a > b {
 		return a
 	}
 	return b
 }
 
-func Clamp[T constraints.Ordered](min, t, max T) T {
+func Clamp[T cmp.Ordered](min, t, max T) T {
 	return Max(min, Min(t, max))
 }
 
