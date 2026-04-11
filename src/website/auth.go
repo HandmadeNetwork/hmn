@@ -163,7 +163,7 @@ func Logout(c *RequestContext) ResponseData {
 
 func RegisterNewUser(c *RequestContext) ResponseData {
 	if c.CurrentUser != nil {
-		c.Redirect(hmnurl.BuildUserSettings(c.CurrentUser.Username), http.StatusSeeOther)
+		return c.Redirect(hmnurl.BuildUserSettings(c.CurrentUser.Username), http.StatusSeeOther)
 	}
 
 	// TODO(asaf): Do something to prevent bot registration

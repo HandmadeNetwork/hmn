@@ -737,7 +737,7 @@ func TicketDeleteSubmit(c *RequestContext) ResponseData {
 
 func TicketScanned(c *RequestContext) ResponseData {
 	if !c.CurrentUser.IsStaff {
-		c.Redirect("https://www.youtube.com/watch?v=dQw4w9WgXcQ", http.StatusSeeOther)
+		return c.Redirect("https://www.youtube.com/watch?v=dQw4w9WgXcQ", http.StatusSeeOther)
 	}
 
 	// TODO(ben): Actually build ticket-scanning logic closer to the time of the event.
