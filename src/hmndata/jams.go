@@ -149,7 +149,7 @@ var Essentials2026 = Jam{
 		config.Beta: "1488299298188820751",
 		config.Live: "1487450321381757029",
 	},
-	NagTime: time.Date(2026, 4, 11, 13, 0, 0, 0, time.UTC),
+	NagTime: time.Date(2026, 4, 11, 14, 0, 0, 0, time.UTC),
 }
 
 var AllJams = []Jam{
