@@ -95,6 +95,21 @@ func UrlWithFragment(path string, query []Q, fragment string) string {
 	return HMNProjectContext.UrlWithFragment(path, query, fragment)
 }
 
+// Cleans up a URL path so it can be compared against a URL regex. Basically this just means
+// futzing with slashes.
+func NormalizePath(path string) string {
+	res := strings.TrimSuffix(path, "/")
+	if res == "" {
+		res = "/"
+	}
+	return res
+}
+
+func URLMatchesRoute(url *url.URL, route regexp.Regexp) bool {
+	path := NormalizePath(url.Path)
+	return route.MatchString(path)
+}
+
 // Takes a project URL and rewrites it using the current URL context. This can be used
 // to convert a personal project URL to official and vice versa.
 func (c *UrlContext) RewriteProjectUrl(u *url.URL) string {

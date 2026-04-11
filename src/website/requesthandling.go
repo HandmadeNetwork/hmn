@@ -114,15 +114,12 @@ func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		method = http.MethodGet // HEADs map to GETs for the purposes of routing
 	}
 
+	currentPath := hmnurl.NormalizePath(req.URL.Path)
+
 nextroute:
 	for _, route := range r.Routes {
 		if route.Method != "" && method != route.Method {
 			continue
-		}
-
-		currentPath := strings.TrimSuffix(req.URL.Path, "/")
-		if currentPath == "" {
-			currentPath = "/"
 		}
 
 		var params map[string]string

@@ -34,6 +34,15 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 	notices := getNoticesFromCookie(c)
 
+	var loginUrl string
+	if hmnurl.URLMatchesRoute(c.URL(), *hmnurl.RegexLoginPage) {
+		// NOTE(ben): If clicking the login button from the login page, don't try to redirect to the
+		// login page after login :)
+		loginUrl = hmnurl.BuildLoginPage(c.URL().Query().Get("redirect"), c.URL().Query().Get("notice"))
+	} else {
+		loginUrl = hmnurl.BuildLoginPage(c.FullUrl(), "")
+	}
+
 	if !c.UrlContext.IsHMN() {
 		projectUrl := c.UrlContext.BuildHomepage()
 		rootBreadcrumb := templates.Breadcrumb{
@@ -60,7 +69,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 		CurrentUrl:          c.FullUrl(),
 		CurrentProjectUrl:   c.UrlContext.BuildHomepage(),
-		LoginPageUrl:        hmnurl.BuildLoginPage(c.FullUrl(), ""),
+		LoginPageUrl:        loginUrl,
 		DiscordInviteUrl:    "https://discord.gg/hmn",
 		NewsletterSignupUrl: hmnurl.BuildAPINewsletterSignup(),
 
