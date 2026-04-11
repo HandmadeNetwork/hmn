@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	neturl "net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -20,7 +19,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
-	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 var UsernameRegex = regexp.MustCompile(`^[0-9a-zA-Z][\w-]{2,29}$`)
@@ -41,7 +39,7 @@ func LoginPage(c *RequestContext) ResponseData {
 	// us to use the login page as a general auth gate on external links, e.g. in
 	// Discord messages.
 	if c.CurrentUser != nil {
-		destination := safeLoginRedirectUrl(redirect)
+		destination := hmnurl.SafeRedirectUrl(redirect)
 		return c.Redirect(destination, http.StatusSeeOther)
 	}
 
@@ -66,7 +64,7 @@ func LoginAction(c *RequestContext) ResponseData {
 	}
 
 	redirect := form.Get("redirect")
-	destination := safeLoginRedirectUrl(redirect)
+	destination := hmnurl.SafeRedirectUrl(redirect)
 
 	if c.CurrentUser != nil {
 		res := c.Redirect(destination, http.StatusSeeOther)
@@ -131,16 +129,8 @@ func LoginAction(c *RequestContext) ResponseData {
 	return res
 }
 
-func safeLoginRedirectUrl(redirect string) string {
-	if redirect != "" && urlIsLocal(redirect) {
-		return redirect
-	} else {
-		return hmnurl.BuildHomepage()
-	}
-}
-
 func LoginWithDiscord(c *RequestContext) ResponseData {
-	destinationUrl := c.URL().Query().Get("redirect")
+	destinationUrl := hmnurl.SafeRedirectUrl(c.URL().Query().Get("redirect"))
 	if c.CurrentUser != nil {
 		return c.Redirect(destinationUrl, http.StatusSeeOther)
 	}
@@ -164,11 +154,7 @@ func LoginWithDiscord(c *RequestContext) ResponseData {
 
 func Logout(c *RequestContext) ResponseData {
 	redirect := c.Req.URL.Query().Get("redirect")
-
-	destination := hmnurl.BuildHomepage()
-	if redirect != "" && urlIsLocal(redirect) {
-		destination = redirect
-	}
+	destination := hmnurl.SafeRedirectUrl(redirect)
 
 	res := c.Redirect(destination, http.StatusSeeOther)
 	logoutUser(c, &res)
@@ -192,7 +178,7 @@ func RegisterNewUser(c *RequestContext) ResponseData {
 
 	notice := c.URL().Query().Get("notice")
 	rawDest := c.Req.URL.Query().Get("destination")
-	dest := safeLoginRedirectUrl(rawDest)
+	dest := hmnurl.SafeRedirectUrl(rawDest)
 
 	tmpl := RegisterPageData{
 		BaseData:            getBaseData(c, "Register", nil),
@@ -543,10 +529,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		b.End()
 	}
 
-	redirect := hmnurl.BuildHomepage()
-	if destination != "" && urlIsLocal(destination) {
-		redirect = destination
-	}
+	redirect := hmnurl.SafeRedirectUrl(destination)
 
 	res := c.Redirect(redirect, http.StatusSeeOther)
 	res.AddFutureNotice("success", "You've completed your registration successfully!")
@@ -967,15 +950,6 @@ func validateUsernameAndToken(c *RequestContext, username string, token string, 
 	}
 
 	return result
-}
-
-func urlIsLocal(url string) bool {
-	urlParsed, err := neturl.Parse(url)
-	if err != nil {
-		return false
-	}
-	baseUrl := utils.Must1(neturl.Parse(config.Config.BaseUrl))
-	return strings.HasSuffix(urlParsed.Host, baseUrl.Host)
 }
 
 func isBlacklisted(ctx context.Context, conn db.ConnOrTx, username, email string) (bool, error) {

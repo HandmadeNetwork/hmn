@@ -142,7 +142,7 @@ func SnippetEditSubmit(c *RequestContext) ResponseData {
 
 	form := c.Req.PostForm
 
-	redirect := form.Get("redirect")
+	redirect := hmnurl.SafeRedirectUrl(form.Get("redirect"))
 	action := form.Get("action")
 	existingSnippetIdStr := strings.TrimSpace(form.Get("snippet_id"))
 	var existingSnippet *hmndata.SnippetAndStuff

@@ -317,7 +317,11 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 		}
 	}
 
-	res := c.Redirect(destinationUrl, http.StatusSeeOther)
+	// We only expect direct URLs to HMN pages, or values that were sanitized on their way into
+	// pending_login, but defense in depth is not a bad thing.
+	safeDest := hmnurl.SafeRedirectUrl(destinationUrl)
+
+	res := c.Redirect(safeDest, http.StatusSeeOther)
 	err = loginUser(c, hmnUser, &res)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)

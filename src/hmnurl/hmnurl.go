@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/utils"
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/oops"
@@ -116,6 +117,26 @@ func (c *UrlContext) RewriteProjectUrl(u *url.URL) string {
 	// we need to strip anything matching the personal project regex to get the base path
 	match := RegexPersonalProject.FindString(u.Path)
 	return c.Url(u.Path[len(match):], QFromURL(u))
+}
+
+// Checks if the given URL string belongs to the HMN website.
+func UrlIsLocal(urlString string) bool {
+	urlParsed, err := url.Parse(urlString)
+	if err != nil {
+		return false
+	}
+	baseUrl := utils.Must1(url.Parse(config.Config.BaseUrl))
+	return urlParsed.Host == baseUrl.Host || strings.HasSuffix(urlParsed.Host, "."+baseUrl.Host)
+}
+
+// Sanitizes a user-controlled redirect URL to avoid spoofing or phishing. If the URL is empty or
+// does not belong to the HMN website, it will return BuildHomepage().
+func SafeRedirectUrl(redirect string) string {
+	if redirect != "" && UrlIsLocal(redirect) {
+		return redirect
+	} else {
+		return BuildHomepage()
+	}
 }
 
 func trim(path string) string {

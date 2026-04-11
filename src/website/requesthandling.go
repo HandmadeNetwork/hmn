@@ -308,6 +308,9 @@ func (c *RequestContext) GetFormValues() (url.Values, error) {
 
 // The logic of this function is copy-pasted from the Go standard library.
 // https://golang.org/pkg/net/http/#Redirect
+//
+// This function will faithfully redirect the user to wherever you tell it, so make sure to
+// appropriately sanitize the destination URL if it is user-controlled.
 func (c *RequestContext) Redirect(dest string, code int) ResponseData {
 	var res ResponseData
 
