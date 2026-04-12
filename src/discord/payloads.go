@@ -437,7 +437,7 @@ func GuildMemberFromMap(m any, k string) *GuildMember {
 		User:   UserFromMap(mmap, "user"),
 		Nick:   maybeStringP(mmap, "nick"),
 		Avatar: maybeStringP(mmap, "avatar"),
-		Roles:  mmap["roles"].([]string),
+		Roles:  maybeStringArray(mmap, "roles"),
 	}
 
 	return gm
@@ -1036,7 +1036,7 @@ func maybeArray(m map[string]any, k string) []any {
 	return val.([]any)
 }
 
-func maybeStringArray(m map[string]any, k string) *[]string {
+func maybeStringArray(m map[string]any, k string) []string {
 	val, ok := m[k]
 	if ok {
 		var result []string
@@ -1044,7 +1044,7 @@ func maybeStringArray(m map[string]any, k string) *[]string {
 			result = append(result, v.(string))
 		}
 
-		return &result
+		return result
 	} else {
 		return nil
 	}
