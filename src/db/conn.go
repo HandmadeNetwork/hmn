@@ -39,7 +39,7 @@ func NewConn() *pgx.Conn {
 func NewConnWithConfig(cfg config.PostgresConfig) *pgx.Conn {
 	cfg = overrideDefaultConfig(cfg)
 
-	pgcfg, err := pgx.ParseConfig(cfg.DSN())
+	pgcfg := utils.Must1(pgx.ParseConfig(cfg.DSN()))
 
 	pgcfg.Tracer = multiTracer{
 		&tracelog.TraceLog{
@@ -66,7 +66,7 @@ func NewConnPool() *pgxpool.Pool {
 func NewConnPoolWithConfig(cfg config.PostgresConfig) *pgxpool.Pool {
 	cfg = overrideDefaultConfig(cfg)
 
-	pgcfg, err := pgxpool.ParseConfig(cfg.DSN())
+	pgcfg := utils.Must1(pgxpool.ParseConfig(cfg.DSN()))
 
 	pgcfg.MinConns = cfg.MinConn
 	pgcfg.MaxConns = cfg.MaxConn
