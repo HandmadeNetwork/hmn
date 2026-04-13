@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"testing/synctest"
 	"time"
 	"unsafe"
 
@@ -433,24 +434,28 @@ func TestContextThings(t *testing.T) {
 		assert.ErrorIs(t, it.Err(), context.DeadlineExceeded)
 	})
 	t.Run("deadline exceeded during iteration", func(t *testing.T) {
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(100*time.Millisecond))
-		defer cancel()
+		synctest.Test(t, func(t *testing.T) {
+			deadline := time.Now().Add(10 * time.Second)
+			ctx, cancel := context.WithDeadline(context.Background(), deadline)
+			defer cancel()
 
-		it, err := QueryIterator[row](ctx, conn, `
-			SELECT * FROM (VALUES ('Hello'), ('Handmade'), ('Network!')) AS t($columns)
-		`)
-		assert.Nil(t, err)
+			it, err := QueryIterator[row](ctx, conn, `
+				SELECT * FROM (VALUES ('Hello'), ('Handmade'), ('Network!')) AS t($columns)
+			`)
+			assert.Nil(t, err)
 
-		first, ok := it.Next()
-		assert.True(t, ok)
-		assert.Equal(t, &row{"Hello"}, first)
+			first, ok := it.Next()
+			assert.True(t, ok)
+			assert.Equal(t, &row{"Hello"}, first)
 
-		time.Sleep(200 * time.Millisecond)
+			time.Sleep(time.Until(deadline))
+			synctest.Wait()
 
-		_, ok = it.Next()
-		assert.False(t, ok)
+			_, ok = it.Next()
+			assert.False(t, ok)
 
-		assert.ErrorIs(t, it.Err(), context.DeadlineExceeded)
+			assert.ErrorIs(t, it.Err(), context.DeadlineExceeded)
+		})
 	})
 	t.Run("canceled before query", func(t *testing.T) {
 		t.Run("Query", func(t *testing.T) {
