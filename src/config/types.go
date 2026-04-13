@@ -117,6 +117,7 @@ type AdminConfig struct {
 
 type DevConfig struct {
 	LiveTemplates bool // load templates live from the filesystem instead of embedding them
+	LiveDBTests   bool // run tests that require a real Postgres connection
 }
 
 type PreviewGenerationConfig struct {

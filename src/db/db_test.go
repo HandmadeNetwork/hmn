@@ -1,11 +1,13 @@
 package db
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
 	"unsafe"
 
+	"git.handmade.network/hmn/hmn/src/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -266,4 +268,83 @@ func TestSetValueFromDB(t *testing.T) {
 
 func reflectPtr[T any](dest *T) reflect.Value {
 	return reflect.NewAt(reflect.TypeOf(*dest), unsafe.Pointer(dest)).Elem()
+}
+
+func TestContextThings(t *testing.T) {
+	if !config.Config.DevConfig.LiveDBTests {
+		t.Skip("connects to real DB")
+	}
+
+	conn := NewConn()
+	type row struct {
+		Word string `db:"word"`
+	}
+
+	t.Run("cancellation during iteration", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+
+		it, err := QueryIterator[row](ctx, conn, `
+			SELECT word FROM (VALUES ('Hello'), ('Handmade'), ('Network!')) AS t($columns)
+		`)
+		assert.Nil(t, err)
+
+		first, ok := it.Next()
+		assert.True(t, ok)
+		assert.Equal(t, "Hello", first.Word)
+		second, ok := it.Next()
+		assert.True(t, ok)
+		assert.Equal(t, "Handmade", second.Word)
+
+		cancel()
+
+		_, ok = it.Next()
+		assert.False(t, ok)
+
+		assert.ErrorIs(t, it.Err(), context.Canceled)
+	})
+	t.Run("canceled before query", func(t *testing.T) {
+		t.Run("Query", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			rows, err := Query[row](ctx, conn, `
+				SELECT word FROM (VALUES ('Hello'), ('Handmade'), ('Network!')) AS t($columns)
+			`)
+			assert.ErrorIs(t, err, context.Canceled)
+			assert.Len(t, rows, 0)
+		})
+		t.Run("QueryOne", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			row, err := QueryOne[row](ctx, conn, `
+				SELECT word FROM (VALUES ('Hello'), ('Handmade'), ('Network!')) AS t($columns)
+			`)
+			assert.ErrorIs(t, err, context.Canceled)
+			assert.Nil(t, row)
+		})
+		t.Run("QueryScalar", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			rows, err := QueryScalar[string](ctx, conn, `
+				SELECT word FROM (VALUES ('Hello'), ('Handmade'), ('Network!')) AS t(word)
+			`)
+			assert.ErrorIs(t, err, context.Canceled)
+			assert.Len(t, rows, 0)
+		})
+		t.Run("QueryOneScalar", func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			row, err := QueryOneScalar[string](ctx, conn, `
+				SELECT word FROM (VALUES ('Hello'), ('Handmade'), ('Network!')) AS t(word)
+			`)
+			assert.ErrorIs(t, err, context.Canceled)
+			assert.Equal(t, "", row)
+		})
+	})
+
+	// NOTE(ben): Unfortunately I'm not aware of any good way to test what
+	// happens when context is canceled partway through iteration, at least for
+	// methods other than QueryIterator. Either we'd have to add some jank test
+	// callback stuff to the main code, which seems superfluous, or we'd have to
+	// do some very strange timing stuff to try and sporadically trigger a
+	// failure, and I don't like either enough to actually test this.
 }
