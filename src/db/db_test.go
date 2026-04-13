@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 	"unsafe"
 
 	"git.handmade.network/hmn/hmn/src/config"
@@ -270,6 +271,114 @@ func reflectPtr[T any](dest *T) reflect.Value {
 	return reflect.NewAt(reflect.TypeOf(*dest), unsafe.Pointer(dest)).Elem()
 }
 
+func TestQuery(t *testing.T) {
+	if !config.Config.DevConfig.LiveDBTests {
+		t.Skip("connects to real DB")
+	}
+
+	conn := NewConn()
+	type row struct {
+		ID   int    `db:"id"`
+		Word string `db:"word"`
+	}
+
+	t.Run("normal", func(t *testing.T) {
+		rows, err := Query[row](context.Background(), conn, `
+			SELECT * FROM (VALUES (1, 'Hello'), (2, 'Handmade'), (3, 'Network!')) AS t($columns)
+		`)
+		assert.Nil(t, err)
+		assert.Len(t, rows, 3)
+		assert.Equal(t, &row{1, "Hello"}, rows[0])
+		assert.Equal(t, &row{2, "Handmade"}, rows[1])
+		assert.Equal(t, &row{3, "Network!"}, rows[2])
+	})
+	t.Run("empty", func(t *testing.T) {
+		rows, err := Query[row](context.Background(), conn, `
+			SELECT * FROM (VALUES (1, 'Hello')) AS t($columns)
+			WHERE FALSE
+		`)
+		assert.Nil(t, err)
+		assert.Len(t, rows, 0)
+	})
+}
+
+func TestQueryOne(t *testing.T) {
+	if !config.Config.DevConfig.LiveDBTests {
+		t.Skip("connects to real DB")
+	}
+
+	conn := NewConn()
+	type row struct {
+		ID   int    `db:"id"`
+		Word string `db:"word"`
+	}
+
+	t.Run("normal", func(t *testing.T) {
+		res, err := QueryOne[row](context.Background(), conn, `
+			SELECT * FROM (VALUES (1, 'Hello'), (2, 'Handmade'), (3, 'Network!')) AS t($columns)
+		`)
+		assert.Nil(t, err)
+		assert.Equal(t, &row{1, "Hello"}, res)
+	})
+	t.Run("not found", func(t *testing.T) {
+		_, err := QueryOne[row](context.Background(), conn, `
+			SELECT * FROM (VALUES (1, 'Hello')) AS t($columns)
+			WHERE FALSE
+		`)
+		assert.ErrorIs(t, err, NotFound)
+	})
+}
+
+func TestQueryScalar(t *testing.T) {
+	if !config.Config.DevConfig.LiveDBTests {
+		t.Skip("connects to real DB")
+	}
+
+	conn := NewConn()
+
+	t.Run("normal", func(t *testing.T) {
+		rows, err := QueryScalar[string](context.Background(), conn, `
+			SELECT word FROM (VALUES (1, 'Hello'), (2, 'Handmade'), (3, 'Network!')) AS t(id, word)
+		`)
+		assert.Nil(t, err)
+		assert.Len(t, rows, 3)
+		assert.Equal(t, "Hello", rows[0])
+		assert.Equal(t, "Handmade", rows[1])
+		assert.Equal(t, "Network!", rows[2])
+	})
+	t.Run("empty", func(t *testing.T) {
+		rows, err := QueryScalar[string](context.Background(), conn, `
+			SELECT word FROM (VALUES (1, 'Hello')) AS t(id, word)
+			WHERE FALSE
+		`)
+		assert.Nil(t, err)
+		assert.Len(t, rows, 0)
+	})
+}
+
+func TestQueryOneScalar(t *testing.T) {
+	if !config.Config.DevConfig.LiveDBTests {
+		t.Skip("connects to real DB")
+	}
+
+	conn := NewConn()
+
+	t.Run("normal", func(t *testing.T) {
+		res, err := QueryOneScalar[string](context.Background(), conn, `
+			SELECT word FROM (VALUES (1, 'Hello'), (2, 'Handmade'), (3, 'Network!')) AS t(id, word)
+		`)
+		assert.Nil(t, err)
+		assert.Equal(t, "Hello", res)
+	})
+	t.Run("empty", func(t *testing.T) {
+		_, err := QueryOneScalar[string](context.Background(), conn, `
+			SELECT word FROM (VALUES (1, 'Hello')) AS t(id, word)
+			WHERE FALSE
+		`)
+		assert.ErrorIs(t, err, NotFound)
+	})
+}
+
 func TestContextThings(t *testing.T) {
 	if !config.Config.DevConfig.LiveDBTests {
 		t.Skip("connects to real DB")
@@ -301,6 +410,47 @@ func TestContextThings(t *testing.T) {
 		assert.False(t, ok)
 
 		assert.ErrorIs(t, it.Err(), context.Canceled)
+	})
+	t.Run("deadline exceeded before query", func(t *testing.T) {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Hour))
+		defer cancel()
+
+		it, err := QueryIterator[row](ctx, conn, `
+			SELECT word FROM (VALUES ('Hello'), ('Handmade'), ('Network!')) AS t($columns)
+		`)
+		if err != nil {
+			assert.ErrorIs(t, err, context.DeadlineExceeded)
+			return
+		}
+
+		// NOTE(ben): For mysterious reasons, sometimes in testing pgx doesn't
+		// return that deadline error right away at this point. But I don't think
+		// we really care, as encountering it during iteration is always fine.
+
+		_, ok := it.Next()
+		assert.False(t, ok)
+
+		assert.ErrorIs(t, it.Err(), context.DeadlineExceeded)
+	})
+	t.Run("deadline exceeded during iteration", func(t *testing.T) {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(100*time.Millisecond))
+		defer cancel()
+
+		it, err := QueryIterator[row](ctx, conn, `
+			SELECT * FROM (VALUES ('Hello'), ('Handmade'), ('Network!')) AS t($columns)
+		`)
+		assert.Nil(t, err)
+
+		first, ok := it.Next()
+		assert.True(t, ok)
+		assert.Equal(t, &row{"Hello"}, first)
+
+		time.Sleep(200 * time.Millisecond)
+
+		_, ok = it.Next()
+		assert.False(t, ok)
+
+		assert.ErrorIs(t, it.Err(), context.DeadlineExceeded)
 	})
 	t.Run("canceled before query", func(t *testing.T) {
 		t.Run("Query", func(t *testing.T) {

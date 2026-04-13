@@ -155,9 +155,6 @@ func QueryIterator[T any](
 	queryStart := time.Now()
 	rows, err := conn.Query(ctx, compiled.query, args...)
 	if err != nil {
-		if errors.Is(err, context.DeadlineExceeded) {
-			panic("query exceeded its deadline")
-		}
 		return nil, err
 	}
 	duration := time.Since(queryStart)
@@ -492,10 +489,14 @@ func (it *Iterator[T]) ToSlice() ([]*T, error) {
 	for {
 		row, ok := it.Next()
 		if !ok {
-			return nil, it.Err()
+			break
 		}
 		result = append(result, row)
 	}
+	if err := it.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func followPathThroughStructs(structPtrVal reflect.Value, path []int) (reflect.Value, reflect.StructField) {
