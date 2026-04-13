@@ -514,14 +514,15 @@ type CalendarEvent struct {
 }
 
 type Ticket struct {
-	ID            string
-	OwnerName     string
-	OwnerEmail    string
-	OwnerUsername string
-	PurchaseDate  time.Time
-	Reserved      bool
-	Notes         string
-	CheckedIn     bool
+	ID                   string
+	OwnerName            string
+	OwnerEmail           string
+	OwnerUsername        string
+	OwnerDiscordUsername string
+	PurchaseDate         time.Time
+	Reserved             bool
+	Notes                string
+	CheckedIn            bool
 
 	Url       string
 	DeleteUrl string

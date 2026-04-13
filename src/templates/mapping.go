@@ -541,13 +541,14 @@ func JamToBannerEvent(jam hmndata.Jam) BannerEvent {
 
 func TicketToTemplate(t *models.Ticket) Ticket {
 	res := Ticket{
-		ID:            t.ID.String(),
-		OwnerName:     t.OwnerName,
-		OwnerEmail:    t.OwnerEmail,
-		OwnerUsername: t.OwnerUsername,
-		PurchaseDate:  t.PurchaseDate,
-		Reserved:      t.Reserved,
-		Notes:         t.Notes,
+		ID:                   t.ID.String(),
+		OwnerName:            t.OwnerName,
+		OwnerEmail:           t.OwnerEmail,
+		OwnerUsername:        t.OwnerUsername,
+		OwnerDiscordUsername: t.OwnerDiscordUsername,
+		PurchaseDate:         t.PurchaseDate,
+		Reserved:             t.Reserved,
+		Notes:                t.Notes,
 
 		Url:       hmnurl.BuildTicketSingle(t.ID.String()),
 		DeleteUrl: hmnurl.BuildTicketDelete(t.ID.String()),

@@ -25,8 +25,9 @@ func FindTicketEventBySlug(slugOrUrlSlug string) (Event, bool) {
 
 func FetchTickets(ctx context.Context, conn db.ConnOrTx, event *Event) ([]models.Ticket, error) {
 	type row struct {
-		Ticket   models.Ticket `db:"ticket"`
-		Username *string       `db:"username"`
+		Ticket          models.Ticket `db:"ticket"`
+		Username        *string       `db:"u.username"`
+		DiscordUsername *string       `db:"du.username"`
 	}
 	rows, err := db.Query[row](ctx, conn,
 		`
@@ -34,6 +35,7 @@ func FetchTickets(ctx context.Context, conn db.ConnOrTx, event *Event) ([]models
 		FROM
 			ticket
 			LEFT JOIN hmn_user AS u ON ticket.user_id = u.id
+			LEFT JOIN discord_user AS du ON du.hmn_user_id = u.id
 		WHERE event_slug = $1
 		ORDER BY purchase_date
 		`,
@@ -48,6 +50,9 @@ func FetchTickets(ctx context.Context, conn db.ConnOrTx, event *Event) ([]models
 		res[i] = rows[i].Ticket
 		if username := rows[i].Username; username != nil {
 			res[i].OwnerUsername = *username
+		}
+		if discordUsername := rows[i].DiscordUsername; discordUsername != nil {
+			res[i].OwnerDiscordUsername = *discordUsername
 		}
 	}
 	return res, nil

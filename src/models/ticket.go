@@ -36,7 +36,8 @@ type Ticket struct {
 	Notes string `db:"notes"`
 
 	// Not a field on the ticket table. Must be filled in by fetching functions.
-	OwnerUsername string
+	OwnerUsername        string
+	OwnerDiscordUsername string
 }
 
 type TicketMetadata struct {
