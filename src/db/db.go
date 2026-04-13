@@ -25,20 +25,23 @@ func init() {
 	pgTypeMap.TypeForValue(nil)
 }
 
-/*
-A general error to be used when no results are found. This is the error returned
-by QueryOne, and can generally be used by other database helpers that fetch a single
-result but find nothing.
-*/
+// A general error to be used when no results are found. This is the error
+// returned by QueryOne, and can generally be used by other database helpers
+// that fetch a single result but find nothing.
 var NotFound = errors.New("not found")
 
-/*
-Performs a SQL query and returns a slice of all the result rows. The query is just plain SQL, but make sure to read the package documentation for details. You must explicitly provide the type argument - this is how it knows what Go type to map the results to, and it cannot be inferred.
-
-Any SQL query may be performed, including INSERT and UPDATE - as long as it returns a result set, you can use this. If the query does not return a result set, or you simply do not care about the result set, call Exec directly on your pgx connection.
-
-This function always returns pointers to the values. This is convenient for structs, but for other types, you may wish to use QueryScalar.
-*/
+// Performs a SQL query and returns a slice of all the result rows. The query
+// is just plain SQL, but make sure to read the package documentation for
+// details. You must explicitly provide the type argument - this is how it
+// knows what Go type to map the results to, and it cannot be inferred.
+//
+// Any SQL query may be performed, including INSERT and UPDATE - as long as it
+// returns a result set, you can use this. If the query does not return a
+// result set, or you simply do not care about the result set, call Exec
+// directly on your pgx connection.
+//
+// This function always returns pointers to the values. This is convenient for
+// structs, but for other types, you may wish to use QueryScalar.
 func Query[T any](
 	ctx context.Context,
 	conn ConnOrTx,
@@ -53,26 +56,8 @@ func Query[T any](
 	}
 }
 
-/*
-Identical to Query, but panics if there was an error.
-*/
-func MustQuery[T any](
-	ctx context.Context,
-	conn ConnOrTx,
-	query string,
-	args ...any,
-) []*T {
-	result, err := Query[T](ctx, conn, query, args...)
-	if err != nil {
-		panic(err)
-	}
-	return result
-}
-
-/*
-Identical to Query, but returns only the first result row. If there are no
-rows in the result set, returns NotFound.
-*/
+// Identical to Query, but returns only the first result row. If there are no
+// rows in the result set, returns NotFound.
 func QueryOne[T any](
 	ctx context.Context,
 	conn ConnOrTx,
@@ -97,26 +82,8 @@ func QueryOne[T any](
 	return result, nil
 }
 
-/*
-Identical to QueryOne, but panics if there was an error.
-*/
-func MustQueryOne[T any](
-	ctx context.Context,
-	conn ConnOrTx,
-	query string,
-	args ...any,
-) *T {
-	result, err := QueryOne[T](ctx, conn, query, args...)
-	if err != nil {
-		panic(err)
-	}
-	return result
-}
-
-/*
-Identical to Query, but returns concrete values instead of pointers. More convenient
-for primitive types.
-*/
+// Identical to Query, but returns concrete values instead of pointers. More
+// convenient for primitive types.
 func QueryScalar[T any](
 	ctx context.Context,
 	conn ConnOrTx,
@@ -141,26 +108,8 @@ func QueryScalar[T any](
 	return result, nil
 }
 
-/*
-Identical to QueryScalar, but panics if there was an error.
-*/
-func MustQueryScalar[T any](
-	ctx context.Context,
-	conn ConnOrTx,
-	query string,
-	args ...any,
-) []T {
-	result, err := QueryScalar[T](ctx, conn, query, args...)
-	if err != nil {
-		panic(err)
-	}
-	return result
-}
-
-/*
-Identical to QueryScalar, but returns only the first result value. If there are
-no rows in the result set, returns NotFound.
-*/
+// Identical to QueryScalar, but returns only the first result value. If there
+// are no rows in the result set, returns NotFound.
 func QueryOneScalar[T any](
 	ctx context.Context,
 	conn ConnOrTx,
@@ -187,25 +136,8 @@ func QueryOneScalar[T any](
 	return *result, nil
 }
 
-/*
-Identical to QueryOneScalar, but panics if there was an error.
-*/
-func MustQueryOneScalar[T any](
-	ctx context.Context,
-	conn ConnOrTx,
-	query string,
-	args ...any,
-) T {
-	result, err := QueryOneScalar[T](ctx, conn, query, args...)
-	if err != nil {
-		panic(err)
-	}
-	return result
-}
-
-/*
-Identical to Query, but returns the ResultIterator instead of automatically converting the results to a slice. The iterator must be closed after use.
-*/
+// Identical to Query, but returns the ResultIterator instead of automatically
+// converting the results to a slice. The iterator must be closed after use.
 func QueryIterator[T any](
 	ctx context.Context,
 	conn ConnOrTx,
@@ -225,7 +157,7 @@ func QueryIterator[T any](
 		}
 		return nil, err
 	}
-	duration := time.Now().Sub(queryStart)
+	duration := time.Since(queryStart)
 	if config.Config.Postgres.SlowQueryThresholdMs > 0 && duration > time.Duration(config.Config.Postgres.SlowQueryThresholdMs)*time.Millisecond {
 		logging.Warn().
 			Interface("Duration", duration.String()).
@@ -258,24 +190,6 @@ func QueryIterator[T any](
 
 	return it, nil
 }
-
-/*
-Identical to QueryIterator, but panics if there was an error.
-*/
-func MustQueryIterator[T any](
-	ctx context.Context,
-	conn ConnOrTx,
-	query string,
-	args ...any,
-) *Iterator[T] {
-	result, err := QueryIterator[T](ctx, conn, query, args...)
-	if err != nil {
-		panic(err)
-	}
-	return result
-}
-
-// TODO: QueryFunc?
 
 type compiledQuery struct {
 	query      string
@@ -566,7 +480,7 @@ func setValueFromDB(dest reflect.Value, value reflect.Value) {
 	}
 }
 
-func (it *Iterator[any]) Close() {
+func (it *Iterator[T]) Close() {
 	it.rows.Close()
 	select {
 	case it.closed <- struct{}{}:

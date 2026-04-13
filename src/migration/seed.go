@@ -171,7 +171,7 @@ func SampleSeed() {
 }
 
 func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.User {
-	user := db.MustQueryOne[models.User](ctx, conn,
+	user := utils.Must1(db.QueryOne[models.User](ctx, conn,
 		`
 		INSERT INTO hmn_user (
 			username, password, email,
@@ -196,7 +196,7 @@ func seedUser(ctx context.Context, conn db.ConnOrTx, input models.User) *models.
 		utils.OrDefault(input.Status, models.UserStatusApproved),
 		utils.OrDefault(input.Name, randomName()), utils.OrDefault(input.Bio, lorem.Paragraph(0, 2)), utils.OrDefault(input.Blurb, lorem.Sentence(0, 14)), utils.OrDefault(input.Signature, lorem.Sentence(0, 16)),
 		input.ShowEmail,
-	)
+	))
 	utils.Must(auth.SetPassword(ctx, conn, input.Username, "password"))
 
 	return user
@@ -257,7 +257,7 @@ func populateThread(ctx context.Context, tx pgx.Tx, thread *models.Thread, users
 var latestProjectId int
 
 func seedProject(ctx context.Context, tx pgx.Tx, input models.Project, owners []*models.User) *models.Project {
-	project := db.MustQueryOne[models.Project](ctx, tx,
+	project := utils.Must1(db.QueryOne[models.Project](ctx, tx,
 		`
 		INSERT INTO project (
 			id,
@@ -286,11 +286,11 @@ func seedProject(ctx context.Context, tx pgx.Tx, input models.Project, owners []
 		input.Featured, input.Personal, utils.OrDefault(input.Lifecycle, models.ProjectLifecycleActive), input.Hidden,
 		input.ForumEnabled, input.BlogEnabled,
 		utils.OrDefault(input.DateCreated, time.Now()),
-	)
+	))
 	latestProjectId = utils.Max(latestProjectId, project.ID)
 
 	// Create forum (even if unused)
-	forum := db.MustQueryOne[models.Subforum](ctx, tx,
+	forum := utils.Must1(db.QueryOne[models.Subforum](ctx, tx,
 		`
 		INSERT INTO subforum (
 			slug, name,
@@ -304,7 +304,7 @@ func seedProject(ctx context.Context, tx pgx.Tx, input models.Project, owners []
 		`,
 		"", project.Name,
 		project.ID,
-	)
+	))
 
 	// Associate forum with project
 	utils.Must1(tx.Exec(ctx,

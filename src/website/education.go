@@ -199,13 +199,13 @@ func EducationArticleNewSubmit(c *RequestContext) ResponseData {
 
 	art, ver := getEduArticleFromForm(form)
 
-	dupe := 0 < db.MustQueryOneScalar[int](c, c.Conn,
+	dupe := 0 < utils.Must1(db.QueryOneScalar[int](c, c.Conn,
 		`
 		SELECT COUNT(*) FROM education_article
 		WHERE slug = $1
 		`,
 		art.Slug,
-	)
+	))
 	if dupe {
 		return c.RejectRequest("A resource already exists with that slug.")
 	}
@@ -458,22 +458,22 @@ func createEduArticle(c *RequestContext, art models.EduArticle, ver models.EduAr
 	tx := utils.Must1(c.Conn.Begin(c))
 	defer tx.Rollback(c)
 	{
-		articleID := db.MustQueryOneScalar[int](c, tx,
+		articleID := utils.Must1(db.QueryOneScalar[int](c, tx,
 			`
 			INSERT INTO education_article (title, slug, description, published, type, current_version)
 			VALUES                        ($1,    $2,   $3,          $4,        $5,   -1)
 			RETURNING id
 			`,
 			art.Title, art.Slug, art.Description, art.Published, art.Type,
-		)
-		versionID := db.MustQueryOneScalar[int](c, tx,
+		))
+		versionID := utils.Must1(db.QueryOneScalar[int](c, tx,
 			`
 			INSERT INTO education_article_version (article_id, date, editor_id, content_raw, content_html)
 			VALUES                                ($1,         $2,   $3,        $4,          $5          )
 			RETURNING id
 			`,
 			articleID, time.Now(), c.CurrentUser.ID, ver.ContentRaw, ver.ContentHTML,
-		)
+		))
 		tx.Exec(c,
 			`UPDATE education_article SET current_version = $1 WHERE id = $2`,
 			versionID, articleID,
@@ -486,18 +486,18 @@ func updateEduArticle(c *RequestContext, slug string, art models.EduArticle, ver
 	tx := utils.Must1(c.Conn.Begin(c))
 	defer tx.Rollback(c)
 	{
-		articleID := db.MustQueryOneScalar[int](c, tx,
+		articleID := utils.Must1(db.QueryOneScalar[int](c, tx,
 			`SELECT id FROM education_article WHERE slug = $1`,
 			slug,
-		)
-		versionID := db.MustQueryOneScalar[int](c, tx,
+		))
+		versionID := utils.Must1(db.QueryOneScalar[int](c, tx,
 			`
 			INSERT INTO education_article_version (article_id, date, editor_id, content_raw, content_html)
 			VALUES                                ($1,         $2,   $3,        $4,          $5          )
 			RETURNING id
 			`,
 			articleID, time.Now(), c.CurrentUser.ID, ver.ContentRaw, ver.ContentHTML,
-		)
+		))
 		tx.Exec(c,
 			`
 			UPDATE education_article
