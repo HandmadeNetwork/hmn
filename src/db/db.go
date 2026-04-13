@@ -179,21 +179,6 @@ func QueryIterator[T any](
 		closed: make(chan struct{}, 1),
 	}
 
-	// Ensure that iterators are closed if context is cancelled. Otherwise,
-	// iterators can hold open connections even after a request is cancelled,
-	// causing the app to deadlock.
-	go func() {
-		done := ctx.Done()
-		if done == nil {
-			return
-		}
-		select {
-		case <-done:
-			it.Close()
-		case <-it.closed:
-		}
-	}()
-
 	return it, nil
 }
 
