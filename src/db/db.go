@@ -52,7 +52,7 @@ func Query[T any](
 	if err != nil {
 		return nil, err
 	} else {
-		return it.ToSlice(), nil
+		return it.ToSlice()
 	}
 }
 
@@ -105,6 +105,9 @@ func QueryScalar[T any](
 		result = append(result, *val)
 	}
 
+	if iterErr := rows.Err(); iterErr != nil {
+		return nil, iterErr
+	}
 	return result, nil
 }
 
@@ -171,11 +174,14 @@ func QueryIterator[T any](
 		rows:             rows,
 		destType:         compiled.destType,
 		destTypeIsScalar: typeIsQueryable(compiled.destType),
-		closed:           make(chan struct{}, 1),
+
+		ctx:    ctx,
+		closed: make(chan struct{}, 1),
 	}
 
-	// Ensure that iterators are closed if context is cancelled. Otherwise, iterators can hold
-	// open connections even after a request is cancelled, causing the app to deadlock.
+	// Ensure that iterators are closed if context is cancelled. Otherwise,
+	// iterators can hold open connections even after a request is cancelled,
+	// causing the app to deadlock.
 	go func() {
 		done := ctx.Done()
 		if done == nil {
@@ -355,16 +361,22 @@ type Iterator[T any] struct {
 	rows             pgx.Rows
 	destType         reflect.Type
 	destTypeIsScalar bool // NOTE(ben): Make sure this gets set every time destType gets set, based on typeIsQueryable(destType). This is kinda fragile...but also contained to this file, so doesn't seem worth a lazy evaluation or a constructor function.
-	closed           chan struct{}
+
+	ctx    context.Context
+	closed chan struct{}
 }
 
 func (it *Iterator[T]) Next() (*T, bool) {
 	// TODO(ben): What happens if this panics? Does it leak resources? Do we need
 	// to put a recover() here and close the rows?
 
+	if it.ctx.Err() != nil {
+		it.Close()
+		return nil, false
+	}
+
 	hasNext := it.rows.Next()
 	if !hasNext {
-		it.Close()
 		return nil, false
 	}
 
@@ -441,7 +453,7 @@ func (it *Iterator[T]) Next() (*T, bool) {
 }
 
 func (it *Iterator[T]) Err() error {
-	return it.rows.Err()
+	return errors.Join(it.rows.Err(), it.ctx.Err())
 }
 
 // Takes a value from a database query (reflected) and assigns it to the
@@ -488,24 +500,17 @@ func (it *Iterator[T]) Close() {
 	}
 }
 
-/*
-Pulls all the remaining values into a slice, and closes the iterator.
-*/
-func (it *Iterator[T]) ToSlice() []*T {
+// Pulls all the remaining values into a slice, and closes the iterator.
+func (it *Iterator[T]) ToSlice() ([]*T, error) {
 	defer it.Close()
 	var result []*T
 	for {
 		row, ok := it.Next()
 		if !ok {
-			err := it.rows.Err()
-			if err != nil {
-				panic(oops.New(err, "error while iterating through db results"))
-			}
-			break
+			return nil, it.Err()
 		}
 		result = append(result, row)
 	}
-	return result
 }
 
 func followPathThroughStructs(structPtrVal reflect.Value, path []int) (reflect.Value, reflect.StructField) {
