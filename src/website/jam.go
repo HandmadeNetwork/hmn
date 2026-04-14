@@ -45,31 +45,33 @@ func JamsIndex(c *RequestContext) ResponseData {
 	type TemplateData struct {
 		templates.BaseData
 
-		LispJamUrl  string
-		WRJ2021Url  string
-		WRJ2022Url  string
-		VJ2023Url   string
-		WRJ2023Url  string
-		LJ2024Url   string
-		VJ2024Url   string
-		WRJ2024Url  string
-		XRay2025Url string
-		WRJ2025Url  string
+		LispJamUrl        string
+		WRJ2021Url        string
+		WRJ2022Url        string
+		VJ2023Url         string
+		WRJ2023Url        string
+		LJ2024Url         string
+		VJ2024Url         string
+		WRJ2024Url        string
+		XRay2025Url       string
+		WRJ2025Url        string
+		Essentials2026Url string
 	}
 
 	res.MustWriteTemplate("jams_index.html", TemplateData{
 		BaseData: getBaseData(c, "Jams", nil),
 
-		LispJamUrl:  hmnurl.BuildFishbowl("lisp-jam"),
-		WRJ2021Url:  hmnurl.BuildJamIndex2021(),
-		WRJ2022Url:  hmnurl.BuildJamIndex2022(),
-		VJ2023Url:   hmnurl.BuildJamIndex2023_Visibility(),
-		WRJ2023Url:  hmnurl.BuildJamIndex2023(),
-		LJ2024Url:   hmnurl.BuildJamGenericIndex(hmndata.LJ2024.UrlSlug),
-		VJ2024Url:   hmnurl.BuildJamGenericIndex(hmndata.VJ2024.UrlSlug),
-		WRJ2024Url:  hmnurl.BuildJamGenericIndex(hmndata.WRJ2024.UrlSlug),
-		XRay2025Url: hmnurl.BuildJamGenericIndex(hmndata.XRay2025.UrlSlug),
-		WRJ2025Url:  hmnurl.BuildJamGenericIndex(hmndata.WRJ2025.UrlSlug),
+		LispJamUrl:        hmnurl.BuildFishbowl("lisp-jam"),
+		WRJ2021Url:        hmnurl.BuildJamIndex2021(),
+		WRJ2022Url:        hmnurl.BuildJamIndex2022(),
+		VJ2023Url:         hmnurl.BuildJamIndex2023_Visibility(),
+		WRJ2023Url:        hmnurl.BuildJamIndex2023(),
+		LJ2024Url:         hmnurl.BuildJamGenericIndex(hmndata.LJ2024.UrlSlug),
+		VJ2024Url:         hmnurl.BuildJamGenericIndex(hmndata.VJ2024.UrlSlug),
+		WRJ2024Url:        hmnurl.BuildJamGenericIndex(hmndata.WRJ2024.UrlSlug),
+		XRay2025Url:       hmnurl.BuildJamGenericIndex(hmndata.XRay2025.UrlSlug),
+		WRJ2025Url:        hmnurl.BuildJamGenericIndex(hmndata.WRJ2025.UrlSlug),
+		Essentials2026Url: hmnurl.BuildJamGenericIndex(hmndata.Essentials2026.UrlSlug),
 	}, c.Perf)
 	return res
 }
