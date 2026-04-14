@@ -258,18 +258,18 @@ func BuildCalendarICal() string {
 
 var RegexLoginAction = regexp.MustCompile("^/login$")
 
-func BuildLoginAction(redirectTo string) string {
+func BuildLoginAction(destination string) string {
 	defer CatchPanic()
-	return Url("/login", []Q{{Name: "redirect", Value: redirectTo}})
+	return Url("/login", []Q{{Name: "destination", Value: destination}})
 }
 
 var RegexLoginPage = regexp.MustCompile("^/login$")
 
-func BuildLoginPage(redirectTo string, notice string) string {
+func BuildLoginPage(destination string, notice string) string {
 	defer CatchPanic()
 	var q []Q
-	if redirectTo != "" {
-		q = append(q, Q{Name: "redirect", Value: redirectTo})
+	if destination != "" {
+		q = append(q, Q{Name: "destination", Value: destination})
 	}
 	if notice != "" {
 		q = append(q, Q{Name: "notice", Value: notice})
@@ -279,19 +279,19 @@ func BuildLoginPage(redirectTo string, notice string) string {
 
 var RegexLoginWithDiscord = regexp.MustCompile("^/login-with-discord$")
 
-func BuildLoginWithDiscord(redirectTo string) string {
+func BuildLoginWithDiscord(destination string) string {
 	defer CatchPanic()
-	return Url("/login-with-discord", []Q{{Name: "redirect", Value: redirectTo}})
+	return Url("/login-with-discord", []Q{{Name: "destination", Value: destination}})
 }
 
 var RegexLogout = regexp.MustCompile("^/logout$")
 
-func BuildLogoutAction(redir string) string {
+func BuildLogoutAction(destination string) string {
 	defer CatchPanic()
-	if redir == "" {
-		redir = "/"
+	if destination == "" {
+		destination = "/"
 	}
-	return Url("/logout", []Q{{"redirect", redir}})
+	return Url("/logout", []Q{{"destination", destination}})
 }
 
 var RegexRegister = regexp.MustCompile("^/register$")

@@ -25,7 +25,7 @@ var UsernameRegex = regexp.MustCompile(`^[0-9a-zA-Z][\w-]{2,29}$`)
 
 type LoginPageData struct {
 	templates.BaseData
-	RedirectUrl         string
+	DestinationUrl      string
 	RegisterUrl         string
 	ForgotPasswordUrl   string
 	LoginWithDiscordUrl string
@@ -33,13 +33,13 @@ type LoginPageData struct {
 }
 
 func LoginPage(c *RequestContext) ResponseData {
-	redirect := c.Req.URL.Query().Get("redirect")
+	destination := c.Req.URL.Query().Get("destination")
 
 	// If already logged in, immediately redirect to the destination. This allows
 	// us to use the login page as a general auth gate on external links, e.g. in
 	// Discord messages.
 	if c.CurrentUser != nil {
-		destination := hmnurl.SafeRedirectUrl(redirect)
+		destination := hmnurl.SafeRedirectUrl(destination)
 		return c.Redirect(destination, http.StatusSeeOther)
 	}
 
@@ -48,10 +48,10 @@ func LoginPage(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("auth_login.html", LoginPageData{
 		BaseData:            getBaseData(c, "Log in", nil),
-		RedirectUrl:         redirect,
-		RegisterUrl:         hmnurl.BuildRegister(redirect, notice),
+		DestinationUrl:      destination,
+		RegisterUrl:         hmnurl.BuildRegister(destination, notice),
 		ForgotPasswordUrl:   hmnurl.BuildRequestPasswordReset(),
-		LoginWithDiscordUrl: hmnurl.BuildLoginWithDiscord(redirect),
+		LoginWithDiscordUrl: hmnurl.BuildLoginWithDiscord(destination),
 		Notice:              notice,
 	}, c.Perf)
 	return res
@@ -63,8 +63,8 @@ func LoginAction(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusBadRequest, NewSafeError(err, "request must contain form data"))
 	}
 
-	redirect := form.Get("redirect")
-	destination := hmnurl.SafeRedirectUrl(redirect)
+	destination := form.Get("destination")
+	destination = hmnurl.SafeRedirectUrl(destination)
 
 	if c.CurrentUser != nil {
 		res := c.Redirect(destination, http.StatusSeeOther)
@@ -75,16 +75,16 @@ func LoginAction(c *RequestContext) ResponseData {
 	username := form.Get("username")
 	password := form.Get("password")
 	if username == "" || password == "" {
-		return c.Redirect(hmnurl.BuildLoginPage(redirect, ""), http.StatusSeeOther)
+		return c.Redirect(hmnurl.BuildLoginPage(destination, ""), http.StatusSeeOther)
 	}
 
-	showLoginWithFailure := func(c *RequestContext, redirect string) ResponseData {
+	showLoginWithFailure := func(c *RequestContext, destination string) ResponseData {
 		var res ResponseData
 		baseData := getBaseData(c, "Log in", nil)
 		baseData.AddImmediateNotice("failure", "Incorrect username or password")
 		res.MustWriteTemplate("auth_login.html", LoginPageData{
 			BaseData:          baseData,
-			RedirectUrl:       redirect,
+			DestinationUrl:    destination,
 			ForgotPasswordUrl: hmnurl.BuildRequestPasswordReset(),
 		}, c.Perf)
 		return res
@@ -101,7 +101,7 @@ func LoginAction(c *RequestContext) ResponseData {
 	)
 	if err != nil {
 		if errors.Is(err, db.NotFound) {
-			return showLoginWithFailure(c, redirect)
+			return showLoginWithFailure(c, destination)
 		} else {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up user by username"))
 		}
@@ -114,7 +114,7 @@ func LoginAction(c *RequestContext) ResponseData {
 	}
 
 	if !success {
-		return showLoginWithFailure(c, redirect)
+		return showLoginWithFailure(c, destination)
 	}
 
 	if user.Status == models.UserStatusInactive {
@@ -130,7 +130,7 @@ func LoginAction(c *RequestContext) ResponseData {
 }
 
 func LoginWithDiscord(c *RequestContext) ResponseData {
-	destinationUrl := hmnurl.SafeRedirectUrl(c.URL().Query().Get("redirect"))
+	destinationUrl := hmnurl.SafeRedirectUrl(c.URL().Query().Get("destination"))
 	if c.CurrentUser != nil {
 		return c.Redirect(destinationUrl, http.StatusSeeOther)
 	}
@@ -153,8 +153,8 @@ func LoginWithDiscord(c *RequestContext) ResponseData {
 }
 
 func Logout(c *RequestContext) ResponseData {
-	redirect := c.Req.URL.Query().Get("redirect")
-	destination := hmnurl.SafeRedirectUrl(redirect)
+	destination := c.Req.URL.Query().Get("destination")
+	destination = hmnurl.SafeRedirectUrl(destination)
 
 	res := c.Redirect(destination, http.StatusSeeOther)
 	logoutUser(c, &res)
@@ -529,9 +529,9 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		b.End()
 	}
 
-	redirect := hmnurl.SafeRedirectUrl(destination)
+	destination = hmnurl.SafeRedirectUrl(destination)
 
-	res := c.Redirect(redirect, http.StatusSeeOther)
+	res := c.Redirect(destination, http.StatusSeeOther)
 	res.AddFutureNotice("success", "You've completed your registration successfully!")
 	err = loginUser(c, validationResult.User, &res)
 	if err != nil {

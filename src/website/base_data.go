@@ -35,10 +35,10 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	notices := getNoticesFromCookie(c)
 
 	var loginUrl string
-	if hmnurl.URLMatchesRoute(c.URL(), *hmnurl.RegexLoginPage) {
-		// NOTE(ben): If clicking the login button from the login page, don't try to redirect to the
+	if hmnurl.URLMatchesRoute(c.URL(), *hmnurl.RegexLoginPage) || hmnurl.URLMatchesRoute(c.URL(), *hmnurl.RegexRegister) {
+		// NOTE(ben): If clicking the login button from the login or register page, don't try to redirect to the
 		// login page after login :)
-		loginUrl = hmnurl.BuildLoginPage(c.URL().Query().Get("redirect"), c.URL().Query().Get("notice"))
+		loginUrl = hmnurl.BuildLoginPage(c.URL().Query().Get("destination"), c.URL().Query().Get("notice"))
 	} else {
 		loginUrl = hmnurl.BuildLoginPage(c.FullUrl(), "")
 	}
