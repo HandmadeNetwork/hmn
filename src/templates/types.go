@@ -521,6 +521,7 @@ type Ticket struct {
 	OwnerDiscordUsername string
 	PurchaseDate         time.Time
 	Reserved             bool
+	Pending              bool
 	Notes                string
 	CheckedIn            bool
 

@@ -121,6 +121,7 @@
         <div class="f3">Tickets</div>
         <div>
             <div><b>Total:</b> {{ add .TicketsEvent.Metadata.SoldTickets .TicketsEvent.Metadata.ReservedTickets }}</div>
+            <div><b>Pending:</b> {{ .TicketsEvent.Metadata.PendingTickets }}</div>
             <div><b>Sold:</b> {{ .TicketsEvent.Metadata.SoldTickets }}</div>
             <div><b>Reserved:</b> {{ .TicketsEvent.Metadata.ReservedTickets }}</div>
             <div><b>Available for sale:</b> {{ sub (sub .TicketsEvent.Metadata.MaxTickets .TicketsEvent.Metadata.SoldTickets) (max .TicketsEvent.Metadata.MaxReserved .TicketsEvent.Metadata.ReservedTickets) }}</div>
@@ -145,20 +146,22 @@
             </thead>
             <tbody>
                 {{ range . }}
-                    <tr>
-                        <td>{{ if .CheckedIn }}<span title="Checked in">👋</span>{{ end }}</td>
-                        <td>{{ if .Reserved }}<span title="Reserved">🎫</span>{{ end }}</td>
-                        <td>{{ if .OwnerUsername }}<a href="{{ .OwnerProfileUrl }}">{{ .OwnerUsername }}</a>{{ else }}(reserved){{ end }}</td>
-                        <td>{{ .OwnerName }}</td>
-                        <td>{{ .OwnerEmail }}</td>
-                        <td>{{ .OwnerDiscordUsername }}</td>
-                        <td>{{ .Notes }}</td>
-                        <td>{{ absoluteshortdate .PurchaseDate }}</td>
-                        <td>
-                            <a href="{{ .Url }}">View</a>
-                            <a href="{{ .DeleteUrl }}">Delete</a>
-                        </td>
-                    </tr>
+                    {{ if not .Pending }}
+                        <tr>
+                            <td>{{ if .CheckedIn }}<span title="Checked in">👋</span>{{ end }}</td>
+                            <td>{{ if .Reserved }}<span title="Reserved">🎫</span>{{ end }}</td>
+                            <td>{{ if .OwnerUsername }}<a href="{{ .OwnerProfileUrl }}">{{ .OwnerUsername }}</a>{{ else }}(reserved){{ end }}</td>
+                            <td>{{ .OwnerName }}</td>
+                            <td>{{ .OwnerEmail }}</td>
+                            <td>{{ .OwnerDiscordUsername }}</td>
+                            <td>{{ .Notes }}</td>
+                            <td>{{ absoluteshortdate .PurchaseDate }}</td>
+                            <td>
+                                <a href="{{ .Url }}">View</a>
+                                <a href="{{ .DeleteUrl }}">Delete</a>
+                            </td>
+                        </tr>
+                    {{ end }}
                 {{ end }}
             </tbody>
         </table>

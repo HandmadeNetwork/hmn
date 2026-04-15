@@ -455,6 +455,7 @@ func cancelPendingTicketsForCheckoutSession(ctx context.Context, conn db.ConnOrT
 type TicketMetadataForEvent struct {
 	models.TicketMetadata
 
+	PendingTickets  int
 	SoldTickets     int
 	ReservedTickets int
 }
@@ -491,6 +492,7 @@ func fetchTicketMetadataForEvent(ctx context.Context, conn db.ConnOrTx, event *h
 	utils.Assert(metadata)
 
 	type ticketAllocations struct {
+		PendingTickets  int `db:"COUNT(*) FILTER (WHERE pending) AS pending_tickets"`
 		SoldTickets     int `db:"COUNT(*) FILTER (WHERE reserved = FALSE) AS sold_tickets"`
 		ReservedTickets int `db:"COUNT(*) FILTER (WHERE reserved = TRUE) AS reserved_tickets"`
 	}
@@ -508,6 +510,7 @@ func fetchTicketMetadataForEvent(ctx context.Context, conn db.ConnOrTx, event *h
 
 	return TicketMetadataForEvent{
 		TicketMetadata:  *metadata,
+		PendingTickets:  allocs.PendingTickets,
 		SoldTickets:     allocs.SoldTickets,
 		ReservedTickets: allocs.ReservedTickets,
 	}, nil

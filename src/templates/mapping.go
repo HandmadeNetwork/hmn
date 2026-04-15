@@ -548,6 +548,7 @@ func TicketToTemplate(t *models.Ticket) Ticket {
 		OwnerDiscordUsername: t.OwnerDiscordUsername,
 		PurchaseDate:         t.PurchaseDate,
 		Reserved:             t.Reserved,
+		Pending:              t.Pending,
 		Notes:                t.Notes,
 
 		Url:       hmnurl.BuildTicketSingle(t.ID.String()),
