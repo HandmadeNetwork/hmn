@@ -125,7 +125,7 @@ func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 		}
 
 		if steamStoreLink {
-			return RebukeMessage(ctx, dbConn, msg, "We do not allow steam links or marketing material in #project-showcase.")
+			return RebukeMessage(ctx, dbConn, msg, "We do not allow Steam links or marketing material in #project-showcase.")
 		}
 
 		// Remove github embeds
