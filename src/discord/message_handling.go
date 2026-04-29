@@ -93,6 +93,7 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 }
 
 var githubRegex = regexp.MustCompile(`^(https:\/\/)?(www\.|gist\.)?github.com`)
+var steampoweredRegex = regexp.MustCompile(`steampowered\.com`)
 
 func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
 	if msg.ChannelID != config.Config.Discord.ShowcaseChannelID {
@@ -107,23 +108,27 @@ func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 	}
 
 	if !messageIsSnippetable(msg) {
-		err := DeleteMessage(ctx, msg.ChannelID, msg.ID)
-		if err != nil {
-			return false, oops.New(err, "failed to delete message")
-		}
-
-		if !msg.Author.IsBot {
-			err = SendDM(ctx, dbConn, msg.Author.ID,
-				"Posts in #project-showcase are required to have an image, video, or link. Please create a thread if you wish to discuss a #project-showcase post.",
-			)
-
-			if err != nil {
-				return true, oops.New(err, "failed to send showcase warning message")
+		return RebukeMessage(ctx, dbConn, msg,
+			"Posts in #project-showcase are required to have an image, video, or link. Please create a thread if you wish to discuss a #project-showcase post.",
+		)
+	} else {
+		// Check steam link
+		steamStoreLink := false
+		for _, e := range msg.Embeds {
+			if e.Url != nil && steampoweredRegex.MatchString(*e.Url) {
+				steamStoreLink = true
+				break
 			}
 		}
+		if !steamStoreLink && steampoweredRegex.MatchString(msg.Content) {
+			steamStoreLink = true
+		}
 
-		return true, nil
-	} else {
+		if steamStoreLink {
+			return RebukeMessage(ctx, dbConn, msg, "We do not allow steam links or marketing material in #project-showcase.")
+		}
+
+		// Remove github embeds
 		if len(msg.Embeds) > 0 {
 			// NOTE(asaf): Remove embeds if all of them are github
 			allGithub := true
@@ -163,21 +168,7 @@ func cleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool
 	}
 
 	if !messageHasLinks(msg.Content) {
-		err := DeleteMessage(ctx, msg.ChannelID, msg.ID)
-		if err != nil {
-			return false, oops.New(err, "failed to delete message")
-		}
-
-		if !msg.Author.IsBot {
-			err = SendDM(ctx, dbConn, msg.Author.ID,
-				"Posts in #the-library are required to have a link. Please discuss library content in other relevant channels.",
-			)
-			if err != nil {
-				return true, oops.New(err, "failed to send showcase warning message")
-			}
-		}
-
-		return true, nil
+		return RebukeMessage(ctx, dbConn, msg, "Posts in #the-library are required to have a link. Please discuss library content in other relevant channels.")
 	}
 
 	return false, nil
@@ -1067,4 +1058,20 @@ func SendDM(ctx context.Context, dbConn db.ConnOrTx, authorID string, text strin
 	}
 
 	return nil
+}
+
+func RebukeMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, noteToUser string) (deleted bool, err error) {
+	err = DeleteMessage(ctx, msg.ChannelID, msg.ID)
+	if err != nil {
+		return false, oops.New(err, "failed to delete message")
+	}
+
+	if !msg.Author.IsBot {
+		DMText := fmt.Sprintf("%s\n\nYour post:\n```\n%s\n```", noteToUser, msg.Content)
+		err = SendDM(ctx, dbConn, msg.Author.ID, DMText)
+		if err != nil {
+			return true, oops.New(err, "failed to send rebuke message")
+		}
+	}
+	return true, nil
 }
