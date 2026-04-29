@@ -33,10 +33,10 @@ edit-caddyfile: ## Edit the Caddyfile
 	@echo "Don't forget to copy your changes back to the repo when you're done."
 
 logs: ## View logs for the website
-	journalctl -u hmn.service -n 100 -f
+	journalctl -u hmn.service -n 100 -f -o cat
 
 logs-caddy: ## View logs for Caddy
-	journalctl -u caddy.service -n 100 -f
+	journalctl -u caddy.service -n 100 -f -o cat
 
 download-database: ## Download a database backup
 	sudo -u hmn bash -c "cd ~ && ~/hmn/server/download_database.sh"
