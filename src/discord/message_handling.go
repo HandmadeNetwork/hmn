@@ -113,19 +113,22 @@ func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 		)
 	} else {
 		// Check steam link
-		steamStoreLink := false
-		for _, e := range msg.Embeds {
-			if e.Url != nil && steampoweredRegex.MatchString(*e.Url) {
-				steamStoreLink = true
-				break
+		whitelistedUser := (msg.Member != nil && config.Config.Discord.ShowcaseWhitelistRoleID != "" && slices.Contains(msg.Member.Roles, config.Config.Discord.ShowcaseWhitelistRoleID))
+		if !whitelistedUser {
+			steamStoreLink := false
+			for _, e := range msg.Embeds {
+				if e.Url != nil && steampoweredRegex.MatchString(*e.Url) {
+					steamStoreLink = true
+					break
+				}
 			}
-		}
-		if !steamStoreLink && steampoweredRegex.MatchString(msg.Content) {
-			steamStoreLink = true
-		}
+			if !steamStoreLink && steampoweredRegex.MatchString(msg.Content) {
+				steamStoreLink = true
+			}
 
-		if steamStoreLink {
-			return RebukeMessage(ctx, dbConn, msg, "We do not allow Steam links or marketing material in #project-showcase.")
+			if steamStoreLink {
+				return RebukeMessage(ctx, dbConn, msg, "We do not allow Steam links or marketing material in #project-showcase.")
+			}
 		}
 
 		// Remove github embeds
@@ -1035,8 +1038,6 @@ func parseTags(content string) []string {
 	for idx, tag := range tags {
 		tags[idx] = strings.ToLower(tag)
 	}
-
-	logging.Debug().Strs("tags", tags).Msg("tags")
 
 	return tags
 }

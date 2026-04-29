@@ -267,6 +267,7 @@ type Message struct {
 	GuildID   *string      `json:"guild_id"`
 	Content   string       `json:"content"`
 	Author    *User        `json:"author"` // note that this may not be an actual valid user (see the docs)
+	Member    *GuildMember `json:"member"` // We only get this through the gateway. Must be fetched separately through the API if calling GetChannelMessage/s.
 	Timestamp string       `json:"timestamp"`
 	Type      MessageType  `json:"type"`
 	Flags     MessageFlags `json:"flags"`
@@ -335,7 +336,8 @@ func MessageFromMap(m any, k string) *Message {
 		ChannelID: mmap["channel_id"].(string),
 		GuildID:   maybeStringP(mmap, "guild_id"),
 		Content:   maybeString(mmap, "content"),
-		Author:    UserFromMap(m, "author"),
+		Author:    UserFromMap(mmap, "author"),
+		Member:    GuildMemberFromMap(mmap, "member"),
 		Timestamp: maybeString(mmap, "timestamp"),
 		Type:      MessageType(maybeInt(mmap, "type")),
 		Flags:     MessageFlags(maybeInt(mmap, "flags")),

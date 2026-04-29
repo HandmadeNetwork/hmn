@@ -166,8 +166,15 @@ func ScrapeRecents(ctx context.Context, dbConn *pgxpool.Pool, channelID string, 
 				return true
 			}
 
+			guildMember, err := GetGuildMember(ctx, config.Config.Discord.GuildID, msg.Author.ID) // NOTE(asaf): We assume we're only working with one guild, because the discord API sucks and doesn't provide the guild in the message payload.
+			if err != nil {
+				logging.Error().Err(err).Msg("failed to get guild member for message while scraping")
+				return false
+			}
+			msg.Member = guildMember
+
 			msg.Backfilled = true
-			err := HandleIncomingMessage(ctx, dbConn, &msg, false)
+			err = HandleIncomingMessage(ctx, dbConn, &msg, false)
 
 			if err != nil {
 				errLog := logging.ExtractLogger(ctx).Error()

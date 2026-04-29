@@ -83,13 +83,14 @@ type DiscordConfig struct {
 	OAuthClientID     string
 	OAuthClientSecret string
 
-	GuildID           string
-	MemberRoleID      string
-	HMHReplayRoleID   string
-	ShowcaseChannelID string
-	JamChannelID      string
-	LibraryChannelID  string
-	StreamsChannelID  string
+	GuildID                 string
+	MemberRoleID            string
+	HMHReplayRoleID         string
+	ShowcaseChannelID       string
+	JamChannelID            string
+	LibraryChannelID        string
+	StreamsChannelID        string
+	ShowcaseWhitelistRoleID string
 }
 
 type TwitchConfig struct {

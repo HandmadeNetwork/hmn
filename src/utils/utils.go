@@ -129,7 +129,7 @@ func RecoverPanicAsError(err *error) {
 			recoveredErr = fmt.Errorf("panic with value: %v", r)
 		}
 
-		*err = errors.Join(existingError, oops.New(recoveredErr, "panic recovered as error"))
+		*err = oops.New(errors.Join(existingError, recoveredErr), "panic recovered as error")
 	}
 }
 
