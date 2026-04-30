@@ -72,6 +72,8 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		LoginPageUrl:        loginUrl,
 		DiscordInviteUrl:    "https://discord.gg/hmn",
 		NewsletterSignupUrl: hmnurl.BuildAPINewsletterSignup(),
+		ManifestoUrl:        hmnurl.BuildManifesto(),
+		MembershipUrl:       hmnurl.BuildHSFMembership(),
 
 		Project: templateProject,
 		User:    templateUser,
@@ -102,6 +104,10 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			ManifestoUrl:    hmnurl.BuildManifesto(),
 			ValuesUrl:       hmnurl.BuildValues(),
 			AboutUrl:        hmnurl.BuildAbout(),
+
+			HSFUrl:           hmnurl.BuildHSFLanding(),
+			HSFMembershipUrl: hmnurl.BuildHSFMembership(),
+			HSFDetailsUrl:    hmnurl.BuildHSFDetails(),
 
 			Breadcrumbs: breadcrumbs,
 
@@ -164,20 +170,4 @@ func buildDefaultOpenGraphItems(project *models.Project, projectLogoUrl string, 
 		{Property: "og:type", Value: "website"},
 		{Property: "og:image", Value: image},
 	}
-}
-
-func getHSFBaseData() templates.HSFBaseData {
-	baseData := templates.HSFBaseData{}
-	if buildcss.ActiveServerPort != 0 {
-		baseData.EsBuildSSEUrl = hmnurl.BuildEsBuild()
-	}
-
-	baseData.HomeUrl = hmnurl.BuildHSFLanding()
-	baseData.ManifestoUrl = hmnurl.BuildHSFManifesto()
-	baseData.ValuesUrl = hmnurl.BuildValues()
-	baseData.ProjectsUrl = hmnurl.BuildHSFProjects()
-	baseData.AboutUrl = hmnurl.BuildHSFAbout()
-	baseData.MembershipUrl = hmnurl.BuildHSFMembership()
-
-	return baseData
 }

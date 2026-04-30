@@ -31,7 +31,6 @@ func Index(c *RequestContext) ResponseData {
 		UserProjects []templates.Project
 		Following    []templates.Follow
 
-		ManifestoUrl   string
 		AboutUrl       string
 		GuidelinesUrl  string
 		AtomFeedUrl    string
@@ -190,7 +189,6 @@ func Index(c *RequestContext) ResponseData {
 		UserProjects: projects,
 		Following:    follows,
 
-		ManifestoUrl:   hmnurl.BuildManifesto(),
 		AboutUrl:       hmnurl.BuildAbout(),
 		GuidelinesUrl:  hmnurl.BuildCommunicationGuidelines(),
 		AtomFeedUrl:    hmnurl.BuildAtomFeed(),

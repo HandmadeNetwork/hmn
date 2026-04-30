@@ -6,7 +6,9 @@ import (
 )
 
 type BaseData struct {
-	Title                 string
+	Title             string
+	SiteTitleOverride string
+
 	CanonicalLink         string
 	OpenGraphItems        []OpenGraphItem
 	BackgroundImage       BackgroundImage
@@ -20,6 +22,8 @@ type BaseData struct {
 	LoginPageUrl        string
 	DiscordInviteUrl    string
 	NewsletterSignupUrl string
+	ManifestoUrl        string
+	MembershipUrl       string
 
 	EsBuildSSEUrl string
 
@@ -30,6 +34,9 @@ type BaseData struct {
 	IsProjectPage bool
 	Header        Header
 	Footer        Footer
+
+	ShowFoundationFooter bool
+	HideMembershipCTA    bool
 }
 
 func (bd *BaseData) AddImmediateNotice(class, content string) {
@@ -60,6 +67,10 @@ type Header struct {
 	ManifestoUrl    string
 	ValuesUrl       string
 	AboutUrl        string
+
+	HSFUrl           string
+	HSFMembershipUrl string
+	HSFDetailsUrl    string
 
 	Project *ProjectHeader
 
@@ -98,17 +109,6 @@ type Footer struct {
 	ProjectIndexUrl            string
 	ContactUrl                 string
 	SearchActionUrl            string
-}
-
-type HSFBaseData struct {
-	HomeUrl       string
-	ManifestoUrl  string
-	ValuesUrl     string
-	ProjectsUrl   string
-	AboutUrl      string
-	MembershipUrl string
-
-	EsBuildSSEUrl string
 }
 
 type Thread struct {

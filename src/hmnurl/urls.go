@@ -1057,21 +1057,9 @@ func BuildHSFLanding() string {
 	return Url("/foundation/", nil)
 }
 
-var RegexHSFManifesto = regexp.MustCompile(`^/foundation/manifesto$`)
+var RegexHSFDetails = regexp.MustCompile(`^/foundation/about$`)
 
-func BuildHSFManifesto() string {
-	return Url("/foundation/manifesto", nil)
-}
-
-var RegexHSFProjects = regexp.MustCompile(`^/foundation/projects$`)
-
-func BuildHSFProjects() string {
-	return Url("/foundation/projects", nil)
-}
-
-var RegexHSFAbout = regexp.MustCompile(`^/foundation/about$`)
-
-func BuildHSFAbout() string {
+func BuildHSFDetails() string {
 	return Url("/foundation/about", nil)
 }
 

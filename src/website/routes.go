@@ -106,7 +106,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexManifesto, Manifesto)
 	hmnOnly.GET(hmnurl.RegexValues, Values)
 	hmnOnly.GET(hmnurl.RegexAbout, About)
-	// hmnOnly.GET(hmnurl.RegexFoundation, Foundation)
 	hmnOnly.GET(hmnurl.RegexCommunicationGuidelines, CommunicationGuidelines)
 	hmnOnly.GET(hmnurl.RegexContactPage, ContactPage)
 	hmnOnly.GET(hmnurl.RegexOldNewsletterSignup, func(c *RequestContext) ResponseData {
@@ -146,11 +145,9 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexTicketScanned, needsAuth(TicketScanned))
 	hmnOnly.GET(hmnurl.RegexTicketSingle, TicketSingle) // Don't put this one first, it likes to capture all the others
 
-	hmnOnly.GET(hmnurl.RegexHSFAbout, HSFAbout)
 	hmnOnly.GET(hmnurl.RegexHSFLanding, HSFLanding)
-	hmnOnly.GET(hmnurl.RegexHSFManifesto, HSFManifesto)
+	hmnOnly.GET(hmnurl.RegexHSFDetails, HSFDetails)
 	hmnOnly.GET(hmnurl.RegexHSFMembership, HSFMembership)
-	hmnOnly.GET(hmnurl.RegexHSFProjects, HSFProjects)
 
 	hmnOnly.GET(hmnurl.RegexTimeMachine, TimeMachine)
 	hmnOnly.GET(hmnurl.RegexTimeMachineSubmissions, TimeMachineSubmissions)
