@@ -24,9 +24,6 @@ func BlogIndex(c *RequestContext) ResponseData {
 		FirstPost  *templates.BlogIndexEntry
 		Posts      []templates.BlogIndexEntry
 		Pagination templates.Pagination
-
-		CanCreatePost bool
-		NewPostUrl    string
 	}
 
 	const postsPerPage = 21
@@ -93,6 +90,13 @@ func BlogIndex(c *RequestContext) ResponseData {
 
 		canCreate = c.CurrentUser.IsStaff || isProjectOwner
 	}
+	if canCreate {
+		baseData.Header.Actions = append(baseData.Header.Actions, templates.Action{
+			Name: "Create Post",
+			Url:  c.UrlContext.BuildBlogNewThread(),
+			Icon: "add-small",
+		})
+	}
 
 	var res ResponseData
 	res.MustWriteTemplate("blog_index.html", blogIndexData{
@@ -108,9 +112,6 @@ func BlogIndex(c *RequestContext) ResponseData {
 			PreviousUrl: c.UrlContext.BuildBlog(utils.Clamp(1, page-1, numPages)),
 			NextUrl:     c.UrlContext.BuildBlog(utils.Clamp(1, page+1, numPages)),
 		},
-
-		CanCreatePost: canCreate,
-		NewPostUrl:    c.UrlContext.BuildBlogNewThread(),
 	}, c.Perf)
 	return res
 }
@@ -178,6 +179,23 @@ func BlogThread(c *RequestContext) ResponseData {
 		Property: "og:description",
 		Value:    posts[0].Post.PreviewPlaintext,
 	})
+
+	mainPost := templatePosts[0]
+	canEdit := c.CurrentUser != nil && (mainPost.Author.ID == c.CurrentUser.ID || c.CurrentUser.IsStaff)
+	if canEdit {
+		baseData.Header.Actions = append(baseData.Header.Actions, []templates.Action{
+			{
+				Name: "Edit",
+				Url:  mainPost.EditUrl,
+				Icon: "edit-line",
+			},
+			{
+				Name: "Delete",
+				Url:  mainPost.DeleteUrl,
+				Icon: "delete",
+			},
+		}...)
+	}
 
 	var res ResponseData
 	res.MustWriteTemplate("blog_post.html", blogPostData{
