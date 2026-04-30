@@ -43,7 +43,8 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		loginUrl = hmnurl.BuildLoginPage(c.FullUrl(), "")
 	}
 
-	if !c.UrlContext.IsHMN() {
+	// Prepend the project breadcrumb, if doing breadcrumbs
+	if !c.UrlContext.IsHMN() && len(breadcrumbs) > 0 {
 		projectUrl := c.UrlContext.BuildHomepage()
 		rootBreadcrumb := templates.Breadcrumb{
 			Name:    project.Name,
