@@ -550,6 +550,7 @@ func TicketToTemplate(t *models.Ticket) Ticket {
 		Reserved:             t.Reserved,
 		Pending:              t.Pending,
 		Notes:                t.Notes,
+		CheckedIn:            t.CheckedIn,
 
 		Url:       hmnurl.BuildTicketSingle(t.ID.String()),
 		DeleteUrl: hmnurl.BuildTicketDelete(t.ID.String()),

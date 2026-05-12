@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -79,6 +80,7 @@ func TicketsAdminEvent(c *RequestContext) ResponseData {
 		TicketPageCommon
 		TicketsEvent     TicketsAdminEventTemplateData
 		ReserveActionUrl string
+		ScannerUrl       string
 	}
 	urlSlug := c.PathParams["urlslug"]
 
@@ -111,6 +113,7 @@ func TicketsAdminEvent(c *RequestContext) ResponseData {
 			Tickets:  tickets,
 		},
 		ReserveActionUrl: hmnurl.BuildTicketsAdminReserve(event.UrlSlug),
+		ScannerUrl:       hmnurl.BuildTicketsAdminScan(event.UrlSlug),
 	}
 
 	var res ResponseData
@@ -244,6 +247,102 @@ func TicketsAdminReserve(c *RequestContext) ResponseData {
 	}
 
 	return c.Redirect(hmnurl.BuildTicketsAdminEvent(event.UrlSlug), http.StatusSeeOther)
+}
+
+func TicketsAdminScan(c *RequestContext) ResponseData {
+	eventUrlSlug := c.PathParams["urlslug"]
+	event, found := hmndata.FindTicketEventBySlug(eventUrlSlug)
+	if !found {
+		return FourOhFour(c)
+	}
+
+	type scanData struct {
+		templates.BaseData
+		Event         hmndata.Event
+		TicketScanUrl string
+	}
+
+	data := scanData{
+		BaseData:      getBaseData(c, "Ticket scanner", nil),
+		Event:         event,
+		TicketScanUrl: hmnurl.BuildTicketsAdminScan(event.UrlSlug),
+	}
+
+	var res ResponseData
+	res.MustWriteTemplate("tickets_admin_scan.html", data, c.Perf)
+	return res
+}
+
+func TicketsAdminScanSubmit(c *RequestContext) ResponseData {
+	eventUrlSlug := c.PathParams["urlslug"]
+	event, found := hmndata.FindTicketEventBySlug(eventUrlSlug)
+	if !found {
+		return c.JSONRejectRequest("Event slug not found")
+	}
+	c.Req.ParseForm()
+	command := c.Req.Form.Get("command")
+	ticketData := c.Req.Form.Get("ticketData")
+
+	ticketUrl, err := url.Parse(ticketData)
+	if err != nil {
+		return c.JSONRejectRequest("Couldn't parse ticket data as url")
+	}
+	match := hmnurl.RegexTicketScanned.FindStringSubmatch(ticketUrl.Path)
+	matchIdx := hmnurl.RegexTicketSingle.SubexpIndex("id")
+	if len(match) <= matchIdx || match[matchIdx] == "" {
+		return c.JSONRejectRequest("Ticket data does not contain id")
+	}
+
+	ticketId := match[matchIdx]
+	ticket, err := db.QueryOne[models.Ticket](c, c.Conn,
+		`
+		SELECT $columns
+		FROM ticket
+		WHERE id = $1
+		`,
+		ticketId,
+	)
+	if err != nil {
+		if err == db.NotFound {
+			return c.JSONRejectRequest("Ticket not found")
+		} else {
+			return c.JSONErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch ticket details"))
+		}
+	}
+
+	if ticket.EventSlug != event.Slug {
+		return c.JSONRejectRequest(fmt.Sprintf("Ticket is for %s, but currently scanning for %s", ticket.EventSlug, event.Slug))
+	}
+
+	renderTicketInfo := func(ticket *models.Ticket, message string) ResponseData {
+		return c.JSONResponse(http.StatusOK, map[string]any{
+			"name":      ticket.OwnerName,
+			"notes":     ticket.Notes,
+			"checkedIn": ticket.CheckedIn,
+			"message":   message,
+		})
+	}
+
+	switch command {
+	case "info":
+		return renderTicketInfo(ticket, "Got ticket info")
+	case "checkin":
+		ticket, err = db.QueryOne[models.Ticket](c, c.Conn,
+			`
+			UPDATE ticket
+			SET checked_in = TRUE
+			WHERE id = $1
+			RETURNING $columns
+			`,
+			ticketId,
+		)
+		if err != nil {
+			return c.JSONErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update checked-in status for ticket"))
+		}
+		return renderTicketInfo(ticket, "Checked-in successfully")
+	default:
+		return c.JSONRejectRequest("Bad command")
+	}
 }
 
 // A generic handler that takes an event slug and initiates a Stripe transaction for it. Will
@@ -646,19 +745,19 @@ func TicketEditSubmit(c *RequestContext) ResponseData {
 	}
 
 	if c.CurrentUser.IsStaff {
-		// checkedInStr := c.Req.Form.Get("checkedin")
+		checkedInStr := c.Req.Form.Get("checkedin")
 		reservedStr := c.Req.Form.Get("reserved")
 		notes := c.Req.Form.Get("notes")
 
-		// checkedIn := checkedInStr != ""
+		checkedIn := checkedInStr != ""
 		reserved := reservedStr != ""
 
 		_, err = c.Conn.Exec(c,
 			`
-			UPDATE ticket SET reserved = $1, notes = $2
-			WHERE id = $3
+			UPDATE ticket SET reserved = $1, notes = $2, checked_in = $3
+			WHERE id = $4
 			`,
-			reserved, notes,
+			reserved, notes, checkedIn,
 			ticket.ID,
 		)
 		if err != nil {

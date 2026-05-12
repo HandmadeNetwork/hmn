@@ -1,0 +1,179 @@
+{{ template "base-2024.html" . }}
+
+{{ define "content" }}
+<div class="flex justify-center">
+	<div class="pv3 ph3 ph0-ns w6 mw-site flex flex-column g3">
+        <div class="f4 ma3 tc">{{ .Event.Name }}</div>
+
+        <div>
+            <canvas id="scanner_canvas" class="db w-100"></canvas>
+            <div class="bg3 pa2 pre-line" id="scan_status">Initializing...</div>
+        </div>
+
+        <div id="ticket_details" class="dn flex-column g3">
+            <div class="center f3" id="ticket_name"></div>
+            <div id="ticket_notes"></div>
+            <div class="flex flex-row g2">
+                <button class="flex-grow-1" id="rescan">Rescan</button>
+                <button class="flex-grow-1" id="checkin">Check-in</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="application/javascript" src="{{ static "js/jsQR.js" }}"></script>
+<script>
+    const ticketScanUrl = "{{ .TicketScanUrl }}";
+    const csrf = JSON.parse({{ csrftokenjs .Session }});
+    let video = document.createElement("VIDEO");
+    let canvas = document.querySelector("#scanner_canvas");
+    let ctx = canvas.getContext("2d");
+    let status = document.querySelector("#scan_status");
+    let name = document.querySelector("#ticket_name");
+    let notes = document.querySelector("#ticket_notes");
+    let detailsContainer = document.querySelector("#ticket_details");
+    let rescanButton = document.querySelector("#rescan");
+    let checkinButton = document.querySelector("#checkin");
+
+    let scanning = false;
+
+    let mediaParams = {
+        video: {
+            facingMode: "environment",
+            aspectRatio: { exact: 1.0 },
+            width: { max: 720 },
+            frameRate: 30,
+        },
+        audio: false,
+    };
+
+    navigator.mediaDevices.getUserMedia(mediaParams).then((stream) => {
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        video.play();
+        runScanner();
+    });
+
+    async function runScanner() {
+        while (true) {
+            let code = null;
+            detailsContainer.style.display = "none";
+            status.textContent = "Scanning...";
+            let lastScanTime = performance.now();
+            while (!code) {
+                await nextScanTime();
+                code = scanQR();
+            }
+
+            status.textContent = "Fetching ticket info...";
+            let ticketInfo = await sendTicketCommand(code, "info");
+            detailsContainer.style.display = "flex";
+            status.textContent = ticketInfo.message;
+            let action = await userActionForTicket(ticketInfo);
+            if (action == "checkin") {
+                status.textContent = "Checking in...";
+                ticketInfo = await sendTicketCommand(code, "checkin");
+                status.textContent = ticketInfo.message;
+                await userActionForTicket(ticketInfo);
+            }
+        }
+    }
+
+    function nextScanTime() {
+        return new Promise((resolve, reject) => {
+            requestAnimationFrame(resolve);
+        })
+    }
+
+    function scanQR() {
+        if (video.readyState == video.HAVE_ENOUGH_DATA) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            let code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+            if (code && code.data != "") {
+                console.log("Found code", code);
+
+                ctx.save();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = "red";
+                ctx.beginPath();
+                ctx.moveTo(code.location.bottomLeftCorner.x, code.location.bottomLeftCorner.y);
+                ctx.lineTo(code.location.bottomRightCorner.x, code.location.bottomRightCorner.y);
+                ctx.lineTo(code.location.topRightCorner.x, code.location.topRightCorner.y);
+                ctx.lineTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
+                ctx.lineTo(code.location.bottomLeftCorner.x, code.location.bottomLeftCorner.y);
+                ctx.stroke();
+                ctx.restore();
+
+                return code.data;
+            }
+        }
+
+        return null;
+    }
+
+    async function sendTicketCommand(code, command) {
+        return new Promise(async (resolve, reject) => {
+            let ticketInfo = {
+                success: false,
+                name: "",
+                notes: "",
+                checkedIn: false,
+                message: "",
+            };
+
+            try {
+                let payload = new FormData();
+                payload.append(csrf.field, csrf.token);
+                payload.append("ticketData", code);
+                payload.append("command", command);
+                let response = await fetch(ticketScanUrl, { method: "POST", body: payload });
+                let responseJson = await response.json()
+                if (response.ok) {
+                    ticketInfo.success = true;
+                    ticketInfo.name = responseJson.name;
+                    ticketInfo.notes = responseJson.notes;
+                    ticketInfo.checkedIn = responseJson.checkedIn;
+                    ticketInfo.message = responseJson.message;
+                } else {
+                    let errorMessage = "Scanned:\n" + code + "\n\n";
+                    errorMessage += responseJson.rejectReason || responseJson.errors.map((e) => e.Message).join(", ");
+                    ticketInfo.message = errorMessage;
+                }
+            } catch (err) {
+                ticketInfo.message = err.message || err;
+            }
+
+            resolve(ticketInfo);
+        });
+    }
+
+    function userActionForTicket(ticketInfo) {
+        let abortController = new AbortController();
+
+        return new Promise((resolve, reject) => {
+            name.style.display = (ticketInfo.name ? "block" : "none");
+            name.textContent = ticketInfo.name;
+
+            notes.style.display = (ticketInfo.notes ? "block" : "none");
+            notes.textContent = ticketInfo.notes;
+
+            checkinButton.textContent = (ticketInfo.checkedIn ? "Already checked in" : "Check-in");
+            checkinButton.disabled = (!ticketInfo.success || ticketInfo.checkedIn);
+
+            checkinButton.addEventListener("click", () => {
+                resolve("checkin");
+            }, { signal: abortController.signal });
+            rescanButton.addEventListener("click", () => {
+                resolve("rescan");
+            }, { signal: abortController.signal });
+        }).then((action) => {
+            abortController.abort();
+            return action;
+        });
+    }
+</script>
+{{ end }}

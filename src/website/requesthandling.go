@@ -425,6 +425,12 @@ func (c *RequestContext) RejectRequest(reason string) ResponseData {
 	return res
 }
 
+func (c *RequestContext) JSONRejectRequest(reason string) ResponseData {
+	return c.JSONResponse(http.StatusBadRequest, map[string]any{
+		"rejectReason": reason,
+	})
+}
+
 type ResponseData struct {
 	StatusCode    int
 	Body          *bytes.Buffer
