@@ -83,7 +83,7 @@ func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.Us
 }
 
 func FetchFollows(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, userID int) ([]templates.Follow, error) {
-	defer perf.StartBlock(ctx, "FOLLOW", "Fetch follows")
+	defer perf.StartBlock(ctx, "FOLLOW", "Fetch follows").End()
 
 	following, err := db.Query[models.Follow](ctx, conn, `
 		---- Fetch follows

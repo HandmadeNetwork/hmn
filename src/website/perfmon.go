@@ -14,6 +14,12 @@ func Perfmon(c *RequestContext) ResponseData {
 	perfData := c.PerfCollector.GetPerfCopy()
 	b.End()
 
+	type Checkpoint struct {
+		Offset      int64
+		Category    string
+		Description string
+	}
+
 	type FlameItem struct {
 		Offset      int64
 		Duration    int64
@@ -22,6 +28,7 @@ func Perfmon(c *RequestContext) ResponseData {
 		Children    []*FlameItem
 		End         time.Time  `json:"-"`
 		Parent      *FlameItem `json:"-"`
+		Checkpoints []Checkpoint
 	}
 
 	type PerfRecord struct {
@@ -59,17 +66,27 @@ func Perfmon(c *RequestContext) ResponseData {
 				for parent.Parent != nil && block.End.After(parent.End) {
 					parent = parent.Parent
 				}
-				flame := FlameItem{
-					Offset:      block.Start.Sub(item.Start).Microseconds(),
-					Duration:    block.End.Sub(block.Start).Microseconds(),
-					Category:    block.Category,
-					Description: block.Description,
-					End:         block.End,
-					Parent:      parent,
-				}
 
-				parent.Children = append(parent.Children, &flame)
-				parent = &flame
+				if block.IsCheckpoint {
+					parent.Checkpoints = append(parent.Checkpoints, Checkpoint{
+						Offset:      block.Start.Sub(item.Start).Microseconds(),
+						Category:    block.Category,
+						Description: block.Description,
+					})
+				} else {
+					flame := FlameItem{
+						Offset:      block.Start.Sub(item.Start).Microseconds(),
+						Duration:    block.End.Sub(block.Start).Microseconds(),
+						Category:    block.Category,
+						Description: block.Description,
+						End:         block.End,
+						Parent:      parent,
+						Checkpoints: []Checkpoint{},
+					}
+
+					parent.Children = append(parent.Children, &flame)
+					parent = &flame
+				}
 			}
 
 			perfRecords = append(perfRecords, record)

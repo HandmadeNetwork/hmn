@@ -7,7 +7,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
-	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/utils"
 	zerologadapter "github.com/jackc/pgx-zerolog"
 	"github.com/jackc/pgx/v5"
@@ -46,7 +45,6 @@ func NewConnWithConfig(cfg config.PostgresConfig) *pgx.Conn {
 			Logger:   zerologadapter.NewLogger(*logging.GlobalLogger()),
 			LogLevel: cfg.LogLevel,
 		},
-		requestPerfTracer{},
 	}
 
 	conn, err := pgx.ConnectConfig(context.Background(), pgcfg)
@@ -75,7 +73,6 @@ func NewConnPoolWithConfig(cfg config.PostgresConfig) *pgxpool.Pool {
 			Logger:   zerologadapter.NewLogger(*logging.GlobalLogger()),
 			LogLevel: cfg.LogLevel,
 		},
-		requestPerfTracer{},
 	}
 
 	conn, err := pgxpool.NewWithConfig(context.Background(), pgcfg)
@@ -118,31 +115,15 @@ func (mt multiTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pg
 
 var reQueryName = regexp.MustCompile("---- (.*)\n")
 
-func GetQueryName(sql string) (string, bool) {
+func GetQueryName(sql string) string {
 	m := reQueryName.FindStringSubmatch(sql)
 	if m != nil {
-		return m[1], true
+		return m[1]
 	}
-	return "", false
-}
 
-const perfBlockContextKey = "__dbPerfBlock"
-
-type requestPerfTracer struct{}
-
-var _ pgx.QueryTracer = requestPerfTracer{}
-
-func (pt requestPerfTracer) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-	p := perf.ExtractPerf(ctx)
-
-	name := "Unknown query"
-	if n, ok := GetQueryName(data.SQL); ok {
-		name = n
+	truncated := sql[:min(len(sql), 30)]
+	if len(truncated) < len(sql) {
+		truncated += "…"
 	}
-	b := p.StartBlock("SQL", name)
-	return context.WithValue(ctx, perfBlockContextKey, b)
-}
-
-func (pt requestPerfTracer) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
-	ctx.Value(perfBlockContextKey).(*perf.BlockHandle).End()
+	return truncated
 }

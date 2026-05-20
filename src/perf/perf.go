@@ -49,10 +49,11 @@ func (rp *RequestPerf) Checkpoint(category, description string) {
 
 	now := time.Now()
 	checkpoint := PerfBlock{
-		Start:       now,
-		End:         now,
-		Category:    category,
-		Description: description,
+		Start:        now,
+		End:          now,
+		Category:     category,
+		Description:  description,
+		IsCheckpoint: true,
 	}
 	rp.Blocks = append(rp.Blocks, checkpoint)
 }
@@ -112,10 +113,11 @@ func (rp *RequestPerf) MsFromStart(block *PerfBlock) float64 {
 }
 
 type PerfBlock struct {
-	Start       time.Time
-	End         time.Time
-	Category    string
-	Description string
+	Start        time.Time
+	End          time.Time
+	Category     string
+	Description  string
+	IsCheckpoint bool
 }
 
 func (pb *PerfBlock) Duration() time.Duration {

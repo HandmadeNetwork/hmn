@@ -164,18 +164,24 @@
 					let child = parent.Children[childIdx];
 					let item = document.createElement("DIV");
 					let catCSS = child.Category.toLowerCase();
-					item.classList.add("absolute");
-					item.classList.add("h1");
-					item.classList.add("overflow-hidden");
-					item.classList.add("f7");
-					item.classList.add("nowrap");
+					item.classList.add("absolute", "h1", "overflow-hidden", "f7", "nowrap");
 					item.style.color = `var(--${catCSS}-text)`;
-					item.style.backgroundColor = `var(--${catCSS}-bg)`;
+					item.style.backgroundColor = `var(--${catCSS}-bg, var(--c1))`;
 					item.textContent = `[${child.Category}] ${child.Description} | ${child.Duration/1000}ms`;
 					item.title = item.textContent;
 					item.style.width = ((child.Duration / maxDuration) * 100) + "%";
 					item.style.left = (((child.Offset) / maxDuration) * 100) + "%";
 					rowEl.appendChild(item);
+
+					for (const checkpoint of child.Checkpoints) {
+						const el = document.createElement("div");
+						el.title = `[${checkpoint.Category}] ${checkpoint.Description}`;
+						el.classList.add("absolute", "h1", "f7", "nowrap");
+						el.style.backgroundColor = `#00000066`;
+						el.style.width = "2px";
+						el.style.left = (((checkpoint.Offset) / maxDuration) * 100) + "%";
+						rowEl.appendChild(el);
+					}
 
 					if (child.Children && child.Children.length > 0) {
 						placeFlameItems(child, depth+1, maxDuration);

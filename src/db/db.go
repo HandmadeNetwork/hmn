@@ -13,6 +13,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/perf"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -147,6 +148,9 @@ func QueryIterator[T any](
 	query string,
 	args ...any,
 ) (*Iterator[T], error) {
+	rp := perf.ExtractPerf(ctx)
+	pb := rp.StartBlock("SQL", GetQueryName(query))
+
 	var destExample T
 	destType := reflect.TypeOf(destExample)
 
@@ -157,6 +161,8 @@ func QueryIterator[T any](
 	if err != nil {
 		return nil, err
 	}
+
+	rp.Checkpoint("SQL", "Query complete")
 	duration := time.Since(queryStart)
 	if config.Config.Postgres.SlowQueryThresholdMs > 0 && duration > time.Duration(config.Config.Postgres.SlowQueryThresholdMs)*time.Millisecond {
 		logging.Warn().
@@ -172,8 +178,9 @@ func QueryIterator[T any](
 		destType:         compiled.destType,
 		destTypeIsScalar: typeIsQueryable(compiled.destType),
 
-		ctx:    ctx,
-		closed: make(chan struct{}, 1),
+		ctx:       ctx,
+		closed:    make(chan struct{}, 1),
+		perfBlock: pb,
 	}
 
 	return it, nil
@@ -344,8 +351,9 @@ type Iterator[T any] struct {
 	destType         reflect.Type
 	destTypeIsScalar bool // NOTE(ben): Make sure this gets set every time destType gets set, based on typeIsQueryable(destType). This is kinda fragile...but also contained to this file, so doesn't seem worth a lazy evaluation or a constructor function.
 
-	ctx    context.Context
-	closed chan struct{}
+	ctx       context.Context
+	closed    chan struct{}
+	perfBlock *perf.BlockHandle
 }
 
 func (it *Iterator[T]) Next() (*T, bool) {
@@ -476,6 +484,7 @@ func setValueFromDB(dest reflect.Value, value reflect.Value) {
 
 func (it *Iterator[T]) Close() {
 	it.rows.Close()
+	it.perfBlock.End()
 	select {
 	case it.closed <- struct{}{}:
 	default:
