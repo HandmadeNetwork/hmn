@@ -48,7 +48,7 @@ var WebsiteCommand = &cobra.Command{
 			auth.PeriodicallyDeleteInactiveUsers(conn),
 			perfCollectorJob,
 			discord.RunDiscordBot(conn),
-			discord.RunHistoryWatcher(conn),
+			// discord.RunHistoryWatcher(conn),
 			twitch.MonitorTwitchSubscriptions(conn),
 			hmns3.StartServer(),
 			assets.BackgroundPreviewGeneration(conn),
