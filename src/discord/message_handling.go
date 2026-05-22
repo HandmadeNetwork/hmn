@@ -94,6 +94,7 @@ func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message
 
 var githubRegex = regexp.MustCompile(`^(https:\/\/)?(www\.|gist\.)?github.com`)
 var steampoweredRegex = regexp.MustCompile(`steampowered\.com`)
+var steamCutoffDate = time.Date(2026, 5, 10, 0, 0, 0, 0, time.UTC)
 
 func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
 	if msg.ChannelID != config.Config.Discord.ShowcaseChannelID {
@@ -126,7 +127,7 @@ func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 				steamStoreLink = true
 			}
 
-			if steamStoreLink {
+			if steamStoreLink && msg.Time().After(steamCutoffDate) {
 				return RebukeMessage(ctx, dbConn, msg, "We do not allow Steam links or marketing material in #project-showcase.")
 			}
 		}
