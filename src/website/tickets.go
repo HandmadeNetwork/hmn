@@ -625,6 +625,10 @@ func TicketSingle(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up ticket for scanning"))
 	}
 
+	if ticket.Pending {
+		return FourOhFour(c)
+	}
+
 	event, ok := hmndata.FindTicketEventBySlug(ticket.EventSlug)
 	if !ok {
 		c.Logger.Error().
@@ -727,17 +731,19 @@ func TicketEditSubmit(c *RequestContext) ResponseData {
 
 	newName := c.Req.Form.Get("name")
 	newEmail := c.Req.Form.Get("email")
+	newAccommodations := c.Req.Form.Get("accommodations")
 
 	// Trim to reasonable length
 	newName = newName[:min(len(newName), 500)]
 	newEmail = newEmail[:min(len(newEmail), 500)]
+	newAccommodations = newAccommodations[:min(len(newAccommodations), 500)]
 
 	_, err = c.Conn.Exec(c,
 		`
-		UPDATE ticket SET name = $1, email = $2
-		WHERE id = $3
+		UPDATE ticket SET name = $1, email = $2, accommodations = $3
+		WHERE id = $4
 		`,
-		newName, newEmail,
+		newName, newEmail, newAccommodations,
 		ticket.ID,
 	)
 	if err != nil {
@@ -844,6 +850,46 @@ func TicketScanned(c *RequestContext) ResponseData {
 
 	// TODO(ben): Actually build ticket-scanning logic closer to the time of the event.
 	return ResponseData{}
+}
+
+// Looks up the current user's ticket, if any, and redirects to it. Useful for
+// emails and whatnot where we want a single link that applies to everyone.
+func TicketSingleForEvent(c *RequestContext) ResponseData {
+	urlSlug := c.PathParams["urlslug"]
+	event, found := hmndata.FindTicketEventBySlug(urlSlug)
+	if !found {
+		return FourOhFour(c)
+	}
+
+	userTicket, err := hmndata.FetchTicket(c, c.Conn, hmndata.TicketQuery{
+		EventSlug: event.Slug,
+		UserID:    c.CurrentUser.ID,
+	})
+	if err != nil && err != db.NotFound {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+	if err == db.NotFound || userTicket.Pending {
+		type TemplateData struct {
+			templates.BaseData
+			EventName string
+		}
+
+		var res ResponseData
+		res.MustWriteTemplate("tickets_no_ticket_for_event.html", TemplateData{
+			BaseData:  getBaseData(c, "Delete Ticket", nil),
+			EventName: event.Name,
+		}, c.Perf)
+		return res
+	}
+
+	utils.Assert(!userTicket.Pending)
+	action := c.Req.URL.Query().Get("action")
+	switch action {
+	case "edit":
+		return c.Redirect(hmnurl.BuildTicketEdit(userTicket.ID.String()), http.StatusSeeOther)
+	default:
+		return c.Redirect(hmnurl.BuildTicketSingle(userTicket.ID.String()), http.StatusSeeOther)
+	}
 }
 
 func canEditTicket(user *models.User, ticket *models.Ticket) bool {

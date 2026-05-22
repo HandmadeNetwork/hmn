@@ -33,7 +33,11 @@ type Ticket struct {
 	StripePriceAmount       int64  `db:"stripe_price_amount"`
 	StripePriceCurrency     string `db:"stripe_price_currency"`
 
+	// Admin only
 	Notes string `db:"notes"`
+
+	// Extra user fields
+	Accommodations string `db:"accommodations"`
 
 	// Not a field on the ticket table. Must be filled in by fetching functions.
 	OwnerUsername        string

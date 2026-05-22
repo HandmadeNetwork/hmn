@@ -172,6 +172,13 @@ func BuildTicketPurchase(urlSlug string) string {
 	return Url(fmt.Sprintf("/tickets/%s/purchase", urlSlug), nil)
 }
 
+var RegexTicketSingleForEvent = regexp.MustCompile("^/tickets/(?P<urlslug>[^/]+)/mine$")
+
+func BuildTicketSingleForEvent(urlSlug string) string {
+	defer CatchPanic()
+	return Url(fmt.Sprintf("/tickets/%s/mine", urlSlug), nil)
+}
+
 var RegexTicketSingle = regexp.MustCompile("^/tickets/(?P<id>[^/]+)$")
 
 func BuildTicketSingle(id string) string {

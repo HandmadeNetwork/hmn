@@ -529,6 +529,7 @@ type Ticket struct {
 	Reserved             bool
 	Pending              bool
 	Notes                string
+	Accommodations       string
 	CheckedIn            bool
 
 	Url       string
