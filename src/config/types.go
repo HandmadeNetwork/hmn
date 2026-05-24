@@ -135,8 +135,17 @@ type PostmarkConfig struct {
 }
 
 type StripeConfig struct {
-	SecretKey     string
-	WebhookSecret string
+	SecretKey      string
+	PublishableKey string
+	WebhookSecret  string
+
+	// PriceID is the default subscription price used when creating a membership Checkout Session.
+	PriceID string
+
+	// MembershipAlternatePriceIDs lists any other Stripe price IDs used for membership (e.g. a
+	// second currency). The webhook dispatcher treats PriceID ∪ MembershipAlternatePriceIDs as
+	// belonging to the subscription flow.
+	MembershipAlternatePriceIDs []string
 }
 
 func init() {

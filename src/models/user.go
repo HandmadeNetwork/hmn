@@ -46,6 +46,16 @@ type User struct {
 	DiscordSaveShowcase                 bool `db:"discord_save_showcase"`
 	DiscordDeleteSnippetOnMessageDelete bool `db:"discord_delete_snippet_on_message_delete"`
 
+	IsSubscribed bool `db:"is_subscribed"`
+
+	StripeCustomerID     *string `db:"stripe_customer_id"`
+	StripeSubscriptionID *string `db:"stripe_subscription_id"`
+
+	SubscriptionStatus *string    `db:"subscription_status"`
+	CurrentPeriodEnd   *time.Time `db:"current_period_end"`
+	CancelAtPeriodEnd  bool       `db:"cancel_at_period_end"`
+	ThankYouEmailSent  bool       `db:"thank_you_email_sent"`
+
 	MarkedAllReadAt time.Time `db:"marked_all_read_at"`
 
 	// Non-db fields, to be filled in by fetch helpers

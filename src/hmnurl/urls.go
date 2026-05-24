@@ -1083,6 +1083,30 @@ func BuildHSFMembership() string {
 	return Url("/foundation/membership", nil)
 }
 
+var RegexSubscriptionManage = regexp.MustCompile(`^/foundation/membership/manage$`)
+
+func BuildSubscriptionManage() string {
+	return Url("/foundation/membership/manage", nil)
+}
+
+var RegexSubscriptionSubscribe = regexp.MustCompile(`^/foundation/membership/subscribe$`)
+
+func BuildSubscriptionSubscribe() string {
+	return Url("/foundation/membership/subscribe", nil)
+}
+
+var RegexSubscriptionCancel = regexp.MustCompile(`^/foundation/membership/cancel$`)
+
+func BuildSubscriptionCancel() string {
+	return Url("/foundation/membership/cancel", nil)
+}
+
+var RegexSubscriptionResume = regexp.MustCompile(`^/foundation/membership/resume$`)
+
+func BuildSubscriptionResume() string {
+	return Url("/foundation/membership/resume", nil)
+}
+
 /*
 * Perf
  */

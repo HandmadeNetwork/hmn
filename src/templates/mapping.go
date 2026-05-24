@@ -262,6 +262,9 @@ func UserToTemplate(u *models.User) User {
 		DiscordSaveShowcase:                 u.DiscordSaveShowcase,
 		DiscordDeleteSnippetOnMessageDelete: u.DiscordDeleteSnippetOnMessageDelete,
 
+		IsSubscribed:      u.IsSubscribed,
+		CancelAtPeriodEnd: u.CancelAtPeriodEnd,
+
 		IsEduTester: u.CanSeeUnpublishedEducationContent(),
 		IsEduAuthor: u.CanAuthorEducation(),
 

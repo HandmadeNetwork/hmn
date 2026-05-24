@@ -270,6 +270,9 @@ type User struct {
 	DiscordSaveShowcase                 bool
 	DiscordDeleteSnippetOnMessageDelete bool
 
+	IsSubscribed      bool
+	CancelAtPeriodEnd bool
+
 	IsEduTester bool
 	IsEduAuthor bool
 

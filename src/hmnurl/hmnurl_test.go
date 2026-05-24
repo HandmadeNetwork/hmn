@@ -538,6 +538,20 @@ func AssertRegexNoMatch(t *testing.T, fullUrl string, regex *regexp.Regexp) {
 	assert.Nilf(t, match, "Url matched regex: [%s] vs [%s]", requestPath, regex.String())
 }
 
+func TestFoundationSubscriptionBuildUrls(t *testing.T) {
+	defer func() {
+		SetGlobalBaseUrl(config.Config.BaseUrl)
+	}()
+	SetGlobalBaseUrl("http://handmade.test")
+	isTest = true
+
+	AssertRegexMatch(t, BuildHSFMembership(), RegexHSFMembership, nil)
+	AssertRegexMatch(t, BuildSubscriptionManage(), RegexSubscriptionManage, nil)
+	AssertRegexMatch(t, BuildSubscriptionSubscribe(), RegexSubscriptionSubscribe, nil)
+	AssertRegexMatch(t, BuildSubscriptionCancel(), RegexSubscriptionCancel, nil)
+	AssertRegexMatch(t, BuildSubscriptionResume(), RegexSubscriptionResume, nil)
+}
+
 func TestThingsThatDontNeedCoverage(t *testing.T) {
 	// look the other way ಠ_ಠ
 	BuildPodcastEpisodeFile("foo")
