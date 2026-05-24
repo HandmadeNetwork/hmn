@@ -56,6 +56,10 @@ type User struct {
 	CancelAtPeriodEnd  bool       `db:"cancel_at_period_end"`
 	ThankYouEmailSent  bool       `db:"thank_you_email_sent"`
 
+	GracePeriodStartedAt *time.Time `db:"grace_period_started_at"`
+	GracePeriodEndsAt    *time.Time `db:"grace_period_ends_at"`
+	GraceAvailable       bool       `db:"grace_available"`
+
 	MarkedAllReadAt time.Time `db:"marked_all_read_at"`
 
 	// Non-db fields, to be filled in by fetch helpers

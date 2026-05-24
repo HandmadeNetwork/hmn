@@ -146,6 +146,13 @@ type StripeConfig struct {
 	// second currency). The webhook dispatcher treats PriceID ∪ MembershipAlternatePriceIDs as
 	// belonging to the subscription flow.
 	MembershipAlternatePriceIDs []string
+
+	// TestClockID attaches new Stripe customers created by subscription test tooling to this clock.
+	TestClockID string
+
+	// SubscriptionNowOverride is an RFC3339 timestamp used instead of time.Now() for subscription
+	// grace-period logic in dev/test. Leave empty in production.
+	SubscriptionNowOverride string
 }
 
 func init() {

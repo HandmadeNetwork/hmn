@@ -262,6 +262,7 @@ type PaymentFailedEmailData struct {
 	ManageSubscriptionUrl string
 	Amount                string
 	NextAttemptDate       string
+	GracePeriodEnd        string
 }
 
 func SendPaymentFailedEmail(
@@ -269,6 +270,7 @@ func SendPaymentFailedEmail(
 	toName string,
 	amount string,
 	nextAttemptDate *time.Time,
+	gracePeriodEnd *time.Time,
 	perf *perf.RequestPerf,
 ) error {
 	defer perf.StartBlock("EMAIL", "Payment failed email").End()
@@ -276,6 +278,11 @@ func SendPaymentFailedEmail(
 	nextAttemptDateStr := ""
 	if nextAttemptDate != nil && !nextAttemptDate.IsZero() {
 		nextAttemptDateStr = nextAttemptDate.Format("January 2, 2006")
+	}
+
+	gracePeriodEndStr := ""
+	if gracePeriodEnd != nil && !gracePeriodEnd.IsZero() {
+		gracePeriodEndStr = gracePeriodEnd.Format("January 2, 2006")
 	}
 
 	b1 := perf.StartBlock("EMAIL", "Rendering template")
@@ -286,6 +293,7 @@ func SendPaymentFailedEmail(
 		ManageSubscriptionUrl: hmnurl.BuildSubscriptionManage(),
 		Amount:                amount,
 		NextAttemptDate:       nextAttemptDateStr,
+		GracePeriodEnd:        gracePeriodEndStr,
 	})
 	if err != nil {
 		return err

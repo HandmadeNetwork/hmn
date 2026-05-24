@@ -86,6 +86,8 @@ type ManageSubscriptionTemplateData struct {
 	CurrentPeriodEnd      string
 	LastPaymentAmount     string
 	LastPaymentMethod     string
+	GracePeriodEnd        string
+	IsInGracePeriod       bool
 
 	DefaultMembershipPriceID string
 	EurMembershipPriceID     string
@@ -159,6 +161,15 @@ func SubscriptionManage(c *RequestContext) ResponseData {
 		eurPriceID = alts[0]
 	}
 
+	gracePeriodEnd := ""
+	isInGracePeriod := false
+	if c.CurrentUser != nil && userInGracePeriod(c.CurrentUser) {
+		isInGracePeriod = true
+		if c.CurrentUser.GracePeriodEndsAt != nil {
+			gracePeriodEnd = c.CurrentUser.GracePeriodEndsAt.UTC().Format("Jan 2, 2006")
+		}
+	}
+
 	var res ResponseData
 	res.MustWriteTemplate("manage_subscription.html", ManageSubscriptionTemplateData{
 		BaseData:                 getBaseData(c, "Manage Membership", nil),
@@ -171,6 +182,8 @@ func SubscriptionManage(c *RequestContext) ResponseData {
 		CurrentPeriodEnd:         currentPeriodEnd,
 		LastPaymentAmount:        lastAmount,
 		LastPaymentMethod:        lastMethod,
+		GracePeriodEnd:           gracePeriodEnd,
+		IsInGracePeriod:          isInGracePeriod,
 		DefaultMembershipPriceID: config.Config.Stripe.PriceID,
 		EurMembershipPriceID:     eurPriceID,
 	}, c.Perf)
@@ -179,6 +192,9 @@ func SubscriptionManage(c *RequestContext) ResponseData {
 
 func SubscriptionSubscribe(c *RequestContext) ResponseData {
 	if c.CurrentUser.IsSubscribed {
+		return c.Redirect(hmnurl.BuildSubscriptionManage(), http.StatusSeeOther)
+	}
+	if userInGracePeriod(c.CurrentUser) {
 		return c.Redirect(hmnurl.BuildSubscriptionManage(), http.StatusSeeOther)
 	}
 
@@ -292,7 +308,7 @@ func SubscriptionResume(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.BuildSubscriptionManage(), http.StatusSeeOther)
 	}
 
-	if c.CurrentUser.CurrentPeriodEnd == nil || c.CurrentUser.CurrentPeriodEnd.Before(time.Now()) {
+	if c.CurrentUser.CurrentPeriodEnd == nil || c.CurrentUser.CurrentPeriodEnd.Before(SubscriptionNow()) {
 		return c.Redirect(hmnurl.BuildSubscriptionSubscribe(), http.StatusSeeOther)
 	}
 
@@ -355,7 +371,10 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 			stripe_customer_id = $1, 
 			stripe_subscription_id = $2, 
 			subscription_status = 'active',
-			cancel_at_period_end = false
+			cancel_at_period_end = false,
+			grace_period_started_at = NULL,
+			grace_period_ends_at = NULL,
+			grace_available = true
 		WHERE id = $3
 		RETURNING $columns
 	`, session.Customer.ID, session.Subscription.ID, userID)
@@ -369,6 +388,8 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 
 func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe.Subscription) {
 	renewalDate := getSubscriptionPeriodEnd(sub)
+	now := SubscriptionNow()
+	stripeStatus := string(sub.Status)
 
 	user, err := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE stripe_customer_id = $1", sub.Customer.ID)
 	if err == db.NotFound {
@@ -388,11 +409,59 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 
 	logging.Info().
 		Int("userID", user.ID).
-		Str("status", string(sub.Status)).
+		Str("status", stripeStatus).
 		Bool("cancelAtPeriodEnd", sub.CancelAtPeriodEnd).
 		Int64("cancelAt", sub.CancelAt).
 		Bool("isCancelling", isCancelling).
 		Msg("updating user subscription from webhook")
+
+	if isFailedPaymentStripeStatus(stripeStatus) {
+		if canStartGrace(user, now) {
+			if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
+				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period")
+				return
+			}
+		} else if !isGraceActive(user, now) {
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user 
+				SET 
+					stripe_customer_id = $1,
+					stripe_subscription_id = $2,
+					subscription_status = $3, 
+					cancel_at_period_end = $4,
+					is_subscribed = false,
+					current_period_end = $5
+				WHERE id = $6
+			`, sub.Customer.ID, sub.ID, stripeStatus, isCancelling, renewalDate, user.ID)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update user subscription from webhook")
+			}
+			return
+		}
+
+		_, err = c.Conn.Exec(c, `
+			UPDATE hmn_user 
+			SET 
+				stripe_customer_id = $1,
+				stripe_subscription_id = $2,
+				subscription_status = $3, 
+				cancel_at_period_end = $4,
+				is_subscribed = true,
+				current_period_end = $5
+			WHERE id = $6
+		`, sub.Customer.ID, sub.ID, SubscriptionStatusGracePeriod, isCancelling, renewalDate, user.ID)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update user subscription grace state from webhook")
+		}
+		return
+	}
+
+	isSubscribed := stripeSubscriptionGrantsAccess(stripeStatus)
+	if isSubscribed {
+		if err := clearGracePeriod(c, c.Conn, user.ID); err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to clear subscription grace period")
+		}
+	}
 
 	_, err = c.Conn.Exec(c, `
 		UPDATE hmn_user 
@@ -401,10 +470,10 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 			stripe_subscription_id = $2,
 			subscription_status = $3, 
 			cancel_at_period_end = $4,
-			is_subscribed = ($3 = 'active' OR $3 = 'trialing'),
-			current_period_end = $5
-		WHERE id = $6
-	`, sub.Customer.ID, sub.ID, sub.Status, isCancelling, renewalDate, user.ID)
+			is_subscribed = $5,
+			current_period_end = $6
+		WHERE id = $7
+	`, sub.Customer.ID, sub.ID, stripeStatus, isCancelling, isSubscribed, renewalDate, user.ID)
 	if err != nil {
 		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update user subscription from webhook")
 	}
@@ -440,7 +509,19 @@ func handleSubscriptionDeleted(c *RequestContext, sc *stripe.Client, sub *stripe
 		return
 	}
 
-	_, err = c.Conn.Exec(c, "UPDATE hmn_user SET is_subscribed = false, stripe_subscription_id = NULL, subscription_status = 'canceled', current_period_end = NULL, cancel_at_period_end = false, thank_you_email_sent = false WHERE id = $1", user.ID)
+	_, err = c.Conn.Exec(c, `
+		UPDATE hmn_user
+		SET
+			is_subscribed = false,
+			stripe_subscription_id = NULL,
+			subscription_status = 'canceled',
+			current_period_end = NULL,
+			cancel_at_period_end = false,
+			thank_you_email_sent = false,
+			grace_period_started_at = NULL,
+			grace_period_ends_at = NULL
+		WHERE id = $1
+	`, user.ID)
 	if err != nil {
 		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to handle subscription deletion")
 		return
@@ -485,11 +566,15 @@ func handleInvoicePaid(c *RequestContext, sc *stripe.Client, inv *stripe.Invoice
 		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to record user payment")
 	}
 
+	if err := clearGracePeriod(c, c.Conn, user.ID); err != nil {
+		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to clear subscription grace period after payment")
+	}
+
 	if inv.Lines != nil && len(inv.Lines.Data) > 0 && inv.Lines.Data[0].Subscription != nil {
 		sub, err := sc.V1Subscriptions.Retrieve(c, inv.Lines.Data[0].Subscription.ID, nil)
 		if err == nil {
 			renewalDate := getSubscriptionPeriodEnd(sub)
-			_, err = c.Conn.Exec(c, "UPDATE hmn_user SET current_period_end = $1, is_subscribed = true WHERE id = $2", renewalDate, user.ID)
+			_, err = c.Conn.Exec(c, "UPDATE hmn_user SET current_period_end = $1, is_subscribed = true, subscription_status = 'active' WHERE id = $2", renewalDate, user.ID)
 			if err != nil {
 				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update renewal date from invoice")
 			}
@@ -510,6 +595,28 @@ func handleInvoicePaymentFailed(c *RequestContext, sc *stripe.Client, inv *strip
 		return
 	}
 
+	now := SubscriptionNow()
+	if canStartGrace(user, now) {
+		if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period from invoice.payment_failed")
+		}
+	} else if !isGraceActive(user, now) && !user.GraceAvailable {
+		_, err = c.Conn.Exec(c, `
+			UPDATE hmn_user
+			SET is_subscribed = false, subscription_status = $1
+			WHERE id = $2
+		`, SubscriptionStatusGraceFailed, user.ID)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to mark subscription grace_failed")
+		}
+	}
+
+	user, err = db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", user.ID)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to reload user after payment failure")
+		return
+	}
+
 	amountStr := ""
 	if inv.AmountDue > 0 {
 		curr := strings.ToUpper(string(inv.Currency))
@@ -527,7 +634,7 @@ func handleInvoicePaymentFailed(c *RequestContext, sc *stripe.Client, inv *strip
 	}
 
 	logging.Info().Int("userID", user.ID).Str("invoiceID", inv.ID).Msg("sending payment failed email")
-	err = email.SendPaymentFailedEmail(user.Email, user.BestName(), amountStr, nextAttemptDate, c.Perf)
+	err = email.SendPaymentFailedEmail(user.Email, user.BestName(), amountStr, nextAttemptDate, user.GracePeriodEndsAt, c.Perf)
 	if err != nil {
 		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to send payment failed email")
 	}
@@ -643,7 +750,7 @@ func attemptThankYouEmail(c *RequestContext, userID int, amountCents int64, curr
 	// We check that the renewal date is at least reasonably in the future to avoid race conditions
 	// where an old or "initiation" date is still in the DB.
 	shouldSend := false
-	if user.IsSubscribed && user.CurrentPeriodEnd != nil && user.CurrentPeriodEnd.After(time.Now().Add(24*time.Hour)) && !user.ThankYouEmailSent {
+	if user.IsSubscribed && user.CurrentPeriodEnd != nil && user.CurrentPeriodEnd.After(SubscriptionNow().Add(24*time.Hour)) && !user.ThankYouEmailSent {
 		shouldSend = true
 		_, err = tx.Exec(c, "UPDATE hmn_user SET thank_you_email_sent = true WHERE id = $1", userID)
 		if err != nil {

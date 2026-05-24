@@ -14,6 +14,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/stripe/stripe-go/v84"
@@ -43,6 +44,13 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 			conn := db.NewConn()
 			defer conn.Close(ctx)
 
+			if override := config.Config.Stripe.SubscriptionNowOverride; override != "" {
+				fmt.Printf("Using subscription time override: %s\n", override)
+			}
+			if testClockID := config.Config.Stripe.TestClockID; testClockID != "" {
+				fmt.Printf("Using Stripe test clock: %s\n", testClockID)
+			}
+
 			sc := stripe.NewClient(config.Config.Stripe.SecretKey)
 			scenarios := []subscriptionTestScenario{
 				{
@@ -58,20 +66,15 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 				},
 				{
 					Name: "ACH (US bank account)",
-					CreatePaymentMethod: func(ctx context.Context, sc *stripe.Client) (*stripe.PaymentMethod, error) {
-						return sc.V1PaymentMethods.Create(ctx, &stripe.PaymentMethodCreateParams{
-							Type: stripe.String("us_bank_account"),
-							USBankAccount: &stripe.PaymentMethodCreateUSBankAccountParams{
-								AccountHolderType: stripe.String("individual"),
-								AccountType:       stripe.String("checking"),
-								RoutingNumber:     stripe.String("110000000"),
-								AccountNumber:     stripe.String("000123456789"),
-							},
-							BillingDetails: &stripe.PaymentMethodCreateBillingDetailsParams{
-								Name: stripe.String("HMN ACH Test User"),
-							},
-						})
-					},
+					CreatePaymentMethod: createACHPaymentMethod,
+				},
+				{
+					Name: "ACH grace expires after 2 week clock advance",
+					Run:  runACHGraceExpiryScenario,
+				},
+				{
+					Name: "ACH verification after 2 day clock advance",
+					Run:  runACHVerificationAfterAdvanceScenario,
 				},
 			}
 
@@ -102,6 +105,7 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 type subscriptionTestScenario struct {
 	Name                string
 	CreatePaymentMethod func(context.Context, *stripe.Client) (*stripe.PaymentMethod, error)
+	Run                 func(context.Context, db.ConnOrTx, *stripe.Client) (subscriptionTestResult, error)
 }
 
 type subscriptionTestResult int
@@ -111,20 +115,38 @@ const (
 	subscriptionTestResultPending
 )
 
+type achTestSetup struct {
+	userID          int
+	customerID      string
+	paymentMethodID string
+	testClockID     string
+}
+
 func runSubscriptionScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client, scenario subscriptionTestScenario) (subscriptionTestResult, error) {
+	if scenario.Run != nil {
+		return scenario.Run(ctx, conn, sc)
+	}
+	return runCardOrACHScenario(ctx, conn, sc, scenario)
+}
+
+func runCardOrACHScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client, scenario subscriptionTestScenario) (subscriptionTestResult, error) {
 	username := fmt.Sprintf("subtest_%s", uuid.NewString()[:8])
 	fmt.Printf("[1/6] Creating test user: %s\n", username)
 	userID, emailAddress := createSubscriptionTestUser(ctx, conn, username)
 	fmt.Printf("      user_id=%d email=%s\n", userID, emailAddress)
 
 	fmt.Printf("[2/6] Creating Stripe customer\n")
-	customer, err := sc.V1Customers.Create(ctx, &stripe.CustomerCreateParams{
+	customerParams := &stripe.CustomerCreateParams{
 		Email: stripe.String(emailAddress),
 		Name:  stripe.String(username),
 		Metadata: map[string]string{
 			"user_id": strconv.Itoa(userID),
 		},
-	})
+	}
+	if testClockID := config.Config.Stripe.TestClockID; testClockID != "" {
+		customerParams.TestClock = stripe.String(testClockID)
+	}
+	customer, err := sc.V1Customers.Create(ctx, customerParams)
 	if err != nil {
 		return subscriptionTestResultPass, err
 	}
@@ -153,9 +175,232 @@ func runSubscriptionScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.C
 		return subscriptionTestResultPass, err
 	}
 
+	return completeSubscription(ctx, conn, sc, userID, customer.ID, paymentMethod.ID)
+}
+
+func runACHGraceExpiryScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client) (subscriptionTestResult, error) {
+	defer website.ClearSubscriptionNowForTests()
+
+	fmt.Printf("[1/7] Creating Stripe test clock\n")
+	testClock, err := createTestClock(ctx, sc, "ach-grace-expiry")
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      test_clock_id=%s frozen_time=%s\n", testClock.ID, time.Unix(testClock.FrozenTime, 0).UTC().Format(time.RFC3339))
+	defer deleteTestClock(ctx, sc, testClock.ID)
+
+	setup, err := setupACHPendingOnClock(ctx, conn, sc, testClock.ID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	fmt.Printf("[5/7] Starting grace period (simulating payment failure while ACH verification is pending)\n")
+	syncSubscriptionNowToTestClock(ctx, sc, testClock.ID)
+	if err := website.StartSubscriptionGracePeriod(ctx, conn, setup.userID); err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	fmt.Printf("[6/7] Advancing test clock by 14 days (past 7-day grace period)\n")
+	clockTime, err := advanceTestClockBy(ctx, sc, testClock.ID, 14*24*time.Hour)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      clock frozen_time=%s\n", clockTime.UTC().Format(time.RFC3339))
+	website.SetSubscriptionNowForTests(clockTime)
+
+	fmt.Printf("[7/7] Expiring due grace periods and verifying final state\n")
+	expiredCount, err := website.ExpireSubscriptionGracePeriods(ctx, conn)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      expired grace periods: %d\n", expiredCount)
+
+	user, err := db.QueryOne[models.User](ctx, conn, "SELECT $columns FROM hmn_user WHERE id = $1", setup.userID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if user.IsSubscribed {
+		return subscriptionTestResultPass, fmt.Errorf("expected is_subscribed=false after grace expiry")
+	}
+	if user.SubscriptionStatus == nil || *user.SubscriptionStatus != website.SubscriptionStatusGraceFailed {
+		return subscriptionTestResultPass, fmt.Errorf("expected subscription_status=%s, got %s", website.SubscriptionStatusGraceFailed, stringOrEmpty(user.SubscriptionStatus))
+	}
+	if user.GraceAvailable {
+		return subscriptionTestResultPass, fmt.Errorf("expected grace_available=false after grace expiry")
+	}
+
+	printSubscriptionData(ctx, conn, setup.userID)
+	return subscriptionTestResultPass, nil
+}
+
+func runACHVerificationAfterAdvanceScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client) (subscriptionTestResult, error) {
+	defer website.ClearSubscriptionNowForTests()
+
+	fmt.Printf("[1/8] Creating Stripe test clock\n")
+	testClock, err := createTestClock(ctx, sc, "ach-verify-after-advance")
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      test_clock_id=%s frozen_time=%s\n", testClock.ID, time.Unix(testClock.FrozenTime, 0).UTC().Format(time.RFC3339))
+	defer deleteTestClock(ctx, sc, testClock.ID)
+
+	setup, err := setupACHPendingOnClock(ctx, conn, sc, testClock.ID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	fmt.Printf("[5/8] Advancing test clock by 2 days (simulating microdeposit wait)\n")
+	clockTime, err := advanceTestClockBy(ctx, sc, testClock.ID, 2*24*time.Hour)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      clock frozen_time=%s\n", clockTime.UTC().Format(time.RFC3339))
+	website.SetSubscriptionNowForTests(clockTime)
+
+	fmt.Printf("[6/8] Triggering ACH verification via SetupIntent\n")
+	if err := verifyACHPaymentMethod(ctx, sc, setup.customerID, setup.paymentMethodID); err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	fmt.Printf("[7/8] Attaching verified payment method and creating subscription\n")
+	_, err = sc.V1PaymentMethods.Attach(ctx, setup.paymentMethodID, &stripe.PaymentMethodAttachParams{
+		Customer: stripe.String(setup.customerID),
+	})
+	if err != nil {
+		return subscriptionTestResultPass, fmt.Errorf("attach verified ACH payment method: %w", err)
+	}
+
+	result, err := completeSubscription(ctx, conn, sc, setup.userID, setup.customerID, setup.paymentMethodID)
+	if err != nil {
+		return result, err
+	}
+
+	fmt.Printf("[8/8] Verifying subscription is active after ACH verification\n")
+	user, err := db.QueryOne[models.User](ctx, conn, "SELECT $columns FROM hmn_user WHERE id = $1", setup.userID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if !user.IsSubscribed {
+		return subscriptionTestResultPass, fmt.Errorf("expected is_subscribed=true after ACH verification")
+	}
+	if user.SubscriptionStatus == nil || *user.SubscriptionStatus != "active" {
+		return subscriptionTestResultPass, fmt.Errorf("expected subscription_status=active, got %s", stringOrEmpty(user.SubscriptionStatus))
+	}
+
+	return result, nil
+}
+
+func setupACHPendingOnClock(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client, testClockID string) (*achTestSetup, error) {
+	username := fmt.Sprintf("subtest_%s", uuid.NewString()[:8])
+	fmt.Printf("[2/7] Creating test user: %s\n", username)
+	userID, emailAddress := createSubscriptionTestUser(ctx, conn, username)
+	fmt.Printf("      user_id=%d email=%s\n", userID, emailAddress)
+
+	fmt.Printf("[3/7] Creating Stripe customer on test clock\n")
+	customer, err := sc.V1Customers.Create(ctx, &stripe.CustomerCreateParams{
+		Email:     stripe.String(emailAddress),
+		Name:      stripe.String(username),
+		TestClock: stripe.String(testClockID),
+		Metadata: map[string]string{
+			"user_id": strconv.Itoa(userID),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("      customer_id=%s\n", customer.ID)
+
+	fmt.Printf("[4/7] Creating ACH payment method and reaching pending verification\n")
+	paymentMethod, err := createACHPaymentMethod(ctx, sc)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("      payment_method_id=%s\n", paymentMethod.ID)
+
+	_, err = sc.V1PaymentMethods.Attach(ctx, paymentMethod.ID, &stripe.PaymentMethodAttachParams{
+		Customer: stripe.String(customer.ID),
+	})
+	if err == nil {
+		return nil, fmt.Errorf("expected ACH attach to require verification")
+	}
+	if !isExpectedACHVerificationPending(err) {
+		return nil, fmt.Errorf("attach ACH payment method: %w", err)
+	}
+	fmt.Printf("      ACH verification is pending; subscription will complete after verification.\n")
+	if err := persistPendingVerificationState(ctx, conn, userID, customer.ID); err != nil {
+		return nil, err
+	}
+	printSubscriptionData(ctx, conn, userID)
+
+	return &achTestSetup{
+		userID:          userID,
+		customerID:      customer.ID,
+		paymentMethodID: paymentMethod.ID,
+		testClockID:     testClockID,
+	}, nil
+}
+
+func createACHPaymentMethod(ctx context.Context, sc *stripe.Client) (*stripe.PaymentMethod, error) {
+	return sc.V1PaymentMethods.Create(ctx, &stripe.PaymentMethodCreateParams{
+		Type: stripe.String("us_bank_account"),
+		USBankAccount: &stripe.PaymentMethodCreateUSBankAccountParams{
+			AccountHolderType: stripe.String("individual"),
+			AccountType:       stripe.String("checking"),
+			RoutingNumber:     stripe.String("110000000"),
+			AccountNumber:     stripe.String("000123456789"),
+		},
+		BillingDetails: &stripe.PaymentMethodCreateBillingDetailsParams{
+			Name: stripe.String("HMN ACH Test User"),
+		},
+	})
+}
+
+func verifyACHPaymentMethod(ctx context.Context, sc *stripe.Client, customerID, paymentMethodID string) error {
+	setupIntent, err := sc.V1SetupIntents.Create(ctx, &stripe.SetupIntentCreateParams{
+		Customer:           stripe.String(customerID),
+		PaymentMethod:      stripe.String(paymentMethodID),
+		PaymentMethodTypes: []*string{stripe.String("us_bank_account")},
+		Confirm:            stripe.Bool(true),
+		MandateData: &stripe.SetupIntentCreateMandateDataParams{
+			CustomerAcceptance: &stripe.SetupIntentCreateMandateDataCustomerAcceptanceParams{
+				Type: stripe.String("online"),
+				Online: &stripe.SetupIntentCreateMandateDataCustomerAcceptanceOnlineParams{
+					IPAddress: stripe.String("127.0.0.1"),
+					UserAgent: stripe.String("HMN Admin Subscription Test"),
+				},
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("confirm setup intent for ACH verification: %w", err)
+	}
+	fmt.Printf("      setup_intent_id=%s status=%s\n", setupIntent.ID, setupIntent.Status)
+
+	if setupIntent.Status == stripe.SetupIntentStatusRequiresAction {
+		setupIntent, err = sc.V1SetupIntents.VerifyMicrodeposits(ctx, setupIntent.ID, &stripe.SetupIntentVerifyMicrodepositsParams{
+			Amounts: []*int64{stripe.Int64(32), stripe.Int64(45)},
+		})
+		if err != nil {
+			setupIntent, err = sc.V1SetupIntents.VerifyMicrodeposits(ctx, setupIntent.ID, &stripe.SetupIntentVerifyMicrodepositsParams{
+				DescriptorCode: stripe.String("SM11AA"),
+			})
+			if err != nil {
+				return fmt.Errorf("verify ACH microdeposits: %w", err)
+			}
+		}
+		fmt.Printf("      setup_intent_id=%s status=%s after verification\n", setupIntent.ID, setupIntent.Status)
+	}
+
+	if setupIntent.Status != stripe.SetupIntentStatusSucceeded {
+		return fmt.Errorf("setup intent did not succeed: status=%s", setupIntent.Status)
+	}
+	return nil
+}
+
+func completeSubscription(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client, userID int, customerID, paymentMethodID string) (subscriptionTestResult, error) {
 	subscriptionParams := &stripe.SubscriptionCreateParams{
-		Customer:             stripe.String(customer.ID),
-		DefaultPaymentMethod: stripe.String(paymentMethod.ID),
+		Customer:             stripe.String(customerID),
+		DefaultPaymentMethod: stripe.String(paymentMethodID),
 		CollectionMethod:     stripe.String("charge_automatically"),
 		PaymentBehavior:      stripe.String("allow_incomplete"),
 		Items: []*stripe.SubscriptionCreateItemParams{
@@ -186,7 +431,7 @@ func runSubscriptionScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.C
 			current_period_end = $5,
 			cancel_at_period_end = $6
 		WHERE id = $7
-	`, isSubscribed, customer.ID, subscription.ID, subscription.Status, renewalDate, subscription.CancelAtPeriodEnd, userID)
+	`, isSubscribed, customerID, subscription.ID, subscription.Status, renewalDate, subscription.CancelAtPeriodEnd, userID)
 	if err != nil {
 		return subscriptionTestResultPass, err
 	}
@@ -214,11 +459,69 @@ func runSubscriptionScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.C
 	}
 
 	fmt.Printf("[6/6] Verifying and printing stored subscription data\n")
-	if err := validateStoredSubscriptionData(ctx, conn, userID, customer.ID, subscription.ID); err != nil {
+	if err := validateStoredSubscriptionData(ctx, conn, userID, customerID, subscription.ID); err != nil {
 		return subscriptionTestResultPass, err
 	}
 	printSubscriptionData(ctx, conn, userID)
 	return subscriptionTestResultPass, nil
+}
+
+func createTestClock(ctx context.Context, sc *stripe.Client, name string) (*stripe.TestHelpersTestClock, error) {
+	return sc.V1TestHelpersTestClocks.Create(ctx, &stripe.TestHelpersTestClockCreateParams{
+		FrozenTime: stripe.Int64(time.Now().Unix()),
+		Name:       stripe.String(name),
+	})
+}
+
+func advanceTestClockBy(ctx context.Context, sc *stripe.Client, testClockID string, duration time.Duration) (time.Time, error) {
+	clock, err := sc.V1TestHelpersTestClocks.Retrieve(ctx, testClockID, nil)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	target := time.Unix(clock.FrozenTime, 0).Add(duration)
+	_, err = sc.V1TestHelpersTestClocks.Advance(ctx, testClockID, &stripe.TestHelpersTestClockAdvanceParams{
+		FrozenTime: stripe.Int64(target.Unix()),
+	})
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	clock, err = waitForTestClockReady(ctx, sc, testClockID)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(clock.FrozenTime, 0), nil
+}
+
+func waitForTestClockReady(ctx context.Context, sc *stripe.Client, testClockID string) (*stripe.TestHelpersTestClock, error) {
+	deadline := time.Now().Add(2 * time.Minute)
+	for time.Now().Before(deadline) {
+		clock, err := sc.V1TestHelpersTestClocks.Retrieve(ctx, testClockID, nil)
+		if err != nil {
+			return nil, err
+		}
+		if clock.Status == stripe.TestHelpersTestClockStatusReady {
+			return clock, nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return nil, fmt.Errorf("test clock %s did not become ready", testClockID)
+}
+
+func syncSubscriptionNowToTestClock(ctx context.Context, sc *stripe.Client, testClockID string) {
+	clock, err := sc.V1TestHelpersTestClocks.Retrieve(ctx, testClockID, nil)
+	if err != nil {
+		panic(err)
+	}
+	website.SetSubscriptionNowForTests(time.Unix(clock.FrozenTime, 0))
+}
+
+func deleteTestClock(ctx context.Context, sc *stripe.Client, testClockID string) {
+	_, err := sc.V1TestHelpersTestClocks.Delete(ctx, testClockID, nil)
+	if err != nil {
+		fmt.Printf("      warning: failed to delete test clock %s: %v\n", testClockID, err)
+	}
 }
 
 func validateStoredSubscriptionData(ctx context.Context, conn db.ConnOrTx, userID int, customerID string, subscriptionID string) error {
@@ -283,6 +586,13 @@ func printSubscriptionData(ctx context.Context, conn db.ConnOrTx, userID int) {
 		fmt.Printf("  current_period_end: \n")
 	}
 	fmt.Printf("  cancel_at_period_end: %v\n", user.CancelAtPeriodEnd)
+	if user.GracePeriodStartedAt != nil {
+		fmt.Printf("  grace_period_started_at: %s\n", user.GracePeriodStartedAt.UTC().Format(time.RFC3339))
+	}
+	if user.GracePeriodEndsAt != nil {
+		fmt.Printf("  grace_period_ends_at: %s\n", user.GracePeriodEndsAt.UTC().Format(time.RFC3339))
+	}
+	fmt.Printf("  grace_available: %v\n", user.GraceAvailable)
 
 	payments, err := db.Query[models.UserPayment](ctx, conn, `
 		SELECT $columns
