@@ -10,6 +10,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
+	"github.com/stripe/stripe-go/v84"
 )
 
 // NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
@@ -131,6 +132,18 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 	if c.CurrentUser != nil {
 		baseData.Header.UserProfileUrl = hmnurl.BuildUserProfile(c.CurrentUser.Username)
+		if userNeedsBankVerificationReminder(c.CurrentUser) {
+			baseData.Header.ShowMembershipVerificationBanner = true
+			bannerURL := hmnurl.BuildHSFMembership()
+			if c.CurrentUser.StripeSubscriptionID != nil && config.Config.Stripe.SecretKey != "" {
+				sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+				if hostedURL := hostedBankVerificationURL(c, sc, *c.CurrentUser.StripeSubscriptionID); hostedURL != "" {
+					bannerURL = hostedURL
+				}
+			}
+			baseData.Header.MembershipVerificationUrl = bannerURL
+			baseData.Header.MembershipGraceDaysRemaining = gracePeriodDaysRemaining(c.CurrentUser, SubscriptionNow())
+		}
 	}
 
 	if !project.IsHMN() {

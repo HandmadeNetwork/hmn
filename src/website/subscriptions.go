@@ -93,8 +93,15 @@ type ManageSubscriptionTemplateData struct {
 	EurMembershipPriceID     string
 }
 
-func SubscriptionManage(c *RequestContext) ResponseData {
+func SubscriptionManageRedirect(c *RequestContext) ResponseData {
+	target := hmnurl.BuildHSFMembership()
+	if query := c.Req.URL.RawQuery; query != "" {
+		target += "?" + query
+	}
+	return c.Redirect(target, http.StatusSeeOther)
+}
 
+func buildMembershipPageData(c *RequestContext, baseData templates.BaseData) ManageSubscriptionTemplateData {
 	// If the user just completed checkout, Stripe redirects with a session_id.
 	// Verify it so we can show the correct "subscribed" view even if webhooks
 	// haven't updated the DB yet.
@@ -170,9 +177,8 @@ func SubscriptionManage(c *RequestContext) ResponseData {
 		}
 	}
 
-	var res ResponseData
-	res.MustWriteTemplate("manage_subscription.html", ManageSubscriptionTemplateData{
-		BaseData:                 getBaseData(c, "Manage Membership", nil),
+	return ManageSubscriptionTemplateData{
+		BaseData:                 baseData,
 		SubscribeUrl:             hmnurl.BuildSubscriptionSubscribe(),
 		CancelSubscriptionUrl:    hmnurl.BuildSubscriptionCancel(),
 		ResumeSubscriptionUrl:    hmnurl.BuildSubscriptionResume(),
@@ -186,16 +192,15 @@ func SubscriptionManage(c *RequestContext) ResponseData {
 		IsInGracePeriod:          isInGracePeriod,
 		DefaultMembershipPriceID: config.Config.Stripe.PriceID,
 		EurMembershipPriceID:     eurPriceID,
-	}, c.Perf)
-	return res
+	}
 }
 
 func SubscriptionSubscribe(c *RequestContext) ResponseData {
 	if c.CurrentUser.IsSubscribed {
-		return c.Redirect(hmnurl.BuildSubscriptionManage(), http.StatusSeeOther)
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
 	}
 	if userInGracePeriod(c.CurrentUser) {
-		return c.Redirect(hmnurl.BuildSubscriptionManage(), http.StatusSeeOther)
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
 	}
 
 	if err := c.Req.ParseForm(); err != nil {
@@ -214,8 +219,8 @@ func SubscriptionSubscribe(c *RequestContext) ResponseData {
 
 	params := &stripe.CheckoutSessionCreateParams{
 		Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
-		SuccessURL:        stripe.String(hmnurl.BuildSubscriptionManage() + "?session_id={CHECKOUT_SESSION_ID}"),
-		CancelURL:         stripe.String(hmnurl.BuildSubscriptionManage()),
+		SuccessURL:        stripe.String(hmnurl.BuildHSFMembership() + "?session_id={CHECKOUT_SESSION_ID}"),
+		CancelURL:         stripe.String(hmnurl.BuildHSFMembership()),
 		ClientReferenceID: stripe.String(strconv.Itoa(c.CurrentUser.ID)),
 		LineItems: []*stripe.CheckoutSessionCreateLineItemParams{
 			{
@@ -282,7 +287,7 @@ func SubscriptionSubscribe(c *RequestContext) ResponseData {
 
 func SubscriptionCancel(c *RequestContext) ResponseData {
 	if c.CurrentUser.StripeSubscriptionID == nil {
-		return c.Redirect(hmnurl.BuildSubscriptionManage(), http.StatusSeeOther)
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
 	}
 
 	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
@@ -300,12 +305,12 @@ func SubscriptionCancel(c *RequestContext) ResponseData {
 		logging.Error().Err(err).Msg("failed to update user cancel_at_period_end optimistically")
 	}
 
-	return c.Redirect(hmnurl.BuildSubscriptionManage(), http.StatusSeeOther)
+	return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
 }
 
 func SubscriptionResume(c *RequestContext) ResponseData {
 	if c.CurrentUser.StripeSubscriptionID == nil {
-		return c.Redirect(hmnurl.BuildSubscriptionManage(), http.StatusSeeOther)
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
 	}
 
 	if c.CurrentUser.CurrentPeriodEnd == nil || c.CurrentUser.CurrentPeriodEnd.Before(SubscriptionNow()) {
@@ -327,7 +332,7 @@ func SubscriptionResume(c *RequestContext) ResponseData {
 		logging.Error().Err(err).Msg("failed to update user cancel_at_period_end optimistically")
 	}
 
-	return c.Redirect(hmnurl.BuildSubscriptionManage(), http.StatusSeeOther)
+	return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
 }
 
 
@@ -361,6 +366,52 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 	userID, err := strconv.Atoi(session.ClientReferenceID)
 	if err != nil {
 		logging.Error().Err(err).Str("client_reference_id", session.ClientReferenceID).Msg("invalid client_reference_id")
+		return
+	}
+
+	if session.Customer == nil || session.Subscription == nil {
+		logging.Error().Int("userID", userID).Msg("checkout.session.completed missing customer or subscription")
+		return
+	}
+
+	if session.PaymentStatus != stripe.CheckoutSessionPaymentStatusPaid {
+		user, err := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", userID).Msg("failed to fetch user for pending checkout session")
+			return
+		}
+
+		_, err = c.Conn.Exec(c, `
+			UPDATE hmn_user
+			SET
+				is_subscribed = true,
+				stripe_customer_id = $1,
+				stripe_subscription_id = $2,
+				cancel_at_period_end = false
+			WHERE id = $3
+		`, session.Customer.ID, session.Subscription.ID, userID)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", userID).Msg("failed to link pending checkout subscription")
+			return
+		}
+
+		now := SubscriptionNow()
+		if canStartGrace(user, now) {
+			if err := startGracePeriod(c, c.Conn, userID, now); err != nil {
+				logging.Error().Err(err).Int("userID", userID).Msg("failed to start grace period for pending checkout payment")
+			}
+		} else if !isGraceActive(user, now) {
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user
+				SET subscription_status = $1
+				WHERE id = $2
+			`, "incomplete", userID)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", userID).Msg("failed to mark subscription incomplete after pending checkout")
+			}
+		}
+
+		logging.Info().Int("userID", userID).Str("paymentStatus", string(session.PaymentStatus)).Msg("checkout completed with pending payment")
 		return
 	}
 
@@ -785,4 +836,51 @@ func sendThankYouEmail(c *RequestContext, user *models.User, renewalDate *time.T
 	if err != nil {
 		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to send thank you email")
 	}
+}
+
+func hostedBankVerificationURL(ctx context.Context, sc *stripe.Client, subscriptionID string) string {
+	if sc == nil || subscriptionID == "" {
+		return ""
+	}
+
+	params := &stripe.SubscriptionRetrieveParams{}
+	params.AddExpand("latest_invoice")
+	sub, err := sc.V1Subscriptions.Retrieve(ctx, subscriptionID, params)
+	if err != nil {
+		logging.Warn().Err(err).Str("subscriptionID", subscriptionID).Msg("failed to retrieve subscription for bank verification banner")
+		return ""
+	}
+	if sub.LatestInvoice == nil || sub.LatestInvoice.ID == "" {
+		return ""
+	}
+
+	listParams := &stripe.InvoicePaymentListParams{
+		Invoice: stripe.String(sub.LatestInvoice.ID),
+	}
+	listParams.AddExpand("data.payment.payment_intent")
+
+	var hostedURL string
+	sc.V1InvoicePayments.List(ctx, listParams)(func(ip *stripe.InvoicePayment, err error) bool {
+		if err != nil {
+			logging.Warn().Err(err).Str("invoiceID", sub.LatestInvoice.ID).Msg("failed to list invoice payments for bank verification banner")
+			return false
+		}
+		if ip == nil || ip.Payment == nil || ip.Payment.PaymentIntent == nil {
+			return true
+		}
+		if url := paymentIntentHostedVerificationURL(ip.Payment.PaymentIntent); url != "" {
+			hostedURL = url
+			return false
+		}
+		return true
+	})
+
+	return hostedURL
+}
+
+func paymentIntentHostedVerificationURL(pi *stripe.PaymentIntent) string {
+	if pi == nil || pi.NextAction == nil || pi.NextAction.VerifyWithMicrodeposits == nil {
+		return ""
+	}
+	return pi.NextAction.VerifyWithMicrodeposits.HostedVerificationURL
 }

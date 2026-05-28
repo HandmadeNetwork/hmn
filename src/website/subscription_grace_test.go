@@ -80,3 +80,43 @@ func TestUserInGracePeriod(t *testing.T) {
 	assert.True(t, userInGracePeriod(&models.User{SubscriptionStatus: statusPtr(SubscriptionStatusGracePeriod)}))
 	assert.False(t, userInGracePeriod(&models.User{SubscriptionStatus: statusPtr("active")}))
 }
+
+func TestGracePeriodDaysRemaining(t *testing.T) {
+	now := time.Date(2026, 5, 24, 12, 0, 0, 0, time.UTC)
+
+	assert.Equal(t, 0, gracePeriodDaysRemaining(nil, now))
+	assert.Equal(t, 0, gracePeriodDaysRemaining(&models.User{}, now))
+
+	user := &models.User{GracePeriodEndsAt: timePtr(now.Add(6 * time.Hour))}
+	assert.Equal(t, 1, gracePeriodDaysRemaining(user, now))
+
+	user.GracePeriodEndsAt = timePtr(now.Add(7 * 24 * time.Hour))
+	assert.Equal(t, 7, gracePeriodDaysRemaining(user, now))
+
+	user.GracePeriodEndsAt = timePtr(now.Add(7*24*time.Hour + time.Hour))
+	assert.Equal(t, 8, gracePeriodDaysRemaining(user, now))
+
+	user.GracePeriodEndsAt = timePtr(now.Add(-time.Hour))
+	assert.Equal(t, 0, gracePeriodDaysRemaining(user, now))
+}
+
+func TestUserNeedsBankVerificationReminder(t *testing.T) {
+	assert.True(t, userNeedsBankVerificationReminder(&models.User{
+		SubscriptionStatus: statusPtr(SubscriptionStatusPendingVerification),
+	}))
+	assert.True(t, userNeedsBankVerificationReminder(&models.User{
+		SubscriptionStatus: statusPtr("incomplete"),
+	}))
+	assert.True(t, userNeedsBankVerificationReminder(&models.User{
+		IsSubscribed:         true,
+		SubscriptionStatus: statusPtr(SubscriptionStatusGracePeriod),
+	}))
+	assert.False(t, userNeedsBankVerificationReminder(&models.User{
+		IsSubscribed:         false,
+		SubscriptionStatus: statusPtr(SubscriptionStatusGracePeriod),
+	}))
+	assert.False(t, userNeedsBankVerificationReminder(&models.User{
+		IsSubscribed:         true,
+		SubscriptionStatus: statusPtr("active"),
+	}))
+}

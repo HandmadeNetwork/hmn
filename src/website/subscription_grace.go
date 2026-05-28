@@ -149,6 +149,36 @@ func userInGracePeriod(user *models.User) bool {
 	return user != nil && user.SubscriptionStatus != nil && *user.SubscriptionStatus == SubscriptionStatusGracePeriod
 }
 
+func userNeedsBankVerificationReminder(user *models.User) bool {
+	if user == nil || user.SubscriptionStatus == nil {
+		return false
+	}
+	switch *user.SubscriptionStatus {
+	case SubscriptionStatusPendingVerification, "incomplete":
+		return true
+	case SubscriptionStatusGracePeriod:
+		return user.IsSubscribed
+	default:
+		return false
+	}
+}
+
+func gracePeriodDaysRemaining(user *models.User, now time.Time) int {
+	if user == nil || user.GracePeriodEndsAt == nil || !user.GracePeriodEndsAt.After(now) {
+		return 0
+	}
+
+	hoursRemaining := user.GracePeriodEndsAt.Sub(now).Hours()
+	days := int(hoursRemaining / 24)
+	if hoursRemaining > float64(days*24) {
+		days++
+	}
+	if days < 1 {
+		return 1
+	}
+	return days
+}
+
 func StartSubscriptionGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int) error {
 	return startGracePeriod(ctx, conn, userID, SubscriptionNow())
 }

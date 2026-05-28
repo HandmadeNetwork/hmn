@@ -1086,7 +1086,7 @@ func BuildHSFMembership() string {
 var RegexSubscriptionManage = regexp.MustCompile(`^/foundation/membership/manage$`)
 
 func BuildSubscriptionManage() string {
-	return Url("/foundation/membership/manage", nil)
+	return BuildHSFMembership()
 }
 
 var RegexSubscriptionSubscribe = regexp.MustCompile(`^/foundation/membership/subscribe$`)

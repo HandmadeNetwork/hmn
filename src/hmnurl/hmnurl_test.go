@@ -546,7 +546,7 @@ func TestFoundationSubscriptionBuildUrls(t *testing.T) {
 	isTest = true
 
 	AssertRegexMatch(t, BuildHSFMembership(), RegexHSFMembership, nil)
-	AssertRegexMatch(t, BuildSubscriptionManage(), RegexSubscriptionManage, nil)
+	AssertRegexMatch(t, BuildSubscriptionManage(), RegexHSFMembership, nil)
 	AssertRegexMatch(t, BuildSubscriptionSubscribe(), RegexSubscriptionSubscribe, nil)
 	AssertRegexMatch(t, BuildSubscriptionCancel(), RegexSubscriptionCancel, nil)
 	AssertRegexMatch(t, BuildSubscriptionResume(), RegexSubscriptionResume, nil)

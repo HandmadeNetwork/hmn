@@ -32,7 +32,7 @@ func HSFMembership(c *RequestContext) ResponseData {
 	baseData.HideMembershipCTA = true
 
 	var res ResponseData
-	res.MustWriteTemplate("hsf_membership.html", baseData, c.Perf)
+	res.MustWriteTemplate("hsf_membership.html", buildMembershipPageData(c, baseData), c.Perf)
 	return res
 }
 

@@ -80,6 +80,10 @@ type Header struct {
 
 	BannerEvent     *BannerEvent
 	SuppressBanners bool
+
+	ShowMembershipVerificationBanner bool
+	MembershipVerificationUrl        string
+	MembershipGraceDaysRemaining     int
 }
 
 type BannerEvent struct {
