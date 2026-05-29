@@ -40,6 +40,14 @@ func StripeWebhook(c *RequestContext) ResponseData {
 
 	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
 
+	if isMembershipGracePaymentRetryEvent(&event) {
+		handleMembershipGracePaymentRetryWebhook(c, sc, &event)
+	}
+
+	if tryHandleMembershipPaymentIntentWebhook(c, sc, &event) {
+		return ResponseData{StatusCode: http.StatusOK}
+	}
+
 	priceIDs, err := stripePriceIDsForEvent(c, sc, &event)
 	if err != nil {
 		c.Logger.Error().Err(err).Str("type", string(event.Type)).Msg("failed to resolve price IDs for stripe event")

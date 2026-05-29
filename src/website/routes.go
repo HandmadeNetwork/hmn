@@ -155,6 +155,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.POST(hmnurl.RegexSubscriptionSubscribe, needsAuth(csrfMiddleware(SubscriptionSubscribe)))
 	hmnOnly.POST(hmnurl.RegexSubscriptionCancel, needsAuth(csrfMiddleware(SubscriptionCancel)))
 	hmnOnly.POST(hmnurl.RegexSubscriptionResume, needsAuth(csrfMiddleware(SubscriptionResume)))
+	hmnOnly.POST(hmnurl.RegexSubscriptionUpdatePaymentMethod, needsAuth(csrfMiddleware(SubscriptionUpdatePaymentMethod)))
 
 	hmnOnly.GET(hmnurl.RegexTimeMachine, TimeMachine)
 	hmnOnly.GET(hmnurl.RegexTimeMachineSubmissions, TimeMachineSubmissions)

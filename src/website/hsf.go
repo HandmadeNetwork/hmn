@@ -1,8 +1,12 @@
 package website
 
 import (
+	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"github.com/stripe/stripe-go/v84"
 )
 
 func HSFLanding(c *RequestContext) ResponseData {
@@ -23,6 +27,16 @@ func HSFDetails(c *RequestContext) ResponseData {
 }
 
 func HSFMembership(c *RequestContext) ResponseData {
+	if c.Req.URL.Query().Get("payment_method_updated") == "1" && c.CurrentUser != nil {
+		sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+		if err := retryPastDueSubscriptionPayment(c, c.Conn, sc, c.CurrentUser); err != nil {
+			c.Logger.Warn().Err(err).Msg("failed to retry subscription payment after billing portal return")
+		}
+		if user, err := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", c.CurrentUser.ID); err == nil {
+			c.CurrentUser = user
+		}
+	}
+
 	breadcrumbs := []templates.Breadcrumb{
 		hsfBaseBreadcrumb,
 		{Name: "Membership", Url: hmnurl.BuildHSFMembership()},

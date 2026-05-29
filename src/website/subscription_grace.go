@@ -8,6 +8,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
+	"github.com/stripe/stripe-go/v84"
 )
 
 const (
@@ -185,4 +186,105 @@ func StartSubscriptionGracePeriod(ctx context.Context, conn db.ConnOrTx, userID 
 
 func ExpireSubscriptionGracePeriods(ctx context.Context, conn db.ConnOrTx) (int64, error) {
 	return expireDueGracePeriods(ctx, conn, SubscriptionNow())
+}
+
+func shouldRetrySubscriptionPayment(user *models.User) bool {
+	if user == nil || user.StripeCustomerID == nil || user.StripeSubscriptionID == nil {
+		return false
+	}
+	if userInGracePeriod(user) {
+		return true
+	}
+	if !user.IsSubscribed || user.SubscriptionStatus == nil {
+		return false
+	}
+	switch *user.SubscriptionStatus {
+	case SubscriptionStatusPendingVerification, "incomplete", "past_due", "unpaid":
+		return true
+	default:
+		return false
+	}
+}
+
+func retryPastDueSubscriptionPayment(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client, user *models.User) error {
+	if !shouldRetrySubscriptionPayment(user) {
+		return nil
+	}
+
+	invoiceID, err := findOpenSubscriptionInvoice(ctx, sc, *user.StripeCustomerID, *user.StripeSubscriptionID)
+	if err != nil {
+		return err
+	}
+	if invoiceID == "" {
+		logging.Info().Int("userID", user.ID).Msg("no open subscription invoice to retry")
+		return nil
+	}
+
+	inv, err := sc.V1Invoices.Pay(ctx, invoiceID, &stripe.InvoicePayParams{})
+	if err != nil {
+		return err
+	}
+
+	logging.Info().Int("userID", user.ID).Str("invoiceID", invoiceID).Str("status", string(inv.Status)).Msg("retried open subscription invoice payment")
+
+	if inv.Status == stripe.InvoiceStatusPaid {
+		if err := clearGracePeriod(ctx, conn, user.ID); err != nil {
+			return err
+		}
+		_, err = conn.Exec(ctx, `
+			UPDATE hmn_user
+			SET is_subscribed = true, subscription_status = 'active'
+			WHERE id = $1
+		`, user.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func findOpenSubscriptionInvoice(ctx context.Context, sc *stripe.Client, customerID, subscriptionID string) (string, error) {
+	subParams := &stripe.SubscriptionRetrieveParams{}
+	subParams.AddExpand("latest_invoice")
+	sub, err := sc.V1Subscriptions.Retrieve(ctx, subscriptionID, subParams)
+	if err != nil {
+		return "", err
+	}
+	if sub.LatestInvoice != nil && sub.LatestInvoice.Status == stripe.InvoiceStatusOpen && sub.LatestInvoice.AmountRemaining > 0 {
+		return sub.LatestInvoice.ID, nil
+	}
+
+	listParams := &stripe.InvoiceListParams{
+		Customer: stripe.String(customerID),
+		Status:   stripe.String(string(stripe.InvoiceStatusOpen)),
+	}
+	var invoiceID string
+	var listErr error
+	sc.V1Invoices.List(ctx, listParams)(func(inv *stripe.Invoice, err error) bool {
+		if err != nil {
+			listErr = err
+			return false
+		}
+		if inv == nil || inv.AmountRemaining <= 0 {
+			return true
+		}
+		if !invoiceBelongsToSubscription(inv, subscriptionID) {
+			return true
+		}
+		invoiceID = inv.ID
+		return false
+	})
+	if listErr != nil {
+		return "", listErr
+	}
+	return invoiceID, nil
+}
+
+func invoiceBelongsToSubscription(inv *stripe.Invoice, subscriptionID string) bool {
+	if inv == nil || inv.Parent == nil || inv.Parent.SubscriptionDetails == nil {
+		return false
+	}
+	sub := inv.Parent.SubscriptionDetails.Subscription
+	return sub != nil && sub.ID == subscriptionID
 }

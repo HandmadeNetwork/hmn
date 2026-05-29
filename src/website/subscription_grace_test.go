@@ -100,6 +100,29 @@ func TestGracePeriodDaysRemaining(t *testing.T) {
 	assert.Equal(t, 0, gracePeriodDaysRemaining(user, now))
 }
 
+func TestShouldRetrySubscriptionPayment(t *testing.T) {
+	subID := "sub_123"
+	custID := "cus_123"
+
+	assert.False(t, shouldRetrySubscriptionPayment(nil))
+	assert.False(t, shouldRetrySubscriptionPayment(&models.User{IsSubscribed: true, SubscriptionStatus: statusPtr(SubscriptionStatusGracePeriod)}))
+
+	user := &models.User{
+		IsSubscribed:           true,
+		StripeCustomerID:       &custID,
+		StripeSubscriptionID:   &subID,
+		SubscriptionStatus:     statusPtr(SubscriptionStatusGracePeriod),
+	}
+	assert.True(t, shouldRetrySubscriptionPayment(user))
+
+	user.SubscriptionStatus = statusPtr("incomplete")
+	assert.True(t, shouldRetrySubscriptionPayment(user))
+
+	user.SubscriptionStatus = statusPtr("active")
+	user.IsSubscribed = true
+	assert.False(t, shouldRetrySubscriptionPayment(user))
+}
+
 func TestUserNeedsBankVerificationReminder(t *testing.T) {
 	assert.True(t, userNeedsBankVerificationReminder(&models.User{
 		SubscriptionStatus: statusPtr(SubscriptionStatusPendingVerification),

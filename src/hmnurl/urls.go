@@ -1083,6 +1083,10 @@ func BuildHSFMembership() string {
 	return Url("/foundation/membership", nil)
 }
 
+func BuildHSFMembershipPaymentMethodReturn() string {
+	return Url("/foundation/membership", []Q{{Name: "payment_method_updated", Value: "1"}})
+}
+
 var RegexSubscriptionManage = regexp.MustCompile(`^/foundation/membership/manage$`)
 
 func BuildSubscriptionManage() string {
@@ -1105,6 +1109,12 @@ var RegexSubscriptionResume = regexp.MustCompile(`^/foundation/membership/resume
 
 func BuildSubscriptionResume() string {
 	return Url("/foundation/membership/resume", nil)
+}
+
+var RegexSubscriptionUpdatePaymentMethod = regexp.MustCompile(`^/foundation/membership/update-payment-method$`)
+
+func BuildSubscriptionUpdatePaymentMethod() string {
+	return Url("/foundation/membership/update-payment-method", nil)
 }
 
 /*

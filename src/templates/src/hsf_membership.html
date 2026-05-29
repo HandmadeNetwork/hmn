@@ -130,24 +130,32 @@
             {{ end }}
             <span id="display-amount">{{ if .CurrentAmount }}{{ .CurrentAmount }}{{ else }}5.00{{ end }}</span>/mo
         </span>
-        {{ if and .User.IsSubscribed .User.CancelAtPeriodEnd }}
-        <form id="resume-subscription-form" method="POST" action="{{ .ResumeSubscriptionUrl }}">
-            {{ csrftoken .Session }}
-            <button type="submit" class="btn btn-primary">
-                Don't cancel
-            </button>
-        </form>
-        {{ else }}
-        <form id="subscribe-form" method="POST"
-            action="{{ if .User.IsSubscribed }}{{ .CancelSubscriptionUrl }}{{ else }}{{ .SubscribeUrl }}{{ end }}">
-            {{ csrftoken .Session }}
-            <input type="hidden" name="price_id" id="price-id-input" value="{{ .DefaultMembershipPriceID }}">
-            <button type="submit" class="btn btn-primary" {{ if .User.IsSubscribed
-                }}onclick="return confirm('Are you sure you want to cancel your membership?');" {{ end }}>
-                {{ if .User.IsSubscribed }}Cancel{{ else }}Support Handmade{{ end }}
-            </button>
-        </form>
-        {{ end }}
+        <div class="flex items-center g2">
+            {{ if .User.IsSubscribed }}
+            <form method="POST" action="{{ .UpdatePaymentMethodUrl }}">
+                {{ csrftoken .Session }}
+                <button type="submit" class="btn btn-primary">Update payment method</button>
+            </form>
+            {{ end }}
+            {{ if and .User.IsSubscribed .User.CancelAtPeriodEnd }}
+            <form id="resume-subscription-form" method="POST" action="{{ .ResumeSubscriptionUrl }}">
+                {{ csrftoken .Session }}
+                <button type="submit" class="btn btn-primary">
+                    Don't cancel
+                </button>
+            </form>
+            {{ else }}
+            <form id="subscribe-form" method="POST"
+                action="{{ if .User.IsSubscribed }}{{ .CancelSubscriptionUrl }}{{ else }}{{ .SubscribeUrl }}{{ end }}">
+                {{ csrftoken .Session }}
+                <input type="hidden" name="price_id" id="price-id-input" value="{{ .DefaultMembershipPriceID }}">
+                <button type="submit" class="btn btn-primary" {{ if .User.IsSubscribed
+                    }}onclick="return confirm('Are you sure you want to cancel your membership?');" {{ end }}>
+                    {{ if .User.IsSubscribed }}Cancel{{ else }}Support Handmade{{ end }}
+                </button>
+            </form>
+            {{ end }}
+        </div>
     </div>
     {{ else }}
     <p class="tc mb0">

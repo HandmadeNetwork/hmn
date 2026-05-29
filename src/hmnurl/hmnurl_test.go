@@ -550,6 +550,7 @@ func TestFoundationSubscriptionBuildUrls(t *testing.T) {
 	AssertRegexMatch(t, BuildSubscriptionSubscribe(), RegexSubscriptionSubscribe, nil)
 	AssertRegexMatch(t, BuildSubscriptionCancel(), RegexSubscriptionCancel, nil)
 	AssertRegexMatch(t, BuildSubscriptionResume(), RegexSubscriptionResume, nil)
+	AssertRegexMatch(t, BuildSubscriptionUpdatePaymentMethod(), RegexSubscriptionUpdatePaymentMethod, nil)
 }
 
 func TestThingsThatDontNeedCoverage(t *testing.T) {

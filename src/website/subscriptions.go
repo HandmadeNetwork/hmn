@@ -66,6 +66,13 @@ func handleMembershipStripeEvent(c *RequestContext, sc *stripe.Client, event *st
 			return
 		}
 		handleInvoicePaymentFailed(c, sc, &inv)
+	case "checkout.session.async_payment_failed":
+		var session stripe.CheckoutSession
+		if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
+			c.Logger.Error().Err(err).Msg("failed to unmarshal checkout.session.async_payment_failed")
+			return
+		}
+		handleCheckoutAsyncPaymentFailed(c, sc, &session)
 	}
 }
 
@@ -77,9 +84,10 @@ type PaymentHistoryItem struct {
 
 type ManageSubscriptionTemplateData struct {
 	templates.BaseData
-	SubscribeUrl          string
-	CancelSubscriptionUrl string
-	ResumeSubscriptionUrl string
+	SubscribeUrl               string
+	CancelSubscriptionUrl      string
+	ResumeSubscriptionUrl      string
+	UpdatePaymentMethodUrl     string
 	CurrentCurrencySymbol string
 	CurrentAmount         string
 	PaymentHistory        []PaymentHistoryItem
@@ -182,6 +190,7 @@ func buildMembershipPageData(c *RequestContext, baseData templates.BaseData) Man
 		SubscribeUrl:             hmnurl.BuildSubscriptionSubscribe(),
 		CancelSubscriptionUrl:    hmnurl.BuildSubscriptionCancel(),
 		ResumeSubscriptionUrl:    hmnurl.BuildSubscriptionResume(),
+		UpdatePaymentMethodUrl:   hmnurl.BuildSubscriptionUpdatePaymentMethod(),
 		CurrentCurrencySymbol:    currentCurrencySymbol,
 		CurrentAmount:            currentAmount,
 		PaymentHistory:           history,
@@ -335,7 +344,33 @@ func SubscriptionResume(c *RequestContext) ResponseData {
 	return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
 }
 
+func SubscriptionUpdatePaymentMethod(c *RequestContext) ResponseData {
+	if !c.CurrentUser.IsSubscribed || c.CurrentUser.StripeCustomerID == nil {
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
+	}
 
+	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+	returnURL := hmnurl.BuildHSFMembershipPaymentMethodReturn()
+	params := &stripe.BillingPortalSessionCreateParams{
+		Customer:  stripe.String(*c.CurrentUser.StripeCustomerID),
+		ReturnURL: stripe.String(returnURL),
+		FlowData: &stripe.BillingPortalSessionCreateFlowDataParams{
+			Type: stripe.String(string(stripe.BillingPortalSessionFlowTypePaymentMethodUpdate)),
+			AfterCompletion: &stripe.BillingPortalSessionCreateFlowDataAfterCompletionParams{
+				Type: stripe.String(string(stripe.BillingPortalSessionFlowAfterCompletionTypeRedirect)),
+				Redirect: &stripe.BillingPortalSessionCreateFlowDataAfterCompletionRedirectParams{
+					ReturnURL: stripe.String(returnURL),
+				},
+			},
+		},
+	}
+	session, err := sc.V1BillingPortalSessions.Create(c, params)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create billing portal session"))
+	}
+
+	return c.Redirect(session.URL, http.StatusSeeOther)
+}
 
 func handleSubscriptionCreated(c *RequestContext, sc *stripe.Client, sub *stripe.Subscription) {
 	if uidStr, ok := sub.Metadata["user_id"]; ok {
@@ -381,37 +416,53 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 			return
 		}
 
-		_, err = c.Conn.Exec(c, `
-			UPDATE hmn_user
-			SET
-				is_subscribed = true,
-				stripe_customer_id = $1,
-				stripe_subscription_id = $2,
-				cancel_at_period_end = false
-			WHERE id = $3
-		`, session.Customer.ID, session.Subscription.ID, userID)
+		pi, pmType, err := checkoutSessionPaymentIntent(c, sc, session)
 		if err != nil {
-			logging.Error().Err(err).Int("userID", userID).Msg("failed to link pending checkout subscription")
+			logging.Error().Err(err).Int("userID", userID).Msg("failed to load checkout payment intent")
 			return
 		}
 
+		grantGrace := shouldGrantGraceForPaymentIntent(pi, pmType)
 		now := SubscriptionNow()
-		if canStartGrace(user, now) {
-			if err := startGracePeriod(c, c.Conn, userID, now); err != nil {
-				logging.Error().Err(err).Int("userID", userID).Msg("failed to start grace period for pending checkout payment")
-			}
-		} else if !isGraceActive(user, now) {
+
+		if grantGrace && canStartGrace(user, now) {
 			_, err = c.Conn.Exec(c, `
 				UPDATE hmn_user
-				SET subscription_status = $1
-				WHERE id = $2
-			`, "incomplete", userID)
+				SET
+					stripe_customer_id = $1,
+					stripe_subscription_id = $2,
+					cancel_at_period_end = false
+				WHERE id = $3
+			`, session.Customer.ID, session.Subscription.ID, userID)
 			if err != nil {
-				logging.Error().Err(err).Int("userID", userID).Msg("failed to mark subscription incomplete after pending checkout")
+				logging.Error().Err(err).Int("userID", userID).Msg("failed to link pending checkout subscription")
+				return
+			}
+			if err := startGracePeriod(c, c.Conn, userID, now); err != nil {
+				logging.Error().Err(err).Int("userID", userID).Msg("failed to start grace period for processing checkout payment")
+			}
+		} else {
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user
+				SET
+					is_subscribed = false,
+					stripe_customer_id = $1,
+					stripe_subscription_id = $2,
+					subscription_status = $3,
+					cancel_at_period_end = false
+				WHERE id = $4
+			`, session.Customer.ID, session.Subscription.ID, "incomplete", userID)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", userID).Msg("failed to link incomplete checkout subscription")
 			}
 		}
 
-		logging.Info().Int("userID", userID).Str("paymentStatus", string(session.PaymentStatus)).Msg("checkout completed with pending payment")
+		logging.Info().
+			Int("userID", userID).
+			Str("paymentStatus", string(session.PaymentStatus)).
+			Bool("grantGrace", grantGrace).
+			Str("paymentMethodType", pmType).
+			Msg("checkout completed with pending payment")
 		return
 	}
 
@@ -467,12 +518,26 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 		Msg("updating user subscription from webhook")
 
 	if isFailedPaymentStripeStatus(stripeStatus) {
-		if canStartGrace(user, now) {
+		if isGraceActive(user, now) {
+			if err := retryPastDueSubscriptionPayment(c, c.Conn, sc, user); err != nil {
+				logging.Warn().Err(err).Int("userID", user.ID).Msg("failed to retry subscription payment on subscription update")
+			} else {
+				refreshed, refreshErr := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", user.ID)
+				if refreshErr == nil {
+					user = refreshed
+				}
+				if refreshedSub, retrieveErr := sc.V1Subscriptions.Retrieve(c, sub.ID, nil); retrieveErr == nil {
+					stripeStatus = string(refreshedSub.Status)
+				}
+			}
+		}
+
+		if isFailedPaymentStripeStatus(stripeStatus) && canStartGrace(user, now) && shouldGrantGraceForSubscription(c, sc, sub) {
 			if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
 				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period")
 				return
 			}
-		} else if !isGraceActive(user, now) {
+		} else if isFailedPaymentStripeStatus(stripeStatus) && !isGraceActive(user, now) {
 			_, err = c.Conn.Exec(c, `
 				UPDATE hmn_user 
 				SET 
@@ -490,6 +555,9 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 			return
 		}
 
+		if !isFailedPaymentStripeStatus(stripeStatus) {
+			// Payment retry cleared the past-due state; fall through to active handling.
+		} else {
 		_, err = c.Conn.Exec(c, `
 			UPDATE hmn_user 
 			SET 
@@ -505,6 +573,7 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update user subscription grace state from webhook")
 		}
 		return
+		}
 	}
 
 	isSubscribed := stripeSubscriptionGrantsAccess(stripeStatus)
@@ -647,9 +716,18 @@ func handleInvoicePaymentFailed(c *RequestContext, sc *stripe.Client, inv *strip
 	}
 
 	now := SubscriptionNow()
-	if canStartGrace(user, now) {
+	grantGrace := shouldGrantGraceForInvoice(c, sc, inv)
+	if grantGrace && canStartGrace(user, now) {
 		if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
 			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period from invoice.payment_failed")
+		}
+	} else if invoicePaymentIsHardDecline(c, sc, inv) || userInGracePeriod(user) {
+		status := "incomplete"
+		if inv.Status != "" {
+			status = string(inv.Status)
+		}
+		if err := revokeSubscriptionAccessAfterDeclinedPayment(c, c.Conn, user.ID, status); err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to revoke access after declined invoice payment")
 		}
 	} else if !isGraceActive(user, now) && !user.GraceAvailable {
 		_, err = c.Conn.Exec(c, `
