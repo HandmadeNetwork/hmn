@@ -999,6 +999,12 @@ func BuildDiscordUnlink() string {
 	return Url("/_discord_unlink", nil)
 }
 
+var RegexDismissMembershipDiscordLinkBanner = regexp.MustCompile("^/_dismiss_membership_discord_link_banner$")
+
+func BuildDismissMembershipDiscordLinkBanner() string {
+	return Url("/_dismiss_membership_discord_link_banner", nil)
+}
+
 var RegexDiscordShowcaseBacklog = regexp.MustCompile("^/discord_showcase_backlog$")
 
 func BuildDiscordShowcaseBacklog() string {

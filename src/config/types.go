@@ -85,6 +85,7 @@ type DiscordConfig struct {
 
 	GuildID                 string
 	MemberRoleID            string
+	SupporterRoleID         string
 	HMHReplayRoleID         string
 	ShowcaseChannelID       string
 	JamChannelID            string

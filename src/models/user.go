@@ -60,6 +60,8 @@ type User struct {
 	GracePeriodEndsAt    *time.Time `db:"grace_period_ends_at"`
 	GraceAvailable       bool       `db:"grace_available"`
 
+	DismissedMembershipDiscordLinkBanner bool `db:"dismissed_membership_discord_link_banner"`
+
 	MarkedAllReadAt time.Time `db:"marked_all_read_at"`
 
 	// Non-db fields, to be filled in by fetch helpers

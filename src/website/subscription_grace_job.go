@@ -20,7 +20,7 @@ func ExpireSubscriptionGracePeriodsJob(dbConn *pgxpool.Pool) *jobs.Job {
 				err := func() (err error) {
 					defer utils.RecoverPanicAsError(&err)
 
-					n, err := expireDueGracePeriods(job.Ctx, dbConn, SubscriptionNow())
+					n, err := ExpireSubscriptionGracePeriods(job.Ctx, dbConn)
 					if err != nil {
 						job.Logger.Error().Err(err).Msg("failed to expire subscription grace periods")
 						return err

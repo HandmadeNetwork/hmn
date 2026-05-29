@@ -89,6 +89,7 @@ func startGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int, now tim
 		return err
 	}
 	logging.Info().Int("userID", userID).Time("graceEndsAt", endsAt).Msg("started subscription grace period")
+	SyncSupporterDiscordRole(ctx, conn, userID)
 	return nil
 }
 
@@ -124,11 +125,12 @@ func expireGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int) error 
 		return err
 	}
 	logging.Info().Int("userID", userID).Msg("expired subscription grace period without payment")
+	SyncSupporterDiscordRole(ctx, conn, userID)
 	return nil
 }
 
-func expireDueGracePeriods(ctx context.Context, conn db.ConnOrTx, now time.Time) (int64, error) {
-	tag, err := conn.Exec(ctx, `
+func expireDueGracePeriods(ctx context.Context, conn db.ConnOrTx, now time.Time) ([]int, error) {
+	userIDPtrs, err := db.Query[int](ctx, conn, `
 		UPDATE hmn_user
 		SET
 			is_subscribed = false,
@@ -139,11 +141,16 @@ func expireDueGracePeriods(ctx context.Context, conn db.ConnOrTx, now time.Time)
 		WHERE subscription_status = $2
 		  AND grace_period_ends_at IS NOT NULL
 		  AND grace_period_ends_at < $3
+		RETURNING id
 	`, SubscriptionStatusGraceFailed, SubscriptionStatusGracePeriod, now)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return tag.RowsAffected(), nil
+	userIDs := make([]int, len(userIDPtrs))
+	for i, id := range userIDPtrs {
+		userIDs[i] = *id
+	}
+	return userIDs, nil
 }
 
 func userInGracePeriod(user *models.User) bool {
@@ -185,7 +192,14 @@ func StartSubscriptionGracePeriod(ctx context.Context, conn db.ConnOrTx, userID 
 }
 
 func ExpireSubscriptionGracePeriods(ctx context.Context, conn db.ConnOrTx) (int64, error) {
-	return expireDueGracePeriods(ctx, conn, SubscriptionNow())
+	userIDs, err := expireDueGracePeriods(ctx, conn, SubscriptionNow())
+	if err != nil {
+		return 0, err
+	}
+	for _, userID := range userIDs {
+		SyncSupporterDiscordRole(ctx, conn, userID)
+	}
+	return int64(len(userIDs)), nil
 }
 
 func shouldRetrySubscriptionPayment(user *models.User) bool {
@@ -239,6 +253,7 @@ func retryPastDueSubscriptionPayment(ctx context.Context, conn db.ConnOrTx, sc *
 		if err != nil {
 			return err
 		}
+		SyncSupporterDiscordRole(ctx, conn, user.ID)
 	}
 
 	return nil

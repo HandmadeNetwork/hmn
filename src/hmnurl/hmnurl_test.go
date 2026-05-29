@@ -457,6 +457,10 @@ func TestDiscordUnlink(t *testing.T) {
 	AssertRegexMatch(t, BuildDiscordUnlink(), RegexDiscordUnlink, nil)
 }
 
+func TestDismissMembershipDiscordLinkBanner(t *testing.T) {
+	AssertRegexMatch(t, BuildDismissMembershipDiscordLinkBanner(), RegexDismissMembershipDiscordLinkBanner, nil)
+}
+
 func TestDiscordShowcaseBacklog(t *testing.T) {
 	AssertRegexMatch(t, BuildDiscordShowcaseBacklog(), RegexDiscordShowcaseBacklog, nil)
 }

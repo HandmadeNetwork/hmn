@@ -5,6 +5,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/buildcss"
 	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/discord"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -143,6 +144,15 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			}
 			baseData.Header.MembershipVerificationUrl = bannerURL
 			baseData.Header.MembershipGraceDaysRemaining = gracePeriodDaysRemaining(c.CurrentUser, SubscriptionNow())
+		}
+		if userNeedsDiscordLinkReminder(c.CurrentUser) {
+			baseData.Header.ShowMembershipDiscordLinkBanner = true
+			baseData.Header.MembershipDiscordLinkDismissUrl = hmnurl.BuildDismissMembershipDiscordLinkBanner()
+			if c.CurrentSession != nil {
+				baseData.Header.MembershipDiscordLinkUrl = discord.GetAuthorizeUrl(c.CurrentSession.CSRFToken, false)
+			} else {
+				baseData.Header.MembershipDiscordLinkUrl = hmnurl.BuildUserSettings("discord")
+			}
 		}
 	}
 

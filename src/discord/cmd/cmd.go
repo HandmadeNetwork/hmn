@@ -80,4 +80,40 @@ func init() {
 		},
 	}
 	rootCommand.AddCommand(makeSnippetCommand)
+
+	syncSupporterRolesCommand := &cobra.Command{
+		Use:   "sync-supporter-roles",
+		Short: "Sync supporter Discord roles for subscribed members",
+		Long:  "Grants SupporterRoleID to subscribed users with linked Discord accounts, and removes it from others.",
+		Run: func(cmd *cobra.Command, args []string) {
+			ctx := context.Background()
+			conn := db.NewConnPool()
+			defer conn.Close()
+
+			dryRun, _ := cmd.Flags().GetBool("dry-run")
+
+			userIDPtrs, err := db.Query[int](ctx, conn, `
+				SELECT hmn_user.id
+				FROM hmn_user
+				INNER JOIN discord_user ON discord_user.hmn_user_id = hmn_user.id
+				WHERE hmn_user.is_subscribed = true
+			`)
+			if err != nil {
+				logging.Error().Err(err).Msg("failed to list subscribed users with Discord")
+				os.Exit(1)
+			}
+
+			if dryRun {
+				logging.Info().Int("count", len(userIDPtrs)).Msg("dry run: would sync supporter Discord roles")
+				return
+			}
+
+			for _, userID := range userIDPtrs {
+				website.SyncSupporterDiscordRole(ctx, conn, *userID)
+			}
+			logging.Info().Int("count", len(userIDPtrs)).Msg("synced supporter Discord roles")
+		},
+	}
+	syncSupporterRolesCommand.Flags().Bool("dry-run", false, "log how many users would be synced without calling Discord")
+	rootCommand.AddCommand(syncSupporterRolesCommand)
 }

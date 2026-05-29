@@ -84,6 +84,10 @@ type Header struct {
 	ShowMembershipVerificationBanner bool
 	MembershipVerificationUrl        string
 	MembershipGraceDaysRemaining     int
+
+	ShowMembershipDiscordLinkBanner  bool
+	MembershipDiscordLinkUrl         string
+	MembershipDiscordLinkDismissUrl  string
 }
 
 type BannerEvent struct {

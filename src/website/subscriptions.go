@@ -455,6 +455,7 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 			if err != nil {
 				logging.Error().Err(err).Int("userID", userID).Msg("failed to link incomplete checkout subscription")
 			}
+			SyncSupporterDiscordRole(c, c.Conn, userID)
 		}
 
 		logging.Info().
@@ -485,6 +486,7 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 	} else {
 		logging.Info().Int("userID", userID).Msg("user subscription linked, attempting thank you email")
 		attemptThankYouEmail(c, user.ID, session.AmountTotal, session.Currency)
+		SyncSupporterDiscordRole(c, c.Conn, userID)
 	}
 }
 
@@ -552,6 +554,7 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 			if err != nil {
 				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update user subscription from webhook")
 			}
+			SyncSupporterDiscordRole(c, c.Conn, user.ID)
 			return
 		}
 
@@ -572,6 +575,7 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 		if err != nil {
 			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update user subscription grace state from webhook")
 		}
+		SyncSupporterDiscordRole(c, c.Conn, user.ID)
 		return
 		}
 	}
@@ -597,6 +601,7 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 	if err != nil {
 		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update user subscription from webhook")
 	}
+	SyncSupporterDiscordRole(c, c.Conn, user.ID)
 
 	if isCancelling && !user.CancelAtPeriodEnd {
 		var expirationDate *time.Time
@@ -648,6 +653,7 @@ func handleSubscriptionDeleted(c *RequestContext, sc *stripe.Client, sub *stripe
 	}
 
 	logging.Info().Int("userID", user.ID).Msg("user subscription deactivated")
+	SyncSupporterDiscordRole(c, c.Conn, user.ID)
 
 	if !sub.CancelAtPeriodEnd {
 		err = email.SendSubscriptionCancelledEmail(user.Email, user.BestName(), nil, c.Perf)
@@ -702,6 +708,7 @@ func handleInvoicePaid(c *RequestContext, sc *stripe.Client, inv *stripe.Invoice
 	}
 
 	attemptThankYouEmail(c, user.ID, inv.AmountPaid, inv.Currency)
+	SyncSupporterDiscordRole(c, c.Conn, user.ID)
 }
 
 func handleInvoicePaymentFailed(c *RequestContext, sc *stripe.Client, inv *stripe.Invoice) {
@@ -738,6 +745,7 @@ func handleInvoicePaymentFailed(c *RequestContext, sc *stripe.Client, inv *strip
 		if err != nil {
 			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to mark subscription grace_failed")
 		}
+		SyncSupporterDiscordRole(c, c.Conn, user.ID)
 	}
 
 	user, err = db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", user.ID)

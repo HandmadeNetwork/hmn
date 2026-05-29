@@ -209,6 +209,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	hmnOnly.GET(hmnurl.RegexDiscordOAuthCallback, DiscordOAuthCallback)
 	hmnOnly.POST(hmnurl.RegexDiscordUnlink, needsAuth(csrfMiddleware(DiscordUnlink)))
+	hmnOnly.POST(hmnurl.RegexDismissMembershipDiscordLinkBanner, needsAuth(csrfMiddleware(DismissMembershipDiscordLinkBanner)))
 	hmnOnly.POST(hmnurl.RegexDiscordShowcaseBacklog, needsAuth(csrfMiddleware(DiscordShowcaseBacklog)))
 	hmnOnly.GET(hmnurl.RegexDiscordBotDebugPage, adminsOnly(DiscordBotDebugPage))
 

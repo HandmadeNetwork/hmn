@@ -317,6 +317,10 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 		}
 	}
 
+	if hmnUser.IsSubscribed {
+		SyncSupporterDiscordRole(c, c.Conn, hmnUser.ID)
+	}
+
 	// We only expect direct URLs to HMN pages, or values that were sanitized on their way into
 	// pending_login, but defense in depth is not a bad thing.
 	safeDest := hmnurl.SafeRedirectUrl(destinationUrl)
@@ -371,6 +375,12 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 	err = discord.RemoveGuildMemberRole(c, discordUser.UserID, config.Config.Discord.MemberRoleID)
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to remove member role on unlink")
+	}
+	if config.Config.Discord.SupporterRoleID != "" {
+		err = discord.RemoveGuildMemberRole(c, discordUser.UserID, config.Config.Discord.SupporterRoleID)
+		if err != nil {
+			c.Logger.Warn().Err(err).Msg("failed to remove supporter role on unlink")
+		}
 	}
 
 	return c.Redirect(hmnurl.BuildUserSettings("discord"), http.StatusSeeOther)

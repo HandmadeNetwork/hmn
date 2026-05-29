@@ -25,5 +25,6 @@ func revokeSubscriptionAccessAfterDeclinedPayment(ctx context.Context, conn db.C
 		return err
 	}
 	logging.Info().Int("userID", userID).Str("status", subscriptionStatus).Msg("revoked subscription access after declined payment")
+	SyncSupporterDiscordRole(ctx, conn, userID)
 	return nil
 }
