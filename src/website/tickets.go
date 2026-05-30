@@ -2,6 +2,7 @@ package website
 
 import (
 	"context"
+	"encoding/csv"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -81,6 +82,7 @@ func TicketsAdminEvent(c *RequestContext) ResponseData {
 		TicketsEvent     TicketsAdminEventTemplateData
 		ReserveActionUrl string
 		ScannerUrl       string
+		CSVUrl           string
 	}
 	urlSlug := c.PathParams["urlslug"]
 
@@ -114,6 +116,7 @@ func TicketsAdminEvent(c *RequestContext) ResponseData {
 		},
 		ReserveActionUrl: hmnurl.BuildTicketsAdminReserve(event.UrlSlug),
 		ScannerUrl:       hmnurl.BuildTicketsAdminScan(event.UrlSlug),
+		CSVUrl:           hmnurl.BuildTicketsAdminEventCSVDownload(event.UrlSlug),
 	}
 
 	var res ResponseData
@@ -174,6 +177,42 @@ func TicketsAdminEventSubmit(c *RequestContext) ResponseData {
 	}
 
 	return c.Redirect(hmnurl.BuildTicketsAdminEvent(eventUrlSlug), http.StatusSeeOther)
+}
+
+func TicketsAdminEventCSVDownload(c *RequestContext) ResponseData {
+	urlSlug := c.PathParams["urlslug"]
+	event, found := hmndata.FindTicketEventBySlug(urlSlug)
+	if !found {
+		return FourOhFour(c)
+	}
+
+	rawTickets, err := hmndata.FetchTickets(c, c.Conn, &event)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch tickets"))
+	}
+	var tickets []templates.Ticket
+	for _, t := range rawTickets {
+		tickets = append(tickets, templates.TicketToTemplate(&t))
+	}
+
+	var res ResponseData
+	res.Header().Set("Content-Type", "text/csv")
+	res.Header().Set("Content-Disposition", `attachment; filename="tickets.csv"`)
+	w := csv.NewWriter(&res)
+	w.Write([]string{"name", "email", "username", "discord_username", "purchase_date", "notes", "accommodations"})
+	for _, ticket := range tickets {
+		w.Write([]string{
+			ticket.OwnerName,
+			ticket.OwnerEmail,
+			ticket.OwnerUsername,
+			ticket.OwnerDiscordUsername,
+			ticket.PurchaseDate.String(),
+			ticket.Notes,
+			ticket.Accommodations,
+		})
+	}
+	w.Flush()
+	return res
 }
 
 func TicketsAdminReserve(c *RequestContext) ResponseData {
