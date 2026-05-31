@@ -109,6 +109,43 @@ func clearGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int) error {
 	return nil
 }
 
+func activateSubscriptionAfterSuccessfulPayment(ctx context.Context, conn db.ConnOrTx, userID int, currentPeriodEnd *time.Time) error {
+	if err := clearGracePeriod(ctx, conn, userID); err != nil {
+		return err
+	}
+	if currentPeriodEnd != nil {
+		_, err := conn.Exec(ctx, `
+			UPDATE hmn_user
+			SET is_subscribed = true, subscription_status = 'active', current_period_end = $1
+			WHERE id = $2
+		`, currentPeriodEnd, userID)
+		return err
+	}
+	_, err := conn.Exec(ctx, `
+		UPDATE hmn_user
+		SET is_subscribed = true, subscription_status = 'active'
+		WHERE id = $1
+	`, userID)
+	return err
+}
+
+func subscriptionIDFromInvoice(inv *stripe.Invoice) string {
+	if inv == nil {
+		return ""
+	}
+	if inv.Lines != nil {
+		for _, line := range inv.Lines.Data {
+			if line.Subscription != nil && line.Subscription.ID != "" {
+				return line.Subscription.ID
+			}
+		}
+	}
+	if inv.Parent != nil && inv.Parent.SubscriptionDetails != nil && inv.Parent.SubscriptionDetails.Subscription != nil {
+		return inv.Parent.SubscriptionDetails.Subscription.ID
+	}
+	return ""
+}
+
 func expireGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int) error {
 	_, err := conn.Exec(ctx, `
 		UPDATE hmn_user
@@ -242,15 +279,13 @@ func retryPastDueSubscriptionPayment(ctx context.Context, conn db.ConnOrTx, sc *
 	logging.Info().Int("userID", user.ID).Str("invoiceID", invoiceID).Str("status", string(inv.Status)).Msg("retried open subscription invoice payment")
 
 	if inv.Status == stripe.InvoiceStatusPaid {
-		if err := clearGracePeriod(ctx, conn, user.ID); err != nil {
-			return err
+		var renewalDate *time.Time
+		if user.StripeSubscriptionID != nil {
+			if sub, retrieveErr := sc.V1Subscriptions.Retrieve(ctx, *user.StripeSubscriptionID, nil); retrieveErr == nil {
+				renewalDate = getSubscriptionPeriodEnd(sub)
+			}
 		}
-		_, err = conn.Exec(ctx, `
-			UPDATE hmn_user
-			SET is_subscribed = true, subscription_status = 'active'
-			WHERE id = $1
-		`, user.ID)
-		if err != nil {
+		if err := activateSubscriptionAfterSuccessfulPayment(ctx, conn, user.ID, renewalDate); err != nil {
 			return err
 		}
 		SyncSupporterDiscordRole(ctx, conn, user.ID)

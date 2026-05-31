@@ -2,7 +2,9 @@ package website
 
 import (
 	"context"
+	"time"
 
+	"git.handmade.network/hmn/hmn/src/models"
 	"github.com/stripe/stripe-go/v84"
 )
 
@@ -25,17 +27,33 @@ func paymentIntentHasMicrodepositVerification(pi *stripe.PaymentIntent) bool {
 // shouldGrantGraceForPaymentIntent returns true when payment is in-flight for an async
 // method (e.g. ACH processing or microdeposit verification), not a card decline.
 func shouldGrantGraceForPaymentIntent(pi *stripe.PaymentIntent, paymentMethodType string) bool {
-	if pi == nil || !isAsyncPaymentMethodType(paymentMethodType) {
+	if pi == nil {
 		return false
 	}
 	switch pi.Status {
-	case stripe.PaymentIntentStatusProcessing:
-		return true
 	case stripe.PaymentIntentStatusRequiresAction:
+		// Bank microdeposit verification; payment method type is often unset on the PI this early.
 		return paymentIntentHasMicrodepositVerification(pi)
+	case stripe.PaymentIntentStatusProcessing:
+		return isAsyncPaymentMethodType(resolvePaymentMethodType(pi, paymentMethodType))
 	default:
 		return false
 	}
+}
+
+func resolvePaymentMethodType(pi *stripe.PaymentIntent, explicit string) string {
+	if explicit != "" {
+		return explicit
+	}
+	if pi.PaymentMethod != nil && pi.PaymentMethod.Type != "" {
+		return string(pi.PaymentMethod.Type)
+	}
+	for _, t := range pi.PaymentMethodTypes {
+		if isAsyncPaymentMethodType(t) {
+			return t
+		}
+	}
+	return ""
 }
 
 func paymentIntentIsHardDecline(pi *stripe.PaymentIntent, paymentMethodType string) bool {
@@ -72,8 +90,8 @@ func paymentIntentPaymentMethodType(ctx context.Context, sc *stripe.Client, pi *
 	if pi == nil {
 		return ""
 	}
-	if pi.PaymentMethod != nil && pi.PaymentMethod.Type != "" {
-		return string(pi.PaymentMethod.Type)
+	if resolved := resolvePaymentMethodType(pi, ""); resolved != "" {
+		return resolved
 	}
 	if pi.PaymentMethod == nil || pi.PaymentMethod.ID == "" {
 		return ""
@@ -113,7 +131,7 @@ func invoicePaymentIntent(ctx context.Context, sc *stripe.Client, inv *stripe.In
 	params := &stripe.InvoicePaymentListParams{
 		Invoice: stripe.String(inv.ID),
 	}
-	params.AddExpand("data.payment.payment_intent.payment_method")
+	params.AddExpand("data.payment.payment_intent")
 
 	var pi *stripe.PaymentIntent
 	sc.V1InvoicePayments.List(ctx, params)(func(ip *stripe.InvoicePayment, err error) bool {
@@ -141,7 +159,7 @@ func shouldGrantGraceForSubscription(ctx context.Context, sc *stripe.Client, sub
 		return false
 	}
 	invParams := &stripe.InvoiceRetrieveParams{}
-	invParams.AddExpand("payments.data.payment.payment_intent.payment_method")
+	invParams.AddExpand("payments.data.payment.payment_intent")
 	inv, err := sc.V1Invoices.Retrieve(ctx, sub.LatestInvoice.ID, invParams)
 	if err != nil {
 		return false
@@ -167,4 +185,17 @@ func invoicePaymentIsHardDecline(ctx context.Context, sc *stripe.Client, inv *st
 		return false
 	}
 	return paymentIntentIsHardDecline(pi, pmType)
+}
+
+// shouldStartGraceOnPaymentFailure returns true when a failed payment should begin the
+// one-time grace period. Async methods (ACH processing / verification) always qualify;
+// card declines qualify only for existing subscribers (renewal), not initial sign-up.
+func shouldStartGraceOnPaymentFailure(user *models.User, now time.Time, asyncGraceEligible bool) bool {
+	if user == nil || !canStartGrace(user, now) {
+		return false
+	}
+	if asyncGraceEligible {
+		return true
+	}
+	return user.IsSubscribed
 }

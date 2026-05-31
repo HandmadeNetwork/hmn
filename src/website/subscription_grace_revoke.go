@@ -7,6 +7,12 @@ import (
 	"git.handmade.network/hmn/hmn/src/logging"
 )
 
+// RevokeSubscriptionAccessAfterDeclinedPayment clears member access when a payment
+// was declined (not processing). Exported for admin subscription test tooling.
+func RevokeSubscriptionAccessAfterDeclinedPayment(ctx context.Context, conn db.ConnOrTx, userID int, subscriptionStatus string) error {
+	return revokeSubscriptionAccessAfterDeclinedPayment(ctx, conn, userID, subscriptionStatus)
+}
+
 // revokeSubscriptionAccessAfterDeclinedPayment clears member access when a payment
 // was declined (not processing). Restores grace_available so a future ACH attempt can
 // still use the one-time grace period.

@@ -6,6 +6,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/models"
+	"github.com/stripe/stripe-go/v84"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -141,5 +142,25 @@ func TestUserNeedsBankVerificationReminder(t *testing.T) {
 	assert.False(t, userNeedsBankVerificationReminder(&models.User{
 		IsSubscribed:         true,
 		SubscriptionStatus: statusPtr("active"),
+	}))
+}
+
+func TestSubscriptionIDFromInvoice(t *testing.T) {
+	assert.Equal(t, "", subscriptionIDFromInvoice(nil))
+
+	assert.Equal(t, "sub_line", subscriptionIDFromInvoice(&stripe.Invoice{
+		Lines: &stripe.InvoiceLineItemList{
+			Data: []*stripe.InvoiceLineItem{
+				{Subscription: &stripe.Subscription{ID: "sub_line"}},
+			},
+		},
+	}))
+
+	assert.Equal(t, "sub_parent", subscriptionIDFromInvoice(&stripe.Invoice{
+		Parent: &stripe.InvoiceParent{
+			SubscriptionDetails: &stripe.InvoiceParentSubscriptionDetails{
+				Subscription: &stripe.Subscription{ID: "sub_parent"},
+			},
+		},
 	}))
 }

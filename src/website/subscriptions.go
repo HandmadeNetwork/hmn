@@ -23,10 +23,10 @@ import (
 // handleMembershipStripeEvent handles membership Stripe webhook events.
 func handleMembershipStripeEvent(c *RequestContext, sc *stripe.Client, event *stripe.Event) {
 	switch event.Type {
-	case "checkout.session.completed":
+	case "checkout.session.completed", "checkout.session.async_payment_succeeded":
 		var session stripe.CheckoutSession
 		if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
-			c.Logger.Error().Err(err).Msg("failed to unmarshal checkout.session.completed")
+			c.Logger.Error().Err(err).Str("type", string(event.Type)).Msg("failed to unmarshal checkout session")
 			return
 		}
 		handleCheckoutSessionCompleted(c, sc, &session)
@@ -441,6 +441,22 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 			if err := startGracePeriod(c, c.Conn, userID, now); err != nil {
 				logging.Error().Err(err).Int("userID", userID).Msg("failed to start grace period for processing checkout payment")
 			}
+		} else if isGraceActive(user, now) {
+			// Grace may already have started via payment_intent.requires_action/processing.
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user
+				SET
+					stripe_customer_id = $1,
+					stripe_subscription_id = $2,
+					cancel_at_period_end = false,
+					is_subscribed = true,
+					subscription_status = $4
+				WHERE id = $3
+			`, session.Customer.ID, session.Subscription.ID, userID, SubscriptionStatusGracePeriod)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", userID).Msg("failed to link checkout subscription during active grace")
+			}
+			SyncSupporterDiscordRole(c, c.Conn, userID)
 		} else {
 			_, err = c.Conn.Exec(c, `
 				UPDATE hmn_user
@@ -534,7 +550,7 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 			}
 		}
 
-		if isFailedPaymentStripeStatus(stripeStatus) && canStartGrace(user, now) && shouldGrantGraceForSubscription(c, sc, sub) {
+		if isFailedPaymentStripeStatus(stripeStatus) && shouldStartGraceOnPaymentFailure(user, now, shouldGrantGraceForSubscription(c, sc, sub)) {
 			if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
 				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period")
 				return
@@ -560,23 +576,23 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 
 		if !isFailedPaymentStripeStatus(stripeStatus) {
 			// Payment retry cleared the past-due state; fall through to active handling.
-		} else {
-		_, err = c.Conn.Exec(c, `
-			UPDATE hmn_user 
-			SET 
-				stripe_customer_id = $1,
-				stripe_subscription_id = $2,
-				subscription_status = $3, 
-				cancel_at_period_end = $4,
-				is_subscribed = true,
-				current_period_end = $5
-			WHERE id = $6
-		`, sub.Customer.ID, sub.ID, SubscriptionStatusGracePeriod, isCancelling, renewalDate, user.ID)
-		if err != nil {
-			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update user subscription grace state from webhook")
-		}
-		SyncSupporterDiscordRole(c, c.Conn, user.ID)
-		return
+		} else if isGraceActive(user, now) {
+			// Grace already started via startGracePeriod; sync Stripe metadata only.
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user
+				SET
+					stripe_customer_id = $1,
+					stripe_subscription_id = $2,
+					cancel_at_period_end = $3,
+					is_subscribed = true,
+					current_period_end = $4
+				WHERE id = $5
+			`, sub.Customer.ID, sub.ID, isCancelling, renewalDate, user.ID)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to sync subscription metadata during grace")
+			}
+			SyncSupporterDiscordRole(c, c.Conn, user.ID)
+			return
 		}
 	}
 
@@ -692,19 +708,21 @@ func handleInvoicePaid(c *RequestContext, sc *stripe.Client, inv *stripe.Invoice
 		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to record user payment")
 	}
 
-	if err := clearGracePeriod(c, c.Conn, user.ID); err != nil {
-		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to clear subscription grace period after payment")
+	subscriptionID := subscriptionIDFromInvoice(inv)
+	if subscriptionID == "" && user.StripeSubscriptionID != nil {
+		subscriptionID = *user.StripeSubscriptionID
 	}
-
-	if inv.Lines != nil && len(inv.Lines.Data) > 0 && inv.Lines.Data[0].Subscription != nil {
-		sub, err := sc.V1Subscriptions.Retrieve(c, inv.Lines.Data[0].Subscription.ID, nil)
+	var renewalDate *time.Time
+	if subscriptionID != "" {
+		sub, err := sc.V1Subscriptions.Retrieve(c, subscriptionID, nil)
 		if err == nil {
-			renewalDate := getSubscriptionPeriodEnd(sub)
-			_, err = c.Conn.Exec(c, "UPDATE hmn_user SET current_period_end = $1, is_subscribed = true, subscription_status = 'active' WHERE id = $2", renewalDate, user.ID)
-			if err != nil {
-				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update renewal date from invoice")
-			}
+			renewalDate = getSubscriptionPeriodEnd(sub)
+		} else {
+			logging.Warn().Err(err).Int("userID", user.ID).Str("subscriptionID", subscriptionID).Msg("failed to retrieve subscription after invoice payment")
 		}
+	}
+	if err := activateSubscriptionAfterSuccessfulPayment(c, c.Conn, user.ID, renewalDate); err != nil {
+		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to activate subscription after invoice payment")
 	}
 
 	attemptThankYouEmail(c, user.ID, inv.AmountPaid, inv.Currency)
@@ -724,11 +742,12 @@ func handleInvoicePaymentFailed(c *RequestContext, sc *stripe.Client, inv *strip
 
 	now := SubscriptionNow()
 	grantGrace := shouldGrantGraceForInvoice(c, sc, inv)
-	if grantGrace && canStartGrace(user, now) {
+	hardDecline := invoicePaymentIsHardDecline(c, sc, inv)
+	if shouldStartGraceOnPaymentFailure(user, now, grantGrace) {
 		if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
 			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period from invoice.payment_failed")
 		}
-	} else if invoicePaymentIsHardDecline(c, sc, inv) || userInGracePeriod(user) {
+	} else if hardDecline && !isGraceActive(user, now) {
 		status := "incomplete"
 		if inv.Status != "" {
 			status = string(inv.Status)

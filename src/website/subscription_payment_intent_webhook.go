@@ -12,7 +12,9 @@ import (
 
 func tryHandleMembershipPaymentIntentWebhook(c *RequestContext, sc *stripe.Client, event *stripe.Event) bool {
 	switch event.Type {
-	case stripe.EventTypePaymentIntentProcessing, stripe.EventTypePaymentIntentPaymentFailed:
+	case stripe.EventTypePaymentIntentProcessing,
+		stripe.EventTypePaymentIntentRequiresAction,
+		stripe.EventTypePaymentIntentPaymentFailed:
 	default:
 		return false
 	}
@@ -39,19 +41,31 @@ func handleMembershipPaymentIntentWebhook(c *RequestContext, sc *stripe.Client, 
 		return false
 	}
 
+	fullPI, err := retrievePaymentIntent(c, sc, pi.ID)
+	if err != nil {
+		logging.Warn().Err(err).Str("paymentIntentID", pi.ID).Msg("failed to retrieve payment intent for membership webhook")
+		fullPI = pi
+	} else if fullPI != nil {
+		pi = fullPI
+	}
+
 	pmType := paymentIntentPaymentMethodType(c, sc, pi)
 	now := SubscriptionNow()
 
 	switch eventType {
-	case stripe.EventTypePaymentIntentProcessing:
+	case stripe.EventTypePaymentIntentProcessing, stripe.EventTypePaymentIntentRequiresAction:
 		if shouldGrantGraceForPaymentIntent(pi, pmType) && canStartGrace(user, now) {
 			if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
-				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start grace period from payment_intent.processing")
+				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start grace period from payment intent webhook")
 			}
 		}
 	case stripe.EventTypePaymentIntentPaymentFailed:
 		if paymentIntentIsHardDecline(pi, pmType) {
-			if err := revokeSubscriptionAccessAfterDeclinedPayment(c, c.Conn, user.ID, "incomplete"); err != nil {
+			if shouldStartGraceOnPaymentFailure(user, now, false) {
+				if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
+					logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start grace period from payment_intent.payment_failed")
+				}
+			} else if err := revokeSubscriptionAccessAfterDeclinedPayment(c, c.Conn, user.ID, "incomplete"); err != nil {
 				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to revoke access from payment_intent.payment_failed")
 			}
 		}

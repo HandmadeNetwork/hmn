@@ -16,6 +16,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/website"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 	"github.com/stripe/stripe-go/v84"
 )
@@ -41,8 +42,8 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 			}
 
 			ctx := context.Background()
-			conn := db.NewConn()
-			defer conn.Close(ctx)
+			pool := db.NewConnPool()
+			defer pool.Close()
 
 			if override := config.Config.Stripe.SubscriptionNowOverride; override != "" {
 				fmt.Printf("Using subscription time override: %s\n", override)
@@ -65,6 +66,10 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 					},
 				},
 				{
+					Name: "Credit card declined (tok_chargeDeclined)",
+					Run:  runDeclinedCardScenario,
+				},
+				{
 					Name: "ACH (US bank account)",
 					CreatePaymentMethod: createACHPaymentMethod,
 				},
@@ -76,12 +81,16 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 					Name: "ACH verification after 2 day clock advance",
 					Run:  runACHVerificationAfterAdvanceScenario,
 				},
+				{
+					Name: "Card renewal failure → grace → payment method update",
+					Run:  runCardRenewalFailureGraceRecoveryScenario,
+				},
 			}
 
 			failed := false
 			for i, scenario := range scenarios {
 				fmt.Printf("\n========== Scenario %d/%d: %s ==========\n", i+1, len(scenarios), scenario.Name)
-				result, err := runSubscriptionScenario(ctx, conn, sc, scenario)
+				result, err := runSubscriptionScenario(ctx, pool, sc, scenario)
 				if err != nil {
 					failed = true
 					fmt.Printf("RESULT: FAIL\n")
@@ -105,7 +114,7 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 type subscriptionTestScenario struct {
 	Name                string
 	CreatePaymentMethod func(context.Context, *stripe.Client) (*stripe.PaymentMethod, error)
-	Run                 func(context.Context, db.ConnOrTx, *stripe.Client) (subscriptionTestResult, error)
+	Run                 func(context.Context, *pgxpool.Pool, *stripe.Client) (subscriptionTestResult, error)
 }
 
 type subscriptionTestResult int
@@ -122,17 +131,17 @@ type achTestSetup struct {
 	testClockID     string
 }
 
-func runSubscriptionScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client, scenario subscriptionTestScenario) (subscriptionTestResult, error) {
+func runSubscriptionScenario(ctx context.Context, pool *pgxpool.Pool, sc *stripe.Client, scenario subscriptionTestScenario) (subscriptionTestResult, error) {
 	if scenario.Run != nil {
-		return scenario.Run(ctx, conn, sc)
+		return scenario.Run(ctx, pool, sc)
 	}
-	return runCardOrACHScenario(ctx, conn, sc, scenario)
+	return runCardOrACHScenario(ctx, pool, sc, scenario)
 }
 
-func runCardOrACHScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client, scenario subscriptionTestScenario) (subscriptionTestResult, error) {
+func runCardOrACHScenario(ctx context.Context, pool *pgxpool.Pool, sc *stripe.Client, scenario subscriptionTestScenario) (subscriptionTestResult, error) {
 	username := fmt.Sprintf("subtest_%s", uuid.NewString()[:8])
 	fmt.Printf("[1/6] Creating test user: %s\n", username)
-	userID, emailAddress := createSubscriptionTestUser(ctx, conn, username)
+	userID, emailAddress := createSubscriptionTestUser(ctx, pool, username)
 	fmt.Printf("      user_id=%d email=%s\n", userID, emailAddress)
 
 	fmt.Printf("[2/6] Creating Stripe customer\n")
@@ -166,19 +175,152 @@ func runCardOrACHScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.Clie
 	if err != nil {
 		if isExpectedACHVerificationPending(err) {
 			fmt.Printf("      ACH verification is pending; subscription will complete after verification.\n")
-			if updateErr := persistPendingVerificationState(ctx, conn, userID, customer.ID); updateErr != nil {
+			if updateErr := persistPendingVerificationState(ctx, pool, userID, customer.ID); updateErr != nil {
 				return subscriptionTestResultPass, updateErr
 			}
-			printSubscriptionData(ctx, conn, userID)
+			printSubscriptionData(ctx, pool, userID)
 			return subscriptionTestResultPending, nil
 		}
 		return subscriptionTestResultPass, err
 	}
 
-	return completeSubscription(ctx, conn, sc, userID, customer.ID, paymentMethod.ID)
+	return completeSubscription(ctx, pool, sc, userID, customer.ID, paymentMethod.ID)
 }
 
-func runACHGraceExpiryScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client) (subscriptionTestResult, error) {
+func runDeclinedCardScenario(ctx context.Context, pool *pgxpool.Pool, sc *stripe.Client) (subscriptionTestResult, error) {
+	username := fmt.Sprintf("subtest_%s", uuid.NewString()[:8])
+	fmt.Printf("[1/6] Creating test user: %s\n", username)
+	userID, emailAddress := createSubscriptionTestUser(ctx, pool, username)
+	fmt.Printf("      user_id=%d email=%s\n", userID, emailAddress)
+
+	fmt.Printf("[2/6] Creating Stripe customer\n")
+	customerParams := &stripe.CustomerCreateParams{
+		Email: stripe.String(emailAddress),
+		Name:  stripe.String(username),
+		Metadata: map[string]string{
+			"user_id": strconv.Itoa(userID),
+		},
+	}
+	if testClockID := config.Config.Stripe.TestClockID; testClockID != "" {
+		customerParams.TestClock = stripe.String(testClockID)
+	}
+	customer, err := sc.V1Customers.Create(ctx, customerParams)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      customer_id=%s\n", customer.ID)
+
+	fmt.Printf("[3/6] Creating declined card payment method (tok_chargeDeclined)\n")
+	paymentMethod, err := sc.V1PaymentMethods.Create(ctx, &stripe.PaymentMethodCreateParams{
+		Type: stripe.String("card"),
+		Card: &stripe.PaymentMethodCreateCardParams{
+			Token: stripe.String("tok_chargeDeclined"),
+		},
+	})
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      payment_method_id=%s\n", paymentMethod.ID)
+
+	fmt.Printf("[4/6] Attaching payment method and creating subscription\n")
+	_, attachErr := sc.V1PaymentMethods.Attach(ctx, paymentMethod.ID, &stripe.PaymentMethodAttachParams{
+		Customer: stripe.String(customer.ID),
+	})
+	if attachErr != nil && !isStripeCardDeclined(attachErr) {
+		return subscriptionTestResultPass, attachErr
+	}
+	if attachErr != nil {
+		fmt.Printf("      card declined during payment method attach (expected)\n")
+	}
+
+	var subscriptionID string
+	stripeStatus := "incomplete"
+
+	if attachErr == nil {
+		subscriptionParams := &stripe.SubscriptionCreateParams{
+			Customer:             stripe.String(customer.ID),
+			DefaultPaymentMethod: stripe.String(paymentMethod.ID),
+			CollectionMethod:     stripe.String("charge_automatically"),
+			PaymentBehavior:      stripe.String("allow_incomplete"),
+			Items: []*stripe.SubscriptionCreateItemParams{
+				{Price: stripe.String(config.Config.Stripe.PriceID)},
+			},
+			Metadata: map[string]string{
+				"user_id": strconv.Itoa(userID),
+			},
+		}
+		subscriptionParams.AddExpand("latest_invoice.payments.data.payment.payment_intent")
+
+		subscription, createErr := sc.V1Subscriptions.Create(ctx, subscriptionParams)
+		if createErr != nil && !isStripeCardDeclined(createErr) {
+			return subscriptionTestResultPass, createErr
+		}
+		if createErr != nil {
+			fmt.Printf("      card declined during subscription create (expected)\n")
+		} else {
+			fmt.Printf("      subscription_id=%s status=%s\n", subscription.ID, subscription.Status)
+			if subscription.Status == stripe.SubscriptionStatusActive || subscription.Status == stripe.SubscriptionStatusTrialing {
+				return subscriptionTestResultPass, fmt.Errorf("expected subscription to fail payment, got status=%s", subscription.Status)
+			}
+			subscriptionID = subscription.ID
+			stripeStatus = string(subscription.Status)
+		}
+	}
+
+	fmt.Printf("[5/6] Simulating declined payment access revoke\n")
+	if err := website.RevokeSubscriptionAccessAfterDeclinedPayment(ctx, pool, userID, stripeStatus); err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if subscriptionID != "" {
+		_, err = pool.Exec(ctx, `
+			UPDATE hmn_user
+			SET stripe_customer_id = $1, stripe_subscription_id = $2, cancel_at_period_end = false
+			WHERE id = $3
+		`, customer.ID, subscriptionID, userID)
+	} else {
+		_, err = pool.Exec(ctx, `
+			UPDATE hmn_user
+			SET stripe_customer_id = $1, cancel_at_period_end = false
+			WHERE id = $2
+		`, customer.ID, userID)
+	}
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	fmt.Printf("[6/6] Verifying stored subscription data after decline\n")
+	user, err := db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if user.IsSubscribed {
+		return subscriptionTestResultPass, fmt.Errorf("expected is_subscribed=false after card decline")
+	}
+	if user.SubscriptionStatus == nil || *user.SubscriptionStatus != stripeStatus {
+		return subscriptionTestResultPass, fmt.Errorf("expected subscription_status=%s, got %s", stripeStatus, stringOrEmpty(user.SubscriptionStatus))
+	}
+	if !user.GraceAvailable {
+		return subscriptionTestResultPass, fmt.Errorf("expected grace_available=true after card decline (grace not consumed)")
+	}
+	if user.GracePeriodStartedAt != nil || user.GracePeriodEndsAt != nil {
+		return subscriptionTestResultPass, fmt.Errorf("expected no grace period after card decline")
+	}
+
+	payments, err := db.Query[models.UserPayment](ctx, pool, `
+		SELECT $columns FROM user_payment WHERE user_id = $1
+	`, userID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if len(payments) > 0 {
+		return subscriptionTestResultPass, fmt.Errorf("expected no paid invoices after card decline, got %d payment rows", len(payments))
+	}
+
+	printSubscriptionData(ctx, pool, userID)
+	return subscriptionTestResultPass, nil
+}
+
+func runACHGraceExpiryScenario(ctx context.Context, pool *pgxpool.Pool, sc *stripe.Client) (subscriptionTestResult, error) {
 	defer website.ClearSubscriptionNowForTests()
 
 	fmt.Printf("[1/7] Creating Stripe test clock\n")
@@ -189,14 +331,14 @@ func runACHGraceExpiryScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe
 	fmt.Printf("      test_clock_id=%s frozen_time=%s\n", testClock.ID, time.Unix(testClock.FrozenTime, 0).UTC().Format(time.RFC3339))
 	defer deleteTestClock(ctx, sc, testClock.ID)
 
-	setup, err := setupACHPendingOnClock(ctx, conn, sc, testClock.ID)
+	setup, err := setupACHPendingOnClock(ctx, pool, sc, testClock.ID)
 	if err != nil {
 		return subscriptionTestResultPass, err
 	}
 
 	fmt.Printf("[5/7] Starting grace period (simulating payment failure while ACH verification is pending)\n")
 	syncSubscriptionNowToTestClock(ctx, sc, testClock.ID)
-	if err := website.StartSubscriptionGracePeriod(ctx, conn, setup.userID); err != nil {
+	if err := website.StartSubscriptionGracePeriod(ctx, pool, setup.userID); err != nil {
 		return subscriptionTestResultPass, err
 	}
 
@@ -209,13 +351,13 @@ func runACHGraceExpiryScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe
 	website.SetSubscriptionNowForTests(clockTime)
 
 	fmt.Printf("[7/7] Expiring due grace periods and verifying final state\n")
-	expiredCount, err := website.ExpireSubscriptionGracePeriods(ctx, conn)
+	expiredCount, err := website.ExpireSubscriptionGracePeriods(ctx, pool)
 	if err != nil {
 		return subscriptionTestResultPass, err
 	}
 	fmt.Printf("      expired grace periods: %d\n", expiredCount)
 
-	user, err := db.QueryOne[models.User](ctx, conn, "SELECT $columns FROM hmn_user WHERE id = $1", setup.userID)
+	user, err := db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", setup.userID)
 	if err != nil {
 		return subscriptionTestResultPass, err
 	}
@@ -229,11 +371,11 @@ func runACHGraceExpiryScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe
 		return subscriptionTestResultPass, fmt.Errorf("expected grace_available=false after grace expiry")
 	}
 
-	printSubscriptionData(ctx, conn, setup.userID)
+	printSubscriptionData(ctx, pool, setup.userID)
 	return subscriptionTestResultPass, nil
 }
 
-func runACHVerificationAfterAdvanceScenario(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client) (subscriptionTestResult, error) {
+func runACHVerificationAfterAdvanceScenario(ctx context.Context, pool *pgxpool.Pool, sc *stripe.Client) (subscriptionTestResult, error) {
 	defer website.ClearSubscriptionNowForTests()
 
 	fmt.Printf("[1/8] Creating Stripe test clock\n")
@@ -244,7 +386,7 @@ func runACHVerificationAfterAdvanceScenario(ctx context.Context, conn db.ConnOrT
 	fmt.Printf("      test_clock_id=%s frozen_time=%s\n", testClock.ID, time.Unix(testClock.FrozenTime, 0).UTC().Format(time.RFC3339))
 	defer deleteTestClock(ctx, sc, testClock.ID)
 
-	setup, err := setupACHPendingOnClock(ctx, conn, sc, testClock.ID)
+	setup, err := setupACHPendingOnClock(ctx, pool, sc, testClock.ID)
 	if err != nil {
 		return subscriptionTestResultPass, err
 	}
@@ -270,13 +412,13 @@ func runACHVerificationAfterAdvanceScenario(ctx context.Context, conn db.ConnOrT
 		return subscriptionTestResultPass, fmt.Errorf("attach verified ACH payment method: %w", err)
 	}
 
-	result, err := completeSubscription(ctx, conn, sc, setup.userID, setup.customerID, setup.paymentMethodID)
+	result, err := completeSubscription(ctx, pool, sc, setup.userID, setup.customerID, setup.paymentMethodID)
 	if err != nil {
 		return result, err
 	}
 
 	fmt.Printf("[8/8] Verifying subscription is active after ACH verification\n")
-	user, err := db.QueryOne[models.User](ctx, conn, "SELECT $columns FROM hmn_user WHERE id = $1", setup.userID)
+	user, err := db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", setup.userID)
 	if err != nil {
 		return subscriptionTestResultPass, err
 	}
@@ -290,10 +432,348 @@ func runACHVerificationAfterAdvanceScenario(ctx context.Context, conn db.ConnOrT
 	return result, nil
 }
 
-func setupACHPendingOnClock(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client, testClockID string) (*achTestSetup, error) {
+func runCardRenewalFailureGraceRecoveryScenario(ctx context.Context, pool *pgxpool.Pool, sc *stripe.Client) (subscriptionTestResult, error) {
+	defer website.ClearSubscriptionNowForTests()
+
+	fmt.Printf("[1/10] Creating Stripe test clock\n")
+	testClock, err := createTestClock(ctx, sc, "card-renewal-grace-recovery")
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      test_clock_id=%s frozen_time=%s\n", testClock.ID, time.Unix(testClock.FrozenTime, 0).UTC().Format(time.RFC3339))
+	defer deleteTestClock(ctx, sc, testClock.ID)
+
+	username := fmt.Sprintf("subtest_%s", uuid.NewString()[:8])
+	fmt.Printf("[2/10] Creating test user: %s\n", username)
+	userID, emailAddress := createSubscriptionTestUser(ctx, pool, username)
+	fmt.Printf("      user_id=%d email=%s\n", userID, emailAddress)
+
+	fmt.Printf("[3/10] Creating Stripe customer on test clock\n")
+	customer, err := sc.V1Customers.Create(ctx, &stripe.CustomerCreateParams{
+		Email:     stripe.String(emailAddress),
+		Name:      stripe.String(username),
+		TestClock: stripe.String(testClock.ID),
+		Metadata: map[string]string{
+			"user_id": strconv.Itoa(userID),
+		},
+	})
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      customer_id=%s\n", customer.ID)
+
+	fmt.Printf("[4/10] Creating subscription with tok_visa\n")
+	visaPM, err := createCardPaymentMethod(ctx, sc, "tok_visa")
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	_, err = sc.V1PaymentMethods.Attach(ctx, visaPM.ID, &stripe.PaymentMethodAttachParams{
+		Customer: stripe.String(customer.ID),
+	})
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	_, err = sc.V1Customers.Update(ctx, customer.ID, &stripe.CustomerUpdateParams{
+		InvoiceSettings: &stripe.CustomerUpdateInvoiceSettingsParams{
+			DefaultPaymentMethod: stripe.String(visaPM.ID),
+		},
+	})
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	result, err := completeSubscription(ctx, pool, sc, userID, customer.ID, visaPM.ID)
+	if err != nil {
+		return result, err
+	}
+
+	user, err := db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if !user.IsSubscribed || user.SubscriptionStatus == nil || *user.SubscriptionStatus != "active" {
+		return subscriptionTestResultPass, fmt.Errorf("expected active subscription before renewal, got is_subscribed=%v status=%s", user.IsSubscribed, stringOrEmpty(user.SubscriptionStatus))
+	}
+	subscriptionID := *user.StripeSubscriptionID
+
+	subParams := &stripe.SubscriptionRetrieveParams{}
+	subParams.AddExpand("items")
+	subscription, err := sc.V1Subscriptions.Retrieve(ctx, subscriptionID, subParams)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if subscription.Items == nil || len(subscription.Items.Data) == 0 {
+		return subscriptionTestResultPass, fmt.Errorf("subscription has no items")
+	}
+	periodEnd := subscription.Items.Data[0].CurrentPeriodEnd
+
+	fmt.Printf("[5/10] Swapping default payment method to tok_chargeCustomerFail (fails on charge)\n")
+	failPM, err := createCardPaymentMethod(ctx, sc, "tok_chargeCustomerFail")
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	_, err = sc.V1PaymentMethods.Attach(ctx, failPM.ID, &stripe.PaymentMethodAttachParams{
+		Customer: stripe.String(customer.ID),
+	})
+	if err != nil {
+		return subscriptionTestResultPass, fmt.Errorf("attach failing card: %w", err)
+	}
+	if err := setDefaultPaymentMethod(ctx, sc, customer.ID, subscriptionID, failPM.ID); err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	fmt.Printf("[6/10] Advancing test clock past billing period end\n")
+	targetTime := time.Unix(periodEnd, 0).Add(time.Hour)
+	clockTime, err := advanceTestClockTo(ctx, sc, testClock.ID, targetTime)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      clock frozen_time=%s (period_end was %s)\n",
+		clockTime.UTC().Format(time.RFC3339),
+		time.Unix(periodEnd, 0).UTC().Format(time.RFC3339))
+	website.SetSubscriptionNowForTests(clockTime)
+
+	fmt.Printf("[7/10] Waiting for renewal payment attempt to fail\n")
+	subscription, err = waitForSubscriptionStatus(ctx, sc, subscriptionID, "past_due", "unpaid", "incomplete")
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      subscription status=%s\n", subscription.Status)
+
+	invParams := &stripe.InvoiceRetrieveParams{}
+	invParams.AddExpand("payments.data.payment.payment_intent")
+	failedInvoice, err := retrieveLatestSubscriptionInvoice(ctx, sc, subscription)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if failedInvoice == nil {
+		return subscriptionTestResultPass, fmt.Errorf("expected open renewal invoice after failed payment")
+	}
+	failedInvoice, err = sc.V1Invoices.Retrieve(ctx, failedInvoice.ID, invParams)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	fmt.Printf("      renewal invoice_id=%s status=%s\n", failedInvoice.ID, failedInvoice.Status)
+
+	fmt.Printf("[8/10] Processing renewal failure webhooks\n")
+	// Stripe test clock may deliver real webhooks if `stripe listen` is running; reset to the
+	// expected pre-grace subscriber state so this scenario exercises our handlers.
+	_, err = pool.Exec(ctx, `
+		UPDATE hmn_user
+		SET
+			is_subscribed = true,
+			subscription_status = 'active',
+			grace_available = true,
+			grace_period_started_at = NULL,
+			grace_period_ends_at = NULL
+		WHERE id = $1
+	`, userID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	failedInvoice, err = sc.V1Invoices.Retrieve(ctx, failedInvoice.ID, invParams)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	if err := dispatchMembershipWebhook(ctx, pool, sc, "invoice.payment_failed", failedInvoice); err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if pi, _, err := website.InvoicePaymentIntentForTests(ctx, sc, failedInvoice); err != nil {
+		return subscriptionTestResultPass, err
+	} else if pi != nil {
+		if err := dispatchMembershipWebhook(ctx, pool, sc, "payment_intent.payment_failed", pi); err != nil {
+			return subscriptionTestResultPass, err
+		}
+	}
+	if err := dispatchMembershipWebhook(ctx, pool, sc, "customer.subscription.updated", subscription); err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	user, err = db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if user.SubscriptionStatus == nil || *user.SubscriptionStatus != website.SubscriptionStatusGracePeriod {
+		return subscriptionTestResultPass, fmt.Errorf("expected subscription_status=%s after renewal failure, got %s", website.SubscriptionStatusGracePeriod, stringOrEmpty(user.SubscriptionStatus))
+	}
+	if !user.IsSubscribed {
+		return subscriptionTestResultPass, fmt.Errorf("expected is_subscribed=true during grace period")
+	}
+	if user.GraceAvailable {
+		return subscriptionTestResultPass, fmt.Errorf("expected grace_available=false after grace started")
+	}
+	if user.GracePeriodStartedAt == nil || user.GracePeriodEndsAt == nil {
+		return subscriptionTestResultPass, fmt.Errorf("expected grace period dates to be set")
+	}
+	fmt.Printf("      grace period started, ends %s\n", user.GracePeriodEndsAt.UTC().Format(time.RFC3339))
+
+	fmt.Printf("[9/10] Updating payment method to tok_visa and retrying payment\n")
+	recoveryPM, err := createCardPaymentMethod(ctx, sc, "tok_visa")
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	_, err = sc.V1PaymentMethods.Attach(ctx, recoveryPM.ID, &stripe.PaymentMethodAttachParams{
+		Customer: stripe.String(customer.ID),
+	})
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if err := setDefaultPaymentMethod(ctx, sc, customer.ID, subscriptionID, recoveryPM.ID); err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	recoveryPMObj, err := sc.V1PaymentMethods.Retrieve(ctx, recoveryPM.ID, nil)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if err := dispatchMembershipWebhook(ctx, pool, sc, "payment_method.attached", recoveryPMObj); err != nil {
+		return subscriptionTestResultPass, err
+	}
+
+	subscription, err = waitForSubscriptionStatus(ctx, sc, subscriptionID, "active", "trialing")
+	if err != nil {
+		// Retry may have paid the invoice without flipping status yet; process invoice.paid if present.
+		fmt.Printf("      subscription not active yet (%v); checking for paid invoice\n", err)
+	}
+
+	paidInvoice, err := retrieveLatestSubscriptionInvoice(ctx, sc, subscription)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if paidInvoice != nil && paidInvoice.Status == stripe.InvoiceStatusPaid {
+		if err := dispatchMembershipWebhook(ctx, pool, sc, "invoice.paid", paidInvoice); err != nil {
+			return subscriptionTestResultPass, err
+		}
+	}
+	if subscription != nil {
+		if err := dispatchMembershipWebhook(ctx, pool, sc, "customer.subscription.updated", subscription); err != nil {
+			return subscriptionTestResultPass, err
+		}
+	}
+
+	fmt.Printf("[10/10] Verifying membership reinstated\n")
+	user, err = db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if !user.IsSubscribed {
+		return subscriptionTestResultPass, fmt.Errorf("expected is_subscribed=true after payment method update")
+	}
+	if user.SubscriptionStatus == nil || *user.SubscriptionStatus != "active" {
+		return subscriptionTestResultPass, fmt.Errorf("expected subscription_status=active after recovery, got %s", stringOrEmpty(user.SubscriptionStatus))
+	}
+	if user.GracePeriodStartedAt != nil || user.GracePeriodEndsAt != nil {
+		return subscriptionTestResultPass, fmt.Errorf("expected grace period cleared after successful payment")
+	}
+	if !user.GraceAvailable {
+		return subscriptionTestResultPass, fmt.Errorf("expected grace_available=true after grace consumed and cleared")
+	}
+
+	printSubscriptionData(ctx, pool, userID)
+	return subscriptionTestResultPass, nil
+}
+
+func createCardPaymentMethod(ctx context.Context, sc *stripe.Client, token string) (*stripe.PaymentMethod, error) {
+	pm, err := sc.V1PaymentMethods.Create(ctx, &stripe.PaymentMethodCreateParams{
+		Type: stripe.String("card"),
+		Card: &stripe.PaymentMethodCreateCardParams{
+			Token: stripe.String(token),
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("      payment_method_id=%s token=%s\n", pm.ID, token)
+	return pm, nil
+}
+
+func setDefaultPaymentMethod(ctx context.Context, sc *stripe.Client, customerID, subscriptionID, paymentMethodID string) error {
+	_, err := sc.V1Customers.Update(ctx, customerID, &stripe.CustomerUpdateParams{
+		InvoiceSettings: &stripe.CustomerUpdateInvoiceSettingsParams{
+			DefaultPaymentMethod: stripe.String(paymentMethodID),
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("update customer default payment method: %w", err)
+	}
+	_, err = sc.V1Subscriptions.Update(ctx, subscriptionID, &stripe.SubscriptionUpdateParams{
+		DefaultPaymentMethod: stripe.String(paymentMethodID),
+	})
+	if err != nil {
+		return fmt.Errorf("update subscription default payment method: %w", err)
+	}
+	return nil
+}
+
+func advanceTestClockTo(ctx context.Context, sc *stripe.Client, testClockID string, target time.Time) (time.Time, error) {
+	_, err := sc.V1TestHelpersTestClocks.Advance(ctx, testClockID, &stripe.TestHelpersTestClockAdvanceParams{
+		FrozenTime: stripe.Int64(target.Unix()),
+	})
+	if err != nil {
+		return time.Time{}, err
+	}
+	clock, err := waitForTestClockReady(ctx, sc, testClockID)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(clock.FrozenTime, 0), nil
+}
+
+func waitForSubscriptionStatus(ctx context.Context, sc *stripe.Client, subscriptionID string, statuses ...string) (*stripe.Subscription, error) {
+	want := make(map[string]struct{}, len(statuses))
+	for _, s := range statuses {
+		want[s] = struct{}{}
+	}
+
+	deadline := time.Now().Add(2 * time.Minute)
+	for time.Now().Before(deadline) {
+		sub, err := sc.V1Subscriptions.Retrieve(ctx, subscriptionID, nil)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := want[string(sub.Status)]; ok {
+			return sub, nil
+		}
+		time.Sleep(2 * time.Second)
+	}
+	sub, err := sc.V1Subscriptions.Retrieve(ctx, subscriptionID, nil)
+	if err != nil {
+		return nil, err
+	}
+	return nil, fmt.Errorf("subscription %s did not reach status %v within timeout (last status=%s)", subscriptionID, statuses, sub.Status)
+}
+
+func retrieveLatestSubscriptionInvoice(ctx context.Context, sc *stripe.Client, sub *stripe.Subscription) (*stripe.Invoice, error) {
+	if sub == nil {
+		return nil, fmt.Errorf("subscription is nil")
+	}
+	subParams := &stripe.SubscriptionRetrieveParams{}
+	subParams.AddExpand("latest_invoice")
+	fresh, err := sc.V1Subscriptions.Retrieve(ctx, sub.ID, subParams)
+	if err != nil {
+		return nil, err
+	}
+	if fresh.LatestInvoice != nil && fresh.LatestInvoice.ID != "" {
+		return sc.V1Invoices.Retrieve(ctx, fresh.LatestInvoice.ID, nil)
+	}
+	return nil, nil
+}
+
+func dispatchMembershipWebhook(ctx context.Context, pool *pgxpool.Pool, sc *stripe.Client, eventType string, obj any) error {
+	event, err := website.StripeEventFromObject(stripe.EventType(eventType), obj)
+	if err != nil {
+		return fmt.Errorf("build stripe event %s: %w", eventType, err)
+	}
+	website.ProcessMembershipStripeWebhookForTests(ctx, pool, sc, event)
+	return nil
+}
+
+func setupACHPendingOnClock(ctx context.Context, pool *pgxpool.Pool, sc *stripe.Client, testClockID string) (*achTestSetup, error) {
 	username := fmt.Sprintf("subtest_%s", uuid.NewString()[:8])
 	fmt.Printf("[2/7] Creating test user: %s\n", username)
-	userID, emailAddress := createSubscriptionTestUser(ctx, conn, username)
+	userID, emailAddress := createSubscriptionTestUser(ctx, pool, username)
 	fmt.Printf("      user_id=%d email=%s\n", userID, emailAddress)
 
 	fmt.Printf("[3/7] Creating Stripe customer on test clock\n")
@@ -327,10 +807,10 @@ func setupACHPendingOnClock(ctx context.Context, conn db.ConnOrTx, sc *stripe.Cl
 		return nil, fmt.Errorf("attach ACH payment method: %w", err)
 	}
 	fmt.Printf("      ACH verification is pending; subscription will complete after verification.\n")
-	if err := persistPendingVerificationState(ctx, conn, userID, customer.ID); err != nil {
+	if err := persistPendingVerificationState(ctx, pool, userID, customer.ID); err != nil {
 		return nil, err
 	}
-	printSubscriptionData(ctx, conn, userID)
+	printSubscriptionData(ctx, pool, userID)
 
 	return &achTestSetup{
 		userID:          userID,
@@ -397,7 +877,7 @@ func verifyACHPaymentMethod(ctx context.Context, sc *stripe.Client, customerID, 
 	return nil
 }
 
-func completeSubscription(ctx context.Context, conn db.ConnOrTx, sc *stripe.Client, userID int, customerID, paymentMethodID string) (subscriptionTestResult, error) {
+func completeSubscription(ctx context.Context, pool *pgxpool.Pool, sc *stripe.Client, userID int, customerID, paymentMethodID string) (subscriptionTestResult, error) {
 	subscriptionParams := &stripe.SubscriptionCreateParams{
 		Customer:             stripe.String(customerID),
 		DefaultPaymentMethod: stripe.String(paymentMethodID),
@@ -421,7 +901,7 @@ func completeSubscription(ctx context.Context, conn db.ConnOrTx, sc *stripe.Clie
 	fmt.Printf("[5/6] Writing subscription state to database\n")
 	renewalDate := getSubscriptionPeriodEndFromStripe(subscription)
 	isSubscribed := subscription.Status == stripe.SubscriptionStatusActive || subscription.Status == stripe.SubscriptionStatusTrialing
-	_, err = conn.Exec(ctx, `
+	_, err = pool.Exec(ctx, `
 		UPDATE hmn_user
 		SET
 			is_subscribed = $1,
@@ -445,7 +925,7 @@ func completeSubscription(ctx context.Context, conn db.ConnOrTx, sc *stripe.Clie
 	}
 	if invoice != nil && invoice.StatusTransitions != nil && invoice.StatusTransitions.PaidAt > 0 {
 		paidAt := time.Unix(invoice.StatusTransitions.PaidAt, 0)
-		_, err = conn.Exec(ctx, `
+		_, err = pool.Exec(ctx, `
 			INSERT INTO user_payment (user_id, stripe_invoice_id, amount_cents, currency, paid_at)
 			VALUES ($1, $2, $3, $4, $5)
 			ON CONFLICT (stripe_invoice_id) DO UPDATE SET
@@ -459,10 +939,10 @@ func completeSubscription(ctx context.Context, conn db.ConnOrTx, sc *stripe.Clie
 	}
 
 	fmt.Printf("[6/6] Verifying and printing stored subscription data\n")
-	if err := validateStoredSubscriptionData(ctx, conn, userID, customerID, subscription.ID); err != nil {
+	if err := validateStoredSubscriptionData(ctx, pool, userID, customerID, subscription.ID); err != nil {
 		return subscriptionTestResultPass, err
 	}
-	printSubscriptionData(ctx, conn, userID)
+	printSubscriptionData(ctx, pool, userID)
 	return subscriptionTestResultPass, nil
 }
 
@@ -524,8 +1004,8 @@ func deleteTestClock(ctx context.Context, sc *stripe.Client, testClockID string)
 	}
 }
 
-func validateStoredSubscriptionData(ctx context.Context, conn db.ConnOrTx, userID int, customerID string, subscriptionID string) error {
-	user, err := db.QueryOne[models.User](ctx, conn, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+func validateStoredSubscriptionData(ctx context.Context, pool *pgxpool.Pool, userID int, customerID string, subscriptionID string) error {
+	user, err := db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
 	if err != nil {
 		return err
 	}
@@ -541,12 +1021,12 @@ func validateStoredSubscriptionData(ctx context.Context, conn db.ConnOrTx, userI
 	return nil
 }
 
-func createSubscriptionTestUser(ctx context.Context, conn db.ConnOrTx, username string) (int, string) {
+func createSubscriptionTestUser(ctx context.Context, pool *pgxpool.Pool, username string) (int, string) {
 	emailAddress := uuid.New().String() + "@example.com"
 	hashedPassword := auth.HashPassword("password")
 
 	var userID int
-	err := conn.QueryRow(ctx, `
+	err := pool.QueryRow(ctx, `
 		INSERT INTO hmn_user (username, email, password, date_joined, registration_ip, status)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id
@@ -567,8 +1047,8 @@ func getSubscriptionPeriodEndFromStripe(sub *stripe.Subscription) *time.Time {
 	return &t
 }
 
-func printSubscriptionData(ctx context.Context, conn db.ConnOrTx, userID int) {
-	user, err := db.QueryOne[models.User](ctx, conn, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+func printSubscriptionData(ctx context.Context, pool *pgxpool.Pool, userID int) {
+	user, err := db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
 	if err != nil {
 		panic(err)
 	}
@@ -594,7 +1074,7 @@ func printSubscriptionData(ctx context.Context, conn db.ConnOrTx, userID int) {
 	}
 	fmt.Printf("  grace_available: %v\n", user.GraceAvailable)
 
-	payments, err := db.Query[models.UserPayment](ctx, conn, `
+	payments, err := db.Query[models.UserPayment](ctx, pool, `
 		SELECT $columns
 		FROM user_payment
 		WHERE user_id = $1
@@ -631,8 +1111,24 @@ func isExpectedACHVerificationPending(err error) bool {
 	return strings.Contains(err.Error(), "must be verified before they can be attached to a customer")
 }
 
-func persistPendingVerificationState(ctx context.Context, conn db.ConnOrTx, userID int, customerID string) error {
-	_, err := conn.Exec(ctx, `
+func isStripeCardDeclined(err error) bool {
+	if err == nil {
+		return false
+	}
+	if strings.Contains(err.Error(), "card_declined") {
+		return true
+	}
+	var stripeErr *stripe.Error
+	if errors.As(err, &stripeErr) {
+		return stripeErr.Code == stripe.ErrorCodeCardDeclined ||
+			stripeErr.Type == stripe.ErrorTypeCard ||
+			stripeErr.DeclineCode == stripe.DeclineCodeGenericDecline
+	}
+	return false
+}
+
+func persistPendingVerificationState(ctx context.Context, pool *pgxpool.Pool, userID int, customerID string) error {
+	_, err := pool.Exec(ctx, `
 		UPDATE hmn_user
 		SET
 			is_subscribed = false,
