@@ -77,13 +77,77 @@
 
 {{ if and .Header.ShowMembershipVerificationBanner (not .Header.SuppressBanners) }}
     <a
+        id="membership-verification-banner"
         class="db tc pa2 link-normal c-white"
         style="background-color: var(--notice-warn-color)"
         href="{{ .Header.MembershipVerificationUrl }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-verification-state-key="{{ .Header.MembershipVerificationStateKey }}"
     >
         Bank account verification pending{{ if gt .Header.MembershipGraceDaysRemaining 0 }} — membership benefits remain active for {{ .Header.MembershipGraceDaysRemaining }} more {{ if eq .Header.MembershipGraceDaysRemaining 1 }}day{{ else }}days{{ end }}{{ end }}.
         <span class="inline-flex items-center"><b>Verify bank account</b><div class="ml1 flex items-center">{{ svg "arrow-right" }}</div></span>
     </a>
+    <script type="text/javascript">
+        (function() {
+            const banner = document.getElementById("membership-verification-banner");
+            if (!banner) {
+                return;
+            }
+
+            const storageKey = "membership_verification_banner_hidden";
+            const maxHiddenMs = 10 * 60 * 1000; // 10 minutes
+            const stateKey = banner.dataset.verificationStateKey || "";
+
+            let hiddenState = null;
+            try {
+                const raw = localStorage.getItem(storageKey);
+                if (raw) {
+                    hiddenState = JSON.parse(raw);
+                }
+            } catch (_err) {
+                hiddenState = null;
+            }
+
+            const now = Date.now();
+            const hiddenAt = hiddenState && typeof hiddenState.hiddenAt === "number" ? hiddenState.hiddenAt : 0;
+            const isExpired = !hiddenAt || now-hiddenAt > maxHiddenMs;
+
+            const shouldHide =
+                hiddenState &&
+                hiddenState.hidden === true &&
+                hiddenState.stateKey &&
+                stateKey &&
+                hiddenState.stateKey === stateKey &&
+                !isExpired;
+
+            if (hiddenState && isExpired) {
+                try {
+                    localStorage.removeItem(storageKey);
+                } catch (_err) {}
+            } else if (shouldHide) {
+                banner.style.display = "none";
+            } else if (hiddenState && hiddenState.stateKey && hiddenState.stateKey !== stateKey) {
+                try {
+                    localStorage.removeItem(storageKey);
+                } catch (_err) {}
+            }
+
+            banner.addEventListener("click", () => {
+                try {
+                    localStorage.setItem(
+                        storageKey,
+                        JSON.stringify({
+                            hidden: true,
+                            stateKey,
+                            hiddenAt: Date.now(),
+                        }),
+                    );
+                } catch (_err) {}
+                banner.style.display = "none";
+            });
+        })();
+    </script>
 {{ end }}
 
 {{ if and .Header.ShowMembershipDiscordLinkBanner (not .Header.SuppressBanners) }}

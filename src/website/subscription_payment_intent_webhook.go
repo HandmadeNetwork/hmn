@@ -55,8 +55,22 @@ func handleMembershipPaymentIntentWebhook(c *RequestContext, sc *stripe.Client, 
 	switch eventType {
 	case stripe.EventTypePaymentIntentProcessing, stripe.EventTypePaymentIntentRequiresAction:
 		if shouldGrantGraceForPaymentIntent(pi, pmType) && canStartGrace(user, now) {
+			if user.StripeCustomerID == nil || user.StripeSubscriptionID == nil {
+				return true
+			}
+			invoiceID, invoiceErr := findOpenSubscriptionInvoice(c, sc, *user.StripeCustomerID, *user.StripeSubscriptionID)
+			if invoiceErr != nil {
+				logging.Warn().Err(invoiceErr).Int("userID", user.ID).Msg("failed to resolve open subscription invoice for payment intent webhook")
+				return true
+			}
+			if invoiceID == "" {
+				logging.Info().Int("userID", user.ID).Str("eventType", string(eventType)).Msg("skipping grace start; no open subscription invoice")
+				return true
+			}
 			if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
 				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start grace period from payment intent webhook")
+			} else {
+				sendACHVerificationGraceEmail(c, user.ID)
 			}
 		}
 	case stripe.EventTypePaymentIntentPaymentFailed:

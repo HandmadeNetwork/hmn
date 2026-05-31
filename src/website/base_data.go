@@ -1,6 +1,7 @@
 package website
 
 import (
+	"fmt"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/buildcss"
@@ -133,7 +134,8 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 	if c.CurrentUser != nil {
 		baseData.Header.UserProfileUrl = hmnurl.BuildUserProfile(c.CurrentUser.Username)
-		if userNeedsBankVerificationReminder(c.CurrentUser) {
+		bankVerificationJustCompleted := c.Req != nil && c.Req.URL != nil && c.Req.URL.Query().Get("bank_verified") == "1"
+		if userNeedsBankVerificationReminder(c.CurrentUser) && !bankVerificationJustCompleted {
 			baseData.Header.ShowMembershipVerificationBanner = true
 			bannerURL := hmnurl.BuildHSFMembership()
 			if c.CurrentUser.StripeSubscriptionID != nil && config.Config.Stripe.SecretKey != "" {
@@ -144,6 +146,13 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 			}
 			baseData.Header.MembershipVerificationUrl = bannerURL
 			baseData.Header.MembershipGraceDaysRemaining = gracePeriodDaysRemaining(c.CurrentUser, SubscriptionNow())
+			baseData.Header.MembershipVerificationStateKey = fmt.Sprintf(
+				"user:%d|status:%s|grace_end:%s|days:%d",
+				c.CurrentUser.ID,
+				stringOrEmpty(c.CurrentUser.SubscriptionStatus),
+				timeOrEmpty(c.CurrentUser.GracePeriodEndsAt),
+				baseData.Header.MembershipGraceDaysRemaining,
+			)
 		}
 		if userNeedsDiscordLinkReminder(c.CurrentUser) {
 			baseData.Header.ShowMembershipDiscordLinkBanner = true
@@ -176,6 +185,20 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	}
 
 	return baseData
+}
+
+func stringOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func timeOrEmpty(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
 }
 
 func buildDefaultOpenGraphItems(project *models.Project, projectLogoUrl string, title string) []templates.OpenGraphItem {

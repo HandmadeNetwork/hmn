@@ -84,6 +84,7 @@ type Header struct {
 	ShowMembershipVerificationBanner bool
 	MembershipVerificationUrl        string
 	MembershipGraceDaysRemaining     int
+	MembershipVerificationStateKey   string
 
 	ShowMembershipDiscordLinkBanner  bool
 	MembershipDiscordLinkUrl         string

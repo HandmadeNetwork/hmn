@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -440,6 +441,8 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 			}
 			if err := startGracePeriod(c, c.Conn, userID, now); err != nil {
 				logging.Error().Err(err).Int("userID", userID).Msg("failed to start grace period for processing checkout payment")
+			} else {
+				sendACHVerificationGraceEmail(c, userID)
 			}
 		} else if isGraceActive(user, now) {
 			// Grace may already have started via payment_intent.requires_action/processing.
@@ -506,6 +509,19 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 	}
 }
 
+func sendACHVerificationGraceEmail(c *RequestContext, userID int) {
+	user, err := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", userID).Msg("failed to fetch user for ACH verification grace email")
+		return
+	}
+
+	err = email.SendACHVerificationGraceEmail(user.Email, user.BestName(), user.GracePeriodEndsAt, c.Perf)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", userID).Msg("failed to send ACH verification grace email")
+	}
+}
+
 func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe.Subscription) {
 	renewalDate := getSubscriptionPeriodEnd(sub)
 	now := SubscriptionNow()
@@ -550,10 +566,13 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 			}
 		}
 
-		if isFailedPaymentStripeStatus(stripeStatus) && shouldStartGraceOnPaymentFailure(user, now, shouldGrantGraceForSubscription(c, sc, sub)) {
+		asyncGraceEligible := shouldGrantGraceForSubscription(c, sc, sub)
+		if isFailedPaymentStripeStatus(stripeStatus) && shouldStartGraceOnPaymentFailure(user, now, asyncGraceEligible) {
 			if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
 				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period")
 				return
+			} else if asyncGraceEligible {
+				sendACHVerificationGraceEmail(c, user.ID)
 			}
 		} else if isFailedPaymentStripeStatus(stripeStatus) && !isGraceActive(user, now) {
 			_, err = c.Conn.Exec(c, `
@@ -746,6 +765,8 @@ func handleInvoicePaymentFailed(c *RequestContext, sc *stripe.Client, inv *strip
 	if shouldStartGraceOnPaymentFailure(user, now, grantGrace) {
 		if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
 			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period from invoice.payment_failed")
+		} else if grantGrace {
+			sendACHVerificationGraceEmail(c, user.ID)
 		}
 	} else if hardDecline && !isGraceActive(user, now) {
 		status := "incomplete"
@@ -987,5 +1008,38 @@ func paymentIntentHostedVerificationURL(pi *stripe.PaymentIntent) string {
 	if pi == nil || pi.NextAction == nil || pi.NextAction.VerifyWithMicrodeposits == nil {
 		return ""
 	}
-	return pi.NextAction.VerifyWithMicrodeposits.HostedVerificationURL
+	hostedURL := pi.NextAction.VerifyWithMicrodeposits.HostedVerificationURL
+	if hostedURL == "" {
+		return ""
+	}
+	return appendReturnURLParam(hostedURL, bankVerificationReturnURL())
+}
+
+func appendReturnURLParam(rawURL, returnURL string) string {
+	if rawURL == "" || returnURL == "" {
+		return rawURL
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	q := u.Query()
+	q.Set("return_url", returnURL)
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
+func bankVerificationReturnURL() string {
+	const verificationCompleteParam = "bank_verified"
+	const verificationCompleteValue = "1"
+
+	base := hmnurl.BuildHSFMembership()
+	u, err := url.Parse(base)
+	if err != nil {
+		return base
+	}
+	q := u.Query()
+	q.Set(verificationCompleteParam, verificationCompleteValue)
+	u.RawQuery = q.Encode()
+	return u.String()
 }

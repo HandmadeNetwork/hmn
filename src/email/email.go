@@ -265,6 +265,13 @@ type PaymentFailedEmailData struct {
 	GracePeriodEnd        string
 }
 
+type ACHVerificationGraceEmailData struct {
+	Name                  string
+	HomepageUrl           string
+	ManageSubscriptionUrl string
+	GracePeriodEnd        string
+}
+
 func SendPaymentFailedEmail(
 	toAddress string,
 	toName string,
@@ -303,6 +310,43 @@ func SendPaymentFailedEmail(
 	b2 := perf.StartBlock("EMAIL", "Sending email")
 	defer b2.End()
 	err = sendMail(toAddress, toName, "[Handmade Software Foundation] Payment failed", contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+	b2.End()
+
+	return nil
+}
+
+func SendACHVerificationGraceEmail(
+	toAddress string,
+	toName string,
+	gracePeriodEnd *time.Time,
+	perf *perf.RequestPerf,
+) error {
+	defer perf.StartBlock("EMAIL", "ACH verification grace email").End()
+
+	gracePeriodEndStr := ""
+	if gracePeriodEnd != nil && !gracePeriodEnd.IsZero() {
+		gracePeriodEndStr = gracePeriodEnd.Format("January 2, 2006")
+	}
+
+	b1 := perf.StartBlock("EMAIL", "Rendering template")
+	defer b1.End()
+	contents, err := renderTemplate("email_ach_verification_grace.html", ACHVerificationGraceEmailData{
+		Name:                  toName,
+		HomepageUrl:           hmnurl.BuildHomepage(),
+		ManageSubscriptionUrl: hmnurl.BuildSubscriptionManage(),
+		GracePeriodEnd:        gracePeriodEndStr,
+	})
+	if err != nil {
+		return err
+	}
+	b1.End()
+
+	b2 := perf.StartBlock("EMAIL", "Sending email")
+	defer b2.End()
+	err = sendMail(toAddress, toName, "[Handmade Software Foundation] Verify your bank account", contents)
 	if err != nil {
 		return oops.New(err, "Failed to send email")
 	}
@@ -380,9 +424,13 @@ func sendMail(toAddress, toName, subject string, contentHTML []byte) error {
 		subject,
 		processedHTML,
 	)
+	var auth smtp.Auth
+	if config.Config.Email.MailerUsername != "" || config.Config.Email.MailerPassword != "" {
+		auth = smtp.PlainAuth("", config.Config.Email.MailerUsername, config.Config.Email.MailerPassword, config.Config.Email.ServerAddress)
+	}
 	return smtp.SendMail(
 		fmt.Sprintf("%s:%d", config.Config.Email.ServerAddress, config.Config.Email.ServerPort),
-		smtp.PlainAuth("", config.Config.Email.MailerUsername, config.Config.Email.MailerPassword, config.Config.Email.ServerAddress),
+		auth,
 		config.Config.Email.FromAddress,
 		[]string{toAddress},
 		contents,
