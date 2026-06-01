@@ -73,9 +73,9 @@ func isFailedPaymentStripeStatus(status string) bool {
 	}
 }
 
-func startGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int, now time.Time) error {
+func startGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int, now time.Time) (bool, error) {
 	endsAt := now.Add(subscriptionGracePeriodDuration)
-	_, err := conn.Exec(ctx, `
+	tag, err := conn.Exec(ctx, `
 		UPDATE hmn_user
 		SET
 			is_subscribed = true,
@@ -84,13 +84,18 @@ func startGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int, now tim
 			grace_period_ends_at = $3,
 			grace_available = false
 		WHERE id = $4
+		  AND grace_available = true
+		  AND (grace_period_ends_at IS NULL OR grace_period_ends_at <= $2)
 	`, SubscriptionStatusGracePeriod, now, endsAt, userID)
 	if err != nil {
-		return err
+		return false, err
+	}
+	if tag.RowsAffected() == 0 {
+		return false, nil
 	}
 	logging.Info().Int("userID", userID).Time("graceEndsAt", endsAt).Msg("started subscription grace period")
 	SyncSupporterDiscordRole(ctx, conn, userID)
-	return nil
+	return true, nil
 }
 
 func clearGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int) error {
@@ -225,7 +230,8 @@ func gracePeriodDaysRemaining(user *models.User, now time.Time) int {
 }
 
 func StartSubscriptionGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int) error {
-	return startGracePeriod(ctx, conn, userID, SubscriptionNow())
+	_, err := startGracePeriod(ctx, conn, userID, SubscriptionNow())
+	return err
 }
 
 func ExpireSubscriptionGracePeriods(ctx context.Context, conn db.ConnOrTx) (int64, error) {

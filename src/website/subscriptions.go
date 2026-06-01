@@ -439,9 +439,10 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 				logging.Error().Err(err).Int("userID", userID).Msg("failed to link pending checkout subscription")
 				return
 			}
-			if err := startGracePeriod(c, c.Conn, userID, now); err != nil {
+			startedGrace, err := startGracePeriod(c, c.Conn, userID, now)
+			if err != nil {
 				logging.Error().Err(err).Int("userID", userID).Msg("failed to start grace period for processing checkout payment")
-			} else {
+			} else if startedGrace {
 				sendACHVerificationGraceEmail(c, userID)
 			}
 		} else if isGraceActive(user, now) {
@@ -568,10 +569,11 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 
 		asyncGraceEligible := shouldGrantGraceForSubscription(c, sc, sub)
 		if isFailedPaymentStripeStatus(stripeStatus) && shouldStartGraceOnPaymentFailure(user, now, asyncGraceEligible) {
-			if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
+			startedGrace, err := startGracePeriod(c, c.Conn, user.ID, now)
+			if err != nil {
 				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period")
 				return
-			} else if asyncGraceEligible {
+			} else if startedGrace && asyncGraceEligible {
 				sendACHVerificationGraceEmail(c, user.ID)
 			}
 		} else if isFailedPaymentStripeStatus(stripeStatus) && !isGraceActive(user, now) {
@@ -763,9 +765,10 @@ func handleInvoicePaymentFailed(c *RequestContext, sc *stripe.Client, inv *strip
 	grantGrace := shouldGrantGraceForInvoice(c, sc, inv)
 	hardDecline := invoicePaymentIsHardDecline(c, sc, inv)
 	if shouldStartGraceOnPaymentFailure(user, now, grantGrace) {
-		if err := startGracePeriod(c, c.Conn, user.ID, now); err != nil {
+		startedGrace, err := startGracePeriod(c, c.Conn, user.ID, now)
+		if err != nil {
 			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period from invoice.payment_failed")
-		} else if grantGrace {
+		} else if startedGrace && grantGrace {
 			sendACHVerificationGraceEmail(c, user.ID)
 		}
 	} else if hardDecline && !isGraceActive(user, now) {

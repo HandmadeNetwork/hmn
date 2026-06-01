@@ -36,6 +36,21 @@ func StripeWebhook(c *RequestContext) ResponseData {
 		return c.JSONErrorResponse(http.StatusBadRequest, oops.New(err, "failed to verify Stripe webhook signature"))
 	}
 
+	if event.ID == "" {
+		c.Logger.Warn().Str("type", string(event.Type)).Msg("Stripe webhook missing event ID; ignoring")
+		return ResponseData{StatusCode: http.StatusOK}
+	}
+
+	wasNewEvent, err := recordStripeWebhookEvent(c, c.Conn, &event)
+	if err != nil {
+		c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to record Stripe webhook event")
+		return ResponseData{StatusCode: http.StatusOK}
+	}
+	if !wasNewEvent {
+		c.Logger.Info().Str("eventID", event.ID).Str("type", string(event.Type)).Msg("duplicate Stripe webhook event; ignoring")
+		return ResponseData{StatusCode: http.StatusOK}
+	}
+
 	c.Logger.Info().Str("type", string(event.Type)).Msg("received Stripe webhook")
 
 	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
@@ -73,6 +88,18 @@ func StripeWebhook(c *RequestContext) ResponseData {
 			Msg("Stripe webhook did not match any known ticket or membership price; ignoring")
 		return ResponseData{StatusCode: http.StatusOK}
 	}
+}
+
+func recordStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *stripe.Event) (bool, error) {
+	tag, err := conn.Exec(ctx, `
+		INSERT INTO stripe_webhook_event (event_id, event_type)
+		VALUES ($1, $2)
+		ON CONFLICT (event_id) DO NOTHING
+	`, event.ID, string(event.Type))
+	if err != nil {
+		return false, oops.New(err, "failed to insert stripe webhook event id")
+	}
+	return tag.RowsAffected() == 1, nil
 }
 
 type stripeWebhookKind int
