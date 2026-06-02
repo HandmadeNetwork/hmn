@@ -490,6 +490,16 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 
 		grantGrace := shouldGrantGraceForPaymentIntent(pi, pmType)
 		shouldSendVerificationEmail := shouldSendACHVerificationEmailForPaymentIntent(pi, pmType)
+		if !grantGrace {
+			// Some ACH checkout.session.completed payloads do not include a usable payment_intent yet.
+			// Fall back to subscription/invoice inspection to decide grace eligibility.
+			if sub, subErr := sc.V1Subscriptions.Retrieve(c, session.Subscription.ID, nil); subErr == nil {
+				grantGrace = shouldGrantGraceForSubscription(c, sc, sub)
+				shouldSendVerificationEmail = shouldSendACHVerificationEmailForSubscription(c, sc, sub)
+			} else {
+				logging.Warn().Err(subErr).Int("userID", userID).Str("subscriptionID", session.Subscription.ID).Msg("failed to inspect subscription for pending checkout grace fallback")
+			}
+		}
 		now := SubscriptionNow()
 
 		if grantGrace && canStartGrace(user, now) {
