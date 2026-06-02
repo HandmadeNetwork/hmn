@@ -84,7 +84,8 @@ func startGracePeriod(ctx context.Context, conn db.ConnOrTx, userID int, now tim
 			subscription_status = $1,
 			grace_period_started_at = $2,
 			grace_period_ends_at = $3,
-			grace_available = false
+			grace_available = false,
+			thank_you_email_sent = false
 		WHERE id = $4
 		  AND grace_available = true
 		  AND (grace_period_ends_at IS NULL OR grace_period_ends_at <= $2)

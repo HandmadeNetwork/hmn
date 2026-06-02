@@ -542,12 +542,29 @@ func runACHVerificationAfterAdvanceScenario(ctx context.Context, pool *pgxpool.P
 	if err != nil {
 		return result, err
 	}
+	user, err := db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", setup.userID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if user.StripeSubscriptionID != nil {
+		if paidInvoice, err := waitForLatestSubscriptionInvoiceStatus(ctx, sc, *user.StripeSubscriptionID, stripe.InvoiceStatusPaid, 20*time.Second); err != nil {
+			return subscriptionTestResultPass, err
+		} else if paidInvoice != nil {
+			_, err = pool.Exec(ctx, `UPDATE hmn_user SET thank_you_email_sent = false WHERE id = $1`, setup.userID)
+			if err != nil {
+				return subscriptionTestResultPass, err
+			}
+			if err := dispatchMembershipWebhook(ctx, pool, sc, "invoice.paid", paidInvoice); err != nil {
+				return subscriptionTestResultPass, fmt.Errorf("dispatch invoice.paid after ACH verification: %w", err)
+			}
+		}
+	}
 	if err := expectScenarioEmailSubjects(ctx, []string{subjectThankYou}); err != nil {
 		return subscriptionTestResultPass, fmt.Errorf("verify thank-you email after ACH verification: %w", err)
 	}
 
 	fmt.Printf("[8/8] Verifying membership is active after ACH verification\n")
-	user, err := db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", setup.userID)
+	user, err = db.QueryOne[models.User](ctx, pool, "SELECT $columns FROM hmn_user WHERE id = $1", setup.userID)
 	if err != nil {
 		return subscriptionTestResultPass, err
 	}
@@ -682,6 +699,7 @@ func runCardRenewalFailureGraceRecoveryScenario(ctx context.Context, pool *pgxpo
 	if err != nil {
 		return subscriptionTestResultPass, err
 	}
+	failedInvoiceID := failedInvoice.ID
 	fmt.Printf("      renewal invoice_id=%s status=%s\n", failedInvoice.ID, failedInvoice.Status)
 
 	fmt.Printf("[8/10] Processing renewal failure webhooks\n")
@@ -718,6 +736,13 @@ func runCardRenewalFailureGraceRecoveryScenario(ctx context.Context, pool *pgxpo
 	}
 	if err := dispatchMembershipWebhook(ctx, pool, sc, "customer.subscription.updated", subscription); err != nil {
 		return subscriptionTestResultPass, err
+	}
+	if failedInvoiceID != "" {
+		if recoveredInvoice, err := sc.V1Invoices.Retrieve(ctx, failedInvoiceID, nil); err == nil && recoveredInvoice.Status == stripe.InvoiceStatusPaid {
+			if err := dispatchMembershipWebhook(ctx, pool, sc, "invoice.paid", recoveredInvoice); err != nil {
+				return subscriptionTestResultPass, err
+			}
+		}
 	}
 	if err := expectScenarioEmailSubjects(ctx, []string{subjectPaymentFailed}); err != nil {
 		return subscriptionTestResultPass, fmt.Errorf("verify payment failed email: %w", err)
@@ -782,6 +807,17 @@ func runCardRenewalFailureGraceRecoveryScenario(ctx context.Context, pool *pgxpo
 	if subscription != nil {
 		if err := dispatchMembershipWebhook(ctx, pool, sc, "customer.subscription.updated", subscription); err != nil {
 			return subscriptionTestResultPass, err
+		}
+	}
+	_, err = pool.Exec(ctx, `UPDATE hmn_user SET thank_you_email_sent = false WHERE id = $1`, userID)
+	if err != nil {
+		return subscriptionTestResultPass, err
+	}
+	if failedInvoiceID != "" {
+		if recoveredInvoice, err := sc.V1Invoices.Retrieve(ctx, failedInvoiceID, nil); err == nil && recoveredInvoice.Status == stripe.InvoiceStatusPaid {
+			if err := dispatchMembershipWebhook(ctx, pool, sc, "invoice.paid", recoveredInvoice); err != nil {
+				return subscriptionTestResultPass, err
+			}
 		}
 	}
 	if err := expectScenarioEmailSubjects(ctx, []string{subjectPaymentFailed, subjectThankYou}); err != nil {
@@ -878,6 +914,36 @@ func waitForSubscriptionStatus(ctx context.Context, sc *stripe.Client, subscript
 		return nil, err
 	}
 	return nil, fmt.Errorf("membership subscription %s did not reach status %v within timeout (last status=%s)", subscriptionID, statuses, sub.Status)
+}
+
+func waitForLatestSubscriptionInvoiceStatus(ctx context.Context, sc *stripe.Client, subscriptionID string, status stripe.InvoiceStatus, timeout time.Duration) (*stripe.Invoice, error) {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		sub, err := sc.V1Subscriptions.Retrieve(ctx, subscriptionID, nil)
+		if err != nil {
+			return nil, err
+		}
+		inv, err := retrieveLatestSubscriptionInvoice(ctx, sc, sub)
+		if err != nil {
+			return nil, err
+		}
+		if inv != nil && inv.Status == status {
+			return inv, nil
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	sub, err := sc.V1Subscriptions.Retrieve(ctx, subscriptionID, nil)
+	if err != nil {
+		return nil, err
+	}
+	inv, err := retrieveLatestSubscriptionInvoice(ctx, sc, sub)
+	if err != nil {
+		return nil, err
+	}
+	if inv == nil {
+		return nil, fmt.Errorf("subscription %s has no latest invoice after waiting for status=%s", subscriptionID, status)
+	}
+	return nil, fmt.Errorf("latest invoice %s did not reach status=%s within timeout (last status=%s)", inv.ID, status, inv.Status)
 }
 
 func retrieveLatestSubscriptionInvoice(ctx context.Context, sc *stripe.Client, sub *stripe.Subscription) (*stripe.Invoice, error) {

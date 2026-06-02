@@ -135,8 +135,12 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	if c.CurrentUser != nil {
 		baseData.Header.UserProfileUrl = hmnurl.BuildUserProfile(c.CurrentUser.Username)
 		showMembershipVerificationBanner := false
+		isPostCheckoutPendingView := c.Req != nil &&
+			c.Req.URL != nil &&
+			c.Req.URL.Query().Get("session_id") != "" &&
+			!c.CurrentUser.IsSubscribed
 		bankVerificationJustCompleted := c.Req != nil && c.Req.URL != nil && c.Req.URL.Query().Get("bank_verified") == "1"
-		if userNeedsBankVerificationReminder(c.CurrentUser) && !bankVerificationJustCompleted {
+		if userNeedsBankVerificationReminder(c.CurrentUser) && !bankVerificationJustCompleted && !isPostCheckoutPendingView {
 			bannerURL := hmnurl.BuildHSFMembership()
 			hasHostedVerification := false
 			if c.CurrentUser.StripeSubscriptionID != nil && config.Config.Stripe.SecretKey != "" {

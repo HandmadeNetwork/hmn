@@ -89,15 +89,17 @@ type ManageSubscriptionTemplateData struct {
 	CancelSubscriptionUrl      string
 	ResumeSubscriptionUrl      string
 	UpdatePaymentMethodUrl     string
-	CurrentCurrencySymbol string
-	CurrentAmount         string
-	PaymentHistory        []PaymentHistoryItem
-	CurrentPeriodEnd      string
-	LastPaymentAmount     string
-	LastPaymentMethod     string
-	GracePeriodEnd        string
-	IsInGracePeriod       bool
-	NeedsBankVerification bool
+	CurrentCurrencySymbol       string
+	CurrentAmount               string
+	PaymentHistory              []PaymentHistoryItem
+	CurrentPeriodEnd            string
+	LastPaymentAmount           string
+	LastPaymentMethod           string
+	GracePeriodEnd              string
+	IsInGracePeriod             bool
+	NeedsBankVerification       bool
+	IsPaymentPending            bool
+	ShowPostCheckoutPendingInfo bool
 
 	DefaultMembershipPriceID string
 	EurMembershipPriceID     string
@@ -168,6 +170,7 @@ func buildMembershipPageData(c *RequestContext, baseData templates.BaseData) Man
 	gracePeriodEnd := ""
 	isInGracePeriod := false
 	needsBankVerification := false
+	isPaymentPending := false
 	if c.CurrentUser != nil && userInGracePeriod(c.CurrentUser) {
 		isInGracePeriod = true
 		if c.CurrentUser.GracePeriodEndsAt != nil {
@@ -181,27 +184,63 @@ func buildMembershipPageData(c *RequestContext, baseData templates.BaseData) Man
 			if hostedBankVerificationURL(c, sc, *c.CurrentUser.StripeSubscriptionID) != "" {
 				needsBankVerification = true
 			}
+			if !needsBankVerification && asyncSubscriptionPaymentStillProcessing(c, sc, *c.CurrentUser.StripeSubscriptionID) {
+				isPaymentPending = true
+			}
 		}
 	}
+	showPostCheckoutPendingInfo := c.CurrentUser != nil &&
+		!c.CurrentUser.IsSubscribed &&
+		strings.TrimSpace(c.Req.URL.Query().Get("session_id")) != ""
 
 	return ManageSubscriptionTemplateData{
-		BaseData:                 baseData,
-		SubscribeUrl:             hmnurl.BuildSubscriptionSubscribe(),
-		CancelSubscriptionUrl:    hmnurl.BuildSubscriptionCancel(),
-		ResumeSubscriptionUrl:    hmnurl.BuildSubscriptionResume(),
-		UpdatePaymentMethodUrl:   hmnurl.BuildSubscriptionUpdatePaymentMethod(),
-		CurrentCurrencySymbol:    currentCurrencySymbol,
-		CurrentAmount:            currentAmount,
-		PaymentHistory:           history,
-		CurrentPeriodEnd:         currentPeriodEnd,
-		LastPaymentAmount:        lastAmount,
-		LastPaymentMethod:        lastMethod,
-		GracePeriodEnd:           gracePeriodEnd,
-		IsInGracePeriod:          isInGracePeriod,
-		NeedsBankVerification:    needsBankVerification,
-		DefaultMembershipPriceID: config.Config.Stripe.PriceID,
-		EurMembershipPriceID:     eurPriceID,
+		BaseData:                  baseData,
+		SubscribeUrl:              hmnurl.BuildSubscriptionSubscribe(),
+		CancelSubscriptionUrl:     hmnurl.BuildSubscriptionCancel(),
+		ResumeSubscriptionUrl:     hmnurl.BuildSubscriptionResume(),
+		UpdatePaymentMethodUrl:    hmnurl.BuildSubscriptionUpdatePaymentMethod(),
+		CurrentCurrencySymbol:     currentCurrencySymbol,
+		CurrentAmount:             currentAmount,
+		PaymentHistory:            history,
+		CurrentPeriodEnd:          currentPeriodEnd,
+		LastPaymentAmount:         lastAmount,
+		LastPaymentMethod:         lastMethod,
+		GracePeriodEnd:            gracePeriodEnd,
+		IsInGracePeriod:           isInGracePeriod,
+		NeedsBankVerification:     needsBankVerification,
+		IsPaymentPending:          isPaymentPending,
+		ShowPostCheckoutPendingInfo: showPostCheckoutPendingInfo,
+		DefaultMembershipPriceID:  config.Config.Stripe.PriceID,
+		EurMembershipPriceID:      eurPriceID,
 	}
+}
+
+func asyncSubscriptionPaymentStillProcessing(ctx context.Context, sc *stripe.Client, subscriptionID string) bool {
+	if sc == nil || subscriptionID == "" {
+		return false
+	}
+
+	params := &stripe.SubscriptionRetrieveParams{}
+	params.AddExpand("latest_invoice")
+	sub, err := sc.V1Subscriptions.Retrieve(ctx, subscriptionID, params)
+	if err != nil || sub == nil || sub.LatestInvoice == nil {
+		return false
+	}
+
+	invParams := &stripe.InvoiceRetrieveParams{}
+	invParams.AddExpand("payments.data.payment.payment_intent")
+	inv, err := sc.V1Invoices.Retrieve(ctx, sub.LatestInvoice.ID, invParams)
+	if err != nil {
+		return false
+	}
+	pi, pmType, err := invoicePaymentIntent(ctx, sc, inv)
+	if err != nil || pi == nil {
+		return false
+	}
+
+	return pi.Status == stripe.PaymentIntentStatusProcessing &&
+		isAsyncPaymentMethodType(pmType) &&
+		!paymentIntentHasMicrodepositVerification(pi)
 }
 
 func SubscriptionSubscribe(c *RequestContext) ResponseData {
@@ -300,6 +339,33 @@ func SubscriptionCancel(c *RequestContext) ResponseData {
 	}
 
 	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+
+	if userInGracePeriod(c.CurrentUser) {
+		_, err := sc.V1Subscriptions.Cancel(c, *c.CurrentUser.StripeSubscriptionID, nil)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to cancel subscription immediately"))
+		}
+
+		_, err = c.Conn.Exec(c, `
+			UPDATE hmn_user
+			SET
+				is_subscribed = false,
+				stripe_subscription_id = NULL,
+				subscription_status = 'canceled',
+				current_period_end = NULL,
+				cancel_at_period_end = false,
+				thank_you_email_sent = false,
+				grace_period_started_at = NULL,
+				grace_period_ends_at = NULL
+			WHERE id = $1
+		`, c.CurrentUser.ID)
+		if err != nil {
+			logging.Error().Err(err).Msg("failed to apply immediate local cancel state for grace-period user")
+		}
+		SyncSupporterDiscordRole(c, c.Conn, c.CurrentUser.ID)
+
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
+	}
 
 	params := &stripe.SubscriptionUpdateParams{
 		CancelAtPeriodEnd: stripe.Bool(true),

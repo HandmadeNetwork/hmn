@@ -17,7 +17,170 @@ func init() {
 	stripe.Key = config.Config.Stripe.SecretKey
 }
 
-// StripeWebhook verifies and routes all Stripe webhook events.
+func beginStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *stripe.Event) (bool, error) {
+	tag, err := conn.Exec(ctx, `
+		INSERT INTO stripe_webhook_event (event_id, event_type, status, last_error, updated_at, processed_at)
+		VALUES ($1, $2, 'processing', NULL, NOW(), NULL)
+		ON CONFLICT (event_id) DO NOTHING
+	`, event.ID, string(event.Type))
+	if err != nil {
+		return false, oops.New(err, "failed to insert stripe webhook event id")
+	}
+	if tag.RowsAffected() == 1 {
+		// First claimant for this event ID.
+		return true, nil
+	}
+
+	status, err := db.QueryOneScalar[string](ctx, conn, `
+		SELECT status
+		FROM stripe_webhook_event
+		WHERE event_id = $1
+	`, event.ID)
+	if err != nil {
+		return false, oops.New(err, "failed to read Stripe webhook event state")
+	}
+	switch status {
+	case "processed", "processing":
+		return false, nil
+	case "failed":
+		tag, err = conn.Exec(ctx, `
+		UPDATE stripe_webhook_event
+		SET
+			event_type = $2,
+			status = 'processing',
+			last_error = NULL,
+			updated_at = NOW(),
+			processed_at = NULL
+		WHERE event_id = $1
+		  AND status = 'failed'
+	`, event.ID, string(event.Type))
+		if err != nil {
+			return false, oops.New(err, "failed to mark stripe webhook event as processing")
+		}
+		return tag.RowsAffected() == 1, nil
+	default:
+		return false, nil
+	}
+}
+
+func shouldProcessMembershipEventOrder(ctx context.Context, conn db.ConnOrTx, event *stripe.Event) (bool, error) {
+	customerID := membershipEventCustomerID(event)
+	if customerID == "" {
+		return true, nil
+	}
+
+	createdAt := event.Created
+	if createdAt <= 0 {
+		return true, nil
+	}
+
+	tag, err := conn.Exec(ctx, `
+		INSERT INTO stripe_membership_event_cursor (customer_id, last_event_created, updated_at)
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (customer_id) DO UPDATE
+		SET
+			last_event_created = EXCLUDED.last_event_created,
+			updated_at = NOW()
+		WHERE stripe_membership_event_cursor.last_event_created <= EXCLUDED.last_event_created
+	`, customerID, createdAt)
+	if err != nil {
+		return false, oops.New(err, "failed to update membership event cursor")
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
+func membershipEventCustomerID(event *stripe.Event) string {
+	if event == nil {
+		return ""
+	}
+	switch event.Type {
+	case stripe.EventTypePaymentIntentProcessing,
+		stripe.EventTypePaymentIntentRequiresAction,
+		stripe.EventTypePaymentIntentPaymentFailed:
+		var pi stripe.PaymentIntent
+		if err := json.Unmarshal(event.Data.Raw, &pi); err != nil {
+			return ""
+		}
+		if pi.Customer == nil {
+			return ""
+		}
+		return pi.Customer.ID
+	case "customer.subscription.created",
+		"customer.subscription.updated",
+		"customer.subscription.deleted":
+		var sub stripe.Subscription
+		if err := json.Unmarshal(event.Data.Raw, &sub); err != nil {
+			return ""
+		}
+		if sub.Customer == nil {
+			return ""
+		}
+		return sub.Customer.ID
+	case "invoice.paid", "invoice.payment_failed":
+		var inv stripe.Invoice
+		if err := json.Unmarshal(event.Data.Raw, &inv); err != nil {
+			return ""
+		}
+		if inv.Customer == nil {
+			return ""
+		}
+		return inv.Customer.ID
+	case "checkout.session.completed", "checkout.session.async_payment_succeeded", "checkout.session.async_payment_failed":
+		var session stripe.CheckoutSession
+		if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
+			return ""
+		}
+		if session.Customer == nil {
+			return ""
+		}
+		return session.Customer.ID
+	case "payment_method.attached":
+		var pm stripe.PaymentMethod
+		if err := json.Unmarshal(event.Data.Raw, &pm); err != nil {
+			return ""
+		}
+		if pm.Customer == nil {
+			return ""
+		}
+		return pm.Customer.ID
+	case "customer.updated":
+		var customer stripe.Customer
+		if err := json.Unmarshal(event.Data.Raw, &customer); err != nil {
+			return ""
+		}
+		return customer.ID
+	default:
+		return ""
+	}
+}
+
+func isMembershipPaymentIntentEvent(event *stripe.Event) bool {
+	if event == nil {
+		return false
+	}
+	switch event.Type {
+	case stripe.EventTypePaymentIntentProcessing,
+		stripe.EventTypePaymentIntentRequiresAction,
+		stripe.EventTypePaymentIntentPaymentFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+func checkMembershipEventOrder(c *RequestContext, event *stripe.Event) bool {
+	shouldProcess, err := shouldProcessMembershipEventOrder(c, c.Conn, event)
+	if err != nil {
+		c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed membership event ordering guard")
+		return false
+	}
+	if !shouldProcess {
+		c.Logger.Info().Str("eventID", event.ID).Str("type", string(event.Type)).Msg("stale membership event by created timestamp; ignoring")
+		return false
+	}
+	return true
+}
+
 func StripeWebhook(c *RequestContext) ResponseData {
 	const MaxBodyBytes = 65536
 	payload, err := io.ReadAll(io.LimitReader(c.Req.Body, MaxBodyBytes))
@@ -64,9 +227,17 @@ func StripeWebhook(c *RequestContext) ResponseData {
 	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
 
 	if isMembershipGracePaymentRetryEvent(&event) {
-		handleMembershipGracePaymentRetryWebhook(c, sc, &event)
+		if checkMembershipEventOrder(c, &event) {
+			handleMembershipGracePaymentRetryWebhook(c, sc, &event)
+		}
 	}
 
+	if isMembershipPaymentIntentEvent(&event) && !checkMembershipEventOrder(c, &event) {
+		if err := finishStripeWebhookEvent(c, c.Conn, &event, nil); err != nil {
+			c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to mark Stripe webhook event processed")
+		}
+		return ResponseData{StatusCode: http.StatusOK}
+	}
 	if tryHandleMembershipPaymentIntentWebhook(c, sc, &event) {
 		if err := finishStripeWebhookEvent(c, c.Conn, &event, nil); err != nil {
 			c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to mark Stripe webhook event processed")
@@ -100,7 +271,9 @@ func StripeWebhook(c *RequestContext) ResponseData {
 		}
 		return res
 	case stripeWebhookKindMembership:
-		handleMembershipStripeEvent(c, sc, &event)
+		if checkMembershipEventOrder(c, &event) {
+			handleMembershipStripeEvent(c, sc, &event)
+		}
 		if err := finishStripeWebhookEvent(c, c.Conn, &event, nil); err != nil {
 			c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to mark Stripe webhook event processed")
 		}
@@ -115,45 +288,6 @@ func StripeWebhook(c *RequestContext) ResponseData {
 		}
 		return ResponseData{StatusCode: http.StatusOK}
 	}
-}
-
-func beginStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *stripe.Event) (bool, error) {
-	status, err := db.QueryOneScalar[string](ctx, conn, `
-		SELECT status
-		FROM stripe_webhook_event
-		WHERE event_id = $1
-	`, event.ID)
-	if err != nil && err != db.NotFound {
-		return false, oops.New(err, "failed to read Stripe webhook event state")
-	}
-	if err == nil && status == "processed" {
-		return false, nil
-	}
-
-	_, err = conn.Exec(ctx, `
-		INSERT INTO stripe_webhook_event (event_id, event_type, status, last_error, updated_at, processed_at)
-		VALUES ($1, $2, 'processing', NULL, NOW(), NULL)
-		ON CONFLICT (event_id) DO NOTHING
-	`, event.ID, string(event.Type))
-	if err != nil {
-		return false, oops.New(err, "failed to insert stripe webhook event id")
-	}
-
-	_, err = conn.Exec(ctx, `
-		UPDATE stripe_webhook_event
-		SET
-			event_type = $2,
-			status = 'processing',
-			last_error = NULL,
-			updated_at = NOW(),
-			processed_at = NULL
-		WHERE event_id = $1
-		  AND status <> 'processed'
-	`, event.ID, string(event.Type))
-	if err != nil {
-		return false, oops.New(err, "failed to mark stripe webhook event as processing")
-	}
-	return true, nil
 }
 
 func finishStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *stripe.Event, processErr error) error {
