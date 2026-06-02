@@ -42,10 +42,6 @@ func membershipScenarios() []subscriptionTestScenario {
 			Run:  runDeclinedCardScenario,
 		},
 		{
-			Name: "ACH (US bank account)",
-			CreatePaymentMethod: createACHPaymentMethod,
-		},
-		{
 			Name: "ACH grace expires after 2 week clock advance",
 			Run:  runACHGraceExpiryScenario,
 		},

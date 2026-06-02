@@ -134,8 +134,10 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 	if c.CurrentUser != nil {
 		baseData.Header.UserProfileUrl = hmnurl.BuildUserProfile(c.CurrentUser.Username)
+		showMembershipVerificationBanner := false
 		bankVerificationJustCompleted := c.Req != nil && c.Req.URL != nil && c.Req.URL.Query().Get("bank_verified") == "1"
 		if userNeedsBankVerificationReminder(c.CurrentUser) && !bankVerificationJustCompleted {
+			showMembershipVerificationBanner = true
 			baseData.Header.ShowMembershipVerificationBanner = true
 			bannerURL := hmnurl.BuildHSFMembership()
 			if c.CurrentUser.StripeSubscriptionID != nil && config.Config.Stripe.SecretKey != "" {
@@ -154,7 +156,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 				baseData.Header.MembershipGraceDaysRemaining,
 			)
 		}
-		if userNeedsDiscordLinkReminder(c.CurrentUser) {
+		if !showMembershipVerificationBanner && userNeedsDiscordLinkReminder(c.CurrentUser) {
 			baseData.Header.ShowMembershipDiscordLinkBanner = true
 			baseData.Header.MembershipDiscordLinkDismissUrl = hmnurl.BuildDismissMembershipDiscordLinkBanner()
 			if c.CurrentSession != nil {

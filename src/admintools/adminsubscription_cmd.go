@@ -2,6 +2,7 @@ package admintools
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -27,6 +28,8 @@ func addSubscriptionCommands(adminCommand *cobra.Command) {
 
 	addSubscriptionTestCommand(cmd)
 	addSubscriptionTestCommand(legacyCmd)
+	addSubscriptionInspectCommand(cmd)
+	addSubscriptionInspectCommand(legacyCmd)
 }
 
 func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
@@ -54,23 +57,75 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 			scenarios := membershipScenarios()
 
 			failed := false
+			passCount := 0
+			pendingCount := 0
+			failCount := 0
+			var failedScenarioNames []string
 			for i, scenario := range scenarios {
 				fmt.Printf("\n========== Scenario %d/%d: %s ==========\n", i+1, len(scenarios), scenario.Name)
 				result, err := runSubscriptionScenario(ctx, pool, sc, scenario)
 				if err != nil {
 					failed = true
+					failCount++
+					failedScenarioNames = append(failedScenarioNames, scenario.Name)
 					fmt.Printf("RESULT: FAIL\n")
 					fmt.Printf("ERROR: %v\n", err)
 				} else if result == subscriptionTestResultPending {
+					pendingCount++
 					fmt.Printf("RESULT: PENDING (expected for ACH verification)\n")
 				} else {
+					passCount++
 					fmt.Printf("RESULT: PASS\n")
+				}
+			}
+
+			fmt.Printf("\n========== Membership Test Summary ==========\n")
+			fmt.Printf("Total scenarios: %d\n", len(scenarios))
+			fmt.Printf("PASS: %d\n", passCount)
+			fmt.Printf("PENDING: %d\n", pendingCount)
+			fmt.Printf("FAIL: %d\n", failCount)
+			if len(failedScenarioNames) > 0 {
+				fmt.Printf("Failed scenarios:\n")
+				for _, name := range failedScenarioNames {
+					fmt.Printf("  - %s\n", name)
 				}
 			}
 
 			if failed {
 				os.Exit(1)
 			}
+		},
+	}
+
+	subscriptionCommand.AddCommand(cmd)
+}
+
+func addSubscriptionInspectCommand(subscriptionCommand *cobra.Command) {
+	cmd := &cobra.Command{
+		Use:   "inspect <username>",
+		Short: "Print membership/payment debug info for a user",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			username := args[0]
+
+			ctx := context.Background()
+			pool := db.NewConnPool()
+			defer pool.Close()
+
+			userID, err := db.QueryOneScalar[int](ctx, pool, `
+				SELECT id
+				FROM hmn_user
+				WHERE LOWER(username) = LOWER($1)
+			`, username)
+			if err != nil {
+				if errors.Is(err, db.NotFound) {
+					fmt.Printf("User not found: %s\n", username)
+					os.Exit(1)
+				}
+				panic(err)
+			}
+
+			printSubscriptionData(ctx, pool, userID)
 		},
 	}
 

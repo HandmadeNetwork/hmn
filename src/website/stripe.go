@@ -41,14 +41,22 @@ func StripeWebhook(c *RequestContext) ResponseData {
 		return ResponseData{StatusCode: http.StatusOK}
 	}
 
-	wasNewEvent, err := recordStripeWebhookEvent(c, c.Conn, &event)
+	shouldProcess, err := beginStripeWebhookEvent(c, c.Conn, &event)
 	if err != nil {
-		c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to record Stripe webhook event")
+		c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to initialize Stripe webhook event state")
 		return ResponseData{StatusCode: http.StatusOK}
 	}
-	if !wasNewEvent {
-		c.Logger.Info().Str("eventID", event.ID).Str("type", string(event.Type)).Msg("duplicate Stripe webhook event; ignoring")
+	if !shouldProcess {
+		c.Logger.Info().Str("eventID", event.ID).Str("type", string(event.Type)).Msg("already processed Stripe webhook event; ignoring")
 		return ResponseData{StatusCode: http.StatusOK}
+	}
+	markFailed := func(processErr error) {
+		if processErr == nil {
+			return
+		}
+		if err := finishStripeWebhookEvent(c, c.Conn, &event, processErr); err != nil {
+			c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to mark Stripe webhook event failure state")
+		}
 	}
 
 	c.Logger.Info().Str("type", string(event.Type)).Msg("received Stripe webhook")
@@ -60,46 +68,123 @@ func StripeWebhook(c *RequestContext) ResponseData {
 	}
 
 	if tryHandleMembershipPaymentIntentWebhook(c, sc, &event) {
+		if err := finishStripeWebhookEvent(c, c.Conn, &event, nil); err != nil {
+			c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to mark Stripe webhook event processed")
+		}
 		return ResponseData{StatusCode: http.StatusOK}
 	}
 
 	priceIDs, err := stripePriceIDsForEvent(c, sc, &event)
 	if err != nil {
+		markFailed(err)
 		c.Logger.Error().Err(err).Str("type", string(event.Type)).Msg("failed to resolve price IDs for stripe event")
 		return ResponseData{StatusCode: http.StatusOK}
 	}
 
 	kind, err := classifyStripePriceIDs(c, c.Conn, priceIDs)
 	if err != nil {
+		markFailed(err)
 		c.Logger.Error().Err(err).Msg("failed to classify stripe webhook by price")
 		return ResponseData{StatusCode: http.StatusOK}
 	}
 
 	switch kind {
 	case stripeWebhookKindTicket:
-		return handleTicketStripeEvent(c, sc, &event)
+		res := handleTicketStripeEvent(c, sc, &event)
+		if res.StatusCode >= http.StatusBadRequest {
+			markFailed(oops.New(nil, "ticket Stripe webhook handler returned status %d", res.StatusCode))
+			return res
+		}
+		if err := finishStripeWebhookEvent(c, c.Conn, &event, nil); err != nil {
+			c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to mark Stripe webhook event processed")
+		}
+		return res
 	case stripeWebhookKindMembership:
 		handleMembershipStripeEvent(c, sc, &event)
+		if err := finishStripeWebhookEvent(c, c.Conn, &event, nil); err != nil {
+			c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to mark Stripe webhook event processed")
+		}
 		return ResponseData{StatusCode: http.StatusOK}
 	default:
 		c.Logger.Warn().
 			Str("type", string(event.Type)).
 			Strs("prices", priceIDs).
 			Msg("Stripe webhook did not match any known ticket or membership price; ignoring")
+		if err := finishStripeWebhookEvent(c, c.Conn, &event, nil); err != nil {
+			c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to mark Stripe webhook event processed")
+		}
 		return ResponseData{StatusCode: http.StatusOK}
 	}
 }
 
-func recordStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *stripe.Event) (bool, error) {
-	tag, err := conn.Exec(ctx, `
-		INSERT INTO stripe_webhook_event (event_id, event_type)
-		VALUES ($1, $2)
+func beginStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *stripe.Event) (bool, error) {
+	status, err := db.QueryOneScalar[string](ctx, conn, `
+		SELECT status
+		FROM stripe_webhook_event
+		WHERE event_id = $1
+	`, event.ID)
+	if err != nil && err != db.NotFound {
+		return false, oops.New(err, "failed to read Stripe webhook event state")
+	}
+	if err == nil && status == "processed" {
+		return false, nil
+	}
+
+	_, err = conn.Exec(ctx, `
+		INSERT INTO stripe_webhook_event (event_id, event_type, status, last_error, updated_at, processed_at)
+		VALUES ($1, $2, 'processing', NULL, NOW(), NULL)
 		ON CONFLICT (event_id) DO NOTHING
 	`, event.ID, string(event.Type))
 	if err != nil {
 		return false, oops.New(err, "failed to insert stripe webhook event id")
 	}
-	return tag.RowsAffected() == 1, nil
+
+	_, err = conn.Exec(ctx, `
+		UPDATE stripe_webhook_event
+		SET
+			event_type = $2,
+			status = 'processing',
+			last_error = NULL,
+			updated_at = NOW(),
+			processed_at = NULL
+		WHERE event_id = $1
+		  AND status <> 'processed'
+	`, event.ID, string(event.Type))
+	if err != nil {
+		return false, oops.New(err, "failed to mark stripe webhook event as processing")
+	}
+	return true, nil
+}
+
+func finishStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *stripe.Event, processErr error) error {
+	if processErr == nil {
+		_, err := conn.Exec(ctx, `
+			UPDATE stripe_webhook_event
+			SET
+				status = 'processed',
+				last_error = NULL,
+				updated_at = NOW(),
+				processed_at = NOW()
+			WHERE event_id = $1
+		`, event.ID)
+		if err != nil {
+			return oops.New(err, "failed to mark stripe webhook event as processed")
+		}
+		return nil
+	}
+
+	_, err := conn.Exec(ctx, `
+		UPDATE stripe_webhook_event
+		SET
+			status = 'failed',
+			last_error = $2,
+			updated_at = NOW()
+		WHERE event_id = $1
+	`, event.ID, processErr.Error())
+	if err != nil {
+		return oops.New(err, "failed to mark stripe webhook event as failed")
+	}
+	return nil
 }
 
 type stripeWebhookKind int

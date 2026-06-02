@@ -31,7 +31,11 @@ func (m AddStripeWebhookEventLedger) Up(ctx context.Context, tx pgx.Tx) error {
 		CREATE TABLE stripe_webhook_event (
 			event_id TEXT PRIMARY KEY,
 			event_type TEXT NOT NULL,
-			received_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+			status TEXT NOT NULL DEFAULT 'processing',
+			last_error TEXT,
+			received_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+			updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+			processed_at TIMESTAMP WITH TIME ZONE
 		)
 	`)
 	return err
