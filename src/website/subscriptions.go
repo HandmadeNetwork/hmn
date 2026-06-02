@@ -97,6 +97,7 @@ type ManageSubscriptionTemplateData struct {
 	LastPaymentMethod     string
 	GracePeriodEnd        string
 	IsInGracePeriod       bool
+	NeedsBankVerification bool
 
 	DefaultMembershipPriceID string
 	EurMembershipPriceID     string
@@ -111,19 +112,6 @@ func SubscriptionManageRedirect(c *RequestContext) ResponseData {
 }
 
 func buildMembershipPageData(c *RequestContext, baseData templates.BaseData) ManageSubscriptionTemplateData {
-	// If the user just completed checkout, Stripe redirects with a session_id.
-	// Verify it so we can show the correct "subscribed" view even if webhooks
-	// haven't updated the DB yet.
-	if c.CurrentUser != nil && !c.CurrentUser.IsSubscribed {
-		if sessionID := c.Req.URL.Query().Get("session_id"); sessionID != "" {
-			sc := stripe.NewClient(config.Config.Stripe.SecretKey)
-			session, err := sc.V1CheckoutSessions.Retrieve(c, sessionID, nil)
-			if err == nil && session.PaymentStatus == stripe.CheckoutSessionPaymentStatusPaid {
-				c.CurrentUser.IsSubscribed = true
-			}
-		}
-	}
-
 	var history []PaymentHistoryItem
 	currentCurrencySymbol := "$"
 	currentAmount := "5.00"
@@ -179,10 +167,20 @@ func buildMembershipPageData(c *RequestContext, baseData templates.BaseData) Man
 
 	gracePeriodEnd := ""
 	isInGracePeriod := false
+	needsBankVerification := false
 	if c.CurrentUser != nil && userInGracePeriod(c.CurrentUser) {
 		isInGracePeriod = true
 		if c.CurrentUser.GracePeriodEndsAt != nil {
 			gracePeriodEnd = c.CurrentUser.GracePeriodEndsAt.UTC().Format("Jan 2, 2006")
+		}
+
+		status := stringOrEmpty(c.CurrentUser.SubscriptionStatus)
+		needsBankVerification = status == SubscriptionStatusPendingVerification || status == "incomplete"
+		if c.CurrentUser.StripeSubscriptionID != nil {
+			sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+			if hostedBankVerificationURL(c, sc, *c.CurrentUser.StripeSubscriptionID) != "" {
+				needsBankVerification = true
+			}
 		}
 	}
 
@@ -200,6 +198,7 @@ func buildMembershipPageData(c *RequestContext, baseData templates.BaseData) Man
 		LastPaymentMethod:        lastMethod,
 		GracePeriodEnd:           gracePeriodEnd,
 		IsInGracePeriod:          isInGracePeriod,
+		NeedsBankVerification:    needsBankVerification,
 		DefaultMembershipPriceID: config.Config.Stripe.PriceID,
 		EurMembershipPriceID:     eurPriceID,
 	}
@@ -424,6 +423,7 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 		}
 
 		grantGrace := shouldGrantGraceForPaymentIntent(pi, pmType)
+		shouldSendVerificationEmail := shouldSendACHVerificationEmailForPaymentIntent(pi, pmType)
 		now := SubscriptionNow()
 
 		if grantGrace && canStartGrace(user, now) {
@@ -442,7 +442,7 @@ func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, sessio
 			startedGrace, err := startGracePeriod(c, c.Conn, userID, now)
 			if err != nil {
 				logging.Error().Err(err).Int("userID", userID).Msg("failed to start grace period for processing checkout payment")
-			} else if startedGrace {
+			} else if startedGrace && shouldSendVerificationEmail {
 				sendACHVerificationGraceEmail(c, userID)
 			}
 		} else if isGraceActive(user, now) {
@@ -568,12 +568,13 @@ func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe
 		}
 
 		asyncGraceEligible := shouldGrantGraceForSubscription(c, sc, sub)
+		shouldSendVerificationEmail := shouldSendACHVerificationEmailForSubscription(c, sc, sub)
 		if isFailedPaymentStripeStatus(stripeStatus) && shouldStartGraceOnPaymentFailure(user, now, asyncGraceEligible) {
 			startedGrace, err := startGracePeriod(c, c.Conn, user.ID, now)
 			if err != nil {
 				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period")
 				return
-			} else if startedGrace && asyncGraceEligible {
+			} else if startedGrace && shouldSendVerificationEmail {
 				sendACHVerificationGraceEmail(c, user.ID)
 			}
 		} else if isFailedPaymentStripeStatus(stripeStatus) && !isGraceActive(user, now) {
@@ -763,12 +764,13 @@ func handleInvoicePaymentFailed(c *RequestContext, sc *stripe.Client, inv *strip
 
 	now := SubscriptionNow()
 	grantGrace := shouldGrantGraceForInvoice(c, sc, inv)
+	shouldSendVerificationEmail := shouldSendACHVerificationEmailForInvoice(c, sc, inv)
 	hardDecline := invoicePaymentIsHardDecline(c, sc, inv)
 	if shouldStartGraceOnPaymentFailure(user, now, grantGrace) {
 		startedGrace, err := startGracePeriod(c, c.Conn, user.ID, now)
 		if err != nil {
 			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period from invoice.payment_failed")
-		} else if startedGrace && grantGrace {
+		} else if startedGrace && shouldSendVerificationEmail {
 			sendACHVerificationGraceEmail(c, user.ID)
 		}
 	} else if hardDecline && !isGraceActive(user, now) {

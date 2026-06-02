@@ -24,6 +24,18 @@ func paymentIntentHasMicrodepositVerification(pi *stripe.PaymentIntent) bool {
 	return pi.NextAction.Type == stripe.PaymentIntentNextActionTypeVerifyWithMicrodeposits
 }
 
+// shouldSendACHVerificationEmailForPaymentIntent returns true only when Stripe
+// indicates the user still needs to complete bank verification.
+func shouldSendACHVerificationEmailForPaymentIntent(pi *stripe.PaymentIntent, paymentMethodType string) bool {
+	if pi == nil {
+		return false
+	}
+	if !isAsyncPaymentMethodType(resolvePaymentMethodType(pi, paymentMethodType)) {
+		return false
+	}
+	return paymentIntentHasMicrodepositVerification(pi)
+}
+
 // shouldGrantGraceForPaymentIntent returns true when payment is in-flight for an async
 // method (e.g. ACH processing or microdeposit verification), not a card decline.
 func shouldGrantGraceForPaymentIntent(pi *stripe.PaymentIntent, paymentMethodType string) bool {
@@ -171,12 +183,37 @@ func shouldGrantGraceForSubscription(ctx context.Context, sc *stripe.Client, sub
 	return shouldGrantGraceForPaymentIntent(pi, pmType)
 }
 
+func shouldSendACHVerificationEmailForSubscription(ctx context.Context, sc *stripe.Client, sub *stripe.Subscription) bool {
+	if sub == nil || sub.LatestInvoice == nil {
+		return false
+	}
+	invParams := &stripe.InvoiceRetrieveParams{}
+	invParams.AddExpand("payments.data.payment.payment_intent")
+	inv, err := sc.V1Invoices.Retrieve(ctx, sub.LatestInvoice.ID, invParams)
+	if err != nil {
+		return false
+	}
+	pi, pmType, err := invoicePaymentIntent(ctx, sc, inv)
+	if err != nil {
+		return false
+	}
+	return shouldSendACHVerificationEmailForPaymentIntent(pi, pmType)
+}
+
 func shouldGrantGraceForInvoice(ctx context.Context, sc *stripe.Client, inv *stripe.Invoice) bool {
 	pi, pmType, err := invoicePaymentIntent(ctx, sc, inv)
 	if err != nil {
 		return false
 	}
 	return shouldGrantGraceForPaymentIntent(pi, pmType)
+}
+
+func shouldSendACHVerificationEmailForInvoice(ctx context.Context, sc *stripe.Client, inv *stripe.Invoice) bool {
+	pi, pmType, err := invoicePaymentIntent(ctx, sc, inv)
+	if err != nil {
+		return false
+	}
+	return shouldSendACHVerificationEmailForPaymentIntent(pi, pmType)
 }
 
 func invoicePaymentIsHardDecline(ctx context.Context, sc *stripe.Client, inv *stripe.Invoice) bool {

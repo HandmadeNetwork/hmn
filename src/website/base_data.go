@@ -137,24 +137,31 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		showMembershipVerificationBanner := false
 		bankVerificationJustCompleted := c.Req != nil && c.Req.URL != nil && c.Req.URL.Query().Get("bank_verified") == "1"
 		if userNeedsBankVerificationReminder(c.CurrentUser) && !bankVerificationJustCompleted {
-			showMembershipVerificationBanner = true
-			baseData.Header.ShowMembershipVerificationBanner = true
 			bannerURL := hmnurl.BuildHSFMembership()
+			hasHostedVerification := false
 			if c.CurrentUser.StripeSubscriptionID != nil && config.Config.Stripe.SecretKey != "" {
 				sc := stripe.NewClient(config.Config.Stripe.SecretKey)
 				if hostedURL := hostedBankVerificationURL(c, sc, *c.CurrentUser.StripeSubscriptionID); hostedURL != "" {
 					bannerURL = hostedURL
+					hasHostedVerification = true
 				}
 			}
-			baseData.Header.MembershipVerificationUrl = bannerURL
-			baseData.Header.MembershipGraceDaysRemaining = gracePeriodDaysRemaining(c.CurrentUser, SubscriptionNow())
-			baseData.Header.MembershipVerificationStateKey = fmt.Sprintf(
-				"user:%d|status:%s|grace_end:%s|days:%d",
-				c.CurrentUser.ID,
-				stringOrEmpty(c.CurrentUser.SubscriptionStatus),
-				timeOrEmpty(c.CurrentUser.GracePeriodEndsAt),
-				baseData.Header.MembershipGraceDaysRemaining,
-			)
+
+			status := stringOrEmpty(c.CurrentUser.SubscriptionStatus)
+			statusImpliesVerificationPending := status == SubscriptionStatusPendingVerification || status == "incomplete"
+			if statusImpliesVerificationPending || hasHostedVerification {
+				showMembershipVerificationBanner = true
+				baseData.Header.ShowMembershipVerificationBanner = true
+				baseData.Header.MembershipVerificationUrl = bannerURL
+				baseData.Header.MembershipGraceDaysRemaining = gracePeriodDaysRemaining(c.CurrentUser, SubscriptionNow())
+				baseData.Header.MembershipVerificationStateKey = fmt.Sprintf(
+					"user:%d|status:%s|grace_end:%s|days:%d",
+					c.CurrentUser.ID,
+					status,
+					timeOrEmpty(c.CurrentUser.GracePeriodEndsAt),
+					baseData.Header.MembershipGraceDaysRemaining,
+				)
+			}
 		}
 		if !showMembershipVerificationBanner && userNeedsDiscordLinkReminder(c.CurrentUser) {
 			baseData.Header.ShowMembershipDiscordLinkBanner = true

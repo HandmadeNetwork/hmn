@@ -5,6 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
+	"strconv"
+	"strings"
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
@@ -33,6 +37,9 @@ func addSubscriptionCommands(adminCommand *cobra.Command) {
 }
 
 func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
+	var scenarioFilter string
+	var openMailpit bool
+
 	cmd := &cobra.Command{
 		Use:   "test",
 		Short: "Run membership test scenarios and print stored DB results",
@@ -46,6 +53,33 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 			pool := db.NewConnPool()
 			defer pool.Close()
 
+			originalEmailConfig := config.Config.Email
+			defer func() {
+				config.Config.Email = originalEmailConfig
+			}()
+
+			mailpit, mailpitInstalled, err := startMembershipMailpit()
+			if err != nil {
+				fmt.Printf("WARNING: failed to start Mailpit, email checks disabled: %v\n", err)
+			}
+			if !mailpitInstalled {
+				fmt.Printf("Mailpit binary not found; skipping email checks.\n")
+			}
+			if mailpit != nil {
+				fmt.Printf("Mailpit started: HTTP=%s SMTP=%s\n", mailpit.httpBaseURL, mailpit.smtpAddr)
+				if openMailpit {
+					if err := openURLInBrowser(mailpit.httpBaseURL); err != nil {
+						fmt.Printf("WARNING: failed to open Mailpit UI: %v\n", err)
+					}
+				}
+				defer func() {
+					if stopErr := mailpit.Stop(); stopErr != nil {
+						fmt.Printf("WARNING: failed to stop Mailpit: %v\n", stopErr)
+					}
+				}()
+				ctx = withMembershipMailpit(ctx, mailpit)
+			}
+
 			if override := config.Config.Stripe.SubscriptionNowOverride; override != "" {
 				fmt.Printf("Using membership time override: %s\n", override)
 			}
@@ -55,6 +89,14 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 
 			sc := stripe.NewClient(config.Config.Stripe.SecretKey)
 			scenarios := membershipScenarios()
+			if scenarioFilter != "" {
+				selected, err := selectMembershipScenarios(scenarios, scenarioFilter)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Invalid --scenario value %q: %v\n", scenarioFilter, err)
+					os.Exit(1)
+				}
+				scenarios = selected
+			}
 
 			failed := false
 			passCount := 0
@@ -62,8 +104,29 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 			failCount := 0
 			var failedScenarioNames []string
 			for i, scenario := range scenarios {
+				if mailpit != nil {
+					if err := mailpit.ClearMessages(); err != nil {
+						fmt.Printf("WARNING: failed to clear Mailpit mailbox before scenario: %v\n", err)
+					}
+				}
+
 				fmt.Printf("\n========== Scenario %d/%d: %s ==========\n", i+1, len(scenarios), scenario.Name)
 				result, err := runSubscriptionScenario(ctx, pool, sc, scenario)
+
+				if mailpit != nil {
+					subjects, subjErr := mailpit.messageSubjects()
+					if subjErr != nil {
+						fmt.Printf("EMAILS: unable to list received messages (%v)\n", subjErr)
+					} else if len(subjects) == 0 {
+						fmt.Printf("EMAILS: none received\n")
+					} else {
+						fmt.Printf("EMAILS: received %d\n", len(subjects))
+						for _, subject := range subjects {
+							fmt.Printf("  - %s\n", subject)
+						}
+					}
+				}
+
 				if err != nil {
 					failed = true
 					failCount++
@@ -96,8 +159,44 @@ func addSubscriptionTestCommand(subscriptionCommand *cobra.Command) {
 			}
 		},
 	}
+	cmd.Flags().StringVar(&scenarioFilter, "scenario", "", "Run a single scenario by 1-based index or exact name")
+	cmd.Flags().BoolVar(&openMailpit, "open-mailpit", false, "Open Mailpit web UI in the default browser when available")
 
 	subscriptionCommand.AddCommand(cmd)
+}
+
+func selectMembershipScenarios(scenarios []subscriptionTestScenario, filter string) ([]subscriptionTestScenario, error) {
+	if idx, err := strconv.Atoi(filter); err == nil {
+		if idx < 1 || idx > len(scenarios) {
+			return nil, fmt.Errorf("index out of range (1-%d)", len(scenarios))
+		}
+		return []subscriptionTestScenario{scenarios[idx-1]}, nil
+	}
+
+	needle := strings.TrimSpace(filter)
+	if needle == "" {
+		return nil, errors.New("scenario name is blank")
+	}
+	for _, scenario := range scenarios {
+		if strings.EqualFold(scenario.Name, needle) {
+			return []subscriptionTestScenario{scenario}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("not found; use 1-%d or one of the scenario names", len(scenarios))
+}
+
+func openURLInBrowser(url string) error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.Command("open", url)
+	case "windows":
+		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
+	}
+	return cmd.Start()
 }
 
 func addSubscriptionInspectCommand(subscriptionCommand *cobra.Command) {

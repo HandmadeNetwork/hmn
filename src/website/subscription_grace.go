@@ -6,8 +6,10 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/perf"
 	"github.com/stripe/stripe-go/v84"
 )
 
@@ -241,8 +243,25 @@ func ExpireSubscriptionGracePeriods(ctx context.Context, conn db.ConnOrTx) (int6
 	}
 	for _, userID := range userIDs {
 		SyncSupporterDiscordRole(ctx, conn, userID)
+		sendGracePeriodEndedEmail(ctx, conn, userID)
 	}
 	return int64(len(userIDs)), nil
+}
+
+func sendGracePeriodEndedEmail(ctx context.Context, conn db.ConnOrTx, userID int) {
+	user, err := db.QueryOne[models.User](ctx, conn, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", userID).Msg("failed to fetch user for grace period ended email")
+		return
+	}
+
+	p := perf.ExtractPerf(ctx)
+	if p == nil {
+		p = perf.MakeNewRequestPerf("subscription grace expiry", "JOB", "/subscription/grace-expiry")
+	}
+	if err := email.SendGracePeriodEndedEmail(user.Email, user.BestName(), p); err != nil {
+		logging.Error().Err(err).Int("userID", userID).Msg("failed to send grace period ended email")
+	}
 }
 
 func shouldRetrySubscriptionPayment(user *models.User) bool {

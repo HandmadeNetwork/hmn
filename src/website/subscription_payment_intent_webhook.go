@@ -55,6 +55,7 @@ func handleMembershipPaymentIntentWebhook(c *RequestContext, sc *stripe.Client, 
 	switch eventType {
 	case stripe.EventTypePaymentIntentProcessing, stripe.EventTypePaymentIntentRequiresAction:
 		if shouldGrantGraceForPaymentIntent(pi, pmType) && canStartGrace(user, now) {
+			shouldSendVerificationEmail := shouldSendACHVerificationEmailForPaymentIntent(pi, pmType)
 			if user.StripeCustomerID == nil || user.StripeSubscriptionID == nil {
 				return true
 			}
@@ -70,7 +71,7 @@ func handleMembershipPaymentIntentWebhook(c *RequestContext, sc *stripe.Client, 
 			startedGrace, err := startGracePeriod(c, c.Conn, user.ID, now)
 			if err != nil {
 				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start grace period from payment intent webhook")
-			} else if startedGrace {
+			} else if startedGrace && shouldSendVerificationEmail {
 				sendACHVerificationGraceEmail(c, user.ID)
 			}
 		}

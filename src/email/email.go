@@ -272,6 +272,12 @@ type ACHVerificationGraceEmailData struct {
 	GracePeriodEnd        string
 }
 
+type GracePeriodEndedEmailData struct {
+	Name                  string
+	HomepageUrl           string
+	ManageSubscriptionUrl string
+}
+
 func SendPaymentFailedEmail(
 	toAddress string,
 	toName string,
@@ -347,6 +353,36 @@ func SendACHVerificationGraceEmail(
 	b2 := perf.StartBlock("EMAIL", "Sending email")
 	defer b2.End()
 	err = sendMail(toAddress, toName, "[Handmade Software Foundation] Verify your bank account", contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+	b2.End()
+
+	return nil
+}
+
+func SendGracePeriodEndedEmail(
+	toAddress string,
+	toName string,
+	perf *perf.RequestPerf,
+) error {
+	defer perf.StartBlock("EMAIL", "Grace period ended email").End()
+
+	b1 := perf.StartBlock("EMAIL", "Rendering template")
+	defer b1.End()
+	contents, err := renderTemplate("email_grace_period_ended.html", GracePeriodEndedEmailData{
+		Name:                  toName,
+		HomepageUrl:           hmnurl.BuildHomepage(),
+		ManageSubscriptionUrl: hmnurl.BuildSubscriptionManage(),
+	})
+	if err != nil {
+		return err
+	}
+	b1.End()
+
+	b2 := perf.StartBlock("EMAIL", "Sending email")
+	defer b2.End()
+	err = sendMail(toAddress, toName, "[Handmade Software Foundation] Grace period ended", contents)
 	if err != nil {
 		return oops.New(err, "Failed to send email")
 	}
