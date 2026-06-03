@@ -27,23 +27,6 @@ func HSFDetails(c *RequestContext) ResponseData {
 }
 
 func HSFMembership(c *RequestContext) ResponseData {
-	// If the user just completed checkout, Stripe redirects with a session_id.
-	// Verify it before building base/header data so both header and page body
-	// are rendered from the same up-to-date subscription state.
-	if c.CurrentUser != nil && !c.CurrentUser.IsSubscribed {
-		if sessionID := c.Req.URL.Query().Get("session_id"); sessionID != "" {
-			sc := stripe.NewClient(config.Config.Stripe.SecretKey)
-			session, err := sc.V1CheckoutSessions.Retrieve(c, sessionID, nil)
-			if err == nil && session.PaymentStatus == stripe.CheckoutSessionPaymentStatusPaid {
-				c.CurrentUser.IsSubscribed = true
-				activeStatus := "active"
-				c.CurrentUser.SubscriptionStatus = &activeStatus
-				c.CurrentUser.GracePeriodStartedAt = nil
-				c.CurrentUser.GracePeriodEndsAt = nil
-			}
-		}
-	}
-
 	if c.Req.URL.Query().Get("payment_method_updated") == "1" && c.CurrentUser != nil {
 		sc := stripe.NewClient(config.Config.Stripe.SecretKey)
 		if err := retryPastDueSubscriptionPayment(c, c.Conn, sc, c.CurrentUser); err != nil {

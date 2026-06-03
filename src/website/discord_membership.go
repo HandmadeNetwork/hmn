@@ -54,7 +54,7 @@ func SyncSupporterDiscordRole(ctx context.Context, conn db.ConnOrTx, userID int)
 }
 
 func SyncSupporterDiscordRoleForCustomer(ctx context.Context, conn db.ConnOrTx, stripeCustomerID string) {
-	if config.Config.Discord.SupporterRoleID == "" || stripeCustomerID == "" {
+	if config.Config.Discord.SupporterRoleID == "" {
 		return
 	}
 

@@ -17,12 +17,22 @@ func init() {
 	stripe.Key = config.Config.Stripe.SecretKey
 }
 
+const (
+	stripeWebhookStatusProcessing = "processing"
+	stripeWebhookStatusProcessed  = "processed"
+	stripeWebhookStatusFailed     = "failed"
+
+	stripeEventPaymentIntentProcessing    = "payment_intent.processing"
+	stripeEventPaymentIntentRequiresAction = "payment_intent.requires_action"
+	stripeEventPaymentIntentPaymentFailed  = "payment_intent.payment_failed"
+)
+
 func beginStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *stripe.Event) (bool, error) {
 	tag, err := conn.Exec(ctx, `
 		INSERT INTO stripe_webhook_event (event_id, event_type, status, last_error, updated_at, processed_at)
-		VALUES ($1, $2, 'processing', NULL, NOW(), NULL)
+		VALUES ($1, $2, $3, NULL, NOW(), NULL)
 		ON CONFLICT (event_id) DO NOTHING
-	`, event.ID, string(event.Type))
+	`, event.ID, string(event.Type), stripeWebhookStatusProcessing)
 	if err != nil {
 		return false, oops.New(err, "failed to insert stripe webhook event id")
 	}
@@ -40,20 +50,20 @@ func beginStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *strip
 		return false, oops.New(err, "failed to read Stripe webhook event state")
 	}
 	switch status {
-	case "processed", "processing":
+	case stripeWebhookStatusProcessed, stripeWebhookStatusProcessing:
 		return false, nil
-	case "failed":
+	case stripeWebhookStatusFailed:
 		tag, err = conn.Exec(ctx, `
 		UPDATE stripe_webhook_event
 		SET
 			event_type = $2,
-			status = 'processing',
+			status = $3,
 			last_error = NULL,
 			updated_at = NOW(),
 			processed_at = NULL
 		WHERE event_id = $1
-		  AND status = 'failed'
-	`, event.ID, string(event.Type))
+		  AND status = $4
+	`, event.ID, string(event.Type), stripeWebhookStatusProcessing, stripeWebhookStatusFailed)
 		if err != nil {
 			return false, oops.New(err, "failed to mark stripe webhook event as processing")
 		}
@@ -94,9 +104,9 @@ func membershipEventCustomerID(event *stripe.Event) string {
 		return ""
 	}
 	switch event.Type {
-	case stripe.EventTypePaymentIntentProcessing,
-		stripe.EventTypePaymentIntentRequiresAction,
-		stripe.EventTypePaymentIntentPaymentFailed:
+	case stripeEventPaymentIntentProcessing,
+		stripeEventPaymentIntentRequiresAction,
+		stripeEventPaymentIntentPaymentFailed:
 		var pi stripe.PaymentIntent
 		if err := json.Unmarshal(event.Data.Raw, &pi); err != nil {
 			return ""
@@ -159,9 +169,9 @@ func isMembershipPaymentIntentEvent(event *stripe.Event) bool {
 		return false
 	}
 	switch event.Type {
-	case stripe.EventTypePaymentIntentProcessing,
-		stripe.EventTypePaymentIntentRequiresAction,
-		stripe.EventTypePaymentIntentPaymentFailed:
+	case stripeEventPaymentIntentProcessing,
+		stripeEventPaymentIntentRequiresAction,
+		stripeEventPaymentIntentPaymentFailed:
 		return true
 	default:
 		return false
@@ -230,6 +240,10 @@ func StripeWebhook(c *RequestContext) ResponseData {
 		if checkMembershipEventOrder(c, &event) {
 			handleMembershipGracePaymentRetryWebhook(c, sc, &event)
 		}
+		if err := finishStripeWebhookEvent(c, c.Conn, &event, nil); err != nil {
+			c.Logger.Error().Err(err).Str("eventID", event.ID).Msg("failed to mark Stripe webhook event processed")
+		}
+		return ResponseData{StatusCode: http.StatusOK}
 	}
 
 	if isMembershipPaymentIntentEvent(&event) && !checkMembershipEventOrder(c, &event) {
@@ -295,12 +309,12 @@ func finishStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *stri
 		_, err := conn.Exec(ctx, `
 			UPDATE stripe_webhook_event
 			SET
-				status = 'processed',
+				status = $2,
 				last_error = NULL,
 				updated_at = NOW(),
 				processed_at = NOW()
 			WHERE event_id = $1
-		`, event.ID)
+		`, event.ID, stripeWebhookStatusProcessed)
 		if err != nil {
 			return oops.New(err, "failed to mark stripe webhook event as processed")
 		}
@@ -310,11 +324,11 @@ func finishStripeWebhookEvent(ctx context.Context, conn db.ConnOrTx, event *stri
 	_, err := conn.Exec(ctx, `
 		UPDATE stripe_webhook_event
 		SET
-			status = 'failed',
-			last_error = $2,
+			status = $2,
+			last_error = $3,
 			updated_at = NOW()
 		WHERE event_id = $1
-	`, event.ID, processErr.Error())
+	`, event.ID, stripeWebhookStatusFailed, processErr.Error())
 	if err != nil {
 		return oops.New(err, "failed to mark stripe webhook event as failed")
 	}

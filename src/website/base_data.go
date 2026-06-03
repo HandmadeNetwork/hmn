@@ -1,7 +1,6 @@
 package website
 
 import (
-	"fmt"
 	"time"
 
 	"git.handmade.network/hmn/hmn/src/buildcss"
