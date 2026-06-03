@@ -1,0 +1,1126 @@
+package website
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/email"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/logging"
+	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/templates"
+	"github.com/stripe/stripe-go/v84"
+)
+
+// handleMembershipStripeEvent handles membership Stripe webhook events.
+func handleMembershipStripeEvent(c *RequestContext, sc *stripe.Client, event *stripe.Event) {
+	switch event.Type {
+	case "checkout.session.completed", "checkout.session.async_payment_succeeded":
+		var session stripe.CheckoutSession
+		if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
+			c.Logger.Error().Err(err).Str("type", string(event.Type)).Msg("failed to unmarshal checkout session")
+			return
+		}
+		handleCheckoutSessionCompleted(c, sc, &session)
+	case "customer.subscription.created":
+		var sub stripe.Subscription
+		if err := json.Unmarshal(event.Data.Raw, &sub); err != nil {
+			c.Logger.Error().Err(err).Msg("failed to unmarshal customer.subscription.created")
+			return
+		}
+		handleSubscriptionCreated(c, sc, &sub)
+	case "customer.subscription.updated":
+		var sub stripe.Subscription
+		if err := json.Unmarshal(event.Data.Raw, &sub); err != nil {
+			c.Logger.Error().Err(err).Msg("failed to unmarshal customer.subscription.updated")
+			return
+		}
+		c.Logger.Trace().RawJSON("sub_json", event.Data.Raw).Msg("received subscription update JSON")
+		handleSubscriptionUpdated(c, sc, &sub)
+	case "customer.subscription.deleted":
+		var sub stripe.Subscription
+		if err := json.Unmarshal(event.Data.Raw, &sub); err != nil {
+			c.Logger.Error().Err(err).Msg("failed to unmarshal customer.subscription.deleted")
+			return
+		}
+		handleSubscriptionDeleted(c, sc, &sub)
+	case "invoice.paid":
+		var inv stripe.Invoice
+		if err := json.Unmarshal(event.Data.Raw, &inv); err != nil {
+			c.Logger.Error().Err(err).Msg("failed to unmarshal invoice.paid")
+			return
+		}
+		handleInvoicePaid(c, sc, &inv)
+	case "invoice.payment_failed":
+		var inv stripe.Invoice
+		if err := json.Unmarshal(event.Data.Raw, &inv); err != nil {
+			c.Logger.Error().Err(err).Msg("failed to unmarshal invoice.payment_failed")
+			return
+		}
+		handleInvoicePaymentFailed(c, sc, &inv)
+	case "checkout.session.async_payment_failed":
+		var session stripe.CheckoutSession
+		if err := json.Unmarshal(event.Data.Raw, &session); err != nil {
+			c.Logger.Error().Err(err).Msg("failed to unmarshal checkout.session.async_payment_failed")
+			return
+		}
+		handleCheckoutAsyncPaymentFailed(c, sc, &session)
+	}
+}
+
+type PaymentHistoryItem struct {
+	Date     string
+	Amount   string
+	CardInfo string
+}
+
+type ManageSubscriptionTemplateData struct {
+	templates.BaseData
+	SubscribeUrl               string
+	CancelSubscriptionUrl      string
+	ResumeSubscriptionUrl      string
+	UpdatePaymentMethodUrl     string
+	CurrentCurrencySymbol       string
+	CurrentAmount               string
+	PaymentHistory              []PaymentHistoryItem
+	CurrentPeriodEnd            string
+	LastPaymentAmount           string
+	LastPaymentMethod           string
+	GracePeriodEnd              string
+	IsInGracePeriod             bool
+	NeedsBankVerification       bool
+	IsPaymentPending            bool
+	ShowPostCheckoutPendingInfo bool
+
+	DefaultMembershipPriceID string
+	EurMembershipPriceID     string
+}
+
+func SubscriptionManageRedirect(c *RequestContext) ResponseData {
+	target := hmnurl.BuildHSFMembership()
+	if query := c.Req.URL.RawQuery; query != "" {
+		target += "?" + query
+	}
+	return c.Redirect(target, http.StatusSeeOther)
+}
+
+func buildMembershipPageData(c *RequestContext, baseData templates.BaseData) ManageSubscriptionTemplateData {
+	var history []PaymentHistoryItem
+	currentCurrencySymbol := "$"
+	currentAmount := "5.00"
+
+	if c.CurrentUser != nil && c.CurrentUser.IsSubscribed {
+		payments, _ := db.Query[models.UserPayment](c, c.Conn, "SELECT $columns FROM user_payment WHERE user_id = $1 ORDER BY paid_at DESC", c.CurrentUser.ID)
+		if len(payments) > 0 {
+			if strings.EqualFold(payments[0].Currency, "eur") {
+				currentCurrencySymbol = "€"
+			}
+			currentAmount = fmt.Sprintf("%.2f", float64(payments[0].AmountCents)/100.0)
+		}
+
+		for _, p := range payments {
+			sym := "$"
+			if strings.EqualFold(p.Currency, "eur") {
+				sym = "€"
+			}
+			card := ""
+			if p.CardBrand != nil {
+				card = strings.ToUpper(*p.CardBrand)
+			}
+			if p.CardLast4 != nil {
+				if card != "" {
+					card += " "
+				}
+				card += "•••• " + *p.CardLast4
+			}
+			history = append(history, PaymentHistoryItem{
+				Date:     p.PaidAt.UTC().Format("Jan 2, 2006"),
+				Amount:   fmt.Sprintf("%s%.2f", sym, float64(p.AmountCents)/100.0),
+				CardInfo: card,
+			})
+		}
+	}
+
+	currentPeriodEnd := ""
+	if c.CurrentUser != nil && c.CurrentUser.CurrentPeriodEnd != nil {
+		currentPeriodEnd = c.CurrentUser.CurrentPeriodEnd.UTC().Format("Jan 2, 2006")
+	}
+
+	lastAmount := ""
+	lastMethod := ""
+	if len(history) > 0 {
+		lastAmount = history[0].Amount
+		lastMethod = history[0].CardInfo
+	}
+
+	eurPriceID := ""
+	if alts := config.Config.Stripe.MembershipAlternatePriceIDs; len(alts) > 0 {
+		eurPriceID = alts[0]
+	}
+
+	gracePeriodEnd := ""
+	isInGracePeriod := false
+	needsBankVerification := false
+	isPaymentPending := false
+	if c.CurrentUser != nil && userInGracePeriod(c.CurrentUser) {
+		isInGracePeriod = true
+		if c.CurrentUser.GracePeriodEndsAt != nil {
+			gracePeriodEnd = c.CurrentUser.GracePeriodEndsAt.UTC().Format("Jan 2, 2006")
+		}
+
+		status := stringOrEmpty(c.CurrentUser.SubscriptionStatus)
+		needsBankVerification = status == SubscriptionStatusPendingVerification || status == "incomplete"
+		if c.CurrentUser.StripeSubscriptionID != nil {
+			sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+			if hostedBankVerificationURL(c, sc, *c.CurrentUser.StripeSubscriptionID) != "" {
+				needsBankVerification = true
+			}
+			if !needsBankVerification && asyncSubscriptionPaymentStillProcessing(c, sc, *c.CurrentUser.StripeSubscriptionID) {
+				isPaymentPending = true
+			}
+		}
+	}
+	showPostCheckoutPendingInfo := c.CurrentUser != nil &&
+		!c.CurrentUser.IsSubscribed &&
+		strings.TrimSpace(c.Req.URL.Query().Get("session_id")) != ""
+
+	return ManageSubscriptionTemplateData{
+		BaseData:                  baseData,
+		SubscribeUrl:              hmnurl.BuildSubscriptionSubscribe(),
+		CancelSubscriptionUrl:     hmnurl.BuildSubscriptionCancel(),
+		ResumeSubscriptionUrl:     hmnurl.BuildSubscriptionResume(),
+		UpdatePaymentMethodUrl:    hmnurl.BuildSubscriptionUpdatePaymentMethod(),
+		CurrentCurrencySymbol:     currentCurrencySymbol,
+		CurrentAmount:             currentAmount,
+		PaymentHistory:            history,
+		CurrentPeriodEnd:          currentPeriodEnd,
+		LastPaymentAmount:         lastAmount,
+		LastPaymentMethod:         lastMethod,
+		GracePeriodEnd:            gracePeriodEnd,
+		IsInGracePeriod:           isInGracePeriod,
+		NeedsBankVerification:     needsBankVerification,
+		IsPaymentPending:          isPaymentPending,
+		ShowPostCheckoutPendingInfo: showPostCheckoutPendingInfo,
+		DefaultMembershipPriceID:  config.Config.Stripe.PriceID,
+		EurMembershipPriceID:      eurPriceID,
+	}
+}
+
+func asyncSubscriptionPaymentStillProcessing(ctx context.Context, sc *stripe.Client, subscriptionID string) bool {
+	if sc == nil || subscriptionID == "" {
+		return false
+	}
+
+	params := &stripe.SubscriptionRetrieveParams{}
+	params.AddExpand("latest_invoice")
+	sub, err := sc.V1Subscriptions.Retrieve(ctx, subscriptionID, params)
+	if err != nil || sub == nil || sub.LatestInvoice == nil {
+		return false
+	}
+
+	invParams := &stripe.InvoiceRetrieveParams{}
+	invParams.AddExpand("payments.data.payment.payment_intent")
+	inv, err := sc.V1Invoices.Retrieve(ctx, sub.LatestInvoice.ID, invParams)
+	if err != nil {
+		return false
+	}
+	pi, pmType, err := invoicePaymentIntent(ctx, sc, inv)
+	if err != nil || pi == nil {
+		return false
+	}
+
+	return pi.Status == stripe.PaymentIntentStatusProcessing &&
+		isAsyncPaymentMethodType(pmType) &&
+		!paymentIntentHasMicrodepositVerification(pi)
+}
+
+func SubscriptionSubscribe(c *RequestContext) ResponseData {
+	if c.CurrentUser.IsSubscribed {
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
+	}
+	if userInGracePeriod(c.CurrentUser) {
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
+	}
+
+	if err := c.Req.ParseForm(); err != nil {
+		return c.ErrorResponse(http.StatusBadRequest, oops.New(err, "failed to parse subscribe form"))
+	}
+
+	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+
+	priceID := strings.TrimSpace(c.Req.FormValue("price_id"))
+	if priceID == "" {
+		priceID = config.Config.Stripe.PriceID
+	}
+	if !membershipPriceIDAllowed(priceID) {
+		return c.RejectRequest("Membership billing is not configured. Set Stripe.PriceID (and optional MembershipAlternatePriceIDs) in config.")
+	}
+
+	params := &stripe.CheckoutSessionCreateParams{
+		Mode:              stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		SuccessURL:        stripe.String(hmnurl.BuildHSFMembership() + "?session_id={CHECKOUT_SESSION_ID}"),
+		CancelURL:         stripe.String(hmnurl.BuildHSFMembership()),
+		ClientReferenceID: stripe.String(strconv.Itoa(c.CurrentUser.ID)),
+		LineItems: []*stripe.CheckoutSessionCreateLineItemParams{
+			{
+				Price:    stripe.String(priceID),
+				Quantity: stripe.Int64(1),
+			},
+		},
+		CustomerEmail: stripe.String(c.CurrentUser.Email),
+		SubscriptionData: &stripe.CheckoutSessionCreateSubscriptionDataParams{
+			Metadata: map[string]string{"user_id": strconv.Itoa(c.CurrentUser.ID)},
+		},
+	}
+
+	p, err := sc.V1Prices.Retrieve(c, priceID, nil)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get requested price"))
+	}
+	targetCurrency := p.Currency
+	targetAmount := p.UnitAmount
+
+	if c.CurrentUser.StripeCustomerID != nil {
+		params.Customer = stripe.String(*c.CurrentUser.StripeCustomerID)
+		params.CustomerEmail = nil
+
+		listParams := &stripe.CheckoutSessionListParams{
+			Customer: stripe.String(*c.CurrentUser.StripeCustomerID),
+			Status:   stripe.String(string(stripe.CheckoutSessionStatusOpen)),
+		}
+
+		iter := sc.V1CheckoutSessions.List(c, listParams)
+		var existingURL string
+		var outdatedSessionID string
+		var listErr error
+		iter(func(session *stripe.CheckoutSession, err error) bool {
+			listErr = err
+			if err == nil && session != nil {
+				if session.Currency == targetCurrency && session.AmountTotal == targetAmount {
+					existingURL = session.URL
+				} else {
+					outdatedSessionID = session.ID
+				}
+			}
+			return false // pull only the first item
+		})
+
+		if listErr != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(listErr, "failed to list checkout sessions"))
+		}
+
+		if existingURL != "" {
+			return c.Redirect(existingURL, http.StatusSeeOther)
+		} else if outdatedSessionID != "" {
+			_, _ = sc.V1CheckoutSessions.Expire(c, outdatedSessionID, nil)
+		}
+	}
+
+	s, err := sc.V1CheckoutSessions.Create(c, params)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create checkout session"))
+	}
+
+	return c.Redirect(s.URL, http.StatusSeeOther)
+}
+
+func SubscriptionCancel(c *RequestContext) ResponseData {
+	if c.CurrentUser.StripeSubscriptionID == nil {
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
+	}
+
+	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+
+	if userInGracePeriod(c.CurrentUser) {
+		_, err := sc.V1Subscriptions.Cancel(c, *c.CurrentUser.StripeSubscriptionID, nil)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to cancel subscription immediately"))
+		}
+
+		_, err = c.Conn.Exec(c, `
+			UPDATE hmn_user
+			SET
+				is_subscribed = false,
+				stripe_subscription_id = NULL,
+				subscription_status = 'canceled',
+				current_period_end = NULL,
+				cancel_at_period_end = false,
+				thank_you_email_sent = false,
+				grace_period_started_at = NULL,
+				grace_period_ends_at = NULL
+			WHERE id = $1
+		`, c.CurrentUser.ID)
+		if err != nil {
+			logging.Error().Err(err).Msg("failed to apply immediate local cancel state for grace-period user")
+		}
+		SyncSupporterDiscordRole(c, c.Conn, c.CurrentUser.ID)
+
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
+	}
+
+	params := &stripe.SubscriptionUpdateParams{
+		CancelAtPeriodEnd: stripe.Bool(true),
+	}
+	_, err := sc.V1Subscriptions.Update(c, *c.CurrentUser.StripeSubscriptionID, params)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to cancel subscription"))
+	}
+
+	_, err = c.Conn.Exec(c, "UPDATE hmn_user SET cancel_at_period_end = true WHERE id = $1", c.CurrentUser.ID)
+	if err != nil {
+		logging.Error().Err(err).Msg("failed to update user cancel_at_period_end optimistically")
+	}
+
+	return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
+}
+
+func SubscriptionResume(c *RequestContext) ResponseData {
+	if c.CurrentUser.StripeSubscriptionID == nil {
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
+	}
+
+	if c.CurrentUser.CurrentPeriodEnd == nil || c.CurrentUser.CurrentPeriodEnd.Before(SubscriptionNow()) {
+		return c.Redirect(hmnurl.BuildSubscriptionSubscribe(), http.StatusSeeOther)
+	}
+
+	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+
+	params := &stripe.SubscriptionUpdateParams{
+		CancelAtPeriodEnd: stripe.Bool(false),
+	}
+	_, err := sc.V1Subscriptions.Update(c, *c.CurrentUser.StripeSubscriptionID, params)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to resume subscription"))
+	}
+
+	_, err = c.Conn.Exec(c, "UPDATE hmn_user SET cancel_at_period_end = false WHERE id = $1", c.CurrentUser.ID)
+	if err != nil {
+		logging.Error().Err(err).Msg("failed to update user cancel_at_period_end optimistically")
+	}
+
+	return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
+}
+
+func SubscriptionUpdatePaymentMethod(c *RequestContext) ResponseData {
+	if !c.CurrentUser.IsSubscribed || c.CurrentUser.StripeCustomerID == nil {
+		return c.Redirect(hmnurl.BuildHSFMembership(), http.StatusSeeOther)
+	}
+
+	sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+	returnURL := hmnurl.BuildHSFMembershipPaymentMethodReturn()
+	params := &stripe.BillingPortalSessionCreateParams{
+		Customer:  stripe.String(*c.CurrentUser.StripeCustomerID),
+		ReturnURL: stripe.String(returnURL),
+		FlowData: &stripe.BillingPortalSessionCreateFlowDataParams{
+			Type: stripe.String(string(stripe.BillingPortalSessionFlowTypePaymentMethodUpdate)),
+			AfterCompletion: &stripe.BillingPortalSessionCreateFlowDataAfterCompletionParams{
+				Type: stripe.String(string(stripe.BillingPortalSessionFlowAfterCompletionTypeRedirect)),
+				Redirect: &stripe.BillingPortalSessionCreateFlowDataAfterCompletionRedirectParams{
+					ReturnURL: stripe.String(returnURL),
+				},
+			},
+		},
+	}
+	session, err := sc.V1BillingPortalSessions.Create(c, params)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to create billing portal session"))
+	}
+
+	return c.Redirect(session.URL, http.StatusSeeOther)
+}
+
+func handleSubscriptionCreated(c *RequestContext, sc *stripe.Client, sub *stripe.Subscription) {
+	if uidStr, ok := sub.Metadata["user_id"]; ok {
+		if uid, err := strconv.Atoi(uidStr); err == nil {
+			renewalDate := getSubscriptionPeriodEnd(sub)
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user 
+				SET 
+					stripe_customer_id = $1, 
+					stripe_subscription_id = $2, 
+					subscription_status = $3,
+					current_period_end = $4
+				WHERE id = $5
+			`, sub.Customer.ID, sub.ID, sub.Status, renewalDate, uid)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", uid).Msg("failed to handle subscription.created")
+			}
+		}
+	}
+}
+
+func handleCheckoutSessionCompleted(c *RequestContext, sc *stripe.Client, session *stripe.CheckoutSession) {
+	if session.ClientReferenceID == "" {
+		logging.Error().Msg("checkout.session.completed missing client_reference_id")
+		return
+	}
+
+	userID, err := strconv.Atoi(session.ClientReferenceID)
+	if err != nil {
+		logging.Error().Err(err).Str("client_reference_id", session.ClientReferenceID).Msg("invalid client_reference_id")
+		return
+	}
+
+	if session.Customer == nil || session.Subscription == nil {
+		logging.Error().Int("userID", userID).Msg("checkout.session.completed missing customer or subscription")
+		return
+	}
+
+	if session.PaymentStatus != stripe.CheckoutSessionPaymentStatusPaid {
+		user, err := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", userID).Msg("failed to fetch user for pending checkout session")
+			return
+		}
+
+		pi, pmType, err := checkoutSessionPaymentIntent(c, sc, session)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", userID).Msg("failed to load checkout payment intent")
+			return
+		}
+
+		grantGrace := shouldGrantGraceForPaymentIntent(pi, pmType)
+		shouldSendVerificationEmail := shouldSendACHVerificationEmailForPaymentIntent(pi, pmType)
+		if !grantGrace {
+			// Some ACH checkout.session.completed payloads do not include a usable payment_intent yet.
+			// Fall back to subscription/invoice inspection to decide grace eligibility.
+			if sub, subErr := sc.V1Subscriptions.Retrieve(c, session.Subscription.ID, nil); subErr == nil {
+				grantGrace = shouldGrantGraceForSubscription(c, sc, sub)
+				shouldSendVerificationEmail = shouldSendACHVerificationEmailForSubscription(c, sc, sub)
+			} else {
+				logging.Warn().Err(subErr).Int("userID", userID).Str("subscriptionID", session.Subscription.ID).Msg("failed to inspect subscription for pending checkout grace fallback")
+			}
+		}
+		now := SubscriptionNow()
+
+		if grantGrace && canStartGrace(user, now) {
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user
+				SET
+					stripe_customer_id = $1,
+					stripe_subscription_id = $2,
+					cancel_at_period_end = false
+				WHERE id = $3
+			`, session.Customer.ID, session.Subscription.ID, userID)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", userID).Msg("failed to link pending checkout subscription")
+				return
+			}
+			startedGrace, err := startGracePeriod(c, c.Conn, userID, now)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", userID).Msg("failed to start grace period for processing checkout payment")
+			} else if startedGrace && shouldSendVerificationEmail {
+				sendACHVerificationGraceEmail(c, userID)
+			}
+		} else if isGraceActive(user, now) {
+			// Grace may already have started via payment_intent.requires_action/processing.
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user
+				SET
+					stripe_customer_id = $1,
+					stripe_subscription_id = $2,
+					cancel_at_period_end = false,
+					is_subscribed = true,
+					subscription_status = $4
+				WHERE id = $3
+			`, session.Customer.ID, session.Subscription.ID, userID, SubscriptionStatusGracePeriod)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", userID).Msg("failed to link checkout subscription during active grace")
+			}
+			SyncSupporterDiscordRole(c, c.Conn, userID)
+		} else {
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user
+				SET
+					is_subscribed = false,
+					stripe_customer_id = $1,
+					stripe_subscription_id = $2,
+					subscription_status = $3,
+					cancel_at_period_end = false
+				WHERE id = $4
+			`, session.Customer.ID, session.Subscription.ID, "incomplete", userID)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", userID).Msg("failed to link incomplete checkout subscription")
+			}
+			SyncSupporterDiscordRole(c, c.Conn, userID)
+		}
+
+		logging.Info().
+			Int("userID", userID).
+			Str("paymentStatus", string(session.PaymentStatus)).
+			Bool("grantGrace", grantGrace).
+			Str("paymentMethodType", pmType).
+			Msg("checkout completed with pending payment")
+		return
+	}
+
+	user, err := db.QueryOne[models.User](c, c.Conn, `
+		UPDATE hmn_user 
+		SET 
+			is_subscribed = true, 
+			stripe_customer_id = $1, 
+			stripe_subscription_id = $2, 
+			subscription_status = 'active',
+			cancel_at_period_end = false,
+			grace_period_started_at = NULL,
+			grace_period_ends_at = NULL,
+			grace_available = true
+		WHERE id = $3
+		RETURNING $columns
+	`, session.Customer.ID, session.Subscription.ID, userID)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", userID).Msg("failed to update user subscription status")
+	} else {
+		logging.Info().Int("userID", userID).Msg("user subscription linked, attempting thank you email")
+		attemptThankYouEmail(c, user.ID, session.AmountTotal, session.Currency)
+		SyncSupporterDiscordRole(c, c.Conn, userID)
+	}
+}
+
+func sendACHVerificationGraceEmail(c *RequestContext, userID int) {
+	user, err := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", userID)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", userID).Msg("failed to fetch user for ACH verification grace email")
+		return
+	}
+
+	err = email.SendACHVerificationGraceEmail(user.Email, user.BestName(), user.GracePeriodEndsAt, c.Perf)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", userID).Msg("failed to send ACH verification grace email")
+	}
+}
+
+func handleSubscriptionUpdated(c *RequestContext, sc *stripe.Client, sub *stripe.Subscription) {
+	renewalDate := getSubscriptionPeriodEnd(sub)
+	now := SubscriptionNow()
+	stripeStatus := string(sub.Status)
+
+	user, err := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE stripe_customer_id = $1", sub.Customer.ID)
+	if err == db.NotFound {
+		if uidStr, ok := sub.Metadata["user_id"]; ok {
+			if uid, subErr := strconv.Atoi(uidStr); subErr == nil {
+				user, err = db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", uid)
+			}
+		}
+	}
+
+	if err != nil {
+		logging.Error().Err(err).Str("customerID", sub.Customer.ID).Msg("failed to fetch user for subscription update")
+		return
+	}
+
+	isCancelling := sub.CancelAtPeriodEnd || (sub.CancelAt > 0 && sub.Status != "canceled")
+
+	logging.Info().
+		Int("userID", user.ID).
+		Str("status", stripeStatus).
+		Bool("cancelAtPeriodEnd", sub.CancelAtPeriodEnd).
+		Int64("cancelAt", sub.CancelAt).
+		Bool("isCancelling", isCancelling).
+		Msg("updating user subscription from webhook")
+
+	if isFailedPaymentStripeStatus(stripeStatus) {
+		if isGraceActive(user, now) {
+			if err := retryPastDueSubscriptionPayment(c, c.Conn, sc, user); err != nil {
+				logging.Warn().Err(err).Int("userID", user.ID).Msg("failed to retry subscription payment on subscription update")
+			} else {
+				refreshed, refreshErr := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", user.ID)
+				if refreshErr == nil {
+					user = refreshed
+				}
+				if refreshedSub, retrieveErr := sc.V1Subscriptions.Retrieve(c, sub.ID, nil); retrieveErr == nil {
+					stripeStatus = string(refreshedSub.Status)
+				}
+			}
+		}
+
+		asyncGraceEligible := shouldGrantGraceForSubscription(c, sc, sub)
+		shouldSendVerificationEmail := shouldSendACHVerificationEmailForSubscription(c, sc, sub)
+		if isFailedPaymentStripeStatus(stripeStatus) && shouldStartGraceOnPaymentFailure(user, now, asyncGraceEligible) {
+			startedGrace, err := startGracePeriod(c, c.Conn, user.ID, now)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period")
+				return
+			} else if startedGrace && shouldSendVerificationEmail {
+				sendACHVerificationGraceEmail(c, user.ID)
+			}
+		} else if isFailedPaymentStripeStatus(stripeStatus) && !isGraceActive(user, now) {
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user 
+				SET 
+					stripe_customer_id = $1,
+					stripe_subscription_id = $2,
+					subscription_status = $3, 
+					cancel_at_period_end = $4,
+					is_subscribed = false,
+					current_period_end = $5
+				WHERE id = $6
+			`, sub.Customer.ID, sub.ID, stripeStatus, isCancelling, renewalDate, user.ID)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update user subscription from webhook")
+			}
+			SyncSupporterDiscordRole(c, c.Conn, user.ID)
+			return
+		}
+
+		if !isFailedPaymentStripeStatus(stripeStatus) {
+			// Payment retry cleared the past-due state; fall through to active handling.
+		} else if isGraceActive(user, now) {
+			// Grace already started via startGracePeriod; sync Stripe metadata only.
+			_, err = c.Conn.Exec(c, `
+				UPDATE hmn_user
+				SET
+					stripe_customer_id = $1,
+					stripe_subscription_id = $2,
+					cancel_at_period_end = $3,
+					is_subscribed = true,
+					current_period_end = $4
+				WHERE id = $5
+			`, sub.Customer.ID, sub.ID, isCancelling, renewalDate, user.ID)
+			if err != nil {
+				logging.Error().Err(err).Int("userID", user.ID).Msg("failed to sync subscription metadata during grace")
+			}
+			SyncSupporterDiscordRole(c, c.Conn, user.ID)
+			return
+		}
+	}
+
+	isSubscribed := stripeSubscriptionGrantsAccess(stripeStatus)
+	if isSubscribed {
+		if err := clearGracePeriod(c, c.Conn, user.ID); err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to clear subscription grace period")
+		}
+	}
+
+	_, err = c.Conn.Exec(c, `
+		UPDATE hmn_user 
+		SET 
+			stripe_customer_id = $1,
+			stripe_subscription_id = $2,
+			subscription_status = $3, 
+			cancel_at_period_end = $4,
+			is_subscribed = $5,
+			current_period_end = $6
+		WHERE id = $7
+	`, sub.Customer.ID, sub.ID, stripeStatus, isCancelling, isSubscribed, renewalDate, user.ID)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to update user subscription from webhook")
+	}
+	SyncSupporterDiscordRole(c, c.Conn, user.ID)
+
+	if isCancelling && !user.CancelAtPeriodEnd {
+		var expirationDate *time.Time
+		if sub.CancelAt > 0 {
+			t := time.Unix(sub.CancelAt, 0)
+			expirationDate = &t
+		} else if renewalDate != nil {
+			expirationDate = renewalDate
+		}
+		logging.Info().Int("userID", user.ID).Msg("sending subscription cancellation initiation email")
+		err = email.SendSubscriptionCancelledEmail(user.Email, user.BestName(), expirationDate, c.Perf)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to send cancellation initiation email")
+		}
+	}
+}
+
+func handleSubscriptionDeleted(c *RequestContext, sc *stripe.Client, sub *stripe.Subscription) {
+	user, err := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE stripe_customer_id = $1", sub.Customer.ID)
+	if err == db.NotFound {
+		if uidStr, ok := sub.Metadata["user_id"]; ok {
+			if uid, subErr := strconv.Atoi(uidStr); subErr == nil {
+				user, err = db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", uid)
+			}
+		}
+	}
+
+	if err != nil {
+		logging.Error().Err(err).Str("customerID", sub.Customer.ID).Msg("failed to fetch user for subscription deletion")
+		return
+	}
+
+	_, err = c.Conn.Exec(c, `
+		UPDATE hmn_user
+		SET
+			is_subscribed = false,
+			stripe_subscription_id = NULL,
+			subscription_status = 'canceled',
+			current_period_end = NULL,
+			cancel_at_period_end = false,
+			thank_you_email_sent = false,
+			grace_period_started_at = NULL,
+			grace_period_ends_at = NULL
+		WHERE id = $1
+	`, user.ID)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to handle subscription deletion")
+		return
+	}
+
+	logging.Info().Int("userID", user.ID).Msg("user subscription deactivated")
+	SyncSupporterDiscordRole(c, c.Conn, user.ID)
+
+	if !sub.CancelAtPeriodEnd {
+		err = email.SendSubscriptionCancelledEmail(user.Email, user.BestName(), nil, c.Perf)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to send cancellation email")
+		}
+	}
+}
+
+func handleInvoicePaid(c *RequestContext, sc *stripe.Client, inv *stripe.Invoice) {
+	if inv.Customer == nil {
+		return
+	}
+
+	user, err := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE stripe_customer_id = $1", inv.Customer.ID)
+	if err == db.NotFound {
+	}
+	if err != nil {
+		logging.Error().Err(err).Str("customerID", inv.Customer.ID).Msg("failed to fetch user for invoice.paid")
+		return
+	}
+
+	details := getPaymentDetails(c, sc, inv)
+
+	_, err = c.Conn.Exec(c, `
+		INSERT INTO user_payment (user_id, stripe_invoice_id, amount_cents, currency, payment_method_type, card_last4, card_brand, paid_at, stripe_fee_cents, net_amount_cents)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		ON CONFLICT (stripe_invoice_id) DO UPDATE SET 
+			payment_method_type = EXCLUDED.payment_method_type,
+			card_last4 = EXCLUDED.card_last4,
+			card_brand = EXCLUDED.card_brand,
+			stripe_fee_cents = EXCLUDED.stripe_fee_cents,
+			net_amount_cents = EXCLUDED.net_amount_cents
+	`, user.ID, inv.ID, inv.AmountPaid, string(inv.Currency), details.methodType, details.last4, details.brand, time.Unix(inv.StatusTransitions.PaidAt, 0), details.feeCents, details.netCents)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to record user payment")
+	}
+
+	subscriptionID := subscriptionIDFromInvoice(inv)
+	if subscriptionID == "" && user.StripeSubscriptionID != nil {
+		subscriptionID = *user.StripeSubscriptionID
+	}
+	var renewalDate *time.Time
+	if subscriptionID != "" {
+		sub, err := sc.V1Subscriptions.Retrieve(c, subscriptionID, nil)
+		if err == nil {
+			renewalDate = getSubscriptionPeriodEnd(sub)
+		} else {
+			logging.Warn().Err(err).Int("userID", user.ID).Str("subscriptionID", subscriptionID).Msg("failed to retrieve subscription after invoice payment")
+		}
+	}
+	if err := activateSubscriptionAfterSuccessfulPayment(c, c.Conn, user.ID, renewalDate); err != nil {
+		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to activate subscription after invoice payment")
+	}
+
+	attemptThankYouEmail(c, user.ID, inv.AmountPaid, inv.Currency)
+	SyncSupporterDiscordRole(c, c.Conn, user.ID)
+}
+
+func handleInvoicePaymentFailed(c *RequestContext, sc *stripe.Client, inv *stripe.Invoice) {
+	if inv.Customer == nil {
+		return
+	}
+
+	user, err := db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE stripe_customer_id = $1", inv.Customer.ID)
+	if err != nil {
+		logging.Error().Err(err).Str("customerID", inv.Customer.ID).Msg("failed to fetch user for invoice.payment_failed")
+		return
+	}
+
+	now := SubscriptionNow()
+	grantGrace := shouldGrantGraceForInvoice(c, sc, inv)
+	shouldSendVerificationEmail := shouldSendACHVerificationEmailForInvoice(c, sc, inv)
+	hardDecline := invoicePaymentIsHardDecline(c, sc, inv)
+	if shouldStartGraceOnPaymentFailure(user, now, grantGrace) {
+		startedGrace, err := startGracePeriod(c, c.Conn, user.ID, now)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to start subscription grace period from invoice.payment_failed")
+		} else if startedGrace && shouldSendVerificationEmail {
+			sendACHVerificationGraceEmail(c, user.ID)
+		}
+	} else if hardDecline && !isGraceActive(user, now) {
+		status := "incomplete"
+		if inv.Status != "" {
+			status = string(inv.Status)
+		}
+		if err := revokeSubscriptionAccessAfterDeclinedPayment(c, c.Conn, user.ID, status); err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to revoke access after declined invoice payment")
+		}
+	} else if !isGraceActive(user, now) && !user.GraceAvailable {
+		_, err = c.Conn.Exec(c, `
+			UPDATE hmn_user
+			SET is_subscribed = false, subscription_status = $1
+			WHERE id = $2
+		`, SubscriptionStatusGraceFailed, user.ID)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", user.ID).Msg("failed to mark subscription grace_failed")
+		}
+		SyncSupporterDiscordRole(c, c.Conn, user.ID)
+	}
+
+	user, err = db.QueryOne[models.User](c, c.Conn, "SELECT $columns FROM hmn_user WHERE id = $1", user.ID)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to reload user after payment failure")
+		return
+	}
+
+	amountStr := ""
+	if inv.AmountDue > 0 {
+		curr := strings.ToUpper(string(inv.Currency))
+		symbol := "$"
+		if curr != "USD" {
+			symbol = curr + " "
+		}
+		amountStr = fmt.Sprintf("%s%.2f", symbol, float64(inv.AmountDue)/100.0)
+	}
+
+	var nextAttemptDate *time.Time
+	if inv.NextPaymentAttempt > 0 {
+		t := time.Unix(inv.NextPaymentAttempt, 0)
+		nextAttemptDate = &t
+	}
+
+	logging.Info().Int("userID", user.ID).Str("invoiceID", inv.ID).Msg("sending payment failed email")
+	err = email.SendPaymentFailedEmail(user.Email, user.BestName(), amountStr, nextAttemptDate, user.GracePeriodEndsAt, c.Perf)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to send payment failed email")
+	}
+}
+
+func getSubscriptionPeriodEnd(sub *stripe.Subscription) *time.Time {
+	if sub != nil && sub.Items != nil && len(sub.Items.Data) > 0 {
+		t := time.Unix(sub.Items.Data[0].CurrentPeriodEnd, 0)
+		return &t
+	}
+	return nil
+}
+
+type paymentDetails struct {
+	methodType *string
+	last4      *string
+	brand      *string
+	feeCents   *int
+	netCents   *int
+}
+
+func getPaymentDetails(c context.Context, sc *stripe.Client, inv *stripe.Invoice) paymentDetails {
+	var details paymentDetails
+	params := &stripe.InvoicePaymentListParams{
+		Invoice: stripe.String(inv.ID),
+	}
+	params.AddExpand("data.payment.charge.balance_transaction")
+	params.AddExpand("data.payment.payment_intent.latest_charge")
+
+	sc.V1InvoicePayments.List(c, params)(func(ip *stripe.InvoicePayment, err error) bool {
+		if err != nil || ip.Payment == nil {
+			return true
+		}
+
+		var targetCharge *stripe.Charge
+		if ip.Payment.Charge != nil {
+			targetCharge = ip.Payment.Charge
+		} else if ip.Payment.PaymentIntent != nil && ip.Payment.PaymentIntent.LatestCharge != nil {
+			targetCharge = ip.Payment.PaymentIntent.LatestCharge
+		}
+
+		if targetCharge == nil {
+			return true
+		}
+
+		if targetCharge.PaymentMethodDetails != nil {
+			mt := string(targetCharge.PaymentMethodDetails.Type)
+			details.methodType = &mt
+			if targetCharge.PaymentMethodDetails.Card != nil {
+				l4 := targetCharge.PaymentMethodDetails.Card.Last4
+				details.last4 = &l4
+				b := string(targetCharge.PaymentMethodDetails.Card.Brand)
+				details.brand = &b
+			} else if targetCharge.PaymentMethodDetails.USBankAccount != nil {
+				l4 := targetCharge.PaymentMethodDetails.USBankAccount.Last4
+				details.last4 = &l4
+				b := targetCharge.PaymentMethodDetails.USBankAccount.BankName
+				details.brand = &b
+			}
+		}
+
+		bt := targetCharge.BalanceTransaction
+		if bt == nil || (bt.Net == 0 && inv.AmountPaid != 0) {
+			retrieveParams := &stripe.ChargeRetrieveParams{}
+			retrieveParams.AddExpand("balance_transaction")
+			fullCharge, err := sc.V1Charges.Retrieve(c, targetCharge.ID, retrieveParams)
+			if err == nil && fullCharge.BalanceTransaction != nil && (fullCharge.BalanceTransaction.Net != 0 || inv.AmountPaid == 0) {
+				bt = fullCharge.BalanceTransaction
+			} else {
+				btListParams := &stripe.BalanceTransactionListParams{
+					Source: stripe.String(targetCharge.ID),
+				}
+				sc.V1BalanceTransactions.List(c, btListParams)(func(item *stripe.BalanceTransaction, err error) bool {
+					if err == nil && (item.Net != 0 || inv.AmountPaid == 0) {
+						bt = item
+						return false
+					}
+					return true
+				})
+			}
+		}
+
+		if bt != nil {
+			fc := int(bt.Fee)
+			details.feeCents = &fc
+			nc := int(bt.Net)
+			details.netCents = &nc
+		}
+
+		return false // Found a payment, stop iteration
+	})
+
+	return details
+}
+
+func attemptThankYouEmail(c *RequestContext, userID int, amountCents int64, currency stripe.Currency) {
+	tx, err := c.Conn.Begin(c)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", userID).Msg("failed to begin transaction for thank you email")
+		return
+	}
+	defer tx.Rollback(c)
+
+	user, err := db.QueryOne[models.User](c, tx, "SELECT $columns FROM hmn_user WHERE id = $1 FOR UPDATE", userID)
+	if err != nil {
+		if err != db.NotFound {
+			logging.Error().Err(err).Int("userID", userID).Msg("failed to query user for thank you email")
+		}
+		return
+	}
+
+	// Only send if we have both pieces of info (active status and renewal date) and haven't sent it yet.
+	// We check that the renewal date is at least reasonably in the future to avoid race conditions
+	// where an old or "initiation" date is still in the DB.
+	shouldSend := false
+	if user.IsSubscribed && user.CurrentPeriodEnd != nil && user.CurrentPeriodEnd.After(SubscriptionNow().Add(24*time.Hour)) && !user.ThankYouEmailSent {
+		shouldSend = true
+		_, err = tx.Exec(c, "UPDATE hmn_user SET thank_you_email_sent = true WHERE id = $1", userID)
+		if err != nil {
+			logging.Error().Err(err).Int("userID", userID).Msg("failed to update thank_you_email_sent flag")
+			return
+		}
+	}
+
+	err = tx.Commit(c)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", userID).Msg("failed to commit transaction for thank you email")
+		return
+	}
+
+	if shouldSend {
+		sendThankYouEmail(c, user, user.CurrentPeriodEnd, amountCents, currency)
+	}
+}
+
+func sendThankYouEmail(c *RequestContext, user *models.User, renewalDate *time.Time, amountCents int64, currency stripe.Currency) {
+	amountStr := ""
+	if amountCents > 0 {
+		curr := strings.ToUpper(string(currency))
+		symbol := "$"
+		if curr != "USD" {
+			symbol = curr + " "
+		}
+		amountStr = fmt.Sprintf("%s%.2f", symbol, float64(amountCents)/100.0)
+	}
+
+	err := email.SendThankYouEmail(user.Email, user.BestName(), renewalDate, amountStr, c.Perf)
+	if err != nil {
+		logging.Error().Err(err).Int("userID", user.ID).Msg("failed to send thank you email")
+	}
+}
+
+func hostedBankVerificationURL(ctx context.Context, sc *stripe.Client, subscriptionID string) string {
+	if sc == nil || subscriptionID == "" {
+		return ""
+	}
+
+	params := &stripe.SubscriptionRetrieveParams{}
+	params.AddExpand("latest_invoice")
+	sub, err := sc.V1Subscriptions.Retrieve(ctx, subscriptionID, params)
+	if err != nil {
+		logging.Warn().Err(err).Str("subscriptionID", subscriptionID).Msg("failed to retrieve subscription for bank verification banner")
+		return ""
+	}
+	if sub.LatestInvoice == nil || sub.LatestInvoice.ID == "" {
+		return ""
+	}
+
+	listParams := &stripe.InvoicePaymentListParams{
+		Invoice: stripe.String(sub.LatestInvoice.ID),
+	}
+	listParams.AddExpand("data.payment.payment_intent")
+
+	var hostedURL string
+	sc.V1InvoicePayments.List(ctx, listParams)(func(ip *stripe.InvoicePayment, err error) bool {
+		if err != nil {
+			logging.Warn().Err(err).Str("invoiceID", sub.LatestInvoice.ID).Msg("failed to list invoice payments for bank verification banner")
+			return false
+		}
+		if ip == nil || ip.Payment == nil || ip.Payment.PaymentIntent == nil {
+			return true
+		}
+		if url := paymentIntentHostedVerificationURL(ip.Payment.PaymentIntent); url != "" {
+			hostedURL = url
+			return false
+		}
+		return true
+	})
+
+	return hostedURL
+}
+
+func paymentIntentHostedVerificationURL(pi *stripe.PaymentIntent) string {
+	if pi == nil || pi.NextAction == nil || pi.NextAction.VerifyWithMicrodeposits == nil {
+		return ""
+	}
+	hostedURL := pi.NextAction.VerifyWithMicrodeposits.HostedVerificationURL
+	if hostedURL == "" {
+		return ""
+	}
+	return appendReturnURLParam(hostedURL, bankVerificationReturnURL())
+}
+
+func appendReturnURLParam(rawURL, returnURL string) string {
+	if rawURL == "" || returnURL == "" {
+		return rawURL
+	}
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	q := u.Query()
+	q.Set("return_url", returnURL)
+	u.RawQuery = q.Encode()
+	return u.String()
+}
+
+func bankVerificationReturnURL() string {
+	const verificationCompleteParam = "bank_verified"
+	const verificationCompleteValue = "1"
+
+	base := hmnurl.BuildHSFMembership()
+	u, err := url.Parse(base)
+	if err != nil {
+		return base
+	}
+	q := u.Query()
+	q.Set(verificationCompleteParam, verificationCompleteValue)
+	u.RawQuery = q.Encode()
+	return u.String()
+}

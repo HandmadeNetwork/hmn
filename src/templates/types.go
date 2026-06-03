@@ -80,6 +80,14 @@ type Header struct {
 
 	BannerEvent     *BannerEvent
 	SuppressBanners bool
+
+	ShowMembershipVerificationBanner bool
+	MembershipVerificationUrl        string
+	MembershipGraceDaysRemaining     int
+
+	ShowMembershipDiscordLinkBanner  bool
+	MembershipDiscordLinkUrl         string
+	MembershipDiscordLinkDismissUrl  string
 }
 
 type BannerEvent struct {
@@ -269,6 +277,9 @@ type User struct {
 
 	DiscordSaveShowcase                 bool
 	DiscordDeleteSnippetOnMessageDelete bool
+
+	IsSubscribed      bool
+	CancelAtPeriodEnd bool
 
 	IsEduTester bool
 	IsEduAuthor bool

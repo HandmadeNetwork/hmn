@@ -1006,6 +1006,12 @@ func BuildDiscordUnlink() string {
 	return Url("/_discord_unlink", nil)
 }
 
+var RegexDismissMembershipDiscordLinkBanner = regexp.MustCompile("^/_dismiss_membership_discord_link_banner$")
+
+func BuildDismissMembershipDiscordLinkBanner() string {
+	return Url("/_dismiss_membership_discord_link_banner", nil)
+}
+
 var RegexDiscordShowcaseBacklog = regexp.MustCompile("^/discord_showcase_backlog$")
 
 func BuildDiscordShowcaseBacklog() string {
@@ -1088,6 +1094,40 @@ var RegexHSFMembership = regexp.MustCompile(`^/foundation/membership$`)
 
 func BuildHSFMembership() string {
 	return Url("/foundation/membership", nil)
+}
+
+func BuildHSFMembershipPaymentMethodReturn() string {
+	return Url("/foundation/membership", []Q{{Name: "payment_method_updated", Value: "1"}})
+}
+
+var RegexSubscriptionManage = regexp.MustCompile(`^/foundation/membership/manage$`)
+
+func BuildSubscriptionManage() string {
+	return BuildHSFMembership()
+}
+
+var RegexSubscriptionSubscribe = regexp.MustCompile(`^/foundation/membership/subscribe$`)
+
+func BuildSubscriptionSubscribe() string {
+	return Url("/foundation/membership/subscribe", nil)
+}
+
+var RegexSubscriptionCancel = regexp.MustCompile(`^/foundation/membership/cancel$`)
+
+func BuildSubscriptionCancel() string {
+	return Url("/foundation/membership/cancel", nil)
+}
+
+var RegexSubscriptionResume = regexp.MustCompile(`^/foundation/membership/resume$`)
+
+func BuildSubscriptionResume() string {
+	return Url("/foundation/membership/resume", nil)
+}
+
+var RegexSubscriptionUpdatePaymentMethod = regexp.MustCompile(`^/foundation/membership/update-payment-method$`)
+
+func BuildSubscriptionUpdatePaymentMethod() string {
+	return Url("/foundation/membership/update-payment-method", nil)
 }
 
 /*

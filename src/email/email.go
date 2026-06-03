@@ -167,6 +167,230 @@ func SendTimeMachineEmail(profileUrl, username, userEmail, discordUsername strin
 	return nil
 }
 
+type ThankYouEmailData struct {
+	Name                  string
+	HomepageUrl           string
+	ManageSubscriptionUrl string
+	RenewalDate           string
+	Amount                string
+}
+
+func SendThankYouEmail(
+	toAddress string,
+	toName string,
+	renewalDate *time.Time,
+	amount string,
+	perf *perf.RequestPerf,
+) error {
+	defer perf.StartBlock("EMAIL", "Thank you email").End()
+
+	renewalDateStr := ""
+	if renewalDate != nil {
+		renewalDateStr = renewalDate.Format("January 2, 2006")
+	}
+
+	b1 := perf.StartBlock("EMAIL", "Rendering template")
+	defer b1.End()
+	contents, err := renderTemplate("email_thank_you.html", ThankYouEmailData{
+		Name:                  toName,
+		HomepageUrl:           hmnurl.BuildHomepage(),
+		ManageSubscriptionUrl: hmnurl.BuildSubscriptionManage(),
+		RenewalDate:           renewalDateStr,
+		Amount:                amount,
+	})
+	if err != nil {
+		return err
+	}
+	b1.End()
+
+	b2 := perf.StartBlock("EMAIL", "Sending email")
+	defer b2.End()
+	err = sendMail(toAddress, toName, "[Handmade Software Foundation] Thank you!", contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+	b2.End()
+
+	return nil
+}
+
+type SubscriptionCancelledEmailData struct {
+	Name           string
+	HomepageUrl    string
+	ExpirationDate string
+}
+
+func SendSubscriptionCancelledEmail(
+	toAddress string,
+	toName string,
+	expirationDate *time.Time,
+	perf *perf.RequestPerf,
+) error {
+	defer perf.StartBlock("EMAIL", "Subscription cancelled email").End()
+
+	expirationDateStr := ""
+	if expirationDate != nil && !expirationDate.IsZero() {
+		expirationDateStr = expirationDate.Format("January 2, 2006")
+	}
+
+	b1 := perf.StartBlock("EMAIL", "Rendering template")
+	defer b1.End()
+	contents, err := renderTemplate("email_subscription_cancelled.html", SubscriptionCancelledEmailData{
+		Name:           toName,
+		HomepageUrl:    hmnurl.BuildHomepage(),
+		ExpirationDate: expirationDateStr,
+	})
+	if err != nil {
+		return err
+	}
+	b1.End()
+
+	b2 := perf.StartBlock("EMAIL", "Sending email")
+	defer b2.End()
+	err = sendMail(toAddress, toName, "[Handmade Software Foundation] Membership cancelled", contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+	b2.End()
+
+	return nil
+}
+
+type PaymentFailedEmailData struct {
+	Name                  string
+	HomepageUrl           string
+	ManageSubscriptionUrl string
+	Amount                string
+	NextAttemptDate       string
+	GracePeriodEnd        string
+}
+
+type ACHVerificationGraceEmailData struct {
+	Name                  string
+	HomepageUrl           string
+	ManageSubscriptionUrl string
+	GracePeriodEnd        string
+}
+
+type GracePeriodEndedEmailData struct {
+	Name                  string
+	HomepageUrl           string
+	ManageSubscriptionUrl string
+}
+
+func SendPaymentFailedEmail(
+	toAddress string,
+	toName string,
+	amount string,
+	nextAttemptDate *time.Time,
+	gracePeriodEnd *time.Time,
+	perf *perf.RequestPerf,
+) error {
+	defer perf.StartBlock("EMAIL", "Payment failed email").End()
+
+	nextAttemptDateStr := ""
+	if nextAttemptDate != nil && !nextAttemptDate.IsZero() {
+		nextAttemptDateStr = nextAttemptDate.Format("January 2, 2006")
+	}
+
+	gracePeriodEndStr := ""
+	if gracePeriodEnd != nil && !gracePeriodEnd.IsZero() {
+		gracePeriodEndStr = gracePeriodEnd.Format("January 2, 2006")
+	}
+
+	b1 := perf.StartBlock("EMAIL", "Rendering template")
+	defer b1.End()
+	contents, err := renderTemplate("email_payment_failed.html", PaymentFailedEmailData{
+		Name:                  toName,
+		HomepageUrl:           hmnurl.BuildHomepage(),
+		ManageSubscriptionUrl: hmnurl.BuildSubscriptionManage(),
+		Amount:                amount,
+		NextAttemptDate:       nextAttemptDateStr,
+		GracePeriodEnd:        gracePeriodEndStr,
+	})
+	if err != nil {
+		return err
+	}
+	b1.End()
+
+	b2 := perf.StartBlock("EMAIL", "Sending email")
+	defer b2.End()
+	err = sendMail(toAddress, toName, "[Handmade Software Foundation] Payment failed", contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+	b2.End()
+
+	return nil
+}
+
+func SendACHVerificationGraceEmail(
+	toAddress string,
+	toName string,
+	gracePeriodEnd *time.Time,
+	perf *perf.RequestPerf,
+) error {
+	defer perf.StartBlock("EMAIL", "ACH verification grace email").End()
+
+	gracePeriodEndStr := ""
+	if gracePeriodEnd != nil && !gracePeriodEnd.IsZero() {
+		gracePeriodEndStr = gracePeriodEnd.Format("January 2, 2006")
+	}
+
+	b1 := perf.StartBlock("EMAIL", "Rendering template")
+	defer b1.End()
+	contents, err := renderTemplate("email_ach_verification_grace.html", ACHVerificationGraceEmailData{
+		Name:                  toName,
+		HomepageUrl:           hmnurl.BuildHomepage(),
+		ManageSubscriptionUrl: hmnurl.BuildSubscriptionManage(),
+		GracePeriodEnd:        gracePeriodEndStr,
+	})
+	if err != nil {
+		return err
+	}
+	b1.End()
+
+	b2 := perf.StartBlock("EMAIL", "Sending email")
+	defer b2.End()
+	err = sendMail(toAddress, toName, "[Handmade Software Foundation] Verify your bank account", contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+	b2.End()
+
+	return nil
+}
+
+func SendGracePeriodEndedEmail(
+	toAddress string,
+	toName string,
+	perf *perf.RequestPerf,
+) error {
+	defer perf.StartBlock("EMAIL", "Grace period ended email").End()
+
+	b1 := perf.StartBlock("EMAIL", "Rendering template")
+	defer b1.End()
+	contents, err := renderTemplate("email_grace_period_ended.html", GracePeriodEndedEmailData{
+		Name:                  toName,
+		HomepageUrl:           hmnurl.BuildHomepage(),
+		ManageSubscriptionUrl: hmnurl.BuildSubscriptionManage(),
+	})
+	if err != nil {
+		return err
+	}
+	b1.End()
+
+	b2 := perf.StartBlock("EMAIL", "Sending email")
+	defer b2.End()
+	err = sendMail(toAddress, toName, "[Handmade Software Foundation] Grace period ended", contents)
+	if err != nil {
+		return oops.New(err, "Failed to send email")
+	}
+	b2.End()
+
+	return nil
+}
+
 func SendExpoTicketPurchaseEmail(toAddress string, toName string, ticket *models.Ticket) error {
 	event, ok := hmndata.FindTicketEventBySlug(ticket.EventSlug)
 	if !ok {
@@ -236,9 +460,13 @@ func sendMail(toAddress, toName, subject string, contentHTML []byte) error {
 		subject,
 		processedHTML,
 	)
+	var auth smtp.Auth
+	if config.Config.Email.MailerUsername != "" || config.Config.Email.MailerPassword != "" {
+		auth = smtp.PlainAuth("", config.Config.Email.MailerUsername, config.Config.Email.MailerPassword, config.Config.Email.ServerAddress)
+	}
 	return smtp.SendMail(
 		fmt.Sprintf("%s:%d", config.Config.Email.ServerAddress, config.Config.Email.ServerPort),
-		smtp.PlainAuth("", config.Config.Email.MailerUsername, config.Config.Email.MailerPassword, config.Config.Email.ServerAddress),
+		auth,
 		config.Config.Email.FromAddress,
 		[]string{toAddress},
 		contents,

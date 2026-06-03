@@ -56,6 +56,7 @@ var WebsiteCommand = &cobra.Command{
 			buildcss.RunServer(),
 			email.MonitorBounces(conn),
 			NagUsersToCreateJamProjectsJob(conn),
+			ExpireSubscriptionGracePeriodsJob(conn),
 		}
 
 		// Create HTTP server

@@ -645,4 +645,5 @@ func init() {
 	addProjectCommands(adminCommand)
 	addPostCommands(adminCommand)
 	addEventCommands(adminCommand)
+	addSubscriptionCommands(adminCommand)
 }

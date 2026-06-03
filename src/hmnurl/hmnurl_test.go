@@ -457,6 +457,10 @@ func TestDiscordUnlink(t *testing.T) {
 	AssertRegexMatch(t, BuildDiscordUnlink(), RegexDiscordUnlink, nil)
 }
 
+func TestDismissMembershipDiscordLinkBanner(t *testing.T) {
+	AssertRegexMatch(t, BuildDismissMembershipDiscordLinkBanner(), RegexDismissMembershipDiscordLinkBanner, nil)
+}
+
 func TestDiscordShowcaseBacklog(t *testing.T) {
 	AssertRegexMatch(t, BuildDiscordShowcaseBacklog(), RegexDiscordShowcaseBacklog, nil)
 }
@@ -536,6 +540,21 @@ func AssertRegexNoMatch(t *testing.T, fullUrl string, regex *regexp.Regexp) {
 	}
 	match := regex.FindStringSubmatch(requestPath)
 	assert.Nilf(t, match, "Url matched regex: [%s] vs [%s]", requestPath, regex.String())
+}
+
+func TestFoundationSubscriptionBuildUrls(t *testing.T) {
+	defer func() {
+		SetGlobalBaseUrl(config.Config.BaseUrl)
+	}()
+	SetGlobalBaseUrl("http://handmade.test")
+	isTest = true
+
+	AssertRegexMatch(t, BuildHSFMembership(), RegexHSFMembership, nil)
+	AssertRegexMatch(t, BuildSubscriptionManage(), RegexHSFMembership, nil)
+	AssertRegexMatch(t, BuildSubscriptionSubscribe(), RegexSubscriptionSubscribe, nil)
+	AssertRegexMatch(t, BuildSubscriptionCancel(), RegexSubscriptionCancel, nil)
+	AssertRegexMatch(t, BuildSubscriptionResume(), RegexSubscriptionResume, nil)
+	AssertRegexMatch(t, BuildSubscriptionUpdatePaymentMethod(), RegexSubscriptionUpdatePaymentMethod, nil)
 }
 
 func TestThingsThatDontNeedCoverage(t *testing.T) {

@@ -85,6 +85,7 @@ type DiscordConfig struct {
 
 	GuildID                 string
 	MemberRoleID            string
+	SupporterRoleID         string
 	HMHReplayRoleID         string
 	ShowcaseChannelID       string
 	JamChannelID            string
@@ -135,8 +136,24 @@ type PostmarkConfig struct {
 }
 
 type StripeConfig struct {
-	SecretKey     string
-	WebhookSecret string
+	SecretKey      string
+	PublishableKey string
+	WebhookSecret  string
+
+	// PriceID is the default subscription price used when creating a membership Checkout Session.
+	PriceID string
+
+	// MembershipAlternatePriceIDs lists any other Stripe price IDs used for membership (e.g. a
+	// second currency). The webhook dispatcher treats PriceID ∪ MembershipAlternatePriceIDs as
+	// belonging to the subscription flow.
+	MembershipAlternatePriceIDs []string
+
+	// TestClockID attaches new Stripe customers created by subscription test tooling to this clock.
+	TestClockID string
+
+	// SubscriptionNowOverride is an RFC3339 timestamp used instead of time.Now() for subscription
+	// grace-period logic in dev/test. Leave empty in production.
+	SubscriptionNowOverride string
 }
 
 func init() {

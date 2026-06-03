@@ -5,11 +5,13 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/buildcss"
 	"git.handmade.network/hmn/hmn/src/config"
+	"git.handmade.network/hmn/hmn/src/discord"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
+	"github.com/stripe/stripe-go/v84"
 )
 
 // NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
@@ -131,6 +133,41 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 	if c.CurrentUser != nil {
 		baseData.Header.UserProfileUrl = hmnurl.BuildUserProfile(c.CurrentUser.Username)
+		showMembershipVerificationBanner := false
+		isPostCheckoutPendingView := c.Req != nil &&
+			c.Req.URL != nil &&
+			c.Req.URL.Query().Get("session_id") != "" &&
+			!c.CurrentUser.IsSubscribed
+		bankVerificationJustCompleted := c.Req != nil && c.Req.URL != nil && c.Req.URL.Query().Get("bank_verified") == "1"
+		if userNeedsBankVerificationReminder(c.CurrentUser) && !bankVerificationJustCompleted && !isPostCheckoutPendingView {
+			bannerURL := hmnurl.BuildHSFMembership()
+			hasHostedVerification := false
+			if c.CurrentUser.StripeSubscriptionID != nil && config.Config.Stripe.SecretKey != "" {
+				sc := stripe.NewClient(config.Config.Stripe.SecretKey)
+				if hostedURL := hostedBankVerificationURL(c, sc, *c.CurrentUser.StripeSubscriptionID); hostedURL != "" {
+					bannerURL = hostedURL
+					hasHostedVerification = true
+				}
+			}
+
+			status := stringOrEmpty(c.CurrentUser.SubscriptionStatus)
+			statusImpliesVerificationPending := status == SubscriptionStatusPendingVerification || status == "incomplete"
+			if statusImpliesVerificationPending || hasHostedVerification {
+				showMembershipVerificationBanner = true
+				baseData.Header.ShowMembershipVerificationBanner = true
+				baseData.Header.MembershipVerificationUrl = bannerURL
+				baseData.Header.MembershipGraceDaysRemaining = gracePeriodDaysRemaining(c.CurrentUser, SubscriptionNow())
+			}
+		}
+		if !showMembershipVerificationBanner && userNeedsDiscordLinkReminder(c.CurrentUser) {
+			baseData.Header.ShowMembershipDiscordLinkBanner = true
+			baseData.Header.MembershipDiscordLinkDismissUrl = hmnurl.BuildDismissMembershipDiscordLinkBanner()
+			if c.CurrentSession != nil {
+				baseData.Header.MembershipDiscordLinkUrl = discord.GetAuthorizeUrl(c.CurrentSession.CSRFToken, false)
+			} else {
+				baseData.Header.MembershipDiscordLinkUrl = hmnurl.BuildUserSettings("discord")
+			}
+		}
 	}
 
 	if !project.IsHMN() {
@@ -153,6 +190,20 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	}
 
 	return baseData
+}
+
+func stringOrEmpty(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func timeOrEmpty(t *time.Time) string {
+	if t == nil {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
 }
 
 func buildDefaultOpenGraphItems(project *models.Project, projectLogoUrl string, title string) []templates.OpenGraphItem {
