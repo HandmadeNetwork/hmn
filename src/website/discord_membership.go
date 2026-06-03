@@ -105,12 +105,8 @@ func DismissMembershipDiscordLinkBanner(c *RequestContext) ResponseData {
 		c.CurrentUser.ID,
 	)
 	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to dismiss membership Discord link banner"))
+		return c.JSONErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to dismiss membership Discord link banner"))
 	}
 
-	dest := c.FullUrl()
-	if referer := c.Req.Referer(); referer != "" {
-		dest = referer
-	}
-	return c.Redirect(dest, http.StatusSeeOther)
+	return c.JSONResponse(http.StatusOK, map[string]any{"success": true})
 }

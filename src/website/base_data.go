@@ -158,13 +158,6 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 				baseData.Header.ShowMembershipVerificationBanner = true
 				baseData.Header.MembershipVerificationUrl = bannerURL
 				baseData.Header.MembershipGraceDaysRemaining = gracePeriodDaysRemaining(c.CurrentUser, SubscriptionNow())
-				baseData.Header.MembershipVerificationStateKey = fmt.Sprintf(
-					"user:%d|status:%s|grace_end:%s|days:%d",
-					c.CurrentUser.ID,
-					status,
-					timeOrEmpty(c.CurrentUser.GracePeriodEndsAt),
-					baseData.Header.MembershipGraceDaysRemaining,
-				)
 			}
 		}
 		if !showMembershipVerificationBanner && userNeedsDiscordLinkReminder(c.CurrentUser) {
