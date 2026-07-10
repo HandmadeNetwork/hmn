@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/discord"
 	"git.handmade.network/hmn/hmn/src/logging"
@@ -80,4 +81,41 @@ func init() {
 		},
 	}
 	rootCommand.AddCommand(makeSnippetCommand)
+
+	processMessageCommand := &cobra.Command{
+		Use:   "processmessage <channel id> <message id>",
+		Short: "Runs a message through our message handling process",
+		Long:  "Runs a message through our standard message handling process, as if that message was received from the gateway, including user notifications",
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) < 2 {
+				cmd.Usage()
+				os.Exit(1)
+			}
+			ctx := context.Background()
+			conn := db.NewConn()
+			defer conn.Close(ctx)
+
+			chanID := args[0]
+			msgID := args[1]
+
+			message, err := discord.GetChannelMessage(ctx, chanID, msgID)
+			if errors.Is(err, discord.NotFound) {
+				logging.Warn().Msg(fmt.Sprintf("no message found on discord for id %s", msgID))
+			} else if err != nil {
+				logging.Error().Msg(fmt.Sprintf("failed to fetch discord message id %s", msgID))
+			}
+
+			guildMember, err := discord.GetGuildMember(ctx, config.Config.Discord.GuildID, message.Author.ID) // NOTE(asaf): We assume we're only working with one guild, because the discord API sucks and doesn't provide the guild in the message payload.
+			if err != nil {
+				logging.Error().Err(err).Msg("failed to get guild member for message while scraping")
+			}
+			message.Member = guildMember
+
+			err = discord.HandleIncomingMessage(ctx, conn, message, true)
+			if err != nil {
+				logging.Error().Err(err).Msg("Error while handling message")
+			}
+		},
+	}
+	rootCommand.AddCommand(processMessageCommand)
 }
