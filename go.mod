@@ -29,8 +29,8 @@ require (
 	github.com/teacat/noire v1.1.0
 	github.com/yuin/goldmark v1.4.13
 	github.com/yuin/goldmark-highlighting v0.0.0-20210516132338-9216f9c5aa01
-	golang.org/x/crypto v0.50.0
-	golang.org/x/image v0.39.0
+	golang.org/x/crypto v0.54.0
+	golang.org/x/image v0.44.0
 	mvdan.cc/xurls/v2 v2.6.0
 )
 
@@ -67,9 +67,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/teambition/rrule-go v1.7.2 // indirect
-	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
-	golang.org/x/text v0.36.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
