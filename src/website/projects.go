@@ -3,20 +3,15 @@ package website
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
-	"image"
-	"io"
 	"net/http"
-	"path"
 	"slices"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
@@ -168,13 +163,13 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	screenshotFilenames, err := db.QueryScalar[string](c, c.Conn,
+	screenshotAssets, err := db.Query[models.Asset](c, c.Conn,
 		`
 		---- Fetching screenshots
-		SELECT screenshot.file
+		SELECT $columns{asset}
 		FROM
-			image_file AS screenshot
-			INNER JOIN project_screenshot ON screenshot.id = project_screenshot.imagefile_id
+			project_screenshot
+			JOIN asset ON project_screenshot.asset_id = asset.id
 		WHERE
 			project_screenshot.project_id = $1
 		`,
@@ -278,8 +273,8 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		}
 	}
 
-	for _, screenshotFilename := range screenshotFilenames {
-		templateData.Screenshots = append(templateData.Screenshots, hmnurl.BuildUserFile(screenshotFilename))
+	for _, screenshot := range screenshotAssets {
+		templateData.Screenshots = append(templateData.Screenshots, hmnurl.BuildS3Asset(screenshot.S3Key))
 	}
 
 	if c.CurrentProject.HasBlog() {
@@ -782,15 +777,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *ProjectPayload) error {
 	var logoUUID *uuid.UUID
 	if payload.Logo.Exists {
-		logo := &payload.Logo
-		logoAsset, err := assets.Create(ctx, tx, assets.CreateInput{
-			Content:     logo.Content,
-			Filename:    logo.Filename,
-			ContentType: logo.Mime,
-			UploaderID:  &user.ID,
-			Width:       logo.Width,
-			Height:      logo.Height,
-		})
+		logoAsset, err := SaveFormImage(ctx, tx, payload.Logo, &user.ID)
 		if err != nil {
 			return oops.New(err, "Failed to save asset")
 		}
@@ -799,15 +786,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 
 	var headerImageUUID *uuid.UUID
 	if payload.HeaderImage.Exists {
-		headerImage := &payload.HeaderImage
-		headerImageAsset, err := assets.Create(ctx, tx, assets.CreateInput{
-			Content:     headerImage.Content,
-			Filename:    headerImage.Filename,
-			ContentType: headerImage.Mime,
-			UploaderID:  &user.ID,
-			Width:       headerImage.Width,
-			Height:      headerImage.Height,
-		})
+		headerImageAsset, err := SaveFormImage(ctx, tx, payload.HeaderImage, &user.ID)
 		if err != nil {
 			return oops.New(err, "Failed to save asset")
 		}
@@ -1044,69 +1023,6 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	}
 
 	return nil
-}
-
-type FormImage struct {
-	Exists   bool
-	Remove   bool
-	Filename string
-	Mime     string
-	Content  []byte
-	Width    int
-	Height   int
-	Size     int64
-}
-
-// NOTE(asaf): This assumes that you already called ParseMultipartForm (which is why there's no size limit here).
-func GetFormImage(c *RequestContext, fieldName string) (FormImage, error) {
-	var res FormImage
-	res.Exists = false
-
-	removeStr := c.Req.Form.Get("remove_" + fieldName)
-	res.Remove = (removeStr == "true")
-	img, header, err := c.Req.FormFile(fieldName)
-	if err != nil {
-		if errors.Is(err, http.ErrMissingFile) {
-			return res, nil
-		} else {
-			return FormImage{}, err
-		}
-	}
-
-	if header != nil {
-		res.Exists = true
-		res.Size = header.Size
-		res.Filename = header.Filename
-
-		res.Content = make([]byte, res.Size)
-		img.Read(res.Content)
-		img.Seek(0, io.SeekStart)
-
-		fileExtensionOverrides := []string{".svg"}
-		fileExt := strings.ToLower(path.Ext(res.Filename))
-		tryDecode := true
-		for _, ext := range fileExtensionOverrides {
-			if fileExt == ext {
-				tryDecode = false
-			}
-		}
-
-		if tryDecode {
-			config, _, err := image.DecodeConfig(img)
-			if err != nil {
-				return FormImage{}, err
-			}
-			res.Width = config.Width
-			res.Height = config.Height
-			res.Mime = http.DetectContentType(res.Content)
-		} else {
-			if fileExt == ".svg" {
-				res.Mime = "image/svg+xml"
-			}
-		}
-	}
-
-	return res, nil
 }
 
 func CanEditProject(user *models.User, owners []*models.User) bool {

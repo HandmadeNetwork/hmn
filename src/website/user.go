@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"git.handmade.network/hmn/hmn/src/assets"
 	"git.handmade.network/hmn/hmn/src/auth"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
@@ -433,14 +432,7 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 	}
 	var avatarUUID *uuid.UUID
 	if newAvatar.Exists {
-		avatarAsset, err := assets.Create(c, tx, assets.CreateInput{
-			Content:     newAvatar.Content,
-			Filename:    newAvatar.Filename,
-			ContentType: newAvatar.Mime,
-			UploaderID:  &c.CurrentUser.ID,
-			Width:       newAvatar.Width,
-			Height:      newAvatar.Height,
-		})
+		avatarAsset, err := SaveFormImage(c, tx, newAvatar, &c.CurrentUser.ID)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to upload avatar"))
 		}

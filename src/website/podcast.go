@@ -31,7 +31,7 @@ type PodcastIndexData struct {
 }
 
 func PodcastIndex(c *RequestContext) ResponseData {
-	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, true, "")
+	podcastResult, err := FetchPodcastAndEpisodes(c, c.CurrentProject.ID, true, "")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -46,7 +46,7 @@ func PodcastIndex(c *RequestContext) ResponseData {
 
 	podcastIndexData := PodcastIndexData{
 		BaseData: baseData,
-		Podcast:  templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile),
+		Podcast:  templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.Image),
 	}
 
 	if canEdit {
@@ -55,7 +55,7 @@ func PodcastIndex(c *RequestContext) ResponseData {
 	}
 
 	for _, episode := range podcastResult.Episodes {
-		podcastIndexData.Episodes = append(podcastIndexData.Episodes, templates.PodcastEpisodeToTemplate(episode, 0, podcastResult.ImageFile))
+		podcastIndexData.Episodes = append(podcastIndexData.Episodes, templates.PodcastEpisodeToTemplate(episode, podcastResult.Image, 0))
 	}
 	var res ResponseData
 	err = res.WriteTemplate("podcast_index.html", podcastIndexData, c.Perf)
@@ -71,7 +71,7 @@ type PodcastEditData struct {
 }
 
 func PodcastEdit(c *RequestContext) ResponseData {
-	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, false, "")
+	podcastResult, err := FetchPodcastAndEpisodes(c, c.CurrentProject.ID, false, "")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -82,7 +82,7 @@ func PodcastEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile)
+	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.Image)
 	baseData := getBaseData(c, fmt.Sprintf("Edit %s", podcast.Title), nil)
 	podcastEditData := PodcastEditData{
 		BaseData: baseData,
@@ -98,7 +98,7 @@ func PodcastEdit(c *RequestContext) ResponseData {
 }
 
 func PodcastEditSubmit(c *RequestContext) ResponseData {
-	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, false, "")
+	podcastResult, err := FetchPodcastAndEpisodes(c, c.CurrentProject.ID, false, "")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -145,45 +145,41 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	}
 	defer tx.Rollback(c)
 
-	imageSaveResult := SaveImageFile(c, tx, "podcast_image", maxFileSize, fmt.Sprintf("podcast/%s/logo%d", c.CurrentProject.Slug, time.Now().UTC().Unix()))
-	if imageSaveResult.ValidationError != "" {
-		return c.RejectRequest(imageSaveResult.ValidationError)
-	} else if imageSaveResult.FatalError != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(imageSaveResult.FatalError, "Failed to save podcast image"))
+	_, err = tx.Exec(c,
+		`
+		UPDATE podcast
+		SET
+			title = $1,
+			description = $2
+		WHERE id = $3
+		`,
+		title,
+		description,
+		podcastResult.Podcast.ID,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to update podcast"))
 	}
 
-	if imageSaveResult.ImageFile != nil {
-		_, err = tx.Exec(c,
-			`
-			UPDATE podcast
-			SET
-				title = $1,
-				description = $2,
-				image_id = $3
-			WHERE id = $4
-			`,
-			title,
-			description,
-			imageSaveResult.ImageFile.ID,
-			podcastResult.Podcast.ID,
-		)
+	image, err := GetFormImage(c, "podcast_image")
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to read image from form"))
+	}
+	if image.Exists {
+		imageAsset, err := SaveFormImage(c, tx, image, &c.CurrentUser.ID)
 		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to update podcast"))
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save podcast image"))
 		}
-	} else {
 		_, err = tx.Exec(c,
 			`
-			UPDATE podcast
-			SET
-				title = $1,
-				description = $2
-			WHERE id = $3
+			UPDATE podcast SET image_asset = $1
+			WHERE id = $2
 			`,
-			title,
-			description,
+			imageAsset.ID,
 			podcastResult.Podcast.ID,
 		)
 	}
+
 	err = tx.Commit(c)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to commit db transaction"))
@@ -204,7 +200,7 @@ type PodcastEpisodeData struct {
 func PodcastEpisode(c *RequestContext) ResponseData {
 	episodeGUIDStr := c.PathParams["episodeid"]
 
-	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, true, episodeGUIDStr)
+	podcastResult, err := FetchPodcastAndEpisodes(c, c.CurrentProject.ID, true, episodeGUIDStr)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -220,8 +216,8 @@ func PodcastEpisode(c *RequestContext) ResponseData {
 		editUrl = hmnurl.BuildPodcastEpisodeEdit(podcastResult.Episodes[0].GUID.String())
 	}
 
-	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile)
-	episode := templates.PodcastEpisodeToTemplate(podcastResult.Episodes[0], 0, podcastResult.ImageFile)
+	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.Image)
+	episode := templates.PodcastEpisodeToTemplate(podcastResult.Episodes[0], podcastResult.Image, 0)
 	baseData := getBaseData(c, fmt.Sprintf("%s | %s", episode.Title, podcast.Title), nil)
 
 	podcastEpisodeData := PodcastEpisodeData{
@@ -251,7 +247,7 @@ type PodcastEpisodeEditData struct {
 }
 
 func PodcastEpisodeNew(c *RequestContext) ResponseData {
-	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, false, "")
+	podcastResult, err := FetchPodcastAndEpisodes(c, c.CurrentProject.ID, false, "")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -267,7 +263,7 @@ func PodcastEpisodeNew(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "Failed to fetch podcast episode file list"))
 	}
 
-	podcast := templates.PodcastToTemplate(podcastResult.Podcast, "")
+	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.Image)
 	var res ResponseData
 	baseData := getBaseData(c, fmt.Sprintf("New episode | %s", podcast.Title), nil)
 	err = res.WriteTemplate("podcast_episode_edit.html", PodcastEpisodeEditData{
@@ -287,7 +283,7 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, true, episodeGUIDStr)
+	podcastResult, err := FetchPodcastAndEpisodes(c, c.CurrentProject.ID, true, episodeGUIDStr)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -304,8 +300,8 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 	}
 	episode := podcastResult.Episodes[0]
 
-	podcast := templates.PodcastToTemplate(podcastResult.Podcast, "")
-	podcastEpisode := templates.PodcastEpisodeToTemplate(episode, 0, "")
+	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.Image)
+	podcastEpisode := templates.PodcastEpisodeToTemplate(episode, podcastResult.Image, 0)
 	baseData := getBaseData(c, fmt.Sprintf("Edit episode %s | %s", podcastEpisode.Title, podcast.Title), nil)
 	podcastEpisodeEditData := PodcastEpisodeEditData{
 		BaseData:      baseData,
@@ -330,7 +326,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 	episodeGUIDStr, found := c.PathParams["episodeid"]
 
 	isEdit := found && episodeGUIDStr != ""
-	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, isEdit, episodeGUIDStr)
+	podcastResult, err := FetchPodcastAndEpisodes(c, c.CurrentProject.ID, isEdit, episodeGUIDStr)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -484,7 +480,7 @@ type PodcastRSSData struct {
 }
 
 func PodcastRSS(c *RequestContext) ResponseData {
-	podcastResult, err := FetchPodcast(c, c.CurrentProject.ID, true, "")
+	podcastResult, err := FetchPodcastAndEpisodes(c, c.CurrentProject.ID, true, "")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -494,7 +490,7 @@ func PodcastRSS(c *RequestContext) ResponseData {
 	}
 
 	podcastRSSData := PodcastRSSData{
-		Podcast: templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.ImageFile),
+		Podcast: templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.Image),
 	}
 
 	for _, episode := range podcastResult.Episodes {
@@ -505,7 +501,7 @@ func PodcastRSS(c *RequestContext) ResponseData {
 		} else {
 			filesize = stat.Size()
 		}
-		podcastRSSData.Episodes = append(podcastRSSData.Episodes, templates.PodcastEpisodeToTemplate(episode, filesize, podcastResult.ImageFile))
+		podcastRSSData.Episodes = append(podcastRSSData.Episodes, templates.PodcastEpisodeToTemplate(episode, podcastResult.Image, filesize))
 	}
 
 	var res ResponseData
@@ -517,24 +513,22 @@ func PodcastRSS(c *RequestContext) ResponseData {
 }
 
 type PodcastResult struct {
-	Podcast   *models.Podcast
-	ImageFile string
-	Episodes  []*models.PodcastEpisode
+	Podcast  *models.Podcast
+	Episodes []*models.PodcastEpisode
+	Image    *models.Asset
 }
 
-func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeGUID string) (PodcastResult, error) {
+func FetchPodcastAndEpisodes(
+	c *RequestContext,
+	projectId int,
+	fetchEpisodes bool,
+	episodeGUID string,
+) (PodcastResult, error) {
 	var result PodcastResult
-	type podcastQuery struct {
-		Podcast       models.Podcast `db:"podcast"`
-		ImageFilename string         `db:"imagefile.file"`
-	}
-	podcastQueryResult, err := db.QueryOne[podcastQuery](c, c.Conn,
+	podcast, err := db.QueryOne[models.Podcast](c, c.Conn,
 		`
 		---- Fetch podcast
-		SELECT $columns
-		FROM
-			podcast
-			LEFT JOIN image_file AS imagefile ON imagefile.id = podcast.image_id
+		SELECT $columns FROM podcast
 		WHERE podcast.project_id = $1
 		`,
 		projectId,
@@ -546,10 +540,7 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 			return result, oops.New(err, "failed to fetch podcast")
 		}
 	}
-	podcast := podcastQueryResult.Podcast
-	podcastImageFilename := podcastQueryResult.ImageFilename
-	result.Podcast = &podcast
-	result.ImageFile = podcastImageFilename
+	result.Podcast = podcast
 
 	if fetchEpisodes {
 		if episodeGUID == "" {
@@ -591,6 +582,17 @@ func FetchPodcast(c *RequestContext, projectId int, fetchEpisodes bool, episodeG
 			}
 			result.Episodes = append(result.Episodes, episode)
 		}
+	}
+
+	if podcast.ImageID != nil {
+		imageAsset, err := db.QueryOne[models.Asset](c, c.Conn,
+			`SELECT $columns FROM asset WHERE id = $1`,
+			podcast.ImageID,
+		)
+		if err != nil {
+			return result, oops.New(err, "failed to fetch podcast image")
+		}
+		result.Image = imageAsset
 	}
 
 	return result, nil
