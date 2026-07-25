@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -44,57 +45,97 @@ type ImageFile struct {
 }
 
 func (m ConvertImageFilesToAssets) Up(ctx context.Context, tx pgx.Tx) error {
-	files, err := db.Query[ImageFile](ctx, tx, `SELECT $columns FROM image_file`)
-	if err != nil {
-		return err
+	// NOTE(ben): First delete all image_file records whose image no longer
+	// exists on disk. We unfortunately have to manually cascade this into
+	// project screenshots and podcasts.
+	{
+		files, err := db.Query[ImageFile](ctx, tx, `SELECT $columns FROM image_file`)
+		if err != nil {
+			return err
+		}
+
+		var missingFileIDs []int
+		for _, file := range files {
+			_, err := os.Stat(filepath.Join("public", "media", file.File))
+			if errors.Is(err, os.ErrNotExist) {
+				fmt.Printf(
+					"WARNING: File %s does not exist on disk, and its image_file record will be deleted.\n",
+					file.File,
+				)
+				missingFileIDs = append(missingFileIDs, file.ID)
+			} else if err != nil {
+				return err
+			}
+		}
+		_, err1 := tx.Exec(ctx,
+			`DELETE FROM project_screenshot WHERE imagefile_id = ANY($1)`,
+			missingFileIDs,
+		)
+		_, err2 := tx.Exec(ctx,
+			`UPDATE podcast SET image_id = NULL WHERE image_id = ANY($1)`,
+			missingFileIDs,
+		)
+		_, err3 := tx.Exec(ctx,
+			`DELETE FROM image_file WHERE id = ANY($1)`,
+			missingFileIDs,
+		)
+		if err := errors.Join(err1, err2, err3); err != nil {
+			return err
+		}
 	}
 
 	// NOTE(ben): Upload all image files as assets. If somehow this fails and we
 	// have to roll back the transaction, we will have created a few unused
 	// assets. OH WELL
-	newAssets := make(map[int]*models.Asset)
-	for i, file := range files {
-		fmt.Printf("Uploading %d of %d: %s...\n", i+1, len(files), file.File)
-		contents, err := os.ReadFile(filepath.Join("public", "media", file.File))
+	{
+		files, err := db.Query[ImageFile](ctx, tx, `SELECT $columns FROM image_file`)
 		if err != nil {
 			return err
 		}
+		newAssets := make(map[int]*models.Asset)
+		for i, file := range files {
+			fmt.Printf("Uploading %d of %d: %s...\n", i+1, len(files), file.File)
+			contents, err := os.ReadFile(filepath.Join("public", "media", file.File))
+			if err != nil {
+				return err
+			}
 
-		asset, err := assets.Create(ctx, tx, assets.CreateInput{
-			Content:  contents,
-			Filename: filepath.Base(file.File),
+			asset, err := assets.Create(ctx, tx, assets.CreateInput{
+				Content:  contents,
+				Filename: filepath.Base(file.File),
 
-			Width:  file.Width,
-			Height: file.Height,
-		})
-		if err != nil {
-			return err
+				Width:  file.Width,
+				Height: file.Height,
+			})
+			if err != nil {
+				return err
+			}
+
+			newAssets[file.ID] = asset
 		}
 
-		newAssets[file.ID] = asset
-	}
-
-	_, err = tx.Exec(ctx,
-		`
-		ALTER TABLE image_file
-			ADD COLUMN asset_id UUID REFERENCES asset (id) ON DELETE SET NULL;
-		`,
-	)
-	if err != nil {
-		return err
-	}
-
-	// NOTE(ben): Feels dumb, but we're just going to set all the new IDs using
-	// one query each. Who cares.
-	for fileID, asset := range newAssets {
-		_, err := tx.Exec(ctx,
+		_, err = tx.Exec(ctx,
 			`
-			UPDATE image_file SET asset_id = $1 WHERE id = $2
+			ALTER TABLE image_file
+				ADD COLUMN asset_id UUID REFERENCES asset (id) ON DELETE SET NULL;
 			`,
-			asset.ID, fileID,
 		)
 		if err != nil {
 			return err
+		}
+
+		// NOTE(ben): Feels dumb, but we're just going to set all the new IDs using
+		// one query each. Who cares.
+		for fileID, asset := range newAssets {
+			_, err := tx.Exec(ctx,
+				`
+				UPDATE image_file SET asset_id = $1 WHERE id = $2
+				`,
+				asset.ID, fileID,
+			)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -104,7 +145,7 @@ func (m ConvertImageFilesToAssets) Up(ctx context.Context, tx pgx.Tx) error {
 		return err
 	}
 	if numNull != 0 {
-		return fmt.Errorf("expected all image files to get assets")
+		return fmt.Errorf("expected all remaining image files to get assets")
 	}
 
 	return nil
