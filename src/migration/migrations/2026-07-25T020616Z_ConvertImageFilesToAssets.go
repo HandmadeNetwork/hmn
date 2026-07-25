@@ -45,9 +45,22 @@ type ImageFile struct {
 }
 
 func (m ConvertImageFilesToAssets) Up(ctx context.Context, tx pgx.Tx) error {
-	// NOTE(ben): First delete all image_file records whose image no longer
-	// exists on disk. We unfortunately have to manually cascade this into
-	// project screenshots and podcasts.
+	// NOTE(ben): Add a column for later, but do it first because otherwise the
+	// subsequent DELETE would cause ALTER TABLE to fail due to pending trigger
+	// events.
+	_, err := tx.Exec(ctx,
+		`
+		ALTER TABLE image_file
+			ADD COLUMN asset_id UUID REFERENCES asset (id) ON DELETE SET NULL;
+		`,
+	)
+	if err != nil {
+		return err
+	}
+
+	// NOTE(ben): Delete all image_file records whose image no longer exists on
+	// disk. We unfortunately have to manually cascade this into project
+	// screenshots and podcasts.
 	{
 		files, err := db.Query[ImageFile](ctx, tx, `SELECT $columns FROM image_file`)
 		if err != nil {
@@ -112,16 +125,6 @@ func (m ConvertImageFilesToAssets) Up(ctx context.Context, tx pgx.Tx) error {
 			}
 
 			newAssets[file.ID] = asset
-		}
-
-		_, err = tx.Exec(ctx,
-			`
-			ALTER TABLE image_file
-				ADD COLUMN asset_id UUID REFERENCES asset (id) ON DELETE SET NULL;
-			`,
-		)
-		if err != nil {
-			return err
 		}
 
 		// NOTE(ben): Feels dumb, but we're just going to set all the new IDs using
