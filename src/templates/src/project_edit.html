@@ -6,6 +6,7 @@
 	<script src="{{ static "js/templates.js" }}"></script>
 	<script src="{{ static "js/base64.js" }}"></script>
 	<script src="{{ static "js/markdown_upload.js" }}"></script>
+	<script src="{{ static "js/tabs.js" }}"></script>
 
 	<script>
 		const go = new Go();
@@ -51,215 +52,225 @@
 				{{ end }}
 			</h1>
 
-			<hr class="mv3">
+			{{ $showAdminProperties := and .Editing .User.IsStaff }}
 
-			<div class="flex flex-column g3">
-				<div class="input-group">
-					<label>Project Title*</label>
-					<input
-						required
-						type="text"
-						id="project_name" name="project_name"
-						maxlength="255"
-						value="{{ .ProjectSettings.Name }}"
-						oninput="updateCardPreview()"
-					>
-				</div>
-
-				<div class="input-group">
-					<label>Summary*</label>
-					<textarea
-						required
-						id="description" name="shortdesc"
-						maxlength="140"
-						oninput="updateCardPreview()"
-					>
-						{{- .ProjectSettings.Blurb -}}
-					</textarea>
-					<div class="f6">Plain text only. No links or markdown.</div>
-				</div>
-				
-				<div class="input-group">
-					<label>Long Description</label>
-					<textarea id="full_description" class="w-100 h5 minh-5 mono lh-copy" name="full_description">
-						{{- .ProjectSettings.Description -}}
-					</textarea>
-					<div class="flex justify-end items-center f6">
-						<div class="upload_bar flex-grow-1">
-							<div class="instructions">
-								Upload files by dragging & dropping, pasting, or <label class="pointer link" for="file_input">selecting</label> them.
-							</div>
-							<div class="progress flex">
-								<div class="progress_text mr3"></div>
-								<div class="progress_bar flex-grow-1 flex-shrink-1 pa1"><div class=""></div></div>
-							</div>
-						</div>
+			<div class="mt3 flex f6 bb">
+				<a class="tab-button ph3 pv1 pointer" data-tab-button="info">Info</a>
+				<a class="tab-button ph3 pv1 pointer" data-tab-button="images">Images &amp; Links</a>
+				{{ if $showAdminProperties }}
+					<a class="tab-button ph3 pv1 pointer" data-tab-button="admin">Admin</a>
+				{{ end }}
+			</div>
+			<div class="pv3">
+				<div data-tab="info" class="flex flex-column g3">
+					<div class="input-group">
+						<label>Project Title*</label>
+						<input
+							required
+							type="text"
+							id="project_name" name="project_name"
+							maxlength="255"
+							value="{{ .ProjectSettings.Name }}"
+							oninput="updateCardPreview()"
+						>
 					</div>
-				</div>
 
-				<div class="input-group">
-					<label>Status</label>
-					<select name="lifecycle">
-						<option value="active" {{ if eq .ProjectSettings.Lifecycle "active" }}selected{{ end }}>Active</option>
-						<option value="hiatus" {{ if eq .ProjectSettings.Lifecycle "hiatus" }}selected{{ end }}>On Hiatus</option>
-						<option value="done"   {{ if eq .ProjectSettings.Lifecycle "done"   }}selected{{ end }}>Completed</option>
-						<option value="dead"   {{ if eq .ProjectSettings.Lifecycle "dead"   }}selected{{ end }}>Abandoned</option>
-					</select>
-				</div>
-
-				<div class="fieldset">
-					<legend>Discord Tag</legend>
-					<div class="pa3 input-group">
-						{{ if not .User.DiscordUser }}
-							<div class="mb2 f6">
-								<a href="{{ .DiscordSettingsUrl }}" target="_blank">Link your Discord account</a> to use this feature.
-							</div>
-						{{ end }}
-						<div class="{{ if not .User.DiscordUser }}o-50{{ end }} flex flex-column g1">
-							<input
-								id="tag" name="tag" type="text"
-								pattern="^[a-z0-9]+(-[a-z0-9]+)*$" maxlength="20"
-								value="{{ .ProjectSettings.Tag }}"
-								{{ if not .User.DiscordUser }}disabled{{ end }}
-							>
-							<div class="f6" id="tag-discord-info">
-								Any Discord message with the tag "&amp;<span id="tag-preview"></span>" will automatically be associated with this project and shared on the website.
-							</div>
-							<div class="f6">Tags must be all lowercase, and can use hyphens to separate words.</div>
-						</div>
+					<div class="input-group">
+						<label>Summary*</label>
+						<textarea
+							required
+							id="description" name="shortdesc"
+							maxlength="140"
+							oninput="updateCardPreview()"
+						>
+							{{- .ProjectSettings.Blurb -}}
+						</textarea>
+						<div class="f6">Plain text only. No links or markdown.</div>
 					</div>
-				</div>
 
-				<div class="fieldset">
-					<legend class="flex justify-between">
-						<span>Project Logo</span>
-						<a href="#" class="normal" onclick="openLogoSelector(event)">+ Upload Project Logo</a>
-					</legend>
-					<div class="logo">
-						{{ template "image_selector.html" imageselectordata "logo" .ProjectSettings.Logo false }}
-						<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be square, and at least 256x256.</div>
+					<div class="input-group">
+						<label>Status</label>
+						<select name="lifecycle">
+							<option value="active" {{ if eq .ProjectSettings.Lifecycle "active" }}selected{{ end }}>Active</option>
+							<option value="hiatus" {{ if eq .ProjectSettings.Lifecycle "hiatus" }}selected{{ end }}>On Hiatus</option>
+							<option value="done"   {{ if eq .ProjectSettings.Lifecycle "done"   }}selected{{ end }}>Completed</option>
+							<option value="dead"   {{ if eq .ProjectSettings.Lifecycle "dead"   }}selected{{ end }}>Abandoned</option>
+						</select>
 					</div>
-				</div>
-
-				<div class="fieldset">
-					<legend class="flex justify-between">
-						<span>Header Image</span>
-						<a href="#" class="normal" onclick="openHeaderSelector(event)">+ Upload Header Image</a>
-					</legend>
-					<div class="header_image">
-						{{ template "image_selector.html" imageselectordata "header_image" .ProjectSettings.HeaderImage false }}
-						<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be wide, and at least 900x300.</div>
-					</div>
-				</div>
-
-				<div class="fieldset">
-					<legend>Owners</legend>
-					<div class="pa3">
-						<div class="flex">
-							<input class="flex-grow-1 bl bt bb br-0" id="owner_name" type="text" placeholder="Enter another owner's username" />
-							<button class="flex no-padding pa3 bt br bb bl-0 also-focus" id="owner_add"><span class="flex w1">{{ svg "add" }}</span></button>
-						</div>
-						<div id="owners_error" class="f6"></div>
-						<div id="owner_list" class="pt3 flex flex-wrap g3">
-							<template id="owner_row">
-								<div class="owner_row flex flex-row items-center g2 bg3 pa2" data-tmpl="root">
-									<input type="hidden" name="owners" data-tmpl="input" />
-									<div class="flex g1 items-center b">
-										<img data-tmpl="avatar" class="avatar avatar-user avatar-small" src="" />
-										<span data-tmpl="name"></span>
-									</div>
-									<a class="remove_owner svgicon f7 link-normal" href="javascript:;">{{ svg "close" }}</a>
+					
+					<div class="input-group">
+						<label>Long Description</label>
+						<textarea id="full_description" class="w-100 h5 minh-5 mono lh-copy" name="full_description">
+							{{- .ProjectSettings.Description -}}
+						</textarea>
+						<div class="flex justify-end items-center f6">
+							<div class="upload_bar flex-grow-1">
+								<div class="instructions">
+									Upload files by dragging & dropping, pasting, or <label class="pointer link" for="file_input">selecting</label> them.
 								</div>
-							</template>
-							{{ range .ProjectSettings.Owners }}
-								<div class="owner_row flex flex-row items-center g2 bg3 pa2">
-									<input type="hidden" name="owners" value="{{ .Username }}" />
-									<div class="flex g1 items-center b">
-										<img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}" />
-										<span title="{{ .Username }}">{{ .Name }}</span>
-									</div>
-									{{ if (or $.User.IsStaff (ne .ID $.User.ID)) }}
-										<a class="remove_owner svgicon f7 link-normal" href="javascript:;">{{ svg "close" }}</a>
-									{{ end }}
+								<div class="progress flex">
+									<div class="progress_text mr3"></div>
+									<div class="progress_bar flex-grow-1 flex-shrink-1 pa1"><div class=""></div></div>
 								</div>
-							{{ end }}
+							</div>
 						</div>
 					</div>
-				</div>
 
-				{{ if .ProjectSettings.JamParticipation }}
 					<div class="fieldset">
-						<legend>Jam Participation</legend>
-						<div class="pa3 flex flex-column g2">
-							{{ range .ProjectSettings.JamParticipation }}
-								<div>
-									<input id="jam_{{ .JamSlug }}" type="checkbox" name="jam_participation" value="{{ .JamSlug }}" {{ if .Participating }}checked{{ end }} />
-									<label for="jam_{{ .JamSlug }}">{{ .JamName }}</label>
+						<legend>Discord Tag</legend>
+						<div class="pa3 input-group">
+							{{ if not .User.DiscordUser }}
+								<div class="mb2 f6">
+									<a href="{{ .DiscordSettingsUrl }}" target="_blank">Link your Discord account</a> to use this feature.
 								</div>
 							{{ end }}
-                            {{ if .User.IsStaff }}
-                                <hr />
-                                <div>
-                                    <input id="jam_hidden" type="checkbox" name="jam_hidden" value="jam_hidden" {{ if .ProjectSettings.JamHidden }} checked {{ end }} />
-                                    <label for="jam_hidden">Hide project on jam pages</label>
-                                </div>
-                            {{ end }}
+							<div class="{{ if not .User.DiscordUser }}o-50{{ end }} flex flex-column g1">
+								<input
+									id="tag" name="tag" type="text"
+									pattern="^[a-z0-9]+(-[a-z0-9]+)*$" maxlength="20"
+									value="{{ .ProjectSettings.Tag }}"
+									{{ if not .User.DiscordUser }}disabled{{ end }}
+								>
+								<div class="f6" id="tag-discord-info">
+									Any Discord message with the tag "&amp;<span id="tag-preview"></span>" will automatically be associated with this project and shared on the website.
+								</div>
+								<div class="f6">Tags must be all lowercase, and can use hyphens to separate words.</div>
+							</div>
 						</div>
 					</div>
-				{{ end }}
 
-				{{/*
-					TODO(redesign): Two problems with the link editor:
-					1. It doesn't start out with a valid "empty" state, i.e. one set of empty fields
-					2. When it is in its empty state, it still renders one link in the live preview.
-				*/}}
-				{{ template "link_editor.html" .ProjectSettings.LinksJSON }}
-
-				{{ if and .Editing .User.IsStaff }}
-				<div class="fieldset">
-					<legend>Admin Properties</legend>
-					<div class="pa3 flex flex-column g3">
-						<div class="flex flex-column g2">
-							<div>
-								<input id="official" type="checkbox" name="official" {{ if not .ProjectSettings.Personal }}checked{{ end }}>
-								<label for="official">Official HMN project</label>
+					<div class="fieldset">
+						<legend>Owners</legend>
+						<div class="pa3">
+							<div class="flex">
+								<input class="flex-grow-1 bl bt bb br-0" id="owner_name" type="text" placeholder="Enter another owner's username" />
+								<button class="flex no-padding pa3 bt br bb bl-0 also-focus" id="owner_add"><span class="flex w1">{{ svg "add" }}</span></button>
 							</div>
-							<div>
-								<input id="hidden" type="checkbox" name="hidden" {{ if .ProjectSettings.Hidden }}checked{{ end }} />
-								<label for="hidden">Hide project</label>
-							</div>
-							<div>
-								<input id="featured" type="checkbox" name="featured" {{ if .ProjectSettings.Featured }}checked{{ end }} />
-								<label for="featured">Featured</label>
+							<div id="owners_error" class="f6"></div>
+							<div id="owner_list" class="pt3 flex flex-wrap g3">
+								<template id="owner_row">
+									<div class="owner_row flex flex-row items-center g2 bg3 pa2" data-tmpl="root">
+										<input type="hidden" name="owners" data-tmpl="input" />
+										<div class="flex g1 items-center b">
+											<img data-tmpl="avatar" class="avatar avatar-user avatar-small" src="" />
+											<span data-tmpl="name"></span>
+										</div>
+										<a class="remove_owner svgicon f7 link-normal" href="javascript:;">{{ svg "close" }}</a>
+									</div>
+								</template>
+								{{ range .ProjectSettings.Owners }}
+									<div class="owner_row flex flex-row items-center g2 bg3 pa2">
+										<input type="hidden" name="owners" value="{{ .Username }}" />
+										<div class="flex g1 items-center b">
+											<img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}" />
+											<span title="{{ .Username }}">{{ .Name }}</span>
+										</div>
+										{{ if (or $.User.IsStaff (ne .ID $.User.ID)) }}
+											<a class="remove_owner svgicon f7 link-normal" href="javascript:;">{{ svg "close" }}</a>
+										{{ end }}
+									</div>
+								{{ end }}
 							</div>
 						</div>
-						<div class="input-group">
-							<label for="slug">Slug</label>
-							<input type="text" id="slug" name="slug" maxlength="255" class="textbox" value="{{ .ProjectSettings.Slug }}">
-							<div class="f6">Has no effect for personal projects. Personal projects have a slug derived from the title.</div>
-							<div class="f6">If you change this, make sure to change DNS too!</div>
-						</div>
-						<div class="input-group">
-							<label for="slug_aliases">Slug Aliases</label>
-							<input type="text" id="slug_aliases" name="slug_aliases" class="textbox" value="{{ .ProjectSettings.SlugAliases }}">
-							<div class="f6">Add any alternate slugs for this project, separated by commas.</div>
-						</div>
-                        <div class="input-group">
-							<label for="sort_score">Sort Score</label>
-                            <input type="number" id="sort_score" name="sort_score" class="textbox" value="{{ .ProjectSettings.SortScore }}" />
-							<div class="f6">Higher score sorts first. Only affects <b>featured</b> projects!</div>
-                        </div>
 					</div>
-				</div>
-				{{ end }}
 
-				<div class="flex justify-end">
-					{{ if .Editing }}
-						<input class="btn-primary" type="submit" value="Save" />
-					{{ else }}
-						<input class="btn-primary" type="submit" value="Create Project" />
+					{{ if .ProjectSettings.JamParticipation }}
+						<div class="fieldset">
+							<legend>Jam Participation</legend>
+							<div class="pa3 flex flex-column g2">
+								{{ range .ProjectSettings.JamParticipation }}
+									<div>
+										<input id="jam_{{ .JamSlug }}" type="checkbox" name="jam_participation" value="{{ .JamSlug }}" {{ if .Participating }}checked{{ end }} />
+										<label for="jam_{{ .JamSlug }}">{{ .JamName }}</label>
+									</div>
+								{{ end }}
+								{{ if .User.IsStaff }}
+										<hr />
+										<div>
+												<input id="jam_hidden" type="checkbox" name="jam_hidden" value="jam_hidden" {{ if .ProjectSettings.JamHidden }} checked {{ end }} />
+												<label for="jam_hidden">Hide project on jam pages</label>
+										</div>
+								{{ end }}
+							</div>
+						</div>
 					{{ end }}
 				</div>
+				<div data-tab="images" class="flex flex-column g3">
+					<div class="fieldset">
+						<legend class="flex justify-between">
+							<span>Project Logo</span>
+							<a href="#" class="normal" onclick="openLogoSelector(event)">+ Upload Project Logo</a>
+						</legend>
+						<div class="logo">
+							{{ template "image_selector.html" imageselectordata "logo" .ProjectSettings.Logo false }}
+							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be square, and at least 256x256.</div>
+						</div>
+					</div>
+
+					<div class="fieldset">
+						<legend class="flex justify-between">
+							<span>Header Image</span>
+							<a href="#" class="normal" onclick="openHeaderSelector(event)">+ Upload Header Image</a>
+						</legend>
+						<div class="header_image">
+							{{ template "image_selector.html" imageselectordata "header_image" .ProjectSettings.HeaderImage false }}
+							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be wide, and at least 900x300.</div>
+						</div>
+					</div>
+
+					{{/*
+						TODO(redesign): Two problems with the link editor:
+						1. It doesn't start out with a valid "empty" state, i.e. one set of empty fields
+						2. When it is in its empty state, it still renders one link in the live preview.
+					*/}}
+					{{ template "link_editor.html" .ProjectSettings.LinksJSON }}
+				</div>
+				<div data-tab="admin" class="flex flex-column g3">
+					{{ if $showAdminProperties }}
+						<div class="fieldset">
+							<legend>Admin Properties</legend>
+							<div class="pa3 flex flex-column g3">
+								<div class="flex flex-column g2">
+									<div>
+										<input id="official" type="checkbox" name="official" {{ if not .ProjectSettings.Personal }}checked{{ end }}>
+										<label for="official">Official HMN project</label>
+									</div>
+									<div>
+										<input id="hidden" type="checkbox" name="hidden" {{ if .ProjectSettings.Hidden }}checked{{ end }} />
+										<label for="hidden">Hide project</label>
+									</div>
+									<div>
+										<input id="featured" type="checkbox" name="featured" {{ if .ProjectSettings.Featured }}checked{{ end }} />
+										<label for="featured">Featured</label>
+									</div>
+								</div>
+								<div class="input-group">
+									<label for="slug">Slug</label>
+									<input type="text" id="slug" name="slug" maxlength="255" class="textbox" value="{{ .ProjectSettings.Slug }}">
+									<div class="f6">Has no effect for personal projects. Personal projects have a slug derived from the title.</div>
+									<div class="f6">If you change this, make sure to change DNS too!</div>
+								</div>
+								<div class="input-group">
+									<label for="slug_aliases">Slug Aliases</label>
+									<input type="text" id="slug_aliases" name="slug_aliases" class="textbox" value="{{ .ProjectSettings.SlugAliases }}">
+									<div class="f6">Add any alternate slugs for this project, separated by commas.</div>
+								</div>
+														<div class="input-group">
+									<label for="sort_score">Sort Score</label>
+																<input type="number" id="sort_score" name="sort_score" class="textbox" value="{{ .ProjectSettings.SortScore }}" />
+									<div class="f6">Higher score sorts first. Only affects <b>featured</b> projects!</div>
+														</div>
+							</div>
+						</div>
+					{{ end }}
+				</div>
+			</div>
+			<div class="flex justify-end">
+				{{ if .Editing }}
+					<input class="btn-primary" type="submit" value="Save" />
+				{{ else }}
+					<input class="btn-primary" type="submit" value="Create Project" />
+				{{ end }}
 			</div>
 		</form>
 		<div class="dn db-l pv4 pr4">
@@ -342,6 +353,8 @@
 	<input type="file" multiple name="file_input" id="file_input" class="dn" />{{/* NOTE(mark): copied NOTE(asaf): Placing this outside the form to avoid submitting it to the server by accident */}}
 	
 	<script>
+	initHashTabs(document);
+
 	let csrf = JSON.parse({{ csrftokenjs .Session }});
 
 	let projectForm = document.querySelector("#project_form");

@@ -3,16 +3,17 @@
 {{ define "extrahead" }}
 	<script src="{{ static "js/image_selector.js" }}"></script>
 	<script src="{{ static "js/templates.js" }}"></script>
+	<script src="{{ static "js/tabs.js" }}"></script>
 {{ end }}
 
 {{ define "content" }}
 <div class="flex justify-center pa3">
 	<div class="w-100 mw-site flex flex-column">
 		<div class="bb mb2 flex f6">
-			<a class="tab-button ph3 pv1 pointer" href="#profile">Profile</a>
-			<a class="tab-button ph3 pv1 pointer" href="#account">Account</a>
-			<a class="tab-button ph3 pv1 pointer" href="#password">Password</a>
-			<a class="tab-button ph3 pv1 pointer" href="#discord">Discord</a>
+			<a class="tab-button ph3 pv1 pointer" data-tab-button="profile">Profile</a>
+			<a class="tab-button ph3 pv1 pointer" data-tab-button="account">Account</a>
+			<a class="tab-button ph3 pv1 pointer" data-tab-button="password">Password</a>
+			<a class="tab-button ph3 pv1 pointer" data-tab-button="discord">Discord</a>
 		</div>
 		<div>
 			<form id="user_form" class="hmn-form" action="{{ .SubmitUrl }}" method="POST" enctype="multipart/form-data">
@@ -28,7 +29,7 @@
 					}
 				</script>
 
-				<div hidden class="settings_panel flex flex-column g3" data-slug="profile">
+				<div hidden class="settings_panel flex flex-column g3" data-tab="profile">
 					<div class="input-group">
 						<label for="realname">Real name</label>
 						<input type="text" id="realname" name="realname" maxlength="255" class="w-100" value="{{ .User.Name }}" />
@@ -96,7 +97,7 @@
 					<input class="btn-primary self-end" type="submit" value="Save" />
 				</div>
 
-				<div hidden class="settings_panel flex flex-column g3" data-slug="account">
+				<div hidden class="settings_panel flex flex-column g3" data-tab="account">
 					<div class="input-group">
 						<label for="username">Username</label>
 						<input id="username" class="w-100" type="text" disabled value="{{ .User.Username }}" />
@@ -113,7 +114,7 @@
 					<input class="btn-primary self-end" type="submit" value="Save" />
 				</div>
 
-				<div class="settings_panel flex flex-column g3" data-slug="password">
+				<div class="settings_panel flex flex-column g3" data-tab="password">
 					<div class="fieldset">
 						<legend>Reset your password</legend>
 						<div class="pa3 flex flex-column g2">
@@ -130,7 +131,7 @@
 					<input class="btn-primary self-end" type="submit" value="Update password" />
 				</div>
 
-				<div class="settings_panel flex flex-column g3" data-slug="discord">
+				<div class="settings_panel flex flex-column g3" data-tab="discord">
 					<div>
 						{{ if .DiscordUser }}
 							Linked account:
@@ -179,36 +180,7 @@
 	</div>
 </div>
 <script>
-	function updateVisibleSettings() {
-		let hash = location.hash;
-		if (hash[0] == "#") {
-			hash = hash.slice(1);
-		}
-
-		let panels = document.querySelectorAll(".settings_panel");
-		let found = false;
-		let slug = "";
-		for (let i = 0; i < panels.length; ++i) {
-			visible = hash == panels[i].dataset.slug;
-			panels[i].hidden = !visible;
-			if (visible) {
-				slug = panels[i].dataset.slug;
-				found = true;
-			}
-		}
-		if (!found) {
-			slug = panels[0].dataset.slug;
-			panels[0].hidden = false;
-		}
-
-		let tabs = document.querySelectorAll(".tab-button");
-		for (let i = 0; i < tabs.length; ++i) {
-			tabs[i].classList.toggle("tab-button-active", tabs[i].getAttribute("href").slice(1) == slug);
-		}
-	}
-
-	window.addEventListener("hashchange", updateVisibleSettings);
-	updateVisibleSettings();
+	initHashTabs(document);
 </script>
 
 <form id="discord-unlink-form" class="dn" action="{{ .DiscordUnlinkUrl }}" method="POST">
