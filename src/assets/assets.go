@@ -21,6 +21,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -58,12 +59,13 @@ func init() {
 }
 
 type CreateInput struct {
-	Content     []byte
-	Filename    string
-	ContentType string
+	Content  []byte
+	Filename string
 
 	// Optional params
-	UploaderID    *int // HMN user id
+
+	ContentType   string // Defaults to http.DetectContentType(Content)
+	UploaderID    *int   // HMN user id
 	Width, Height int
 }
 
@@ -88,14 +90,12 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 	if len(in.Content) == 0 {
 		return nil, InvalidAssetError(fmt.Errorf("could not upload asset '%s': no bytes of data were provided", filename))
 	}
-	if in.ContentType == "" {
-		return nil, InvalidAssetError(fmt.Errorf("could not upload asset '%s': no content type provided", filename))
-	}
 
 	// Upload the asset to the DO space
 	id := uuid.New()
 	key := AssetKey(id.String(), filename)
 	checksum := fmt.Sprintf("%x", sha1.Sum(in.Content))
+	contentType := utils.OrDefault(in.ContentType, http.DetectContentType(in.Content))
 
 	upload := func() error {
 		_, err := client.PutObject(ctx, &s3.PutObjectInput{
@@ -103,7 +103,7 @@ func Create(ctx context.Context, dbConn db.ConnOrTx, in CreateInput) (*models.As
 			Key:         &key,
 			Body:        bytes.NewReader(in.Content),
 			ACL:         types.ObjectCannedACLPublicRead,
-			ContentType: &in.ContentType,
+			ContentType: &contentType,
 		})
 		return err
 	}

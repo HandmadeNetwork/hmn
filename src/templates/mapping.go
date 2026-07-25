@@ -430,10 +430,10 @@ func SnippetEditProjectsToJSON(projects []Project) string {
 	return builder.String()
 }
 
-func PodcastToTemplate(podcast *models.Podcast, imageFilename string) Podcast {
-	imageUrl := ""
-	if imageFilename != "" {
-		imageUrl = hmnurl.BuildUserFile(imageFilename)
+func PodcastToTemplate(podcast *models.Podcast, image *models.Asset) Podcast {
+	var imageUrl string
+	if image != nil {
+		imageUrl = hmnurl.BuildS3Asset(image.S3Key)
 	}
 	return Podcast{
 		Title:       podcast.Title,
@@ -450,10 +450,10 @@ func PodcastToTemplate(podcast *models.Podcast, imageFilename string) Podcast {
 	}
 }
 
-func PodcastEpisodeToTemplate(episode *models.PodcastEpisode, audioFileSize int64, imageFilename string) PodcastEpisode {
-	imageUrl := ""
-	if imageFilename != "" {
-		imageUrl = hmnurl.BuildUserFile(imageFilename)
+func PodcastEpisodeToTemplate(episode *models.PodcastEpisode, image *models.Asset, audioFileSize int64) PodcastEpisode {
+	var imageUrl string
+	if image != nil {
+		imageUrl = hmnurl.BuildS3Asset(image.S3Key)
 	}
 	return PodcastEpisode{
 		GUID:            episode.GUID.String(),

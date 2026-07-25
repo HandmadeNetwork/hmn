@@ -7,9 +7,9 @@ import (
 )
 
 type Podcast struct {
-	ID        int `db:"id"`
-	ImageID   int `db:"image_id"`
-	ProjectID int `db:"project_id"`
+	ID        int        `db:"id"`
+	ImageID   *uuid.UUID `db:"image_asset"`
+	ProjectID int        `db:"project_id"`
 
 	Title       string `db:"title"`
 	Description string `db:"description"`
