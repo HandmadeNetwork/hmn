@@ -1,3 +1,11 @@
+{{/*
+
+	NOTE(ben): Only one instance of the link editor can be included on the page
+	at a time. Also, reorderable.js is required.
+
+	As links are edited, a `linkedit` event is dispatched on `window`.
+
+*/}}
 <div class="fieldset">
 	<legend class="flex justify-between">
 		<span>Links</span>
@@ -5,193 +13,147 @@
 	</legend>
 	<div class="pa3 input-group">
 		<div id="links" class="flex flex-column g2 relative">
-			<div class="b primary_links">Primary Links</div>
-			<div class="b drop_slot secondary_links">Secondary Links</div>
+			<div class="b primary-links">Primary Links</div>
+			<div class="b secondary-links reorderable-item">Secondary Links</div>
 		</div>
-		<template id="link_row">
-			<div class="link_row drop_slot w-100 flex items-center" data-tmpl="root">
-				<span class="link_handle svgicon pr2 pr3-ns pointer grab" onmousedown="startLinkDrag(event)">{{ svg "draggable" }}</span>
+		<template id="link-editor-row">
+			<div data-tmpl="root" class="reorderable-item link-editor-row w-100 flex items-center">
+				<span class="svgicon pr2 pr3-ns pointer grab no-touch" onpointerdown="startLinkDrag(event)">{{ svg "draggable" }}</span>
 				<div class="flex-grow-1 flex flex-column flex-row-ns g2-ns">
-					<input data-tmpl="nameInput" size="1" class="link_name flex-grow-1" type="text" placeholder="Name" oninput="linkInput(event)" />
-					<input data-tmpl="urlInput" size="1" class="link_url flex-grow-1" type="url" placeholder="Link" oninput="linkInput(event)" />
+					<input data-tmpl="nameInput" size="1" class="link-name flex-grow-1" type="text" placeholder="Name" oninput="linkInput(event)">
+					<input data-tmpl="urlInput" size="1" class="link-url flex-grow-1" type="url" placeholder="Link" oninput="linkInput(event)">
 				</div>
-				<a class="delete_link svgicon link-normal pl2 pl3-ns f4" href="javascript:;" onclick="deleteLink(event)">{{ svg "delete" }}</a>
+				<a class="svgicon link-normal pl2 pl3-ns f4" href="javascript:;" onclick="deleteLink(event)">{{ svg "delete" }}</a>
 			</div>
 		</template>
-		<template id="link_row_dummy">
-			<div class="link_row_dummy drop_slot flex flex-row" data-tmpl="root">
-				<input class="o-0">
+		<template id="link-editor-empty-section">
+			<div data-tmpl="root" class="link-placeholder ba b--dashed pa2 i f7 tc">
+				Drag links here
 			</div>
 		</template>
 	</div>
-	<input id="links_json" type="hidden" name="links">
+	<input id="links-json" type="hidden" name="links">
+
 	<script>
-	const linksContainer = document.querySelector("#links");
-	const parentForm = linksContainer.closest("form");
-	const secondaryLinksTitle = linksContainer.querySelector(".secondary_links");
-	const linksJSONInput = document.querySelector("#links_json");
-	const linkTemplate = makeTemplateCloner("link_row");
-	const dummyLinkTemplate = makeTemplateCloner("link_row_dummy");
+		const linksContainer = document.querySelector("#links");
+		const parentForm = linksContainer.closest("form");
+		const primaryLinksTitle = linksContainer.querySelector(".primary-links");
+		const secondaryLinksTitle = linksContainer.querySelector(".secondary-links");
+		const linksJSONInput = document.querySelector("#links-json");
 
-	parentForm.addEventListener("submit", function() {
-		updateLinksJSON();
-	});
-	
-	{{ if . }}
-	const initialLinks = JSON.parse("{{ . }}");
-	{{ else }}
-	const initialLinks = [];
-	{{ end }}
-	for (const link of initialLinks) {
-		const l = linkTemplate();
-		l.nameInput.value = link.name;
-		l.urlInput.value = link.url;
-		if (link.primary) {
-			secondaryLinksTitle.insertAdjacentElement("beforebegin", l.root);
-		} else {
-			linksContainer.appendChild(l.root);
-		}
-	}
-	ensureLinksEmptyState();
+		const linkTemplate = makeTemplateCloner("link-editor-row");
+		const emptySectionTemplate = makeTemplateCloner("link-editor-empty-section");
 
-	function addLink(e) {
-		e.preventDefault();
-		linksContainer.appendChild(linkTemplate().root);
-
-		fireLinkEditEvent();
-	}
-
-	function deleteLink(e) {
-		e.preventDefault();
-		const l = e.target.closest(".link_row");
-		l.remove();
-
-		ensureLinksEmptyState();
-
-		fireLinkEditEvent();
-	}
-
-	function ensureLinksEmptyState() {
-		if (!linksContainer.querySelector(".link_row")) {
-			// Empty state is a single row
-			linksContainer.appendChild(linkTemplate().root);
-		}
-	}
-
-	function updateLinksJSON() {
-		const links = [];
-		let primary = true;
-		let els = linksContainer.children;
-		for (let i = 0; i < els.length; ++i) {
-			let el = els[i];
-			if (el.classList.contains("secondary_links")) {
-				primary = false;
-				continue;
+		{{ if . }}
+			const initialLinks = JSON.parse("{{ . }}");
+		{{ else }}
+			const initialLinks = [];
+		{{ end }}
+		for (const link of initialLinks) {
+			const l = linkTemplate();
+			l.nameInput.value = link.name;
+			l.urlInput.value = link.url;
+			if (link.primary) {
+				secondaryLinksTitle.insertAdjacentElement("beforebegin", l.root);
+			} else {
+				linksContainer.appendChild(l.root);
 			}
-			if (el.classList.contains("link_row")) {
-				const name = el.querySelector(".link_name").value;
-				const url = el.querySelector(".link_url").value;
-				if (!url) {
+		}
+
+		function ensurePlaceholders() {
+			for (const el of linksContainer.querySelectorAll(".link-placeholder")) {
+				el.remove();
+			}
+
+			let numPrimary = 0, numSecondary = 0;
+			let primary = true;
+			for (const el of linksContainer.children) {
+				if (el === primaryLinksTitle) {
+					continue;
+				}
+				if (el === secondaryLinksTitle) {
+					primary = false;
 					continue;
 				}
 
-				links.push({
-					"name": name,
-					"url": url,
-					"primary": primary,
-				});
+				if (el.classList.contains("reorderable-item")) {
+					if (primary) {
+						numPrimary += 1;
+					} else {
+						numSecondary += 1;
+					}
+				}
+			}
+
+			if (numPrimary === 0) {
+				primaryLinksTitle.insertAdjacentElement("afterend", emptySectionTemplate().root);
+			}
+			if (numSecondary === 0) {
+				secondaryLinksTitle.insertAdjacentElement("afterend", emptySectionTemplate().root);
 			}
 		}
-		linksJSONInput.value = JSON.stringify(links);
-	}
+		ensurePlaceholders();
 
-	let draggingLink = null;
-	let linkDragStartY = 0;
-	let linkDragStartMouseY = 0;
+		function getLinkData() {
+			const links = [];
+			let primary = true;
+			for (const el of linksContainer.children) {
+				if (el === secondaryLinksTitle) {
+					primary = false;
+					continue;
+				}
 
-	function startLinkDrag(e) {
-		e.preventDefault();
-		const l = e.target.closest(".link_row");
-
-		const top = l.offsetTop;
-
-		l.insertAdjacentElement("beforebegin", dummyLinkTemplate().root);
-		document.body.classList.add("grabbing");
-		
-		l.style.position = "absolute";
-		l.style.top = `${top}px`;
-		l.classList.add("link_dragging");
-		l.classList.remove("drop_slot");
-
-		draggingLink = l;
-		linkDragStartY = top;
-		linkDragStartMouseY = e.pageY;
-	}
-
-	function doLinkDrag(e) {
-		if (!draggingLink) {
-			return;
-		}
-
-		const maxTop = linksContainer.offsetHeight - draggingLink.offsetHeight;
-
-		const delta = e.pageY - linkDragStartMouseY;
-		const top = Math.max(0, Math.min(maxTop, linkDragStartY + delta));
-		const middle = top + draggingLink.offsetHeight/2;
-
-		draggingLink.style.top = `${top}px`;
-
-		const slots = linksContainer.querySelectorAll(".drop_slot");
-		let closestSlot = null;
-		let slotDist = Number.MAX_VALUE;
-		for (let i = 0; i < slots.length; ++i) {
-			let slotMiddle = slots[i].offsetTop + slots[i].offsetHeight/2;
-			let dist = Math.abs(middle - slotMiddle);
-			if (dist < slotDist) {
-				closestSlot = slots[i];
-				slotDist = dist;
+				if (el.classList.contains("link-editor-row")) {
+					const name = el.querySelector(".link-name").value;
+					const url = el.querySelector(".link-url").value;
+					if (!url) {
+						continue;
+					}
+					links.push({ name, url, primary });
+				}
 			}
+			return links;
 		}
-		const dummy = linksContainer.querySelector(".link_row_dummy");
-		if (!closestSlot.classList.contains("link_row_dummy")) {
-			let replaceType = "afterend";
-			if (closestSlot.offsetTop < dummy.offsetTop) {
-				replaceType = "beforebegin";
-			}
-			closestSlot.insertAdjacentElement(replaceType, dummy);
+		function updateLinksJSON() {
+			linksJSONInput.value = JSON.stringify(getLinkData());
 		}
-	}
-	
-	function endLinkDrag(e) {
-		if (!draggingLink) {
-			return;
+		function linksUpdated() {
+			updateLinksJSON();
+			window.dispatchEvent(new Event("linkedit"));
 		}
 
-		const dummy = linksContainer.querySelector(".link_row_dummy");
-		draggingLink.remove();
-		dummy.insertAdjacentElement("beforebegin", draggingLink);
-		dummy.remove();
+		function addLink(e) {
+			e.preventDefault();
+			secondaryLinksTitle.insertAdjacentElement("beforebegin", linkTemplate().root);
 
-		draggingLink.style.position = null;
-		draggingLink.style.top = null;
-		draggingLink.classList.remove("link_dragging");
-		draggingLink.classList.add("drop_slot");
+			ensurePlaceholders();
+			linksUpdated();
+		}
+		function deleteLink(e) {
+			e.preventDefault();
+			const l = e.target.closest(".link-editor-row");
+			l.remove();
 
-		document.body.classList.remove("grabbing");
-		draggingLink = null;
+			ensurePlaceholders();
+			linksUpdated();
+		}
+		function linkInput(e) {
+			linksUpdated();
+		}
 
-		fireLinkEditEvent();
-	}
-	window.addEventListener("mouseup", endLinkDrag);
-	window.addEventListener("mousemove", doLinkDrag);
+		const { startDrag: startLinkDrag } = initReorderable(
+			linksContainer,
+			{
+				onReorder(item) {
+					ensurePlaceholders();
+					linksUpdated();
+				},
+			},
+		);
 
-	function linkInput(e) {
-		fireLinkEditEvent();
-	}
-
-	function fireLinkEditEvent() {
-		window.dispatchEvent(new Event("linkedit"));
-	}
+		parentForm.addEventListener("submit", function() {
+			updateLinksJSON(); // NOTE(ben): Just update JSON, don't fire another event
+		});
 	</script>
 </div>
 

@@ -7,6 +7,7 @@
 	<script src="{{ static "js/base64.js" }}"></script>
 	<script src="{{ static "js/markdown_upload.js" }}"></script>
 	<script src="{{ static "js/tabs.js" }}"></script>
+	<script src="{{ static "js/reorderable.js" }}"></script>
 
 	<script>
 		const go = new Go();
@@ -592,15 +593,7 @@
 	const secondaryLinkTemplate = makeTemplateCloner("secondary_link");
 
 	function updateLinkPreviews() {
-		const links = document.querySelector("#links");
-		const linksChildren = Array.from(links.children);
-
-		const secondaryHeader = links.querySelector(".secondary_links");
-		const rows = links.querySelectorAll(".link_row");
-
-		function index(el) {
-			return linksChildren.indexOf(el);
-		}
+		const linkData = getLinkData(); // NOTE(ben): getLinkData is defined in link_editor.html.
 
 		const primaryPreview = document.querySelector("#primary_links_preview");
 		const secondaryPreview = document.querySelector("#secondary_links_preview");
@@ -608,22 +601,17 @@
 		primaryPreview.innerHTML = "";
 		secondaryPreview.innerHTML = "";
 
-		const indexOfSecondary = index(secondaryHeader);
-		for (const row of rows) {
-			const name = row.querySelector(".link_name").value;
-			const url = row.querySelector(".link_url").value;
-
-			const primary = index(row) < indexOfSecondary;
-			if (primary) {
+		for (const link of linkData) {
+			if (link.primary) {
 				const l = primaryLinkTemplate();
-				l.root.href = url;
-				l.name.innerText = name;
+				l.root.href = link.url;
+				l.name.innerText = link.name;
 				primaryPreview.appendChild(l.root);
 			} else {
 				let icon = "website";
 				let title = "";
 				if (parseKnownServicesForUrl) {
-					const guess = parseKnownServicesForUrl(url);
+					const guess = parseKnownServicesForUrl(link.url);
 					icon = guess.icon;
 					title = guess.service;
 					if (guess.username) {
@@ -633,8 +621,8 @@
 				const iconSVG = document.querySelector(`#link-icon-${icon}`).innerHTML;
 				
 				const l = secondaryLinkTemplate();
-				l.root.href = url;
-				l.root.title = name || title;
+				l.root.href = link.url;
+				l.root.title = link.name || title;
 				l.root.innerHTML = iconSVG;
 				secondaryPreview.appendChild(l.root);
 			}
