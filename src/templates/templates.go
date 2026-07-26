@@ -334,13 +334,17 @@ var HMNTemplateFuncs = template.FuncMap{
 		return num%2 == 1
 	},
 
-	// NOTE(asaf): Template specific functions:
-	"imageselectordata": func(name string, src *Asset, required bool) ImageSelectorData {
-		return ImageSelectorData{
-			Name:     name,
-			Asset:    src,
-			Required: required,
+	"asseturl": func(asset *Asset) string {
+		if asset == nil {
+			return ""
 		}
+		return asset.Url
+	},
+	"assetfilename": func(asset *Asset) string {
+		if asset == nil {
+			return ""
+		}
+		return asset.Filename
 	},
 
 	"mediaimage":   func() TimelineItemMediaType { return TimelineItemMediaTypeImage },

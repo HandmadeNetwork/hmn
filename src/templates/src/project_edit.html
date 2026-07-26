@@ -2,8 +2,10 @@
 
 {{ define "extrahead" }}
 	{{ template "markdown_previews.html" .TextEditor }}
-	<script src="{{ static "js/image_selector.js" }}"></script>
+	{{ template "image_selector.html" }}
+
 	<script src="{{ static "js/templates.js" }}"></script>
+	<script src="{{ static "js/image_selector.js" }}"></script>
 	<script src="{{ static "js/base64.js" }}"></script>
 	<script src="{{ static "js/markdown_upload.js" }}"></script>
 	<script src="{{ static "js/tabs.js" }}"></script>
@@ -203,7 +205,7 @@
 							<a href="#" class="normal" onclick="openLogoSelector(event)">+ Upload Project Logo</a>
 						</legend>
 						<div class="logo">
-							{{ template "image_selector.html" imageselectordata "logo" .ProjectSettings.Logo false }}
+							<span id="project-logo-placeholder"></span>
 							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be square, and at least 256x256.</div>
 						</div>
 					</div>
@@ -214,7 +216,7 @@
 							<a href="#" class="normal" onclick="openHeaderSelector(event)">+ Upload Header Image</a>
 						</legend>
 						<div class="header_image">
-							{{ template "image_selector.html" imageselectordata "header_image" .ProjectSettings.HeaderImage false }}
+							<span id="header-image-placeholder"></span>
 							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be wide, and at least 900x300.</div>
 						</div>
 					</div>
@@ -529,10 +531,11 @@
 	const headerMaxFileSize = {{ .HeaderMaxFileSize }};
 
 	const logoSelector = new ImageSelector(
-		document.querySelector("#project_form"),
+		"logo",
 		logoMaxFileSize,
-		document.querySelector(".logo"),
 		{
+			originalUrl: "{{ asseturl .ProjectSettings.Logo }}",
+			originalFilename: "{{ assetfilename .ProjectSettings.Logo }}",
 			onUpdate() {
 				updateCardPreview();
 			},
@@ -540,14 +543,16 @@
 	);
 	function openLogoSelector(e) {
 		e.preventDefault();
-		logoSelector.openFileInput();
+		logoSelector.openImageInput();
 	}
+	document.querySelector("#project-logo-placeholder").replaceWith(logoSelector.root);
 
 	const headerSelector = new ImageSelector(
-		document.querySelector("#project_form"),
+		"header_image",
 		headerMaxFileSize,
-		document.querySelector(".header_image"),
 		{
+			originalUrl: "{{ asseturl .ProjectSettings.HeaderImage }}",
+			originalFilename: "{{ assetfilename .ProjectSettings.HeaderImage }}",
 			onUpdate() {
 				updateCardPreview();
 			},
@@ -555,8 +560,9 @@
 	);
 	function openHeaderSelector(e) {
 		e.preventDefault();
-		headerSelector.openFileInput();
+		headerSelector.openImageInput();
 	}
+	document.querySelector("#header-image-placeholder").replaceWith(headerSelector.root);
 
 	function updateCardPreview() {
 		const title = document.querySelector("#project_name").value || "Project Title";

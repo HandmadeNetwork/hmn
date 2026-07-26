@@ -441,12 +441,6 @@ type ProjectCardData struct {
 	Classes string
 }
 
-type ImageSelectorData struct {
-	Name     string
-	Asset    *Asset
-	Required bool
-}
-
 type Breadcrumb struct {
 	Name, Url string
 	Project   *Project
