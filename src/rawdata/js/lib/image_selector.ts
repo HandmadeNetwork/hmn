@@ -1,35 +1,69 @@
-// NOTE(ben): See image_selector.html.
-const imageSelectorTemplate = makeTemplateCloner("image-selector");
+import { makeTemplateCloner } from "./templates";
 
-class ImageSelector {
+export type ImageSelectorOptions = {
+	defaultUrl?: string,
+	originalUrl?: string,
+	originalFilename?: string,
+
+	onUpdate?: ImageSelectorUpdateFunc,
+};
+export type ImageSelectorUpdateFunc = (url: string) => void;
+
+// NOTE(ben): See image_selector.html.
+type ImageSelectorTmpl = {
+	inputImage: HTMLInputElement,
+	inputRemove: HTMLInputElement,
+	errorMessage: HTMLElement,
+	previewContainer: HTMLElement,
+	preview: HTMLImageElement,
+	linkReset: HTMLAnchorElement,
+	linkRemove: HTMLAnchorElement,
+	filenameText: HTMLElement,
+}
+const imageSelectorTemplate = makeTemplateCloner<ImageSelectorTmpl>("image-selector");
+
+export class ImageSelector {
+	// The current URL of the selector. (Will be an object URL if the image has
+	// not been submitted yet.)
+	url: string;
+
+	// The template content to be inserted into the DOM wherever you like.
+	root: DocumentFragment;
+
+	// 
+
+	private maxFileSize: number;
+	private imageInput: HTMLInputElement;
+	private removeImageInput: HTMLInputElement;
+	private previewImage: HTMLImageElement;
+	private previewContainer: HTMLElement;
+	private resetLink: HTMLAnchorElement;
+	private removeLink: HTMLAnchorElement;
+	private filenameText: HTMLElement;
+	private errorEl: HTMLElement;
+	private defaultUrl: string;
+	private originalUrl: string;
+	private originalFilename: string;
+	private onUpdate: ImageSelectorUpdateFunc;
+
 	constructor(
-		formName,
-		maxFileSize,
+		formName: string,
+		maxFileSize: number,
 		{
 			defaultUrl = "",
 			originalUrl = "",
 			originalFilename = "",
 
-			onUpdate = url => {},
-		} = {},
+			onUpdate = () => { },
+		}: ImageSelectorOptions = {},
 	) {
 		const tmpl = imageSelectorTemplate();
-		
-		// ------------------------------------------------------------------------
-		// NOTE(ben): "Public" properties
 
-		// The current URL of the selector. (Will be an object URL if the image has
-		// not been submitted yet.)
-		this.url = ""; 
-
-		// The template content to be inserted into the DOM wherever you like.
+		this.url = "";
 		this.root = tmpl.root;
 
-		// ------------------------------------------------------------------------
-		// NOTE(ben): Set other "private" instance variables
-
 		this.maxFileSize = maxFileSize;
-		
+
 		this.imageInput = tmpl.inputImage;
 		this.removeImageInput = tmpl.inputRemove;
 		this.previewImage = tmpl.preview;
@@ -55,27 +89,27 @@ class ImageSelector {
 		this.setImageUrl(this.originalUrl, /*initial=*/true);
 		this.updatePreview();
 
-		this.imageInput.addEventListener("change", function (ev) {
-			if (this.imageInput.files.length > 0) {
-				this.handleNewImageFile(this.imageInput.files[0]);
+		this.imageInput.addEventListener("change", ev => {
+			if (this.imageInput.files!.length > 0) {
+				this.handleNewImageFile(this.imageInput.files![0]);
 			}
-		}.bind(this));
+		});
 
-		this.resetLink.addEventListener("click", function (ev) {
+		this.resetLink.addEventListener("click", ev => {
 			this.resetImage();
-		}.bind(this));
+		});
 
 		if (this.removeLink) {
-			this.removeLink.addEventListener("click", function (ev) {
+			this.removeLink.addEventListener("click", ev => {
 				this.removeImage();
-			}.bind(this));
+			});
 		}
 	}
 
 	openImageInput() {
 		this.imageInput.click();
 	}
-	setImageUrl(url, initial = false) {
+	setImageUrl(url: string, initial = false) {
 		this.url = url;
 		if (url) {
 			this.previewImage.style.display = "block";
@@ -88,20 +122,20 @@ class ImageSelector {
 			this.onUpdate(url);
 		}
 	}
-	setError(error) {
+	private setError(error: string) {
 		this.errorEl.textContent = error;
 		this.errorEl.hidden = !error;
 		this.imageInput.setCustomValidity(error);
 		this.imageInput.reportValidity();
 	}
-	checkSizeLimit(size) {
+	private checkSizeLimit(size: number) {
 		if (size > this.maxFileSize) {
 			this.setError("File too big. Max file size is " + this.maxFileSize + " bytes.");
 		} else {
 			this.setError("");
 		}
 	}
-	updatePreview(file = null) {
+	private updatePreview(file: File | null = null) {
 		const showReset = (
 			this.originalUrl
 			&& this.originalUrl !== this.defaultUrl
@@ -120,7 +154,7 @@ class ImageSelector {
 		this.previewContainer.hidden = !this.url;
 	}
 
-	handleNewImageFile(file) {
+	private handleNewImageFile(file: File) {
 		this.checkSizeLimit(file.size);
 		this.removeImageInput.value = "";
 		this.setImageUrl(URL.createObjectURL(file));

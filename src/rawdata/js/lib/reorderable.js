@@ -18,8 +18,8 @@
  * finished; however, there will also be an item with the `reorderable-dummy`
  * class that you may need to be aware of.
  */
-function initReorderable(container, {
-  onReorder = item => {},
+export function initReorderable(container, {
+  onReorder = item => { },
 } = {}) {
   let dragItem = null;
   let dragPointerId = null;
@@ -59,7 +59,7 @@ function initReorderable(container, {
   function doDrag(e) {
     const delta = e.pageY - dragMouseStartY;
     const top = dragItemStartY + delta;
-    const middle = top + dragItem.offsetHeight/2;
+    const middle = top + dragItem.offsetHeight / 2;
 
     // NOTE(ben): Find the closest item to insert before or after.
     const items = container.querySelectorAll(".reorderable-item");
@@ -71,7 +71,7 @@ function initReorderable(container, {
         continue;
       }
 
-      const itemMiddle = item.offsetTop + item.offsetHeight/2;
+      const itemMiddle = item.offsetTop + item.offsetHeight / 2;
       const dist = middle - itemMiddle;
       if (Math.abs(dist) < closestItemDist) {
         closestItem = item;

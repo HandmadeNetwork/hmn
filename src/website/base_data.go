@@ -3,7 +3,7 @@ package website
 import (
 	"time"
 
-	"git.handmade.network/hmn/hmn/src/buildcss"
+	"git.handmade.network/hmn/hmn/src/bundle"
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
@@ -125,7 +125,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		},
 	}
 
-	if buildcss.ActiveServerPort != 0 {
+	if bundle.ActiveServerPort != 0 {
 		baseData.EsBuildSSEUrl = hmnurl.BuildEsBuild()
 	}
 
