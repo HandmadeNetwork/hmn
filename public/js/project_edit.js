@@ -756,7 +756,7 @@ function initHashTabs(container, {
   return res;
 }
 
-// src/rawdata/js/project_edit.js
+// src/rawdata/js/project_edit.ts
 function init({
   csrf,
   projectName,
@@ -773,32 +773,32 @@ function init({
   headerImageFilename
 }) {
   initHashTabs(document);
-  let projectForm = document.querySelector("#project_form");
-  const tag = document.querySelector("#tag");
-  const tagPreview = document.querySelector("#tag-preview");
+  const projectForm = must(document.querySelector("#project_form"));
+  const tag = must(document.querySelector("#tag"));
+  const tagPreview = must(document.querySelector("#tag-preview"));
   function updateTagPreview() {
     tagPreview.innerText = tag.value || "[your tag]";
   }
   updateTagPreview();
   tag.addEventListener("input", () => updateTagPreview());
-  const description = document.querySelector("#full_description");
-  const descPreview = document.querySelector("#desc_preview");
+  const description = must(document.querySelector("#full_description"));
+  const descPreview = must(document.querySelector("#desc_preview"));
   const { clear: clearDescription } = autosaveContent({
     inputEl: description,
     storageKey: "project-description/".concat(projectName)
   });
   projectForm.addEventListener("submit", () => clearDescription());
-  let doMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
+  const doMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
   const OWNER_QUERY_STATE_IDLE = 0;
   const OWNER_QUERY_STATE_QUERYING = 1;
   let ownerQueryState = OWNER_QUERY_STATE_IDLE;
-  let addOwnerInput = document.querySelector("#owner_name");
-  let addOwnerButton = document.querySelector("#owner_add");
-  let ownersError = document.querySelector("#owners_error");
-  let ownerList = document.querySelector("#owner_list");
-  let ownerTemplate = makeTemplateCloner("owner_row");
-  let ownerPreviewTemplate = makeTemplateCloner("owner_preview");
-  let ownersPreviewContainer = document.querySelector("#owners_preview");
+  const addOwnerInput = must(document.querySelector("#owner_name"));
+  const addOwnerButton = must(document.querySelector("#owner_add"));
+  const ownersError = must(document.querySelector("#owners_error"));
+  const ownerList = must(document.querySelector("#owner_list"));
+  const ownerTemplate = makeTemplateCloner("owner_row");
+  const ownerPreviewTemplate = makeTemplateCloner("owner_preview");
+  const ownersPreviewContainer = must(document.querySelector("#owners_preview"));
   addOwnerInput.addEventListener("keypress", function(ev) {
     if (ev.which == 13) {
       startAddOwner();
@@ -864,7 +864,7 @@ function init({
   }
   function setOwnerQueryState(state) {
     ownerQueryState = state;
-    querying = ownerQueryState == OWNER_QUERY_STATE_QUERYING;
+    const querying = ownerQueryState == OWNER_QUERY_STATE_QUERYING;
     addOwnerInput.disabled = querying;
     addOwnerButton.disabled = querying;
     updateAddOwnerStyles();
@@ -873,15 +873,14 @@ function init({
     let ownerEl = ownerTemplate();
     ownerEl.input.value = username;
     ownerEl.name.textContent = bestName;
-    ownerEl.title = username;
     ownerEl.avatar.src = avatarUrl;
-    ownerList.appendChild(ownerEl.root);
+    ownerList.appendChild(ownerEl.rootElement);
     updateAddOwnerStyles();
     updateOwnersPreview();
   }
-  ownerList.addEventListener("click", function(ev) {
-    if (ev.target.closest(".remove_owner")) {
-      ev.target.closest(".owner_row").remove();
+  ownerList.addEventListener("click", (ev) => {
+    if (ownerList.closest(".remove_owner")) {
+      must(ownerList.closest(".owner_row")).remove();
     }
     updateAddOwnerStyles();
     updateOwnersPreview();
@@ -890,8 +889,8 @@ function init({
     let ownerEls = ownerList.querySelectorAll(".owner_row");
     ownersPreviewContainer.innerHTML = "";
     for (let i = 0; i < ownerEls.length; ++i) {
-      let avatarUrl = ownerEls[i].querySelector("img").src;
-      let name = ownerEls[i].querySelector("span").textContent;
+      let avatarUrl = must(ownerEls[i].querySelector("img")).src;
+      let name = must(ownerEls[i].querySelector("span")).textContent;
       let previewEl = ownerPreviewTemplate();
       previewEl.avatar.src = avatarUrl;
       previewEl.name.textContent = name;
@@ -910,11 +909,11 @@ function init({
       }
     }
   );
-  function openLogoSelector(e) {
+  must(document.querySelector("#logo-upload-button")).addEventListener("click", (e) => {
     e.preventDefault();
     logoSelector.openImageInput();
-  }
-  document.querySelector("#project-logo-placeholder").replaceWith(logoSelector.root);
+  });
+  must(document.querySelector("#project-logo-placeholder")).replaceWith(logoSelector.root);
   const headerSelector = new ImageSelector(
     "header_image",
     headerMaxFileSize,
@@ -926,27 +925,27 @@ function init({
       }
     }
   );
-  function openHeaderSelector(e) {
+  must(document.querySelector("#header-upload-button")).addEventListener("click", (e) => {
     e.preventDefault();
     headerSelector.openImageInput();
-  }
-  document.querySelector("#header-image-placeholder").replaceWith(headerSelector.root);
+  });
+  must(document.querySelector("#header-image-placeholder")).replaceWith(headerSelector.root);
   function updateCardPreview() {
-    const title = document.querySelector("#project_name").value || "Project Title";
-    document.querySelector("#logo_preview img").src = logoSelector.url;
-    document.querySelector("#logo_placeholder").innerText = title[0].toUpperCase();
-    document.querySelector("#logo_placeholder").hidden = !!logoSelector.url;
-    document.querySelector("#header_img_preview").style.backgroundImage = "url(".concat(headerSelector.url, ")");
-    document.querySelector("#flowsnake").classList.toggle("dn", headerSelector.url);
-    document.querySelector("#name_preview").innerText = title;
-    document.querySelector("#longdesc_title").innerText = title;
-    document.querySelector("#blurb_preview").innerText = document.querySelector("#description").value || "Project summary";
+    const title = must(document.querySelector("#project_name")).value || "Project Title";
+    must(document.querySelector("#logo_preview img")).src = logoSelector.url;
+    must(document.querySelector("#logo_placeholder")).innerText = title[0].toUpperCase();
+    must(document.querySelector("#logo_placeholder")).hidden = !!logoSelector.url;
+    must(document.querySelector("#header_img_preview")).style.backgroundImage = "url(".concat(headerSelector.url, ")");
+    must(document.querySelector("#flowsnake")).classList.toggle("dn", !!headerSelector.url);
+    must(document.querySelector("#name_preview")).innerText = title;
+    must(document.querySelector("#longdesc_title")).innerText = title;
+    must(document.querySelector("#blurb_preview")).innerText = must(document.querySelector("#description")).value || "Project summary";
   }
   updateCardPreview();
   setupMarkdownUpload(
     document.querySelectorAll("#project_form input[type=submit]"),
-    document.querySelector("#file_input"),
-    document.querySelector(".upload_bar"),
+    must(document.querySelector("#file_input")),
+    must(document.querySelector(".upload_bar")),
     description,
     doMarkdown,
     textMaxFileSize,
@@ -957,16 +956,16 @@ function init({
   const secondaryLinkTemplate = makeTemplateCloner("secondary_link");
   function updateLinkPreviews() {
     const linkData = getLinkData();
-    const primaryPreview = document.querySelector("#primary_links_preview");
-    const secondaryPreview = document.querySelector("#secondary_links_preview");
+    const primaryPreview = must(document.querySelector("#primary_links_preview"));
+    const secondaryPreview = must(document.querySelector("#secondary_links_preview"));
     primaryPreview.innerHTML = "";
     secondaryPreview.innerHTML = "";
     for (const link of linkData) {
       if (link.primary) {
         const l = primaryLinkTemplate();
-        l.root.href = link.url;
+        l.link.href = link.url;
         l.name.innerText = link.name;
-        primaryPreview.appendChild(l.root);
+        primaryPreview.appendChild(l.link);
       } else {
         let icon = "website";
         let title = "";
@@ -978,12 +977,12 @@ function init({
             title += " (".concat(guess.username, ")");
           }
         }
-        const iconSVG = document.querySelector("#link-icon-".concat(icon)).innerHTML;
+        const iconSVG = must(document.querySelector("#link-icon-".concat(icon))).innerHTML;
         const l = secondaryLinkTemplate();
-        l.root.href = link.url;
-        l.root.title = link.name || title;
-        l.root.innerHTML = iconSVG;
-        secondaryPreview.appendChild(l.root);
+        l.link.href = link.url;
+        l.link.title = link.name || title;
+        l.link.innerHTML = iconSVG;
+        secondaryPreview.appendChild(l.link);
       }
     }
   }

@@ -39,7 +39,7 @@ export type SelectTabOptions = {
  *    A function that selects a tab by name without clicking a button. By
  *    setting `sendEvent` to false you can suppress the call to `onSelect`.
  */
-export function initTabs(container: HTMLElement, {
+export function initTabs(container: ParentNode, {
     initialTab = null,
     onSelect = () => { },
 }: TabsOptions = {}): TabsFunctions {
@@ -81,7 +81,7 @@ export function initTabs(container: HTMLElement, {
 /**
  * A wrapper around `initTabs` that automatically uses the URL #hash.
  */
-export function initHashTabs(container: HTMLElement, {
+export function initHashTabs(container: ParentNode, {
     initialTab = null,
 } = {}) {
     const res = initTabs(container, {

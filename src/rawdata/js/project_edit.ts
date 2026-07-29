@@ -1,8 +1,26 @@
 import { ImageSelector } from "./lib/image_selector";
 import { setupMarkdownUpload } from "./lib/markdown_upload";
-import { getLinkData, initLinkEditor } from "./lib/link_editor";
+import { getLinkData, initLinkEditor, LinkData } from "./lib/link_editor";
 import { initHashTabs } from "./lib/tabs";
 import { makeTemplateCloner } from "./lib/templates";
+import { CSRFToken, FileInputElement } from "./lib/types";
+import { must } from "./lib/utils";
+
+export type ProjectEditConfig = {
+	csrf: CSRFToken,
+	projectName: string,
+	maxOwners: number,
+	logoMaxFileSize: number,
+	headerMaxFileSize: number,
+	textMaxFileSize: number,
+	editorUploadUrl: string,
+	initialLinks: LinkData,
+	ownerCheckUrl: string,
+	logoUrl: string,
+	logoFilename: string,
+	headerImageUrl: string,
+	headerImageFilename: string,
+};
 
 export function init({
 	csrf,
@@ -18,17 +36,17 @@ export function init({
 	logoFilename,
 	headerImageUrl,
 	headerImageFilename,
-}) {
+}: ProjectEditConfig) {
 	initHashTabs(document);
 
-	let projectForm = document.querySelector("#project_form");
+	const projectForm = must(document.querySelector<HTMLFormElement>("#project_form"));
 
 	//////////
 	// Tags //
 	//////////
 
-	const tag = document.querySelector('#tag');
-	const tagPreview = document.querySelector('#tag-preview');
+	const tag = must(document.querySelector<HTMLInputElement>('#tag'));
+	const tagPreview = must(document.querySelector<HTMLElement>('#tag-preview'));
 	function updateTagPreview() {
 		tagPreview.innerText = tag.value || "[your tag]";
 	}
@@ -39,8 +57,8 @@ export function init({
 	// Description management //
 	////////////////////////////
 
-	const description = document.querySelector('#full_description');
-	const descPreview = document.querySelector('#desc_preview');
+	const description = must(document.querySelector<HTMLTextAreaElement>('#full_description'));
+	const descPreview = must(document.querySelector<HTMLElement>('#desc_preview'));
 	const { clear: clearDescription } = autosaveContent({
 		inputEl: description,
 		storageKey: `project-description/${projectName}`,
@@ -48,7 +66,7 @@ export function init({
 	projectForm.addEventListener('submit', () => clearDescription());
 
 	// TODO(ben): Probably the live markdown stuff should be module-ified too.
-	let doMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
+	const doMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
 
 	//////////////////////
 	// Owner management //
@@ -56,15 +74,24 @@ export function init({
 
 	const OWNER_QUERY_STATE_IDLE = 0;
 	const OWNER_QUERY_STATE_QUERYING = 1;
+	type OwnerQueryState = typeof OWNER_QUERY_STATE_IDLE | typeof OWNER_QUERY_STATE_QUERYING;
 
-	let ownerQueryState = OWNER_QUERY_STATE_IDLE;
-	let addOwnerInput = document.querySelector("#owner_name");
-	let addOwnerButton = document.querySelector("#owner_add");
-	let ownersError = document.querySelector("#owners_error");
-	let ownerList = document.querySelector("#owner_list");
-	let ownerTemplate = makeTemplateCloner("owner_row");
-	let ownerPreviewTemplate = makeTemplateCloner("owner_preview");
-	let ownersPreviewContainer = document.querySelector("#owners_preview");
+	let ownerQueryState: OwnerQueryState = OWNER_QUERY_STATE_IDLE;
+	const addOwnerInput = must(document.querySelector<HTMLInputElement>("#owner_name"));
+	const addOwnerButton = must(document.querySelector<HTMLButtonElement>("#owner_add"));
+	const ownersError = must(document.querySelector<HTMLElement>("#owners_error"));
+	const ownerList = must(document.querySelector<HTMLElement>("#owner_list"));
+	const ownerTemplate = makeTemplateCloner<{
+		rootElement: HTMLElement,
+		input: HTMLInputElement,
+		avatar: HTMLImageElement,
+		name: HTMLElement,
+	}>("owner_row");
+	const ownerPreviewTemplate = makeTemplateCloner<{
+		avatar: HTMLImageElement,
+		name: HTMLElement,
+	}>("owner_preview");
+	const ownersPreviewContainer = must(document.querySelector<HTMLElement>("#owners_preview"));
 
 	addOwnerInput.addEventListener("keypress", function (ev) {
 		if (ev.which == 13) {
@@ -93,7 +120,7 @@ export function init({
 		if (newOwner.length == 0) {
 			return;
 		}
-		let ownerEls = ownerList.querySelectorAll(".owner_row input[name='owners']");
+		let ownerEls = ownerList.querySelectorAll<HTMLInputElement>(".owner_row input[name='owners']");
 		for (let i = 0; i < ownerEls.length; ++i) {
 			let existingOwner = ownerEls[i].value.toLowerCase();
 			if (newOwner == existingOwner) {
@@ -134,28 +161,27 @@ export function init({
 		setOwnerQueryState(OWNER_QUERY_STATE_QUERYING);
 	}
 
-	function setOwnerQueryState(state) {
+	function setOwnerQueryState(state: OwnerQueryState) {
 		ownerQueryState = state;
-		querying = (ownerQueryState == OWNER_QUERY_STATE_QUERYING);
+		const querying = (ownerQueryState == OWNER_QUERY_STATE_QUERYING);
 		addOwnerInput.disabled = querying;
 		addOwnerButton.disabled = querying;
 		updateAddOwnerStyles();
 	}
 
-	function addOwner(username, bestName, avatarUrl) {
+	function addOwner(username: string, bestName: string, avatarUrl: string) {
 		let ownerEl = ownerTemplate();
 		ownerEl.input.value = username;
 		ownerEl.name.textContent = bestName;
-		ownerEl.title = username;
 		ownerEl.avatar.src = avatarUrl;
-		ownerList.appendChild(ownerEl.root);
+		ownerList.appendChild(ownerEl.rootElement);
 		updateAddOwnerStyles();
 		updateOwnersPreview();
 	}
 
-	ownerList.addEventListener("click", function (ev) {
-		if (ev.target.closest(".remove_owner")) {
-			ev.target.closest(".owner_row").remove();
+	ownerList.addEventListener("click", ev => {
+		if (ownerList.closest(".remove_owner")) {
+			must(ownerList.closest(".owner_row")).remove();
 		}
 		updateAddOwnerStyles();
 		updateOwnersPreview();
@@ -165,8 +191,8 @@ export function init({
 		let ownerEls = ownerList.querySelectorAll(".owner_row");
 		ownersPreviewContainer.innerHTML = "";
 		for (let i = 0; i < ownerEls.length; ++i) {
-			let avatarUrl = ownerEls[i].querySelector("img").src;
-			let name = ownerEls[i].querySelector("span").textContent;
+			let avatarUrl = must(ownerEls[i].querySelector("img")).src;
+			let name = must(ownerEls[i].querySelector("span")).textContent;
 			let previewEl = ownerPreviewTemplate();
 			previewEl.avatar.src = avatarUrl;
 			previewEl.name.textContent = name;
@@ -192,11 +218,11 @@ export function init({
 			},
 		},
 	);
-	function openLogoSelector(e) {
+	must(document.querySelector("#logo-upload-button")).addEventListener("click", e => {
 		e.preventDefault();
 		logoSelector.openImageInput();
-	}
-	document.querySelector("#project-logo-placeholder").replaceWith(logoSelector.root);
+	});
+	must(document.querySelector("#project-logo-placeholder")).replaceWith(logoSelector.root);
 
 	const headerSelector = new ImageSelector(
 		"header_image",
@@ -209,23 +235,23 @@ export function init({
 			},
 		},
 	);
-	function openHeaderSelector(e) {
+	must(document.querySelector("#header-upload-button")).addEventListener("click", e => {
 		e.preventDefault();
 		headerSelector.openImageInput();
-	}
-	document.querySelector("#header-image-placeholder").replaceWith(headerSelector.root);
+	});
+	must(document.querySelector("#header-image-placeholder")).replaceWith(headerSelector.root);
 
 	function updateCardPreview() {
-		const title = document.querySelector("#project_name").value || "Project Title";
+		const title = must(document.querySelector<HTMLInputElement>("#project_name")).value || "Project Title";
 
-		document.querySelector("#logo_preview img").src = logoSelector.url;
-		document.querySelector("#logo_placeholder").innerText = title[0].toUpperCase();
-		document.querySelector("#logo_placeholder").hidden = !!logoSelector.url;
-		document.querySelector("#header_img_preview").style.backgroundImage = `url(${headerSelector.url})`;
-		document.querySelector("#flowsnake").classList.toggle("dn", headerSelector.url);
-		document.querySelector("#name_preview").innerText = title;
-		document.querySelector("#longdesc_title").innerText = title;
-		document.querySelector("#blurb_preview").innerText = document.querySelector("#description").value || "Project summary";
+		must(document.querySelector<HTMLImageElement>("#logo_preview img")).src = logoSelector.url;
+		must(document.querySelector<HTMLElement>("#logo_placeholder")).innerText = title[0].toUpperCase();
+		must(document.querySelector<HTMLElement>("#logo_placeholder")).hidden = !!logoSelector.url;
+		must(document.querySelector<HTMLElement>("#header_img_preview")).style.backgroundImage = `url(${headerSelector.url})`;
+		must(document.querySelector<HTMLElement>("#flowsnake")).classList.toggle("dn", !!headerSelector.url);
+		must(document.querySelector<HTMLElement>("#name_preview")).innerText = title;
+		must(document.querySelector<HTMLElement>("#longdesc_title")).innerText = title;
+		must(document.querySelector<HTMLElement>("#blurb_preview")).innerText = must(document.querySelector<HTMLTextAreaElement>("#description")).value || "Project summary";
 	}
 	updateCardPreview();
 
@@ -234,8 +260,8 @@ export function init({
 	//////////////////
 	setupMarkdownUpload(
 		document.querySelectorAll("#project_form input[type=submit]"),
-		document.querySelector('#file_input'),
-		document.querySelector('.upload_bar'),
+		must(document.querySelector<FileInputElement>('#file_input')),
+		must(document.querySelector('.upload_bar')),
 		description,
 		doMarkdown,
 		textMaxFileSize,
@@ -248,14 +274,19 @@ export function init({
 
 	initLinkEditor(initialLinks);
 
-	const primaryLinkTemplate = makeTemplateCloner("primary_link");
-	const secondaryLinkTemplate = makeTemplateCloner("secondary_link");
+	const primaryLinkTemplate = makeTemplateCloner<{
+		link: HTMLAnchorElement,
+		name: HTMLElement,
+	}>("primary_link");
+	const secondaryLinkTemplate = makeTemplateCloner<{
+		link: HTMLAnchorElement,
+	}>("secondary_link");
 
 	function updateLinkPreviews() {
 		const linkData = getLinkData();
 
-		const primaryPreview = document.querySelector("#primary_links_preview");
-		const secondaryPreview = document.querySelector("#secondary_links_preview");
+		const primaryPreview = must(document.querySelector<HTMLElement>("#primary_links_preview"));
+		const secondaryPreview = must(document.querySelector<HTMLElement>("#secondary_links_preview"));
 
 		primaryPreview.innerHTML = "";
 		secondaryPreview.innerHTML = "";
@@ -263,12 +294,13 @@ export function init({
 		for (const link of linkData) {
 			if (link.primary) {
 				const l = primaryLinkTemplate();
-				l.root.href = link.url;
+				l.link.href = link.url;
 				l.name.innerText = link.name;
-				primaryPreview.appendChild(l.root);
+				primaryPreview.appendChild(l.link);
 			} else {
 				let icon = "website";
 				let title = "";
+				// TODO(ben): Functions defined in Go code (.d.ts?)
 				if (parseKnownServicesForUrl) {
 					const guess = parseKnownServicesForUrl(link.url);
 					icon = guess.icon;
@@ -277,13 +309,13 @@ export function init({
 						title += ` (${guess.username})`;
 					}
 				}
-				const iconSVG = document.querySelector(`#link-icon-${icon}`).innerHTML;
+				const iconSVG = must(document.querySelector(`#link-icon-${icon}`)).innerHTML;
 
 				const l = secondaryLinkTemplate();
-				l.root.href = link.url;
-				l.root.title = link.name || title;
-				l.root.innerHTML = iconSVG;
-				secondaryPreview.appendChild(l.root);
+				l.link.href = link.url;
+				l.link.title = link.name || title;
+				l.link.innerHTML = iconSVG;
+				secondaryPreview.appendChild(l.link);
 			}
 		}
 	}
