@@ -62,9 +62,11 @@ func BuildContext() (api.BuildContext, *api.ContextError) {
 		Write:  true,
 
 		Engines: []api.Engine{
-			{Name: api.EngineChrome, Version: "109"},
-			{Name: api.EngineFirefox, Version: "109"},
-			{Name: api.EngineSafari, Version: "17"},
+			// NOTE(ben): Currently all at the version that introduced CSS selector
+			// nesting.
+			{Name: api.EngineChrome, Version: "120"},
+			{Name: api.EngineFirefox, Version: "117"},
+			{Name: api.EngineSafari, Version: "17.2"},
 		},
 	})
 }
