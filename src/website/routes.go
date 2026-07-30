@@ -70,7 +70,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	routes.GET(hmnurl.RegexPublic, func(c *RequestContext) ResponseData {
 		var res ResponseData
 		if bundle.ActiveServerPort != 0 {
-			if strings.HasSuffix(c.Req.URL.Path, ".css") {
+			if strings.HasSuffix(c.Req.URL.Path, ".css") || strings.HasSuffix(c.Req.URL.Path, ".js") {
 				proxy := httputil.ReverseProxy{
 					Director: func(r *http.Request) {
 						r.URL.Scheme = "http"
