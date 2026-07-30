@@ -54,7 +54,11 @@ function collectElements(paths: TemplatePath[], rootElement: ParentNode) {
     return result;
 }
 
-export function makeTemplateCloner<T extends ClonedTemplate>(id: string): () => T & { root: DocumentFragment } {
+// NOTE(ben): provide `root: DocumentFragment` if T does not contain it;
+// otherwise, T's `root` take precedence.
+export type TemplateElements<T> = T & Omit<{ root: DocumentFragment }, keyof T>;
+
+export function makeTemplateCloner<T extends ClonedTemplate>(id: string): () => TemplateElements<T> {
     return function () {
         var templateEl = getTemplateEl(id);
         if (templateEl === null) {
@@ -64,14 +68,14 @@ export function makeTemplateCloner<T extends ClonedTemplate>(id: string): () => 
         var root = templateEl.content.cloneNode(true) as DocumentFragment;
         var paths = getTemplatePaths(id, root);
         var result = collectElements(paths, root);
-        return result as T & { root: DocumentFragment };
+        return result as TemplateElements<T>;
     };
 }
 
-export function emptyElement(el: Node) {
+export function emptyElement<T extends Node>(el: T) {
     var newEl = el.cloneNode(false);
     assert(el.parentElement);
     el.parentElement.insertBefore(newEl, el);
     el.parentElement.removeChild(el);
-    return newEl;
+    return newEl as T;
 }

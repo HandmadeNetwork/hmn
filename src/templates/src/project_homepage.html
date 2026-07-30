@@ -1,9 +1,5 @@
 {{ template "base-2024.html" . }}
 
-{{ define "extrahead" }}
-	<script src="{{ static "js/templates.js" }}"></script>
-{{ end }}
-
 {{ define "content" }}
 <div class="flex justify-center">
 	<div class="flex-grow-1 flex flex-column items-center mw-site pt4-ns overflow-hidden">
@@ -156,7 +152,15 @@
 			const currentProjectId = {{ .Project.ID }};
 
 			document.querySelector(".create_snippet_link")?.addEventListener("click", function() {
-				let snippetEdit = makeSnippetEdit(userName, userAvatar, userUrl, new Date(), "", null, [currentProjectId], currentProjectId, null, null);
+				let snippetEdit = makeSnippetEditLegacy({
+					ownerName: userName,
+					ownerAvatar: userAvatar,
+					ownerUrl: userUrl,
+					date: new Date(),
+					text: "",
+					projectIds: [currentProjectId],
+					stickyProjectId: currentProjectId,
+				});
 				document.querySelector(".timeline").insertBefore(snippetEdit.root, document.querySelector(".timeline").children[0]);
 				document.querySelector(".create_snippet_link")?.remove();
 			});
@@ -168,7 +172,9 @@
 						parent = parent.parentElement;
 					}
 					if (parent && parent.classList.contains("timeline-item")) {
-						editTimelineSnippet(parent, currentProjectId);
+						editTimelineSnippetLegacy(parent, {
+							stickyProjectId: currentProjectId,
+						});
 					}
 				}
 			});
