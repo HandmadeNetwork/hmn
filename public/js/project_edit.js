@@ -950,8 +950,8 @@ function init({
     updateOwnersPreview();
   }
   ownerList.addEventListener("click", (ev) => {
-    if (ownerList.closest(".remove_owner")) {
-      must(ownerList.closest(".owner_row")).remove();
+    if (ev.target.closest(".remove_owner")) {
+      must(ev.target.closest(".owner_row")).remove();
     }
     updateAddOwnerStyles();
     updateOwnersPreview();
