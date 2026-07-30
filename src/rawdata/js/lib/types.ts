@@ -3,4 +3,4 @@ export type CSRFToken = {
   token: string,
 };
 
-export type FileInputElement = HTMLInputElement & { files: FileList };
+export type HTMLFileInputElement = HTMLInputElement & { files: FileList };

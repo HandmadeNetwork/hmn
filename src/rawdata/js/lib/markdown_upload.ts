@@ -1,4 +1,5 @@
 import { base64EncArr, strToUTF8Arr } from "./base64";
+import { HTMLFileInputElement } from "./types";
 import { assert, must } from "./utils";
 
 type Upload = {
@@ -32,7 +33,7 @@ type Upload = {
  */
 export function setupMarkdownUpload(
 	eSubmits: Iterable<HTMLInputElement>,
-	eFileInput: HTMLInputElement & { files: FileList },
+	eFileInput: HTMLFileInputElement,
 	eUploadBar: HTMLElement,
 	eText: HTMLTextAreaElement,
 	doMarkdown: () => void,

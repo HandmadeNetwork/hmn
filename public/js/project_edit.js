@@ -756,6 +756,82 @@ function initHashTabs(container, {
   return res;
 }
 
+// src/rawdata/js/lib/markdown_previews.ts
+var previewWorker = new Worker("/assets/markdown_worker.js");
+function autosaveContent({
+  inputEl,
+  storageKey
+}) {
+  const storagePrefix = "saved-content";
+  const aWeekAgo = (/* @__PURE__ */ new Date()).getTime() - 7 * 24 * 60 * 60 * 1e3;
+  for (const key in window.localStorage) {
+    if (!window.localStorage.hasOwnProperty(key)) {
+      continue;
+    }
+    if (key.startsWith(storagePrefix)) {
+      try {
+        const { when } = JSON.parse(window.localStorage.getItem(key));
+        if (when <= aWeekAgo) {
+          window.localStorage.removeItem(key);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+  const storageKeyFull = "".concat(storagePrefix, "/").concat(storageKey);
+  const storedContents = window.localStorage.getItem(storageKeyFull);
+  if (storedContents && !inputEl.value) {
+    try {
+      const { contents } = JSON.parse(storedContents);
+      inputEl.value = contents;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  function updateContentCache() {
+    window.localStorage.setItem(storageKeyFull, JSON.stringify({
+      when: (/* @__PURE__ */ new Date()).getTime(),
+      contents: inputEl.value
+    }));
+  }
+  inputEl.addEventListener("input", () => updateContentCache());
+  return {
+    clear() {
+      window.localStorage.removeItem(storageKeyFull);
+    }
+  };
+}
+var markdownIds = [];
+function initLiveMarkdown({
+  inputEl,
+  previewEl,
+  parserName = "parseMarkdown"
+}) {
+  if (markdownIds.includes(inputEl.id)) {
+    console.warn('Multiple elements with ID "'.concat(inputEl.id, '" are being used for Markdown. Results will be very confusing!'));
+  }
+  markdownIds.push(inputEl.id);
+  previewWorker.onmessage = ({ data }) => {
+    var _a;
+    const { elementID, html } = data;
+    if (elementID === inputEl.id) {
+      previewEl.innerHTML = html;
+      (_a = MathJax.typeset) == null ? void 0 : _a.call(MathJax);
+    }
+  };
+  function doMarkdown() {
+    previewWorker.postMessage({
+      elementID: inputEl.id,
+      markdown: inputEl.value,
+      parserName
+    });
+  }
+  doMarkdown();
+  inputEl.addEventListener("input", () => doMarkdown());
+  return doMarkdown;
+}
+
 // src/rawdata/js/project_edit.ts
 function init({
   csrf,

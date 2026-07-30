@@ -1,7 +1,7 @@
 {{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
-	{{ template "markdown_previews.html" .TextEditor }}
+	{{ template "markdown_previews.html" }}
 	{{ template "image_selector.html" }}
 
 	<script>
@@ -11,6 +11,40 @@
 				go.run(result.instance); // don't await this; we want it to be continuously running
 			});
 		window.parseKnownServicesForUrl = null; // will be set by the Go code
+	</script>
+
+	<script type="module">
+		import { init } from "{{ static "js/project_edit.js" }}";
+
+		init({
+			csrf: JSON.parse({{ csrftokenjs .Session }}),
+
+			{{ if .Editing }}
+				projectName: "new-project",
+			{{ else }}
+				projectName: "{{ .Project.Name }}",
+			{{ end }}
+
+			{{ with .ProjectSettings.LinksJSON }}
+				initialLinks: JSON.parse("{{ . }}"),
+			{{ else }}
+				initialLinks: [],
+			{{ end }}
+
+			maxOwners: {{ .MaxOwners }},
+
+			logoUrl: "{{ asseturl .ProjectSettings.Logo }}",
+			logoFilename: "{{ assetfilename .ProjectSettings.Logo }}",
+			headerImageUrl: "{{ asseturl .ProjectSettings.HeaderImage }}",
+			headerImageFilename: "{{ assetfilename .ProjectSettings.HeaderImage }}",
+
+			logoMaxFileSize: {{ .LogoMaxFileSize }},
+			headerMaxFileSize: {{ .HeaderMaxFileSize }},
+			textMaxFileSize: {{ .TextEditor.MaxFileSize }},
+
+			editorUploadUrl: {{ .TextEditor.UploadUrl }},
+			ownerCheckUrl: "{{ .APICheckUsernameUrl }}",
+		});
 	</script>
 
 	<style>
@@ -341,38 +375,4 @@
 		</div>
 	</div>
 	<input type="file" multiple name="file_input" id="file_input" class="dn" />{{/* NOTE(mark): copied NOTE(asaf): Placing this outside the form to avoid submitting it to the server by accident */}}
-	
-	<script type="module">
-		import { init } from "{{ static "js/project_edit.js" }}";
-
-		init({
-			csrf: JSON.parse({{ csrftokenjs .Session }}),
-
-			{{ if .Editing }}
-				projectName: "new-project",
-			{{ else }}
-				projectName: "{{ .Project.Name }}",
-			{{ end }}
-
-			{{ with .ProjectSettings.LinksJSON }}
-				initialLinks: JSON.parse("{{ . }}"),
-			{{ else }}
-				initialLinks: [],
-			{{ end }}
-
-			maxOwners: {{ .MaxOwners }},
-
-			logoUrl: "{{ asseturl .ProjectSettings.Logo }}",
-			logoFilename: "{{ assetfilename .ProjectSettings.Logo }}",
-			headerImageUrl: "{{ asseturl .ProjectSettings.HeaderImage }}",
-			headerImageFilename: "{{ assetfilename .ProjectSettings.HeaderImage }}",
-
-			logoMaxFileSize: {{ .LogoMaxFileSize }},
-			headerMaxFileSize: {{ .HeaderMaxFileSize }},
-			textMaxFileSize: {{ .TextEditor.MaxFileSize }},
-
-			editorUploadUrl: {{ .TextEditor.UploadUrl }},
-			ownerCheckUrl: "{{ .APICheckUsernameUrl }}",
-		});
-	</script>
 {{ end }}

@@ -3,8 +3,9 @@ import { setupMarkdownUpload } from "./lib/markdown_upload";
 import { getLinkData, initLinkEditor, LinkData } from "./lib/link_editor";
 import { initHashTabs } from "./lib/tabs";
 import { makeTemplateCloner } from "./lib/templates";
-import { CSRFToken, FileInputElement } from "./lib/types";
+import { CSRFToken, HTMLFileInputElement } from "./lib/types";
 import { must } from "./lib/utils";
+import { autosaveContent, initLiveMarkdown } from "./lib/markdown_previews";
 
 export type ProjectEditConfig = {
 	csrf: CSRFToken,
@@ -260,7 +261,7 @@ export function init({
 	//////////////////
 	setupMarkdownUpload(
 		document.querySelectorAll("#project_form input[type=submit]"),
-		must(document.querySelector<FileInputElement>('#file_input')),
+		must(document.querySelector<HTMLFileInputElement>('#file_input')),
 		must(document.querySelector('.upload_bar')),
 		description,
 		doMarkdown,
