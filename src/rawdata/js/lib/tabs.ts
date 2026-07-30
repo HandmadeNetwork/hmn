@@ -1,7 +1,7 @@
 import { must } from "./utils";
 
 export type TabsOptions = {
-    initialTab?: string | null,
+    initialTab?: string,
     onSelect?: (name: string) => void,
 };
 
@@ -40,7 +40,7 @@ export type SelectTabOptions = {
  *    setting `sendEvent` to false you can suppress the call to `onSelect`.
  */
 export function initTabs(container: ParentNode, {
-    initialTab = null,
+    initialTab,
     onSelect = () => { },
 }: TabsOptions = {}): TabsFunctions {
     const buttons = Array.from(container.querySelectorAll("[data-tab-button]")) as HTMLElement[];
@@ -78,12 +78,16 @@ export function initTabs(container: ParentNode, {
     };
 }
 
+export type HashTabsOptions = {
+    initialTab?: string,
+};
+
 /**
  * A wrapper around `initTabs` that automatically uses the URL #hash.
  */
 export function initHashTabs(container: ParentNode, {
-    initialTab = null,
-} = {}) {
+    initialTab,
+}: HashTabsOptions = {}) {
     const res = initTabs(container, {
         initialTab: initialTab ?? document.location.hash.substring(1),
         onSelect(name) {

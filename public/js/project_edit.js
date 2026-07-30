@@ -705,7 +705,7 @@ function initLinkEditor(initialLinks) {
 
 // src/rawdata/js/lib/tabs.ts
 function initTabs(container, {
-  initialTab = null,
+  initialTab,
   onSelect = () => {
   }
 } = {}) {
@@ -738,7 +738,7 @@ function initTabs(container, {
   };
 }
 function initHashTabs(container, {
-  initialTab = null
+  initialTab
 } = {}) {
   const res = initTabs(container, {
     initialTab: initialTab != null ? initialTab : document.location.hash.substring(1),
