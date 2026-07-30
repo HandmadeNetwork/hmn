@@ -1062,6 +1062,7 @@ function init({
     }
   }
   updateLinkPreviews();
+  window.addEventListener("wasmready", () => updateLinkPreviews());
   window.addEventListener("linkedit", () => updateLinkPreviews());
 }
 export {
