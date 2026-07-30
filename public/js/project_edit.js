@@ -969,6 +969,8 @@ function init({
     }
   }
   updateOwnersPreview();
+  const projectNameField = must(document.querySelector("#project_name"));
+  const descriptionField = must(document.querySelector("#description"));
   const logoSelector = new ImageSelector(
     "logo",
     logoMaxFileSize,
@@ -1002,7 +1004,7 @@ function init({
   });
   must(document.querySelector("#header-image-placeholder")).replaceWith(headerSelector.root);
   function updateCardPreview() {
-    const title = must(document.querySelector("#project_name")).value || "Project Title";
+    const title = projectNameField.value || "Project Title";
     must(document.querySelector("#logo_preview img")).src = logoSelector.url;
     must(document.querySelector("#logo_placeholder")).innerText = title[0].toUpperCase();
     must(document.querySelector("#logo_placeholder")).hidden = !!logoSelector.url;
@@ -1010,9 +1012,11 @@ function init({
     must(document.querySelector("#flowsnake")).classList.toggle("dn", !!headerSelector.url);
     must(document.querySelector("#name_preview")).innerText = title;
     must(document.querySelector("#longdesc_title")).innerText = title;
-    must(document.querySelector("#blurb_preview")).innerText = must(document.querySelector("#description")).value || "Project summary";
+    must(document.querySelector("#blurb_preview")).innerText = descriptionField.value || "Project summary";
   }
   updateCardPreview();
+  projectNameField.addEventListener("input", updateCardPreview);
+  descriptionField.addEventListener("input", updateCardPreview);
   setupMarkdownUpload(
     document.querySelectorAll("#project_form input[type=submit]"),
     must(document.querySelector("#file_input")),

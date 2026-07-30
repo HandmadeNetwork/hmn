@@ -213,6 +213,9 @@ export function init({
 	// Logo / header management //
 	//////////////////////////////
 
+	const projectNameField = must(document.querySelector<HTMLInputElement>("#project_name"));
+	const descriptionField = must(document.querySelector<HTMLTextAreaElement>("#description"));
+
 	const logoSelector = new ImageSelector(
 		"logo",
 		logoMaxFileSize,
@@ -248,7 +251,7 @@ export function init({
 	must(document.querySelector("#header-image-placeholder")).replaceWith(headerSelector.root);
 
 	function updateCardPreview() {
-		const title = must(document.querySelector<HTMLInputElement>("#project_name")).value || "Project Title";
+		const title = projectNameField.value || "Project Title";
 
 		must(document.querySelector<HTMLImageElement>("#logo_preview img")).src = logoSelector.url;
 		must(document.querySelector<HTMLElement>("#logo_placeholder")).innerText = title[0].toUpperCase();
@@ -257,9 +260,11 @@ export function init({
 		must(document.querySelector<HTMLElement>("#flowsnake")).classList.toggle("dn", !!headerSelector.url);
 		must(document.querySelector<HTMLElement>("#name_preview")).innerText = title;
 		must(document.querySelector<HTMLElement>("#longdesc_title")).innerText = title;
-		must(document.querySelector<HTMLElement>("#blurb_preview")).innerText = must(document.querySelector<HTMLTextAreaElement>("#description")).value || "Project summary";
+		must(document.querySelector<HTMLElement>("#blurb_preview")).innerText = descriptionField.value || "Project summary";
 	}
 	updateCardPreview();
+	projectNameField.addEventListener("input", updateCardPreview);
+	descriptionField.addEventListener("input", updateCardPreview);
 
 	//////////////////
 	// Asset upload //
