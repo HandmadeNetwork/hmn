@@ -85,7 +85,6 @@ function ensurePlaceholders() {
     secondaryLinksTitle.insertAdjacentElement("afterend", emptySectionTemplate().rootElement);
   }
 }
-ensurePlaceholders();
 
 export function getLinkData(): LinkData {
   const links = [];
@@ -142,6 +141,7 @@ export function initLinkEditor(initialLinks: LinkData) {
       linksContainer.appendChild(l.rootElement);
     }
   }
+  ensurePlaceholders()
 
   addButton.addEventListener("click", e => {
     e.preventDefault();

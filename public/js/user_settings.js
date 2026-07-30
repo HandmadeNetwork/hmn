@@ -205,6 +205,229 @@ var ImageSelector = class {
   }
 };
 
+// src/rawdata/js/lib/reorderable.js
+function initReorderable(container, {
+  onReorder = (item) => {
+  }
+} = {}) {
+  let dragItem = null;
+  let dragPointerId = null;
+  let dragItemStartY = 0;
+  let dragMouseStartY = 0;
+  const dummy = document.createElement("div");
+  dummy.classList.add("reorderable-dummy");
+  function startDrag(e) {
+    if (!e.isPrimary || e.button !== 0) {
+      return;
+    }
+    e.preventDefault();
+    const item = e.target.closest(".reorderable-item");
+    const top = item.offsetTop;
+    item.style.position = "absolute";
+    item.style.top = `${top}px`;
+    item.classList.add("reorderable-dragging");
+    dummy.style.height = `${item.offsetHeight}px`;
+    item.insertAdjacentElement("beforebegin", dummy);
+    document.body.classList.add("grabbing");
+    dragItem = item;
+    dragPointerId = e.pointerId;
+    dragItemStartY = top;
+    dragMouseStartY = e.pageY;
+    container.setPointerCapture(e.pointerId);
+    container.addEventListener("pointermove", doDrag);
+    container.addEventListener("lostpointercapture", endDrag, { once: true });
+  }
+  function doDrag(e) {
+    const delta = e.pageY - dragMouseStartY;
+    const top = dragItemStartY + delta;
+    const middle = top + dragItem.offsetHeight / 2;
+    const items = container.querySelectorAll(".reorderable-item");
+    let closestItem = null;
+    let closestItemDist = Infinity;
+    let insertBefore = null;
+    for (const item of items) {
+      if (item === dragItem) {
+        continue;
+      }
+      const itemMiddle = item.offsetTop + item.offsetHeight / 2;
+      const dist = middle - itemMiddle;
+      if (Math.abs(dist) < closestItemDist) {
+        closestItem = item;
+        closestItemDist = Math.abs(dist);
+        insertBefore = dist < 0;
+      }
+    }
+    if (closestItem) {
+      let alreadyOrdered = true;
+      let n = closestItem;
+      while (true) {
+        if (insertBefore) {
+          n = n.previousSibling;
+        } else {
+          n = n.nextSibling;
+        }
+        if (!n) {
+          alreadyOrdered = false;
+          break;
+        }
+        if (n === dragItem) {
+          break;
+        }
+        if (n.classList?.contains("reorderable-item")) {
+          alreadyOrdered = false;
+          break;
+        }
+      }
+      if (!alreadyOrdered) {
+        closestItem.insertAdjacentElement(insertBefore ? "beforebegin" : "afterend", dummy);
+        dragItem.remove();
+        dummy.insertAdjacentElement("beforebegin", dragItem);
+        onReorder(dragItem);
+      }
+    }
+    const maxTop = container.offsetHeight - dragItem.offsetHeight;
+    const newTop = Math.max(0, Math.min(maxTop, top));
+    dragItem.style.top = `${newTop}px`;
+  }
+  function endDrag(e) {
+    container.removeEventListener("pointermove", doDrag);
+    dragItem.remove();
+    dummy.insertAdjacentElement("beforebegin", dragItem);
+    dummy.remove();
+    dragItem.style.position = null;
+    dragItem.style.top = null;
+    dragItem.classList.remove("reorderable-dragging");
+    document.body.classList.remove("grabbing");
+    onReorder(dragItem);
+    dragItem = null;
+    dragPointerId = null;
+    dragItemStartY = 0;
+    dragMouseStartY = 0;
+  }
+  return {
+    startDrag
+  };
+}
+
+// src/rawdata/js/lib/link_editor.ts
+var linksContainer = must(document.querySelector("#links"));
+var parentForm = must(linksContainer.closest("form"));
+var addButton = must(document.querySelector("#link-editor-add-button"));
+var primaryLinksTitle = must(linksContainer.querySelector(".primary-links"));
+var secondaryLinksTitle = must(linksContainer.querySelector(".secondary-links"));
+var linksJSONInput = must(document.querySelector("#links-json"));
+var linkTemplate = makeTemplateCloner("link-editor-row");
+var emptySectionTemplate = makeTemplateCloner("link-editor-empty-section");
+var { startDrag: startLinkDrag } = initReorderable(
+  linksContainer,
+  {
+    onReorder(item) {
+      ensurePlaceholders();
+      linksUpdated();
+    }
+  }
+);
+function makeLink() {
+  const res = linkTemplate();
+  res.nameInput.addEventListener("input", linkInput);
+  res.urlInput.addEventListener("input", linkInput);
+  res.grabHandle.addEventListener("pointerdown", startLinkDrag);
+  res.deleteButton.addEventListener("click", (e) => {
+    e.preventDefault();
+    const link = must(e.target.closest(".link-editor-row"));
+    deleteLink(link);
+  });
+  return res;
+}
+function ensurePlaceholders() {
+  for (const el of linksContainer.querySelectorAll(".link-placeholder")) {
+    el.remove();
+  }
+  let numPrimary = 0, numSecondary = 0;
+  let primary = true;
+  for (const el of linksContainer.children) {
+    if (el === primaryLinksTitle) {
+      continue;
+    }
+    if (el === secondaryLinksTitle) {
+      primary = false;
+      continue;
+    }
+    if (el.classList.contains("reorderable-item")) {
+      if (primary) {
+        numPrimary += 1;
+      } else {
+        numSecondary += 1;
+      }
+    }
+  }
+  if (numPrimary === 0) {
+    primaryLinksTitle.insertAdjacentElement("afterend", emptySectionTemplate().rootElement);
+  }
+  if (numSecondary === 0) {
+    secondaryLinksTitle.insertAdjacentElement("afterend", emptySectionTemplate().rootElement);
+  }
+}
+function getLinkData() {
+  const links = [];
+  let primary = true;
+  for (const el of linksContainer.children) {
+    if (el === secondaryLinksTitle) {
+      primary = false;
+      continue;
+    }
+    if (el.classList.contains("link-editor-row")) {
+      const name = must(el.querySelector(".link-name")).value;
+      const url = must(el.querySelector(".link-url")).value;
+      if (!url) {
+        continue;
+      }
+      links.push({ name, url, primary });
+    }
+  }
+  return links;
+}
+function updateLinksJSON() {
+  linksJSONInput.value = JSON.stringify(getLinkData());
+}
+function linksUpdated() {
+  updateLinksJSON();
+  window.dispatchEvent(new Event("linkedit"));
+}
+function addLink() {
+  secondaryLinksTitle.insertAdjacentElement("beforebegin", makeLink().rootElement);
+  ensurePlaceholders();
+  linksUpdated();
+}
+function deleteLink(row) {
+  row.remove();
+  ensurePlaceholders();
+  linksUpdated();
+}
+function linkInput() {
+  linksUpdated();
+}
+function initLinkEditor(initialLinks) {
+  for (const link of initialLinks) {
+    const l = makeLink();
+    l.nameInput.value = link.name;
+    l.urlInput.value = link.url;
+    if (link.primary) {
+      secondaryLinksTitle.insertAdjacentElement("beforebegin", l.rootElement);
+    } else {
+      linksContainer.appendChild(l.rootElement);
+    }
+  }
+  ensurePlaceholders();
+  addButton.addEventListener("click", (e) => {
+    e.preventDefault();
+    addLink();
+  });
+  parentForm.addEventListener("submit", function() {
+    updateLinksJSON();
+  });
+}
+
 // src/rawdata/js/lib/tabs.ts
 function initTabs(container, {
   initialTab,
@@ -269,7 +492,8 @@ function lengthReporter(inputEl, lengthEl) {
 function init({
   avatarMaxFileSize,
   avatarUrl,
-  avatarFilename
+  avatarFilename,
+  linksJson
 }) {
   lengthReporter(
     must(document.getElementById("realname")),
@@ -288,6 +512,7 @@ function init({
     avatarSelector.openImageInput();
   });
   must(document.querySelector("#user-avatar-placeholder")).replaceWith(avatarSelector.root);
+  initLinkEditor(JSON.parse(linksJson));
   lengthReporter(
     must(document.getElementById("shortbio")),
     must(document.querySelector(".shortbio-length"))

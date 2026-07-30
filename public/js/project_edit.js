@@ -639,7 +639,6 @@ function ensurePlaceholders() {
     secondaryLinksTitle.insertAdjacentElement("afterend", emptySectionTemplate().rootElement);
   }
 }
-ensurePlaceholders();
 function getLinkData() {
   const links = [];
   let primary = true;
@@ -690,6 +689,7 @@ function initLinkEditor(initialLinks) {
       linksContainer.appendChild(l.rootElement);
     }
   }
+  ensurePlaceholders();
   addButton.addEventListener("click", (e) => {
     e.preventDefault();
     addLink();

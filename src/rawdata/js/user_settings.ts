@@ -1,4 +1,5 @@
 import { ImageSelector } from "./lib/image_selector";
+import { initLinkEditor } from "./lib/link_editor";
 import { initHashTabs } from "./lib/tabs";
 import { must } from "./lib/utils";
 
@@ -14,12 +15,14 @@ export type UserSettingsOptions = {
   avatarMaxFileSize: number,
   avatarUrl: string | undefined,
   avatarFilename: string | undefined,
+  linksJson: string,
 };
 
 export function init({
   avatarMaxFileSize,
   avatarUrl,
   avatarFilename,
+  linksJson,
 }: UserSettingsOptions) {
   lengthReporter(
     must(document.getElementById("realname")) as HTMLInputElement,
@@ -40,6 +43,8 @@ export function init({
     avatarSelector.openImageInput();
   });
   must(document.querySelector("#user-avatar-placeholder")).replaceWith(avatarSelector.root);
+
+  initLinkEditor(JSON.parse(linksJson));
 
   lengthReporter(
     must(document.getElementById("shortbio")) as HTMLInputElement,
