@@ -521,10 +521,12 @@ function init({
     must(document.getElementById("longbio")),
     must(document.querySelector(".longbio-length"))
   );
-  lengthReporter(
-    must(document.getElementById("signature")),
-    must(document.querySelector(".signature-length"))
-  );
+  if (document.getElementById("signature")) {
+    lengthReporter(
+      must(document.getElementById("signature")),
+      must(document.querySelector(".signature-length"))
+    );
+  }
   initHashTabs(document);
   const discordUnlinkForm = must(document.querySelector("#discord-unlink-form"));
   document.querySelector("#unlink-discord-button")?.addEventListener("click", (e) => {

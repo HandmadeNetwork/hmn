@@ -56,10 +56,12 @@ export function init({
     must(document.querySelector(".longbio-length")),
   );
 
-  lengthReporter(
-    must(document.getElementById("signature")) as HTMLInputElement,
-    must(document.querySelector(".signature-length")),
-  );
+  if (document.getElementById("signature")) {
+    lengthReporter(
+      must(document.getElementById("signature")) as HTMLInputElement,
+      must(document.querySelector(".signature-length")),
+    );
+  }
 
   initHashTabs(document);
 
