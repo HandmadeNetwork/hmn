@@ -1,14 +1,10 @@
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-
 // src/rawdata/js/lib/utils.ts
 function assert(cond, msg, soft = false) {
   if (!cond) {
     if (soft) {
-      console.error(msg != null ? msg : "Assertion failed");
+      console.error(msg ?? "Assertion failed");
     } else {
-      throw new Error(msg != null ? msg : "Assertion failed");
+      throw new Error(msg ?? "Assertion failed");
     }
   }
 }
@@ -23,7 +19,7 @@ var templatePathCache = {};
 function getTemplateEl(id) {
   if (!templateElementCache[id]) {
     const el = document.getElementById(id);
-    assert(el, "no element with id ".concat(id));
+    assert(el, `no element with id ${id}`);
     assert(el instanceof HTMLTemplateElement);
     templateElementCache[id] = el;
   }
@@ -68,7 +64,7 @@ function makeTemplateCloner(id) {
   return function() {
     var templateEl = getTemplateEl(id);
     if (templateEl === null) {
-      throw new Error("Couldn't find template with ID '".concat(id, "'"));
+      throw new Error(`Couldn't find template with ID '${id}'`);
     }
     var root = templateEl.content.cloneNode(true);
     var paths = getTemplatePaths(id, root);
@@ -80,6 +76,25 @@ function makeTemplateCloner(id) {
 // src/rawdata/js/lib/image_selector.ts
 var imageSelectorTemplate = makeTemplateCloner("image-selector");
 var ImageSelector = class {
+  // The current URL of the selector. (Will be an object URL if the image has
+  // not been submitted yet.)
+  url;
+  // The template content to be inserted into the DOM wherever you like.
+  root;
+  // 
+  maxFileSize;
+  imageInput;
+  removeImageInput;
+  previewImage;
+  previewContainer;
+  resetLink;
+  removeLink;
+  filenameText;
+  errorEl;
+  defaultUrl;
+  originalUrl;
+  originalFilename;
+  onUpdate;
   constructor(formName, maxFileSize, {
     defaultUrl = "",
     originalUrl = "",
@@ -87,25 +102,6 @@ var ImageSelector = class {
     onUpdate = () => {
     }
   } = {}) {
-    // The current URL of the selector. (Will be an object URL if the image has
-    // not been submitted yet.)
-    __publicField(this, "url");
-    // The template content to be inserted into the DOM wherever you like.
-    __publicField(this, "root");
-    // 
-    __publicField(this, "maxFileSize");
-    __publicField(this, "imageInput");
-    __publicField(this, "removeImageInput");
-    __publicField(this, "previewImage");
-    __publicField(this, "previewContainer");
-    __publicField(this, "resetLink");
-    __publicField(this, "removeLink");
-    __publicField(this, "filenameText");
-    __publicField(this, "errorEl");
-    __publicField(this, "defaultUrl");
-    __publicField(this, "originalUrl");
-    __publicField(this, "originalFilename");
-    __publicField(this, "onUpdate");
     const tmpl = imageSelectorTemplate();
     this.url = "";
     this.root = tmpl.root;
@@ -124,7 +120,7 @@ var ImageSelector = class {
     this.onUpdate = onUpdate;
     this.imageInput.name = formName;
     this.imageInput.value = "";
-    this.removeImageInput.name = "remove_".concat(formName);
+    this.removeImageInput.name = `remove_${formName}`;
     this.removeImageInput.value = "";
     this.setImageUrl(
       this.originalUrl,
@@ -219,7 +215,7 @@ function initTabs(container, {
   const tabs = Array.from(container.querySelectorAll("[data-tab]"));
   const firstTab = tabs[0].getAttribute("data-tab");
   function selectTab(name, { sendEvent = true } = {}) {
-    if (!container.querySelector('[data-tab="'.concat(name, '"]'))) {
+    if (!container.querySelector(`[data-tab="${name}"]`)) {
       console.warn("no tab found with name", name);
       return selectTab(firstTab, { sendEvent });
     }
@@ -247,9 +243,9 @@ function initHashTabs(container, {
   initialTab
 } = {}) {
   const res = initTabs(container, {
-    initialTab: initialTab != null ? initialTab : document.location.hash.substring(1),
+    initialTab: initialTab ?? document.location.hash.substring(1),
     onSelect(name) {
-      document.location.hash = "#".concat(name);
+      document.location.hash = `#${name}`;
     }
   });
   const { selectTab } = res;
@@ -265,7 +261,7 @@ function initHashTabs(container, {
 // src/rawdata/js/user_settings.ts
 function lengthReporter(inputEl, lengthEl) {
   let updateLength = function() {
-    lengthEl.textContent = "".concat(inputEl.value.length, "/").concat(inputEl.getAttribute("maxlength"));
+    lengthEl.textContent = `${inputEl.value.length}/${inputEl.getAttribute("maxlength")}`;
   };
   inputEl.addEventListener("input", updateLength);
   updateLength();
@@ -275,7 +271,6 @@ function init({
   avatarUrl,
   avatarFilename
 }) {
-  var _a, _b;
   lengthReporter(
     must(document.getElementById("realname")),
     must(document.querySelector(".realname-length"))
@@ -307,12 +302,12 @@ function init({
   );
   initHashTabs(document);
   const discordUnlinkForm = must(document.querySelector("#discord-unlink-form"));
-  (_a = document.querySelector("#unlink-discord-button")) == null ? void 0 : _a.addEventListener("click", (e) => {
+  document.querySelector("#unlink-discord-button")?.addEventListener("click", (e) => {
     e.preventDefault();
     discordUnlinkForm.submit();
   });
   const discordShowcaseBacklogForm = must(document.querySelector("#discord-showcase-backlog"));
-  (_b = document.querySelector("#discord-showcase-backlog-button")) == null ? void 0 : _b.addEventListener("click", (e) => {
+  document.querySelector("#discord-showcase-backlog-button")?.addEventListener("click", (e) => {
     e.preventDefault();
     discordShowcaseBacklogForm.submit();
   });

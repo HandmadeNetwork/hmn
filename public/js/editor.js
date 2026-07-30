@@ -21,7 +21,7 @@ function autosaveContent({
       }
     }
   }
-  const storageKeyFull = "".concat(storagePrefix, "/").concat(storageKey);
+  const storageKeyFull = `${storagePrefix}/${storageKey}`;
   const storedContents = window.localStorage.getItem(storageKeyFull);
   if (storedContents && !inputEl.value) {
     try {
@@ -51,15 +51,14 @@ function initLiveMarkdown({
   parserName = "parseMarkdown"
 }) {
   if (markdownIds.includes(inputEl.id)) {
-    console.warn('Multiple elements with ID "'.concat(inputEl.id, '" are being used for Markdown. Results will be very confusing!'));
+    console.warn(`Multiple elements with ID "${inputEl.id}" are being used for Markdown. Results will be very confusing!`);
   }
   markdownIds.push(inputEl.id);
   previewWorker.onmessage = ({ data }) => {
-    var _a;
     const { elementID, html } = data;
     if (elementID === inputEl.id) {
       previewEl.innerHTML = html;
-      (_a = MathJax.typeset) == null ? void 0 : _a.call(MathJax);
+      MathJax.typeset?.();
     }
   };
   function doMarkdown() {
@@ -138,9 +137,9 @@ function strToUTF8Arr(sDOMStr) {
 function assert(cond, msg, soft = false) {
   if (!cond) {
     if (soft) {
-      console.error(msg != null ? msg : "Assertion failed");
+      console.error(msg ?? "Assertion failed");
     } else {
-      throw new Error(msg != null ? msg : "Assertion failed");
+      throw new Error(msg ?? "Assertion failed");
     }
   }
 }
@@ -199,7 +198,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
     }
   });
   function makeUploadString(uploadNumber, filename) {
-    return "Uploading file #".concat(uploadNumber, ": `").concat(filename, "`...");
+    return `Uploading file #${uploadNumber}: \`${filename}\`...`;
   }
   eText.addEventListener("drop", (ev) => {
     enterCounter = 0;
@@ -210,9 +209,8 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
     ev.preventDefault();
   });
   eText.addEventListener("paste", (ev) => {
-    var _a, _b;
-    const files = (_a = ev.clipboardData) == null ? void 0 : _a.files;
-    if ((_b = files == null ? void 0 : files.length) != null ? _b : 0 > 0) {
+    const files = ev.clipboardData?.files;
+    if (files?.length ?? 0 > 0) {
       importUserFiles(files);
       ev.preventDefault();
     }
@@ -224,7 +222,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
       if (f.size < maxFileSize) {
         items.push({ file: f, error: null });
       } else {
-        items.push({ file: null, error: "`".concat(f.name, "` is too big! Max size is ").concat(maxFileSize, " but the file is ").concat(f.size, ".") });
+        items.push({ file: null, error: `\`${f.name}\` is too big! Max size is ${maxFileSize} but the file is ${f.size}.` });
       }
     }
     let cursorStart = eText.selectionStart;
@@ -241,7 +239,9 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
         toInsert += makeUploadString(fileCounter, item.file.name) + "\n\n";
         queueUpload(fileCounter, item.file);
       } else {
-        toInsert += "".concat(item.error, "\n\n");
+        toInsert += `${item.error}
+
+`;
       }
     }
     eText.value = eText.value.substring(0, cursorStart) + toInsert + eText.value.substring(cursorEnd, eText.value.length);
@@ -274,7 +274,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
     doMarkdown();
   }
   function replaceUploadStringError(upload) {
-    replaceUploadString(upload, "There was a problem uploading your file `".concat(upload.file.name, "`."));
+    replaceUploadString(upload, `There was a problem uploading your file \`${upload.file.name}\`.`);
   }
   function queueUpload(uploadNumber, file) {
     uploadQueue.push({
@@ -282,7 +282,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
       file
     });
     currentBatchSize++;
-    uploadProgressText.textContent = "Uploading files ".concat(currentBatchDone + 1, "/").concat(currentBatchSize);
+    uploadProgressText.textContent = `Uploading files ${currentBatchDone + 1}/${currentBatchSize}`;
   }
   function uploadDone(ev) {
     assert(currentXhr);
@@ -291,13 +291,13 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
       if (currentXhr.status == 200 && currentXhr.response) {
         if (currentXhr.response.url) {
           let url = currentXhr.response.url;
-          let newString = "[".concat(currentUpload.file.name, "](").concat(url, ")");
+          let newString = `[${currentUpload.file.name}](${url})`;
           if (currentXhr.response.mime.startsWith("image")) {
             newString = "!" + newString;
           }
           replaceUploadString(currentUpload, newString);
         } else if (currentXhr.response.error) {
-          replaceUploadString(currentUpload, "Upload failed for `".concat(currentUpload.file.name, "`: ").concat(currentXhr.response.error, "."));
+          replaceUploadString(currentUpload, `Upload failed for \`${currentUpload.file.name}\`: ${currentXhr.response.error}.`);
         } else {
           replaceUploadStringError(currentUpload);
         }
@@ -323,7 +323,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
     if (currentUpload == null) {
       const next = uploadQueue.shift();
       if (next) {
-        uploadProgressText.textContent = "Uploading files ".concat(currentBatchDone + 1, "/").concat(currentBatchSize);
+        uploadProgressText.textContent = `Uploading files ${currentBatchDone + 1}/${currentBatchSize}`;
         eUploadBar.classList.add("uploading");
         uploadProgressBarFill.style.width = "0%";
         for (const e of eSubmits) {
@@ -369,13 +369,13 @@ function init({ maxFileSize, uploadUrl }) {
   if (titleField) {
     const { clear: clearTitle } = autosaveContent({
       inputEl: titleField,
-      storageKey: "post-title/".concat(window.location.host).concat(window.location.pathname)
+      storageKey: `post-title/${window.location.host}${window.location.pathname}`
     });
     clearFuncs.push(clearTitle);
   }
   const { clear: clearContent } = autosaveContent({
     inputEl: textField,
-    storageKey: "post-content/".concat(window.location.host).concat(window.location.pathname)
+    storageKey: `post-content/${window.location.host}${window.location.pathname}`
   });
   clearFuncs.push(clearContent);
   form.addEventListener("submit", (e) => {

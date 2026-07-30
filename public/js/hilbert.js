@@ -4,9 +4,9 @@ function hilbertPath(iterations, step = 10) {
   for (let i = 0; i < iterations; i++) {
     l = l.replaceAll(/[AB]/g, (c) => c === "A" ? "+BF-AFA-FB+" : "-AF+BFB+FA-");
   }
-  const dirs = ["h".concat(step), "v".concat(step), "h-".concat(step), "v-".concat(step)];
+  const dirs = [`h${step}`, `v${step}`, `h-${step}`, `v-${step}`];
   let dir = 0;
-  let p = "M".concat(step, " ").concat(step);
+  let p = `M${step} ${step}`;
   for (const char of l) {
     if (char === "F") {
       p += dirs[dir];
@@ -31,7 +31,7 @@ function createHilbertCurves() {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     const p = hilbertPath(7, 10), width = hilbertWidth(7, 10);
     path.setAttribute("d", p);
-    svg.setAttribute("viewBox", "0 0 ".concat(width, " ").concat(width));
+    svg.setAttribute("viewBox", `0 0 ${width} ${width}`);
     svg.appendChild(path);
     filler.appendChild(svg);
     container.appendChild(filler);

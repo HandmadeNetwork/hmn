@@ -2,9 +2,9 @@
 function assert(cond, msg, soft = false) {
   if (!cond) {
     if (soft) {
-      console.error(msg != null ? msg : "Assertion failed");
+      console.error(msg ?? "Assertion failed");
     } else {
-      throw new Error(msg != null ? msg : "Assertion failed");
+      throw new Error(msg ?? "Assertion failed");
     }
   }
 }
@@ -19,7 +19,7 @@ var templatePathCache = {};
 function getTemplateEl(id) {
   if (!templateElementCache[id]) {
     const el = document.getElementById(id);
-    assert(el, "no element with id ".concat(id));
+    assert(el, `no element with id ${id}`);
     assert(el instanceof HTMLTemplateElement);
     templateElementCache[id] = el;
   }
@@ -64,7 +64,7 @@ function makeTemplateCloner(id) {
   return function() {
     var templateEl = getTemplateEl(id);
     if (templateEl === null) {
-      throw new Error("Couldn't find template with ID '".concat(id, "'"));
+      throw new Error(`Couldn't find template with ID '${id}'`);
     }
     var root = templateEl.content.cloneNode(true);
     var paths = getTemplatePaths(id, root);
@@ -127,8 +127,8 @@ function makeSnippetEdit({
   } else {
     snippetEdit.avatarImg.hidden = true;
   }
-  snippetEdit.username.textContent = ownerName != null ? ownerName : "";
-  snippetEdit.username.href = ownerUrl != null ? ownerUrl : "";
+  snippetEdit.username.textContent = ownerName ?? "";
+  snippetEdit.username.href = ownerUrl ?? "";
   snippetEdit.date.textContent = new Intl.DateTimeFormat([], { month: "2-digit", day: "2-digit", year: "numeric" }).format(date);
   snippetEdit.text.value = text;
   if (attachmentElement) {
@@ -168,7 +168,7 @@ function makeSnippetEdit({
   }
   function addProject(proj) {
     let projEl = snippetEditProjectTemplate();
-    projEl.projectId.value = "".concat(proj.id);
+    projEl.projectId.value = `${proj.id}`;
     projEl.projectLogo.src = proj.logo;
     projEl.projectName.textContent = proj.name;
     if (proj.id == stickyProjectId) {
@@ -214,7 +214,7 @@ function makeSnippetEdit({
       projectSelector.appendChild(option);
       for (let i = 0; i < remainingProjects.length; ++i) {
         const option2 = document.createElement("option");
-        option2.value = "".concat(remainingProjects[i].id);
+        option2.value = `${remainingProjects[i].id}`;
         option2.selected = false;
         option2.textContent = remainingProjects[i].name;
         projectSelector.appendChild(option2);
@@ -378,9 +378,8 @@ function makeSnippetEdit({
     ev.preventDefault();
   });
   snippetEdit.text.addEventListener("paste", (ev) => {
-    var _a;
     assert(ev.clipboardData);
-    const files = (_a = ev.clipboardData.files) != null ? _a : [];
+    const files = ev.clipboardData.files ?? [];
     if (files.length > 0) {
       setFile(files[0]);
     }
@@ -424,7 +423,7 @@ function makeSnippetEdit({
       ev.preventDefault();
       return;
     }
-    snippetEdit.redirect.value = onDeleteRedirectUrl != null ? onDeleteRedirectUrl : "";
+    snippetEdit.redirect.value = onDeleteRedirectUrl ?? "";
     snippetEdit.file.value = "";
   });
   validate();
@@ -436,13 +435,12 @@ function editTimelineSnippet(timelineItemEl, {
   stickyProjectId,
   onDeleteRedirectUrl
 }) {
-  var _a, _b, _c, _d, _e;
-  const ownerName = (_a = timelineItemEl.querySelector(".user")) == null ? void 0 : _a.textContent;
-  const ownerUrl = (_b = timelineItemEl.querySelector(".user")) == null ? void 0 : _b.href;
-  const ownerAvatar = (_c = timelineItemEl.querySelector(".avatar")) == null ? void 0 : _c.src;
+  const ownerName = timelineItemEl.querySelector(".user")?.textContent;
+  const ownerUrl = timelineItemEl.querySelector(".user")?.href;
+  const ownerAvatar = timelineItemEl.querySelector(".avatar")?.src;
   const creationDate = new Date(must(timelineItemEl.querySelector("time")).dateTime);
   const rawDesc = must(timelineItemEl.querySelector(".rawdesc")).textContent;
-  const attachment = (_e = (_d = timelineItemEl.querySelector(".timeline-media")) == null ? void 0 : _d.children) == null ? void 0 : _e[0];
+  const attachment = timelineItemEl.querySelector(".timeline-media")?.children?.[0];
   const projectIds = [];
   const projectEls = timelineItemEl.querySelectorAll(".project-id-list > input");
   for (let i = 0; i < projectEls.length; ++i) {

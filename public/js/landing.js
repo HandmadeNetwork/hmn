@@ -8,7 +8,7 @@ function initTabs(container, {
   const tabs = Array.from(container.querySelectorAll("[data-tab]"));
   const firstTab = tabs[0].getAttribute("data-tab");
   function selectTab(name, { sendEvent = true } = {}) {
-    if (!container.querySelector('[data-tab="'.concat(name, '"]'))) {
+    if (!container.querySelector(`[data-tab="${name}"]`)) {
       console.warn("no tab found with name", name);
       return selectTab(firstTab, { sendEvent });
     }
@@ -36,9 +36,9 @@ function initHashTabs(container, {
   initialTab
 } = {}) {
   const res = initTabs(container, {
-    initialTab: initialTab != null ? initialTab : document.location.hash.substring(1),
+    initialTab: initialTab ?? document.location.hash.substring(1),
     onSelect(name) {
-      document.location.hash = "#".concat(name);
+      document.location.hash = `#${name}`;
     }
   });
   const { selectTab } = res;
@@ -55,9 +55,9 @@ function initHashTabs(container, {
 function assert(cond, msg, soft = false) {
   if (!cond) {
     if (soft) {
-      console.error(msg != null ? msg : "Assertion failed");
+      console.error(msg ?? "Assertion failed");
     } else {
-      throw new Error(msg != null ? msg : "Assertion failed");
+      throw new Error(msg ?? "Assertion failed");
     }
   }
 }

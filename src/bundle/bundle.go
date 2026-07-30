@@ -64,7 +64,7 @@ func BuildContext() (api.BuildContext, *api.ContextError) {
 		Engines: []api.Engine{
 			{Name: api.EngineChrome, Version: "109"},
 			{Name: api.EngineFirefox, Version: "109"},
-			{Name: api.EngineSafari, Version: "12"},
+			{Name: api.EngineSafari, Version: "17"},
 		},
 	})
 }

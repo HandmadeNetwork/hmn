@@ -1,14 +1,10 @@
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-
 // src/rawdata/js/lib/utils.ts
 function assert(cond, msg, soft = false) {
   if (!cond) {
     if (soft) {
-      console.error(msg != null ? msg : "Assertion failed");
+      console.error(msg ?? "Assertion failed");
     } else {
-      throw new Error(msg != null ? msg : "Assertion failed");
+      throw new Error(msg ?? "Assertion failed");
     }
   }
 }
@@ -23,7 +19,7 @@ var templatePathCache = {};
 function getTemplateEl(id) {
   if (!templateElementCache[id]) {
     const el = document.getElementById(id);
-    assert(el, "no element with id ".concat(id));
+    assert(el, `no element with id ${id}`);
     assert(el instanceof HTMLTemplateElement);
     templateElementCache[id] = el;
   }
@@ -68,7 +64,7 @@ function makeTemplateCloner(id) {
   return function() {
     var templateEl = getTemplateEl(id);
     if (templateEl === null) {
-      throw new Error("Couldn't find template with ID '".concat(id, "'"));
+      throw new Error(`Couldn't find template with ID '${id}'`);
     }
     var root = templateEl.content.cloneNode(true);
     var paths = getTemplatePaths(id, root);
@@ -80,6 +76,25 @@ function makeTemplateCloner(id) {
 // src/rawdata/js/lib/image_selector.ts
 var imageSelectorTemplate = makeTemplateCloner("image-selector");
 var ImageSelector = class {
+  // The current URL of the selector. (Will be an object URL if the image has
+  // not been submitted yet.)
+  url;
+  // The template content to be inserted into the DOM wherever you like.
+  root;
+  // 
+  maxFileSize;
+  imageInput;
+  removeImageInput;
+  previewImage;
+  previewContainer;
+  resetLink;
+  removeLink;
+  filenameText;
+  errorEl;
+  defaultUrl;
+  originalUrl;
+  originalFilename;
+  onUpdate;
   constructor(formName, maxFileSize, {
     defaultUrl = "",
     originalUrl = "",
@@ -87,25 +102,6 @@ var ImageSelector = class {
     onUpdate = () => {
     }
   } = {}) {
-    // The current URL of the selector. (Will be an object URL if the image has
-    // not been submitted yet.)
-    __publicField(this, "url");
-    // The template content to be inserted into the DOM wherever you like.
-    __publicField(this, "root");
-    // 
-    __publicField(this, "maxFileSize");
-    __publicField(this, "imageInput");
-    __publicField(this, "removeImageInput");
-    __publicField(this, "previewImage");
-    __publicField(this, "previewContainer");
-    __publicField(this, "resetLink");
-    __publicField(this, "removeLink");
-    __publicField(this, "filenameText");
-    __publicField(this, "errorEl");
-    __publicField(this, "defaultUrl");
-    __publicField(this, "originalUrl");
-    __publicField(this, "originalFilename");
-    __publicField(this, "onUpdate");
     const tmpl = imageSelectorTemplate();
     this.url = "";
     this.root = tmpl.root;
@@ -124,7 +120,7 @@ var ImageSelector = class {
     this.onUpdate = onUpdate;
     this.imageInput.name = formName;
     this.imageInput.value = "";
-    this.removeImageInput.name = "remove_".concat(formName);
+    this.removeImageInput.name = `remove_${formName}`;
     this.removeImageInput.value = "";
     this.setImageUrl(
       this.originalUrl,
@@ -319,7 +315,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
     }
   });
   function makeUploadString(uploadNumber, filename) {
-    return "Uploading file #".concat(uploadNumber, ": `").concat(filename, "`...");
+    return `Uploading file #${uploadNumber}: \`${filename}\`...`;
   }
   eText.addEventListener("drop", (ev) => {
     enterCounter = 0;
@@ -330,9 +326,8 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
     ev.preventDefault();
   });
   eText.addEventListener("paste", (ev) => {
-    var _a, _b;
-    const files = (_a = ev.clipboardData) == null ? void 0 : _a.files;
-    if ((_b = files == null ? void 0 : files.length) != null ? _b : 0 > 0) {
+    const files = ev.clipboardData?.files;
+    if (files?.length ?? 0 > 0) {
       importUserFiles(files);
       ev.preventDefault();
     }
@@ -344,7 +339,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
       if (f.size < maxFileSize) {
         items.push({ file: f, error: null });
       } else {
-        items.push({ file: null, error: "`".concat(f.name, "` is too big! Max size is ").concat(maxFileSize, " but the file is ").concat(f.size, ".") });
+        items.push({ file: null, error: `\`${f.name}\` is too big! Max size is ${maxFileSize} but the file is ${f.size}.` });
       }
     }
     let cursorStart = eText.selectionStart;
@@ -361,7 +356,9 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
         toInsert += makeUploadString(fileCounter, item.file.name) + "\n\n";
         queueUpload(fileCounter, item.file);
       } else {
-        toInsert += "".concat(item.error, "\n\n");
+        toInsert += `${item.error}
+
+`;
       }
     }
     eText.value = eText.value.substring(0, cursorStart) + toInsert + eText.value.substring(cursorEnd, eText.value.length);
@@ -394,7 +391,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
     doMarkdown();
   }
   function replaceUploadStringError(upload) {
-    replaceUploadString(upload, "There was a problem uploading your file `".concat(upload.file.name, "`."));
+    replaceUploadString(upload, `There was a problem uploading your file \`${upload.file.name}\`.`);
   }
   function queueUpload(uploadNumber, file) {
     uploadQueue.push({
@@ -402,7 +399,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
       file
     });
     currentBatchSize++;
-    uploadProgressText.textContent = "Uploading files ".concat(currentBatchDone + 1, "/").concat(currentBatchSize);
+    uploadProgressText.textContent = `Uploading files ${currentBatchDone + 1}/${currentBatchSize}`;
   }
   function uploadDone(ev) {
     assert(currentXhr);
@@ -411,13 +408,13 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
       if (currentXhr.status == 200 && currentXhr.response) {
         if (currentXhr.response.url) {
           let url = currentXhr.response.url;
-          let newString = "[".concat(currentUpload.file.name, "](").concat(url, ")");
+          let newString = `[${currentUpload.file.name}](${url})`;
           if (currentXhr.response.mime.startsWith("image")) {
             newString = "!" + newString;
           }
           replaceUploadString(currentUpload, newString);
         } else if (currentXhr.response.error) {
-          replaceUploadString(currentUpload, "Upload failed for `".concat(currentUpload.file.name, "`: ").concat(currentXhr.response.error, "."));
+          replaceUploadString(currentUpload, `Upload failed for \`${currentUpload.file.name}\`: ${currentXhr.response.error}.`);
         } else {
           replaceUploadStringError(currentUpload);
         }
@@ -443,7 +440,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
     if (currentUpload == null) {
       const next = uploadQueue.shift();
       if (next) {
-        uploadProgressText.textContent = "Uploading files ".concat(currentBatchDone + 1, "/").concat(currentBatchSize);
+        uploadProgressText.textContent = `Uploading files ${currentBatchDone + 1}/${currentBatchSize}`;
         eUploadBar.classList.add("uploading");
         uploadProgressBarFill.style.width = "0%";
         for (const e of eSubmits) {
@@ -498,9 +495,9 @@ function initReorderable(container, {
     const item = e.target.closest(".reorderable-item");
     const top = item.offsetTop;
     item.style.position = "absolute";
-    item.style.top = "".concat(top, "px");
+    item.style.top = `${top}px`;
     item.classList.add("reorderable-dragging");
-    dummy.style.height = "".concat(item.offsetHeight, "px");
+    dummy.style.height = `${item.offsetHeight}px`;
     item.insertAdjacentElement("beforebegin", dummy);
     document.body.classList.add("grabbing");
     dragItem = item;
@@ -512,7 +509,6 @@ function initReorderable(container, {
     container.addEventListener("lostpointercapture", endDrag, { once: true });
   }
   function doDrag(e) {
-    var _a;
     const delta = e.pageY - dragMouseStartY;
     const top = dragItemStartY + delta;
     const middle = top + dragItem.offsetHeight / 2;
@@ -548,7 +544,7 @@ function initReorderable(container, {
         if (n === dragItem) {
           break;
         }
-        if ((_a = n.classList) == null ? void 0 : _a.contains("reorderable-item")) {
+        if (n.classList?.contains("reorderable-item")) {
           alreadyOrdered = false;
           break;
         }
@@ -562,7 +558,7 @@ function initReorderable(container, {
     }
     const maxTop = container.offsetHeight - dragItem.offsetHeight;
     const newTop = Math.max(0, Math.min(maxTop, top));
-    dragItem.style.top = "".concat(newTop, "px");
+    dragItem.style.top = `${newTop}px`;
   }
   function endDrag(e) {
     container.removeEventListener("pointermove", doDrag);
@@ -713,7 +709,7 @@ function initTabs(container, {
   const tabs = Array.from(container.querySelectorAll("[data-tab]"));
   const firstTab = tabs[0].getAttribute("data-tab");
   function selectTab(name, { sendEvent = true } = {}) {
-    if (!container.querySelector('[data-tab="'.concat(name, '"]'))) {
+    if (!container.querySelector(`[data-tab="${name}"]`)) {
       console.warn("no tab found with name", name);
       return selectTab(firstTab, { sendEvent });
     }
@@ -741,9 +737,9 @@ function initHashTabs(container, {
   initialTab
 } = {}) {
   const res = initTabs(container, {
-    initialTab: initialTab != null ? initialTab : document.location.hash.substring(1),
+    initialTab: initialTab ?? document.location.hash.substring(1),
     onSelect(name) {
-      document.location.hash = "#".concat(name);
+      document.location.hash = `#${name}`;
     }
   });
   const { selectTab } = res;
@@ -779,7 +775,7 @@ function autosaveContent({
       }
     }
   }
-  const storageKeyFull = "".concat(storagePrefix, "/").concat(storageKey);
+  const storageKeyFull = `${storagePrefix}/${storageKey}`;
   const storedContents = window.localStorage.getItem(storageKeyFull);
   if (storedContents && !inputEl.value) {
     try {
@@ -809,15 +805,14 @@ function initLiveMarkdown({
   parserName = "parseMarkdown"
 }) {
   if (markdownIds.includes(inputEl.id)) {
-    console.warn('Multiple elements with ID "'.concat(inputEl.id, '" are being used for Markdown. Results will be very confusing!'));
+    console.warn(`Multiple elements with ID "${inputEl.id}" are being used for Markdown. Results will be very confusing!`);
   }
   markdownIds.push(inputEl.id);
   previewWorker.onmessage = ({ data }) => {
-    var _a;
     const { elementID, html } = data;
     if (elementID === inputEl.id) {
       previewEl.innerHTML = html;
-      (_a = MathJax.typeset) == null ? void 0 : _a.call(MathJax);
+      MathJax.typeset?.();
     }
   };
   function doMarkdown() {
@@ -861,7 +856,7 @@ function init({
   const descPreview = must(document.querySelector("#desc_preview"));
   const { clear: clearDescription } = autosaveContent({
     inputEl: description,
-    storageKey: "project-description/".concat(projectName)
+    storageKey: `project-description/${projectName}`
   });
   projectForm.addEventListener("submit", () => clearDescription());
   const doMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
@@ -1011,7 +1006,7 @@ function init({
     must(document.querySelector("#logo_preview img")).src = logoSelector.url;
     must(document.querySelector("#logo_placeholder")).innerText = title[0].toUpperCase();
     must(document.querySelector("#logo_placeholder")).hidden = !!logoSelector.url;
-    must(document.querySelector("#header_img_preview")).style.backgroundImage = "url(".concat(headerSelector.url, ")");
+    must(document.querySelector("#header_img_preview")).style.backgroundImage = `url(${headerSelector.url})`;
     must(document.querySelector("#flowsnake")).classList.toggle("dn", !!headerSelector.url);
     must(document.querySelector("#name_preview")).innerText = title;
     must(document.querySelector("#longdesc_title")).innerText = title;
@@ -1050,10 +1045,10 @@ function init({
           icon = guess.icon;
           title = guess.service;
           if (guess.username) {
-            title += " (".concat(guess.username, ")");
+            title += ` (${guess.username})`;
           }
         }
-        const iconSVG = must(document.querySelector("#link-icon-".concat(icon))).innerHTML;
+        const iconSVG = must(document.querySelector(`#link-icon-${icon}`)).innerHTML;
         const l = secondaryLinkTemplate();
         l.link.href = link.url;
         l.link.title = link.name || title;

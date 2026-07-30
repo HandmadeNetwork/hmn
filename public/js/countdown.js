@@ -2,9 +2,9 @@
 function assert(cond, msg, soft = false) {
   if (!cond) {
     if (soft) {
-      console.error(msg != null ? msg : "Assertion failed");
+      console.error(msg ?? "Assertion failed");
     } else {
-      throw new Error(msg != null ? msg : "Assertion failed");
+      throw new Error(msg ?? "Assertion failed");
     }
   }
 }
@@ -23,11 +23,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const remainingDays = remainingHours / 24;
       let str = "imminently";
       if (remainingMinutes < 60) {
-        str = "in ".concat(Math.ceil(remainingMinutes), " ").concat(remainingMinutes === 1 ? "minute" : "minutes");
+        str = `in ${Math.ceil(remainingMinutes)} ${remainingMinutes === 1 ? "minute" : "minutes"}`;
       } else if (remainingHours < 24) {
-        str = "in ".concat(Math.ceil(remainingHours), " ").concat(remainingHours === 1 ? "hour" : "hours");
+        str = `in ${Math.ceil(remainingHours)} ${remainingHours === 1 ? "hour" : "hours"}`;
       } else {
-        str = "in ".concat(Math.ceil(remainingDays), " ").concat(remainingDays === 1 ? "day" : "days");
+        str = `in ${Math.ceil(remainingDays)} ${remainingDays === 1 ? "day" : "days"}`;
       }
       countdown.innerText = str;
     };

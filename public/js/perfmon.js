@@ -2,9 +2,9 @@
 function assert(cond, msg, soft = false) {
   if (!cond) {
     if (soft) {
-      console.error(msg != null ? msg : "Assertion failed");
+      console.error(msg ?? "Assertion failed");
     } else {
-      throw new Error(msg != null ? msg : "Assertion failed");
+      throw new Error(msg ?? "Assertion failed");
     }
   }
 }
@@ -15,7 +15,7 @@ var templatePathCache = {};
 function getTemplateEl(id) {
   if (!templateElementCache[id]) {
     const el = document.getElementById(id);
-    assert(el, "no element with id ".concat(id));
+    assert(el, `no element with id ${id}`);
     assert(el instanceof HTMLTemplateElement);
     templateElementCache[id] = el;
   }
@@ -60,7 +60,7 @@ function makeTemplateCloner(id) {
   return function() {
     var templateEl = getTemplateEl(id);
     if (templateEl === null) {
-      throw new Error("Couldn't find template with ID '".concat(id, "'"));
+      throw new Error(`Couldn't find template with ID '${id}'`);
     }
     var root = templateEl.content.cloneNode(true);
     var paths = getTemplatePaths(id, root);
@@ -110,18 +110,18 @@ function init(perfRecordsJSON) {
           let item = document.createElement("DIV");
           let catCSS = child.Category.toLowerCase();
           item.classList.add("absolute", "h1", "overflow-hidden", "f7", "nowrap");
-          item.style.color = "var(--".concat(catCSS, "-text)");
-          item.style.backgroundColor = "var(--".concat(catCSS, "-bg, var(--c1))");
-          item.textContent = "[".concat(child.Category, "] ").concat(child.Description, " | ").concat(child.Duration / 1e3, "ms");
+          item.style.color = `var(--${catCSS}-text)`;
+          item.style.backgroundColor = `var(--${catCSS}-bg, var(--c1))`;
+          item.textContent = `[${child.Category}] ${child.Description} | ${child.Duration / 1e3}ms`;
           item.title = item.textContent;
           item.style.width = child.Duration / maxDuration * 100 + "%";
           item.style.left = child.Offset / maxDuration * 100 + "%";
           rowEl.appendChild(item);
           for (const checkpoint of child.Checkpoints) {
             const el = document.createElement("div");
-            el.title = "[".concat(checkpoint.Category, "] ").concat(checkpoint.Description);
+            el.title = `[${checkpoint.Category}] ${checkpoint.Description}`;
             el.classList.add("absolute", "h1", "f7", "nowrap");
-            el.style.backgroundColor = "#00000066";
+            el.style.backgroundColor = `#00000066`;
             el.style.width = "2px";
             el.style.left = checkpoint.Offset / maxDuration * 100 + "%";
             rowEl.appendChild(el);

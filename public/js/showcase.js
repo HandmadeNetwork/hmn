@@ -2,9 +2,9 @@
 function assert(cond, msg, soft = false) {
   if (!cond) {
     if (soft) {
-      console.error(msg != null ? msg : "Assertion failed");
+      console.error(msg ?? "Assertion failed");
     } else {
-      throw new Error(msg != null ? msg : "Assertion failed");
+      throw new Error(msg ?? "Assertion failed");
     }
   }
 }
@@ -15,7 +15,7 @@ var templatePathCache = {};
 function getTemplateEl(id) {
   if (!templateElementCache[id]) {
     const el = document.getElementById(id);
-    assert(el, "no element with id ".concat(id));
+    assert(el, `no element with id ${id}`);
     assert(el instanceof HTMLTemplateElement);
     templateElementCache[id] = el;
   }
@@ -60,7 +60,7 @@ function makeTemplateCloner(id) {
   return function() {
     var templateEl = getTemplateEl(id);
     if (templateEl === null) {
-      throw new Error("Couldn't find template with ID '".concat(id, "'"));
+      throw new Error(`Couldn't find template with ID '${id}'`);
     }
     var root = templateEl.content.cloneNode(true);
     var paths = getTemplatePaths(id, root);
@@ -103,7 +103,7 @@ function doOnce(f) {
 function makeShowcaseItem(timelineItem) {
   const timestamp = showcaseTimestamp(timelineItem.date);
   const itemEl = showcaseItemTemplate();
-  itemEl.avatar.style.backgroundImage = "url('".concat(timelineItem.owner_avatar, "')");
+  itemEl.avatar.style.backgroundImage = `url('${timelineItem.owner_avatar}')`;
   itemEl.username.textContent = timelineItem.owner_name;
   itemEl.when.textContent = timestamp;
   let addThumbnailFunc = () => {
@@ -113,7 +113,7 @@ function makeShowcaseItem(timelineItem) {
   switch (timelineItem.media_type) {
     case TimelineMediaTypes.IMAGE:
       addThumbnailFunc = () => {
-        itemEl.thumbnail.style.backgroundImage = "url('".concat(timelineItem.thumbnail_url, "')");
+        itemEl.thumbnail.style.backgroundImage = `url('${timelineItem.thumbnail_url}')`;
       };
       createModalContentFunc = () => {
         const modalImage = document.createElement("img");
@@ -223,16 +223,16 @@ function initShowcaseContainer(container, items, rowHeight = 300, itemSpacing = 
       const row = document.createElement("div");
       row.classList.add("flex");
       row.classList.toggle("justify-between", rowWidth2 >= width);
-      row.style.marginBottom = "".concat(itemSpacing, "px");
+      row.style.marginBottom = `${itemSpacing}px`;
       for (const itemEl of itemEls) {
         const index = parseInt(itemEl.getAttribute("data-index"), 10);
         const item = items[index];
         const aspect = item.width / item.height;
         const baseWidth = aspect * rowHeight * scaleFactor;
         const actualWidth = baseWidth - totalSpacing / itemEls.length;
-        itemEl.style.width = "".concat(actualWidth, "px");
-        itemEl.style.height = "".concat(scaleFactor * rowHeight, "px");
-        itemEl.style.marginRight = "".concat(itemSpacing, "px");
+        itemEl.style.width = `${actualWidth}px`;
+        itemEl.style.height = `${scaleFactor * rowHeight}px`;
+        itemEl.style.marginRight = `${itemSpacing}px`;
         row.appendChild(itemEl);
       }
       container2.appendChild(row);
