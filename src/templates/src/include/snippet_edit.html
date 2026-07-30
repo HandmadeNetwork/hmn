@@ -55,9 +55,56 @@
 		<a data-tmpl="removeButton" class="ml2 mr1" href="javascript:;">&#10006;</a>
 	</div>
 </template>
-<script>
-	const maxFilesize = {{ .SnippetEdit.AssetMaxSize }};
-	const availableProjects = JSON.parse("{{ .SnippetEdit.AvailableProjectsJSON }}");
-</script>
-<script src="{{ static "js/snippetedit.js" }}"></script>
+<script type="module">
+	import { makeSnippetEdit, editTimelineSnippet } from '{{ static "js/snippetedit.js" }}';
 
+	// TODO(ts): Theoretically temporary jank: Putting curried forms of
+	// exported functions on the window so we don't have to edit all the pages
+	// where we have snippet editing right now. This is trash and we should
+	// rework this.
+
+	window.makeSnippetEditLegacy = function makeSnippetEditLegacy({
+		ownerName, // type: string | undefined
+		ownerAvatar, // type: string | undefined
+		ownerUrl, // type: string | undefined
+		date, // type: Date
+		text, // type: string
+		attachmentElement, // type: Element | undefined
+		projectIds, // type: number[]
+		stickyProjectId, // type: number | undefined
+		onDeleteRedirectUrl, // type: string | undefined
+		snippetId, // type: string | undefined
+		originalSnippetEl, // type: HTMLElement | undefined
+	}) {
+		return makeSnippetEdit({
+			maxFilesize: {{ .SnippetEdit.AssetMaxSize }},
+			availableProjects: JSON.parse("{{ .SnippetEdit.AvailableProjectsJSON }}"),
+			ownerName,
+			ownerAvatar,
+			ownerUrl,
+			date,
+			text,
+			attachmentElement,
+			projectIds,
+			stickyProjectId,
+			onDeleteRedirectUrl,
+			snippetId,
+			originalSnippetEl,
+		});
+	};
+
+	window.editTimelineSnippetLegacy = function editTimelineSnippetLegacy(
+		timelineItemEl,
+		{
+			stickyProjectId, // type: number | undefined
+			onDeleteRedirectUrl, // type: string | undefined
+		} = {},
+	) {
+		return editTimelineSnippet(timelineItemEl, {
+			maxFilesize: {{ .SnippetEdit.AssetMaxSize }},
+			availableProjects: JSON.parse("{{ .SnippetEdit.AvailableProjectsJSON }}"),
+			stickyProjectId,
+			onDeleteRedirectUrl,
+		});
+	};
+</script>

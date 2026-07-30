@@ -2,11 +2,15 @@
 
 {{ define "extrahead" }}
 	{{ template "image_selector.html" }}
-
-	<script src="{{ static "js/templates.js" }}"></script>
-	<script src="{{ static "js/image_selector.js" }}"></script>
-	<script src="{{ static "js/tabs.js" }}"></script>
-	<script src="{{ static "js/reorderable.js" }}"></script>
+	<script type="module">
+		import { init } from '{{ static "js/user_settings.js" }}';
+		init({
+			avatarMaxFileSize: {{ .AvatarMaxFileSize }},
+			avatarUrl: "{{ asseturl .User.Avatar }}" || undefined,
+			avatarFilename: "{{ assetfilename .User.Avatar }}" || undefined,
+			linksJson: "{{ .LinksJSON }}",
+		});
+	</script>
 {{ end }}
 
 {{ define "content" }}
@@ -22,61 +26,29 @@
 			<form id="user_form" class="hmn-form" action="{{ .SubmitUrl }}" method="POST" enctype="multipart/form-data">
 				{{ csrftoken .Session }}
 
-				<script>
-					function lengthReporter(inputEl, lengthEl) {
-						let updateLength = function() {
-							lengthEl.textContent = `${inputEl.value.length}/${inputEl.getAttribute("maxlength")}`;
-						}
-						inputEl.addEventListener("input", updateLength);
-						updateLength();
-					}
-				</script>
-
 				<div hidden class="settings_panel flex flex-column g3" data-tab="profile">
 					<div class="input-group">
 						<label for="realname">Real name</label>
 						<input type="text" id="realname" name="realname" maxlength="255" class="w-100" value="{{ .User.Name }}" />
 						<div class="f6 tr realname-length">0/255</div>
-						<script>
-							lengthReporter(document.getElementById("realname"), document.querySelector(".realname-length"));
-						</script>
 					</div>
 					<div class="fieldset">
 						<legend class="flex justify-between">
 							<span>Avatar</span>
-							<a href="javascript:;" class="normal" onclick="openUserAvatarSelector(event)">+ Upload Avatar</a>
+							<a id="upload-avatar-button" href="javascript:;" class="normal">+ Upload Avatar</a>
 						</legend>
 						<div class="user_avatar">
 							<span id="user-avatar-placeholder"></span>
 							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be square, and at least 256x256.</div>
-							<script>
-								let avatarSelector = new ImageSelector(
-									"user_avatar",
-									{{ .AvatarMaxFileSize }},
-									{
-										originalUrl: "{{ asseturl .User.Avatar }}",
-										originalFilename: "{{ assetfilename .User.Avatar }}",
-									},
-								);
-
-								function openUserAvatarSelector(ev) {
-									ev.preventDefault();
-									avatarSelector.openImageInput();
-								}
-								document.querySelector("#user-avatar-placeholder").replaceWith(avatarSelector.root);
-							</script>
 						</div>
 					</div>
-					{{ template "link_editor.html" .LinksJSON }}
+					{{ template "link_editor.html" }}
 					<div class="input-group">
 						<label for="shortbio">Short bio</label>
 						<textarea class="w-100" maxlength="140" data-max-chars="140" name="shortbio" id="shortbio">
 							{{- .User.Blurb -}}
 						</textarea>
 						<div class="f6 tr shortbio-length">0/140</div>
-						<script>
-							lengthReporter(document.getElementById("shortbio"), document.querySelector(".shortbio-length"));
-						</script>
 					</div>
 					<div class="input-group">
 						<label for="longbio">Full bio</label>
@@ -84,9 +56,6 @@
 							{{- .User.Bio -}}
 						</textarea>
 						<div class="f6 tr longbio-length">0/1018</div>
-						<script>
-							lengthReporter(document.getElementById("longbio"), document.querySelector(".longbio-length"));
-						</script>
 					</div>
 					{{ if .User.Signature }}
 						<div class="input-group">
@@ -95,9 +64,6 @@
 								{{- .User.Signature -}}
 							</textarea>
 							<div class="f6 tr signature-length">0/255</div>
-						<script>
-							lengthReporter(document.getElementById("signature"), document.querySelector(".signature-length"));
-						</script>
 						</div>
 					{{ end }}
 					<input class="btn-primary self-end" type="submit" value="Save" />
@@ -142,7 +108,7 @@
 						{{ if .DiscordUser }}
 							Linked account:
 							<span class="b ph2">{{ .DiscordUser.Username }}#{{ .DiscordUser.Discriminator }}</span>
-							<a href="javascript:void(0)" onclick="unlinkDiscord()">
+							<a id="unlink-discord-button" href="javascript:void(0)">
 								Unlink account
 							</a>
 						{{ else }}
@@ -167,7 +133,7 @@
 					</div>
 					{{ if .DiscordUser }}
 						<div class="mv3 mw6">
-							<a href="javascript:void(0)" onclick="discordShowcaseBacklog()">
+							<a id="discord-showcase-backlog-button" href="javascript:void(0)">
 								Create snippets from all of my <span class="b nowrap">#project-showcase</span> posts
 							</a>
 							<div class="f7 c--dimmer">
@@ -185,25 +151,12 @@
 		</div>
 	</div>
 </div>
-<script>
-	initHashTabs(document);
-</script>
 
 <form id="discord-unlink-form" class="dn" action="{{ .DiscordUnlinkUrl }}" method="POST">
-    {{ csrftoken .Session }}
-    <script>
-        function unlinkDiscord() {
-            document.querySelector('#discord-unlink-form').submit();
-        }
-    </script>
+	{{ csrftoken .Session }}
 </form>
 
 <form id="discord-showcase-backlog" class="dn" action="{{ .DiscordShowcaseBacklogUrl }}" method="POST">
-    {{ csrftoken .Session }}
-    <script>
-        function discordShowcaseBacklog() {
-            document.querySelector('#discord-showcase-backlog').submit();
-        }
-    </script>
+	{{ csrftoken .Session }}
 </form>
 {{ end }}

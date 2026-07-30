@@ -1,4 +1,4 @@
-package buildcss
+package bundle
 
 import (
 	"git.handmade.network/hmn/hmn/src/config"
@@ -9,8 +9,8 @@ import (
 
 var ActiveServerPort uint16
 
-func RunServer() *jobs.Job {
-	job := jobs.New("esbuild CSS server")
+func RunEsBuildServer() *jobs.Job {
+	job := jobs.New("esbuild CSS/JS server")
 	log := job.Logger
 
 	if config.Config.Env != config.Dev {
@@ -46,21 +46,27 @@ func RunServer() *jobs.Job {
 
 func BuildContext() (api.BuildContext, *api.ContextError) {
 	return api.Context(api.BuildOptions{
-		EntryPoints: []string{
-			"src/rawdata/css/style.css",
-			"src/rawdata/css/force-light.css",
-			"src/rawdata/css/force-dark.css",
-			"src/rawdata/css/hsf/hsf.css",
+		EntryPointsAdvanced: []api.EntryPoint{
+			{InputPath: "src/rawdata/css/style.css", OutputPath: "style"},
+			{InputPath: "src/rawdata/css/force-light.css", OutputPath: "force-light"},
+			{InputPath: "src/rawdata/css/force-dark.css", OutputPath: "force-dark"},
+			{InputPath: "src/rawdata/js/*.js"},
+			{InputPath: "src/rawdata/js/*.ts"},
 		},
-		Outbase:  "src/rawdata/css",
+		Outbase:  "src/rawdata",
 		Outdir:   "public",
 		External: []string{"/public/*"},
-		Bundle:   true,
-		Write:    true,
+
+		Format: api.FormatESModule,
+		Bundle: true,
+		Write:  true,
+
 		Engines: []api.Engine{
-			{Name: api.EngineChrome, Version: "109"},
-			{Name: api.EngineFirefox, Version: "109"},
-			{Name: api.EngineSafari, Version: "12"},
+			// NOTE(ben): Currently all at the version that introduced CSS selector
+			// nesting.
+			{Name: api.EngineChrome, Version: "120"},
+			{Name: api.EngineFirefox, Version: "117"},
+			{Name: api.EngineSafari, Version: "17.2"},
 		},
 	})
 }

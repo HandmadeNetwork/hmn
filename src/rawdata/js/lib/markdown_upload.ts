@@ -1,4 +1,11 @@
-// Requires base64.js
+import { base64EncArr, strToUTF8Arr } from "./base64";
+import { HTMLFileInputElement } from "./types";
+import { assert, must } from "./utils";
+
+type Upload = {
+	uploadNumber: number,
+	file: File,
+};
 
 /**
  * Sets up file / image uploading for Markdown content.
@@ -24,43 +31,51 @@
  * @param maxFileSize The max allowed file size in bytes.
  * @param uploadUrl The URL to POST assets to (unique per project to avoid CORS issues).
  */
-function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown, maxFileSize, uploadUrl) {
+export function setupMarkdownUpload(
+	eSubmits: Iterable<HTMLInputElement>,
+	eFileInput: HTMLFileInputElement,
+	eUploadBar: HTMLElement,
+	eText: HTMLTextAreaElement,
+	doMarkdown: () => void,
+	maxFileSize: number,
+	uploadUrl: string,
+) {
 	const submitTexts = Array.from(eSubmits).map(e => e.value);
-	const uploadProgress = eUploadBar.querySelector('.progress');
-	const uploadProgressText = eUploadBar.querySelector('.progress_text');
-	const uploadProgressBar = eUploadBar.querySelector('.progress_bar');
-	const uploadProgressBarFill = eUploadBar.querySelector('.progress_bar > div');
+	const uploadProgress = must(eUploadBar.querySelector('.progress')) as HTMLElement;
+	const uploadProgressText = must(eUploadBar.querySelector('.progress_text')) as HTMLElement;
+	const uploadProgressBar = must(eUploadBar.querySelector('.progress_bar')) as HTMLElement;
+	const uploadProgressBarFill = must(eUploadBar.querySelector('.progress_bar > div')) as HTMLElement;
 	let fileCounter = 0;
 	let enterCounter = 0;
-	let uploadQueue = [];
-	let currentUpload = null;
-	let currentXhr = null;
+	let uploadQueue: Upload[] = [];
+	let currentUpload: Upload | null = null;
+	let currentXhr: XMLHttpRequest | null = null;
 	let currentBatchSize = 0;
 	let currentBatchDone = 0;
 
-	eFileInput.addEventListener("change", function(ev) {
+	eFileInput.addEventListener("change", () => {
 		if (eFileInput.files.length > 0) {
 			importUserFiles(eFileInput.files);
 		}
 	});
 
-	eText.addEventListener("dragover", function(ev) {
-		let effect = "none";
-		for (let i = 0; i < ev.dataTransfer.items.length; ++i) {
-			if (ev.dataTransfer.items[i].kind.toLowerCase() == "file") {
+	eText.addEventListener("dragover", ev => {
+		let effect: DataTransfer["dropEffect"] = "none";
+		for (let i = 0; i < ev.dataTransfer!.items.length; ++i) {
+			if (ev.dataTransfer!.items[i].kind.toLowerCase() == "file") {
 				effect = "copy";
 				break;
 			}
 		}
-		ev.dataTransfer.dropEffect = effect;
+		ev.dataTransfer!.dropEffect = effect;
 		ev.preventDefault();
 	});
 
-	eText.addEventListener("dragenter", function(ev) {
+	eText.addEventListener("dragenter", function (ev) {
 		enterCounter++;
 		let droppable = false;
-		for (let i = 0; i < ev.dataTransfer.items.length; ++i) {
-			if (ev.dataTransfer.items[i].kind.toLowerCase() == "file") {
+		for (let i = 0; i < ev.dataTransfer!.items.length; ++i) {
+			if (ev.dataTransfer!.items[i].kind.toLowerCase() == "file") {
 				droppable = true;
 				break;
 			}
@@ -70,18 +85,18 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		}
 	});
 
-	eText.addEventListener("dragleave", function(ev) {
+	eText.addEventListener("dragleave", function (ev) {
 		enterCounter--;
 		if (enterCounter == 0) {
 			eText.classList.remove("drop");
 		}
 	});
 
-	function makeUploadString(uploadNumber, filename) {
+	function makeUploadString(uploadNumber: number, filename: string) {
 		return `Uploading file #${uploadNumber}: \`${filename}\`...`;
 	}
 
-	eText.addEventListener("drop", function(ev) {
+	eText.addEventListener("drop", ev => {
 		enterCounter = 0;
 		eText.classList.remove("drop");
 
@@ -92,16 +107,19 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		ev.preventDefault();
 	});
 
-	eText.addEventListener("paste", function(ev) {
-		const files = ev.clipboardData?.files ?? [];
-		if (files.length > 0) {
-			importUserFiles(files)
-            ev.preventDefault();
+	eText.addEventListener("paste", ev => {
+		const files = ev.clipboardData?.files;
+		if (files?.length ?? 0 > 0) {
+			importUserFiles(files!)
+			ev.preventDefault();
 		}
 	});
 
-	function importUserFiles(files) {
-		let items = [];
+	function importUserFiles(files: FileList) {
+		let items: (
+			{ file: File, error: null }
+			| { file: null, error: string }
+		)[] = [];
 		for (let i = 0; i < files.length; ++i) {
 			let f = files[i];
 			if (f.size < maxFileSize) {
@@ -116,33 +134,33 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 
 		let toInsert = "";
 		let linesToCursor = eText.value.substr(0, cursorStart).split("\n");
-		let cursorLine = linesToCursor[linesToCursor.length-1].trim();
+		let cursorLine = linesToCursor[linesToCursor.length - 1].trim();
 		if (cursorLine.length > 0) {
 			toInsert = "\n\n";
 		}
-		for (let i = 0; i < items.length; ++i) {
-			if (items[i].file) {
+		for (const item of items) {
+			if (item.file) {
 				fileCounter++;
-				toInsert += makeUploadString(fileCounter, items[i].file.name) + "\n\n";
-				queueUpload(fileCounter, items[i].file);
+				toInsert += makeUploadString(fileCounter, item.file.name) + "\n\n";
+				queueUpload(fileCounter, item.file);
 			} else {
-				toInsert += `${items[i].error}\n\n`;
+				toInsert += `${item.error}\n\n`;
 			}
 		}
 
 		eText.value = eText.value.substring(0, cursorStart) + toInsert + eText.value.substring(cursorEnd, eText.value.length);
-        eText.selectionStart = cursorStart + toInsert.length;
-        eText.selectionEnd = eText.selectionStart;
+		eText.selectionStart = cursorStart + toInsert.length;
+		eText.selectionEnd = eText.selectionStart;
 		doMarkdown();
 		uploadNext();
 	}
 
-	function replaceUploadString(upload, newString) {
+	function replaceUploadString(upload: Upload, newString: string) {
 		let cursorStart = eText.selectionStart;
 		let cursorEnd = eText.selectionEnd;
 		let uploadString = makeUploadString(upload.uploadNumber, upload.file.name);
 		let insertIndex = eText.value.indexOf(uploadString)
-		
+
 		// The user deleted part of the upload string during the upload.
 		// Paste the newString at the end.
 		if (insertIndex === -1) {
@@ -156,7 +174,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 
 		const intersects = cursorStart < insertIndex + uploadString.length && insertIndex < cursorEnd;
 		const fullyInside = insertIndex <= cursorStart && cursorEnd <= insertIndex + uploadString.length;
-		if ( (fullyInside && cursorStart === cursorEnd) || (intersects && !fullyInside) ) {
+		if ((fullyInside && cursorStart === cursorEnd) || (intersects && !fullyInside)) {
 			// The user's cursor is inside the placeholder string, or some but not all of the placeholder is selected
 			// the cursor should be moved to the end of the replaced string
 			eText.selectionStart = eText.selectionEnd = insertIndex + newString.length;
@@ -176,21 +194,23 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		doMarkdown();
 	}
 
-	function replaceUploadStringError(upload) {
+	function replaceUploadStringError(upload: Upload) {
 		replaceUploadString(upload, `There was a problem uploading your file \`${upload.file.name}\`.`);
 	}
 
-	function queueUpload(uploadNumber, file) {
+	function queueUpload(uploadNumber: number, file: File) {
 		uploadQueue.push({
 			uploadNumber: uploadNumber,
 			file: file
 		});
 
 		currentBatchSize++;
-		uploadProgressText.textContent = `Uploading files ${currentBatchDone+1}/${currentBatchSize}`;
+		uploadProgressText.textContent = `Uploading files ${currentBatchDone + 1}/${currentBatchSize}`;
 	}
 
-	function uploadDone(ev) {
+	function uploadDone(ev: ProgressEvent<XMLHttpRequestEventTarget>) {
+		assert(currentXhr);
+		assert(currentUpload);
 		try {
 			if (currentXhr.status == 200 && currentXhr.response) {
 				if (currentXhr.response.url) {
@@ -219,7 +239,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 		uploadNext();
 	}
 
-	function updateUploadProgress(ev) {
+	function updateUploadProgress(ev: ProgressEvent<XMLHttpRequestEventTarget>) {
 		if (ev.lengthComputable) {
 			let progress = ev.loaded / ev.total;
 			uploadProgressBarFill.style.width = Math.floor(progress * 100) + "%";
@@ -228,9 +248,9 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 
 	function uploadNext() {
 		if (currentUpload == null) {
-			next = uploadQueue.shift();
+			const next = uploadQueue.shift();
 			if (next) {
-				uploadProgressText.textContent = `Uploading files ${currentBatchDone+1}/${currentBatchSize}`;
+				uploadProgressText.textContent = `Uploading files ${currentBatchDone + 1}/${currentBatchSize}`;
 				eUploadBar.classList.add("uploading");
 				uploadProgressBarFill.style.width = "0%";
 				for (const e of eSubmits) {
@@ -256,7 +276,7 @@ function setupMarkdownUpload(eSubmits, eFileInput, eUploadBar, eText, doMarkdown
 					uploadNext();
 				}
 			} else {
-				for (const [i, e] of eSubmits.entries()) {
+				for (const [i, e] of Array.from(eSubmits).entries()) {
 					e.disabled = false;
 					e.value = submitTexts[i];
 				}

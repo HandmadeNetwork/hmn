@@ -1,0 +1,121 @@
+const previewWorker = new Worker("/assets/markdown_worker.js");
+
+export type AutosaveContentOptions = {
+  inputEl: HTMLInputElement | HTMLTextAreaElement,
+  /** Unique string identifying this field across the site. */
+  storageKey: string,
+};
+
+export type AutosaveContentResult = {
+  /**
+   * Call this function when you submit the form or otherwise want to delete
+   * the work-in-progress user content.
+   */
+  clear: () => void,
+};
+
+/**
+ * Automatically save and restore content from a text field on change.
+ */
+export function autosaveContent({
+  inputEl,
+  storageKey,
+}: AutosaveContentOptions): AutosaveContentResult {
+  const storagePrefix = 'saved-content';
+
+  // Delete old irrelevant local contents
+  const aWeekAgo = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+  for (const key in window.localStorage) {
+    if (!window.localStorage.hasOwnProperty(key)) {
+      continue;
+    }
+
+    if (key.startsWith(storagePrefix)) {
+      try {
+        const { when } = JSON.parse(window.localStorage.getItem(key)!);
+        if (when <= aWeekAgo) {
+          window.localStorage.removeItem(key);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+
+  // Load any stored content from localStorage
+  const storageKeyFull = `${storagePrefix}/${storageKey}`;
+  const storedContents = window.localStorage.getItem(storageKeyFull);
+  if (storedContents && !inputEl.value) {
+    try {
+      const { contents } = JSON.parse(storedContents);
+      inputEl.value = contents;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function updateContentCache() {
+    window.localStorage.setItem(storageKeyFull, JSON.stringify({
+      when: new Date().getTime(),
+      contents: inputEl.value,
+    }));
+  }
+
+  inputEl.addEventListener('input', () => updateContentCache());
+
+  return {
+    clear() {
+      window.localStorage.removeItem(storageKeyFull);
+    },
+  }
+}
+
+const markdownIds: string[] = [];
+
+export type LiveMarkdownOptions = {
+  inputEl: HTMLInputElement | HTMLTextAreaElement,
+  previewEl: HTMLElement,
+  parserName?: string,
+};
+
+/**
+ * Initialize live Markdown rendering. Returns a function that renders the
+ * latest Markdown when called.
+ */
+export function initLiveMarkdown({
+  inputEl,
+  previewEl,
+  parserName,
+}: LiveMarkdownOptions): () => void {
+  // NOTE(ben): Doing this here instead of in the binding above so that we can
+  // treat an empty string as also needing the default.
+  if (!parserName) {
+    parserName = "parseMarkdown";
+  }
+
+  if (markdownIds.includes(inputEl.id)) {
+    console.warn(`Multiple elements with ID "${inputEl.id}" are being used for Markdown. Results will be very confusing!`);
+  }
+  markdownIds.push(inputEl.id);
+
+  previewWorker.onmessage = ({ data }) => {
+    const { elementID, html } = data;
+    if (elementID === inputEl.id) {
+      previewEl.innerHTML = html;
+      MathJax.typeset?.();
+    }
+  };
+
+  function doMarkdown() {
+    previewWorker.postMessage({
+      elementID: inputEl.id,
+      markdown: inputEl.value,
+      parserName,
+    });
+  }
+
+  doMarkdown();
+  inputEl.addEventListener('input', () => doMarkdown());
+
+  return doMarkdown;
+}

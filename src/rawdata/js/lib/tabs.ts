@@ -1,3 +1,18 @@
+import { must } from "./utils";
+
+export type TabsOptions = {
+    initialTab?: string,
+    onSelect?: (name: string) => void,
+};
+
+export type TabsFunctions = {
+    selectTab: (name: string, opts?: SelectTabOptions) => void,
+};
+
+export type SelectTabOptions = {
+    sendEvent?: boolean,
+};
+
 /**
  * A utility for a tabbed section on the page. To use it:
  * 
@@ -24,19 +39,19 @@
  *    A function that selects a tab by name without clicking a button. By
  *    setting `sendEvent` to false you can suppress the call to `onSelect`.
  */
-function initTabs(container, {
-    initialTab = null,
-    onSelect = name => {},
-} = {}) {
-    const buttons = Array.from(container.querySelectorAll("[data-tab-button]"));
-    const tabs = Array.from(container.querySelectorAll("[data-tab]"));
+export function initTabs(container: ParentNode, {
+    initialTab,
+    onSelect = () => { },
+}: TabsOptions = {}): TabsFunctions {
+    const buttons = Array.from(container.querySelectorAll("[data-tab-button]")) as HTMLElement[];
+    const tabs = Array.from(container.querySelectorAll("[data-tab]")) as HTMLElement[];
 
-    const firstTab = tabs[0].getAttribute("data-tab");
+    const firstTab = tabs[0].getAttribute("data-tab")!;
 
-    function selectTab(name, { sendEvent = true } = {}) {
+    function selectTab(name: string, { sendEvent = true } = {}) {
         if (!container.querySelector(`[data-tab="${name}"]`)) {
             console.warn("no tab found with name", name);
-            return selectTab(firstTab, initial);
+            return selectTab(firstTab, { sendEvent });
         }
 
         for (const tab of tabs) {
@@ -54,7 +69,7 @@ function initTabs(container, {
 
     for (const button of buttons) {
         button.addEventListener("click", () => {
-            selectTab(button.getAttribute("data-tab-button"));
+            selectTab(button.getAttribute("data-tab-button")!);
         });
     }
 
@@ -63,12 +78,16 @@ function initTabs(container, {
     };
 }
 
+export type HashTabsOptions = {
+    initialTab?: string,
+};
+
 /**
- * A wrapper around the above that automatically uses the URL #hash.
+ * A wrapper around `initTabs` that automatically uses the URL #hash.
  */
-function initHashTabs(container, {
-    initialTab = null,
-} = {}) {
+export function initHashTabs(container: ParentNode, {
+    initialTab,
+}: HashTabsOptions = {}) {
     const res = initTabs(container, {
         initialTab: initialTab ?? document.location.hash.substring(1),
         onSelect(name) {
@@ -82,6 +101,6 @@ function initHashTabs(container, {
             selectTab(tab, { sendEvent: false });
         }
     });
-    
+
     return res;
 }

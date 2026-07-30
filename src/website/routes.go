@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"git.handmade.network/hmn/hmn/src/buildcss"
+	"git.handmade.network/hmn/hmn/src/bundle"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/email"
 	"git.handmade.network/hmn/hmn/src/hmndata"
@@ -48,14 +48,14 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	apiRoutes := routes.WithMiddleware(panicCatcherMiddleware(true))
 
 	routes.GET(hmnurl.RegexEsBuild, func(c *RequestContext) ResponseData {
-		if buildcss.ActiveServerPort != 0 {
+		if bundle.ActiveServerPort != 0 {
 			var err error
 			defer utils.RecoverPanicAsError(&err)
 			var res ResponseData
 			proxy := httputil.ReverseProxy{
 				Director: func(r *http.Request) {
 					r.URL.Scheme = "http"
-					r.URL.Host = fmt.Sprintf("localhost:%d", buildcss.ActiveServerPort)
+					r.URL.Host = fmt.Sprintf("localhost:%d", bundle.ActiveServerPort)
 					r.Host = "localhost"
 				},
 			}
@@ -69,12 +69,12 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 
 	routes.GET(hmnurl.RegexPublic, func(c *RequestContext) ResponseData {
 		var res ResponseData
-		if buildcss.ActiveServerPort != 0 {
-			if strings.HasSuffix(c.Req.URL.Path, ".css") {
+		if bundle.ActiveServerPort != 0 {
+			if strings.HasSuffix(c.Req.URL.Path, ".css") || strings.HasSuffix(c.Req.URL.Path, ".js") {
 				proxy := httputil.ReverseProxy{
 					Director: func(r *http.Request) {
 						r.URL.Scheme = "http"
-						r.URL.Host = fmt.Sprintf("localhost:%d", buildcss.ActiveServerPort)
+						r.URL.Host = fmt.Sprintf("localhost:%d", bundle.ActiveServerPort)
 						r.Host = "localhost"
 					},
 					ModifyResponse: func(res *http.Response) error {

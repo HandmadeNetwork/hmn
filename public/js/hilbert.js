@@ -1,9 +1,9 @@
+// src/rawdata/js/hilbert.ts
 function hilbertPath(iterations, step = 10) {
   let l = "A";
   for (let i = 0; i < iterations; i++) {
-    l = l.replaceAll(/[AB]/g, c => c === "A" ? "+BF-AFA-FB+" : "-AF+BFB+FA-");
+    l = l.replaceAll(/[AB]/g, (c) => c === "A" ? "+BF-AFA-FB+" : "-AF+BFB+FA-");
   }
-
   const dirs = [`h${step}`, `v${step}`, `h-${step}`, `v-${step}`];
   let dir = 0;
   let p = `M${step} ${step}`;
@@ -17,14 +17,11 @@ function hilbertPath(iterations, step = 10) {
     }
     dir = (dir + 4) % 4;
   }
-
   return p;
 }
-
 function hilbertWidth(iterations, step = 10) {
-  return step * (2**iterations - 1 + 2);
+  return step * (2 ** iterations - 1 + 2);
 }
-
 function createHilbertCurves() {
   const containers = document.querySelectorAll(".hilbert");
   for (const container of containers) {
@@ -40,5 +37,4 @@ function createHilbertCurves() {
     container.appendChild(filler);
   }
 }
-
 document.addEventListener("DOMContentLoaded", () => createHilbertCurves());

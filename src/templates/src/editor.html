@@ -1,10 +1,17 @@
 {{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
-    {{ template "markdown_previews.html" .TextEditor }}
+    {{ template "markdown_previews.html" }}
 
-    <script src="{{ static "js/base64.js" }}"></script>
-    <script src="{{ static "js/markdown_upload.js" }}"></script>
+    <script type="module">
+        import { init } from '{{ static "js/editor.js" }}';
+
+        init({
+            maxFileSize: {{ .TextEditor.MaxFileSize }},
+            uploadUrl: "{{ .TextEditor.UploadUrl }}",
+            parserName: "{{ .TextEditor.ParserName }}",
+        });
+    </script>
 
     <style>
         #editor {
@@ -133,151 +140,4 @@
         </div>
         <input type="file" multiple name="file_input" id="file_input" class="dn" />{{/* NOTE(asaf): Placing this outside the form to avoid submitting it to the server by accident */}}
     </div>
-
-    <script>
-        const maxFileSize = {{ .TextEditor.MaxFileSize }};
-        const uploadUrl = {{ .TextEditor.UploadUrl }};
-
-        const form = document.querySelector('#form');
-        const titleField = document.querySelector('#title'); // may be undefined, be careful!
-        const textField = document.querySelector('#editor');
-        const preview = document.querySelector('#preview');
-
-        // Save content on change, clear on submit
-        const clearFuncs = [];
-        if (titleField) {
-            const { clear: clearTitle } = autosaveContent({
-                inputEl: titleField,
-                storageKey: `post-title/${window.location.host}${window.location.pathname}`,
-            });
-            clearFuncs.push(clearTitle);
-        }
-        const { clear: clearContent } = autosaveContent({
-            inputEl: textField,
-            storageKey: `post-content/${window.location.host}${window.location.pathname}`,
-        });
-        clearFuncs.push(clearContent);
-        form.addEventListener('submit', e => {
-            for (const clear of clearFuncs) {
-                clear();
-            }
-        });
-
-        // Do live Markdown previews
-        let doMarkdown = initLiveMarkdown({ inputEl: textField, previewEl: preview });
-
-        /*
-        / Asset upload
-        */ 
-        setupMarkdownUpload(
-            document.querySelectorAll("#form input[type=submit]"),
-            document.querySelector('#file_input'),
-            document.querySelector('.upload_bar'),
-            textField,
-            doMarkdown,
-            maxFileSize,
-            uploadUrl
-        );
-
-        textField.addEventListener("keydown", function (ev) {
-            if (ev.ctrlKey) {
-                const key = ev.key.toLowerCase();
-                const start = textField.selectionStart;
-                const end = textField.selectionEnd;
-                const selected = textField.value.substring(start, end);
-
-                if (key === 'k') {
-                    ev.preventDefault();
-
-                    if (selected.length) {
-                        textField.value = 
-                            textField.value.substring(0, start) + '[' +
-                            selected + ']()' + 
-                            textField.value.substring(end);
-
-                        textField.selectionStart = textField.selectionEnd = end + 3;
-                    }
-                    else {
-                        textField.value =
-                            textField.value.substring(0, start) +
-                            "[](url)" +
-                            textField.value.substring(end);
-
-                        textField.selectionStart = textField.selectionEnd = start + 1;
-                    }
-                    textField.focus();
-                    doMarkdown();
-                }
-                else if (key === 'b') {
-                    ev.preventDefault();
-
-                    if (selected.length) {
-                        textField.value = 
-                            textField.value.substring(0, start) + '**' +
-                            selected + '**' + 
-                            textField.value.substring(end);
-
-                        textField.selectionStart = textField.selectionEnd = end + 2;
-                    }
-                    else {
-                        textField.value =
-                            textField.value.substring(0, start) +
-                            "****" +
-                            textField.value.substring(end);
-
-                        textField.selectionStart = textField.selectionEnd = start + 2;
-                    }
-                    textField.focus();
-                    doMarkdown();
-                }
-                else if (key === 'i') {
-                    ev.preventDefault();
-
-                    if (selected.length) {
-                        textField.value = 
-                            textField.value.substring(0, start) + '*' +
-                            selected + '*' + 
-                            textField.value.substring(end);
-
-                        textField.selectionStart = textField.selectionEnd = end + 1;
-                    }
-                    else {
-                        textField.value =
-                            textField.value.substring(0, start) +
-                            "**" +
-                            textField.value.substring(end);
-
-                        textField.selectionStart = textField.selectionEnd = start + 1;
-                    }
-                    textField.focus();
-                    doMarkdown();
-                }
-                else if (key === 's') {
-                    ev.preventDefault();
-                }
-            }
-        });
-
-        textField.addEventListener("paste", (ev) => {
-            const clipboard = ev.clipboardData || window.clipboardData;
-            const pastedText = clipboard.getData("text");
-            const start = textField.selectionStart;
-            const end = textField.selectionEnd;
-
-            if (pastedText && (pastedText.startsWith('https://') || pastedText.startsWith('http://')) && start !== end) {
-                ev.preventDefault();
-
-                textField.value =
-                    textField.value.substring(0, start) + '[' +
-                    textField.value.substring(start, end) + '](' +
-                    pastedText + ')' +
-                    textField.value.substring(end);
-
-                textField.selectionStart = textField.selectionEnd = end + 4 + pastedText.length;
-
-                textField.focus();
-                doMarkdown();
-            }
-        });
-    </script>
 {{ end }}
