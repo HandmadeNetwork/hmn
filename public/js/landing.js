@@ -74,6 +74,11 @@ initHashTabs(must(document.querySelector("#landing-tabs")), {
 var latestNews = must(document.querySelector("#latest_news"));
 var latestNewsPostID = must(latestNews.getAttribute("data-id"));
 var latestNewsClosedKey = "latest_news_closed";
+document.querySelector("#close-latest-news-button").addEventListener("click", (e) => {
+  e.preventDefault();
+  localStorage.setItem(latestNewsClosedKey, latestNewsPostID);
+  hideLatestNewsIfClosedOrRead();
+});
 function hideLatestNewsIfClosedOrRead() {
   const isUnread = latestNews.hasAttribute("data-unread");
   const closedID = localStorage.getItem(latestNewsClosedKey);

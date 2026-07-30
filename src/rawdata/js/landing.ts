@@ -12,11 +12,11 @@ const latestNews = must(document.querySelector<HTMLElement>("#latest_news"));
 const latestNewsPostID = must(latestNews.getAttribute("data-id"));
 const latestNewsClosedKey = "latest_news_closed";
 
-function closeLatestNews(e) {
+document.querySelector("#close-latest-news-button")!.addEventListener("click", e => {
   e.preventDefault();
   localStorage.setItem(latestNewsClosedKey, latestNewsPostID);
   hideLatestNewsIfClosedOrRead();
-}
+});
 
 function hideLatestNewsIfClosedOrRead() {
   const isUnread = latestNews.hasAttribute("data-unread");
