@@ -7,6 +7,11 @@ import { CSRFToken, HTMLFileInputElement } from "./lib/types";
 import { must } from "./lib/utils";
 import { autosaveContent, initLiveMarkdown } from "./lib/markdown_previews";
 
+// NOTE(ben): Set on the window by our Go code.
+declare const parseKnownServicesForUrl:
+	| ((url: string) => { service: string, icon: string, username: string })
+	| null;
+
 export type ProjectEditConfig = {
 	csrf: CSRFToken,
 	projectName: string,
@@ -301,7 +306,6 @@ export function init({
 			} else {
 				let icon = "website";
 				let title = "";
-				// TODO(ben): Functions defined in Go code (.d.ts?)
 				if (parseKnownServicesForUrl) {
 					const guess = parseKnownServicesForUrl(link.url);
 					icon = guess.icon;
