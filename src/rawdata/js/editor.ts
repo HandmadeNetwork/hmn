@@ -11,9 +11,10 @@ const preview = must(document.querySelector<HTMLElement>('#preview'));
 export type EditorOptions = {
   maxFileSize: number,
   uploadUrl: string,
+  markdownParser?: string,
 };
 
-export function init({ maxFileSize, uploadUrl }: EditorOptions) {
+export function init({ maxFileSize, uploadUrl, markdownParser }: EditorOptions) {
   // Save content on change, clear on submit
   const clearFuncs: (() => void)[] = [];
   if (titleField) {
@@ -35,7 +36,11 @@ export function init({ maxFileSize, uploadUrl }: EditorOptions) {
   });
 
   // Do live Markdown previews
-  const doMarkdown = initLiveMarkdown({ inputEl: textField, previewEl: preview });
+  const doMarkdown = initLiveMarkdown({
+    inputEl: textField,
+    previewEl: preview,
+    parserName: markdownParser,
+  });
 
   /*
   / Asset upload

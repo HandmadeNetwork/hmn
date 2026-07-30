@@ -85,8 +85,14 @@ export type LiveMarkdownOptions = {
 export function initLiveMarkdown({
   inputEl,
   previewEl,
-  parserName = "parseMarkdown",
+  parserName,
 }: LiveMarkdownOptions): () => void {
+  // NOTE(ben): Doing this here instead of in the binding above so that we can
+  // treat an empty string as also needing the default.
+  if (!parserName) {
+    parserName = "parseMarkdown";
+  }
+
   if (markdownIds.includes(inputEl.id)) {
     console.warn(`Multiple elements with ID "${inputEl.id}" are being used for Markdown. Results will be very confusing!`);
   }

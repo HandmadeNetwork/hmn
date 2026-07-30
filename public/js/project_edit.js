@@ -802,8 +802,11 @@ var markdownIds = [];
 function initLiveMarkdown({
   inputEl,
   previewEl,
-  parserName = "parseMarkdown"
+  parserName
 }) {
+  if (!parserName) {
+    parserName = "parseMarkdown";
+  }
   if (markdownIds.includes(inputEl.id)) {
     console.warn(`Multiple elements with ID "${inputEl.id}" are being used for Markdown. Results will be very confusing!`);
   }

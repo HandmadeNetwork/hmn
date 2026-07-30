@@ -48,8 +48,11 @@ var markdownIds = [];
 function initLiveMarkdown({
   inputEl,
   previewEl,
-  parserName = "parseMarkdown"
+  parserName
 }) {
+  if (!parserName) {
+    parserName = "parseMarkdown";
+  }
   if (markdownIds.includes(inputEl.id)) {
     console.warn(`Multiple elements with ID "${inputEl.id}" are being used for Markdown. Results will be very confusing!`);
   }
@@ -364,7 +367,7 @@ var form = must(document.querySelector("#form"));
 var titleField = document.querySelector("#title");
 var textField = must(document.querySelector("#editor"));
 var preview = must(document.querySelector("#preview"));
-function init({ maxFileSize, uploadUrl }) {
+function init({ maxFileSize, uploadUrl, markdownParser }) {
   const clearFuncs = [];
   if (titleField) {
     const { clear: clearTitle } = autosaveContent({
@@ -383,7 +386,11 @@ function init({ maxFileSize, uploadUrl }) {
       clear();
     }
   });
-  const doMarkdown = initLiveMarkdown({ inputEl: textField, previewEl: preview });
+  const doMarkdown = initLiveMarkdown({
+    inputEl: textField,
+    previewEl: preview,
+    parserName: markdownParser
+  });
   setupMarkdownUpload(
     document.querySelectorAll("#form input[type=submit]"),
     must(document.querySelector("#file_input")),
