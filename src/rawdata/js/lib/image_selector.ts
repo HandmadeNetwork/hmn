@@ -6,6 +6,7 @@ export type ImageSelectorOptions = {
 	originalFilename?: string,
 
 	onUpdate?: ImageSelectorUpdateFunc,
+	onRemove?: () => void,
 };
 export type ImageSelectorUpdateFunc = (url: string) => void;
 
@@ -45,6 +46,7 @@ export class ImageSelector {
 	private originalUrl: string;
 	private originalFilename: string;
 	private onUpdate: ImageSelectorUpdateFunc;
+	private onRemove: () => void;
 
 	constructor(
 		formName: string,
@@ -55,6 +57,7 @@ export class ImageSelector {
 			originalFilename = "",
 
 			onUpdate = () => { },
+			onRemove = () => { },
 		}: ImageSelectorOptions = {},
 	) {
 		const tmpl = imageSelectorTemplate();
@@ -78,6 +81,7 @@ export class ImageSelector {
 		this.originalFilename = originalFilename;
 
 		this.onUpdate = onUpdate;
+		this.onRemove = onRemove;
 
 		// NOTE(ben): Initialize DOM things
 		this.imageInput.name = formName;
@@ -106,8 +110,19 @@ export class ImageSelector {
 		}
 	}
 
-	openImageInput() {
-		this.imageInput.click();
+	openImageInput(): Promise<File | null> {
+		return new Promise(resolve => {
+			const done = () => {
+				if (this.imageInput.files!.length > 0) {
+					resolve(this.imageInput.files![0]);
+				} else {
+					resolve(null);
+				}
+			}
+			this.imageInput.addEventListener("change", done, { once: true });
+			this.imageInput.addEventListener("cancel", done, { once: true });
+			this.imageInput.click();
+		});
 	}
 	setImageUrl(url: string, initial = false) {
 		this.url = url;
@@ -166,6 +181,7 @@ export class ImageSelector {
 		this.removeImageInput.value = "true";
 		this.setImageUrl(this.defaultUrl);
 		this.updatePreview(null);
+		this.onRemove();
 	}
 	resetImage() {
 		this.checkSizeLimit(0);

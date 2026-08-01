@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"math/rand"
@@ -150,12 +151,11 @@ func ProjectToProjectSettings(
 	p *models.Project,
 	owners []*models.User,
 	tag string,
+	jams []*models.JamProject,
+	links []*models.Link,
 	logo, headerImage *models.Asset,
+	screenshots []*models.Asset,
 ) ProjectSettings {
-	ownerUsers := make([]User, 0, len(owners))
-	for _, owner := range owners {
-		ownerUsers = append(ownerUsers, UserToTemplate(owner))
-	}
 	return ProjectSettings{
 		Name:        p.Name,
 		Slug:        p.Slug,
@@ -165,13 +165,24 @@ func ProjectToProjectSettings(
 		Personal:    p.Personal,
 		Lifecycle:   ProjectLifecycleValues[p.Lifecycle],
 		Tag:         tag,
+		JamParticipation: utils.Map(jams, func(jam *models.JamProject) ProjectJamParticipation {
+			return ProjectJamParticipation{
+				JamName:       jam.JamName,
+				JamSlug:       jam.JamSlug,
+				Participating: jam.Participating,
+			}
+		}),
+		JamHidden: p.JamHidden,
+		SortScore: p.SortScore,
+
 		Blurb:       p.Blurb,
 		Description: p.Description,
-		Owners:      ownerUsers,
-		Logo:        AssetToTemplate(logo),
-		HeaderImage: AssetToTemplate(headerImage),
-		JamHidden:   p.JamHidden,
-		SortScore:   p.SortScore,
+		LinksJSON:   string(utils.Must1(json.Marshal(LinksToTemplate(links)))),
+		Owners:      utils.Map(owners, UserToTemplate),
+
+		Logo:            AssetToTemplate(logo),
+		HeaderImage:     AssetToTemplate(headerImage),
+		ScreenshotsJSON: string(utils.Must1(json.Marshal(utils.Map(screenshots, AssetToTemplate)))),
 	}
 }
 

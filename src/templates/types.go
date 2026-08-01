@@ -203,8 +203,9 @@ type ProjectSettings struct {
 	LinksJSON   string
 	Owners      []User
 
-	Logo        *Asset
-	HeaderImage *Asset
+	Logo            *Asset
+	HeaderImage     *Asset
+	ScreenshotsJSON string
 }
 
 type Flowsnake struct {
@@ -220,13 +221,14 @@ const FlowsnakeMinSize = 2500   // px
 const FlowsnakeSizeRange = 1000 // px
 
 type Asset struct {
-	Url string
+	Url string `json:"url"`
 
-	ID            string
-	Filename      string
-	Size          int
-	MimeType      string
-	Width, Height int
+	ID       string `json:"id"`
+	Filename string `json:"filename"`
+	Size     int    `json:"size"`
+	MimeType string `json:"mimeType"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
 }
 
 type Follow struct {

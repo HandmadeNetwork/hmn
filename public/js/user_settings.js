@@ -95,11 +95,14 @@ var ImageSelector = class {
   originalUrl;
   originalFilename;
   onUpdate;
+  onRemove;
   constructor(formName, maxFileSize, {
     defaultUrl = "",
     originalUrl = "",
     originalFilename = "",
     onUpdate = () => {
+    },
+    onRemove = () => {
     }
   } = {}) {
     const tmpl = imageSelectorTemplate();
@@ -118,6 +121,7 @@ var ImageSelector = class {
     this.originalUrl = originalUrl;
     this.originalFilename = originalFilename;
     this.onUpdate = onUpdate;
+    this.onRemove = onRemove;
     this.imageInput.name = formName;
     this.imageInput.value = "";
     this.removeImageInput.name = `remove_${formName}`;
@@ -143,7 +147,18 @@ var ImageSelector = class {
     }
   }
   openImageInput() {
-    this.imageInput.click();
+    return new Promise((resolve) => {
+      const done = () => {
+        if (this.imageInput.files.length > 0) {
+          resolve(this.imageInput.files[0]);
+        } else {
+          resolve(null);
+        }
+      };
+      this.imageInput.addEventListener("change", done, { once: true });
+      this.imageInput.addEventListener("cancel", done, { once: true });
+      this.imageInput.click();
+    });
   }
   setImageUrl(url, initial = false) {
     this.url = url;
@@ -195,6 +210,7 @@ var ImageSelector = class {
     this.removeImageInput.value = "true";
     this.setImageUrl(this.defaultUrl);
     this.updatePreview(null);
+    this.onRemove();
   }
   resetImage() {
     this.checkSizeLimit(0);

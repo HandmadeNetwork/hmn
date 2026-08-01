@@ -1,11 +1,13 @@
 import { ImageSelector } from "./lib/image_selector";
 import { setupMarkdownUpload } from "./lib/markdown_upload";
+import { Asset } from "./lib/models";
 import { getLinkData, initLinkEditor, LinkData } from "./lib/link_editor";
 import { initHashTabs } from "./lib/tabs";
 import { makeTemplateCloner } from "./lib/templates";
 import { CSRFToken, HTMLFileInputElement } from "./lib/types";
-import { must } from "./lib/utils";
+import { assert, must } from "./lib/utils";
 import { autosaveContent, initLiveMarkdown } from "./lib/markdown_previews";
+import { initReorderable } from "./lib/reorderable";
 
 // NOTE(ben): Set on the window by our Go code.
 declare const parseKnownServicesForUrl:
@@ -26,6 +28,7 @@ export type ProjectEditConfig = {
 	logoFilename: string,
 	headerImageUrl: string,
 	headerImageFilename: string,
+	screenshots: Asset[] | null,
 };
 
 export function init({
@@ -42,6 +45,7 @@ export function init({
 	logoFilename,
 	headerImageUrl,
 	headerImageFilename,
+	screenshots,
 }: ProjectEditConfig) {
 	initHashTabs(document);
 
@@ -261,6 +265,10 @@ export function init({
 		must(document.querySelector<HTMLElement>("#name_preview")).innerText = title;
 		must(document.querySelector<HTMLElement>("#longdesc_title")).innerText = title;
 		must(document.querySelector<HTMLElement>("#blurb_preview")).innerText = descriptionField.value || "Project summary";
+
+		// NOTE(ben): Also update guidance in the editor.
+		must(document.querySelector<HTMLElement>("#logo-selector-container")).hidden = !logoSelector.url;
+		must(document.querySelector<HTMLElement>("#header-image-selector-container")).hidden = !headerSelector.url;
 	}
 	updateCardPreview();
 	projectNameField.addEventListener("input", updateCardPreview);
@@ -332,4 +340,66 @@ export function init({
 	updateLinkPreviews();
 	window.addEventListener("wasmready", () => updateLinkPreviews());
 	window.addEventListener("linkedit", () => updateLinkPreviews());
+
+	///////////////////////////
+	// Screenshot management //
+	///////////////////////////
+
+	const screenshotContainer = must(document.querySelector<HTMLElement>("#screenshots"));
+	const screenshotTemplate = makeTemplateCloner<{
+		root: HTMLElement,
+		grabHandle: HTMLElement,
+		selectorPlaceholder: HTMLElement,
+	}>("screenshot");
+
+	function onScreenshotRemove(item: HTMLElement) {
+		item.remove();
+	}
+
+	// Initialize with existing screenshots
+	const { startDrag: startDragScreenshot } = initReorderable(screenshotContainer, {
+		onReorder() {
+			// TODO(ben): Update whatever preview exists
+		}
+	});
+	for (const screenshot of screenshots ?? []) {
+		const el = screenshotTemplate();
+
+		const selector = new ImageSelector("screenshot", headerMaxFileSize, {
+			originalUrl: screenshot.url,
+			originalFilename: screenshot.filename,
+
+			onRemove: () => onScreenshotRemove(el.root),
+		});
+		el.selectorPlaceholder.replaceWith(selector.root);
+		el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
+
+		screenshotContainer.appendChild(el.root);
+	}
+
+	// Hook up new screenshots
+	const newScreenshotButton = must(document.querySelector<HTMLAnchorElement>("#screenshot-upload-button"));
+	newScreenshotButton.addEventListener("click", async e => {
+		e.preventDefault();
+		const el = screenshotTemplate();
+		const selector = new ImageSelector("screenshot", headerMaxFileSize, {
+			onRemove: () => onScreenshotRemove(el.root),
+		});
+		el.selectorPlaceholder.replaceWith(selector.root);
+		el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
+
+		// NOTE(ben): The element needs to be in the real DOM to actually pop up
+		// the dialog, but if we insert it in the right place, styles will break.
+		// So, insert it somewhere stupid and then move it.
+		el.root.hidden = true;
+		document.body.appendChild(el.root);
+		const file = await selector.openImageInput();
+		if (file) {
+			el.root.remove();
+			screenshotContainer.appendChild(el.root);
+			el.root.hidden = false;
+		} else {
+			el.root.remove();
+		}
+	});
 }

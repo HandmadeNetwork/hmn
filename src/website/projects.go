@@ -2,7 +2,6 @@ package website
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -20,7 +19,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/twitch"
-	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -561,6 +559,24 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
 	}
 
+	projectScreenshots, err := db.Query[models.Asset](c, c.Conn,
+		`
+		---- Fetching project screenshots
+		SELECT $columns{asset}
+		FROM
+			project_screenshot
+			JOIN asset ON project_screenshot.asset_id = asset.id
+		WHERE
+			project_screenshot.project_id = $1
+		ORDER BY
+			project_screenshot.sort
+		`,
+		p.Project.ID,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project screenshots"))
+	}
+
 	projectJams, err := hmndata.FetchJamsForProject(c, c.Conn, c.CurrentUser, p.Project.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jams for project"))
@@ -570,19 +586,11 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		&p.Project,
 		p.Owners,
 		p.TagText(),
+		projectJams,
+		projectLinks,
 		p.LogoAsset, p.HeaderImage,
+		projectScreenshots,
 	)
-
-	projectSettings.LinksJSON = string(utils.Must1(json.Marshal(templates.LinksToTemplate(projectLinks))))
-
-	projectSettings.JamParticipation = make([]templates.ProjectJamParticipation, 0, len(projectJams))
-	for _, jam := range projectJams {
-		projectSettings.JamParticipation = append(projectSettings.JamParticipation, templates.ProjectJamParticipation{
-			JamName:       jam.JamName,
-			JamSlug:       jam.JamSlug,
-			Participating: jam.Participating,
-		})
-	}
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{

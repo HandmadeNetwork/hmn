@@ -95,11 +95,14 @@ var ImageSelector = class {
   originalUrl;
   originalFilename;
   onUpdate;
+  onRemove;
   constructor(formName, maxFileSize, {
     defaultUrl = "",
     originalUrl = "",
     originalFilename = "",
     onUpdate = () => {
+    },
+    onRemove = () => {
     }
   } = {}) {
     const tmpl = imageSelectorTemplate();
@@ -118,6 +121,7 @@ var ImageSelector = class {
     this.originalUrl = originalUrl;
     this.originalFilename = originalFilename;
     this.onUpdate = onUpdate;
+    this.onRemove = onRemove;
     this.imageInput.name = formName;
     this.imageInput.value = "";
     this.removeImageInput.name = `remove_${formName}`;
@@ -143,7 +147,18 @@ var ImageSelector = class {
     }
   }
   openImageInput() {
-    this.imageInput.click();
+    return new Promise((resolve) => {
+      const done = () => {
+        if (this.imageInput.files.length > 0) {
+          resolve(this.imageInput.files[0]);
+        } else {
+          resolve(null);
+        }
+      };
+      this.imageInput.addEventListener("change", done, { once: true });
+      this.imageInput.addEventListener("cancel", done, { once: true });
+      this.imageInput.click();
+    });
   }
   setImageUrl(url, initial = false) {
     this.url = url;
@@ -195,6 +210,7 @@ var ImageSelector = class {
     this.removeImageInput.value = "true";
     this.setImageUrl(this.defaultUrl);
     this.updatePreview(null);
+    this.onRemove();
   }
   resetImage() {
     this.checkSizeLimit(0);
@@ -844,7 +860,8 @@ function init({
   logoUrl,
   logoFilename,
   headerImageUrl,
-  headerImageFilename
+  headerImageFilename,
+  screenshots
 }) {
   initHashTabs(document);
   const projectForm = must(document.querySelector("#project_form"));
@@ -1016,6 +1033,8 @@ function init({
     must(document.querySelector("#name_preview")).innerText = title;
     must(document.querySelector("#longdesc_title")).innerText = title;
     must(document.querySelector("#blurb_preview")).innerText = descriptionField.value || "Project summary";
+    must(document.querySelector("#logo-selector-container")).hidden = !logoSelector.url;
+    must(document.querySelector("#header-image-selector-container")).hidden = !headerSelector.url;
   }
   updateCardPreview();
   projectNameField.addEventListener("input", updateCardPreview);
@@ -1067,6 +1086,46 @@ function init({
   updateLinkPreviews();
   window.addEventListener("wasmready", () => updateLinkPreviews());
   window.addEventListener("linkedit", () => updateLinkPreviews());
+  const screenshotContainer = must(document.querySelector("#screenshots"));
+  const screenshotTemplate = makeTemplateCloner("screenshot");
+  function onScreenshotRemove(item) {
+    item.remove();
+  }
+  const { startDrag: startDragScreenshot } = initReorderable(screenshotContainer, {
+    onReorder() {
+    }
+  });
+  for (const screenshot of screenshots ?? []) {
+    const el = screenshotTemplate();
+    const selector = new ImageSelector("screenshot", headerMaxFileSize, {
+      originalUrl: screenshot.url,
+      originalFilename: screenshot.filename,
+      onRemove: () => onScreenshotRemove(el.root)
+    });
+    el.selectorPlaceholder.replaceWith(selector.root);
+    el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
+    screenshotContainer.appendChild(el.root);
+  }
+  const newScreenshotButton = must(document.querySelector("#screenshot-upload-button"));
+  newScreenshotButton.addEventListener("click", async (e) => {
+    e.preventDefault();
+    const el = screenshotTemplate();
+    const selector = new ImageSelector("screenshot", headerMaxFileSize, {
+      onRemove: () => onScreenshotRemove(el.root)
+    });
+    el.selectorPlaceholder.replaceWith(selector.root);
+    el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
+    el.root.hidden = true;
+    document.body.appendChild(el.root);
+    const file = await selector.openImageInput();
+    if (file) {
+      el.root.remove();
+      screenshotContainer.appendChild(el.root);
+      el.root.hidden = false;
+    } else {
+      el.root.remove();
+    }
+  });
 }
 export {
   init

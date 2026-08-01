@@ -33,18 +33,20 @@
 			{{ end }}
 
 			maxOwners: {{ .MaxOwners }},
-
+			
+			logoMaxFileSize: {{ .LogoMaxFileSize }},
+			headerMaxFileSize: {{ .HeaderMaxFileSize }},
+			textMaxFileSize: {{ .TextEditor.MaxFileSize }},
+			
+			editorUploadUrl: {{ .TextEditor.UploadUrl }},
+			ownerCheckUrl: "{{ .APICheckUsernameUrl }}",
+			
 			logoUrl: "{{ asseturl .ProjectSettings.Logo }}",
 			logoFilename: "{{ assetfilename .ProjectSettings.Logo }}",
 			headerImageUrl: "{{ asseturl .ProjectSettings.HeaderImage }}",
 			headerImageFilename: "{{ assetfilename .ProjectSettings.HeaderImage }}",
 
-			logoMaxFileSize: {{ .LogoMaxFileSize }},
-			headerMaxFileSize: {{ .HeaderMaxFileSize }},
-			textMaxFileSize: {{ .TextEditor.MaxFileSize }},
-
-			editorUploadUrl: {{ .TextEditor.UploadUrl }},
-			ownerCheckUrl: "{{ .APICheckUsernameUrl }}",
+			screenshots: JSON.parse("{{ .ProjectSettings.ScreenshotsJSON }}"),
 		});
 	</script>
 
@@ -230,7 +232,9 @@
 							<a href="#" class="normal" id="logo-upload-button">+ Upload Project Logo</a>
 						</legend>
 						<div class="logo">
-							<span id="project-logo-placeholder"></span>
+							<div id="logo-selector-container" class="pa3">
+								<span id="project-logo-placeholder"></span>
+							</div>
 							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be square, and at least 256x256.</div>
 						</div>
 					</div>
@@ -241,12 +245,35 @@
 							<a href="#" class="normal" id="header-upload-button">+ Upload Header Image</a>
 						</legend>
 						<div class="header_image">
-							<span id="header-image-placeholder"></span>
-							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be wide, and at least 900x300.</div>
+							<div id="header-image-selector-container" class="pa3">
+								<span id="header-image-placeholder"></span>
+							</div>
+							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">
+								Images should be wide, and at least 900x300.
+							</div>
 						</div>
 					</div>
 
 					{{ template "link_editor.html" }}
+
+					<div class="fieldset">
+						<legend class="flex justify-between">
+							<span>Screenshots</span>
+							<a href="#" class="normal" id="screenshot-upload-button">+ Upload Screenshot</a>
+						</legend>
+						<div>
+							<template id="screenshot">
+								<div data-tmpl="root" class="reorderable-item flex items-center pv3 pr3">
+									<span data-tmpl="grabHandle" class="flex-shrink-0 svgicon pa3 pointer grab no-touch">{{ svg "draggable" }}</span>
+									<span data-tmpl="selectorPlaceholder"></span>
+								</div>
+							</template>
+							<div id="screenshots" class="relative overflow-hidden"></div>
+							<div class="show-when-sibling-empty flex justify-center items-center f6 pv2 ph3 tc">
+								Images should ideally have a 16:9 aspect ratio, and be at least 1280x720. Make sure any text is big and readable!
+							</div>
+						</div>
+					</div>
 				</div>
 				<div data-tab="admin" class="flex flex-column g3">
 					{{ if $showAdminProperties }}
