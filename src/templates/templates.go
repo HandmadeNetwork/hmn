@@ -3,6 +3,7 @@ package templates
 import (
 	"embed"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -334,6 +335,9 @@ var HMNTemplateFuncs = template.FuncMap{
 		return num%2 == 1
 	},
 
+	"json": func(thing any) string {
+		return string(utils.Must1(json.Marshal(thing)))
+	},
 	"asseturl": func(asset *Asset) string {
 		if asset == nil {
 			return ""

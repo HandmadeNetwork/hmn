@@ -2,16 +2,23 @@ import { makeTemplateCloner } from "./templates";
 
 export type ImageSelectorOptions = {
 	defaultUrl?: string,
-	originalUrl?: string,
-	originalFilename?: string,
+	original?: OriginalFile,
 
 	onUpdate?: ImageSelectorUpdateFunc,
 	onRemove?: () => void,
 };
 export type ImageSelectorUpdateFunc = (url: string) => void;
 
+// NOTE(ben): Fields chosen to line up with Asset.
+type OriginalFile = {
+	url: string,
+	filename: string,
+	id: string,
+};
+
 // NOTE(ben): See image_selector.html.
 type ImageSelectorTmpl = {
+	inputOriginal: HTMLInputElement,
 	inputImage: HTMLInputElement,
 	inputRemove: HTMLInputElement,
 	errorMessage: HTMLElement,
@@ -34,7 +41,8 @@ export class ImageSelector {
 	// 
 
 	private maxFileSize: number;
-	private imageInput: HTMLInputElement;
+	private originalImageInput: HTMLInputElement;
+	private newImageInput: HTMLInputElement;
 	private removeImageInput: HTMLInputElement;
 	private previewImage: HTMLImageElement;
 	private previewContainer: HTMLElement;
@@ -43,8 +51,7 @@ export class ImageSelector {
 	private filenameText: HTMLElement;
 	private errorEl: HTMLElement;
 	private defaultUrl: string;
-	private originalUrl: string;
-	private originalFilename: string;
+	private originalFile: OriginalFile | null;
 	private onUpdate: ImageSelectorUpdateFunc;
 	private onRemove: () => void;
 
@@ -53,8 +60,7 @@ export class ImageSelector {
 		maxFileSize: number,
 		{
 			defaultUrl = "",
-			originalUrl = "",
-			originalFilename = "",
+			original,
 
 			onUpdate = () => { },
 			onRemove = () => { },
@@ -67,7 +73,8 @@ export class ImageSelector {
 
 		this.maxFileSize = maxFileSize;
 
-		this.imageInput = tmpl.inputImage;
+		this.originalImageInput = tmpl.inputOriginal;
+		this.newImageInput = tmpl.inputImage;
 		this.removeImageInput = tmpl.inputRemove;
 		this.previewImage = tmpl.preview;
 		this.previewContainer = tmpl.previewContainer;
@@ -77,25 +84,27 @@ export class ImageSelector {
 		this.errorEl = tmpl.errorMessage;
 
 		this.defaultUrl = defaultUrl;
-		this.originalUrl = originalUrl;
-		this.originalFilename = originalFilename;
+		this.originalFile = original ?? null;
 
 		this.onUpdate = onUpdate;
 		this.onRemove = onRemove;
 
 		// NOTE(ben): Initialize DOM things
-		this.imageInput.name = formName;
-		this.imageInput.value = "";
+		this.originalImageInput.name = `original_${formName}`;
+		this.originalImageInput.value = original?.id ?? "NOASSET";
+
+		this.newImageInput.name = `image_${formName}`;
+		this.newImageInput.value = "";
 
 		this.removeImageInput.name = `remove_${formName}`;
 		this.removeImageInput.value = "";
 
-		this.setImageUrl(this.originalUrl, /*initial=*/true);
+		this.setImageUrl(this.originalFile?.url ?? "", /*initial=*/true);
 		this.updatePreview();
 
-		this.imageInput.addEventListener("change", ev => {
-			if (this.imageInput.files!.length > 0) {
-				this.handleNewImageFile(this.imageInput.files![0]);
+		this.newImageInput.addEventListener("change", ev => {
+			if (this.newImageInput.files!.length > 0) {
+				this.handleNewImageFile(this.newImageInput.files![0]);
 			}
 		});
 
@@ -113,15 +122,15 @@ export class ImageSelector {
 	openImageInput(): Promise<File | null> {
 		return new Promise(resolve => {
 			const done = () => {
-				if (this.imageInput.files!.length > 0) {
-					resolve(this.imageInput.files![0]);
+				if (this.newImageInput.files!.length > 0) {
+					resolve(this.newImageInput.files![0]);
 				} else {
 					resolve(null);
 				}
 			}
-			this.imageInput.addEventListener("change", done, { once: true });
-			this.imageInput.addEventListener("cancel", done, { once: true });
-			this.imageInput.click();
+			this.newImageInput.addEventListener("change", done, { once: true });
+			this.newImageInput.addEventListener("cancel", done, { once: true });
+			this.newImageInput.click();
 		});
 	}
 	setImageUrl(url: string, initial = false) {
@@ -140,8 +149,8 @@ export class ImageSelector {
 	private setError(error: string) {
 		this.errorEl.textContent = error;
 		this.errorEl.hidden = !error;
-		this.imageInput.setCustomValidity(error);
-		this.imageInput.reportValidity();
+		this.newImageInput.setCustomValidity(error);
+		this.newImageInput.reportValidity();
 	}
 	private checkSizeLimit(size: number) {
 		if (size > this.maxFileSize) {
@@ -152,16 +161,16 @@ export class ImageSelector {
 	}
 	private updatePreview(file: File | null = null) {
 		const showReset = (
-			this.originalUrl
-			&& this.originalUrl !== this.defaultUrl
-			&& this.originalUrl !== this.url
+			this.originalFile
+			&& this.originalFile.url !== this.defaultUrl
+			&& this.originalFile.url !== this.url
 		);
 		const showRemove = this.url !== this.defaultUrl;
 		this.resetLink.hidden = !showReset;
 		this.removeLink.hidden = !showRemove;
 
-		if (this.url === this.originalUrl) {
-			this.filenameText.innerText = this.originalFilename;
+		if (this.originalFile && this.url === this.originalFile.url) {
+			this.filenameText.innerText = this.originalFile.filename;
 		} else {
 			this.filenameText.innerText = file ? file.name : "";
 		}
@@ -177,17 +186,17 @@ export class ImageSelector {
 	}
 	removeImage() {
 		this.checkSizeLimit(0);
-		this.imageInput.value = "";
-		this.removeImageInput.value = "true";
+		this.newImageInput.value = "";
+		this.removeImageInput.value = this.originalFile?.id ?? "";
 		this.setImageUrl(this.defaultUrl);
 		this.updatePreview(null);
 		this.onRemove();
 	}
 	resetImage() {
 		this.checkSizeLimit(0);
-		this.imageInput.value = "";
+		this.newImageInput.value = "";
 		this.removeImageInput.value = "";
-		this.setImageUrl(this.originalUrl);
+		this.setImageUrl(this.originalFile?.url ?? "");
 		this.updatePreview(null);
 	}
 }

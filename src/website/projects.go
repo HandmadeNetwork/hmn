@@ -2,6 +2,7 @@ package website
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/twitch"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -664,6 +666,7 @@ type ProjectPayload struct {
 	OwnerUsernames        []string
 	Logo                  FormImage
 	HeaderImage           FormImage
+	Screenshots           []FormImage
 	Tag                   string
 	JamParticipationSlugs []string
 	JamHidden             bool
@@ -733,6 +736,11 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		res.Error = oops.New(err, "Failed to read image from form")
 		return res
 	}
+	screenshots, err := GetFormImages(c, "screenshot")
+	if err != nil {
+		res.Error = oops.New(err, "Failed to read screenshots from form")
+		return res
+	}
 
 	owners := c.Req.Form["owners"]
 	if len(owners) > maxProjectOwners {
@@ -769,6 +777,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		OwnerUsernames:        owners,
 		Logo:                  logo,
 		HeaderImage:           headerImage,
+		Screenshots:           screenshots,
 		Tag:                   tag,
 		JamParticipationSlugs: jamParticipationSlugs,
 		JamHidden:             jamHidden,
@@ -782,28 +791,40 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	return res
 }
 
+// NOTE(ben): Called for both new and edited projects to set lots of common
+// data after you know the project exists.
 func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *ProjectPayload) error {
+	// NOTE(ben): Upload all new assets before proceeding with DB updates.
 	var logoUUID *uuid.UUID
-	if payload.Logo.Exists {
+	var headerImageUUID *uuid.UUID
+	var newScreenshotUUIDs []uuid.UUID
+	if payload.Logo.New {
 		logoAsset, err := SaveFormImage(ctx, tx, payload.Logo, &user.ID)
 		if err != nil {
 			return oops.New(err, "Failed to save asset")
 		}
 		logoUUID = &logoAsset.ID
 	}
-
-	var headerImageUUID *uuid.UUID
-	if payload.HeaderImage.Exists {
+	if payload.HeaderImage.New {
 		headerImageAsset, err := SaveFormImage(ctx, tx, payload.HeaderImage, &user.ID)
 		if err != nil {
 			return oops.New(err, "Failed to save asset")
 		}
 		headerImageUUID = &headerImageAsset.ID
 	}
+	for _, screenshot := range payload.Screenshots {
+		if screenshot.New {
+			screenshotAsset, err := SaveFormImage(ctx, tx, screenshot, &user.ID)
+			if err != nil {
+				return oops.New(err, "Failed to save screenshot")
+			}
+			newScreenshotUUIDs = append(newScreenshotUUIDs, screenshotAsset.ID)
+		}
+	}
 
 	hasSelf := false
 	selfUsername := strings.ToLower(user.Username)
-	for i, _ := range payload.OwnerUsernames {
+	for i := range payload.OwnerUsernames {
 		payload.OwnerUsernames[i] = strings.ToLower(payload.OwnerUsernames[i])
 		if payload.OwnerUsernames[i] == selfUsername {
 			hasSelf = true
@@ -873,38 +894,117 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 	}
 
-	if payload.Logo.Exists || payload.Logo.Remove {
-		_, err = tx.Exec(ctx,
-			`
-			UPDATE project
-			SET
-				logo_asset_id = $2
-			WHERE
-				id = $1
-			`,
-			payload.ProjectID,
-			logoUUID,
-		)
-		if err != nil {
-			return oops.New(err, "Failed to update project's logo")
-		}
-	}
+	// NOTE(ben): Update images and screenshots
+	{
+		var errs []error
 
-	if payload.HeaderImage.Exists || payload.HeaderImage.Remove {
-		_, err = tx.Exec(ctx,
+		if payload.Logo.New || payload.Logo.Remove {
+			_, err = tx.Exec(ctx,
+				`
+				UPDATE project
+				SET
+					logo_asset_id = $2
+				WHERE
+					id = $1
+				`,
+				payload.ProjectID,
+				logoUUID,
+			)
+			if err != nil {
+				errs = append(errs, oops.New(err, "Failed to update project's logo"))
+			}
+		}
+
+		if payload.HeaderImage.New || payload.HeaderImage.Remove {
+			_, err = tx.Exec(ctx,
+				`
+				UPDATE project
+				SET
+					header_asset_id = $2
+				WHERE
+					id = $1
+				`,
+				payload.ProjectID,
+				headerImageUUID,
+			)
+			if err != nil {
+				errs = append(errs, oops.New(err, "Failed to update project's header image"))
+			}
+		}
+
+		currentNewScreenshot := 0
+		numNewOrExistingScreenshots := 0
+		for sort, screenshot := range payload.Screenshots {
+			if screenshot.New || screenshot.Exists {
+				numNewOrExistingScreenshots += 1
+
+				assetID := screenshot.AssetID
+				if screenshot.New {
+					// NOTE(ben): No bounds check necessary because newScreenshotUUIDs was
+					// generated from screenshot.New's above.
+					assetID = newScreenshotUUIDs[currentNewScreenshot].String()
+					currentNewScreenshot++
+				}
+
+				_, err := tx.Exec(ctx,
+					`
+					---- Upsert project screenshot
+					INSERT INTO project_screenshot (project_id, asset_id, sort)
+					VALUES ($1, $2, $3)
+					ON CONFLICT (project_id, asset_id) DO UPDATE
+						SET sort = $3
+					`,
+					payload.ProjectID, assetID, sort,
+				)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+			} else {
+				utils.Assert(screenshot.Remove)
+				utils.Assert(screenshot.AssetID)
+
+				res, err := tx.Exec(ctx,
+					`
+					---- Delete project screenshot
+					DELETE FROM project_screenshot
+					WHERE project_id = $1 AND asset_id = $2
+					`,
+					payload.ProjectID, screenshot.AssetID,
+				)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				if res.RowsAffected() != 1 {
+					errs = append(errs, errors.New("attempt to delete nonexistent screenshot"))
+					continue
+				}
+			}
+		}
+
+		if err := errors.Join(errs...); err != nil {
+			return oops.New(err, "failed to upload project images")
+		}
+
+		// NOTE(ben): Sanity check: After all this, we should have N project
+		// screenshots that all have different sorts.
+		type Sanity struct {
+			Total    int `db:"COUNT(*)"`
+			NumSorts int `db:"COUNT(DISTINCT sort)"`
+		}
+		sanity := utils.Must1(db.QueryOne[Sanity](ctx, tx,
 			`
-			UPDATE project
-			SET
-				header_asset_id = $2
-			WHERE
-				id = $1
+			---- Project screenshot sanity check
+			SELECT $columns FROM project_screenshot
+			WHERE project_id = $1
 			`,
 			payload.ProjectID,
-			headerImageUUID,
+		))
+		utils.Assert(
+			sanity.Total == numNewOrExistingScreenshots && sanity.NumSorts == sanity.Total,
+			fmt.Sprintf("should have %d screenshots, but had %d with %d distinct sorts", len(payload.Screenshots), sanity.Total, sanity.NumSorts),
 		)
-		if err != nil {
-			return oops.New(err, "Failed to update project's header image")
-		}
 	}
 
 	owners, err := db.Query[models.User](ctx, tx,

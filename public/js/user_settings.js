@@ -83,7 +83,8 @@ var ImageSelector = class {
   root;
   // 
   maxFileSize;
-  imageInput;
+  originalImageInput;
+  newImageInput;
   removeImageInput;
   previewImage;
   previewContainer;
@@ -92,14 +93,12 @@ var ImageSelector = class {
   filenameText;
   errorEl;
   defaultUrl;
-  originalUrl;
-  originalFilename;
+  originalFile;
   onUpdate;
   onRemove;
   constructor(formName, maxFileSize, {
     defaultUrl = "",
-    originalUrl = "",
-    originalFilename = "",
+    original,
     onUpdate = () => {
     },
     onRemove = () => {
@@ -109,7 +108,8 @@ var ImageSelector = class {
     this.url = "";
     this.root = tmpl.root;
     this.maxFileSize = maxFileSize;
-    this.imageInput = tmpl.inputImage;
+    this.originalImageInput = tmpl.inputOriginal;
+    this.newImageInput = tmpl.inputImage;
     this.removeImageInput = tmpl.inputRemove;
     this.previewImage = tmpl.preview;
     this.previewContainer = tmpl.previewContainer;
@@ -118,23 +118,24 @@ var ImageSelector = class {
     this.filenameText = tmpl.filenameText;
     this.errorEl = tmpl.errorMessage;
     this.defaultUrl = defaultUrl;
-    this.originalUrl = originalUrl;
-    this.originalFilename = originalFilename;
+    this.originalFile = original ?? null;
     this.onUpdate = onUpdate;
     this.onRemove = onRemove;
-    this.imageInput.name = formName;
-    this.imageInput.value = "";
+    this.originalImageInput.name = `original_${formName}`;
+    this.originalImageInput.value = original?.id ?? "NOASSET";
+    this.newImageInput.name = `image_${formName}`;
+    this.newImageInput.value = "";
     this.removeImageInput.name = `remove_${formName}`;
     this.removeImageInput.value = "";
     this.setImageUrl(
-      this.originalUrl,
+      this.originalFile?.url ?? "",
       /*initial=*/
       true
     );
     this.updatePreview();
-    this.imageInput.addEventListener("change", (ev) => {
-      if (this.imageInput.files.length > 0) {
-        this.handleNewImageFile(this.imageInput.files[0]);
+    this.newImageInput.addEventListener("change", (ev) => {
+      if (this.newImageInput.files.length > 0) {
+        this.handleNewImageFile(this.newImageInput.files[0]);
       }
     });
     this.resetLink.addEventListener("click", (ev) => {
@@ -149,15 +150,15 @@ var ImageSelector = class {
   openImageInput() {
     return new Promise((resolve) => {
       const done = () => {
-        if (this.imageInput.files.length > 0) {
-          resolve(this.imageInput.files[0]);
+        if (this.newImageInput.files.length > 0) {
+          resolve(this.newImageInput.files[0]);
         } else {
           resolve(null);
         }
       };
-      this.imageInput.addEventListener("change", done, { once: true });
-      this.imageInput.addEventListener("cancel", done, { once: true });
-      this.imageInput.click();
+      this.newImageInput.addEventListener("change", done, { once: true });
+      this.newImageInput.addEventListener("cancel", done, { once: true });
+      this.newImageInput.click();
     });
   }
   setImageUrl(url, initial = false) {
@@ -176,8 +177,8 @@ var ImageSelector = class {
   setError(error) {
     this.errorEl.textContent = error;
     this.errorEl.hidden = !error;
-    this.imageInput.setCustomValidity(error);
-    this.imageInput.reportValidity();
+    this.newImageInput.setCustomValidity(error);
+    this.newImageInput.reportValidity();
   }
   checkSizeLimit(size) {
     if (size > this.maxFileSize) {
@@ -187,12 +188,12 @@ var ImageSelector = class {
     }
   }
   updatePreview(file = null) {
-    const showReset = this.originalUrl && this.originalUrl !== this.defaultUrl && this.originalUrl !== this.url;
+    const showReset = this.originalFile && this.originalFile.url !== this.defaultUrl && this.originalFile.url !== this.url;
     const showRemove = this.url !== this.defaultUrl;
     this.resetLink.hidden = !showReset;
     this.removeLink.hidden = !showRemove;
-    if (this.url === this.originalUrl) {
-      this.filenameText.innerText = this.originalFilename;
+    if (this.originalFile && this.url === this.originalFile.url) {
+      this.filenameText.innerText = this.originalFile.filename;
     } else {
       this.filenameText.innerText = file ? file.name : "";
     }
@@ -206,17 +207,17 @@ var ImageSelector = class {
   }
   removeImage() {
     this.checkSizeLimit(0);
-    this.imageInput.value = "";
-    this.removeImageInput.value = "true";
+    this.newImageInput.value = "";
+    this.removeImageInput.value = this.originalFile?.id ?? "";
     this.setImageUrl(this.defaultUrl);
     this.updatePreview(null);
     this.onRemove();
   }
   resetImage() {
     this.checkSizeLimit(0);
-    this.imageInput.value = "";
+    this.newImageInput.value = "";
     this.removeImageInput.value = "";
-    this.setImageUrl(this.originalUrl);
+    this.setImageUrl(this.originalFile?.url ?? "");
     this.updatePreview(null);
   }
 };

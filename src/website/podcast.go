@@ -165,7 +165,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to read image from form"))
 	}
-	if image.Exists {
+	if image.New {
 		imageAsset, err := SaveFormImage(c, tx, image, &c.CurrentUser.ID)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save podcast image"))

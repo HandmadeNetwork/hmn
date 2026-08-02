@@ -29,7 +29,8 @@ func (m ProjectScreenshotSort) Description() string {
 func (m ProjectScreenshotSort) Up(ctx context.Context, tx pgx.Tx) error {
 	_, err := tx.Exec(ctx, `
 		ALTER TABLE project_screenshot
-			ADD COLUMN sort INTEGER DEFAULT 0;
+			ADD COLUMN sort INTEGER NOT NULL DEFAULT 0,
+			ADD CONSTRAINT project_screenshot_project_asset_uniq UNIQUE (project_id, asset_id);
 	`)
 	return err
 }
@@ -37,6 +38,7 @@ func (m ProjectScreenshotSort) Up(ctx context.Context, tx pgx.Tx) error {
 func (m ProjectScreenshotSort) Down(ctx context.Context, tx pgx.Tx) error {
 	_, err := tx.Exec(ctx, `
 		ALTER TABLE project_screenshot
+			DROP CONSTRAINT project_screenshot_project_asset_uniq,
 			DROP COLUMN sort;
 	`)
 	return err

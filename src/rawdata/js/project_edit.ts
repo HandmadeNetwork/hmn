@@ -5,7 +5,7 @@ import { getLinkData, initLinkEditor, LinkData } from "./lib/link_editor";
 import { initHashTabs } from "./lib/tabs";
 import { makeTemplateCloner } from "./lib/templates";
 import { CSRFToken, HTMLFileInputElement } from "./lib/types";
-import { assert, must } from "./lib/utils";
+import { must } from "./lib/utils";
 import { autosaveContent, initLiveMarkdown } from "./lib/markdown_previews";
 import { initReorderable } from "./lib/reorderable";
 
@@ -24,10 +24,8 @@ export type ProjectEditConfig = {
 	editorUploadUrl: string,
 	initialLinks: LinkData,
 	ownerCheckUrl: string,
-	logoUrl: string,
-	logoFilename: string,
-	headerImageUrl: string,
-	headerImageFilename: string,
+	logo: Asset | null,
+	headerImage: Asset | null,
 	screenshots: Asset[] | null,
 };
 
@@ -41,10 +39,8 @@ export function init({
 	editorUploadUrl,
 	initialLinks,
 	ownerCheckUrl,
-	logoUrl,
-	logoFilename,
-	headerImageUrl,
-	headerImageFilename,
+	logo,
+	headerImage,
 	screenshots,
 }: ProjectEditConfig) {
 	initHashTabs(document);
@@ -224,8 +220,7 @@ export function init({
 		"logo",
 		logoMaxFileSize,
 		{
-			originalUrl: logoUrl,
-			originalFilename: logoFilename,
+			original: logo || undefined,
 			onUpdate() {
 				updateCardPreview();
 			},
@@ -241,8 +236,7 @@ export function init({
 		"header_image",
 		headerMaxFileSize,
 		{
-			originalUrl: headerImageUrl,
-			originalFilename: headerImageFilename,
+			original: headerImage || undefined,
 			onUpdate() {
 				updateCardPreview();
 			},
@@ -352,10 +346,6 @@ export function init({
 		selectorPlaceholder: HTMLElement,
 	}>("screenshot");
 
-	function onScreenshotRemove(item: HTMLElement) {
-		item.remove();
-	}
-
 	// Initialize with existing screenshots
 	const { startDrag: startDragScreenshot } = initReorderable(screenshotContainer, {
 		onReorder() {
@@ -366,10 +356,10 @@ export function init({
 		const el = screenshotTemplate();
 
 		const selector = new ImageSelector("screenshot", headerMaxFileSize, {
-			originalUrl: screenshot.url,
-			originalFilename: screenshot.filename,
-
-			onRemove: () => onScreenshotRemove(el.root),
+			original: screenshot,
+			onRemove: () => {
+				el.root.hidden = true;
+			},
 		});
 		el.selectorPlaceholder.replaceWith(selector.root);
 		el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
@@ -383,7 +373,7 @@ export function init({
 		e.preventDefault();
 		const el = screenshotTemplate();
 		const selector = new ImageSelector("screenshot", headerMaxFileSize, {
-			onRemove: () => onScreenshotRemove(el.root),
+			onRemove: () => el.root.remove(),
 		});
 		el.selectorPlaceholder.replaceWith(selector.root);
 		el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
