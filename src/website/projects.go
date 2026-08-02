@@ -27,6 +27,7 @@ import (
 
 const maxPersonalProjects = 20
 const maxProjectOwners = 5
+const maxProjectScreenshots = 15
 
 type ProjectTemplateData struct {
 	templates.BaseData
@@ -403,6 +404,7 @@ type ProjectEditData struct {
 	Editing         bool
 	ProjectSettings templates.ProjectSettings
 	MaxOwners       int
+	MaxScreenshots  int
 
 	APICheckUsernameUrl                string
 	LogoMaxFileSize, HeaderMaxFileSize int
@@ -447,6 +449,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 		Editing:         false,
 		ProjectSettings: project,
 		MaxOwners:       maxProjectOwners,
+		MaxScreenshots:  maxProjectScreenshots,
 
 		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
 		LogoMaxFileSize:     ProjectLogoMaxFileSize,
@@ -600,6 +603,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		Editing:         true,
 		ProjectSettings: projectSettings,
 		MaxOwners:       maxProjectOwners,
+		MaxScreenshots:  maxProjectScreenshots,
 
 		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
 		LogoMaxFileSize:     ProjectLogoMaxFileSize,
@@ -794,6 +798,16 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 // NOTE(ben): Called for both new and edited projects to set lots of common
 // data after you know the project exists.
 func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *ProjectPayload) error {
+	numNewOrExistingScreenshots := 0
+	for _, screenshot := range payload.Screenshots {
+		if screenshot.New || screenshot.Exists {
+			numNewOrExistingScreenshots += 1
+		}
+	}
+	if numNewOrExistingScreenshots > maxProjectScreenshots {
+		return errors.New("too many screenshots")
+	}
+
 	// NOTE(ben): Upload all new assets before proceeding with DB updates.
 	var logoUUID *uuid.UUID
 	var headerImageUUID *uuid.UUID
@@ -933,11 +947,8 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 
 		currentNewScreenshot := 0
-		numNewOrExistingScreenshots := 0
 		for sort, screenshot := range payload.Screenshots {
 			if screenshot.New || screenshot.Exists {
-				numNewOrExistingScreenshots += 1
-
 				assetID := screenshot.AssetID
 				if screenshot.New {
 					// NOTE(ben): No bounds check necessary because newScreenshotUUIDs was

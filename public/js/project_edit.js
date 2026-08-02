@@ -852,6 +852,7 @@ function init({
   csrf,
   projectName,
   maxOwners,
+  maxScreenshots,
   logoMaxFileSize,
   headerMaxFileSize,
   textMaxFileSize,
@@ -1084,6 +1085,7 @@ function init({
   window.addEventListener("wasmready", () => updateLinkPreviews());
   window.addEventListener("linkedit", () => updateLinkPreviews());
   const screenshotContainer = must(document.querySelector("#screenshots"));
+  const newScreenshotButton = must(document.querySelector("#screenshot-upload-button"));
   const screenshotTemplate = makeTemplateCloner("screenshot");
   const { startDrag: startDragScreenshot } = initReorderable(screenshotContainer, {
     onReorder() {
@@ -1095,18 +1097,21 @@ function init({
       original: screenshot,
       onRemove: () => {
         el.root.hidden = true;
+        updateNewScreenshotButton();
       }
     });
     el.selectorPlaceholder.replaceWith(selector.root);
     el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
     screenshotContainer.appendChild(el.root);
   }
-  const newScreenshotButton = must(document.querySelector("#screenshot-upload-button"));
   newScreenshotButton.addEventListener("click", async (e) => {
     e.preventDefault();
     const el = screenshotTemplate();
     const selector = new ImageSelector("screenshot", headerMaxFileSize, {
-      onRemove: () => el.root.remove()
+      onRemove: () => {
+        el.root.remove();
+        updateNewScreenshotButton();
+      }
     });
     el.selectorPlaceholder.replaceWith(selector.root);
     el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
@@ -1120,7 +1125,13 @@ function init({
     } else {
       el.root.remove();
     }
+    updateNewScreenshotButton();
   });
+  function updateNewScreenshotButton() {
+    const numScreenshots = screenshotContainer.querySelectorAll(".reorderable-item:not([hidden])").length;
+    newScreenshotButton.disabled = numScreenshots >= maxScreenshots;
+  }
+  updateNewScreenshotButton();
 }
 export {
   init

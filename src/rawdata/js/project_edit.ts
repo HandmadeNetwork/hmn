@@ -18,6 +18,7 @@ export type ProjectEditConfig = {
 	csrf: CSRFToken,
 	projectName: string,
 	maxOwners: number,
+	maxScreenshots: number,
 	logoMaxFileSize: number,
 	headerMaxFileSize: number,
 	textMaxFileSize: number,
@@ -33,6 +34,7 @@ export function init({
 	csrf,
 	projectName,
 	maxOwners,
+	maxScreenshots,
 	logoMaxFileSize,
 	headerMaxFileSize,
 	textMaxFileSize,
@@ -340,6 +342,7 @@ export function init({
 	///////////////////////////
 
 	const screenshotContainer = must(document.querySelector<HTMLElement>("#screenshots"));
+	const newScreenshotButton = must(document.querySelector<HTMLButtonElement>("#screenshot-upload-button"));
 	const screenshotTemplate = makeTemplateCloner<{
 		root: HTMLElement,
 		grabHandle: HTMLElement,
@@ -359,6 +362,7 @@ export function init({
 			original: screenshot,
 			onRemove: () => {
 				el.root.hidden = true;
+				updateNewScreenshotButton();
 			},
 		});
 		el.selectorPlaceholder.replaceWith(selector.root);
@@ -368,12 +372,14 @@ export function init({
 	}
 
 	// Hook up new screenshots
-	const newScreenshotButton = must(document.querySelector<HTMLAnchorElement>("#screenshot-upload-button"));
 	newScreenshotButton.addEventListener("click", async e => {
 		e.preventDefault();
 		const el = screenshotTemplate();
 		const selector = new ImageSelector("screenshot", headerMaxFileSize, {
-			onRemove: () => el.root.remove(),
+			onRemove: () => {
+				el.root.remove();
+				updateNewScreenshotButton();
+			}
 		});
 		el.selectorPlaceholder.replaceWith(selector.root);
 		el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
@@ -391,5 +397,13 @@ export function init({
 		} else {
 			el.root.remove();
 		}
+
+		updateNewScreenshotButton();
 	});
+
+	function updateNewScreenshotButton() {
+		const numScreenshots = screenshotContainer.querySelectorAll(".reorderable-item:not([hidden])").length;
+		newScreenshotButton.disabled = numScreenshots >= maxScreenshots;
+	}
+	updateNewScreenshotButton();
 }
