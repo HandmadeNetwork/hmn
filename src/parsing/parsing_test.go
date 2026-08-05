@@ -38,12 +38,16 @@ And here's my favorite YouTube video:
 https://youtu.be/dQw4w9WgXcQ
 
 I hope you like it as much as I do.
+
+If you paste a link in parentheses (like https://handmade.network/), the site will pick up the closing parenthesis as part of the link. This is jank.
 `
 	t.Run("Real post Markdown", func(t *testing.T) {
 		html := ParseMarkdown(md, PostMarkdown)
 		t.Log(html)
 		assert.Contains(t, html, `<img src="coolimage.png"`)
 		assert.Contains(t, html, "<iframe")
+		assert.NotContains(t, html, `<a href="https://handmade.network/)">https://handmade.network/)</a>`)
+		assert.Contains(t, html, `<a href="https://handmade.network/">https://handmade.network/</a>`)
 	})
 	t.Run("Post edit preview Markdown", func(t *testing.T) {
 		html := ParseMarkdown(md, PostEditPreviewMarkdown)
@@ -51,6 +55,8 @@ I hope you like it as much as I do.
 		assert.Contains(t, html, `<img src="coolimage.png"`)
 		assert.Contains(t, html, `<img src="https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg"`)
 		assert.NotContains(t, html, "<iframe")
+		assert.NotContains(t, html, `<a href="https://handmade.network/)">https://handmade.network/)</a>`)
+		assert.Contains(t, html, `<a href="https://handmade.network/">https://handmade.network/</a>`)
 	})
 	t.Run("Post preview Markdown", func(t *testing.T) {
 		html := ParseMarkdown(md, PostPreviewMarkdown)
@@ -58,6 +64,8 @@ I hope you like it as much as I do.
 		assert.Contains(t, html, `<img src="coolimage.png"`)
 		assert.Contains(t, html, `<a href="https://youtu.be/dQw4w9WgXcQ"`)
 		assert.NotContains(t, html, "<iframe")
+		assert.NotContains(t, html, `<a href="https://handmade.network/)">https://handmade.network/)</a>`)
+		assert.Contains(t, html, `<a href="https://handmade.network/">https://handmade.network/</a>`)
 	})
 	t.Run("Plaintext Markdown", func(t *testing.T) {
 		html := ParseMarkdown(md, PlaintextMarkdown)
@@ -66,6 +74,8 @@ I hope you like it as much as I do.
 		assert.NotContains(t, html, `<a`)
 		assert.NotContains(t, html, "<iframe")
 		assert.NotContains(t, html, "\n", "Plain text markdown is intended for OpenGraph descriptions and therefore shouldn't contain newlines")
+		assert.NotContains(t, html, `<a href="https://handmade.network/)">https://handmade.network/)</a>`)
+		assert.NotContains(t, html, `<a href="https://handmade.network/">https://handmade.network/</a>`)
 	})
 }
 

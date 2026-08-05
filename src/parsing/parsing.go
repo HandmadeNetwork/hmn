@@ -2,6 +2,7 @@ package parsing
 
 import (
 	"bytes"
+	"regexp"
 
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
@@ -106,6 +107,9 @@ type MarkdownOptions struct {
 	Education bool
 }
 
+// modified from https://github.com/yuin/goldmark/blob/master/extension/linkify.go (urlRegexp)
+var customLinkifyURLRegex = regexp.MustCompile(`^(?:http|https|ftp)://[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-z]+(?::\d+)?(?:[/#?](?:[-a-zA-Z0-9@:%_+.~#$!?&/=;,'">\^{}\[\]` + "`" + `]|\([-a-zA-Z0-9@:%_+~#$!?&/=;'">\^{}\[\]` + "`" + `]|\)[-a-zA-Z0-9@:%_+~#$!?&/=;'">\^{}\[\]` + "`" + `])*)?`) //nolint:golint,lll
+
 func makeGoldmark(rawHTML bool, opts ...goldmark.Option) goldmark.Markdown {
 	// We need to re-create Goldmark's default parsers to disable HTML parsing.
 	// Or enable it again. yay
@@ -131,6 +135,9 @@ func makeGoldmark(rawHTML bool, opts ...goldmark.Option) goldmark.Markdown {
 		util.Prioritized(parser.NewAutoLinkParser(), 300),
 		// util.Prioritized(parser.NewRawHTMLParser(), 400),
 		util.Prioritized(parser.NewEmphasisParser(), 500),
+		util.Prioritized(extension.NewLinkifyParser(
+			extension.WithLinkifyURLRegexp(customLinkifyURLRegex),
+		), 600),
 	}
 
 	if rawHTML {
