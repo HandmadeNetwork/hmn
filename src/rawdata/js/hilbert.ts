@@ -64,7 +64,7 @@ function createHilbertCurves() {
     }
 
     window.addEventListener("resize", redrawCanvas);
-    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawCanvas);
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawCanvas);
     redrawCanvas();
   }
 }

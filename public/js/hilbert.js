@@ -59,7 +59,7 @@ function createHilbertCurves() {
     container.appendChild(canvas);
     const ctx = canvas.getContext("2d");
     window.addEventListener("resize", redrawCanvas2);
-    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawCanvas2);
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redrawCanvas2);
     redrawCanvas2();
   }
 }
