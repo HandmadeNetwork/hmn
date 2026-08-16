@@ -27,7 +27,7 @@ function createHilbertCurves() {
       ctx.resetTransform();
       ctx.translate(pxWidth / 2, pxHeight / 2);
       ctx.rotate(-angle);
-      ctx.scale(size / width, size / width);
+      ctx.scale(size / width * window.devicePixelRatio, size / width * window.devicePixelRatio);
       let x = -width / 2, y = -width / 2;
       ctx.moveTo(x, y);
       const dirs = [
