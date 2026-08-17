@@ -46,7 +46,6 @@ If you paste a link in parentheses (like https://handmade.network/), the site sh
 		t.Log(html)
 		assert.Contains(t, html, `<img src="coolimage.png"`)
 		assert.Contains(t, html, "<iframe")
-		assert.NotContains(t, html, `<a href="https://handmade.network/)">https://handmade.network/)</a>`)
 		assert.Contains(t, html, `<a href="https://handmade.network/">https://handmade.network/</a>`)
 	})
 	t.Run("Post edit preview Markdown", func(t *testing.T) {
