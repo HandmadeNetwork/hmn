@@ -39,7 +39,7 @@ https://youtu.be/dQw4w9WgXcQ
 
 I hope you like it as much as I do.
 
-If you paste a link in parentheses (like https://handmade.network/), the site will pick up the closing parenthesis as part of the link. This is jank.
+If you paste a link in parentheses (like https://handmade.network/), the site should not pick up the closing parenthesis as part of the link.
 `
 	t.Run("Real post Markdown", func(t *testing.T) {
 		html := ParseMarkdown(md, PostMarkdown)
