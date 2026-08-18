@@ -160,10 +160,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		templates.BaseData
 		ProjectPageBaseData
 
-		Screenshots                  []string
-		PrimaryLinks, SecondaryLinks []templates.Link
-		RecentActivity               []templates.TimelineItem
-		SnippetEdit                  templates.SnippetEdit
+		Screenshots    []string
+		Links          []templates.Link
+		RecentActivity []templates.TimelineItem
+		SnippetEdit    templates.SnippetEdit
 
 		CanEdit bool
 		EditUrl string
@@ -218,11 +218,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
 	}
 	for _, link := range templates.LinksToTemplate(projectLinks) {
-		if link.Primary {
-			tmpl.PrimaryLinks = append(tmpl.PrimaryLinks, link)
-		} else {
-			tmpl.SecondaryLinks = append(tmpl.SecondaryLinks, link)
-		}
+		tmpl.Links = append(tmpl.Links, link)
 	}
 
 	tmpl.CanEdit = c.CurrentUserCanEditCurrentProject()

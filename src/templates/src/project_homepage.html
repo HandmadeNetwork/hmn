@@ -1,33 +1,78 @@
 {{ template "base-2024.html" . }}
 
+{{ define "extrahead" }}
+	<script type="module" src='{{ static "js/project.js" }}'></script>
+{{ end }}
+
 {{ define "content" }}
-<div class="flex justify-center pa3">
-	<div class="w--project-sidebar flex flex-column g3">
-		<!-- Title card -->
-		<div class="bg1 pa3 flex flex-column g3 link-normal">
-			<div>
-				{{ template "project_logo.html" .Project }}
+<div class="flex justify-center">
+	<div class="w-100 mw-site flex pv2 pv3-l ph2 ph0-l g3">
+		<!-- Sidebar -->
+		<div class="w--project-sidebar flex-shrink-0 flex flex-column g2">
+			<!-- Title card -->
+			<div class="bg1 pa3 flex flex-column g3 link-normal">
+				<div>
+					{{ template "project_logo.html" .Project }}
+				</div>
+				<div class="flex flex-column g1">
+					<a href="{{ .Project.Url }}"><h2 class="f4">{{ .Project.Name }}</h2></a>
+					<div>{{ .Project.Blurb }}</div>
+				</div>
+				{{ with .Owners }}
+					<div class="flex flex-column g2">
+						{{ range . }}
+							<a class="flex g1 items-center b" href="{{ .ProfileUrl }}">
+								<img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}">
+								<span>{{ .Name }}</span>
+							</a>
+						{{ end }}
+					</div>
+				{{ end }}
 			</div>
-			<div class="flex flex-column g1">
-				<a href="{{ .Project.Url }}"><h2 class="f4">{{ .Project.Name }}</h2></a>
-				<div>{{ .Project.Blurb }}</div>
+
+			<!-- Navigation -->
+			<div class="bg1 pa2 flex flex-column g1 link-normal">
+				{{ range .NavLinks }}
+					<a class="ph2 pv1 {{ if .Active }}bg3 b{{ end }}" href="{{ .Url }}">{{ .Name }}</a>
+				{{ end }}
 			</div>
-			{{ with .Owners }}
-				<div class="flex flex-column g2">
+
+			<!-- Links -->
+			{{ with .Links }}
+				<div class="bg1 pa2 flex flex-column link-normal">
 					{{ range . }}
-						<a class="flex g1 items-center b" href="{{ .ProfileUrl }}">
-							<img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}">
-							<span>{{ .Name }}</span>
+						<a class="ph2 pv1 flex items-center g1" href="{{ .Url }}">
+							{{ svg (strjoin "logos/" .Icon) }}
+							{{ or .Name .ServiceName }}
+							<span class="flex-grow-1"></span>
+							<span class="svgicon f6 ml2">{{ svg "arrow-right-up" }}</span>
 						</a>
 					{{ end }}
 				</div>
 			{{ end }}
 		</div>
 
-		<!-- Navigation -->
-		<div class="bg1 pa2 flex flex-column g1 link-normal">
-			{{ range .NavLinks }}
-				<a class="ph2 pv1 {{ if .Active }}bg3 b{{ end }}" href="{{ .Url }}">{{ .Name }}</a>
+		<!-- Main content -->
+		<div class="flex-grow-1">
+			<!-- Screenshots -->
+			<div id="screenshots" class="carousel-container">
+				<div class="carousel">
+					{{ range $i, $s := .Screenshots }}
+						<div class="carousel-item {{ if eq $i 0 }}active{{ end }} aspect-ratio aspect-ratio--16x9">
+							<img class="aspect-ratio--object object-cover bg1" src="{{ $s }}">
+						</div>
+					{{ end }}
+					<div class="absolute left-0 bottom-0 right-0 z-999 ma2 flex justify-end">
+						<div class="carousel-buttons pa2 br-pill bg-transparent-lighter"></div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Description -->
+			{{ if .Project.ParsedDescription }}
+				<div id="longdesc" class="description w-100 pt3 post-content">
+					{{ .Project.ParsedDescription }}
+				</div>
 			{{ end }}
 		</div>
 	</div>
@@ -48,7 +93,7 @@
 			"></div>
 			<div class="flex flex-column flex-row-ns pa2 pa3-ns relative">
 				<div class="project-links-spacer"></div>
-				<div class="flex flex-column flex-row-ns items-end g2 g3-ns">
+				{{/*  <div class="flex flex-column flex-row-ns items-end g2 g3-ns">
 					{{ with .PrimaryLinks }}
 						<div class="project-links">
 							{{ range . }}
@@ -63,7 +108,7 @@
 							{{ end }}
 						</div>
 					{{ end }}
-				</div>
+				</div>  */}}
 			</div>
 		</div>
 		<div class="project-homepage-card">
