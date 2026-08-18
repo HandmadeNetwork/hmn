@@ -42,7 +42,7 @@ func ExpoIndex(c *RequestContext) ResponseData {
 	canPurchase := metadata.MaxTickets > 0 && !metadata.Presale
 	soldOut := canPurchase && metadata.RemainingTicketsForSale() <= 0
 	tmpl := Tmpl{
-		BaseData:     getBaseData(c, expo.Name, nil),
+		BaseData:     getBaseTemplateData(c, expo.Name, nil),
 		Expo:         expo,
 		BuyTicketUrl: hmnurl.BuildTicketPurchase(expo.UrlSlug),
 		CanPurchase:  canPurchase,
@@ -111,7 +111,7 @@ func ExpoTicketPurchaseSuccess(c *RequestContext) ResponseData {
 		ExpoURL string
 	}
 	tmpl := Tmpl{
-		BaseData: getBaseData(c, event.Name, nil),
+		BaseData: getBaseTemplateData(c, event.Name, nil),
 		ExpoURL:  hmnurl.BuildExpo(expo.UrlSlug, ""),
 	}
 

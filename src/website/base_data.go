@@ -15,12 +15,7 @@ import (
 // NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
 //
 //	If you pass nil, no breadcrumbs will be created.
-func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadcrumb) templates.BaseData {
-	var project models.Project
-	if c.CurrentProject != nil {
-		project = *c.CurrentProject
-	}
-
+func getBaseTemplateData(c *RequestContext, title string, breadcrumbs []templates.Breadcrumb) templates.BaseData {
 	var templateUser *templates.User
 	var templateSession *templates.Session
 	if c.CurrentUser != nil {
@@ -29,8 +24,8 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		templateUser = &u
 		templateSession = &s
 	}
-	templateProject := templates.ProjectToTemplate(&project)
-	templateProject.Logo = c.CurrentProjectLogoUrl
+	templateProject := templates.ProjectToTemplate(c.CurrentProject)
+	templateProject.Logo = templates.AssetUrl(c.CurrentProjectExtras.LogoAsset)
 
 	notices := getNoticesFromCookie(c)
 
@@ -47,7 +42,7 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 	if !c.UrlContext.IsHMN() {
 		projectUrl := c.UrlContext.BuildHomepage()
 		rootBreadcrumb := templates.Breadcrumb{
-			Name:    project.Name,
+			Name:    c.CurrentProject.Name,
 			Url:     projectUrl,
 			Project: &templateProject,
 		}
@@ -83,9 +78,9 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 
 		ReportIssueEmail: "team@handmade.network",
 
-		OpenGraphItems: buildDefaultOpenGraphItems(&project, c.CurrentProjectLogoUrl, title),
+		OpenGraphItems: buildDefaultOpenGraphItems(c.CurrentProject, templates.AssetUrl(c.CurrentProjectExtras.LogoAsset), title),
 
-		IsProjectPage: !project.IsHMN(),
+		IsProjectPage: !c.CurrentProject.IsHMN(),
 		Header: templates.Header{
 			AdminApprovalQueueUrl: hmnurl.BuildAdminApprovalQueue(), // TODO(asaf): Replace with general-purpose admin page
 			UserSettingsUrl:       hmnurl.BuildUserSettings(""),
@@ -133,18 +128,18 @@ func getBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadc
 		baseData.Header.UserProfileUrl = hmnurl.BuildUserProfile(c.CurrentUser.Username)
 	}
 
-	if !project.IsHMN() {
+	if !c.CurrentProject.IsHMN() {
 		episodeGuideUrl := ""
-		defaultTopic, hasAnnotations := config.Config.EpisodeGuide.Projects[project.Slug]
+		defaultTopic, hasAnnotations := config.Config.EpisodeGuide.Projects[c.CurrentProject.Slug]
 		if hasAnnotations {
 			episodeGuideUrl = c.UrlContext.BuildEpisodeList(defaultTopic)
 		}
 
 		baseData.Header.Project = &templates.ProjectHeader{
-			HasForums:       project.HasForums(),
-			HasBlog:         project.HasBlog(),
+			HasForums:       c.CurrentProject.HasForums(),
+			HasBlog:         c.CurrentProject.HasBlog(),
 			HasEpisodeGuide: hasAnnotations,
-			CanEdit:         c.CurrentUserCanEditCurrentProject,
+			CanEdit:         c.CurrentUserCanEditCurrentProject(),
 			ForumsUrl:       c.UrlContext.BuildForum(nil, 1),
 			BlogUrl:         c.UrlContext.BuildBlog(1),
 			EpisodeGuideUrl: episodeGuideUrl,

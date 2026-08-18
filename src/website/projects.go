@@ -41,7 +41,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseData(c, "Projects", nil)
+	baseData := getBaseTemplateData(c, "Projects", nil)
 	tmpl := ProjectTemplateData{
 		BaseData: baseData,
 
@@ -135,18 +135,15 @@ func jamLink(jamSlug string) string {
 	}
 }
 
-type ProjectHomepageData struct {
-	templates.BaseData
-	Project        templates.Project
-	Owners         []templates.User
-	Screenshots    []string
-	ProjectLinks   []templates.Link
-	Licenses       []templates.Link
-	RecentActivity []templates.TimelineItem
-	SnippetEdit    templates.SnippetEdit
+type ProjectPageBaseData struct {
+	Owners   []templates.User
+	NavLinks []ProjectPageNavLink
+}
 
-	FollowUrl string
-	Following bool
+type ProjectPageNavLink struct {
+	Name   string
+	Url    string
+	Active bool
 }
 
 func ProjectHomepage(c *RequestContext) ResponseData {
@@ -159,10 +156,34 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	// There are no further permission checks to do, because permissions are
 	// checked whatever way we fetch the project.
 
-	owners, err := hmndata.FetchProjectOwners(c, c.Conn, c.CurrentProject.ID)
+	type ProjectHomepageData struct {
+		templates.BaseData
+		ProjectPageBaseData
+
+		Screenshots                  []string
+		PrimaryLinks, SecondaryLinks []templates.Link
+		RecentActivity               []templates.TimelineItem
+		SnippetEdit                  templates.SnippetEdit
+
+		CanEdit bool
+		EditUrl string
+
+		FollowUrl string
+		Following bool
+	}
+	var tmpl ProjectHomepageData
+
+	tmpl.BaseData = getBaseTemplateData(c, c.CurrentProject.Name, nil)
+	tmpl.BaseData.OpenGraphItems = append(tmpl.BaseData.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description",
+		Value:    c.CurrentProject.Blurb,
+	})
+
+	projectBaseData, err := getProjectPageBaseData(c, "Home")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
+	tmpl.ProjectPageBaseData = projectBaseData
 
 	screenshotAssets, err := db.Query[models.Asset](c, c.Conn,
 		`
@@ -179,6 +200,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch screenshots for project"))
 	}
+	tmpl.Screenshots = utils.Map(screenshotAssets, templates.AssetUrl)
 
 	projectLinks, err := db.Query[models.Link](c, c.Conn,
 		`
@@ -195,47 +217,19 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
 	}
-
-	type ProjectHomepageData struct {
-		templates.BaseData
-		Project                      templates.Project
-		Owners                       []templates.User
-		Screenshots                  []string
-		PrimaryLinks, SecondaryLinks []templates.Link
-		RecentActivity               []templates.TimelineItem
-		SnippetEdit                  templates.SnippetEdit
-
-		CanEdit bool
-		EditUrl string
-
-		FollowUrl string
-		Following bool
+	for _, link := range templates.LinksToTemplate(projectLinks) {
+		if link.Primary {
+			tmpl.PrimaryLinks = append(tmpl.PrimaryLinks, link)
+		} else {
+			tmpl.SecondaryLinks = append(tmpl.SecondaryLinks, link)
+		}
 	}
 
-	var templateData ProjectHomepageData
-
-	templateData.BaseData = getBaseData(c, c.CurrentProject.Name, nil)
-	templateData.BaseData.OpenGraphItems = append(templateData.BaseData.OpenGraphItems, templates.OpenGraphItem{
-		Property: "og:description",
-		Value:    c.CurrentProject.Blurb,
-	})
-
-	p, err := hmndata.FetchProject(c, c.Conn, c.CurrentUser, c.CurrentProject.ID, hmndata.ProjectsQuery{
-		Lifecycles:    models.AllProjectLifecycles,
-		IncludeHidden: true,
-	})
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project details"))
-	}
-	templateData.Project = templates.ProjectAndStuffToTemplate(&p)
-	for _, owner := range owners {
-		templateData.Owners = append(templateData.Owners, templates.UserToTemplate(owner))
-	}
-	templateData.CanEdit = c.CurrentUserCanEditCurrentProject
-	templateData.EditUrl = c.UrlContext.BuildProjectEdit("")
+	tmpl.CanEdit = c.CurrentUserCanEditCurrentProject()
+	tmpl.EditUrl = c.UrlContext.BuildProjectEdit("")
 
 	if c.CurrentProject.Hidden {
-		templateData.BaseData.AddImmediateNotice(
+		tmpl.BaseData.AddImmediateNotice(
 			"hidden",
 			"NOTICE: This project is hidden. It is currently visible only to owners and site admins.",
 		)
@@ -244,7 +238,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if c.CurrentProject.Lifecycle != models.ProjectLifecycleActive {
 		switch c.CurrentProject.Lifecycle {
 		case models.ProjectLifecycleUnapproved:
-			templateData.BaseData.AddImmediateNotice(
+			tmpl.BaseData.AddImmediateNotice(
 				"unapproved",
 				fmt.Sprintf(
 					"NOTICE: This project has not yet been submitted for approval. It is only visible to owners. Please <a href=\"%s\">submit it for approval</a> when the project content is ready for review.",
@@ -252,32 +246,107 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 				),
 			)
 		case models.ProjectLifecycleApprovalRequired:
-			templateData.BaseData.AddImmediateNotice(
+			tmpl.BaseData.AddImmediateNotice(
 				"unapproved",
 				"NOTICE: This project is awaiting approval. It is only visible to owners and site admins.",
 			)
 		case models.ProjectLifecycleHiatus:
-			templateData.BaseData.AddImmediateNotice(
+			tmpl.BaseData.AddImmediateNotice(
 				"hiatus",
 				"NOTICE: This project is on hiatus and may not update for a while.",
 			)
 		case models.ProjectLifecycleDead:
-			templateData.BaseData.AddImmediateNotice(
+			tmpl.BaseData.AddImmediateNotice(
 				"dead",
 				"NOTICE: This project is has been marked dead and is only visible to owners and site admins.",
 			)
 		case models.ProjectLifecycleLTSRequired:
-			templateData.BaseData.AddImmediateNotice(
+			tmpl.BaseData.AddImmediateNotice(
 				"lts-reqd",
 				"NOTICE: This project is awaiting approval for maintenance-mode status.",
 			)
 		}
 	}
 
-	for _, screenshot := range screenshotAssets {
-		templateData.Screenshots = append(templateData.Screenshots, hmnurl.BuildS3Asset(screenshot.S3Key))
+	subforumTree := models.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+
+	tmpl.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
+		ProjectIDs: []int{c.CurrentProject.ID},
+		Limit:      maxRecentActivity,
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
+	followUrl := ""
+	following := false
+	if c.CurrentUser != nil {
+		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
+		}
+		templateProjects := make([]templates.Project, 0, len(userProjects))
+		templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&c.CurrentProjectExtras))
+		for _, p := range userProjects {
+			if p.Project.ID == c.CurrentProject.ID {
+				continue
+			}
+			templateProject := templates.ProjectAndStuffToTemplate(&p)
+			templateProjects = append(templateProjects, templateProject)
+		}
+		tmpl.SnippetEdit = templates.SnippetEdit{
+			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
+			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
+			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
+		}
+
+		followUrl = hmnurl.BuildFollowProject()
+		following, err = db.QueryOneScalar[bool](c, c.Conn, `
+			SELECT COUNT(*) > 0
+			FROM follower
+			WHERE user_id = $1 AND following_project_id = $2
+		`, c.CurrentUser.ID, c.CurrentProject.ID)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
+		}
+
+		if c.CurrentUserCanEditCurrentProject() {
+			tmpl.Header.Actions = []templates.Action{
+				{
+					Name: "Edit Project",
+					Url:  c.UrlContext.BuildProjectEdit(""),
+					Icon: "edit-line",
+				},
+			}
+		}
+	}
+	tmpl.FollowUrl = followUrl
+	tmpl.Following = following
+
+	var res ResponseData
+	err = res.WriteTemplate("project_homepage.html", tmpl, c.Perf)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render project homepage template"))
+	}
+	return res
+}
+
+func getProjectPageBaseData(c *RequestContext, activeLinkName string) (ProjectPageBaseData, error) {
+	var res ProjectPageBaseData
+
+	owners, err := hmndata.FetchProjectOwners(c, c.Conn, c.CurrentProject.ID)
+	if err != nil {
+		return ProjectPageBaseData{}, err
+	}
+	res.Owners = utils.Map(owners, templates.UserToTemplate)
+
+	res.NavLinks = append(res.NavLinks, ProjectPageNavLink{
+		Name: "Home",
+		Url:  c.UrlContext.BuildHomepage(),
+	})
 	if c.CurrentProject.HasBlog() {
 		canSeeBlogLink := false
 		if c.CurrentUser != nil {
@@ -296,6 +365,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		if !canSeeBlogLink {
 			hasBlogPosts, err := db.QueryOneScalar[bool](c, c.Conn,
 				`
+					---- Check for blog posts
 					SELECT COUNT(*) > 0
 					FROM thread
 					WHERE
@@ -307,92 +377,27 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 				c.CurrentProject.ID,
 			)
 			if err != nil {
-				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project blogs"))
+				return ProjectPageBaseData{}, oops.New(err, "failed to fetch project blogs")
 			}
 
 			canSeeBlogLink = hasBlogPosts
 		}
 
 		if canSeeBlogLink {
-			templateData.PrimaryLinks = append(templateData.PrimaryLinks, templates.Link{
-				Name: "Project blog",
+			res.NavLinks = append(res.NavLinks, ProjectPageNavLink{
+				Name: "Blog",
 				Url:  c.UrlContext.BuildBlog(1),
 			})
 		}
 	}
 
-	for _, link := range templates.LinksToTemplate(projectLinks) {
-		if link.Primary {
-			templateData.PrimaryLinks = append(templateData.PrimaryLinks, link)
-		} else {
-			templateData.SecondaryLinks = append(templateData.SecondaryLinks, link)
+	for i := range res.NavLinks {
+		if res.NavLinks[i].Name == activeLinkName {
+			res.NavLinks[i].Active = true
 		}
 	}
 
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-
-	templateData.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
-		ProjectIDs: []int{c.CurrentProject.ID},
-		Limit:      maxRecentActivity,
-	})
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
-
-	followUrl := ""
-	following := false
-	if c.CurrentUser != nil {
-		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-			OwnerIDs: []int{c.CurrentUser.ID},
-		})
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
-		}
-		templateProjects := make([]templates.Project, 0, len(userProjects))
-		templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&p))
-		for _, p := range userProjects {
-			if p.Project.ID == c.CurrentProject.ID {
-				continue
-			}
-			templateProject := templates.ProjectAndStuffToTemplate(&p)
-			templateProjects = append(templateProjects, templateProject)
-		}
-		templateData.SnippetEdit = templates.SnippetEdit{
-			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
-			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
-			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
-		}
-
-		followUrl = hmnurl.BuildFollowProject()
-		following, err = db.QueryOneScalar[bool](c, c.Conn, `
-			SELECT COUNT(*) > 0
-			FROM follower
-			WHERE user_id = $1 AND following_project_id = $2
-		`, c.CurrentUser.ID, c.CurrentProject.ID)
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
-		}
-
-		if c.CurrentUserCanEditCurrentProject {
-			templateData.Header.Actions = []templates.Action{
-				{
-					Name: "Edit Project",
-					Url:  c.UrlContext.BuildProjectEdit(""),
-					Icon: "edit-line",
-				},
-			}
-		}
-	}
-	templateData.FollowUrl = followUrl
-	templateData.Following = following
-
-	var res ResponseData
-	err = res.WriteTemplate("project_homepage.html", templateData, c.Perf)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render project homepage template"))
-	}
-	return res
+	return res, nil
 }
 
 var ProjectLogoMaxFileSize = 2 * 1024 * 1024
@@ -445,7 +450,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
-		BaseData:        getBaseData(c, "New Project", nil),
+		BaseData:        getBaseTemplateData(c, "New Project", nil),
 		Editing:         false,
 		ProjectSettings: project,
 		MaxOwners:       maxProjectOwners,
@@ -532,7 +537,7 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 }
 
 func ProjectEdit(c *RequestContext) ResponseData {
-	if !c.CurrentUserCanEditCurrentProject {
+	if !c.CurrentUserCanEditCurrentProject() {
 		return FourOhFour(c)
 	}
 
@@ -599,7 +604,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
-		BaseData:        getBaseData(c, "Edit Project", nil),
+		BaseData:        getBaseTemplateData(c, "Edit Project", nil),
 		Editing:         true,
 		ProjectSettings: projectSettings,
 		MaxOwners:       maxProjectOwners,
@@ -622,7 +627,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 }
 
 func ProjectEditSubmit(c *RequestContext) ResponseData {
-	if !c.CurrentUserCanEditCurrentProject {
+	if !c.CurrentUserCanEditCurrentProject() {
 		return FourOhFour(c)
 	}
 	formResult := ParseProjectEditForm(c)

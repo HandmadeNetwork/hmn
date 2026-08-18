@@ -20,13 +20,13 @@ import (
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
-	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) http.Handler {
 	router := &Router{}
+
 	routes := RouteBuilder{
 		Router: router,
 		Middlewares: []Middleware{
@@ -34,19 +34,22 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			trackRequestPerf(perfCollector),
 			logContextErrorsMiddleware,
 			preventSearchEngineIndexingOfBeta,
+
+			// NOTE(ben): All routes get the HMN project so they can render error pages etc.
+			loadHMNProject,
 			panicCatcherMiddleware(false),
 		},
 	}
-
 	anyProject := routes.WithMiddleware(
 		storeNoticesInCookieMiddleware,
-		loadCommonData,
+		loadCurrentUserAndProject,
 	)
 	hmnOnly := anyProject.WithMiddleware(
 		redirectToHMN,
 	)
 	apiRoutes := routes.WithMiddleware(panicCatcherMiddleware(true))
 
+	// NOTE(ben): Root routes, free of almost all middleware
 	routes.GET(hmnurl.RegexEsBuild, func(c *RequestContext) ResponseData {
 		if bundle.ActiveServerPort != 0 {
 			var err error
@@ -66,7 +69,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 		}
 		return FourOhFour(c)
 	})
-
 	routes.GET(hmnurl.RegexPublic, func(c *RequestContext) ResponseData {
 		var res ResponseData
 		if bundle.ActiveServerPort != 0 {
@@ -408,12 +410,11 @@ func personalProjectMiddleware(h Handler) Handler {
 		}
 
 		c.CurrentProject = &p.Project
-		c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(p.LogoAsset)
+		c.CurrentProjectExtras = p
+		c.UrlContext = hmndata.UrlContextForProject(c.CurrentProject)
+
 		c.CurrentProject.Color1 = hmnProject.Color1
 		c.CurrentProject.Color2 = hmnProject.Color2
-
-		c.UrlContext = hmndata.UrlContextForProject(c.CurrentProject)
-		c.CurrentUserCanEditCurrentProject = CanEditProject(c.CurrentUser, p.Owners)
 
 		if !c.CurrentProject.Personal {
 			return c.Redirect(c.UrlContext.RewriteProjectUrl(c.URL()), http.StatusSeeOther)

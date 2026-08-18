@@ -39,7 +39,7 @@ func HSFMembership(c *RequestContext) ResponseData {
 var hsfBaseBreadcrumb = templates.Breadcrumb{Name: "Handmade Software Foundation", Url: hmnurl.BuildHSFLanding()}
 
 func getHSFBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadcrumb) templates.BaseData {
-	baseData := getBaseData(c, title, breadcrumbs)
+	baseData := getBaseTemplateData(c, title, breadcrumbs)
 	baseData.SiteTitleOverride = "Handmade Software Foundation"
 	baseData.ShowFoundationFooter = true
 

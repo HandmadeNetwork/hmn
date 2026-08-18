@@ -457,7 +457,7 @@ func DiscordBotDebugPage(c *RequestContext) ResponseData {
 	botEvents := discord.GetBotEvents()
 	var res ResponseData
 	res.MustWriteTemplate("discord_bot_debug.html", DiscordBotDebugData{
-		BaseData: getBaseData(c, "", nil),
+		BaseData: getBaseTemplateData(c, "", nil),
 
 		BotEvents: botEvents,
 	}, c.Perf)

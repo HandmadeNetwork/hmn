@@ -55,7 +55,7 @@ func TicketsAdmin(c *RequestContext) ResponseData {
 		TicketEvents []TicketsAdminEventTemplateData
 	}
 	data := TicketsTemplateData{
-		BaseData:         getBaseData(c, "Admin ticket dashboard", nil),
+		BaseData:         getBaseTemplateData(c, "Admin ticket dashboard", nil),
 		TicketPageCommon: getCommonTicketPageData(),
 	}
 	for _, e := range hmndata.AllTicketEvents {
@@ -106,7 +106,7 @@ func TicketsAdminEvent(c *RequestContext) ResponseData {
 	}
 
 	data := TicketsEventTemplateData{
-		BaseData:         getBaseData(c, fmt.Sprintf("Admin ticket dashboard - %s", event.Name), nil),
+		BaseData:         getBaseTemplateData(c, fmt.Sprintf("Admin ticket dashboard - %s", event.Name), nil),
 		TicketPageCommon: getCommonTicketPageData(),
 		TicketsEvent: TicketsAdminEventTemplateData{
 			Event:    event,
@@ -302,7 +302,7 @@ func TicketsAdminScan(c *RequestContext) ResponseData {
 	}
 
 	data := scanData{
-		BaseData:      getBaseData(c, "Ticket scanner", nil),
+		BaseData:      getBaseTemplateData(c, "Ticket scanner", nil),
 		Event:         event,
 		TicketScanUrl: hmnurl.BuildTicketsAdminScan(event.UrlSlug),
 	}
@@ -687,7 +687,7 @@ func TicketSingle(c *RequestContext) ResponseData {
 		EventURL         string
 	}
 	tmpl := TemplateData{
-		BaseData:         getBaseData(c, fmt.Sprintf("%s Ticket", event.Name), nil),
+		BaseData:         getBaseTemplateData(c, fmt.Sprintf("%s Ticket", event.Name), nil),
 		Ticket:           templates.TicketToTemplate(ticket),
 		TicketCodeURL:    hmnurl.BuildTicketQRCode(ticket.ID.String()),
 		TicketEditURL:    hmnurl.BuildTicketEdit(ticket.ID.String()),
@@ -742,7 +742,7 @@ func TicketEdit(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("tickets_single_edit.html", TemplateData{
-		BaseData:  getBaseData(c, "Edit Ticket", nil),
+		BaseData:  getBaseTemplateData(c, "Edit Ticket", nil),
 		Ticket:    templates.TicketToTemplate(ticket),
 		SubmitURL: hmnurl.BuildTicketEdit(ticket.ID.String()),
 	}, c.Perf)
@@ -835,7 +835,7 @@ func TicketDelete(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("tickets_single_delete.html", TemplateData{
-		BaseData:  getBaseData(c, "Delete Ticket", nil),
+		BaseData:  getBaseTemplateData(c, "Delete Ticket", nil),
 		Ticket:    templates.TicketToTemplate(ticket),
 		SubmitURL: hmnurl.BuildTicketDelete(ticket.ID.String()),
 	}, c.Perf)
@@ -915,7 +915,7 @@ func TicketSingleForEvent(c *RequestContext) ResponseData {
 
 		var res ResponseData
 		res.MustWriteTemplate("tickets_no_ticket_for_event.html", TemplateData{
-			BaseData:  getBaseData(c, "Delete Ticket", nil),
+			BaseData:  getBaseTemplateData(c, "Delete Ticket", nil),
 			EventName: event.Name,
 		}, c.Perf)
 		return res

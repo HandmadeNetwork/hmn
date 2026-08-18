@@ -103,7 +103,7 @@ func Perfmon(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("perfmon.html", PerfmonData{
-		BaseData:        getBaseData(c, "Perfmon", nil),
+		BaseData:        getBaseTemplateData(c, "Perfmon", nil),
 		PerfRecordsJSON: string(perfJSON),
 	}, c.Perf)
 	return res

@@ -65,13 +65,6 @@ var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
 	models.ProjectLifecycleLTS:              "Complete",
 }
 
-func ProjectLogoUrl(asset *models.Asset) string {
-	if asset != nil {
-		return hmnurl.BuildS3Asset(asset.S3Key)
-	}
-	return ""
-}
-
 func MakeFlowsnake(seed int) Flowsnake {
 	src := rand.NewSource(int64(seed))
 	rnd := rand.New(src)
@@ -121,7 +114,7 @@ func ProjectToTemplate(
 
 func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff) Project {
 	res := ProjectToTemplate(&p.Project)
-	res.Logo = ProjectLogoUrl(p.LogoAsset)
+	res.Logo = AssetUrl(p.LogoAsset)
 	for _, o := range p.Owners {
 		res.Owners = append(res.Owners, UserToTemplate(o))
 	}
@@ -192,7 +185,7 @@ func AssetToTemplate(a *models.Asset) *Asset {
 	}
 
 	return &Asset{
-		Url: hmnurl.BuildS3Asset(a.S3Key),
+		Url: AssetUrl(a),
 
 		ID:       a.ID.String(),
 		Filename: a.Filename,
@@ -201,6 +194,13 @@ func AssetToTemplate(a *models.Asset) *Asset {
 		Width:    a.Width,
 		Height:   a.Height,
 	}
+}
+
+func AssetUrl(a *models.Asset) string {
+	if a == nil {
+		return ""
+	}
+	return hmnurl.BuildS3Asset(a.S3Key)
 }
 
 func SessionToTemplate(s *models.Session) Session {
