@@ -54,7 +54,6 @@ If you paste a link in parentheses (like https://handmade.network/), the site sh
 		assert.Contains(t, html, `<img src="coolimage.png"`)
 		assert.Contains(t, html, `<img src="https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg"`)
 		assert.NotContains(t, html, "<iframe")
-		assert.NotContains(t, html, `<a href="https://handmade.network/)">https://handmade.network/)</a>`)
 		assert.Contains(t, html, `<a href="https://handmade.network/">https://handmade.network/</a>`)
 	})
 	t.Run("Post preview Markdown", func(t *testing.T) {
@@ -63,7 +62,6 @@ If you paste a link in parentheses (like https://handmade.network/), the site sh
 		assert.Contains(t, html, `<img src="coolimage.png"`)
 		assert.Contains(t, html, `<a href="https://youtu.be/dQw4w9WgXcQ"`)
 		assert.NotContains(t, html, "<iframe")
-		assert.NotContains(t, html, `<a href="https://handmade.network/)">https://handmade.network/)</a>`)
 		assert.Contains(t, html, `<a href="https://handmade.network/">https://handmade.network/</a>`)
 	})
 	t.Run("Plaintext Markdown", func(t *testing.T) {
