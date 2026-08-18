@@ -246,7 +246,7 @@ var HMNTemplateFuncs = template.FuncMap{
 			return result + " ago"
 		}
 
-		delta := time.Now().Sub(t)
+		delta := time.Since(t)
 
 		if delta < time.Minute {
 			return "Less than a minute ago"
