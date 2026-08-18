@@ -73,8 +73,6 @@ If you paste a link in parentheses (like https://handmade.network/), the site sh
 		assert.NotContains(t, html, `<a`)
 		assert.NotContains(t, html, "<iframe")
 		assert.NotContains(t, html, "\n", "Plain text markdown is intended for OpenGraph descriptions and therefore shouldn't contain newlines")
-		assert.NotContains(t, html, `<a href="https://handmade.network/)">https://handmade.network/)</a>`)
-		assert.NotContains(t, html, `<a href="https://handmade.network/">https://handmade.network/</a>`)
 	})
 }
 
