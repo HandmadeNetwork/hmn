@@ -855,6 +855,7 @@ function init({
   maxScreenshots,
   logoMaxFileSize,
   headerMaxFileSize,
+  screenshotMaxFileSize,
   textMaxFileSize,
   editorUploadUrl,
   initialLinks,
@@ -1093,7 +1094,7 @@ function init({
   });
   for (const screenshot of screenshots ?? []) {
     const el = screenshotTemplate();
-    const selector = new ImageSelector("screenshot", headerMaxFileSize, {
+    const selector = new ImageSelector("screenshot", screenshotMaxFileSize, {
       original: screenshot,
       onRemove: () => {
         el.root.hidden = true;
@@ -1107,7 +1108,7 @@ function init({
   newScreenshotButton.addEventListener("click", async (e) => {
     e.preventDefault();
     const el = screenshotTemplate();
-    const selector = new ImageSelector("screenshot", headerMaxFileSize, {
+    const selector = new ImageSelector("screenshot", screenshotMaxFileSize, {
       onRemove: () => {
         el.root.remove();
         updateNewScreenshotButton();

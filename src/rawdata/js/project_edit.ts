@@ -21,6 +21,7 @@ export type ProjectEditConfig = {
 	maxScreenshots: number,
 	logoMaxFileSize: number,
 	headerMaxFileSize: number,
+	screenshotMaxFileSize: number,
 	textMaxFileSize: number,
 	editorUploadUrl: string,
 	initialLinks: LinkData,
@@ -37,6 +38,7 @@ export function init({
 	maxScreenshots,
 	logoMaxFileSize,
 	headerMaxFileSize,
+	screenshotMaxFileSize,
 	textMaxFileSize,
 	editorUploadUrl,
 	initialLinks,
@@ -358,7 +360,7 @@ export function init({
 	for (const screenshot of screenshots ?? []) {
 		const el = screenshotTemplate();
 
-		const selector = new ImageSelector("screenshot", headerMaxFileSize, {
+		const selector = new ImageSelector("screenshot", screenshotMaxFileSize, {
 			original: screenshot,
 			onRemove: () => {
 				el.root.hidden = true;
@@ -375,7 +377,7 @@ export function init({
 	newScreenshotButton.addEventListener("click", async e => {
 		e.preventDefault();
 		const el = screenshotTemplate();
-		const selector = new ImageSelector("screenshot", headerMaxFileSize, {
+		const selector = new ImageSelector("screenshot", screenshotMaxFileSize, {
 			onRemove: () => {
 				el.root.remove();
 				updateNewScreenshotButton();

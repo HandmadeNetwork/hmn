@@ -275,8 +275,26 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	followUrl := ""
+	followUrl := hmnurl.BuildFollowProject()
 	following := false
+	if c.CurrentUser != nil {
+		following, err = db.QueryOneScalar[bool](c, c.Conn, `
+			---- Check following
+			SELECT COUNT(*) > 0
+			FROM follower
+			WHERE user_id = $1 AND following_project_id = $2
+		`, c.CurrentUser.ID, c.CurrentProject.ID)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
+		}
+	}
+	// TODO(ben): Decide which to render based on above
+	tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
+		Name: "Follow",
+		Url:  followUrl,
+		Icon: "add",
+	})
+
 	if c.CurrentUser != nil {
 		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 			OwnerIDs: []int{c.CurrentUser.ID},
@@ -299,27 +317,14 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
 		}
 
-		followUrl = hmnurl.BuildFollowProject()
-		following, err = db.QueryOneScalar[bool](c, c.Conn, `
-			SELECT COUNT(*) > 0
-			FROM follower
-			WHERE user_id = $1 AND following_project_id = $2
-		`, c.CurrentUser.ID, c.CurrentProject.ID)
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
-		}
-
 		if c.CurrentUserCanEditCurrentProject() {
-			tmpl.Header.Actions = []templates.Action{
-				{
-					Name: "Edit Project",
-					Url:  c.UrlContext.BuildProjectEdit(""),
-					Icon: "edit-line",
-				},
-			}
+			tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
+				Name: "Edit Project",
+				Url:  c.UrlContext.BuildProjectEdit(""),
+				Icon: "edit-line",
+			})
 		}
 	}
-	tmpl.FollowUrl = followUrl
 	tmpl.Following = following
 
 	var res ResponseData
@@ -407,8 +412,10 @@ type ProjectEditData struct {
 	MaxOwners       int
 	MaxScreenshots  int
 
-	APICheckUsernameUrl                string
-	LogoMaxFileSize, HeaderMaxFileSize int
+	APICheckUsernameUrl   string
+	LogoMaxFileSize       int
+	HeaderMaxFileSize     int
+	ScreenshotMaxFileSize int
 
 	AllLogos []templates.Icon
 
@@ -452,9 +459,10 @@ func ProjectNew(c *RequestContext) ResponseData {
 		MaxOwners:       maxProjectOwners,
 		MaxScreenshots:  maxProjectScreenshots,
 
-		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
-		LogoMaxFileSize:     ProjectLogoMaxFileSize,
-		HeaderMaxFileSize:   ProjectHeaderMaxFileSize,
+		APICheckUsernameUrl:   hmnurl.BuildAPICheckUsername(),
+		LogoMaxFileSize:       ProjectLogoMaxFileSize,
+		HeaderMaxFileSize:     ProjectHeaderMaxFileSize,
+		ScreenshotMaxFileSize: AssetMaxSize(c.CurrentUser),
 
 		AllLogos: allLogos(),
 
@@ -606,9 +614,10 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		MaxOwners:       maxProjectOwners,
 		MaxScreenshots:  maxProjectScreenshots,
 
-		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
-		LogoMaxFileSize:     ProjectLogoMaxFileSize,
-		HeaderMaxFileSize:   ProjectHeaderMaxFileSize,
+		APICheckUsernameUrl:   hmnurl.BuildAPICheckUsername(),
+		LogoMaxFileSize:       ProjectLogoMaxFileSize,
+		HeaderMaxFileSize:     ProjectHeaderMaxFileSize,
+		ScreenshotMaxFileSize: AssetMaxSize(c.CurrentUser),
 
 		AllLogos: allLogos(),
 
