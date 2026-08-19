@@ -273,6 +273,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 			}
 		})
 
+		rb.GET(hmnurl.RegexProjectFeed, ProjectFeed)
 		rb.GET(hmnurl.RegexProjectEdit, needsAuth(ProjectEdit))
 		rb.POST(hmnurl.RegexProjectEdit, needsAuth(csrfMiddleware(ProjectEditSubmit)))
 

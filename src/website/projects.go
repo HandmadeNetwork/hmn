@@ -93,6 +93,7 @@ func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error)
 
 type ProjectPageBaseData struct {
 	Owners   []templates.User
+	Links    []templates.Link
 	NavLinks []ProjectPageNavLink
 }
 
@@ -103,8 +104,6 @@ type ProjectPageNavLink struct {
 }
 
 func ProjectHomepage(c *RequestContext) ResponseData {
-	maxRecentActivity := 100
-
 	if c.CurrentProject == nil {
 		return FourOhFour(c)
 	}
@@ -113,10 +112,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		templates.BaseData
 		ProjectPageBaseData
 
-		Screenshots    []string
-		Links          []templates.Link
-		RecentActivity []templates.TimelineItem
-		SnippetEdit    templates.SnippetEdit
+		Screenshots []string
 
 		CanEdit bool
 		EditUrl string
@@ -154,25 +150,6 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch screenshots for project"))
 	}
 	tmpl.Screenshots = utils.Map(screenshotAssets, templates.AssetUrl)
-
-	projectLinks, err := db.Query[models.Link](c, c.Conn,
-		`
-		---- Fetching project links
-		SELECT $columns
-		FROM
-			link as link
-		WHERE
-			link.project_id = $1
-		ORDER BY link.ordering ASC
-		`,
-		c.CurrentProject.ID,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
-	}
-	for _, link := range templates.LinksToTemplate(projectLinks) {
-		tmpl.Links = append(tmpl.Links, link)
-	}
 
 	tmpl.CanEdit = c.CurrentUserCanEditCurrentProject()
 	tmpl.EditUrl = c.UrlContext.BuildProjectEdit("")
@@ -217,18 +194,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		}
 	}
 
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-
-	tmpl.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
-		ProjectIDs: []int{c.CurrentProject.ID},
-		Limit:      maxRecentActivity,
-	})
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
-
-	// NOTE(ben): Fetch following status
+	// NOTE(ben): Prepare breadcrumb actions
 	if c.CurrentUser != nil {
 		tmpl.FollowUrl = hmnurl.BuildFollowProject()
 		tmpl.Following, err = db.QueryOneScalar[bool](c, c.Conn, `
@@ -257,9 +223,61 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			Id:     "follow-unfollow",
 			Hidden: !tmpl.Following,
 		})
+
+		if c.CurrentUserCanEditCurrentProject() {
+			tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
+				Name: "Edit Project",
+				Url:  c.UrlContext.BuildProjectEdit(""),
+				Icon: "edit-line",
+			})
+		}
 	}
 
-	if c.CurrentUser != nil {
+	var res ResponseData
+	err = res.WriteTemplate("project_homepage.html", tmpl, c.Perf)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render project homepage template"))
+	}
+	return res
+}
+
+func ProjectFeed(c *RequestContext) ResponseData {
+	maxRecentActivity := 100
+
+	type ProjectFeedData struct {
+		templates.BaseData
+		ProjectPageBaseData
+
+		RecentActivity []templates.TimelineItem
+		SnippetEdit    templates.SnippetEdit
+	}
+	var tmpl ProjectFeedData
+	var err error
+
+	tmpl.BaseData = getBaseTemplateData(c, "Feed", []templates.Breadcrumb{
+		{Name: "Feed", Url: c.UrlContext.BuildProjectFeed()},
+	})
+	projectBaseData, err := getProjectPageBaseData(c, "Feed")
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+	tmpl.ProjectPageBaseData = projectBaseData
+
+	// NOTE(ben): Get timeline activity
+	{
+		subforumTree := models.GetFullSubforumTree(c, c.Conn)
+		lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+		tmpl.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
+			ProjectIDs: []int{c.CurrentProject.ID},
+			Limit:      maxRecentActivity,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, err)
+		}
+	}
+
+	// NOTE(ben): Prepare snippet (post) editor
+	{
 		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 			OwnerIDs: []int{c.CurrentUser.ID},
 		})
@@ -280,18 +298,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
 			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
 		}
-
-		if c.CurrentUserCanEditCurrentProject() {
-			tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
-				Name: "Edit Project",
-				Url:  c.UrlContext.BuildProjectEdit(""),
-				Icon: "edit-line",
-			})
-		}
 	}
 
 	var res ResponseData
-	err = res.WriteTemplate("project_homepage.html", tmpl, c.Perf)
+	err = res.WriteTemplate("project_feed.html", tmpl, c.Perf)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render project homepage template"))
 	}
@@ -301,34 +311,61 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 func getProjectPageBaseData(c *RequestContext, activeLinkName string) (ProjectPageBaseData, error) {
 	var res ProjectPageBaseData
 
+	// NOTE(ben): Get project owners
 	owners, err := hmndata.FetchProjectOwners(c, c.Conn, c.CurrentProject.ID)
 	if err != nil {
 		return ProjectPageBaseData{}, err
 	}
 	res.Owners = utils.Map(owners, templates.UserToTemplate)
 
-	res.NavLinks = append(res.NavLinks, ProjectPageNavLink{
-		Name: "Home",
-		Url:  c.UrlContext.BuildHomepage(),
-	})
-	if c.CurrentProject.HasBlog() {
-		canSeeBlogLink := false
-		if c.CurrentUser != nil {
-			if c.CurrentUser.IsStaff {
-				canSeeBlogLink = true
-			} else {
-				for _, owner := range owners {
-					if owner.ID == c.CurrentUser.ID {
-						canSeeBlogLink = true
-						break
+	// NOTE(ben): Get user-created links
+	{
+		projectLinks, err := db.Query[models.Link](c, c.Conn,
+			`
+			---- Fetching project links
+			SELECT $columns
+			FROM
+				link as link
+			WHERE
+				link.project_id = $1
+			ORDER BY link.ordering ASC
+			`,
+			c.CurrentProject.ID,
+		)
+		if err != nil {
+			return ProjectPageBaseData{}, oops.New(err, "failed to fetch project links")
+		}
+		res.Links = utils.Map(projectLinks, templates.LinkToTemplate)
+	}
+
+	// NOTE(ben): Get nav links
+	{
+		res.NavLinks = append(res.NavLinks, ProjectPageNavLink{
+			Name: "Home",
+			Url:  c.UrlContext.BuildHomepage(),
+		})
+		res.NavLinks = append(res.NavLinks, ProjectPageNavLink{
+			Name: "Feed",
+			Url:  c.UrlContext.BuildProjectFeed(),
+		})
+		if c.CurrentProject.HasBlog() {
+			canSeeBlogLink := false
+			if c.CurrentUser != nil {
+				if c.CurrentUser.IsStaff {
+					canSeeBlogLink = true
+				} else {
+					for _, owner := range owners {
+						if owner.ID == c.CurrentUser.ID {
+							canSeeBlogLink = true
+							break
+						}
 					}
 				}
 			}
-		}
 
-		if !canSeeBlogLink {
-			hasBlogPosts, err := db.QueryOneScalar[bool](c, c.Conn,
-				`
+			if !canSeeBlogLink {
+				hasBlogPosts, err := db.QueryOneScalar[bool](c, c.Conn,
+					`
 					---- Check for blog posts
 					SELECT COUNT(*) > 0
 					FROM thread
@@ -336,28 +373,29 @@ func getProjectPageBaseData(c *RequestContext, activeLinkName string) (ProjectPa
 						type = $1
 						AND project_id = $2
 						AND deleted = false
-				`,
-				models.ThreadTypeProjectBlogPost,
-				c.CurrentProject.ID,
-			)
-			if err != nil {
-				return ProjectPageBaseData{}, oops.New(err, "failed to fetch project blogs")
+					`,
+					models.ThreadTypeProjectBlogPost,
+					c.CurrentProject.ID,
+				)
+				if err != nil {
+					return ProjectPageBaseData{}, oops.New(err, "failed to fetch project blogs")
+				}
+
+				canSeeBlogLink = hasBlogPosts
 			}
 
-			canSeeBlogLink = hasBlogPosts
+			if canSeeBlogLink {
+				res.NavLinks = append(res.NavLinks, ProjectPageNavLink{
+					Name: "Blog",
+					Url:  c.UrlContext.BuildBlog(1),
+				})
+			}
 		}
 
-		if canSeeBlogLink {
-			res.NavLinks = append(res.NavLinks, ProjectPageNavLink{
-				Name: "Blog",
-				Url:  c.UrlContext.BuildBlog(1),
-			})
-		}
-	}
-
-	for i := range res.NavLinks {
-		if res.NavLinks[i].Name == activeLinkName {
-			res.NavLinks[i].Active = true
+		for i := range res.NavLinks {
+			if res.NavLinks[i].Name == activeLinkName {
+				res.NavLinks[i].Active = true
+			}
 		}
 	}
 

@@ -556,6 +556,13 @@ func BuildPersonalProject(id int, slug string) string {
 	return Url(fmt.Sprintf("/p/%d/%s", id, slug), nil)
 }
 
+var RegexProjectFeed = regexp.MustCompile("^/posts$")
+
+func (c *UrlContext) BuildProjectFeed() string {
+	defer CatchPanic()
+	return c.Url("/posts", nil)
+}
+
 var RegexProjectEdit = regexp.MustCompile("^/edit$")
 
 func (c *UrlContext) BuildProjectEdit(section string) string {

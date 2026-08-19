@@ -1,0 +1,77 @@
+{{ template "base-2024.html" . }}
+
+{{ define "extrahead" }}
+  <script type="module" src='{{ static "js/project_feed.js" }}'></script>
+  <style>
+    .timeline .timeline-item {
+      --item-color: var(--c1);
+    }
+  </style>
+{{ end }}
+
+{{ define "content" }}
+  <div class="flex justify-center">
+    <div class="w-100 mw-site flex pv2 pv3-l ph2 ph0-l g3">
+      <!-- Sidebar -->
+      {{ template "project_sidebar.html" . }}
+
+      <!-- Timeline -->
+      <div class="flex-grow-1 flex flex-column">
+        <div class="overflow-hidden">
+          <div class="flex flex-row items-center mb2">
+            <h2 id="recent">Recent Activity</h2>
+            <div class="flex-grow-1"></div>
+            {{ if .Header.Project.CanEdit }}
+              <a href="javascript:;" class="create_snippet_link button">Add Post</a>
+            {{ end }}
+          </div>
+        </div>
+        <div class="timeline">
+          {{ range .RecentActivity }}
+            {{ template "timeline_item.html" . }}
+          {{ end }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {{ if .User }}
+    {{ template "snippet_edit.html" . }}
+    {{ if .Header.Project.CanEdit }}
+      <script>
+        const userName  = "{{ .User.Name }}";
+        const userAvatar = "{{ .User.AvatarUrl }}";
+        const userUrl = "{{ .User.ProfileUrl }}";
+        const currentProjectId = {{ .Project.ID }};
+
+        document.querySelector(".create_snippet_link")?.addEventListener("click", function() {
+          let snippetEdit = makeSnippetEditLegacy({
+            ownerName: userName,
+            ownerAvatar: userAvatar,
+            ownerUrl: userUrl,
+            date: new Date(),
+            text: "",
+            projectIds: [currentProjectId],
+            stickyProjectId: currentProjectId,
+          });
+          document.querySelector(".timeline").insertBefore(snippetEdit.root, document.querySelector(".timeline").children[0]);
+          document.querySelector(".create_snippet_link")?.remove();
+        });
+
+        document.querySelector(".timeline").addEventListener("click", function(ev) {
+          if (ev.target.classList.contains("edit")) {
+            let parent = ev.target.parentElement;
+            while (parent && !parent.classList.contains("timeline-item")) {
+              parent = parent.parentElement;
+            }
+            if (parent && parent.classList.contains("timeline-item")) {
+              editTimelineSnippetLegacy(parent, {
+                stickyProjectId: currentProjectId,
+              });
+            }
+          }
+        });
+      </script>
+    {{ end }}
+  {{ end }}
+{{ end }}
