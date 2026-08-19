@@ -91,50 +91,6 @@ func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error)
 	return projects, nil
 }
 
-func getPersonalProjects(c *RequestContext, jamSlug string) ([]templates.Project, error) {
-	var slugs []string
-	if jamSlug != "" {
-		slugs = []string{jamSlug}
-	}
-
-	projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		Types:    hmndata.PersonalProjects,
-		JamSlugs: slugs,
-	})
-	if err != nil {
-		return nil, oops.New(err, "failed to fetch personal projects")
-	}
-
-	sort.Slice(projects, func(i, j int) bool {
-		p1 := projects[i].Project
-		p2 := projects[j].Project
-		return p2.AllLastUpdated.Before(p1.AllLastUpdated) // sort backwards - recent first
-	})
-
-	var personalProjects []templates.Project
-	for _, p := range projects {
-		templateProject := templates.ProjectAndStuffToTemplate(&p)
-		personalProjects = append(personalProjects, templateProject)
-	}
-
-	return personalProjects, nil
-}
-
-func jamLink(jamSlug string) string {
-	switch jamSlug {
-	case hmndata.WRJ2021.Slug:
-		return hmnurl.BuildJamIndex2021()
-	case hmndata.WRJ2022.Slug:
-		return hmnurl.BuildJamIndex2022()
-	case hmndata.WRJ2023.Slug:
-		return hmnurl.BuildJamIndex2023()
-	case hmndata.VJ2023.Slug:
-		return hmnurl.BuildJamIndex2023_Visibility()
-	default:
-		return ""
-	}
-}
-
 type ProjectPageBaseData struct {
 	Owners   []templates.User
 	NavLinks []ProjectPageNavLink
@@ -152,9 +108,6 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if c.CurrentProject == nil {
 		return FourOhFour(c)
 	}
-
-	// There are no further permission checks to do, because permissions are
-	// checked whatever way we fetch the project.
 
 	type ProjectHomepageData struct {
 		templates.BaseData
@@ -275,10 +228,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	followUrl := hmnurl.BuildFollowProject()
-	following := false
+	// NOTE(ben): Fetch following status
 	if c.CurrentUser != nil {
-		following, err = db.QueryOneScalar[bool](c, c.Conn, `
+		tmpl.FollowUrl = hmnurl.BuildFollowProject()
+		tmpl.Following, err = db.QueryOneScalar[bool](c, c.Conn, `
 			---- Check following
 			SELECT COUNT(*) > 0
 			FROM follower
@@ -287,13 +240,24 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
 		}
+
+		tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
+			Name: "Follow",
+			Url:  tmpl.FollowUrl,
+			Icon: "add",
+
+			Id:     "follow-follow",
+			Hidden: tmpl.Following,
+		})
+		tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
+			Name: "Unfollow",
+			Url:  tmpl.FollowUrl,
+			Icon: "remove",
+
+			Id:     "follow-unfollow",
+			Hidden: !tmpl.Following,
+		})
 	}
-	// TODO(ben): Decide which to render based on above
-	tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
-		Name: "Follow",
-		Url:  followUrl,
-		Icon: "add",
-	})
 
 	if c.CurrentUser != nil {
 		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
@@ -325,7 +289,6 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			})
 		}
 	}
-	tmpl.Following = following
 
 	var res ResponseData
 	err = res.WriteTemplate("project_homepage.html", tmpl, c.Perf)

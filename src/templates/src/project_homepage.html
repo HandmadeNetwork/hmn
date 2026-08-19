@@ -1,7 +1,16 @@
 {{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
-	<script type="module" src='{{ static "js/project.js" }}'></script>
+	<script type="module">
+		import { initFollowLink } from '{{ static "js/project.js" }}';
+
+		initFollowLink({
+			csrfToken: '{{ and .Session .Session.CSRFToken }}',
+			followUrl: '{{ .FollowUrl }}',
+			projectId: '{{ .Project.ID }}',
+			initialFollowing: {{ .Following }},
+		});
+	</script>
 {{ end }}
 
 {{ define "content" }}
@@ -18,6 +27,11 @@
 					<a href="{{ .Project.Url }}"><h2 class="f4">{{ .Project.Name }}</h2></a>
 					<div>{{ .Project.Blurb }}</div>
 				</div>
+				{{ if .Project.LifecycleString }}
+					<div>
+						<span class="badge {{ .Project.LifecycleBadgeClass }}">{{ .Project.LifecycleString }}</span>
+					</div>
+				{{ end }}
 				{{ with .Owners }}
 					<div class="flex flex-column g2">
 						{{ range . }}
@@ -78,120 +92,7 @@
 	</div>
 </div>
 
-<div class="flex justify-center">
-	<div class="flex-grow-1 flex flex-column items-center mw-site pt4-ns overflow-hidden">
-		<div
-			class="project-header-img"
-			{{ with .Project.HeaderImage }}
-				style="background-image: url('{{ . }}')"
-			{{ end }}
-		>
-			<div class="flowsnake {{ if .Project.HeaderImage }}dn{{ end }}" style="
-				--hue: {{ .Project.Flowsnake.Hue }}deg;
-				--size: {{ .Project.Flowsnake.Size }}px;
-				--angle: {{ .Project.Flowsnake.Angle }}deg;
-			"></div>
-			<div class="flex flex-column flex-row-ns pa2 pa3-ns relative">
-				<div class="project-links-spacer"></div>
-				{{/*  <div class="flex flex-column flex-row-ns items-end g2 g3-ns">
-					{{ with .PrimaryLinks }}
-						<div class="project-links">
-							{{ range . }}
-								<a class="ph3 pv2 flex items-center" href="{{ .Url }}">{{ .Name }}<span class="svgicon f6 ml2">{{ svg "arrow-right-up" }}</span></a>
-							{{ end }}
-						</div>
-					{{ end }}
-					{{ with .SecondaryLinks }}
-						<div class="project-links ph1">
-							{{ range . }}
-								<a class="ph2 flex" href="{{ .Url }}" title="{{ .ServiceName }}{{ with .Username }} ({{ . }}){{ end }}">{{ svg (strjoin "logos/" .Icon) }}</a>
-							{{ end }}
-						</div>
-					{{ end }}
-				</div>  */}}
-			</div>
-		</div>
-		<div class="project-homepage-card">
-			<a class="flex-shrink-0 flex project-card-logo" href="{{ .Project.Url }}">
-				{{ template "project_logo.html" .Project }}
-			</a>
-			<div class="details flex-grow-1">
-				<div class="flex justify-between mb2">
-					<a href="{{ .Project.Url }}"><h3 class="b f4">{{ .Project.Name }}</h3></a>
-					{{ if .FollowUrl }}
-						<a id="follow_link" class="flex items-center" href="javascript:;">
-							<div class="follow-follow" {{ if .Following }}hidden{{ end }}>
-								<span class="svgicon f7 mr1">{{ svg "add" }}</span>
-								Follow
-							</div>
-							<div class="follow-unfollow" {{ if not .Following }}hidden{{ end }}>
-								<span class="svgicon f7 mr1">{{ svg "remove" }}</span>
-								Unfollow
-							</div>
-						</a>
-						<script>
-							const followLink = document.getElementById("follow_link");
-							let following = {{ .Following }};
-							followLink.addEventListener("click", async function() {
-								followLink.disabled = true;
-
-								let formData = new FormData();
-								formData.set("csrf_token", "{{ .Session.CSRFToken }}");
-								formData.set("project_id", "{{ .Project.ID }}");
-								if (following) {
-									formData.set("unfollow", "true");
-								}
-								let result = await fetch("{{ .FollowUrl }}", {
-									method: "POST",
-									body: formData,
-									redirect: "error",
-									credentials: "include",
-								});
-								if (result.ok) {
-									following = !following;
-									followLink.querySelector(".follow-follow").hidden = following;
-									followLink.querySelector(".follow-unfollow").hidden = !following;
-								}
-								
-								followLink.disabled = false;
-							});
-						</script>
-					{{ end }}
-				</div>
-				<div class="blurb">{{ .Project.Blurb }}</div>
-				{{ with .Owners }}
-					<hr class="mv3">
-					<div class="flex flex-wrap g2">
-						{{ range . }}
-							<a class="flex g1 items-center b" href="{{ .ProfileUrl }}">
-								<img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}">
-								<span>{{ .Name }}</span>
-							</a>
-						{{ end }}
-					</div>
-				{{ end }}
-				{{ if .Project.LifecycleString }}
-					<div class="badges mt2">
-						<span class="badge {{ .Project.LifecycleBadgeClass }}">{{ .Project.LifecycleString }}</span>
-					</div>
-				{{ end }}
-			</div>
-		</div>
-		{{ if .Project.ParsedDescription }}
-			<div id="longdesc" class="description w-100 ph3 ph0-ns pt4">
-				<h3 class="f4">About {{ .Project.Name }}</h3>
-				<hr class="mv3">
-				<div class="longdesc-content post-content maxh-5 overflow-hidden">
-					{{ .Project.ParsedDescription }}
-				</div>
-				<a class="longdesc-link pt3 db" href="#">
-					<span class="longdesc-text">Read more</span> <span class="svgicon f7 dib">{{ svg "chevron-down-thick" }}</span>
-				</a>
-				{{/* TODO(redesign): Add a fade at the bottom of this. */}}
-			</div>
-		{{ end }}
-	</div>
-</div>
+{{/*
 {{ if or .Header.Project.CanEdit (gt (len .RecentActivity) 0) }}
 <div class="bg1 mt4 bt bb pv4">
 	<div class="m-center mw-site flex g3 ph3 ph0-ns">
@@ -306,4 +207,5 @@
 		filters.appendChild(container);
 	}
 </script>
+*/}}
 {{ end }}

@@ -451,6 +451,10 @@ type Breadcrumb struct {
 type Action struct {
 	Name, Url string
 	Icon      string
+
+	// Optional properties
+	Id     string
+	Hidden bool
 }
 
 type Pagination struct {
