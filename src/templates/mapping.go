@@ -414,31 +414,12 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 	return builder.String()
 }
 
-func SnippetEditProjectsToJSON(projects []Project) string {
-	builder := strings.Builder{}
-	builder.WriteRune('[')
-	for i, proj := range projects {
-		if i > 0 {
-			builder.WriteRune(',')
-		}
-		builder.WriteRune('{')
-
-		builder.WriteString(`"id":`)
-		builder.WriteString(strconv.FormatInt(int64(proj.ID), 10))
-		builder.WriteRune(',')
-
-		builder.WriteString(`"name":"`)
-		builder.WriteString(proj.Name)
-		builder.WriteString(`",`)
-
-		builder.WriteString(`"logo":"`)
-		builder.WriteString(proj.Logo)
-		builder.WriteRune('"')
-
-		builder.WriteRune('}')
+func ProjectToSnippetEditProject(project Project) SnippetEditProject {
+	return SnippetEditProject{
+		ID:   project.ID,
+		Name: project.Name,
+		Logo: project.Logo,
 	}
-	builder.WriteRune(']')
-	return builder.String()
 }
 
 func PodcastToTemplate(podcast *models.Podcast, image *models.Asset) Podcast {

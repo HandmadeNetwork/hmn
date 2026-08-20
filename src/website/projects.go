@@ -248,8 +248,8 @@ func ProjectFeed(c *RequestContext) ResponseData {
 		templates.BaseData
 		ProjectPageBaseData
 
-		RecentActivity []templates.TimelineItem
-		SnippetEdit    templates.SnippetEdit
+		RecentActivity      []templates.TimelineItem
+		SnippetEditorConfig templates.SnippetEditorConfig
 	}
 	var tmpl ProjectFeedData
 	var err error
@@ -293,10 +293,12 @@ func ProjectFeed(c *RequestContext) ResponseData {
 			templateProject := templates.ProjectAndStuffToTemplate(&p)
 			templateProjects = append(templateProjects, templateProject)
 		}
-		tmpl.SnippetEdit = templates.SnippetEdit{
-			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
-			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
-			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
+		tmpl.SnippetEditorConfig = templates.SnippetEditorConfig{
+			AssetMaxSize:      AssetMaxSize(c.CurrentUser),
+			AvailableProjects: utils.Map(templateProjects, templates.ProjectToSnippetEditProject),
+			Owner:             tmpl.User,
+
+			SubmitUrl: hmnurl.BuildSnippetSubmit(),
 		}
 	}
 

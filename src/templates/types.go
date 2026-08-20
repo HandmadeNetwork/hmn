@@ -242,29 +242,39 @@ type ProjectJamParticipation struct {
 	Participating bool
 }
 
-type SnippetEdit struct {
-	AvailableProjectsJSON string
-	SubmitUrl             string
-	OnDeleteRedirectUrl   string
-	AssetMaxSize          int
+type SnippetEditorConfig struct {
+	AssetMaxSize      int                  `json:"assetMaxSize"`
+	AvailableProjects []SnippetEditProject `json:"availableProjects"`
+	Owner             *User                `json:"owner"`
+	RequiredProjectID int                  `json:"requiredProjectID,omitempty"`
+
+	SubmitUrl string `json:"submitUrl"`
+
+	OnDeleteRedirectUrl string `json:"onDeleteRedirectUrl,omitempty"`
+}
+
+type SnippetEditProject struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Logo string `json:"logo"`
 }
 
 type User struct {
-	ID       int
-	Username string
+	ID       int    `json:"id"`
+	Username string `json:"username"`
 	Email    string
 	IsStaff  bool
 	Status   int
 	Featured bool
 
-	Name       string
+	Name       string `json:"name"`
 	Blurb      string
 	Bio        string
 	Signature  string
 	DateJoined time.Time
-	Avatar     *Asset
-	AvatarUrl  string
-	ProfileUrl string
+	Avatar     *Asset `json:"avatar"`
+	AvatarUrl  string `json:"avatarUrl,omitempty"`
+	ProfileUrl string `json:"profileUrl"`
 
 	ShowEmail bool
 	Timezone  string

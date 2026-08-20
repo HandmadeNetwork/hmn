@@ -29,7 +29,7 @@ type SnippetData struct {
 	Snippet templates.TimelineItem
 
 	CanEditSnippet bool
-	SnippetEdit    templates.SnippetEdit
+	SnippetEdit    templates.SnippetEditorConfig
 }
 
 func Snippet(c *RequestContext) ResponseData {
@@ -97,7 +97,7 @@ func Snippet(c *RequestContext) ResponseData {
 
 	baseData := getBaseTemplateData(c, fmt.Sprintf("Snippet by %s", snippet.OwnerName), nil)
 	baseData.OpenGraphItems = opengraph // NOTE(asaf): We're overriding the defaults on purpose.
-	snippetEdit := templates.SnippetEdit{}
+	snippetEdit := templates.SnippetEditorConfig{}
 	if c.CurrentUser != nil {
 		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 			OwnerIDs: []int{c.CurrentUser.ID},
@@ -110,11 +110,11 @@ func Snippet(c *RequestContext) ResponseData {
 			templateProject := templates.ProjectAndStuffToTemplate(&p)
 			templateProjects = append(templateProjects, templateProject)
 		}
-		snippetEdit = templates.SnippetEdit{
-			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
-			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
-			OnDeleteRedirectUrl:   hmnurl.BuildUserProfile(s.Owner.Username),
-			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
+		snippetEdit = templates.SnippetEditorConfig{
+			AvailableProjects:   templates.SnippetEditProjectsToJSON(templateProjects),
+			SubmitUrl:           hmnurl.BuildSnippetSubmit(),
+			OnDeleteRedirectUrl: hmnurl.BuildUserProfile(s.Owner.Username),
+			AssetMaxSize:        AssetMaxSize(c.CurrentUser),
 		}
 	}
 	var res ResponseData

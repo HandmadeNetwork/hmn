@@ -45,7 +45,7 @@ type UserProfileTemplateData struct {
 	AdminSetOptionsUrl string
 	AdminNukeUrl       string
 
-	SnippetEdit templates.SnippetEdit
+	SnippetEdit templates.SnippetEditorConfig
 }
 
 func UserProfile(c *RequestContext) ResponseData {
@@ -142,12 +142,12 @@ func UserProfile(c *RequestContext) ResponseData {
 	ownProfile := (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID)
 	followUrl := ""
 	following := false
-	snippetEdit := templates.SnippetEdit{}
+	snippetEdit := templates.SnippetEditorConfig{}
 	if c.CurrentUser != nil {
-		snippetEdit = templates.SnippetEdit{
-			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
-			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
-			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
+		snippetEdit = templates.SnippetEditorConfig{
+			AvailableProjects: templates.SnippetEditProjectsToJSON(templateProjects),
+			SubmitUrl:         hmnurl.BuildSnippetSubmit(),
+			AssetMaxSize:      AssetMaxSize(c.CurrentUser),
 		}
 
 		if !ownProfile {

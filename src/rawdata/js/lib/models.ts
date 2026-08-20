@@ -10,3 +10,28 @@ export type Asset = {
   width: number,
   height: number,
 };
+
+export type SnippetEditorConfig = {
+  assetMaxSize: number,
+  availableProjects: SnippetEditAvailableProject[],
+  owner: User,
+  requiredProjectID?: number,
+
+  submitUrl: string,
+  onDeleteRedirectUrl?: string,
+};
+
+export type SnippetEditAvailableProject = {
+  id: number,
+	name: string,
+	logo: string,
+};
+
+export type User = {
+  id: number,
+  username: string,
+  name: string,
+  avatar: Asset | null,
+  avatarUrl?: string,
+  profileUrl: string,
+};
