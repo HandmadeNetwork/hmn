@@ -95,6 +95,9 @@ type ProjectPageBaseData struct {
 	Owners   []templates.User
 	Links    []templates.Link
 	NavLinks []ProjectPageNavLink
+
+	FollowUrl string
+	Following bool
 }
 
 type ProjectPageNavLink struct {
@@ -116,9 +119,6 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 		CanEdit bool
 		EditUrl string
-
-		FollowUrl string
-		Following bool
 	}
 	var tmpl ProjectHomepageData
 
@@ -128,7 +128,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		Value:    c.CurrentProject.Blurb,
 	})
 
-	projectBaseData, err := getProjectPageBaseData(c, "Home")
+	projectBaseData, err := getProjectPageBaseData(c, &tmpl.BaseData, "Home")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -195,42 +195,12 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	}
 
 	// NOTE(ben): Prepare breadcrumb actions
-	if c.CurrentUser != nil {
-		tmpl.FollowUrl = hmnurl.BuildFollowProject()
-		tmpl.Following, err = db.QueryOneScalar[bool](c, c.Conn, `
-			---- Check following
-			SELECT COUNT(*) > 0
-			FROM follower
-			WHERE user_id = $1 AND following_project_id = $2
-		`, c.CurrentUser.ID, c.CurrentProject.ID)
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
-		}
-
+	if c.CurrentUserCanEditCurrentProject() {
 		tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
-			Name: "Follow",
-			Url:  tmpl.FollowUrl,
-			Icon: "add",
-
-			Id:     "follow-follow",
-			Hidden: tmpl.Following,
+			Name: "Edit Project",
+			Url:  c.UrlContext.BuildProjectEdit(""),
+			Icon: "edit-line",
 		})
-		tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
-			Name: "Unfollow",
-			Url:  tmpl.FollowUrl,
-			Icon: "remove",
-
-			Id:     "follow-unfollow",
-			Hidden: !tmpl.Following,
-		})
-
-		if c.CurrentUserCanEditCurrentProject() {
-			tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
-				Name: "Edit Project",
-				Url:  c.UrlContext.BuildProjectEdit(""),
-				Icon: "edit-line",
-			})
-		}
 	}
 
 	var res ResponseData
@@ -257,7 +227,7 @@ func ProjectFeed(c *RequestContext) ResponseData {
 	tmpl.BaseData = getBaseTemplateData(c, "Feed", []templates.Breadcrumb{
 		{Name: "Feed", Url: c.UrlContext.BuildProjectFeed()},
 	})
-	projectBaseData, err := getProjectPageBaseData(c, "Feed")
+	projectBaseData, err := getProjectPageBaseData(c, &tmpl.BaseData, "Feed")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
@@ -311,7 +281,7 @@ func ProjectFeed(c *RequestContext) ResponseData {
 	return res
 }
 
-func getProjectPageBaseData(c *RequestContext, activeLinkName string) (ProjectPageBaseData, error) {
+func getProjectPageBaseData(c *RequestContext, base *templates.BaseData, activeLinkName string) (ProjectPageBaseData, error) {
 	var res ProjectPageBaseData
 
 	// NOTE(ben): Get project owners
@@ -400,6 +370,37 @@ func getProjectPageBaseData(c *RequestContext, activeLinkName string) (ProjectPa
 				res.NavLinks[i].Active = true
 			}
 		}
+	}
+
+	// NOTE(ben): Get header actions (follow/unfollow)
+	{
+		res.FollowUrl = hmnurl.BuildFollowProject()
+		res.Following, err = db.QueryOneScalar[bool](c, c.Conn, `
+			---- Check following
+			SELECT COUNT(*) > 0
+			FROM follower
+			WHERE user_id = $1 AND following_project_id = $2
+		`, c.CurrentUser.ID, c.CurrentProject.ID)
+		if err != nil {
+			return ProjectPageBaseData{}, oops.New(err, "failed to fetch following status")
+		}
+
+		base.Header.Actions = append(base.Header.Actions, templates.Action{
+			Name: "Follow",
+			Url:  res.FollowUrl,
+			Icon: "add",
+
+			Id:     "follow-follow",
+			Hidden: res.Following,
+		})
+		base.Header.Actions = append(base.Header.Actions, templates.Action{
+			Name: "Unfollow",
+			Url:  res.FollowUrl,
+			Icon: "remove",
+
+			Id:     "follow-unfollow",
+			Hidden: !res.Following,
+		})
 	}
 
 	return res, nil
