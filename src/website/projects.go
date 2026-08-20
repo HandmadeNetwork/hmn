@@ -297,6 +297,7 @@ func ProjectFeed(c *RequestContext) ResponseData {
 			AssetMaxSize:      AssetMaxSize(c.CurrentUser),
 			AvailableProjects: utils.Map(templateProjects, templates.ProjectToSnippetEditProject),
 			Owner:             tmpl.User,
+			RequiredProjectID: c.CurrentProject.ID,
 
 			SubmitUrl: hmnurl.BuildSnippetSubmit(),
 		}

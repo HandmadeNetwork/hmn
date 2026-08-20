@@ -38,3 +38,4 @@ document.addEventListener("DOMContentLoaded", () => {
     setInterval(updateCountdown2, 1e3 * 60);
   }
 });
+//# sourceMappingURL=countdown.js.map

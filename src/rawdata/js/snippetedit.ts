@@ -86,6 +86,7 @@ export function makeSnippetEdit({
 	let attachmentChanged = false;
 	let hasAttachment = false;
 
+	snippetEditor.root.action = config.submitUrl;
 	snippetEditor.redirect.value = location.href;
 	if (config.owner.avatarUrl) {
 		snippetEditor.avatarImg.src = config.owner.avatarUrl;
@@ -102,13 +103,23 @@ export function makeSnippetEdit({
 	if (originalAttachment) {
 		clearAttachment(true);
 	}
-	if (snippetToEdit) {
-		snippetEditor.snippetId.value = snippetToEdit.id;
+	if (edit) {
+		snippetEditor.snippetId.value = edit.id;
 	} else {
 		snippetEditor.deleteButton.remove();
 	}
 
-	for (const projectID of config.snippetToEdit?.projectIDs ?? []) {
+	if (config.requiredProjectID) {
+		const proj = must(
+			config.availableProjects.find(p => p.id === config.requiredProjectID),
+			"the required project should always be in the list of available projects",
+		);
+		addProject(proj);
+	}
+	for (const projectID of edit?.projectIDs ?? []) {
+		if (projectID === config.requiredProjectID) {
+			continue;
+		}
 		const proj = config.availableProjects.find(p => p.id === projectID);
 		if (proj) {
 			addProject(proj);
@@ -116,7 +127,7 @@ export function makeSnippetEdit({
 	}
 	updateProjectSelector();
 
-	if (originalSnippetEl) {
+	if (edit?.el) {
 		snippetEditor.cancelLink.addEventListener("click", function () {
 			cancel();
 		});
@@ -125,8 +136,8 @@ export function makeSnippetEdit({
 	}
 
 	function cancel() {
-		if (originalSnippetEl) {
-			snippetEditor.root.parentElement!.insertBefore(originalSnippetEl, snippetEditor.root);
+		if (edit?.el) {
+			snippetEditor.root.parentElement!.insertBefore(edit.el, snippetEditor.root);
 		}
 		snippetEditor.root.remove();
 	}
@@ -135,6 +146,7 @@ export function makeSnippetEdit({
 		let projEl = snippetEditProjectTemplate();
 		projEl.projectId.value = `${proj.id}`;
 		projEl.projectLogo.src = proj.logo;
+		projEl.projectLogo.hidden = !proj.logo;
 		projEl.projectName.textContent = proj.name;
 		if (proj.id === config.requiredProjectID) {
 			projEl.removeButton.remove();
@@ -287,9 +299,9 @@ export function makeSnippetEdit({
 
 	function validate() {
 		let sizeGood = true;
-		if (snippetEditor.file.files.length > 0 && snippetEditor.file.files[0].size > maxFilesize) {
+		if (snippetEditor.file.files.length > 0 && snippetEditor.file.files[0].size > config.assetMaxSize) {
 			// NOTE(asaf): Writing this out in bytes to make the limit exactly clear to the user.
-			let readableSize = new Intl.NumberFormat([], { useGrouping: true }).format(maxFilesize);
+			let readableSize = new Intl.NumberFormat([], { useGrouping: true }).format(config.assetMaxSize);
 			snippetEditor.errors.textContent = "File is too big! Max filesize is " + readableSize + " bytes.";
 			sizeGood = false;
 		} else {
@@ -397,13 +409,13 @@ export function makeSnippetEdit({
 				assignedIds.push(id);
 			}
 		}
-		if (projectIds.length != assignedIds.length) {
+		if (edit?.projectIDs.length != assignedIds.length) {
 			projectsChanged = true;
 		} else {
-			for (let i = 0; i < projectIds.length; ++i) {
+			for (let i = 0; i < edit?.projectIDs.length; ++i) {
 				let found = false;
 				for (let j = 0; j < assignedIds.length; ++j) {
-					if (projectIds[i] == assignedIds[j]) {
+					if (edit.projectIDs[i] == assignedIds[j]) {
 						found = true;
 					}
 				}
@@ -414,7 +426,7 @@ export function makeSnippetEdit({
 			}
 		}
 
-		if (originalSnippetEl && (!attachmentChanged && originalText == snippetEditor.text.value.trim() && !projectsChanged)) {
+		if (edit && (!attachmentChanged && originalText == snippetEditor.text.value.trim() && !projectsChanged)) {
 			// NOTE(asaf): We're in edit mode and nothing changed, so no need to submit to the server.
 			ev.preventDefault();
 			cancel();
@@ -427,7 +439,7 @@ export function makeSnippetEdit({
 			return;
 		}
 
-		snippetEditor.redirect.value = onDeleteRedirectUrl ?? "";
+		snippetEditor.redirect.value = config.onDeleteRedirectUrl ?? "";
 		snippetEditor.file.value = "";
 	});
 
@@ -436,48 +448,32 @@ export function makeSnippetEdit({
 	return snippetEditor;
 }
 
-export type EditTimelineSnippetOptions = {
-	maxFilesize: number,
-	availableProjects: AvailableProject[],
-	stickyProjectId?: number,
-	onDeleteRedirectUrl?: string,
-};
+export function editTimelineSnippet(timelineItemEl: HTMLElement, config: SnippetEditorConfig) {
+	// HACK(ben): We just modify the data we got from the server to masquerade as
+	// a different user.
+	config.owner.name = timelineItemEl.querySelector(".user")!.textContent;
+	config.owner.profileUrl = timelineItemEl.querySelector<HTMLAnchorElement>(".user")!.href;
+	config.owner.avatarUrl = timelineItemEl.querySelector<HTMLImageElement>(".avatar")?.src;
 
-export function editTimelineSnippet(timelineItemEl: HTMLElement, {
-	maxFilesize,
-	availableProjects,
-	stickyProjectId,
-	onDeleteRedirectUrl,
-}: EditTimelineSnippetOptions) {
-	// TODO(ben): must/types
-	const ownerName = timelineItemEl.querySelector(".user")?.textContent;
-	const ownerUrl = timelineItemEl.querySelector<HTMLAnchorElement>(".user")?.href;
-	const ownerAvatar = timelineItemEl.querySelector<HTMLImageElement>(".avatar")?.src;
 	const creationDate = new Date(must(timelineItemEl.querySelector<HTMLTimeElement>("time")).dateTime);
 	const rawDesc = must(timelineItemEl.querySelector<HTMLElement>(".rawdesc")).textContent;
-	const attachment = timelineItemEl.querySelector<HTMLElement>(".timeline-media")?.children?.[0];
-	const projectIds: number[] = [];
+	const projectIDs: number[] = [];
 	const projectEls = timelineItemEl.querySelectorAll<HTMLInputElement>(".project-id-list > input");
-	for (let i = 0; i < projectEls.length; ++i) {
-		let projid = parseInt(projectEls[i].value, 10);
-		if (projid) {
-			projectIds.push(projid);
+	for (const projectEl of projectEls) {
+		let projID = parseInt(projectEl.value, 10);
+		if (projID) {
+			projectIDs.push(projID);
 		}
 	}
-	let snippetEdit = makeSnippetEdit({
-		maxFilesize,
-		availableProjects,
-		ownerName,
-		ownerAvatar,
-		ownerUrl,
-		date: creationDate,
-		text: rawDesc,
-		attachmentElement: attachment,
-		projectIds,
-		stickyProjectId,
-		onDeleteRedirectUrl,
-		snippetId: must(timelineItemEl.getAttribute("data-id")),
-		originalSnippetEl: timelineItemEl,
+	const snippetEdit = makeSnippetEdit({
+		config,
+		edit: {
+			el: timelineItemEl,
+			id: must(timelineItemEl.getAttribute("data-id")),
+			creationDate: creationDate,
+			text: rawDesc,
+			projectIDs,
+		},
 	});
 	timelineItemEl.parentElement!.insertBefore(snippetEdit.root, timelineItemEl);
 	timelineItemEl.remove();

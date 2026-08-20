@@ -145,7 +145,7 @@ func UserProfile(c *RequestContext) ResponseData {
 	snippetEdit := templates.SnippetEditorConfig{}
 	if c.CurrentUser != nil {
 		snippetEdit = templates.SnippetEditorConfig{
-			AvailableProjects: templates.SnippetEditProjectsToJSON(templateProjects),
+			AvailableProjects: utils.Map(templateProjects, templates.ProjectToSnippetEditProject),
 			SubmitUrl:         hmnurl.BuildSnippetSubmit(),
 			AssetMaxSize:      AssetMaxSize(c.CurrentUser),
 		}

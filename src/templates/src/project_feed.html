@@ -1,7 +1,20 @@
 {{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
-  <script type="module" src='{{ static "js/project_feed.js" }}'></script>
+  <script type="module">
+    import { makeSnippetEdit } from '{{ static "js/snippetedit.js" }}';
+
+    document.querySelector("#add-post-button")?.addEventListener("click", function() {
+      const editor = makeSnippetEdit({
+        config: JSON.parse('{{ json .SnippetEditorConfig }}'),
+      });
+      document.querySelector(".timeline").insertBefore(
+        editor.root,
+        document.querySelector(".timeline").children[0],
+      );
+      document.querySelector("#add-post-button").remove();
+    });
+  </script>
   <style>
     .timeline .timeline-item {
       --item-color: var(--c1);
@@ -39,7 +52,7 @@
     {{ template "snippet_edit.html" . }}
     {{ if .Header.Project.CanEdit }}
       <script>
-        const userName  = "{{ .User.Name }}";
+        {{/*  const userName  = "{{ .User.Name }}";
         const userAvatar = "{{ .User.AvatarUrl }}";
         const userUrl = "{{ .User.ProfileUrl }}";
         const currentProjectId = {{ .Project.ID }};
@@ -56,7 +69,7 @@
           });
           document.querySelector(".timeline").insertBefore(snippetEdit.root, document.querySelector(".timeline").children[0]);
           document.querySelector(".create_snippet_link")?.remove();
-        });
+        });  */}}
 
         document.querySelector(".timeline").addEventListener("click", function(ev) {
           if (ev.target.classList.contains("edit")) {

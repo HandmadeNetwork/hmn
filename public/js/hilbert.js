@@ -38,3 +38,4 @@ function createHilbertCurves() {
   }
 }
 document.addEventListener("DOMContentLoaded", () => createHilbertCurves());
+//# sourceMappingURL=hilbert.js.map

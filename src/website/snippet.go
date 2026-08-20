@@ -20,6 +20,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 	"mvdan.cc/xurls/v2"
 )
@@ -111,7 +112,7 @@ func Snippet(c *RequestContext) ResponseData {
 			templateProjects = append(templateProjects, templateProject)
 		}
 		snippetEdit = templates.SnippetEditorConfig{
-			AvailableProjects:   templates.SnippetEditProjectsToJSON(templateProjects),
+			AvailableProjects:   utils.Map(templateProjects, templates.ProjectToSnippetEditProject),
 			SubmitUrl:           hmnurl.BuildSnippetSubmit(),
 			OnDeleteRedirectUrl: hmnurl.BuildUserProfile(s.Owner.Username),
 			AssetMaxSize:        AssetMaxSize(c.CurrentUser),

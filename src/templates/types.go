@@ -248,8 +248,7 @@ type SnippetEditorConfig struct {
 	Owner             *User                `json:"owner"`
 	RequiredProjectID int                  `json:"requiredProjectID,omitempty"`
 
-	SubmitUrl string `json:"submitUrl"`
-
+	SubmitUrl           string `json:"submitUrl"`
 	OnDeleteRedirectUrl string `json:"onDeleteRedirectUrl,omitempty"`
 }
 
