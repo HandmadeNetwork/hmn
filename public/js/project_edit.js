@@ -90,7 +90,7 @@ var ImageSelector = class {
   previewContainer;
   resetLink;
   removeLink;
-  filenameText;
+  filenameTextEl;
   errorEl;
   defaultUrl;
   originalFile;
@@ -115,7 +115,7 @@ var ImageSelector = class {
     this.previewContainer = tmpl.previewContainer;
     this.resetLink = tmpl.linkReset;
     this.removeLink = tmpl.linkRemove;
-    this.filenameText = tmpl.filenameText;
+    this.filenameTextEl = tmpl.filenameText;
     this.errorEl = tmpl.errorMessage;
     this.defaultUrl = defaultUrl;
     this.originalFile = original ?? null;
@@ -192,11 +192,14 @@ var ImageSelector = class {
     const showRemove = this.url !== this.defaultUrl;
     this.resetLink.hidden = !showReset;
     this.removeLink.hidden = !showRemove;
+    let filenameText;
     if (this.originalFile && this.url === this.originalFile.url) {
-      this.filenameText.innerText = this.originalFile.filename;
+      filenameText = this.originalFile.filename;
     } else {
-      this.filenameText.innerText = file ? file.name : "";
+      filenameText = file ? file.name : "";
     }
+    this.filenameTextEl.innerText = filenameText;
+    this.filenameTextEl.title = filenameText;
     this.previewContainer.hidden = !this.url;
   }
   handleNewImageFile(file) {

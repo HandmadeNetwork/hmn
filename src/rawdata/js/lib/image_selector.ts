@@ -48,7 +48,7 @@ export class ImageSelector {
 	private previewContainer: HTMLElement;
 	private resetLink: HTMLAnchorElement;
 	private removeLink: HTMLAnchorElement;
-	private filenameText: HTMLElement;
+	private filenameTextEl: HTMLElement;
 	private errorEl: HTMLElement;
 	private defaultUrl: string;
 	private originalFile: OriginalFile | null;
@@ -80,7 +80,7 @@ export class ImageSelector {
 		this.previewContainer = tmpl.previewContainer;
 		this.resetLink = tmpl.linkReset;
 		this.removeLink = tmpl.linkRemove;
-		this.filenameText = tmpl.filenameText;
+		this.filenameTextEl = tmpl.filenameText;
 		this.errorEl = tmpl.errorMessage;
 
 		this.defaultUrl = defaultUrl;
@@ -169,11 +169,14 @@ export class ImageSelector {
 		this.resetLink.hidden = !showReset;
 		this.removeLink.hidden = !showRemove;
 
+		let filenameText;
 		if (this.originalFile && this.url === this.originalFile.url) {
-			this.filenameText.innerText = this.originalFile.filename;
+			filenameText = this.originalFile.filename;
 		} else {
-			this.filenameText.innerText = file ? file.name : "";
+			filenameText = file ? file.name : ""
 		}
+		this.filenameTextEl.innerText = filenameText;
+		this.filenameTextEl.title = filenameText;
 
 		this.previewContainer.hidden = !this.url;
 	}
