@@ -41,7 +41,7 @@ func GetFormImage(c *RequestContext, fieldName string) (FormImage, error) {
 	assetID := c.Req.Form.Get("original_" + fieldName)
 	utils.Assert(assetID)
 
-	img, header, err := c.Req.FormFile(fieldName)
+	img, header, err := c.Req.FormFile("image_" + fieldName)
 	if errors.Is(err, http.ErrMissingFile) {
 		removeAssetID := c.Req.Form.Get("remove_" + fieldName)
 		if assetID == "NOASSET" {
