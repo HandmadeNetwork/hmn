@@ -6,37 +6,8 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
-	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
-	"git.handmade.network/hmn/hmn/src/templates"
 )
-
-func FollowingTest(c *RequestContext) ResponseData {
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-
-	timelineItems, err := FetchFollowTimelineForUser(
-		c, c.Conn,
-		c.CurrentUser,
-		lineageBuilder,
-		FollowTimelineQuery{},
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, err)
-	}
-
-	type FollowingTestData struct {
-		templates.BaseData
-		TimelineItems []templates.TimelineItem
-	}
-
-	var res ResponseData
-	res.MustWriteTemplate("following_test.html", FollowingTestData{
-		BaseData:      getBaseTemplateData(c, "Following test", nil),
-		TimelineItems: timelineItems,
-	}, c.Perf)
-	return res
-}
 
 func FollowUser(c *RequestContext) ResponseData {
 	err := c.Req.ParseForm()
