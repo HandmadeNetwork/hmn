@@ -15,7 +15,7 @@ import (
 // NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
 //
 //	If you pass nil, no breadcrumbs will be created.
-func getBaseTemplateData(c *RequestContext, title string, breadcrumbs []templates.Breadcrumb) templates.BaseData {
+func getBaseTemplateData(c *RequestContext, title string, breadcrumbs []templates.BreadcrumbLink) templates.BaseData {
 	var templateUser *templates.User
 	var templateSession *templates.Session
 	if c.CurrentUser != nil {
@@ -41,12 +41,12 @@ func getBaseTemplateData(c *RequestContext, title string, breadcrumbs []template
 	// Prepend the project breadcrumb
 	if !c.UrlContext.IsHMN() {
 		projectUrl := c.UrlContext.BuildHomepage()
-		rootBreadcrumb := templates.Breadcrumb{
+		rootBreadcrumb := templates.BreadcrumbLink{
 			Name:    c.CurrentProject.Name,
 			Url:     projectUrl,
 			Project: &templateProject,
 		}
-		breadcrumbs = append([]templates.Breadcrumb{rootBreadcrumb}, breadcrumbs...)
+		breadcrumbs = append([]templates.BreadcrumbLink{rootBreadcrumb}, breadcrumbs...)
 
 		if len(breadcrumbs) > 1 && breadcrumbs[1].Url == projectUrl {
 			c.Logger.Warn().Msg("duplicate root breadcrumb")

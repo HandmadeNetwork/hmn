@@ -74,8 +74,8 @@ type Header struct {
 
 	Project *ProjectHeader
 
-	Breadcrumbs         []Breadcrumb
-	Actions             []Action
+	Breadcrumbs         []BreadcrumbLink
+	Actions             []BreadcrumbAction
 	SuppressBreadcrumbs bool
 
 	BannerEvent     *BannerEvent
@@ -367,7 +367,7 @@ type PostListItem struct {
 	Title       string
 	Url         string
 	UUID        string
-	Breadcrumbs []Breadcrumb
+	Breadcrumbs []BreadcrumbLink
 
 	PostType       PostType
 	PostTypePrefix string
@@ -402,7 +402,7 @@ type TimelineItem struct {
 	Title             string
 	TypeTitle         string
 	FilterTitle       string
-	Breadcrumbs       []Breadcrumb
+	Breadcrumbs       []BreadcrumbLink
 	Url               string
 	DiscordMessageUrl string
 
@@ -452,18 +452,22 @@ type ProjectCardData struct {
 	Classes string
 }
 
-type Breadcrumb struct {
+type BreadcrumbLink struct {
 	Name, Url string
 	Project   *Project
 }
 
-type Action struct {
+type BreadcrumbAction struct {
 	Name, Url string
 	Icon      string
 
-	// Optional properties
-	Id     string
-	Hidden bool
+	// Optional; causes link to be wrapped in a form
+	PostData []BreadcrumbActionPostData
+}
+
+type BreadcrumbActionPostData struct {
+	Name  string
+	Value any
 }
 
 type Pagination struct {

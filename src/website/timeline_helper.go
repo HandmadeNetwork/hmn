@@ -175,7 +175,7 @@ func PostToTimelineItem(
 ) templates.TimelineItem {
 	ownerTmpl := templates.UserToTemplate(owner)
 
-	var breadcrumbs []templates.Breadcrumb
+	var breadcrumbs []templates.BreadcrumbLink
 	breadcrumbs = GenericThreadBreadcrumbs(urlContext, lineageBuilder, thread, threadOwner)
 	item := templates.TimelineItem{
 		ID:          strconv.Itoa(post.ID),
@@ -397,7 +397,7 @@ func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *
 	filterTitle := ""
 	typeTitle := ""
 	url := ""
-	var breadcrumbs []templates.Breadcrumb
+	var breadcrumbs []templates.BreadcrumbLink
 	switch item.Item.Type {
 	case models.TimelineItemTypeSnippet:
 		filterTitle = "Snippets"
@@ -414,7 +414,7 @@ func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *
 				typeTitle = "Blog comment"
 			}
 			url = urlContext.BuildBlogThreadWithPostHash(item.Item.ThreadID, item.Item.Title, item.Item.ID)
-			breadcrumbs = []templates.Breadcrumb{
+			breadcrumbs = []templates.BreadcrumbLink{
 				{
 					Name: urlContext.ProjectName,
 					Url:  urlContext.BuildHomepage(),
@@ -432,7 +432,7 @@ func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *
 				typeTitle = "Blog comment"
 			}
 			url = hmnurl.BuildPersonalBlogThreadWithPostHash(item.ThreadOwner.Username, item.Item.ThreadID, item.Item.Title, item.Item.ID)
-			breadcrumbs = []templates.Breadcrumb{
+			breadcrumbs = []templates.BreadcrumbLink{
 				{
 					Name: item.ThreadOwner.BestName(),
 					Url:  hmnurl.BuildUserProfile(item.ThreadOwner.Username),

@@ -1057,12 +1057,6 @@ var RegexTwitchDebugPage = regexp.MustCompile("^/twitch_debug$")
 * Following
  */
 
-var RegexFollowingTest = regexp.MustCompile("^/following$")
-
-func BuildFollowingTest() string {
-	return Url("/following", nil)
-}
-
 var RegexFollowUser = regexp.MustCompile("^/follow/user$")
 
 func BuildFollowUser() string {

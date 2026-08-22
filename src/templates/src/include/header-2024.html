@@ -89,11 +89,26 @@
       {{ end }}
     </div>
     <div class="flex items-center g3">
+      {{ $session := .Session }}
       {{ range .Header.Actions }}
-        <a {{ with .Id }}id="{{ . }}"{{ end }} {{ if .Hidden }}hidden{{ end }} class="flex items-center pv2 lh-copy" href="{{ .Url }}">
+        {{ if .PostData }}
+          {{/* NOTE(ben): Form is submitted via link, hooked up by the script below */}}
+          <form method="POST">
+            {{ csrftoken $session }}
+            {{ range .PostData }}
+              <input type="hidden" name="{{ .Name }}" value="{{ .Value }}">
+            {{ end }}
+        {{ end }}
+        <a
+          href="{{ .Url }}"
+          class="flex items-center pv2 lh-copy {{ if .PostData }}link-method-post{{ end }}"
+        >
           <span class="f5 svgicon svgicon-nofix mr1 flex items-center">{{ svg .Icon }}</span>
           {{ .Name }}
         </a>
+        {{ if .PostData }}
+          </form>
+        {{ end }}
       {{ end }}
     </div>
   </div>
@@ -167,6 +182,17 @@
       header.classList.toggle("mobile-open");
     });
   });
+</script>
+<script type="module">
+  // NOTE(ben): Hook up link-method-post
+  for (const a of document.querySelectorAll("a.link-method-post")) {
+    const form = a.closest("form");
+    a.addEventListener("click", e => {
+      e.preventDefault();
+      form.action = a.href;
+      form.submit();
+    });
+  }
 </script>
 
 {{ define "event banner" }}

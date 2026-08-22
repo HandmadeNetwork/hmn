@@ -72,7 +72,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseTemplateData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)})
+	baseData := getBaseTemplateData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.BreadcrumbLink{BlogBreadcrumb(c.UrlContext)})
 
 	canCreate := false
 	if c.CurrentProject.HasBlog() && c.CurrentUser != nil {
@@ -91,7 +91,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		canCreate = c.CurrentUser.IsStaff || isProjectOwner
 	}
 	if canCreate {
-		baseData.Header.Actions = append(baseData.Header.Actions, templates.Action{
+		baseData.Header.Actions = append(baseData.Header.Actions, templates.BreadcrumbAction{
 			Name: "Create Post",
 			Url:  c.UrlContext.BuildBlogNewThread(),
 			Icon: "add-small",
@@ -183,7 +183,7 @@ func BlogThread(c *RequestContext) ResponseData {
 	mainPost := templatePosts[0]
 	canEdit := c.CurrentUser != nil && (mainPost.Author.ID == c.CurrentUser.ID || c.CurrentUser.IsStaff)
 	if canEdit {
-		baseData.Header.Actions = append(baseData.Header.Actions, []templates.Action{
+		baseData.Header.Actions = append(baseData.Header.Actions, []templates.BreadcrumbAction{
 			{
 				Name: "Edit",
 				Url:  mainPost.EditUrl,

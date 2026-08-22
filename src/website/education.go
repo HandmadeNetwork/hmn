@@ -159,7 +159,7 @@ func EducationArticle(c *RequestContext) ResponseData {
 		)
 	}
 
-	tmpl.Header.Breadcrumbs = []templates.Breadcrumb{
+	tmpl.Header.Breadcrumbs = []templates.BreadcrumbLink{
 		{Name: "Education", Url: hmnurl.BuildEducationIndex()},
 		{Name: article.Title, Url: hmnurl.BuildEducationArticle(article.Slug)},
 	}

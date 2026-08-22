@@ -196,7 +196,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	// NOTE(ben): Prepare breadcrumb actions
 	if c.CurrentUserCanEditCurrentProject() {
-		tmpl.Header.Actions = append(tmpl.Header.Actions, templates.Action{
+		tmpl.Header.Actions = append(tmpl.Header.Actions, templates.BreadcrumbAction{
 			Name: "Edit Project",
 			Url:  c.UrlContext.BuildProjectEdit(""),
 			Icon: "edit-line",
@@ -224,7 +224,7 @@ func ProjectFeed(c *RequestContext) ResponseData {
 	var tmpl ProjectFeedData
 	var err error
 
-	tmpl.BaseData = getBaseTemplateData(c, "Feed", []templates.Breadcrumb{
+	tmpl.BaseData = getBaseTemplateData(c, "Feed", []templates.BreadcrumbLink{
 		{Name: "Feed", Url: c.UrlContext.BuildProjectFeed()},
 	})
 	projectBaseData, err := getProjectPageBaseData(c, &tmpl.BaseData, "Feed")
@@ -385,22 +385,30 @@ func getProjectPageBaseData(c *RequestContext, base *templates.BaseData, activeL
 			return ProjectPageBaseData{}, oops.New(err, "failed to fetch following status")
 		}
 
-		base.Header.Actions = append(base.Header.Actions, templates.Action{
-			Name: "Follow",
-			Url:  res.FollowUrl,
-			Icon: "add",
+		if res.Following {
+			base.Header.Actions = append(base.Header.Actions, templates.BreadcrumbAction{
+				Name: "Unfollow",
+				Url:  res.FollowUrl,
+				Icon: "remove",
 
-			Id:     "follow-follow",
-			Hidden: res.Following,
-		})
-		base.Header.Actions = append(base.Header.Actions, templates.Action{
-			Name: "Unfollow",
-			Url:  res.FollowUrl,
-			Icon: "remove",
+				PostData: []templates.BreadcrumbActionPostData{
+					{"project_id", c.CurrentProject.ID},
+					{"redirect", c.FullUrl()},
+					{"unfollow", true},
+				},
+			})
+		} else {
+			base.Header.Actions = append(base.Header.Actions, templates.BreadcrumbAction{
+				Name: "Follow",
+				Url:  res.FollowUrl,
+				Icon: "add",
 
-			Id:     "follow-unfollow",
-			Hidden: !res.Following,
-		})
+				PostData: []templates.BreadcrumbActionPostData{
+					{"project_id", c.CurrentProject.ID},
+					{"redirect", c.FullUrl()},
+				},
+			})
+		}
 	}
 
 	return res, nil

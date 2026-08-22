@@ -21,7 +21,7 @@ func StyleTest(c *RequestContext) ResponseData {
 				OwnerName:      "Cool User",
 				OwnerAvatarUrl: templates.UserAvatarDefaultUrl("dark"),
 				Date:           time.Now().Add(-5 * time.Second),
-				Breadcrumbs: []templates.Breadcrumb{
+				Breadcrumbs: []templates.BreadcrumbLink{
 					{Name: "Project"},
 					{Name: "Forums"},
 					{Name: "Subforum"},

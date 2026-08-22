@@ -63,12 +63,12 @@ var ThreadTypeDisplayNames = map[models.ThreadType]string{
 	models.ThreadTypeForumPost:       "Forums",
 }
 
-func GenericThreadBreadcrumbs(urlContext *hmnurl.UrlContext, lineageBuilder *models.SubforumLineageBuilder, thread *models.Thread, threadOwner *models.User) []templates.Breadcrumb {
-	var result []templates.Breadcrumb
+func GenericThreadBreadcrumbs(urlContext *hmnurl.UrlContext, lineageBuilder *models.SubforumLineageBuilder, thread *models.Thread, threadOwner *models.User) []templates.BreadcrumbLink {
+	var result []templates.BreadcrumbLink
 	if thread.Type == models.ThreadTypeForumPost {
 		result = SubforumBreadcrumbs(urlContext, lineageBuilder, *thread.SubforumID)
 	} else if thread.Type == models.ThreadTypePersonalBlogPost {
-		result = []templates.Breadcrumb{
+		result = []templates.BreadcrumbLink{
 			{
 				Name: threadOwner.BestName(),
 				Url:  hmnurl.BuildUserProfile(threadOwner.Username),
@@ -79,7 +79,7 @@ func GenericThreadBreadcrumbs(urlContext *hmnurl.UrlContext, lineageBuilder *mod
 			},
 		}
 	} else {
-		result = []templates.Breadcrumb{
+		result = []templates.BreadcrumbLink{
 			{
 				Name: urlContext.ProjectName,
 				Url:  urlContext.BuildHomepage(),

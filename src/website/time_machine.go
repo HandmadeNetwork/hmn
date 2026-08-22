@@ -50,7 +50,7 @@ func TimeMachine(c *RequestContext) ResponseData {
 }
 
 func TimeMachineSubmissions(c *RequestContext) ResponseData {
-	baseData := getBaseTemplateData(c, "Time Machine - Submissions", []templates.Breadcrumb{
+	baseData := getBaseTemplateData(c, "Time Machine - Submissions", []templates.BreadcrumbLink{
 		{"Time Machine", hmnurl.BuildTimeMachine(), nil},
 		{"Submissions", hmnurl.BuildTimeMachineSubmissions(), nil},
 	})
