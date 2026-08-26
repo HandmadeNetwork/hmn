@@ -16,7 +16,7 @@ require (
 	github.com/frustra/bbcode v0.0.0-20201127003707-6ef347fbe1c8
 	github.com/go-stack/stack v1.8.0
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/websocket v1.4.2
+	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx-zerolog v0.0.0-20220923130014-7856b90a65ae
 	github.com/jackc/pgx/v5 v5.9.1
 	github.com/jpillora/backoff v1.0.0
