@@ -198,7 +198,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexSnippet, Snippet)
 	hmnOnly.GET(hmnurl.RegexProjectIndex, ProjectIndex)
 
-	hmnOnly.GET(hmnurl.RegexFollowingTest, needsAuth(FollowingTest))
 	hmnOnly.POST(hmnurl.RegexFollowUser, needsAuth(csrfMiddleware(FollowUser)))
 	hmnOnly.POST(hmnurl.RegexFollowProject, needsAuth(csrfMiddleware(FollowProject)))
 
