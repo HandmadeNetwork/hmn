@@ -27,6 +27,7 @@ func (e *Error) Unwrap() error {
 
 type CallStack []StackFrame
 
+// Implements [[zerolog.LogArrayMarshaler]]
 func (s CallStack) MarshalZerologArray(a *zerolog.Array) {
 	for _, frame := range s {
 		a.Object(frame)
@@ -39,6 +40,7 @@ type StackFrame struct {
 	Function string `json:"function"`
 }
 
+// Implements [[zerolog.LogObjectMarshaler]]
 func (f StackFrame) MarshalZerologObject(e *zerolog.Event) {
 	e.
 		Str("file", f.File).

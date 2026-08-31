@@ -261,7 +261,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 	})
 
 	data := adminApprovalQueueData{
-		BaseData:        getBaseData(c, "Admin approval queue", nil),
+		BaseData:        getBaseTemplateData(c, "Admin approval queue", nil),
 		UnapprovedUsers: unapprovedUsers,
 		SubmitUrl:       hmnurl.BuildAdminApprovalQueue(),
 		ApprovalAction:  ApprovalQueueActionApprove,

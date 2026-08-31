@@ -3,6 +3,7 @@ package templates
 import (
 	"embed"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -206,11 +207,20 @@ var HMNTemplateFuncs = template.FuncMap{
 	"color2css": func(color noire.Color) template.CSS {
 		return template.CSS(color.HTML())
 	},
-	"csrftoken": func(s Session) template.HTML {
+	"csrftoken": func(s *Session) template.HTML {
+		// NOTE(ben): It is annoying to gate this function behind
+		// {{ if .CurrentUser }} all the time, so instead we just let this no-op if
+		// there is no active auth session. (Ditto for the JS flavor below.)
+		if s == nil {
+			return ""
+		}
 		return template.HTML(fmt.Sprintf(`<input type="hidden" name="%s" value="%s">`, auth.CSRFFieldName, s.CSRFToken))
 	},
-	"csrftokenjs": func(s Session) template.HTML {
-		return template.HTML(fmt.Sprintf(`{ "field": "%s", "token": "%s" }`, auth.CSRFFieldName, s.CSRFToken))
+	"csrftokenjs": func(s *Session) template.JS {
+		if s == nil {
+			return "null"
+		}
+		return template.JS(fmt.Sprintf(`{ "field": "%s", "token": "%s" }`, auth.CSRFFieldName, s.CSRFToken))
 	},
 	"darken": func(amount float64, color noire.Color) noire.Color {
 		return color.Shade(amount)
@@ -245,7 +255,7 @@ var HMNTemplateFuncs = template.FuncMap{
 			return result + " ago"
 		}
 
-		delta := time.Now().Sub(t)
+		delta := time.Since(t)
 
 		if delta < time.Minute {
 			return "Less than a minute ago"
@@ -334,6 +344,9 @@ var HMNTemplateFuncs = template.FuncMap{
 		return num%2 == 1
 	},
 
+	"json": func(thing any) string {
+		return string(utils.Must1(json.Marshal(thing)))
+	},
 	"asseturl": func(asset *Asset) string {
 		if asset == nil {
 			return ""

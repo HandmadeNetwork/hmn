@@ -47,7 +47,7 @@ func LoginPage(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("auth_login.html", LoginPageData{
-		BaseData:            getBaseData(c, "Log in", nil),
+		BaseData:            getBaseTemplateData(c, "Log in", nil),
 		DestinationUrl:      destination,
 		RegisterUrl:         hmnurl.BuildRegister(destination, notice),
 		ForgotPasswordUrl:   hmnurl.BuildRequestPasswordReset(),
@@ -80,7 +80,7 @@ func LoginAction(c *RequestContext) ResponseData {
 
 	showLoginWithFailure := func(c *RequestContext, destination string) ResponseData {
 		var res ResponseData
-		baseData := getBaseData(c, "Log in", nil)
+		baseData := getBaseTemplateData(c, "Log in", nil)
 		baseData.AddImmediateNotice("failure", "Incorrect username or password")
 		res.MustWriteTemplate("auth_login.html", LoginPageData{
 			BaseData:          baseData,
@@ -181,7 +181,7 @@ func RegisterNewUser(c *RequestContext) ResponseData {
 	dest := hmnurl.SafeRedirectUrl(rawDest)
 
 	tmpl := RegisterPageData{
-		BaseData:            getBaseData(c, "Register", nil),
+		BaseData:            getBaseTemplateData(c, "Register", nil),
 		DestinationURL:      dest,
 		Notice:              notice,
 		LoginUrl:            hmnurl.BuildLoginPage(rawDest, notice),
@@ -400,7 +400,7 @@ func RegisterNewUserSuccess(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("auth_register_success.html", RegisterNewUserSuccessData{
-		BaseData:     getBaseData(c, "Register", nil),
+		BaseData:     getBaseTemplateData(c, "Register", nil),
 		ContactUsUrl: hmnurl.BuildContactPage(),
 	}, c.Perf)
 	return res
@@ -447,7 +447,7 @@ func EmailConfirmation(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("auth_email_validation.html", EmailValidationData{
-		BaseData:       getBaseData(c, "Register", nil),
+		BaseData:       getBaseTemplateData(c, "Register", nil),
 		Token:          token,
 		Username:       username,
 		DestinationURL: c.Req.URL.Query().Get("destination"),
@@ -474,7 +474,7 @@ func EmailConfirmationSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	} else if !success {
 		var res ResponseData
-		baseData := getBaseData(c, "Register", nil)
+		baseData := getBaseTemplateData(c, "Register", nil)
 		// NOTE(asaf): We can report that the password is incorrect, because an attacker wouldn't have a valid token to begin with.
 		baseData.AddImmediateNotice("failure", "Incorrect password. Please try again.")
 		res.MustWriteTemplate("auth_email_validation.html", EmailValidationData{
@@ -563,7 +563,7 @@ func RequestPasswordReset(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.BuildHomepage(), http.StatusSeeOther)
 	}
 	var res ResponseData
-	res.MustWriteTemplate("auth_password_reset.html", getBaseData(c, "Password Reset", nil), c.Perf)
+	res.MustWriteTemplate("auth_password_reset.html", getBaseTemplateData(c, "Password Reset", nil), c.Perf)
 	return res
 }
 
@@ -689,7 +689,7 @@ func PasswordResetSent(c *RequestContext) ResponseData {
 	}
 	var res ResponseData
 	res.MustWriteTemplate("auth_password_reset_sent.html", PasswordResetSentData{
-		BaseData:     getBaseData(c, "Password Reset", nil),
+		BaseData:     getBaseTemplateData(c, "Password Reset", nil),
 		ContactUsUrl: hmnurl.BuildContactPage(),
 	}, c.Perf)
 	return res
@@ -723,7 +723,7 @@ func DoPasswordReset(c *RequestContext) ResponseData {
 	}
 
 	res.MustWriteTemplate("auth_do_password_reset.html", DoPasswordResetData{
-		BaseData: getBaseData(c, "Password Reset", nil),
+		BaseData: getBaseTemplateData(c, "Password Reset", nil),
 		Username: username,
 		Token:    token,
 	}, c.Perf)

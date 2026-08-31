@@ -14,12 +14,30 @@ import (
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
-	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-func loadCommonData(h Handler) Handler {
+// Loads the special HMN project from the database and sets it as the current project.
+func loadHMNProject(h Handler) Handler {
 	return func(c *RequestContext) ResponseData {
-		b := c.Perf.StartBlock("MIDDLEWARE", "Load common website data")
+		dbProject, err := hmndata.FetchProject(c, c.Conn, c.CurrentUser, models.HMNProjectID, hmndata.ProjectsQuery{
+			Lifecycles:    models.AllProjectLifecycles,
+			IncludeHidden: true,
+		})
+		if err != nil {
+			panic(oops.New(err, "failed to fetch HMN project"))
+		}
+		c.CurrentProject = &dbProject.Project
+		c.CurrentProjectExtras = dbProject
+		c.UrlContext = hmndata.UrlContextForProject(&dbProject.Project)
+
+		return h(c)
+	}
+}
+
+func loadCurrentUserAndProject(h Handler) Handler {
+	return func(c *RequestContext) ResponseData {
+		b := c.Perf.StartBlock("MIDDLEWARE", "Load current user/project")
 		{
 			// get user
 			{
@@ -38,9 +56,9 @@ func loadCommonData(h Handler) Handler {
 
 			// get current official project (HMN or otherwise, by subdomain)
 			{
-				slug := hmnurl.GetOfficialProjectSlugFromHost(c.Req.Host)
-				var owners []*models.User
+				utils.Assert(c.CurrentProject, "should already have HMN project loaded")
 
+				slug := hmnurl.GetOfficialProjectSlugFromHost(c.Req.Host)
 				if len(slug) > 0 {
 					dbProject, err := hmndata.FetchProjectBySlug(c, c.Conn, c.CurrentUser, slug, hmndata.ProjectsQuery{
 						Lifecycles:    models.AllProjectLifecycles,
@@ -48,36 +66,16 @@ func loadCommonData(h Handler) Handler {
 					})
 					if err == nil {
 						c.CurrentProject = &dbProject.Project
-						c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(dbProject.LogoAsset)
-						owners = dbProject.Owners
+						c.CurrentProjectExtras = dbProject
+						c.UrlContext = hmndata.UrlContextForProject(&dbProject.Project)
 					} else {
 						if errors.Is(err, db.NotFound) {
-							// do nothing, this is fine
+							// NOTE(ben): Do nothing, this is fine - we will default to the HMN project
 						} else {
 							return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
 						}
 					}
 				}
-
-				if c.CurrentProject == nil {
-					dbProject, err := hmndata.FetchProject(c, c.Conn, c.CurrentUser, models.HMNProjectID, hmndata.ProjectsQuery{
-						Lifecycles:    models.AllProjectLifecycles,
-						IncludeHidden: true,
-					})
-					if err != nil {
-						panic(oops.New(err, "failed to fetch HMN project"))
-					}
-					c.CurrentProject = &dbProject.Project
-					c.CurrentProjectLogoUrl = templates.ProjectLogoUrl(dbProject.LogoAsset)
-				}
-
-				if c.CurrentProject == nil {
-					panic("failed to load project data")
-				}
-
-				c.CurrentUserCanEditCurrentProject = CanEditProject(c.CurrentUser, owners)
-
-				c.UrlContext = hmndata.UrlContextForProject(c.CurrentProject)
 			}
 		}
 		b.End()

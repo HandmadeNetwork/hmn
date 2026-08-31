@@ -40,7 +40,7 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseData(c, "Projects", nil)
+	baseData := getBaseTemplateData(c, "Projects", nil)
 	tmpl := ProjectTemplateData{
 		BaseData: baseData,
 
@@ -213,7 +213,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 
 	var templateData ProjectHomepageData
 
-	templateData.BaseData = getBaseData(c, c.CurrentProject.Name, nil)
+	templateData.BaseData = getBaseTemplateData(c, c.CurrentProject.Name, nil)
 	templateData.BaseData.OpenGraphItems = append(templateData.BaseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    c.CurrentProject.Blurb,
@@ -230,7 +230,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	for _, owner := range owners {
 		templateData.Owners = append(templateData.Owners, templates.UserToTemplate(owner))
 	}
-	templateData.CanEdit = c.CurrentUserCanEditCurrentProject
+	templateData.CanEdit = c.CurrentUserCanEditCurrentProject()
 	templateData.EditUrl = c.UrlContext.BuildProjectEdit("")
 
 	if c.CurrentProject.Hidden {
@@ -373,8 +373,8 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
 		}
 
-		if c.CurrentUserCanEditCurrentProject {
-			templateData.Header.Actions = []templates.Action{
+		if c.CurrentUserCanEditCurrentProject() {
+			templateData.Header.Actions = []templates.BreadcrumbAction{
 				{
 					Name: "Edit Project",
 					Url:  c.UrlContext.BuildProjectEdit(""),
@@ -443,7 +443,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
-		BaseData:        getBaseData(c, "New Project", nil),
+		BaseData:        getBaseTemplateData(c, "New Project", nil),
 		Editing:         false,
 		ProjectSettings: project,
 		MaxOwners:       maxProjectOwners,
@@ -529,7 +529,7 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 }
 
 func ProjectEdit(c *RequestContext) ResponseData {
-	if !c.CurrentUserCanEditCurrentProject {
+	if !c.CurrentUserCanEditCurrentProject() {
 		return FourOhFour(c)
 	}
 
@@ -586,7 +586,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
-		BaseData:        getBaseData(c, "Edit Project", nil),
+		BaseData:        getBaseTemplateData(c, "Edit Project", nil),
 		Editing:         true,
 		ProjectSettings: projectSettings,
 		MaxOwners:       maxProjectOwners,
@@ -608,7 +608,7 @@ func ProjectEdit(c *RequestContext) ResponseData {
 }
 
 func ProjectEditSubmit(c *RequestContext) ResponseData {
-	if !c.CurrentUserCanEditCurrentProject {
+	if !c.CurrentUserCanEditCurrentProject() {
 		return FourOhFour(c)
 	}
 	formResult := ParseProjectEditForm(c)

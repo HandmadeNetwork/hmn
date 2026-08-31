@@ -12,7 +12,7 @@ func HSFLanding(c *RequestContext) ResponseData {
 }
 
 func HSFDetails(c *RequestContext) ResponseData {
-	breadcrumbs := []templates.Breadcrumb{
+	breadcrumbs := []templates.BreadcrumbLink{
 		hsfBaseBreadcrumb,
 		{Name: "Details", Url: hmnurl.BuildHSFDetails()},
 	}
@@ -23,7 +23,7 @@ func HSFDetails(c *RequestContext) ResponseData {
 }
 
 func HSFMembership(c *RequestContext) ResponseData {
-	breadcrumbs := []templates.Breadcrumb{
+	breadcrumbs := []templates.BreadcrumbLink{
 		hsfBaseBreadcrumb,
 		{Name: "Membership", Url: hmnurl.BuildHSFMembership()},
 	}
@@ -36,10 +36,10 @@ func HSFMembership(c *RequestContext) ResponseData {
 	return res
 }
 
-var hsfBaseBreadcrumb = templates.Breadcrumb{Name: "Handmade Software Foundation", Url: hmnurl.BuildHSFLanding()}
+var hsfBaseBreadcrumb = templates.BreadcrumbLink{Name: "Handmade Software Foundation", Url: hmnurl.BuildHSFLanding()}
 
-func getHSFBaseData(c *RequestContext, title string, breadcrumbs []templates.Breadcrumb) templates.BaseData {
-	baseData := getBaseData(c, title, breadcrumbs)
+func getHSFBaseData(c *RequestContext, title string, breadcrumbs []templates.BreadcrumbLink) templates.BaseData {
+	baseData := getBaseTemplateData(c, title, breadcrumbs)
 	baseData.SiteTitleOverride = "Handmade Software Foundation"
 	baseData.ShowFoundationFooter = true
 

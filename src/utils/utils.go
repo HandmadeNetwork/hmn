@@ -162,6 +162,34 @@ func Assert[T comparable](value T, msg ...any) {
 }
 
 // Because sometimes you just want a pointer to the thing.
+// TODO(ben): As of Go 1.whatever we can now do new(v) everywhere we would use
+// this function.
 func P[T any](value T) *T {
 	return &value
+}
+
+// Produces a new slice by applying the callback function to each element.
+//
+// NOTE(ben): As always, don't abuse this! :) For loops are still ok to use.
+// But sometimes it's just convenient to do this inline.
+func Map[S ~[]E1, E1, E2 any](s S, f func(E1) E2) []E2 {
+	if s == nil {
+		return nil
+	}
+	res := make([]E2, len(s))
+	for i, v := range s {
+		res[i] = f(v)
+	}
+	return res
+}
+
+func MapP[S ~[]E1, E1, E2 any](s S, f func(*E1) E2) []E2 {
+	if s == nil {
+		return nil
+	}
+	res := make([]E2, len(s))
+	for i := range s {
+		res[i] = f(&s[i])
+	}
+	return res
 }
