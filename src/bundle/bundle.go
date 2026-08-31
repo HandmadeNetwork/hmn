@@ -57,9 +57,10 @@ func BuildContext() (api.BuildContext, *api.ContextError) {
 		Outdir:   "public",
 		External: []string{"/public/*"},
 
-		Format: api.FormatESModule,
-		Bundle: true,
-		Write:  true,
+		Format:    api.FormatESModule,
+		Bundle:    true,
+		Write:     true,
+		Sourcemap: api.SourceMapLinked,
 
 		Engines: []api.Engine{
 			// NOTE(ben): Currently all at the version that introduced CSS selector

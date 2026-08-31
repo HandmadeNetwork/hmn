@@ -461,3 +461,4 @@ function init({ maxFileSize, uploadUrl, markdownParser }) {
 export {
   init
 };
+//# sourceMappingURL=editor.js.map
