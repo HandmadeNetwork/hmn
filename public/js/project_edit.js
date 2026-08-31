@@ -811,13 +811,13 @@ function initLiveMarkdown({
     console.warn(`Multiple elements with ID "${inputEl.id}" are being used for Markdown. Results will be very confusing!`);
   }
   markdownIds.push(inputEl.id);
-  previewWorker.onmessage = ({ data }) => {
+  previewWorker.addEventListener("message", ({ data }) => {
     const { elementID, html } = data;
     if (elementID === inputEl.id) {
       previewEl.innerHTML = html;
       MathJax.typeset?.();
     }
-  };
+  });
   function doMarkdown() {
     previewWorker.postMessage({
       elementID: inputEl.id,
