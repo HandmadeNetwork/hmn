@@ -431,14 +431,14 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to read image from form"))
 	}
 	var avatarUUID *uuid.UUID
-	if newAvatar.Exists {
+	if newAvatar.New {
 		avatarAsset, err := SaveFormImage(c, tx, newAvatar, &c.CurrentUser.ID)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to upload avatar"))
 		}
 		avatarUUID = &avatarAsset.ID
 	}
-	if newAvatar.Exists || newAvatar.Remove {
+	if newAvatar.New || newAvatar.Remove {
 		_, err := tx.Exec(c,
 			`
 			UPDATE hmn_user

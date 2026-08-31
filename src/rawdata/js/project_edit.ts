@@ -1,6 +1,7 @@
 import { ImageSelector } from "./lib/image_selector";
 import { setupMarkdownUpload } from "./lib/markdown_upload";
 import { getLinkData, initLinkEditor, LinkData } from "./lib/link_editor";
+import { Asset } from "./lib/models";
 import { initHashTabs } from "./lib/tabs";
 import { makeTemplateCloner } from "./lib/templates";
 import { CSRFToken, HTMLFileInputElement } from "./lib/types";
@@ -22,10 +23,8 @@ export type ProjectEditConfig = {
 	editorUploadUrl: string,
 	initialLinks: LinkData,
 	ownerCheckUrl: string,
-	logoUrl: string,
-	logoFilename: string,
-	headerImageUrl: string,
-	headerImageFilename: string,
+	logo: Asset | null,
+	headerImage: Asset | null,
 };
 
 export function init({
@@ -38,10 +37,8 @@ export function init({
 	editorUploadUrl,
 	initialLinks,
 	ownerCheckUrl,
-	logoUrl,
-	logoFilename,
-	headerImageUrl,
-	headerImageFilename,
+	logo,
+	headerImage,
 }: ProjectEditConfig) {
 	initHashTabs(document);
 
@@ -220,8 +217,7 @@ export function init({
 		"logo",
 		logoMaxFileSize,
 		{
-			originalUrl: logoUrl,
-			originalFilename: logoFilename,
+			original: logo || undefined,
 			onUpdate() {
 				updateCardPreview();
 			},
@@ -237,8 +233,7 @@ export function init({
 		"header_image",
 		headerMaxFileSize,
 		{
-			originalUrl: headerImageUrl,
-			originalFilename: headerImageFilename,
+			original: headerImage || undefined,
 			onUpdate() {
 				updateCardPreview();
 			},

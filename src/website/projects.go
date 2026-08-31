@@ -776,7 +776,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 
 func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *ProjectPayload) error {
 	var logoUUID *uuid.UUID
-	if payload.Logo.Exists {
+	if payload.Logo.New {
 		logoAsset, err := SaveFormImage(ctx, tx, payload.Logo, &user.ID)
 		if err != nil {
 			return oops.New(err, "Failed to save asset")
@@ -785,7 +785,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 	}
 
 	var headerImageUUID *uuid.UUID
-	if payload.HeaderImage.Exists {
+	if payload.HeaderImage.New {
 		headerImageAsset, err := SaveFormImage(ctx, tx, payload.HeaderImage, &user.ID)
 		if err != nil {
 			return oops.New(err, "Failed to save asset")
@@ -865,7 +865,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 	}
 
-	if payload.Logo.Exists || payload.Logo.Remove {
+	if payload.Logo.New || payload.Logo.Remove {
 		_, err = tx.Exec(ctx,
 			`
 			UPDATE project
@@ -882,7 +882,7 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 	}
 
-	if payload.HeaderImage.Exists || payload.HeaderImage.Remove {
+	if payload.HeaderImage.New || payload.HeaderImage.Remove {
 		_, err = tx.Exec(ctx,
 			`
 			UPDATE project
