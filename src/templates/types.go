@@ -169,9 +169,8 @@ type Project struct {
 	ParsedDescription template.HTML
 	Owners            []User
 
-	Logo        string
-	HeaderImage string
-	Flowsnake   Flowsnake
+	Logo      string
+	Flowsnake Flowsnake
 
 	LifecycleBadgeClass string
 	LifecycleString     string
@@ -183,6 +182,10 @@ type Project struct {
 
 	UUID         string
 	DateApproved time.Time
+
+	// NOTE(ben): Legacy; now we just have screenshots. We are keeping this
+	// around so project authors can retrieve their old header images.
+	HeaderImage string
 }
 
 type ProjectSettings struct {
@@ -205,6 +208,7 @@ type ProjectSettings struct {
 
 	Logo        *Asset
 	HeaderImage *Asset
+	Screenshots []*Asset
 }
 
 type Flowsnake struct {

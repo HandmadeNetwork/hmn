@@ -402,7 +402,16 @@ function getLinkData() {
       if (!url) {
         continue;
       }
-      links.push({ name, url, primary });
+      let serviceName = "";
+      let username = "";
+      let icon = "website";
+      if (parseKnownServicesForUrl) {
+        const guess = parseKnownServicesForUrl(url);
+        icon = guess.icon;
+        username = guess.username;
+        serviceName = guess.service;
+      }
+      links.push({ name, url, serviceName, username, icon, primary });
     }
   }
   return links;

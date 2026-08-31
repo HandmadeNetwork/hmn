@@ -673,7 +673,16 @@ function getLinkData() {
       if (!url) {
         continue;
       }
-      links.push({ name, url, primary });
+      let serviceName = "";
+      let username = "";
+      let icon = "website";
+      if (parseKnownServicesForUrl) {
+        const guess = parseKnownServicesForUrl(url);
+        icon = guess.icon;
+        username = guess.username;
+        serviceName = guess.service;
+      }
+      links.push({ name, url, serviceName, username, icon, primary });
     }
   }
   return links;
@@ -851,40 +860,232 @@ function initLiveMarkdown({
   return doMarkdown;
 }
 
+// src/rawdata/js/lib/sticky_sidebar.ts
+function updateStickySidebars() {
+  for (const container of document.querySelectorAll(".stickinator")) {
+    const parent = container.parentElement;
+    const parentTopScreen = parent.getBoundingClientRect().top;
+    const parentHeight = parent.getBoundingClientRect().height;
+    const topID = container.dataset.top;
+    const bottomID = container.dataset.bottom;
+    const topEl = topID ? document.getElementById(topID) : null;
+    const bottomEl = bottomID ? document.getElementById(bottomID) : null;
+    let topInParent, height;
+    if (topEl) {
+      const topTopScreen = topEl.getBoundingClientRect().top;
+      topInParent = topTopScreen - parentTopScreen;
+    } else {
+      topInParent = 0;
+    }
+    if (bottomEl) {
+      const bottomBottomScreen = bottomEl.getBoundingClientRect().bottom;
+      height = bottomBottomScreen - parentTopScreen - topInParent;
+    } else {
+      height = parentHeight - topInParent;
+    }
+    container.style.top = `${topInParent}px`;
+    container.style.height = `${height}px`;
+  }
+}
+window.addEventListener("resize", updateStickySidebars);
+
+// src/rawdata/js/lib/constants.ts
+var MEDIUM_EM = 35;
+var LARGE_EM = 60;
+
+// src/rawdata/js/lib/relocator.ts
+function updateRelocators() {
+  const l = window.matchMedia(`(min-width: ${LARGE_EM}em)`).matches;
+  const ns = window.matchMedia(`(min-width: ${MEDIUM_EM}em)`).matches;
+  for (const relocator of document.querySelectorAll(".relocator")) {
+    const targetDefaultID = must(relocator.dataset.relocate, "must have a data-relocate attribute");
+    const targetNSID = relocator.dataset.relocateNs ?? targetDefaultID;
+    const targetLID = relocator.dataset.relocateL ?? targetNSID;
+    const targetDefault = must(document.getElementById(targetDefaultID), `no element found with id ${targetDefaultID}`);
+    const targetNS = must(document.getElementById(targetNSID), `no element found with id ${targetNSID}`);
+    const targetL = must(document.getElementById(targetLID), `no element found with id ${targetLID}`);
+    const target = l ? targetL : ns ? targetNS : targetDefault;
+    target.parentElement.insertBefore(relocator, target.nextSibling);
+  }
+}
+updateRelocators();
+window.addEventListener("resize", updateRelocators);
+
 // src/rawdata/js/project_edit.ts
 function init({
   csrf,
   projectName,
   maxOwners,
+  maxScreenshots,
   logoMaxFileSize,
-  headerMaxFileSize,
+  screenshotMaxFileSize,
   textMaxFileSize,
   editorUploadUrl,
   initialLinks,
   ownerCheckUrl,
   logo,
-  headerImage
+  screenshots,
+  linkIcons: linkIconsRaw
 }) {
-  initHashTabs(document);
   const projectForm = must(document.querySelector("#project_form"));
-  const tag = must(document.querySelector("#tag"));
-  const tagPreview = must(document.querySelector("#tag-preview"));
-  function updateTagPreview() {
-    tagPreview.innerText = tag.value || "[your tag]";
-  }
-  updateTagPreview();
-  tag.addEventListener("input", () => updateTagPreview());
-  const description = must(document.querySelector("#full_description"));
-  const descPreview = must(document.querySelector("#desc_preview"));
-  const { clear: clearDescription } = autosaveContent({
-    inputEl: description,
-    storageKey: `project-description/${projectName}`
+  initHashTabs(document, {
+    onSelect(name) {
+      const card = must(document.querySelector("#card-preview-sticky-container"));
+      const description = must(document.querySelector("#description-preview-sticky-container"));
+      const links = must(document.querySelector("#links-preview-sticky-container"));
+      card.hidden = name !== "info";
+      description.hidden = name !== "info";
+      links.hidden = name !== "images";
+    },
+    fireOnSelectForInitialTab: true
   });
-  projectForm.addEventListener("submit", () => clearDescription());
-  const doMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
-  const OWNER_QUERY_STATE_IDLE = 0;
-  const OWNER_QUERY_STATE_QUERYING = 1;
-  let ownerQueryState = OWNER_QUERY_STATE_IDLE;
+  const previewResizeObserver = new ResizeObserver(updateStickySidebars);
+  previewResizeObserver.observe(must(document.querySelector("#preview-container")));
+  {
+    let updateTagPreview2 = function() {
+      tagPreview.innerText = tag.value || "[your tag]";
+    };
+    var updateTagPreview = updateTagPreview2;
+    const tag = must(document.querySelector("#tag"));
+    const tagPreview = must(document.querySelector("#tag-preview"));
+    updateTagPreview2();
+    tag.addEventListener("input", () => updateTagPreview2());
+  }
+  {
+    const description = must(document.querySelector("#full_description"));
+    const descPreview = must(document.querySelector("#desc_preview"));
+    const { clear: clearDescription } = autosaveContent({
+      inputEl: description,
+      storageKey: `project-description/${projectName}`
+    });
+    projectForm.addEventListener("submit", () => clearDescription());
+    previewResizeObserver.observe(description);
+    const doMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
+    setupMarkdownUpload(
+      document.querySelectorAll("#project_form input[type=submit]"),
+      must(document.querySelector("#file_input")),
+      must(document.querySelector(".upload_bar")),
+      description,
+      doMarkdown,
+      textMaxFileSize,
+      editorUploadUrl
+    );
+  }
+  initOwnersUI({ csrf, maxOwners, ownerCheckUrl });
+  {
+    let updateCardPreview2 = function() {
+      const title = projectNameField.value || "Project Title";
+      must(document.querySelector("#logo_preview img")).src = logoSelector.url;
+      must(document.querySelector("#logo_placeholder")).innerText = title[0].toUpperCase();
+      must(document.querySelector("#logo_placeholder")).hidden = !!logoSelector.url;
+      must(document.querySelector("#name_preview")).innerText = title;
+      must(document.querySelector("#blurb_preview")).innerText = descriptionField.value || "Project summary";
+      must(document.querySelector("#logo-selector-container")).hidden = !logoSelector.url;
+    };
+    var updateCardPreview = updateCardPreview2;
+    const projectNameField = must(document.querySelector("#project_name"));
+    const descriptionField = must(document.querySelector("#description"));
+    const logoSelector = new ImageSelector(
+      "logo",
+      logoMaxFileSize,
+      {
+        original: logo || void 0,
+        onUpdate() {
+          updateCardPreview2();
+        }
+      }
+    );
+    must(document.querySelector("#logo-upload-button")).addEventListener("click", (e) => {
+      e.preventDefault();
+      logoSelector.openImageInput();
+    });
+    must(document.querySelector("#project-logo-placeholder")).replaceWith(logoSelector.root);
+    updateCardPreview2();
+    projectNameField.addEventListener("input", updateCardPreview2);
+    descriptionField.addEventListener("input", updateCardPreview2);
+  }
+  {
+    let updateLinkPreviews2 = function() {
+      const linkData = getLinkData();
+      const preview = must(document.querySelector("#links-preview"));
+      preview.innerHTML = "";
+      let seenPrimary = false, seenSecondary = false;
+      for (const link of linkData) {
+        const name = link.name || link.serviceName;
+        const iconSVG = linkIcons[link.icon];
+        const l = linkTemplate2();
+        l.link.href = link.url;
+        l.name.innerText = name;
+        l.name.title = name;
+        l.icon.innerHTML = iconSVG;
+        l.divider.hidden = link.primary || !seenPrimary || seenSecondary;
+        preview.appendChild(l.root);
+        seenPrimary ||= link.primary;
+        seenSecondary ||= !link.primary;
+      }
+    };
+    var updateLinkPreviews = updateLinkPreviews2;
+    initLinkEditor(initialLinks);
+    const linkIcons = Object.fromEntries(linkIconsRaw.map((i) => [i.name, i.svg]));
+    const linkTemplate2 = makeTemplateCloner("link-preview");
+    updateLinkPreviews2();
+    window.addEventListener("wasmready", () => updateLinkPreviews2());
+    window.addEventListener("linkedit", () => updateLinkPreviews2());
+  }
+  {
+    let updateNewScreenshotButton2 = function() {
+      const numScreenshots = screenshotContainer.querySelectorAll(".reorderable-item:not([hidden])").length;
+      newScreenshotButton.disabled = numScreenshots >= maxScreenshots;
+    };
+    var updateNewScreenshotButton = updateNewScreenshotButton2;
+    const screenshotContainer = must(document.querySelector("#screenshots"));
+    const newScreenshotButton = must(document.querySelector("#screenshot-upload-button"));
+    const screenshotTemplate = makeTemplateCloner("screenshot");
+    const { startDrag: startDragScreenshot } = initReorderable(screenshotContainer, {
+      onReorder() {
+      }
+    });
+    for (const screenshot of screenshots ?? []) {
+      const el = screenshotTemplate();
+      const selector = new ImageSelector("screenshot", screenshotMaxFileSize, {
+        original: screenshot,
+        onRemove: () => {
+          el.root.hidden = true;
+          updateNewScreenshotButton2();
+        }
+      });
+      el.selectorPlaceholder.replaceWith(selector.root);
+      el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
+      screenshotContainer.appendChild(el.root);
+    }
+    newScreenshotButton.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const el = screenshotTemplate();
+      const selector = new ImageSelector("screenshot", screenshotMaxFileSize, {
+        onRemove: () => {
+          el.root.remove();
+          updateNewScreenshotButton2();
+        }
+      });
+      el.selectorPlaceholder.replaceWith(selector.root);
+      el.grabHandle.addEventListener("pointerdown", startDragScreenshot);
+      el.root.hidden = true;
+      document.body.appendChild(el.root);
+      const file = await selector.openImageInput();
+      if (file) {
+        el.root.remove();
+        screenshotContainer.appendChild(el.root);
+        el.root.hidden = false;
+      } else {
+        el.root.remove();
+      }
+      updateNewScreenshotButton2();
+    });
+    updateNewScreenshotButton2();
+  }
+}
+function initOwnersUI(opts) {
+  let ownerQueryState = "idle";
   const addOwnerInput = must(document.querySelector("#owner_name"));
   const addOwnerButton = must(document.querySelector("#owner_add"));
   const ownersError = must(document.querySelector("#owners_error"));
@@ -892,6 +1093,11 @@ function init({
   const ownerTemplate = makeTemplateCloner("owner_row");
   const ownerPreviewTemplate = makeTemplateCloner("owner_preview");
   const ownersPreviewContainer = must(document.querySelector("#owners_preview"));
+  function updateAddOwnerStyles() {
+    const numOwnerRows = ownerList.querySelectorAll(".owner_row").length;
+    addOwnerInput.disabled = numOwnerRows >= opts.maxOwners;
+  }
+  updateAddOwnerStyles();
   addOwnerInput.addEventListener("keypress", function(ev) {
     if (ev.which == 13) {
       startAddOwner();
@@ -903,13 +1109,8 @@ function init({
     ev.preventDefault();
     startAddOwner();
   });
-  function updateAddOwnerStyles() {
-    const numOwnerRows = document.querySelectorAll(".owner_row").length;
-    addOwnerInput.disabled = numOwnerRows >= maxOwners;
-  }
-  updateAddOwnerStyles();
-  function startAddOwner() {
-    if (ownerQueryState == OWNER_QUERY_STATE_QUERYING) {
+  async function startAddOwner() {
+    if (ownerQueryState == "querying") {
       return;
     }
     let newOwner = addOwnerInput.value.trim().toLowerCase();
@@ -924,40 +1125,35 @@ function init({
       }
     }
     ownersError.textContent = "";
-    let xhr = new XMLHttpRequest();
-    xhr.withCredentials = true;
-    xhr.open("POST", ownerCheckUrl);
-    xhr.responseType = "json";
-    xhr.addEventListener("load", function(ev) {
-      let result = xhr.response;
-      if (result) {
-        if (result.found) {
-          addOwner(result.username, result.name, result.avatarUrl);
-          addOwnerInput.value = "";
-        } else {
-          ownersError.textContent = "Username not found";
-        }
+    setOwnerQueryState("querying");
+    try {
+      const data = new FormData();
+      data.append(opts.csrf.field, opts.csrf.token);
+      data.append("username", newOwner);
+      const response = await fetch(opts.ownerCheckUrl, {
+        method: "POST",
+        credentials: "include",
+        body: data
+      });
+      const result = await response.json();
+      if (result.found) {
+        addOwner(result.username, result.name, result.avatarUrl);
+        addOwnerInput.value = "";
       } else {
-        ownersError.textContent = "There was an issue validating this username";
+        ownersError.textContent = "Username not found.";
       }
-      setOwnerQueryState(OWNER_QUERY_STATE_IDLE);
-      if (document.activeElement == addOwnerButton) {
+      if (document.activeElement === addOwnerButton) {
         addOwnerInput.focus();
       }
-    });
-    xhr.addEventListener("error", function(ev) {
+    } catch (e) {
+      console.error(e);
       ownersError.textContent = "There was an issue validating this username";
-      setOwnerQueryState(OWNER_QUERY_STATE_IDLE);
-    });
-    let data = new FormData();
-    data.append(csrf.field, csrf.token);
-    data.append("username", newOwner);
-    xhr.send(data);
-    setOwnerQueryState(OWNER_QUERY_STATE_QUERYING);
+    }
+    setOwnerQueryState("idle");
   }
   function setOwnerQueryState(state) {
     ownerQueryState = state;
-    const querying = ownerQueryState == OWNER_QUERY_STATE_QUERYING;
+    const querying = ownerQueryState === "querying";
     addOwnerInput.disabled = querying;
     addOwnerButton.disabled = querying;
     updateAddOwnerStyles();
@@ -991,99 +1187,6 @@ function init({
     }
   }
   updateOwnersPreview();
-  const projectNameField = must(document.querySelector("#project_name"));
-  const descriptionField = must(document.querySelector("#description"));
-  const logoSelector = new ImageSelector(
-    "logo",
-    logoMaxFileSize,
-    {
-      original: logo || void 0,
-      onUpdate() {
-        updateCardPreview();
-      }
-    }
-  );
-  must(document.querySelector("#logo-upload-button")).addEventListener("click", (e) => {
-    e.preventDefault();
-    logoSelector.openImageInput();
-  });
-  must(document.querySelector("#project-logo-placeholder")).replaceWith(logoSelector.root);
-  const headerSelector = new ImageSelector(
-    "header_image",
-    headerMaxFileSize,
-    {
-      original: headerImage || void 0,
-      onUpdate() {
-        updateCardPreview();
-      }
-    }
-  );
-  must(document.querySelector("#header-upload-button")).addEventListener("click", (e) => {
-    e.preventDefault();
-    headerSelector.openImageInput();
-  });
-  must(document.querySelector("#header-image-placeholder")).replaceWith(headerSelector.root);
-  function updateCardPreview() {
-    const title = projectNameField.value || "Project Title";
-    must(document.querySelector("#logo_preview img")).src = logoSelector.url;
-    must(document.querySelector("#logo_placeholder")).innerText = title[0].toUpperCase();
-    must(document.querySelector("#logo_placeholder")).hidden = !!logoSelector.url;
-    must(document.querySelector("#header_img_preview")).style.backgroundImage = `url(${headerSelector.url})`;
-    must(document.querySelector("#flowsnake")).classList.toggle("dn", !!headerSelector.url);
-    must(document.querySelector("#name_preview")).innerText = title;
-    must(document.querySelector("#longdesc_title")).innerText = title;
-    must(document.querySelector("#blurb_preview")).innerText = descriptionField.value || "Project summary";
-  }
-  updateCardPreview();
-  projectNameField.addEventListener("input", updateCardPreview);
-  descriptionField.addEventListener("input", updateCardPreview);
-  setupMarkdownUpload(
-    document.querySelectorAll("#project_form input[type=submit]"),
-    must(document.querySelector("#file_input")),
-    must(document.querySelector(".upload_bar")),
-    description,
-    doMarkdown,
-    textMaxFileSize,
-    editorUploadUrl
-  );
-  initLinkEditor(initialLinks);
-  const primaryLinkTemplate = makeTemplateCloner("primary_link");
-  const secondaryLinkTemplate = makeTemplateCloner("secondary_link");
-  function updateLinkPreviews() {
-    const linkData = getLinkData();
-    const primaryPreview = must(document.querySelector("#primary_links_preview"));
-    const secondaryPreview = must(document.querySelector("#secondary_links_preview"));
-    primaryPreview.innerHTML = "";
-    secondaryPreview.innerHTML = "";
-    for (const link of linkData) {
-      if (link.primary) {
-        const l = primaryLinkTemplate();
-        l.link.href = link.url;
-        l.name.innerText = link.name;
-        primaryPreview.appendChild(l.link);
-      } else {
-        let icon = "website";
-        let title = "";
-        if (parseKnownServicesForUrl) {
-          const guess = parseKnownServicesForUrl(link.url);
-          icon = guess.icon;
-          title = guess.service;
-          if (guess.username) {
-            title += ` (${guess.username})`;
-          }
-        }
-        const iconSVG = must(document.querySelector(`#link-icon-${icon}`)).innerHTML;
-        const l = secondaryLinkTemplate();
-        l.link.href = link.url;
-        l.link.title = link.name || title;
-        l.link.innerHTML = iconSVG;
-        secondaryPreview.appendChild(l.link);
-      }
-    }
-  }
-  updateLinkPreviews();
-  window.addEventListener("wasmready", () => updateLinkPreviews());
-  window.addEventListener("linkedit", () => updateLinkPreviews());
 }
 export {
   init

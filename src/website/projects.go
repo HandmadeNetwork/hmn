@@ -2,7 +2,7 @@ package website
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -27,6 +27,7 @@ import (
 
 const maxPersonalProjects = 20
 const maxProjectOwners = 5
+const maxProjectScreenshots = 15
 
 type ProjectTemplateData struct {
 	templates.BaseData
@@ -395,7 +396,6 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 }
 
 var ProjectLogoMaxFileSize = 2 * 1024 * 1024
-var ProjectHeaderMaxFileSize = 2 * 1024 * 1024 // TODO(ben): Pick a real limit
 
 type ProjectEditData struct {
 	templates.BaseData
@@ -403,9 +403,11 @@ type ProjectEditData struct {
 	Editing         bool
 	ProjectSettings templates.ProjectSettings
 	MaxOwners       int
+	MaxScreenshots  int
 
-	APICheckUsernameUrl                string
-	LogoMaxFileSize, HeaderMaxFileSize int
+	APICheckUsernameUrl   string
+	LogoMaxFileSize       int
+	ScreenshotMaxFileSize int
 
 	AllLogos []templates.Icon
 
@@ -447,10 +449,11 @@ func ProjectNew(c *RequestContext) ResponseData {
 		Editing:         false,
 		ProjectSettings: project,
 		MaxOwners:       maxProjectOwners,
+		MaxScreenshots:  maxProjectScreenshots,
 
-		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
-		LogoMaxFileSize:     ProjectLogoMaxFileSize,
-		HeaderMaxFileSize:   ProjectHeaderMaxFileSize,
+		APICheckUsernameUrl:   hmnurl.BuildAPICheckUsername(),
+		LogoMaxFileSize:       ProjectLogoMaxFileSize,
+		ScreenshotMaxFileSize: AssetMaxSize(c.CurrentUser),
 
 		AllLogos: allLogos(),
 
@@ -561,6 +564,24 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
 	}
 
+	projectScreenshots, err := db.Query[models.Asset](c, c.Conn,
+		`
+		---- Fetching project screenshots
+		SELECT $columns{asset}
+		FROM
+			project_screenshot
+			JOIN asset ON project_screenshot.asset_id = asset.id
+		WHERE
+			project_screenshot.project_id = $1
+		ORDER BY
+			project_screenshot.sort
+		`,
+		p.Project.ID,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project screenshots"))
+	}
+
 	projectJams, err := hmndata.FetchJamsForProject(c, c.Conn, c.CurrentUser, p.Project.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jams for project"))
@@ -570,19 +591,11 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		&p.Project,
 		p.Owners,
 		p.TagText(),
+		projectJams,
+		projectLinks,
 		p.LogoAsset, p.HeaderImage,
+		projectScreenshots,
 	)
-
-	projectSettings.LinksJSON = string(utils.Must1(json.Marshal(templates.LinksToTemplate(projectLinks))))
-
-	projectSettings.JamParticipation = make([]templates.ProjectJamParticipation, 0, len(projectJams))
-	for _, jam := range projectJams {
-		projectSettings.JamParticipation = append(projectSettings.JamParticipation, templates.ProjectJamParticipation{
-			JamName:       jam.JamName,
-			JamSlug:       jam.JamSlug,
-			Participating: jam.Participating,
-		})
-	}
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
@@ -590,10 +603,11 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		Editing:         true,
 		ProjectSettings: projectSettings,
 		MaxOwners:       maxProjectOwners,
+		MaxScreenshots:  maxProjectScreenshots,
 
-		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
-		LogoMaxFileSize:     ProjectLogoMaxFileSize,
-		HeaderMaxFileSize:   ProjectHeaderMaxFileSize,
+		APICheckUsernameUrl:   hmnurl.BuildAPICheckUsername(),
+		LogoMaxFileSize:       ProjectLogoMaxFileSize,
+		ScreenshotMaxFileSize: AssetMaxSize(c.CurrentUser),
 
 		AllLogos: allLogos(),
 
@@ -655,7 +669,7 @@ type ProjectPayload struct {
 	Hidden                bool
 	OwnerUsernames        []string
 	Logo                  FormImage
-	HeaderImage           FormImage
+	Screenshots           []FormImage
 	Tag                   string
 	JamParticipationSlugs []string
 	JamHidden             bool
@@ -675,7 +689,7 @@ type ProjectEditFormResult struct {
 
 func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	var res ProjectEditFormResult
-	maxBodySize := int64(ProjectLogoMaxFileSize + ProjectHeaderMaxFileSize + 1024*1024)
+	maxBodySize := int64(ProjectLogoMaxFileSize + 1024*1024)
 	c.Req.Body = http.MaxBytesReader(c.Res, c.Req.Body, maxBodySize)
 	err := c.Req.ParseMultipartForm(maxBodySize)
 	if err != nil {
@@ -720,9 +734,9 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		res.Error = oops.New(err, "Failed to read image from form")
 		return res
 	}
-	headerImage, err := GetFormImage(c, "header_image")
+	screenshots, err := GetFormImages(c, "screenshot")
 	if err != nil {
-		res.Error = oops.New(err, "Failed to read image from form")
+		res.Error = oops.New(err, "Failed to read screenshots from form")
 		return res
 	}
 
@@ -760,7 +774,7 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		Hidden:                hidden,
 		OwnerUsernames:        owners,
 		Logo:                  logo,
-		HeaderImage:           headerImage,
+		Screenshots:           screenshots,
 		Tag:                   tag,
 		JamParticipationSlugs: jamParticipationSlugs,
 		JamHidden:             jamHidden,
@@ -775,7 +789,19 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 }
 
 func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *ProjectPayload) error {
+	numNewOrExistingScreenshots := 0
+	for _, screenshot := range payload.Screenshots {
+		if screenshot.New || screenshot.Exists {
+			numNewOrExistingScreenshots += 1
+		}
+	}
+	if numNewOrExistingScreenshots > maxProjectScreenshots {
+		return errors.New("too many screenshots")
+	}
+
+	// NOTE(ben): Upload all new assets before proceeding with DB updates.
 	var logoUUID *uuid.UUID
+	var newScreenshotUUIDs []uuid.UUID
 	if payload.Logo.New {
 		logoAsset, err := SaveFormImage(ctx, tx, payload.Logo, &user.ID)
 		if err != nil {
@@ -783,19 +809,19 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 		logoUUID = &logoAsset.ID
 	}
-
-	var headerImageUUID *uuid.UUID
-	if payload.HeaderImage.New {
-		headerImageAsset, err := SaveFormImage(ctx, tx, payload.HeaderImage, &user.ID)
-		if err != nil {
-			return oops.New(err, "Failed to save asset")
+	for _, screenshot := range payload.Screenshots {
+		if screenshot.New {
+			screenshotAsset, err := SaveFormImage(ctx, tx, screenshot, &user.ID)
+			if err != nil {
+				return oops.New(err, "Failed to save screenshot")
+			}
+			newScreenshotUUIDs = append(newScreenshotUUIDs, screenshotAsset.ID)
 		}
-		headerImageUUID = &headerImageAsset.ID
 	}
 
 	hasSelf := false
 	selfUsername := strings.ToLower(user.Username)
-	for i, _ := range payload.OwnerUsernames {
+	for i := range payload.OwnerUsernames {
 		payload.OwnerUsernames[i] = strings.ToLower(payload.OwnerUsernames[i])
 		if payload.OwnerUsernames[i] == selfUsername {
 			hasSelf = true
@@ -865,38 +891,97 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		}
 	}
 
-	if payload.Logo.New || payload.Logo.Remove {
-		_, err = tx.Exec(ctx,
-			`
-			UPDATE project
-			SET
-				logo_asset_id = $2
-			WHERE
-				id = $1
-			`,
-			payload.ProjectID,
-			logoUUID,
-		)
-		if err != nil {
-			return oops.New(err, "Failed to update project's logo")
-		}
-	}
+	// NOTE(ben): Update images and screenshots
+	{
+		var errs []error
 
-	if payload.HeaderImage.New || payload.HeaderImage.Remove {
-		_, err = tx.Exec(ctx,
+		if payload.Logo.New || payload.Logo.Remove {
+			_, err = tx.Exec(ctx,
+				`
+				UPDATE project
+				SET
+					logo_asset_id = $2
+				WHERE
+					id = $1
+				`,
+				payload.ProjectID,
+				logoUUID,
+			)
+			if err != nil {
+				errs = append(errs, oops.New(err, "Failed to update project's logo"))
+			}
+		}
+
+		currentNewScreenshot := 0
+		for sort, screenshot := range payload.Screenshots {
+			if screenshot.New || screenshot.Exists {
+				assetID := screenshot.AssetID
+				if screenshot.New {
+					// NOTE(ben): No bounds check necessary because newScreenshotUUIDs was
+					// generated from screenshot.New's above.
+					assetID = newScreenshotUUIDs[currentNewScreenshot].String()
+					currentNewScreenshot++
+				}
+
+				_, err := tx.Exec(ctx,
+					`
+					---- Upsert project screenshot
+					INSERT INTO project_screenshot (project_id, asset_id, sort)
+					VALUES ($1, $2, $3)
+					ON CONFLICT (project_id, asset_id) DO UPDATE
+						SET sort = $3
+					`,
+					payload.ProjectID, assetID, sort,
+				)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+			} else {
+				utils.Assert(screenshot.Remove)
+				utils.Assert(screenshot.AssetID)
+
+				res, err := tx.Exec(ctx,
+					`
+					---- Delete project screenshot
+					DELETE FROM project_screenshot
+					WHERE project_id = $1 AND asset_id = $2
+					`,
+					payload.ProjectID, screenshot.AssetID,
+				)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				if res.RowsAffected() != 1 {
+					errs = append(errs, errors.New("attempt to delete nonexistent screenshot"))
+					continue
+				}
+			}
+		}
+
+		if err := errors.Join(errs...); err != nil {
+			return oops.New(err, "failed to upload project images")
+		}
+
+		// NOTE(ben): Sanity check: After all this, we should have N project
+		// screenshots that all have different sorts.
+		type Sanity struct {
+			Total    int `db:"COUNT(*)"`
+			NumSorts int `db:"COUNT(DISTINCT sort)"`
+		}
+		sanity := utils.Must1(db.QueryOne[Sanity](ctx, tx,
 			`
-			UPDATE project
-			SET
-				header_asset_id = $2
-			WHERE
-				id = $1
+			---- Project screenshot sanity check
+			SELECT $columns FROM project_screenshot
+			WHERE project_id = $1
 			`,
 			payload.ProjectID,
-			headerImageUUID,
+		))
+		utils.Assert(
+			sanity.Total == numNewOrExistingScreenshots && sanity.NumSorts == sanity.Total,
+			fmt.Sprintf("should have %d screenshots, but had %d with %d distinct sorts", len(payload.Screenshots), sanity.Total, sanity.NumSorts),
 		)
-		if err != nil {
-			return oops.New(err, "Failed to update project's header image")
-		}
 	}
 
 	owners, err := db.Query[models.User](ctx, tx,

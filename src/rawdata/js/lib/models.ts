@@ -10,3 +10,8 @@ export type Asset = {
   width: number,
   height: number,
 };
+
+export type Icon = {
+  name: string,
+  svg: string,
+};
