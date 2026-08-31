@@ -4,7 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -114,9 +113,8 @@ func TestRecoverPanicAsError(t *testing.T) {
 			panic("blerp")
 		}
 		err := f()
-		var asOops *oops.Error
 		assert.ErrorContains(t, err, "blerp")
-		assert.True(t, errors.As(err, &asOops))
+		assert.ErrorContains(t, errors.Unwrap(err), "blerp")
 	})
 	t.Run("panic, error", func(t *testing.T) {
 		f := func() (err error) {
@@ -125,10 +123,8 @@ func TestRecoverPanicAsError(t *testing.T) {
 			panic("blerp")
 		}
 		err := f()
-		var asOops *oops.Error
 		assert.ErrorContains(t, err, "blerp")
 		assert.ErrorContains(t, err, "sentinel")
-		assert.True(t, errors.As(err, &asOops))
 		assert.True(t, errors.Is(err, sentinelError))
 	})
 }

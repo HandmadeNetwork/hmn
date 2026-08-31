@@ -203,8 +203,8 @@ func Forum(c *RequestContext) ResponseData {
 }
 
 func ForumMarkRead(c *RequestContext) ResponseData {
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	sfId, err := strconv.Atoi(c.PathParams["sfid"])
 	if err != nil {
@@ -833,8 +833,8 @@ func WikiArticleRedirect(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up wiki thread"))
 	}
 
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	dest := UrlForGenericThread(c.UrlContext, &thread.Thread, lineageBuilder)
 	return c.Redirect(dest, http.StatusFound)
@@ -847,8 +847,8 @@ type commonForumData struct {
 	ThreadID   int
 	PostID     int
 
-	SubforumTree   models.SubforumTree
-	LineageBuilder *models.SubforumLineageBuilder
+	SubforumTree   hmndata.SubforumTree
+	LineageBuilder *hmndata.SubforumLineageBuilder
 }
 
 /*
@@ -862,8 +862,8 @@ If this returns false, then something was malformed and you should 404.
 func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 	defer c.Perf.StartBlock("FORUMS", "Fetch common forum data").End()
 
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	res := commonForumData{
 		c:              c,
@@ -898,7 +898,7 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 	return res, true
 }
 
-func validateSubforums(lineageBuilder *models.SubforumLineageBuilder, project *models.Project, sfPath string) (int, bool) {
+func validateSubforums(lineageBuilder *hmndata.SubforumLineageBuilder, project *models.Project, sfPath string) (int, bool) {
 	if project.ForumID == nil {
 		return -1, false
 	}

@@ -7,9 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
-	"git.handmade.network/hmn/hmn/src/oops"
 )
 
 /*
@@ -31,98 +29,84 @@ func (c *UrlContext) BuildHomepage() string {
 var RegexJamsIndex = regexp.MustCompile("^/jams$")
 
 func BuildJamsIndex() string {
-	defer CatchPanic()
 	return Url("/jams", nil)
 }
 
 var RegexJamIndex = regexp.MustCompile("^/jam$")
 
 func BuildJamIndex() string {
-	defer CatchPanic()
 	return Url("/jam", nil)
 }
 
 var RegexJamIndex2021 = regexp.MustCompile("^/jam/2021$")
 
 func BuildJamIndex2021() string {
-	defer CatchPanic()
 	return Url("/jam/2021", nil)
 }
 
 var RegexJamIndex2022 = regexp.MustCompile("^/jam/2022$")
 
 func BuildJamIndex2022() string {
-	defer CatchPanic()
 	return Url("/jam/2022", nil)
 }
 
 var RegexJamFeed2022 = regexp.MustCompile("^/jam/2022/feed$")
 
 func BuildJamFeed2022() string {
-	defer CatchPanic()
 	return Url("/jam/2022/feed", nil)
 }
 
 var RegexJamIndex2023 = regexp.MustCompile("^/jam/2023$")
 
 func BuildJamIndex2023() string {
-	defer CatchPanic()
 	return Url("/jam/2023", nil)
 }
 
 var RegexJamFeed2023 = regexp.MustCompile("^/jam/2023/feed$")
 
 func BuildJamFeed2023() string {
-	defer CatchPanic()
 	return Url("/jam/2023/feed", nil)
 }
 
 var RegexJamIndex2023_Visibility = regexp.MustCompile("^/jam/visibility-2023$")
 
 func BuildJamIndex2023_Visibility() string {
-	defer CatchPanic()
 	return Url("/jam/visibility-2023", nil)
 }
 
 var RegexJamFeed2023_Visibility = regexp.MustCompile("^/jam/visibility-2023/feed$")
 
 func BuildJamFeed2023_Visibility() string {
-	defer CatchPanic()
 	return Url("/jam/visibility-2023/feed", nil)
 }
 
 var RegexJamRecap2023_Visibility = regexp.MustCompile("^/jam/visibility-2023/recap$")
 
 func BuildJamRecap2023_Visibility() string {
-	defer CatchPanic()
 	return Url("/jam/visibility-2023/recap", nil)
 }
 
 var RegexJamGenericIndex = regexp.MustCompile("^/jam/(?P<urlslug>[^/]+)$")
 
 func BuildJamGenericIndex(urlSlug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/jam/%s", urlSlug), nil)
 }
 
 var RegexJamGenericFeed = regexp.MustCompile("^/jam/(?P<urlslug>[^/]+)/feed$")
 
 func BuildJamGenericFeed(urlSlug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/jam/%s/feed", urlSlug), nil)
 }
 
 var RegexJamGenericGuidelines = regexp.MustCompile("^/jam/(?P<urlslug>[^/]+)/guidelines$")
 
 func BuildJamGenericGuidelines(urlSlug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/jam/%s/guidelines", urlSlug), nil)
 }
 
 var RegexExpo = regexp.MustCompile("^/expo/(?P<urlslug>[^/]+)$")
 
 func BuildExpo(urlSlug string, status string) string {
-	defer CatchPanic()
 	var q []Q
 	if status != "" {
 		q = []Q{{"status", status}}
@@ -133,145 +117,124 @@ func BuildExpo(urlSlug string, status string) string {
 var RegexExpoTicketPurchaseSuccess = regexp.MustCompile("^/expo/(?P<urlslug>[^/]+)/success$")
 
 func BuildExpoTicketPurchaseSuccess(urlSlug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/expo/%s/success", urlSlug), nil)
 }
 
 var RegexTicketsAdmin = regexp.MustCompile("^/tickets/admin$")
 
 func BuildTicketsAdmin() string {
-	defer CatchPanic()
 	return Url("/tickets/admin", nil)
 }
 
 var RegexTicketsAdminEvent = regexp.MustCompile("^/tickets/admin/(?P<urlslug>[^/]+)$")
 
 func BuildTicketsAdminEvent(urlSlug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/admin/%s", urlSlug), nil)
 }
 
 var RegexTicketsAdminEventCSVDownload = regexp.MustCompile("^/tickets/admin/(?P<urlslug>[^/]+)/csv$")
 
 func BuildTicketsAdminEventCSVDownload(urlSlug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/admin/%s/csv", urlSlug), nil)
 }
 
 var RegexTicketsAdminReserve = regexp.MustCompile("^/tickets/admin/(?P<urlslug>[^/]+)/reserve$")
 
 func BuildTicketsAdminReserve(urlSlug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/admin/%s/reserve", urlSlug), nil)
 }
 
 var RegexTicketsAdminScan = regexp.MustCompile("^/tickets/admin/(?P<urlslug>[^/]+)/scan$")
 
 func BuildTicketsAdminScan(urlSlug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/admin/%s/scan", urlSlug), nil)
 }
 
 var RegexTicketPurchase = regexp.MustCompile("^/tickets/(?P<urlslug>[^/]+)/purchase$")
 
 func BuildTicketPurchase(urlSlug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/%s/purchase", urlSlug), nil)
 }
 
 var RegexTicketSingleForEvent = regexp.MustCompile("^/tickets/(?P<urlslug>[^/]+)/mine$")
 
 func BuildTicketSingleForEvent(urlSlug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/%s/mine", urlSlug), nil)
 }
 
 var RegexTicketSingle = regexp.MustCompile("^/tickets/(?P<id>[^/]+)$")
 
 func BuildTicketSingle(id string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/%s", id), nil)
 }
 
 var RegexTicketQRCode = regexp.MustCompile("^/tickets/(?P<id>[^.]+).png$")
 
 func BuildTicketQRCode(id string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/%s.png", id), nil)
 }
 
 var RegexTicketEdit = regexp.MustCompile("^/tickets/(?P<id>[^/]+)/edit$")
 
 func BuildTicketEdit(id string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/%s/edit", id), nil)
 }
 
 var RegexTicketDelete = regexp.MustCompile("^/tickets/(?P<id>[^/]+)/delete$")
 
 func BuildTicketDelete(id string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/%s/delete", id), nil)
 }
 
 var RegexTicketScanned = regexp.MustCompile("^/tickets/(?P<id>[^/]+)/scanned$")
 
 func BuildTicketScanned(id string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/tickets/%s/scanned", id), nil)
 }
 
 var RegexTimeMachine = regexp.MustCompile("^/timemachine$")
 
 func BuildTimeMachine() string {
-	defer CatchPanic()
 	return Url("/timemachine", nil)
 }
 
 var RegexTimeMachineSubmissions = regexp.MustCompile("^/timemachine/submissions$")
 
 func BuildTimeMachineSubmissions() string {
-	defer CatchPanic()
 	return Url("/timemachine/submissions", nil)
 }
 
 func BuildTimeMachineSubmission(id int) string {
-	defer CatchPanic()
 	return UrlWithFragment("/timemachine/submissions", nil, strconv.Itoa(id))
 }
 
 var RegexTimeMachineAtomFeed = regexp.MustCompile("^/timemachine/submissions/atom$")
 
 func BuildTimeMachineAtomFeed() string {
-	defer CatchPanic()
 	return Url("/timemachine/submissions/atom", nil)
 }
 
 var RegexTimeMachineForm = regexp.MustCompile("^/timemachine/submit$")
 
 func BuildTimeMachineForm() string {
-	defer CatchPanic()
 	return Url("/timemachine/submit", nil)
 }
 
 var RegexTimeMachineFormDone = regexp.MustCompile("^/timemachine/thanks$")
 
 func BuildTimeMachineFormDone() string {
-	defer CatchPanic()
 	return Url("/timemachine/thanks", nil)
 }
 
 var RegexCalendarIndex = regexp.MustCompile("^/calendar$")
 
 func BuildCalendarIndex() string {
-	defer CatchPanic()
 	return Url("/calendar", nil)
 }
 
 var RegexCalendarICal = regexp.MustCompile("^/Handmade Network.ical$")
 
 func BuildCalendarICal() string {
-	defer CatchPanic()
 	return Url("/Handmade Network.ical", nil)
 }
 
@@ -280,14 +243,12 @@ func BuildCalendarICal() string {
 var RegexLoginAction = regexp.MustCompile("^/login$")
 
 func BuildLoginAction(destination string) string {
-	defer CatchPanic()
 	return Url("/login", []Q{{Name: "destination", Value: destination}})
 }
 
 var RegexLoginPage = regexp.MustCompile("^/login$")
 
 func BuildLoginPage(destination string, notice string) string {
-	defer CatchPanic()
 	var q []Q
 	if destination != "" {
 		q = append(q, Q{Name: "destination", Value: destination})
@@ -301,14 +262,12 @@ func BuildLoginPage(destination string, notice string) string {
 var RegexLoginWithDiscord = regexp.MustCompile("^/login-with-discord$")
 
 func BuildLoginWithDiscord(destination string) string {
-	defer CatchPanic()
 	return Url("/login-with-discord", []Q{{Name: "destination", Value: destination}})
 }
 
 var RegexLogout = regexp.MustCompile("^/logout$")
 
 func BuildLogoutAction(destination string) string {
-	defer CatchPanic()
 	if destination == "" {
 		destination = "/"
 	}
@@ -318,7 +277,6 @@ func BuildLogoutAction(destination string) string {
 var RegexRegister = regexp.MustCompile("^/register$")
 
 func BuildRegister(destination string, notice string) string {
-	defer CatchPanic()
 	var query []Q
 	if destination != "" {
 		query = append(query, Q{"destination", destination})
@@ -332,14 +290,12 @@ func BuildRegister(destination string, notice string) string {
 var RegexRegistrationSuccess = regexp.MustCompile("^/registered_successfully$")
 
 func BuildRegistrationSuccess() string {
-	defer CatchPanic()
 	return Url("/registered_successfully", nil)
 }
 
 var RegexEmailConfirmation = regexp.MustCompile("^/email_confirmation/(?P<username>[^/]+)/(?P<token>[^/]+)$")
 
 func BuildEmailConfirmation(username, token string, destination string) string {
-	defer CatchPanic()
 	var query []Q
 	if destination != "" {
 		query = append(query, Q{"destination", destination})
@@ -350,14 +306,12 @@ func BuildEmailConfirmation(username, token string, destination string) string {
 var RegexRequestPasswordReset = regexp.MustCompile("^/password_reset$")
 
 func BuildRequestPasswordReset() string {
-	defer CatchPanic()
 	return Url("/password_reset", nil)
 }
 
 var RegexPasswordResetSent = regexp.MustCompile("^/password_reset/sent$")
 
 func BuildPasswordResetSent() string {
-	defer CatchPanic()
 	return Url("/password_reset/sent", nil)
 }
 
@@ -365,7 +319,6 @@ var RegexOldDoPasswordReset = regexp.MustCompile(`^_password_reset/(?P<username>
 var RegexDoPasswordReset = regexp.MustCompile("^/password_reset/(?P<username>[^/]+)/(?P<token>[^/]+)$")
 
 func BuildDoPasswordReset(username string, token string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/password_reset/%s/%s", url.PathEscape(username), token), nil)
 }
 
@@ -376,42 +329,36 @@ func BuildDoPasswordReset(username string, token string) string {
 var RegexManifesto = regexp.MustCompile("^/manifesto$")
 
 func BuildManifesto() string {
-	defer CatchPanic()
 	return Url("/manifesto", nil)
 }
 
 var RegexValues = regexp.MustCompile("^/values$")
 
 func BuildValues() string {
-	defer CatchPanic()
 	return Url("/values", nil)
 }
 
 var RegexAbout = regexp.MustCompile("^/about$")
 
 func BuildAbout() string {
-	defer CatchPanic()
 	return Url("/about", nil)
 }
 
 var RegexCommunicationGuidelines = regexp.MustCompile("^/communication-guidelines$")
 
 func BuildCommunicationGuidelines() string {
-	defer CatchPanic()
 	return Url("/communication-guidelines", nil)
 }
 
 var RegexContactPage = regexp.MustCompile("^/contact$")
 
 func BuildContactPage() string {
-	defer CatchPanic()
 	return Url("/contact", nil)
 }
 
 var RegexOldNewsletterSignup = regexp.MustCompile("^/newsletter$")
 
 func BuildOldNewsletterSignup() string {
-	defer CatchPanic()
 	return Url("/newsletter", nil)
 }
 
@@ -422,9 +369,8 @@ func BuildOldNewsletterSignup() string {
 var RegexUserProfile = regexp.MustCompile(`^/m/(?P<username>[^/]+)$`)
 
 func BuildUserProfile(username string) string {
-	defer CatchPanic()
 	if len(username) == 0 {
-		panic(oops.New(nil, "Username must not be blank"))
+		panic("Username must not be blank")
 	}
 	return Url("/m/"+username, nil)
 }
@@ -442,28 +388,24 @@ func BuildUserSettings(section string) string {
 var RegexAdminAtomFeed = regexp.MustCompile(`^/admin/atom$`)
 
 func BuildAdminAtomFeed() string {
-	defer CatchPanic()
 	return Url("/admin/atom", nil)
 }
 
 var RegexAdminApprovalQueue = regexp.MustCompile(`^/admin/approvals$`)
 
 func BuildAdminApprovalQueue() string {
-	defer CatchPanic()
 	return Url("/admin/approvals", nil)
 }
 
 var RegexAdminSetUserOptions = regexp.MustCompile(`^/admin/setuseroptions$`)
 
 func BuildAdminSetUserOptions() string {
-	defer CatchPanic()
 	return Url("/admin/setuseroptions", nil)
 }
 
 var RegexAdminNukeUser = regexp.MustCompile(`^/admin/nukeuser$`)
 
 func BuildAdminNukeUser() string {
-	defer CatchPanic()
 	return Url("/admin/nukeuser", nil)
 }
 
@@ -474,14 +416,12 @@ func BuildAdminNukeUser() string {
 var RegexSnippet = regexp.MustCompile(`^/snippet/(?P<snippetid>\d+)$`)
 
 func BuildSnippet(snippetId int) string {
-	defer CatchPanic()
 	return Url("/snippet/"+strconv.Itoa(snippetId), nil)
 }
 
 var RegexSnippetSubmit = regexp.MustCompile(`^/snippet$`)
 
 func BuildSnippetSubmit() string {
-	defer CatchPanic()
 	return Url("/snippet", nil)
 }
 
@@ -492,14 +432,12 @@ func BuildSnippetSubmit() string {
 var RegexFeed = regexp.MustCompile(`^/feed(/(?P<page>.+)?)?$`)
 
 func BuildFeed() string {
-	defer CatchPanic()
 	return Url("/feed", nil)
 }
 
 func BuildFeedWithPage(page int) string {
-	defer CatchPanic()
 	if page < 1 {
-		panic(oops.New(nil, "Invalid feed page (%d), must be >= 1", page))
+		panic(fmt.Sprintf("Invalid feed page (%d), must be >= 1", page))
 	}
 	if page == 1 {
 		return BuildFeed()
@@ -510,17 +448,14 @@ func BuildFeedWithPage(page int) string {
 var RegexAtomFeed = regexp.MustCompile("^/atom(/(?P<feedtype>[^/]+))?(/new)?$") // NOTE(asaf): `/new` for backwards compatibility with old website
 
 func BuildAtomFeed() string {
-	defer CatchPanic()
 	return Url("/atom", nil)
 }
 
 func BuildAtomFeedForProjects() string {
-	defer CatchPanic()
 	return Url("/atom/projects", nil)
 }
 
 func BuildAtomFeedForShowcase() string {
-	defer CatchPanic()
 	return Url("/atom/showcase", nil)
 }
 
@@ -531,20 +466,17 @@ func BuildAtomFeedForShowcase() string {
 var RegexProjectIndex = regexp.MustCompile(`^/projects$`)
 
 func BuildProjectIndex() string {
-	defer CatchPanic()
 	return Url("/projects", nil)
 }
 
 var RegexProjectNew = regexp.MustCompile("^/p/new$")
 
 func BuildProjectNew() string {
-	defer CatchPanic()
 
 	return Url("/p/new", nil)
 }
 
 func BuildProjectNewJam() string {
-	defer CatchPanic()
 
 	return Url("/p/new", []Q{{Name: "jam", Value: "1"}})
 }
@@ -552,14 +484,12 @@ func BuildProjectNewJam() string {
 var RegexPersonalProject = regexp.MustCompile("^/p/(?P<projectid>[0-9]+)(/(?P<projectslug>[a-zA-Z0-9-]+))?")
 
 func BuildPersonalProject(id int, slug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/p/%d/%s", id, slug), nil)
 }
 
 var RegexProjectEdit = regexp.MustCompile("^/edit$")
 
 func (c *UrlContext) BuildProjectEdit(section string) string {
-	defer CatchPanic()
 
 	return c.UrlWithFragment("/edit", nil, section)
 }
@@ -571,47 +501,40 @@ func (c *UrlContext) BuildProjectEdit(section string) string {
 var RegexPodcast = regexp.MustCompile(`^/podcast$`)
 
 func BuildPodcast() string {
-	defer CatchPanic()
 	return Url("/podcast", nil)
 }
 
 var RegexPodcastEdit = regexp.MustCompile(`^/podcast/edit$`)
 
 func BuildPodcastEdit() string {
-	defer CatchPanic()
 	return Url("/podcast/edit", nil)
 }
 
 var RegexPodcastEpisode = regexp.MustCompile(`^/podcast/ep/(?P<episodeid>[^/]+)$`)
 
 func BuildPodcastEpisode(episodeGUID string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/podcast/ep/%s", episodeGUID), nil)
 }
 
 var RegexPodcastEpisodeNew = regexp.MustCompile(`^/podcast/ep/new$`)
 
 func BuildPodcastEpisodeNew() string {
-	defer CatchPanic()
 	return Url("/podcast/ep/new", nil)
 }
 
 var RegexPodcastEpisodeEdit = regexp.MustCompile(`^/podcast/ep/(?P<episodeid>[^/]+)/edit$`)
 
 func BuildPodcastEpisodeEdit(episodeGUID string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/podcast/ep/%s/edit", episodeGUID), nil)
 }
 
 var RegexPodcastRSS = regexp.MustCompile(`^/podcast/podcast.xml$`)
 
 func BuildPodcastRSS() string {
-	defer CatchPanic()
 	return Url("/podcast/podcast.xml", nil)
 }
 
 func BuildPodcastEpisodeFile(filename string) string {
-	defer CatchPanic()
 	return BuildUserFile(fmt.Sprintf("podcast/%s/%s", models.HMNProjectSlug, filename))
 }
 
@@ -622,14 +545,12 @@ func BuildPodcastEpisodeFile(filename string) string {
 var RegexFishbowlIndex = regexp.MustCompile(`^/fishbowl$`)
 
 func BuildFishbowlIndex() string {
-	defer CatchPanic()
 	return Url("/fishbowl", nil)
 }
 
 var RegexFishbowl = regexp.MustCompile(`^/fishbowl/(?P<slug>[^/]+)/?$`)
 
 func BuildFishbowl(slug string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/fishbowl/%s/", slug), nil)
 }
 
@@ -642,14 +563,12 @@ var RegexFishbowlFiles = regexp.MustCompile(`^/fishbowl/(?P<slug>[^/]+)(?P<path>
 var RegexEducationIndex = regexp.MustCompile(`^/education$`)
 
 func BuildEducationIndex() string {
-	defer CatchPanic()
 	return Url("/education", nil)
 }
 
 var RegexEducationGlossary = regexp.MustCompile(`^/education/glossary(/(?P<slug>[^/]+))?$`)
 
 func BuildEducationGlossary(termSlug string) string {
-	defer CatchPanic()
 
 	if termSlug == "" {
 		return Url("/education/glossary", nil)
@@ -707,11 +626,6 @@ func (c *UrlContext) Url(path string, query []Q) string {
 }
 
 func (c *UrlContext) UrlWithFragment(path string, query []Q, fragment string) string {
-	if c == nil {
-		logging.Warn().Stack().Msg("URL context was nil; defaulting to the HMN URL context")
-		c = &HMNProjectContext
-	}
-
 	if c.PersonalProject {
 		url := url.URL{
 			Scheme:   baseUrlParsed.Scheme,
@@ -746,9 +660,8 @@ func (c *UrlContext) UrlWithFragment(path string, query []Q, fragment string) st
 }
 
 func (c *UrlContext) BuildForum(subforums []string, page int) string {
-	defer CatchPanic()
 	if page < 1 {
-		panic(oops.New(nil, "Invalid forum thread page (%d), must be >= 1", page))
+		panic(fmt.Sprintf("Invalid forum thread page (%d), must be >= 1", page))
 	}
 
 	builder := buildSubforumPath(subforums)
@@ -765,7 +678,6 @@ var RegexForumNewThread = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[
 var RegexForumNewThreadSubmit = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/new/submit$`)
 
 func (c *UrlContext) BuildForumNewThread(subforums []string, submit bool) string {
-	defer CatchPanic()
 	builder := buildSubforumPath(subforums)
 	builder.WriteString("/t/new")
 	if submit {
@@ -778,14 +690,12 @@ func (c *UrlContext) BuildForumNewThread(subforums []string, submit bool) string
 var RegexForumThread = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)(-([^/]+))?(/(?P<page>\d+))?$`)
 
 func (c *UrlContext) BuildForumThread(subforums []string, threadId int, title string, page int) string {
-	defer CatchPanic()
 	builder := buildForumThreadPath(subforums, threadId, title, page)
 
 	return c.Url(builder.String(), nil)
 }
 
 func (c *UrlContext) BuildForumThreadWithPostHash(subforums []string, threadId int, title string, page int, postId int) string {
-	defer CatchPanic()
 	builder := buildForumThreadPath(subforums, threadId, title, page)
 
 	return c.UrlWithFragment(builder.String(), nil, strconv.Itoa(postId))
@@ -794,7 +704,6 @@ func (c *UrlContext) BuildForumThreadWithPostHash(subforums []string, threadId i
 var RegexForumPost = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)/p/(?P<postid>\d+)$`)
 
 func (c *UrlContext) BuildForumPost(subforums []string, threadId int, postId int) string {
-	defer CatchPanic()
 	builder := buildForumPostPath(subforums, threadId, postId)
 
 	return c.Url(builder.String(), nil)
@@ -803,7 +712,6 @@ func (c *UrlContext) BuildForumPost(subforums []string, threadId int, postId int
 var RegexForumPostDelete = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)/p/(?P<postid>\d+)/delete$`)
 
 func (c *UrlContext) BuildForumPostDelete(subforums []string, threadId int, postId int) string {
-	defer CatchPanic()
 	builder := buildForumPostPath(subforums, threadId, postId)
 	builder.WriteString("/delete")
 	return c.Url(builder.String(), nil)
@@ -812,7 +720,6 @@ func (c *UrlContext) BuildForumPostDelete(subforums []string, threadId int, post
 var RegexForumPostEdit = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)/p/(?P<postid>\d+)/edit$`)
 
 func (c *UrlContext) BuildForumPostEdit(subforums []string, threadId int, postId int) string {
-	defer CatchPanic()
 	builder := buildForumPostPath(subforums, threadId, postId)
 	builder.WriteString("/edit")
 	return c.Url(builder.String(), nil)
@@ -821,7 +728,6 @@ func (c *UrlContext) BuildForumPostEdit(subforums []string, threadId int, postId
 var RegexForumPostReply = regexp.MustCompile(`^/forums(/(?P<subforums>[^\d/]+(/[^\d]+)*))?/t/(?P<threadid>\d+)/p/(?P<postid>\d+)/reply$`)
 
 func (c *UrlContext) BuildForumPostReply(subforums []string, threadId int, postId int) string {
-	defer CatchPanic()
 	builder := buildForumPostPath(subforums, threadId, postId)
 	builder.WriteString("/reply")
 	return c.Url(builder.String(), nil)
@@ -838,9 +744,8 @@ var RegexBlogsRedirect = regexp.MustCompile(`^/blogs(?P<remainder>.*)`)
 var RegexBlog = regexp.MustCompile(`^/blog(/(?P<page>\d+))?$`)
 
 func (c *UrlContext) BuildBlog(page int) string {
-	defer CatchPanic()
 	if page < 1 {
-		panic(oops.New(nil, "Invalid blog page (%d), must be >= 1", page))
+		panic(fmt.Sprintf("Invalid blog page (%d), must be >= 1", page))
 	}
 	path := "/blog"
 
@@ -854,13 +759,11 @@ func (c *UrlContext) BuildBlog(page int) string {
 var RegexBlogThread = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)(-([^/]+))?$`)
 
 func (c *UrlContext) BuildBlogThread(threadId int, title string) string {
-	defer CatchPanic()
 	builder := buildBlogThreadPath(threadId, title)
 	return c.Url(builder.String(), nil)
 }
 
 func (c *UrlContext) BuildBlogThreadWithPostHash(threadId int, title string, postId int) string {
-	defer CatchPanic()
 	builder := buildBlogThreadPath(threadId, title)
 	return c.UrlWithFragment(builder.String(), nil, strconv.Itoa(postId))
 }
@@ -868,14 +771,12 @@ func (c *UrlContext) BuildBlogThreadWithPostHash(threadId int, title string, pos
 var RegexBlogNewThread = regexp.MustCompile(`^/blog/new$`)
 
 func (c *UrlContext) BuildBlogNewThread() string {
-	defer CatchPanic()
 	return c.Url("/blog/new", nil)
 }
 
 var RegexBlogPost = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)/e/(?P<postid>\d+)$`)
 
 func (c *UrlContext) BuildBlogPost(threadId int, postId int) string {
-	defer CatchPanic()
 	builder := buildBlogPostPath(threadId, postId)
 	return c.Url(builder.String(), nil)
 }
@@ -883,7 +784,6 @@ func (c *UrlContext) BuildBlogPost(threadId int, postId int) string {
 var RegexBlogPostDelete = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)/e/(?P<postid>\d+)/delete$`)
 
 func (c *UrlContext) BuildBlogPostDelete(threadId int, postId int) string {
-	defer CatchPanic()
 	builder := buildBlogPostPath(threadId, postId)
 	builder.WriteString("/delete")
 	return c.Url(builder.String(), nil)
@@ -892,7 +792,6 @@ func (c *UrlContext) BuildBlogPostDelete(threadId int, postId int) string {
 var RegexBlogPostEdit = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)/e/(?P<postid>\d+)/edit$`)
 
 func (c *UrlContext) BuildBlogPostEdit(threadId int, postId int) string {
-	defer CatchPanic()
 	builder := buildBlogPostPath(threadId, postId)
 	builder.WriteString("/edit")
 	return c.Url(builder.String(), nil)
@@ -901,7 +800,6 @@ func (c *UrlContext) BuildBlogPostEdit(threadId int, postId int) string {
 var RegexBlogPostReply = regexp.MustCompile(`^/blog/p/(?P<threadid>\d+)/e/(?P<postid>\d+)/reply$`)
 
 func (c *UrlContext) BuildBlogPostReply(threadId int, postId int) string {
-	defer CatchPanic()
 	builder := buildBlogPostPath(threadId, postId)
 	builder.WriteString("/reply")
 	return c.Url(builder.String(), nil)
@@ -914,10 +812,8 @@ func (c *UrlContext) BuildBlogPostReply(threadId int, postId int) string {
 var RegexPersonalBlog = regexp.MustCompile(`^/m/(?P<username>[^/]+)/blog(/(?P<page>\d+))?$`)
 
 func BuildPersonalBlog(username string, page int) string {
-	defer CatchPanic()
-
 	if page < 1 {
-		panic(oops.New(nil, "Invalid blog page (%d), must be >= 1", page))
+		panic(fmt.Sprintf("Invalid blog page (%d), must be >= 1", page))
 	}
 
 	path := fmt.Sprintf("/m/%s/blog", username)
@@ -932,14 +828,12 @@ func BuildPersonalBlog(username string, page int) string {
 var RegexPersonalBlogThread = regexp.MustCompile(`^/m/(?P<username>[^/]+)/blog/p/(?P<threadid>\d+)(-([^/]+))?$`)
 
 func BuildPersonalBlogThread(username string, threadId int, title string) string {
-	defer CatchPanic()
 	builder := buildBlogThreadPath(threadId, title)
 	path := fmt.Sprintf("/m/%s%s", username, builder.String())
 	return Url(path, nil)
 }
 
 func BuildPersonalBlogThreadWithPostHash(username string, threadId int, title string, postId int) string {
-	defer CatchPanic()
 	builder := buildBlogThreadPath(threadId, title)
 	path := fmt.Sprintf("/m/%s%s", username, builder.String())
 	return UrlWithFragment(path, nil, strconv.Itoa(postId))
@@ -948,7 +842,6 @@ func BuildPersonalBlogThreadWithPostHash(username string, threadId int, title st
 var RegexPersonalBlogNewThread = regexp.MustCompile(`^/m/(?P<username>[^/]+)/blog/new$`)
 
 func BuildPersonalBlogNewThread(username string) string {
-	defer CatchPanic()
 	return Url(fmt.Sprintf("/m/%s/blog/new", username), nil)
 }
 
@@ -965,7 +858,6 @@ var RegexLibraryAny = regexp.MustCompile(`^/library`)
 var RegexEpisodeList = regexp.MustCompile(`^/episode(/(?P<topic>[^/]+))?$`)
 
 func (c *UrlContext) BuildEpisodeList(topic string) string {
-	defer CatchPanic()
 
 	var builder strings.Builder
 	builder.WriteString("/episode")
@@ -979,14 +871,12 @@ func (c *UrlContext) BuildEpisodeList(topic string) string {
 var RegexEpisode = regexp.MustCompile(`^/episode/(?P<topic>[^/]+)/(?P<episode>[^/]+)$`)
 
 func (c *UrlContext) BuildEpisode(topic string, episode string) string {
-	defer CatchPanic()
 	return c.Url(fmt.Sprintf("/episode/%s/%s", topic, episode), nil)
 }
 
 var RegexCineraIndex = regexp.MustCompile(`^/(?P<topic>[^/]+).index$`)
 
 func (c *UrlContext) BuildCineraIndex(topic string) string {
-	defer CatchPanic()
 	return c.Url(fmt.Sprintf("/%s.index", topic), nil)
 }
 
@@ -1112,14 +1002,12 @@ func (c *UrlContext) BuildAssetUpload() string {
 var RegexMarkdownWorkerJS = regexp.MustCompile("^/assets/markdown_worker.js$")
 
 func BuildMarkdownWorkerJS() string {
-	defer CatchPanic()
 	return Url("/assets/markdown_worker.js", nil)
 }
 
 var RegexS3Asset *regexp.Regexp
 
 func BuildS3Asset(s3key string) string {
-	defer CatchPanic()
 	res := fmt.Sprintf("%s%s", S3BaseUrl, s3key)
 	return res
 }
@@ -1127,20 +1015,18 @@ func BuildS3Asset(s3key string) string {
 var RegexEsBuild = regexp.MustCompile("^/esbuild$")
 
 func BuildEsBuild() string {
-	defer CatchPanic()
 	return Url("/esbuild", nil)
 }
 
 var RegexPublic = regexp.MustCompile("^/public/.+$")
 
 func BuildPublic(filepath string, cachebust bool) string {
-	defer CatchPanic()
 	filepath = strings.Trim(filepath, "/")
 	if len(strings.TrimSpace(filepath)) == 0 {
-		panic(oops.New(nil, "Attempted to build a /public url with no path"))
+		panic("Attempted to build a /public url with no path")
 	}
 	if strings.Contains(filepath, "?") {
-		panic(oops.New(nil, "Public url failpath must not contain query params"))
+		panic("Public url failpath must not contain query params")
 	}
 	var builder strings.Builder
 	builder.WriteString("/public")
@@ -1148,7 +1034,7 @@ func BuildPublic(filepath string, cachebust bool) string {
 	for part := range pathParts {
 		part = strings.TrimSpace(part)
 		if len(part) == 0 {
-			panic(oops.New(nil, "Attempted to build a /public url with blank path segments: %s", filepath))
+			panic(fmt.Sprintf("Attempted to build a /public url with blank path segments: %s", filepath))
 		}
 		builder.WriteRune('/')
 		builder.WriteString(part)
@@ -1161,10 +1047,9 @@ func BuildPublic(filepath string, cachebust bool) string {
 }
 
 func BuildTheme(filepath string, theme string, cachebust bool) string {
-	defer CatchPanic()
 	filepath = strings.Trim(filepath, "/")
 	if len(theme) == 0 {
-		panic(oops.New(nil, "Theme can't be blank"))
+		panic("Theme can't be blank")
 	}
 	return BuildPublic(fmt.Sprintf("themes/%s/%s", theme, filepath), cachebust)
 }
@@ -1194,9 +1079,8 @@ var RegexForumMarkRead = regexp.MustCompile(`^/markread/(?P<sfid>\d+)$`)
 
 // NOTE(asaf): subforumId == 0 means ALL SUBFORUMS
 func (c *UrlContext) BuildForumMarkRead(subforumId int) string {
-	defer CatchPanic()
 	if subforumId < 0 {
-		panic(oops.New(nil, "Invalid subforum ID (%d), must be >= 0", subforumId))
+		panic(fmt.Sprintf("Invalid subforum ID (%d), must be >= 0", subforumId))
 	}
 
 	var builder strings.Builder
@@ -1215,11 +1099,11 @@ var RegexCatchAll = regexp.MustCompile("^")
 func buildSubforumPath(subforums []string) *strings.Builder {
 	for _, subforum := range subforums {
 		if strings.Contains(subforum, "/") {
-			panic(oops.New(nil, "Tried building forum url with / in subforum name"))
+			panic("Tried building forum url with / in subforum name")
 		}
 		subforum = strings.TrimSpace(subforum)
 		if len(subforum) == 0 {
-			panic(oops.New(nil, "Tried building forum url with blank subforum"))
+			panic("Tried building forum url with blank subforum")
 		}
 	}
 
@@ -1235,11 +1119,11 @@ func buildSubforumPath(subforums []string) *strings.Builder {
 
 func buildForumThreadPath(subforums []string, threadId int, title string, page int) *strings.Builder {
 	if page < 1 {
-		panic(oops.New(nil, "Invalid forum thread page (%d), must be >= 1", page))
+		panic(fmt.Sprintf("Invalid forum thread page (%d), must be >= 1", page))
 	}
 
 	if threadId < 1 {
-		panic(oops.New(nil, "Invalid forum thread ID (%d), must be >= 1", threadId))
+		panic(fmt.Sprintf("Invalid forum thread ID (%d), must be >= 1", threadId))
 	}
 
 	builder := buildSubforumPath(subforums)
@@ -1260,11 +1144,11 @@ func buildForumThreadPath(subforums []string, threadId int, title string, page i
 
 func buildForumPostPath(subforums []string, threadId int, postId int) *strings.Builder {
 	if threadId < 1 {
-		panic(oops.New(nil, "Invalid forum thread ID (%d), must be >= 1", threadId))
+		panic(fmt.Sprintf("Invalid forum thread ID (%d), must be >= 1", threadId))
 	}
 
 	if postId < 1 {
-		panic(oops.New(nil, "Invalid forum post ID (%d), must be >= 1", postId))
+		panic(fmt.Sprintf("Invalid forum post ID (%d), must be >= 1", postId))
 	}
 
 	builder := buildSubforumPath(subforums)
@@ -1279,7 +1163,7 @@ func buildForumPostPath(subforums []string, threadId int, postId int) *strings.B
 
 func buildBlogThreadPath(threadId int, title string) *strings.Builder {
 	if threadId < 1 {
-		panic(oops.New(nil, "Invalid blog thread ID (%d), must be >= 1", threadId))
+		panic(fmt.Sprintf("Invalid blog thread ID (%d), must be >= 1", threadId))
 	}
 
 	var builder strings.Builder
@@ -1296,11 +1180,11 @@ func buildBlogThreadPath(threadId int, title string) *strings.Builder {
 
 func buildBlogPostPath(threadId int, postId int) *strings.Builder {
 	if threadId < 1 {
-		panic(oops.New(nil, "Invalid blog thread ID (%d), must be >= 1", threadId))
+		panic(fmt.Sprintf("Invalid blog thread ID (%d), must be >= 1", threadId))
 	}
 
 	if postId < 1 {
-		panic(oops.New(nil, "Invalid blog post ID (%d), must be >= 1", postId))
+		panic(fmt.Sprintf("Invalid blog post ID (%d), must be >= 1", postId))
 	}
 
 	var builder strings.Builder
@@ -1322,13 +1206,4 @@ func PathSafeTitle(title string) string {
 	title = PathCharsToClear.ReplaceAllLiteralString(title, "")
 	title = url.PathEscape(title)
 	return title
-}
-
-// TODO(asaf): Find a nicer solution that doesn't require adding a defer to every construction function while also not printing errors in tests.
-func CatchPanic() {
-	if !isTest {
-		if recovered := recover(); recovered != nil {
-			logging.LogPanicValue(nil, recovered, "Url construction failed")
-		}
-	}
 }

@@ -1,6 +1,7 @@
 package website
 
 import (
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/templates"
@@ -20,7 +21,7 @@ func ForumBreadcrumb(projectUrlContext *hmnurl.UrlContext) templates.BreadcrumbL
 	}
 }
 
-func SubforumBreadcrumbs(projectUrlContext *hmnurl.UrlContext, lineageBuilder *models.SubforumLineageBuilder, subforumID int) []templates.BreadcrumbLink {
+func SubforumBreadcrumbs(projectUrlContext *hmnurl.UrlContext, lineageBuilder *hmndata.SubforumLineageBuilder, subforumID int) []templates.BreadcrumbLink {
 	var result []templates.BreadcrumbLink
 	result = append(result, ForumBreadcrumb(projectUrlContext))
 	subforums := lineageBuilder.GetSubforumLineage(subforumID)
@@ -35,7 +36,7 @@ func SubforumBreadcrumbs(projectUrlContext *hmnurl.UrlContext, lineageBuilder *m
 	return result
 }
 
-func ForumThreadBreadcrumbs(projectUrlContext *hmnurl.UrlContext, lineageBuilder *models.SubforumLineageBuilder, thread *models.Thread) []templates.BreadcrumbLink {
+func ForumThreadBreadcrumbs(projectUrlContext *hmnurl.UrlContext, lineageBuilder *hmndata.SubforumLineageBuilder, thread *models.Thread) []templates.BreadcrumbLink {
 	result := SubforumBreadcrumbs(projectUrlContext, lineageBuilder, *thread.SubforumID)
 	result = append(result, templates.BreadcrumbLink{
 		Name: thread.Title,

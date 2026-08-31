@@ -199,8 +199,8 @@ func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostLi
 	if err != nil {
 		return nil, err
 	}
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	b := c.Perf.StartBlock("FEED", "Build post items")
 	var postItems []templates.PostListItem

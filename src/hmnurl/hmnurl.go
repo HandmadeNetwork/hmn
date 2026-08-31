@@ -5,14 +5,42 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"time"
 
 	"git.handmade.network/hmn/hmn/src/models"
-	"git.handmade.network/hmn/hmn/src/utils"
-
-	"git.handmade.network/hmn/hmn/src/config"
-	"git.handmade.network/hmn/hmn/src/oops"
+	// NOTE(ben): Avoid importing oops to keep wasm builds smaller (thanks zerolog)
 )
+
+var baseUrlParsed url.URL
+var cacheBustVersion string
+var S3BaseUrl string
+var isTest bool
+
+// ----------------------------------------------------------------------------
+// Init functions (called primarily from src/config/init.go)
+
+func SetGlobalBaseUrl(fullBaseUrl string) {
+	parsed, err := url.Parse(fullBaseUrl)
+	if err != nil {
+		panic(fmt.Errorf("could not parse base URL: %w", err))
+	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		panic("Website is misconfigured. Config should include a full BaseUrl (e.g. \"http://handmade.local:9001\")")
+	}
+
+	baseUrlParsed = *parsed
+}
+
+func SetCacheBustVersion(newCacheBustVersion string) {
+	cacheBustVersion = newCacheBustVersion
+}
+
+func SetS3BaseUrl(base string) {
+	S3BaseUrl = base
+	RegexS3Asset = regexp.MustCompile(fmt.Sprintf("%s(?P<key>[\\w\\-./]+)", regexp.QuoteMeta(S3BaseUrl)))
+}
+
+// ----------------------------------------------------------------------------
+// Actual package
 
 type Q struct {
 	Name  string
@@ -27,38 +55,6 @@ func QFromURL(u *url.URL) []Q {
 		}
 	}
 	return result
-}
-
-var baseUrlParsed url.URL
-var cacheBustVersion string
-var S3BaseUrl string
-var isTest bool
-
-func init() {
-	SetGlobalBaseUrl(config.Config.BaseUrl)
-	SetCacheBustVersion(fmt.Sprint(time.Now().Unix()))
-	SetS3BaseUrl(config.Config.DigitalOcean.AssetsPublicUrlRoot)
-}
-
-func SetGlobalBaseUrl(fullBaseUrl string) {
-	parsed, err := url.Parse(fullBaseUrl)
-	if err != nil {
-		panic(oops.New(err, "could not parse base URL"))
-	}
-	if parsed.Scheme == "" || parsed.Host == "" {
-		panic(oops.New(nil, "Website is misconfigured. Config should include a full BaseUrl (e.g. \"http://handmade.local:9001\")"))
-	}
-
-	baseUrlParsed = *parsed
-}
-
-func SetCacheBustVersion(newCacheBustVersion string) {
-	cacheBustVersion = newCacheBustVersion
-}
-
-func SetS3BaseUrl(base string) {
-	S3BaseUrl = base
-	RegexS3Asset = regexp.MustCompile(fmt.Sprintf("%s(?P<key>[\\w\\-./]+)", regexp.QuoteMeta(S3BaseUrl)))
 }
 
 func GetBaseHost() string {
@@ -125,8 +121,7 @@ func UrlIsLocal(urlString string) bool {
 	if err != nil {
 		return false
 	}
-	baseUrl := utils.Must1(url.Parse(config.Config.BaseUrl))
-	return urlParsed.Host == baseUrl.Host || strings.HasSuffix(urlParsed.Host, "."+baseUrl.Host)
+	return urlParsed.Host == baseUrlParsed.Host || strings.HasSuffix(urlParsed.Host, "."+baseUrlParsed.Host)
 }
 
 // Sanitizes a user-controlled redirect URL to avoid spoofing or phishing. If the URL is empty or
