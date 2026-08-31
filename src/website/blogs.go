@@ -18,14 +18,12 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-func BlogIndex(c *RequestContext) ResponseData {
-	type blogIndexData struct {
-		templates.BaseData
-		FirstPost  *templates.BlogIndexEntry
-		Posts      []templates.BlogIndexEntry
-		Pagination templates.Pagination
-	}
+type BlogIndexData struct {
+	FirstPost *templates.BlogIndexEntry
+	Posts     []templates.BlogIndexEntry
+}
 
+func BlogIndex(c *RequestContext) ResponseData {
 	const postsPerPage = 21
 
 	numThreads, err := hmndata.CountThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
@@ -51,25 +49,6 @@ func BlogIndex(c *RequestContext) ResponseData {
 	})
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
-	}
-
-	var firstEntry *templates.BlogIndexEntry
-	var entries []templates.BlogIndexEntry
-	for _, thread := range threads {
-		entry := templates.BlogIndexEntry{
-			Title:   thread.Thread.Title,
-			Url:     c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title),
-			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
-			Date:    thread.FirstPost.PostDate,
-			Content: template.HTML(thread.FirstPost.PreviewHTML),
-			Hilbert: templates.MakeHilbert(thread.Thread.ID),
-		}
-
-		if page == 1 && firstEntry == nil {
-			firstEntry = &entry
-		} else {
-			entries = append(entries, entry)
-		}
 	}
 
 	baseData := getBaseTemplateData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.BreadcrumbLink{BlogBreadcrumb(c.UrlContext)})
@@ -98,11 +77,16 @@ func BlogIndex(c *RequestContext) ResponseData {
 		})
 	}
 
+	type tmpl struct {
+		templates.BaseData
+		BlogIndexData
+		Pagination templates.Pagination
+	}
+
 	var res ResponseData
-	res.MustWriteTemplate("blog_index.html", blogIndexData{
-		BaseData:  baseData,
-		FirstPost: firstEntry,
-		Posts:     entries,
+	res.MustWriteTemplate("blog_index.html", tmpl{
+		BaseData:      baseData,
+		BlogIndexData: getBlogIndexData(c, page, threads),
 		Pagination: templates.Pagination{
 			Current: page,
 			Total:   numPages,
@@ -306,14 +290,6 @@ func BlogPersonalIndex(c *RequestContext) ResponseData {
 	if !viewable || profileUser == nil {
 		return FourOhFour(c)
 	}
-	type blogIndexData struct {
-		templates.BaseData
-		Posts      []templates.BlogIndexEntry
-		Pagination templates.Pagination
-
-		CanCreatePost bool
-		NewPostUrl    string
-	}
 
 	const postsPerPage = 20
 
@@ -342,25 +318,24 @@ func BlogPersonalIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
 	}
 
-	var entries []templates.BlogIndexEntry
-	for _, thread := range threads {
-		entries = append(entries, templates.BlogIndexEntry{
-			Title:   thread.Thread.Title,
-			Url:     hmnurl.BuildPersonalBlogThread(profileUser.Username, thread.Thread.ID, thread.Thread.Title),
-			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
-			Date:    thread.FirstPost.PostDate,
-			Content: template.HTML(thread.FirstPost.PreviewHTML),
-		})
-	}
-
 	baseData := getBaseTemplateData(c, fmt.Sprintf("%s's Blog", profileUser.Username), nil)
 
 	canCreate := (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID)
 
+	type tmpl struct {
+		templates.BaseData
+		BlogIndexData
+
+		Pagination templates.Pagination
+
+		CanCreatePost bool
+		NewPostUrl    string
+	}
+
 	var res ResponseData
-	res.MustWriteTemplate("blog_index.html", blogIndexData{
-		BaseData: baseData,
-		Posts:    entries,
+	res.MustWriteTemplate("blog_index.html", tmpl{
+		BaseData:      baseData,
+		BlogIndexData: getBlogIndexData(c, page, threads),
 		Pagination: templates.Pagination{
 			Current: page,
 			Total:   numPages,
@@ -896,6 +871,31 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 	}
 
 	return res, true
+}
+
+func getBlogIndexData(c *RequestContext, page int, threads []hmndata.ThreadAndStuff) BlogIndexData {
+	var firstEntry *templates.BlogIndexEntry
+	var entries []templates.BlogIndexEntry
+	for _, thread := range threads {
+		entry := templates.BlogIndexEntry{
+			Title:   thread.Thread.Title,
+			Url:     c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title),
+			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
+			Date:    thread.FirstPost.PostDate,
+			Content: template.HTML(thread.FirstPost.PreviewHTML),
+			Hilbert: templates.MakeHilbert(thread.Thread.ID),
+		}
+
+		if page == 1 && firstEntry == nil {
+			firstEntry = &entry
+		} else {
+			entries = append(entries, entry)
+		}
+	}
+	return BlogIndexData{
+		FirstPost: firstEntry,
+		Posts:     entries,
+	}
 }
 
 func addBlogUrlsToPost(urlContext *hmnurl.UrlContext, p *templates.Post, thread *models.Thread, postId int) {
