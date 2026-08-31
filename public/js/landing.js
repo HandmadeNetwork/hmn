@@ -2,7 +2,8 @@
 function initTabs(container, {
   initialTab,
   onSelect = () => {
-  }
+  },
+  fireOnSelectForInitialTab = false
 } = {}) {
   const buttons = Array.from(container.querySelectorAll("[data-tab-button]"));
   const tabs = Array.from(container.querySelectorAll("[data-tab]"));
@@ -22,7 +23,7 @@ function initTabs(container, {
       onSelect(name);
     }
   }
-  selectTab(initialTab || firstTab, { sendEvent: false });
+  selectTab(initialTab || firstTab, { sendEvent: fireOnSelectForInitialTab });
   for (const button of buttons) {
     button.addEventListener("click", () => {
       selectTab(button.getAttribute("data-tab-button"));
@@ -32,20 +33,20 @@ function initTabs(container, {
     selectTab
   };
 }
-function initHashTabs(container, {
-  initialTab
-} = {}) {
+function initHashTabs(container, opts = {}) {
   const res = initTabs(container, {
-    initialTab: initialTab ?? document.location.hash.substring(1),
+    initialTab: opts.initialTab ?? document.location.hash.substring(1),
     onSelect(name) {
       document.location.hash = `#${name}`;
-    }
+      opts.onSelect?.(name);
+    },
+    fireOnSelectForInitialTab: opts.fireOnSelectForInitialTab
   });
   const { selectTab } = res;
   window.addEventListener("hashchange", (e) => {
     const tab = new URL(e.newURL).hash.substring(1);
     if (tab) {
-      selectTab(tab, { sendEvent: false });
+      selectTab(tab);
     }
   });
   return res;

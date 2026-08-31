@@ -1,8 +1,12 @@
 import { must } from "./utils";
 
 export type TabsOptions = {
+    /** A string identifying the tab to be automatically selected. */
     initialTab?: string,
+    /** A function that is triggered when a new tab is selected. */
     onSelect?: (name: string) => void,
+    /** Whether to fire onSelect when initializing. (Default: false) */
+    fireOnSelectForInitialTab?: boolean,
 };
 
 export type TabsFunctions = {
@@ -42,6 +46,7 @@ export type SelectTabOptions = {
 export function initTabs(container: ParentNode, {
     initialTab,
     onSelect = () => { },
+    fireOnSelectForInitialTab = false,
 }: TabsOptions = {}): TabsFunctions {
     const buttons = Array.from(container.querySelectorAll("[data-tab-button]")) as HTMLElement[];
     const tabs = Array.from(container.querySelectorAll("[data-tab]")) as HTMLElement[];
@@ -65,7 +70,7 @@ export function initTabs(container: ParentNode, {
             onSelect(name);
         }
     }
-    selectTab(initialTab || firstTab, { sendEvent: false });
+    selectTab(initialTab || firstTab, { sendEvent: fireOnSelectForInitialTab });
 
     for (const button of buttons) {
         button.addEventListener("click", () => {
@@ -78,27 +83,23 @@ export function initTabs(container: ParentNode, {
     };
 }
 
-export type HashTabsOptions = {
-    initialTab?: string,
-};
-
 /**
  * A wrapper around `initTabs` that automatically uses the URL #hash.
  */
-export function initHashTabs(container: ParentNode, {
-    initialTab,
-}: HashTabsOptions = {}) {
+export function initHashTabs(container: ParentNode, opts: TabsOptions = {}) {
     const res = initTabs(container, {
-        initialTab: initialTab ?? document.location.hash.substring(1),
+        initialTab: opts.initialTab ?? document.location.hash.substring(1),
         onSelect(name) {
             document.location.hash = `#${name}`;
+            opts.onSelect?.(name);
         },
+        fireOnSelectForInitialTab: opts.fireOnSelectForInitialTab,
     });
     const { selectTab } = res;
     window.addEventListener("hashchange", e => {
         const tab = new URL(e.newURL).hash.substring(1);
         if (tab) {
-            selectTab(tab, { sendEvent: false });
+            selectTab(tab);
         }
     });
 
