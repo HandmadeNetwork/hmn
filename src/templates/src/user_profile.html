@@ -1,6 +1,23 @@
 {{ template "base-2024.html" . }}
 
 {{ define "extrahead" }}
+	{{ template "snippet_edit.html" . }}
+	<script type="module">
+		import { makeSnippetEdit } from '{{ static "js/snippetedit.js" }}';
+
+		document.querySelector("#add-post-button")?.addEventListener("click", e => {
+			const container = e.target.closest(".timeline-container");
+			const timeline = container.querySelector(".timeline");
+			const editor = makeSnippetEdit({
+        config: JSON.parse('{{ json .SnippetEditorConfig }}'),
+      });
+			timeline.insertBefore(
+				editor.root,
+				timeline.children[0],
+			);
+			document.querySelector("#add-post-button").remove();
+		});
+	</script>
 	<style>
 		.led {
 			aspect-ratio: 1;
@@ -208,7 +225,7 @@
 						<h2 id="recent">Recent Activity</h2>
 						<div class="flex-grow-1"></div>
 						{{ if .OwnProfile }}
-							<a href="javascript:;" class="create_snippet_link button">Add Snippet</a>
+							<a id="add-post-button" href="javascript:;" class="button">Add Post</a>
 						{{ end }}
 					</div>
 					<div class="timeline-filters f6"></div>
@@ -223,42 +240,6 @@
 	</div>
 </div>
 
-{{ if .User }}
-	{{ template "snippet_edit.html" . }}
-	<script>
-		const userName  = "{{ .User.Name }}";
-		const userAvatar = "{{ .User.AvatarUrl }}";
-		const userUrl = "{{ .User.ProfileUrl }}";
-
-
-		{{ if .OwnProfile }}
-			document.querySelector(".create_snippet_link")?.addEventListener("click", function() {
-				let snippetEdit = makeSnippetEditLegacy({
-					ownerName: userName,
-					ownerAvatar: userAvatar,
-					ownerUrl: userUrl,
-					date: new Date(),
-					text: "",
-					projectIds: [],
-				});
-				document.querySelector(".timeline").insertBefore(snippetEdit.root, document.querySelector(".timeline").children[0]);
-				document.querySelector(".create_snippet_link")?.remove();
-			});
-		{{ end }}
-
-		document.querySelector(".timeline").addEventListener("click", function(ev) {
-			if (ev.target.classList.contains("edit")) {
-				let parent = ev.target.parentElement;
-				while (parent && !parent.classList.contains("timeline-item")) {
-					parent = parent.parentElement;
-				}
-				if (parent && parent.classList.contains("timeline-item")) {
-					editTimelineSnippetLegacy(parent);
-				}
-			}
-		});
-	</script>
-{{ end }}
 <script>
 	const filterTitles = [];
 	for (const item of document.querySelectorAll('.timeline-item')) {

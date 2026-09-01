@@ -20,6 +20,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/parsing"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
 	"mvdan.cc/xurls/v2"
 )
@@ -28,8 +29,8 @@ type SnippetData struct {
 	templates.BaseData
 	Snippet templates.TimelineItem
 
-	CanEditSnippet bool
-	SnippetEdit    templates.SnippetEdit
+	CanEditSnippet      bool
+	SnippetEditorConfig templates.SnippetEditorConfig
 }
 
 func Snippet(c *RequestContext) ResponseData {
@@ -97,7 +98,7 @@ func Snippet(c *RequestContext) ResponseData {
 
 	baseData := getBaseTemplateData(c, fmt.Sprintf("Snippet by %s", snippet.OwnerName), nil)
 	baseData.OpenGraphItems = opengraph // NOTE(asaf): We're overriding the defaults on purpose.
-	snippetEdit := templates.SnippetEdit{}
+	var snippetEditorConfig templates.SnippetEditorConfig
 	if c.CurrentUser != nil {
 		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 			OwnerIDs: []int{c.CurrentUser.ID},
@@ -105,24 +106,37 @@ func Snippet(c *RequestContext) ResponseData {
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
 		}
-		templateProjects := make([]templates.Project, 0, len(userProjects))
-		for _, p := range userProjects {
-			templateProject := templates.ProjectAndStuffToTemplate(&p)
-			templateProjects = append(templateProjects, templateProject)
+		templateProjects := make([]templates.Project, 0, len(s.Projects)+len(userProjects))
+		for _, p := range s.Projects {
+			templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(p))
 		}
-		snippetEdit = templates.SnippetEdit{
-			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
-			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
-			OnDeleteRedirectUrl:   hmnurl.BuildUserProfile(s.Owner.Username),
-			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
+		for _, p := range userProjects {
+			alreadyAdded := false
+			for _, other := range templateProjects {
+				if p.Project.ID == other.ID {
+					alreadyAdded = true
+					break
+				}
+			}
+			if !alreadyAdded {
+				templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&p))
+			}
+		}
+		snippetEditorConfig = templates.SnippetEditorConfig{
+			AssetMaxSize:      AssetMaxSize(c.CurrentUser),
+			AvailableProjects: utils.Map(templateProjects, templates.ProjectToSnippetEditProject),
+			Owner:             new(templates.UserToTemplate(s.Owner)),
+
+			SubmitUrl:           hmnurl.BuildSnippetSubmit(),
+			OnDeleteRedirectUrl: hmnurl.BuildUserProfile(s.Owner.Username),
 		}
 	}
 	var res ResponseData
 	err = res.WriteTemplate("snippet.html", SnippetData{
-		BaseData:       baseData,
-		Snippet:        snippet,
-		CanEditSnippet: canEdit,
-		SnippetEdit:    snippetEdit,
+		BaseData:            baseData,
+		Snippet:             snippet,
+		CanEditSnippet:      canEdit,
+		SnippetEditorConfig: snippetEditorConfig,
 	}, c.Perf)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render snippet template"))

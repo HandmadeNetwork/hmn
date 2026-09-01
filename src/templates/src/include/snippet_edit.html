@@ -4,14 +4,16 @@
 }
 </style>
 <template id="snippet-edit">
-	<form data-tmpl="root" class="hmn-form snippet-edit-root ba b--theme-dim pa3 mb2" method="POST" action="{{ .SnippetEdit.SubmitUrl }}" enctype="multipart/form-data">
+	<form data-tmpl="root" class="hmn-form bg1 snippet-edit-root ba b--theme-dim pa3 mb2" method="POST" enctype="multipart/form-data">
 		{{ csrftoken .Session }}
 		<input data-tmpl="redirect" type="hidden" name="redirect" />
 		<input data-tmpl="snippetId" type="hidden" name="snippet_id" />
 		<input data-tmpl="removeAttachment" type="hidden" name="remove_attachment" value="false" />
 		<input data-tmpl="file" type="file" name="file" class="dn" />
-		<div class="flex items-center">
-			<a data-tmpl="avatarLink" class="flex-shrink-0"><img data-tmpl="avatarImg" class="avatar lite mr2" /></a>
+		<div class="flex items-center link-normal">
+			<a data-tmpl="avatarLink" class="flex-shrink-0">
+				<img data-tmpl="avatarImg" class="avatar avatar-user mr2" />
+			</a>
 			<a data-tmpl="username" class="flex-shrink-0"></a>
 			<div class="spacer flex-grow-1"></div>
 			<span data-tmpl="date" class="flex-shrink-0">Date</span>
@@ -19,7 +21,7 @@
 		</div>
 		<textarea data-tmpl="text" placeholder="Description and/or links" class="w-100 h4 mt3" name="text"></textarea>
 		<div class="mv3">
-			<div data-tmpl="uploadBox">
+			<div data-tmpl="uploadBox" class="link-normal">
 				<a data-tmpl="uploadLink" class="upload-box b--dashed bw1 flex flex-column items-center pa4 br3" href="javascript:;">
 					Upload image, video, or other file
 				</a>
@@ -38,7 +40,7 @@
 				<div data-tmpl="errors" class="mt2 hide-if-empty"></div>
 			</div>
 		</div>
-		<div class="flex">
+		<div class="flex items-end">
 			<div data-tmpl="projectList" class="flex-grow-1 flex flex-wrap g2"></div>
 			<div class="flex-shrink-0 flex">
 				<input data-tmpl="deleteButton" class="flex-grow-0 flex-shrink-0 mr2" type="submit" name="action" value="Delete" />
@@ -55,56 +57,3 @@
 		<a data-tmpl="removeButton" class="ml2 mr1" href="javascript:;">&#10006;</a>
 	</div>
 </template>
-<script type="module">
-	import { makeSnippetEdit, editTimelineSnippet } from '{{ static "js/snippetedit.js" }}';
-
-	// TODO(ts): Theoretically temporary jank: Putting curried forms of
-	// exported functions on the window so we don't have to edit all the pages
-	// where we have snippet editing right now. This is trash and we should
-	// rework this.
-
-	window.makeSnippetEditLegacy = function makeSnippetEditLegacy({
-		ownerName, // type: string | undefined
-		ownerAvatar, // type: string | undefined
-		ownerUrl, // type: string | undefined
-		date, // type: Date
-		text, // type: string
-		attachmentElement, // type: Element | undefined
-		projectIds, // type: number[]
-		stickyProjectId, // type: number | undefined
-		onDeleteRedirectUrl, // type: string | undefined
-		snippetId, // type: string | undefined
-		originalSnippetEl, // type: HTMLElement | undefined
-	}) {
-		return makeSnippetEdit({
-			maxFilesize: {{ .SnippetEdit.AssetMaxSize }},
-			availableProjects: JSON.parse("{{ .SnippetEdit.AvailableProjectsJSON }}"),
-			ownerName,
-			ownerAvatar,
-			ownerUrl,
-			date,
-			text,
-			attachmentElement,
-			projectIds,
-			stickyProjectId,
-			onDeleteRedirectUrl,
-			snippetId,
-			originalSnippetEl,
-		});
-	};
-
-	window.editTimelineSnippetLegacy = function editTimelineSnippetLegacy(
-		timelineItemEl,
-		{
-			stickyProjectId, // type: number | undefined
-			onDeleteRedirectUrl, // type: string | undefined
-		} = {},
-	) {
-		return editTimelineSnippet(timelineItemEl, {
-			maxFilesize: {{ .SnippetEdit.AssetMaxSize }},
-			availableProjects: JSON.parse("{{ .SnippetEdit.AvailableProjectsJSON }}"),
-			stickyProjectId,
-			onDeleteRedirectUrl,
-		});
-	};
-</script>

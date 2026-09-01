@@ -211,6 +211,76 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	return res
 }
 
+func ProjectFeed(c *RequestContext) ResponseData {
+	maxRecentActivity := 100
+
+	type ProjectFeedData struct {
+		templates.BaseData
+		ProjectPageBaseData
+
+		RecentActivity      []templates.TimelineItem
+		SnippetEditorConfig templates.SnippetEditorConfig
+	}
+	var tmpl ProjectFeedData
+	var err error
+
+	tmpl.BaseData = getBaseTemplateData(c, "Feed", []templates.BreadcrumbLink{
+		{Name: "Feed", Url: c.UrlContext.BuildProjectFeed()},
+	})
+	projectBaseData, err := getProjectPageBaseData(c, &tmpl.BaseData, "Feed")
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, err)
+	}
+	tmpl.ProjectPageBaseData = projectBaseData
+
+	// NOTE(ben): Get timeline activity
+	{
+		subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+		lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
+		tmpl.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
+			ProjectIDs: []int{c.CurrentProject.ID},
+			Limit:      maxRecentActivity,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, err)
+		}
+	}
+
+	// NOTE(ben): Prepare snippet (post) editor
+	if c.CurrentUser != nil {
+		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+			OwnerIDs: []int{c.CurrentUser.ID},
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
+		}
+		templateProjects := make([]templates.Project, 0, len(userProjects))
+		templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&c.CurrentProjectExtras))
+		for _, p := range userProjects {
+			if p.Project.ID == c.CurrentProject.ID {
+				continue
+			}
+			templateProject := templates.ProjectAndStuffToTemplate(&p)
+			templateProjects = append(templateProjects, templateProject)
+		}
+		tmpl.SnippetEditorConfig = templates.SnippetEditorConfig{
+			AssetMaxSize:      AssetMaxSize(c.CurrentUser),
+			AvailableProjects: utils.Map(templateProjects, templates.ProjectToSnippetEditProject),
+			Owner:             tmpl.User,
+			RequiredProjectID: c.CurrentProject.ID,
+
+			SubmitUrl: hmnurl.BuildSnippetSubmit(),
+		}
+	}
+
+	var res ResponseData
+	err = res.WriteTemplate("project_feed.html", tmpl, c.Perf)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render project homepage template"))
+	}
+	return res
+}
+
 func getProjectPageBaseData(c *RequestContext, base *templates.BaseData, activeLinkName string) (ProjectPageBaseData, error) {
 	var res ProjectPageBaseData
 

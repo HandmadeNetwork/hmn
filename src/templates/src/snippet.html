@@ -1,25 +1,27 @@
 {{ template "base-2024.html" . }}
 
-{{ define "content" }}
-<div class="mw-site pa3 center">
-	{{ template "timeline_item.html" .Snippet }}
-</div>
-{{ if .CanEditSnippet }}
+{{ define "extrahead" }}
 	{{ template "snippet_edit.html" . }}
-	<script>
-		document.querySelector(".timeline-item .edit").addEventListener("click", function(ev) {
-			if (ev.target.classList.contains("edit")) {
-				let parent = ev.target.parentElement;
-				while (parent && !parent.classList.contains("timeline-item")) {
-					parent = parent.parentElement;
-				}
-				if (parent && parent.classList.contains("timeline-item")) {
-          editTimelineSnippetLegacy(parent, {
-						onDeleteRedirectUrl: "{{ .SnippetEdit.OnDeleteRedirectUrl }}",
-					});
-				}
-			}
-		});
-	</script>
 {{ end }}
+
+{{ define "content" }}
+	<div class="mw-site pa3 center">
+		{{ template "timeline_item.html" .Snippet }}
+	</div>
+
+	{{ if .CanEditSnippet }}
+		<script type="module">
+			import { editTimelineSnippet } from '{{ static "js/snippetedit.js" }}';
+
+			document.querySelector(".timeline-item .edit").addEventListener("click", function(ev) {
+				if (ev.target.classList.contains("edit")) {
+					const parent = ev.target.closest(".timeline-item");
+					editTimelineSnippet(
+						parent,
+						JSON.parse('{{ json .SnippetEditorConfig }}'),
+					);
+				}
+			});
+		</script>
+	{{ end }}
 {{ end }}
