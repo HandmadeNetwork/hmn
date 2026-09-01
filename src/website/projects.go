@@ -516,11 +516,13 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 	err = tx.QueryRow(c,
 		`
 		INSERT INTO project
-			(name, blurb, description, descparsed, lifecycle, date_created, all_last_updated)
+			(name, blurb, description, descparsed, ai_policy, ai_policy_parsed, lifecycle, date_created, all_last_updated)
 		VALUES
-			($1,   $2,    $3,          $4,         $5,        $6,           $6)
+			($1,   $2,    $3,          $4,         $5,        $6,               $7,        $8,           $8)
 		RETURNING id
 		`,
+		"",
+		"",
 		"",
 		"",
 		"",
@@ -684,6 +686,8 @@ type ProjectPayload struct {
 	Links                 []ParsedLink
 	Description           string
 	ParsedDescription     string
+	AIPolicy              string
+	ParsedAIPolicy        string
 	Lifecycle             models.ProjectLifecycle
 	Hidden                bool
 	OwnerUsernames        []string
@@ -729,8 +733,20 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		return res
 	}
 	links := ParseLinks(c.Req.Form.Get("links"))
+
 	description := c.Req.Form.Get("full_description")
+	if description == "" {
+		res.RejectionReason = "Projects must have a long description"
+		return res
+	}
 	parsedDescription := parsing.ParseMarkdown(description, parsing.PostMarkdown)
+
+	aiPolicy := c.Req.Form.Get("ai_policy")
+	if aiPolicy == "" {
+		res.RejectionReason = "Projects must have an AI policy"
+		return res
+	}
+	parsedAIPolicy := parsing.ParseMarkdown(aiPolicy, parsing.PostMarkdown)
 
 	lifecycleStr := c.Req.Form.Get("lifecycle")
 	lifecycle, found := templates.ProjectLifecycleFromValue(lifecycleStr)
@@ -789,6 +805,8 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		Links:                 links,
 		Description:           description,
 		ParsedDescription:     parsedDescription,
+		AIPolicy:              aiPolicy,
+		ParsedAIPolicy:        parsedAIPolicy,
 		Lifecycle:             lifecycle,
 		Hidden:                hidden,
 		OwnerUsernames:        owners,
@@ -858,7 +876,9 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			blurb = $3,
 			description = $4,
 			descparsed = $5,
-			lifecycle = $6
+			ai_policy = $6,
+			ai_policy_parsed = $7,
+			lifecycle = $8
 		WHERE id = $1
 		`,
 		payload.ProjectID,
@@ -866,6 +886,8 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		payload.Blurb,
 		payload.Description,
 		payload.ParsedDescription,
+		payload.AIPolicy,
+		payload.ParsedAIPolicy,
 		payload.Lifecycle,
 	)
 	if err != nil {

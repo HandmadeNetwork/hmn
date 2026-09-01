@@ -953,20 +953,23 @@ function init({
   }
   {
     const description = must(document.querySelector("#full_description"));
+    const aiPolicy = must(document.querySelector("#ai_policy"));
     const descPreview = must(document.querySelector("#desc_preview"));
+    const aiPolicyPreview = must(document.querySelector("#ai_policy_preview"));
     const { clear: clearDescription } = autosaveContent({
       inputEl: description,
       storageKey: `project-description/${projectName}`
     });
     projectForm.addEventListener("submit", () => clearDescription());
     previewResizeObserver.observe(description);
-    const doMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
+    const descMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
+    const aiPolicyMarkdown = initLiveMarkdown({ inputEl: aiPolicy, previewEl: aiPolicyPreview });
     setupMarkdownUpload(
       document.querySelectorAll("#project_form input[type=submit]"),
       must(document.querySelector("#file_input")),
       must(document.querySelector(".upload_bar")),
       description,
-      doMarkdown,
+      descMarkdown,
       textMaxFileSize,
       editorUploadUrl
     );

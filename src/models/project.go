@@ -61,6 +61,8 @@ type Project struct {
 	Blurb             string   `db:"blurb"`
 	Description       string   `db:"description"`
 	ParsedDescription string   `db:"descparsed"`
+	AIPolicy          string   `db:"ai_policy"`
+	ParsedAIPolicy    string   `db:"ai_policy_parsed"`
 
 	Lifecycle ProjectLifecycle `db:"lifecycle"` // TODO(asaf): Ensure we only fetch projects in the correct lifecycle phase everywhere.
 

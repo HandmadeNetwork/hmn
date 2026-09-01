@@ -81,7 +81,9 @@ export function init({
 	////////////////////////////
 	{
 		const description = must(document.querySelector<HTMLTextAreaElement>('#full_description'));
+		const aiPolicy = must(document.querySelector<HTMLTextAreaElement>('#ai_policy'));
 		const descPreview = must(document.querySelector<HTMLElement>('#desc_preview'));
+		const aiPolicyPreview = must(document.querySelector<HTMLElement>('#ai_policy_preview'));
 		const { clear: clearDescription } = autosaveContent({
 			inputEl: description,
 			storageKey: `project-description/${projectName}`,
@@ -89,13 +91,14 @@ export function init({
 		projectForm.addEventListener('submit', () => clearDescription());
 		previewResizeObserver.observe(description);
 
-		const doMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
+		const descMarkdown = initLiveMarkdown({ inputEl: description, previewEl: descPreview });
+		const aiPolicyMarkdown = initLiveMarkdown({ inputEl: aiPolicy, previewEl: aiPolicyPreview });
 		setupMarkdownUpload(
 			document.querySelectorAll("#project_form input[type=submit]"),
 			must(document.querySelector<HTMLFileInputElement>('#file_input')),
 			must(document.querySelector('.upload_bar')),
 			description,
-			doMarkdown,
+			descMarkdown,
 			textMaxFileSize,
 			editorUploadUrl,
 		);

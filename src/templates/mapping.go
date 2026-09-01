@@ -97,6 +97,7 @@ func ProjectToTemplate(
 		Url:               hmndata.UrlContextForProject(p).BuildHomepage(),
 		Blurb:             p.Blurb,
 		ParsedDescription: template.HTML(p.ParsedDescription),
+		ParsedAIPolicy:    template.HTML(p.ParsedAIPolicy),
 
 		Flowsnake: MakeFlowsnake(p.ID),
 
@@ -170,6 +171,7 @@ func ProjectToProjectSettings(
 
 		Blurb:       p.Blurb,
 		Description: p.Description,
+		AIPolicy:    p.AIPolicy,
 		LinksJSON:   string(utils.Must1(json.Marshal(LinksToTemplate(links)))),
 		Owners:      utils.Map(owners, UserToTemplate),
 

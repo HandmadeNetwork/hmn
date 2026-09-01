@@ -167,6 +167,7 @@ type Project struct {
 	Url               string
 	Blurb             string
 	ParsedDescription template.HTML
+	ParsedAIPolicy    template.HTML
 	Owners            []User
 
 	Logo      string
@@ -203,6 +204,7 @@ type ProjectSettings struct {
 
 	Blurb       string
 	Description string
+	AIPolicy    string
 	LinksJSON   string
 	Owners      []User
 
