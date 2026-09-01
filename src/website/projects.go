@@ -33,11 +33,13 @@ type ProjectTemplateData struct {
 	templates.BaseData
 
 	OfficialProjects []templates.Project
+	GalleryProjects  []templates.Project
 }
 
 func ProjectIndex(c *RequestContext) ResponseData {
-	officialProjects, err := getShuffledOfficialProjects(c)
-	if err != nil {
+	officialProjects, err1 := getShuffledOfficialProjects(c)
+	galleryProjects, err2 := getGalleryProjects(c)
+	if err := errors.Join(err1, err2); err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
@@ -46,11 +48,62 @@ func ProjectIndex(c *RequestContext) ResponseData {
 		BaseData: baseData,
 
 		OfficialProjects: officialProjects,
+		GalleryProjects:  galleryProjects,
 	}
 
 	var res ResponseData
 	res.MustWriteTemplate("project_index.html", tmpl, c.Perf)
 	return res
+}
+
+func getGalleryProjects(c *RequestContext) ([]templates.Project, error) {
+	galleryProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		Types:       hmndata.OfficialProjects,
+		GalleryOnly: true,
+		OrderBy:     "gallery_sort",
+	})
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch gallery projects")
+	}
+
+	galleryProjectIDs := utils.Map(galleryProjects, func(p hmndata.ProjectAndStuff) int {
+		return p.Project.ID
+	})
+	type screenshotRow struct {
+		ProjectID  int          `db:"project_screenshot.project_id"`
+		Screenshot models.Asset `db:"asset"`
+	}
+	screenshotAssets, err := db.Query[screenshotRow](c, c.Conn,
+		`
+		---- Fetching screenshots for gallery
+		SELECT $columns
+		FROM
+			project_screenshot
+			JOIN asset ON project_screenshot.asset_id = asset.id
+		WHERE
+			project_screenshot.project_id = ANY($1)
+		ORDER BY project_screenshot.project_id, project_screenshot.sort
+		`,
+		galleryProjectIDs,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch screenshots for gallery")
+	}
+
+	var templateProjects []templates.Project
+	for _, p := range galleryProjects {
+		tmpl := templates.ProjectAndStuffToTemplate(&p)
+		// NOTE(ben): Pick the first screenshot as the gallery image, if any
+		for _, screenshot := range screenshotAssets {
+			if screenshot.ProjectID == p.Project.ID {
+				tmpl.GalleryImage = templates.AssetToTemplate(&screenshot.Screenshot)
+				break
+			}
+		}
+		templateProjects = append(templateProjects, tmpl)
+	}
+
+	return templateProjects, nil
 }
 
 func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error) {
@@ -702,6 +755,10 @@ type ProjectPayload struct {
 	SlugAliases string // comma-separated
 	Featured    bool
 	Personal    bool
+
+	Gallery     bool
+	GallerySort int
+	GalleryDesc string
 }
 
 type ProjectEditFormResult struct {
@@ -799,6 +856,10 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	sortScoreStr := c.Req.Form.Get("sort_score")
 	sortScore, _ := strconv.Atoi(sortScoreStr)
 
+	gallery := c.Req.Form.Get("gallery") != ""
+	gallerySort, _ := strconv.Atoi(c.Req.Form.Get("gallery_sort"))
+	galleryDesc := c.Req.Form.Get("gallery_desc")
+
 	res.Payload = ProjectPayload{
 		Name:                  projectName,
 		Blurb:                 shortDesc,
@@ -820,11 +881,17 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		Personal:              !official,
 		Featured:              featured,
 		SortScore:             sortScore,
+
+		Gallery:     gallery,
+		GallerySort: gallerySort,
+		GalleryDesc: galleryDesc,
 	}
 
 	return res
 }
 
+// NOTE(ben): Called for both new and edited projects to set lots of common
+// data after you know the project exists.
 func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *ProjectPayload) error {
 	numNewOrExistingScreenshots := 0
 	for _, screenshot := range payload.Screenshots {
@@ -914,7 +981,10 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 				hidden = $5,
 				slug_aliases = $6,
 				jam_hidden = $7,
-				sort_score = $8
+				sort_score = $8,
+				gallery = $9,
+				gallery_sort = $10,
+				gallery_desc = $11
 			WHERE
 				id = $1
 			`,
@@ -926,6 +996,9 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			slugAliases,
 			payload.JamHidden,
 			payload.SortScore,
+			payload.Gallery,
+			payload.GallerySort,
+			payload.GalleryDesc,
 		)
 		if err != nil {
 			return oops.New(err, "Failed to update project with admin fields")

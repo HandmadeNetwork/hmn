@@ -110,6 +110,11 @@ func ProjectToTemplate(
 		HasForum: p.HasForums(),
 
 		DateApproved: p.DateApproved,
+
+		Gallery:     p.Gallery,
+		GallerySort: p.GallerySort,
+		GalleryDesc: p.GalleryDesc,
+		// Gallery screenshot not provided automatically
 	}
 }
 
@@ -178,6 +183,10 @@ func ProjectToProjectSettings(
 		Logo:        AssetToTemplate(logo),
 		HeaderImage: AssetToTemplate(headerImage),
 		Screenshots: utils.Map(screenshots, AssetToTemplate),
+
+		Gallery:     p.Gallery,
+		GallerySort: p.GallerySort,
+		GalleryDesc: p.GalleryDesc,
 	}
 }
 

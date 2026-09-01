@@ -85,6 +85,10 @@ type Project struct {
 	ForumEnabled   bool `db:"forum_enabled"`
 	BlogEnabled    bool `db:"blog_enabled"`
 	LibraryEnabled bool `db:"library_enabled"` // TODO: Delete this field from the db
+
+	Gallery     bool   `db:"gallery"`
+	GallerySort int    `db:"gallery_sort"`
+	GalleryDesc string `db:"gallery_desc"`
 }
 
 func (p *Project) IsHMN() bool {

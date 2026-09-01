@@ -184,6 +184,11 @@ type Project struct {
 	UUID         string
 	DateApproved time.Time
 
+	Gallery      bool
+	GallerySort  int
+	GalleryDesc  string
+	GalleryImage *Asset
+
 	// NOTE(ben): Legacy; now we just have screenshots. We are keeping this
 	// around so project authors can retrieve their old header images.
 	HeaderImage string
@@ -211,6 +216,10 @@ type ProjectSettings struct {
 	Logo        *Asset
 	HeaderImage *Asset
 	Screenshots []*Asset
+
+	Gallery     bool
+	GallerySort int
+	GalleryDesc string
 }
 
 type Flowsnake struct {
