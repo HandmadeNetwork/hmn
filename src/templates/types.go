@@ -454,6 +454,14 @@ type BreadcrumbLink struct {
 type BreadcrumbAction struct {
 	Name, Url string
 	Icon      string
+
+	// Optional; causes link to be wrapped in a form
+	PostData []BreadcrumbActionPostData
+}
+
+type BreadcrumbActionPostData struct {
+	Name  string
+	Value any
 }
 
 type Pagination struct {

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/oops"
 )
@@ -16,6 +17,7 @@ func FollowUser(c *RequestContext) ResponseData {
 
 	userIDStr := c.Req.Form.Get("user_id")
 	unfollowStr := c.Req.Form.Get("unfollow")
+	redirect := hmnurl.SafeRedirectUrl(c.Req.Form.Get("redirect"))
 
 	userID, err := strconv.Atoi(userIDStr)
 	if err != nil {
@@ -42,10 +44,7 @@ func FollowUser(c *RequestContext) ResponseData {
 		}
 	}
 
-	var res ResponseData
-	addCORSHeaders(c, &res)
-	res.WriteHeader(http.StatusNoContent)
-	return res
+	return c.Redirect(redirect, http.StatusSeeOther)
 }
 
 func FollowProject(c *RequestContext) ResponseData {
@@ -56,6 +55,7 @@ func FollowProject(c *RequestContext) ResponseData {
 
 	projectIDStr := c.Req.Form.Get("project_id")
 	unfollowStr := c.Req.Form.Get("unfollow")
+	redirect := hmnurl.SafeRedirectUrl(c.Req.Form.Get("redirect"))
 
 	projectID, err := strconv.Atoi(projectIDStr)
 	if err != nil {
@@ -83,8 +83,5 @@ func FollowProject(c *RequestContext) ResponseData {
 		}
 	}
 
-	var res ResponseData
-	addCORSHeaders(c, &res)
-	res.WriteHeader(http.StatusNoContent)
-	return res
+	return c.Redirect(redirect, http.StatusSeeOther)
 }

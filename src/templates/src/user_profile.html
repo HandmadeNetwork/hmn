@@ -44,33 +44,24 @@
 				<div class="mb3">{{ . }}</div>
 			{{ end }}
 			{{ if .FollowUrl }}
-				<a id="follow_link" class="db" href="javascript:;">{{ if .Following }}Unfollow{{ else }}Follow{{ end }}</a>
-				<script>
-					const followLink = document.getElementById("follow_link");
-					let following = {{ .Following }};
-					followLink.addEventListener("click", async function() {
-						followLink.disabled = true;
-
-						let formData = new FormData();
-						formData.set("csrf_token", "{{ .Session.CSRFToken }}");
-						formData.set("user_id", "{{ .ProfileUser.ID }}");
-						if (following) {
-							formData.set("unfollow", "true");
-						}
-						let result = await fetch("{{ .FollowUrl }}", {
-							method: "POST",
-							body: formData,
-							redirect: "error",
-							credentials: "include",
+				<form action="{{ .FollowUrl }}" method="POST">
+					{{ csrftoken .Session }}
+					<input type="hidden" name="user_id" value="{{ .ProfileUser.ID }}">
+					<input type="hidden" name="redirect" value="{{ .CurrentUrl }}">
+					{{ if .Following }}
+						<input type="hidden" name="unfollow" value="true">
+					{{ end }}
+					<a id="follow_link" class="db" href="javascript:;">
+						{{ if .Following }}Unfollow{{ else }}Follow{{ end }}
+					</a>
+					<script>
+						const followLink = document.getElementById("follow_link");
+						followLink.addEventListener("click", e => {
+							e.preventDefault();
+							followLink.closest("form").submit();
 						});
-						if (result.ok) {
-							following = !following;
-							followLink.textContent = (following ? "Unfollow" : "Follow");
-						}
-						
-						followLink.disabled = false;
-					});
-				</script>
+					</script>
+				</form>
 			{{ end }}
 			<div class="w-100 w-auto-ns w-100-l">
 				{{ if .ProfileUser.Email }}
