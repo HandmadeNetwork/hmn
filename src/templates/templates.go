@@ -344,20 +344,13 @@ var HMNTemplateFuncs = template.FuncMap{
 		return num%2 == 1
 	},
 
+	// TODO(ben): This really might not actually be necessary, since it seems Go
+	// will automatically JSON-encode any Go value when included in a JS
+	// expression context, and the resulting encoding will probably be fairly
+	// concise compared to the wacky escaping that often results from this
+	// function.
 	"json": func(thing any) string {
 		return string(utils.Must1(json.Marshal(thing)))
-	},
-	"asseturl": func(asset *Asset) string {
-		if asset == nil {
-			return ""
-		}
-		return asset.Url
-	},
-	"assetfilename": func(asset *Asset) string {
-		if asset == nil {
-			return ""
-		}
-		return asset.Filename
 	},
 
 	"mediaimage":   func() TimelineItemMediaType { return TimelineItemMediaTypeImage },

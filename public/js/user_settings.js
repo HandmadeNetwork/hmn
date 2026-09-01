@@ -521,8 +521,7 @@ function lengthReporter(inputEl, lengthEl) {
 }
 function init({
   avatarMaxFileSize,
-  avatarUrl,
-  avatarFilename,
+  avatar,
   linksJson
 }) {
   lengthReporter(
@@ -533,8 +532,7 @@ function init({
     "user_avatar",
     avatarMaxFileSize,
     {
-      originalUrl: avatarUrl,
-      originalFilename: avatarFilename
+      original: avatar || void 0
     }
   );
   must(document.querySelector("#upload-avatar-button")).addEventListener("click", (e) => {
