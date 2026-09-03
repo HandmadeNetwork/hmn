@@ -85,8 +85,10 @@ func BlogIndex(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("blog_index.html", tmpl{
-		BaseData:      baseData,
-		BlogIndexData: getBlogIndexData(c, page, threads),
+		BaseData: baseData,
+		BlogIndexData: getBlogIndexData(c, page, threads, func(t *models.Thread) string {
+			return c.UrlContext.BuildBlogThread(t.ID, t.Title)
+		}),
 		Pagination: templates.Pagination{
 			Current: page,
 			Total:   numPages,
@@ -334,8 +336,10 @@ func BlogPersonalIndex(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("blog_index.html", tmpl{
-		BaseData:      baseData,
-		BlogIndexData: getBlogIndexData(c, page, threads),
+		BaseData: baseData,
+		BlogIndexData: getBlogIndexData(c, page, threads, func(t *models.Thread) string {
+			return hmnurl.BuildPersonalBlogThread(profileUser.Username, t.ID, t.Title)
+		}),
 		Pagination: templates.Pagination{
 			Current: page,
 			Total:   numPages,
@@ -873,13 +877,18 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 	return res, true
 }
 
-func getBlogIndexData(c *RequestContext, page int, threads []hmndata.ThreadAndStuff) BlogIndexData {
+func getBlogIndexData(
+	c *RequestContext,
+	page int,
+	threads []hmndata.ThreadAndStuff,
+	buildUrl func(*models.Thread) string, // NOTE(ben): Awkward, but we don't actually know here whether the blog is personal or not, nor who the user is if so.
+) BlogIndexData {
 	var firstEntry *templates.BlogIndexEntry
 	var entries []templates.BlogIndexEntry
 	for _, thread := range threads {
 		entry := templates.BlogIndexEntry{
 			Title:   thread.Thread.Title,
-			Url:     c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title),
+			Url:     buildUrl(&thread.Thread),
 			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
 			Date:    thread.FirstPost.PostDate,
 			Content: template.HTML(thread.FirstPost.PreviewHTML),
