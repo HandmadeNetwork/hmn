@@ -13,7 +13,6 @@ import (
 var baseUrlParsed url.URL
 var cacheBustVersion string
 var S3BaseUrl string
-var isTest bool
 
 // ----------------------------------------------------------------------------
 // Init functions (called primarily from src/config/init.go)

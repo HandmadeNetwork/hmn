@@ -147,9 +147,11 @@ func buildAllWasmFiles() {
 		compile.Stderr = os.Stderr
 		if err := compile.Run(); err != nil {
 			fmt.Fprintf(os.Stderr, "WASM BUILD FAILED: %v\n", err)
+			code := 1
 			if exit, ok := err.(*exec.ExitError); ok {
-				os.Exit(exit.ExitCode())
+				code = exit.ExitCode()
 			}
+			os.Exit(code)
 		}
 		// fmt.Fprintf(os.Stderr, "%s: size before opt = %v\n", out, utils.Must1(os.Stat(out)).Size())
 

@@ -2,6 +2,7 @@ package parsing
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -131,7 +132,7 @@ func init() {
 
 		iterator, err := lexer.Tokenise(nil, text)
 		if err != nil {
-			panic("failed to tokenize bbcode")
+			panic(fmt.Errorf("failed to tokenize bbcode: %w", err))
 		}
 
 		var result bytes.Buffer
