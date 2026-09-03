@@ -252,7 +252,7 @@ func (c *RequestContext) FullUrl() string {
 }
 
 func (c *RequestContext) CurrentUserCanEditCurrentProject() bool {
-	if c.CurrentProject == nil {
+	if c.CurrentProject.IsHMN() {
 		return false
 	}
 	return CanEditProject(c.CurrentUser, c.CurrentProjectExtras.Owners)
