@@ -338,11 +338,7 @@ func getProjectPageBaseData(c *RequestContext, base *templates.BaseData, activeL
 	var res ProjectPageBaseData
 
 	// NOTE(ben): Get project owners
-	owners, err := hmndata.FetchProjectOwners(c, c.Conn, c.CurrentProject.ID)
-	if err != nil {
-		return ProjectPageBaseData{}, err
-	}
-	res.Owners = utils.Map(owners, templates.UserToTemplate)
+	res.Owners = utils.Map(c.CurrentProjectExtras.Owners, templates.UserToTemplate)
 
 	// NOTE(ben): Get user-created links
 	{
@@ -380,7 +376,7 @@ func getProjectPageBaseData(c *RequestContext, base *templates.BaseData, activeL
 				if c.CurrentUser.IsStaff {
 					canSeeBlogLink = true
 				} else {
-					for _, owner := range owners {
+					for _, owner := range c.CurrentProjectExtras.Owners {
 						if owner.ID == c.CurrentUser.ID {
 							canSeeBlogLink = true
 							break
@@ -427,6 +423,7 @@ func getProjectPageBaseData(c *RequestContext, base *templates.BaseData, activeL
 
 	// NOTE(ben): Get header actions (follow/unfollow)
 	if c.CurrentUser != nil {
+		var err error
 		res.FollowUrl = hmnurl.BuildFollowProject()
 		res.Following, err = db.QueryOneScalar[bool](c, c.Conn, `
 			---- Check following
@@ -791,14 +788,14 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	}
 	links := ParseLinks(c.Req.Form.Get("links"))
 
-	description := c.Req.Form.Get("full_description")
+	description := strings.TrimSpace(c.Req.Form.Get("full_description"))
 	if description == "" {
 		res.RejectionReason = "Projects must have a long description"
 		return res
 	}
 	parsedDescription := parsing.ParseMarkdown(description, parsing.PostMarkdown)
 
-	aiPolicy := c.Req.Form.Get("ai_policy")
+	aiPolicy := strings.TrimSpace(c.Req.Form.Get("ai_policy"))
 	if aiPolicy == "" {
 		res.RejectionReason = "Projects must have an AI policy"
 		return res
