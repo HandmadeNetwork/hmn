@@ -460,8 +460,7 @@ function initLinkEditor(initialLinks) {
 // src/rawdata/js/lib/tabs.ts
 function initTabs(container, {
   initialTab,
-  onSelect = () => {
-  },
+  onSelect = () => true,
   fireOnSelectForInitialTab = false
 } = {}) {
   const buttons = Array.from(container.querySelectorAll("[data-tab-button]"));
@@ -469,8 +468,8 @@ function initTabs(container, {
   const firstTab = tabs[0].getAttribute("data-tab");
   function selectTab(name, { sendEvent = true } = {}) {
     if (!container.querySelector(`[data-tab="${name}"]`)) {
-      console.warn("no tab found with name", name);
-      return selectTab(firstTab, { sendEvent });
+      console.error("no tab found with name", name);
+      return false;
     }
     for (const tab of tabs) {
       tab.hidden = tab.getAttribute("data-tab") !== name;
@@ -481,8 +480,11 @@ function initTabs(container, {
     if (sendEvent) {
       onSelect(name);
     }
+    return true;
   }
-  selectTab(initialTab || firstTab, { sendEvent: fireOnSelectForInitialTab });
+  if (!selectTab(initialTab || firstTab, { sendEvent: fireOnSelectForInitialTab })) {
+    selectTab(firstTab, { sendEvent: fireOnSelectForInitialTab });
+  }
   for (const button of buttons) {
     button.addEventListener("click", () => {
       selectTab(button.getAttribute("data-tab-button"));
@@ -497,7 +499,7 @@ function initHashTabs(container, opts = {}) {
     initialTab: opts.initialTab ?? document.location.hash.substring(1),
     onSelect(name) {
       document.location.hash = `#${name}`;
-      opts.onSelect?.(name);
+      return opts.onSelect?.(name) ?? true;
     },
     fireOnSelectForInitialTab: opts.fireOnSelectForInitialTab
   });
