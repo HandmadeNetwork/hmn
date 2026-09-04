@@ -3,6 +3,7 @@ package website
 import (
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"io"
 	"mime/multipart"
@@ -39,7 +40,9 @@ type FormImage struct {
 func GetFormImage(c *RequestContext, fieldName string) (FormImage, error) {
 	// NOTE(ben): May be an asset UUID or "NOASSET".
 	assetID := c.Req.Form.Get("original_" + fieldName)
-	utils.Assert(assetID)
+	if assetID == "" {
+		return FormImage{}, fmt.Errorf("field original_%s not found", fieldName)
+	}
 
 	img, header, err := c.Req.FormFile("image_" + fieldName)
 	if errors.Is(err, http.ErrMissingFile) {
@@ -49,7 +52,14 @@ func GetFormImage(c *RequestContext, fieldName string) (FormImage, error) {
 			return FormImage{}, nil
 		} else if removeAssetID != "" {
 			// Existing file was removed
-			utils.Assert(assetID == removeAssetID, "GetFormImage should only be used when there is one image selector on the page with that name.")
+
+			// NOTE(ben): GetFormImage should only be used when there is one image
+			// selector on the page with that name. This is basically an assert but
+			// can fail on bad user input, so just an error here.
+			if assetID != removeAssetID {
+				return FormImage{}, errors.New("original and removed asset IDs do not match")
+			}
+
 			return FormImage{
 				Remove:  true,
 				AssetID: assetID,
@@ -105,14 +115,20 @@ func GetFormImages(c *RequestContext, fieldName string) ([]FormImage, error) {
 	var res []FormImage
 	var errs []error
 
+	// NOTE(ben): FYI, you should read from c.Req.MultipartForm instead of
+	// c.Req.Form for consistency with c.Req.MultipartForm.File and because .Form
+	// can also be populated by query params, which we don't care about. (To be
+	// fair, if people try to screw up our image loading using query params,
+	// they're only hurting themselves.)
+
 	assetIDsToRemove := make(map[string]struct{})
-	for _, assetIDToRemove := range c.Req.Form["remove_"+fieldName] {
+	for _, assetIDToRemove := range c.Req.MultipartForm.Value["remove_"+fieldName] {
 		assetIDsToRemove[assetIDToRemove] = struct{}{}
 	}
 
 	nextNewImage := 0
 	newImages := c.Req.MultipartForm.File["image_"+fieldName]
-	for _, existingAssetID := range c.Req.Form["original_"+fieldName] {
+	for _, existingAssetID := range c.Req.MultipartForm.Value["original_"+fieldName] {
 		if _, ok := assetIDsToRemove[existingAssetID]; ok {
 			res = append(res, FormImage{
 				Remove:  true,
