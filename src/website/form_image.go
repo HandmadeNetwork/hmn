@@ -18,6 +18,7 @@ import (
 )
 
 type FormImage struct {
+	// NOTE(ben): These are mutually exclusive.
 	New    bool
 	Exists bool
 	Remove bool

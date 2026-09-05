@@ -537,7 +537,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 }
 
 func ProjectNewSubmit(c *RequestContext) ResponseData {
-	formResult := ParseProjectEditForm(c)
+	formResult := parseProjectEditForm(c)
 	if formResult.Error != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, formResult.Error)
 	}
@@ -696,7 +696,7 @@ func ProjectEditSubmit(c *RequestContext) ResponseData {
 	if !c.CurrentUserCanEditCurrentProject() {
 		return FourOhFour(c)
 	}
-	formResult := ParseProjectEditForm(c)
+	formResult := parseProjectEditForm(c)
 	if formResult.Error != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, formResult.Error)
 	}
@@ -764,7 +764,7 @@ type ProjectEditFormResult struct {
 	Error           error
 }
 
-func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
+func parseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	var res ProjectEditFormResult
 	maxBodySize := int64(ProjectLogoMaxFileSize + 1024*1024)
 	c.Req.Body = http.MaxBytesReader(c.Res, c.Req.Body, maxBodySize)
@@ -826,6 +826,16 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	screenshots, err := GetFormImages(c, "screenshot")
 	if err != nil {
 		res.Error = oops.New(err, "Failed to read screenshots from form")
+		return res
+	}
+	numNewOrExistingScreenshots := 0
+	for _, screenshot := range screenshots {
+		if screenshot.New || screenshot.Exists {
+			numNewOrExistingScreenshots += 1
+		}
+	}
+	if numNewOrExistingScreenshots > maxProjectScreenshots {
+		res.RejectionReason = "too many screenshots"
 		return res
 	}
 
@@ -895,9 +905,6 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		if screenshot.New || screenshot.Exists {
 			numNewOrExistingScreenshots += 1
 		}
-	}
-	if numNewOrExistingScreenshots > maxProjectScreenshots {
-		return errors.New("too many screenshots")
 	}
 
 	// NOTE(ben): Upload all new assets before proceeding with DB updates.
@@ -1089,10 +1096,10 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			`,
 			payload.ProjectID,
 		))
-		utils.Assert(
-			sanity.Total == numNewOrExistingScreenshots && sanity.NumSorts == sanity.Total,
-			fmt.Sprintf("should have %d screenshots, but had %d with %d distinct sorts", len(payload.Screenshots), sanity.Total, sanity.NumSorts),
-		)
+		sane := sanity.Total == numNewOrExistingScreenshots && sanity.NumSorts == sanity.Total
+		if !sane {
+			return fmt.Errorf("should have %d screenshots, but had %d with %d distinct sorts", numNewOrExistingScreenshots, sanity.Total, sanity.NumSorts)
+		}
 	}
 
 	owners, err := db.Query[models.User](ctx, tx,
