@@ -15,8 +15,10 @@ export function updateRelocators() {
 
     const target = l ? targetL : (ns ? targetNS : targetDefault);
 
-    // NOTE(ben): My kingdom for an `insertAfter`.
-    target.parentElement!.insertBefore(relocator, target.nextSibling);
+    if (relocator.previousSibling !== target) {
+      // NOTE(ben): My kingdom for an `insertAfter`.
+      target.parentElement!.insertBefore(relocator, target.nextSibling);
+    }
   }
 }
 updateRelocators();

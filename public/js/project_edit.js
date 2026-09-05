@@ -907,7 +907,9 @@ function updateRelocators() {
     const targetNS = must(document.getElementById(targetNSID), `no element found with id ${targetNSID}`);
     const targetL = must(document.getElementById(targetLID), `no element found with id ${targetLID}`);
     const target = l ? targetL : ns ? targetNS : targetDefault;
-    target.parentElement.insertBefore(relocator, target.nextSibling);
+    if (relocator.previousSibling !== target) {
+      target.parentElement.insertBefore(relocator, target.nextSibling);
+    }
   }
 }
 updateRelocators();
