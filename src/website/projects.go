@@ -265,6 +265,10 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 }
 
 func ProjectFeed(c *RequestContext) ResponseData {
+	if c.CurrentProject.IsHMN() {
+		return FourOhFour(c)
+	}
+
 	maxRecentActivity := 100
 
 	type ProjectFeedData struct {
