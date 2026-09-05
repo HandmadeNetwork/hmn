@@ -11,6 +11,7 @@ import { initReorderable } from "./lib/reorderable";
 import { CheckUsernameResult } from "./lib/apitypes";
 import { updateStickySidebars } from "./lib/sticky_sidebar";
 import "./lib/relocator";
+import { firstInvalidElement, FormElement } from "./lib/validation";
 
 export type ProjectEditConfig = {
 	csrf: CSRFToken,
@@ -48,7 +49,7 @@ export function init({
 	//////////
 	// Tabs //
 	//////////
-	initHashTabs(document, {
+	const { selectTab } = initHashTabs(document, {
 		onSelect(name) {
 			const card = must(document.querySelector<HTMLElement>("#card-preview-sticky-container"));
 			const description = must(document.querySelector<HTMLElement>("#description-preview-sticky-container"));
@@ -64,6 +65,32 @@ export function init({
 	});
 	const previewResizeObserver = new ResizeObserver(updateStickySidebars);
 	previewResizeObserver.observe(must(document.querySelector("#preview-container")));
+
+	////////////////
+	// Validation //
+	////////////////
+	projectForm.addEventListener("submit", e => {
+		const firstBadElement = firstInvalidElement(projectForm);
+		if (!firstBadElement) {
+			return;
+		}
+
+		// NOTE(ben): We stop immediate propagation to prevent other submit
+		// handlers from firing, e.g. to clear saved markdown.
+		e.preventDefault();
+		e.stopImmediatePropagation();
+
+		const tab = must(firstBadElement.closest("[data-tab]"));
+		selectTab(tab.getAttribute("data-tab")!);
+		firstBadElement.focus();
+		firstBadElement.reportValidity(); // NOTE(ben): Without this the browser won't show the validation popup.
+
+		// MUSING(ben): The browser popup is ugly and stupid, but I doubt it's
+		// worth building custom validation popups either. The integration with the
+		// built-in browser validation could maybe be managed with the info present
+		// in ValidityState, but unless the browser provides us with a complete
+		// string to present, localization concerns would be tremendously annoying.
+	});
 
 	//////////
 	// Tags //

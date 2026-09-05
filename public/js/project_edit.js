@@ -915,6 +915,17 @@ function updateRelocators() {
 updateRelocators();
 window.addEventListener("resize", updateRelocators);
 
+// src/rawdata/js/lib/validation.ts
+function firstInvalidElement(form) {
+  for (const el of form.elements) {
+    const formEl = el;
+    if (formEl.willValidate && !formEl.validity.valid) {
+      return formEl;
+    }
+  }
+  return null;
+}
+
 // src/rawdata/js/project_edit.ts
 function init({
   csrf,
@@ -932,7 +943,7 @@ function init({
   linkIcons: linkIconsRaw
 }) {
   const projectForm = must(document.querySelector("#project_form"));
-  initHashTabs(document, {
+  const { selectTab } = initHashTabs(document, {
     onSelect(name) {
       const card = must(document.querySelector("#card-preview-sticky-container"));
       const description = must(document.querySelector("#description-preview-sticky-container"));
@@ -946,6 +957,18 @@ function init({
   });
   const previewResizeObserver = new ResizeObserver(updateStickySidebars);
   previewResizeObserver.observe(must(document.querySelector("#preview-container")));
+  projectForm.addEventListener("submit", (e) => {
+    const firstBadElement = firstInvalidElement(projectForm);
+    if (!firstBadElement) {
+      return;
+    }
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const tab = must(firstBadElement.closest("[data-tab]"));
+    selectTab(tab.getAttribute("data-tab"));
+    firstBadElement.focus();
+    firstBadElement.reportValidity();
+  });
   {
     let updateTagPreview2 = function() {
       tagPreview.innerText = tag.value || "[your tag]";
