@@ -17,13 +17,13 @@ export function initCarousel(
 
   let current = 0;
   function activateCarousel(i: number, silent = false) {
-    const items = document.querySelectorAll('.carousel-item');
+    const items = container.querySelectorAll('.carousel-item');
     for (const item of items) {
       item.classList.remove('active');
     }
     items[i].classList.add('active');
 
-    const smallItems = document.querySelectorAll('.carousel-item-small');
+    const smallItems = container.querySelectorAll('.carousel-item-small');
     if (smallItems.length > 0) {
       for (const item of smallItems) {
         item.classList.remove('active');
@@ -31,7 +31,7 @@ export function initCarousel(
       smallItems[i].classList.add('active');
     }
 
-    const buttons = document.querySelectorAll('.carousel-button');
+    const buttons = container.querySelectorAll('.carousel-button');
     for (const button of buttons) {
       button.classList.remove('active');
     }
