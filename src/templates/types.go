@@ -275,30 +275,30 @@ type SnippetEditProject struct {
 type User struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
-	Email    string
-	IsStaff  bool
-	Status   int
-	Featured bool
+	Email    string `json:"-"`
+	IsStaff  bool   `json:"-"`
+	Status   int    `json:"-"`
+	Featured bool   `json:"-"`
 
-	Name       string `json:"name"`
-	Blurb      string
-	Bio        string
-	Signature  string
-	DateJoined time.Time
-	Avatar     *Asset `json:"avatar"`
-	AvatarUrl  string `json:"avatarUrl,omitempty"`
-	ProfileUrl string `json:"profileUrl"`
+	Name       string    `json:"name"`
+	Blurb      string    `json:"-"`
+	Bio        string    `json:"-"`
+	Signature  string    `json:"-"`
+	DateJoined time.Time `json:"-"`
+	Avatar     *Asset    `json:"avatar"`
+	AvatarUrl  string    `json:"avatarUrl,omitempty"`
+	ProfileUrl string    `json:"profileUrl"`
 
-	ShowEmail bool
-	Timezone  string
+	ShowEmail bool   `json:"-"`
+	Timezone  string `json:"-"`
 
-	DiscordSaveShowcase                 bool
-	DiscordDeleteSnippetOnMessageDelete bool
+	DiscordSaveShowcase                 bool `json:"-"`
+	DiscordDeleteSnippetOnMessageDelete bool `json:"-"`
 
-	IsEduTester bool
-	IsEduAuthor bool
+	IsEduTester bool `json:"-"`
+	IsEduAuthor bool `json:"-"`
 
-	DiscordUser *DiscordUser
+	DiscordUser *DiscordUser `json:"-"`
 }
 
 type Link struct {
