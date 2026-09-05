@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"math/rand"
@@ -64,13 +65,6 @@ var LifecycleBadgeStrings = map[models.ProjectLifecycle]string{
 	models.ProjectLifecycleLTS:              "Complete",
 }
 
-func ProjectLogoUrl(asset *models.Asset) string {
-	if asset != nil {
-		return hmnurl.BuildS3Asset(asset.S3Key)
-	}
-	return ""
-}
-
 func MakeFlowsnake(seed int) Flowsnake {
 	src := rand.NewSource(int64(seed))
 	rnd := rand.New(src)
@@ -103,6 +97,7 @@ func ProjectToTemplate(
 		Url:               hmndata.UrlContextForProject(p).BuildHomepage(),
 		Blurb:             p.Blurb,
 		ParsedDescription: template.HTML(p.ParsedDescription),
+		ParsedAIPolicy:    template.HTML(p.ParsedAIPolicy),
 
 		Flowsnake: MakeFlowsnake(p.ID),
 
@@ -115,12 +110,17 @@ func ProjectToTemplate(
 		HasForum: p.HasForums(),
 
 		DateApproved: p.DateApproved,
+
+		Gallery:     p.Gallery,
+		GallerySort: p.GallerySort,
+		GalleryDesc: p.GalleryDesc,
+		// Gallery screenshot not provided automatically
 	}
 }
 
 func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff) Project {
 	res := ProjectToTemplate(&p.Project)
-	res.Logo = ProjectLogoUrl(p.LogoAsset)
+	res.Logo = AssetUrl(p.LogoAsset)
 	for _, o := range p.Owners {
 		res.Owners = append(res.Owners, UserToTemplate(o))
 	}
@@ -150,12 +150,11 @@ func ProjectToProjectSettings(
 	p *models.Project,
 	owners []*models.User,
 	tag string,
+	jams []*models.JamProject,
+	links []*models.Link,
 	logo, headerImage *models.Asset,
+	screenshots []*models.Asset,
 ) ProjectSettings {
-	ownerUsers := make([]User, 0, len(owners))
-	for _, owner := range owners {
-		ownerUsers = append(ownerUsers, UserToTemplate(owner))
-	}
 	return ProjectSettings{
 		Name:        p.Name,
 		Slug:        p.Slug,
@@ -165,13 +164,29 @@ func ProjectToProjectSettings(
 		Personal:    p.Personal,
 		Lifecycle:   ProjectLifecycleValues[p.Lifecycle],
 		Tag:         tag,
+		JamParticipation: utils.Map(jams, func(jam *models.JamProject) ProjectJamParticipation {
+			return ProjectJamParticipation{
+				JamName:       jam.JamName,
+				JamSlug:       jam.JamSlug,
+				Participating: jam.Participating,
+			}
+		}),
+		JamHidden: p.JamHidden,
+		SortScore: p.SortScore,
+
 		Blurb:       p.Blurb,
 		Description: p.Description,
-		Owners:      ownerUsers,
+		AIPolicy:    p.AIPolicy,
+		LinksJSON:   string(utils.Must1(json.Marshal(LinksToTemplate(links)))),
+		Owners:      utils.Map(owners, UserToTemplate),
+
 		Logo:        AssetToTemplate(logo),
 		HeaderImage: AssetToTemplate(headerImage),
-		JamHidden:   p.JamHidden,
-		SortScore:   p.SortScore,
+		Screenshots: utils.Map(screenshots, AssetToTemplate),
+
+		Gallery:     p.Gallery,
+		GallerySort: p.GallerySort,
+		GalleryDesc: p.GalleryDesc,
 	}
 }
 
@@ -181,7 +196,7 @@ func AssetToTemplate(a *models.Asset) *Asset {
 	}
 
 	return &Asset{
-		Url: hmnurl.BuildS3Asset(a.S3Key),
+		Url: AssetUrl(a),
 
 		ID:       a.ID.String(),
 		Filename: a.Filename,
@@ -190,6 +205,13 @@ func AssetToTemplate(a *models.Asset) *Asset {
 		Width:    a.Width,
 		Height:   a.Height,
 	}
+}
+
+func AssetUrl(a *models.Asset) string {
+	if a == nil {
+		return ""
+	}
+	return hmnurl.BuildS3Asset(a.S3Key)
 }
 
 func SessionToTemplate(s *models.Session) Session {
@@ -403,31 +425,12 @@ func TimelineItemsToJSON(items []TimelineItem) string {
 	return builder.String()
 }
 
-func SnippetEditProjectsToJSON(projects []Project) string {
-	builder := strings.Builder{}
-	builder.WriteRune('[')
-	for i, proj := range projects {
-		if i > 0 {
-			builder.WriteRune(',')
-		}
-		builder.WriteRune('{')
-
-		builder.WriteString(`"id":`)
-		builder.WriteString(strconv.FormatInt(int64(proj.ID), 10))
-		builder.WriteRune(',')
-
-		builder.WriteString(`"name":"`)
-		builder.WriteString(proj.Name)
-		builder.WriteString(`",`)
-
-		builder.WriteString(`"logo":"`)
-		builder.WriteString(proj.Logo)
-		builder.WriteRune('"')
-
-		builder.WriteRune('}')
+func ProjectToSnippetEditProject(project Project) SnippetEditProject {
+	return SnippetEditProject{
+		ID:   project.ID,
+		Name: project.Name,
+		Logo: project.Logo,
 	}
-	builder.WriteRune(']')
-	return builder.String()
 }
 
 func PodcastToTemplate(podcast *models.Podcast, image *models.Asset) Podcast {

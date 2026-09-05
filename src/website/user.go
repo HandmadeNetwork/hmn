@@ -45,7 +45,7 @@ type UserProfileTemplateData struct {
 	AdminSetOptionsUrl string
 	AdminNukeUrl       string
 
-	SnippetEdit templates.SnippetEdit
+	SnippetEditorConfig templates.SnippetEditorConfig
 }
 
 func UserProfile(c *RequestContext) ResponseData {
@@ -98,8 +98,8 @@ func UserProfile(c *RequestContext) ResponseData {
 		}
 	}
 
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	timelineItems, err := FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
 		OwnerIDs: []int{profileUser.ID},
@@ -137,17 +137,19 @@ func UserProfile(c *RequestContext) ResponseData {
 
 	templateUser := templates.UserToTemplate(profileUser)
 
-	baseData := getBaseData(c, templateUser.Name, nil)
+	baseData := getBaseTemplateData(c, templateUser.Name, nil)
 
 	ownProfile := (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID)
 	followUrl := ""
 	following := false
-	snippetEdit := templates.SnippetEdit{}
+	var snippetEditorConfig templates.SnippetEditorConfig
 	if c.CurrentUser != nil {
-		snippetEdit = templates.SnippetEdit{
-			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
-			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
-			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
+		snippetEditorConfig = templates.SnippetEditorConfig{
+			AssetMaxSize:      AssetMaxSize(c.CurrentUser),
+			AvailableProjects: utils.Map(templateProjects, templates.ProjectToSnippetEditProject),
+			Owner:             &templateUser,
+
+			SubmitUrl: hmnurl.BuildSnippetSubmit(),
 		}
 
 		if !ownProfile {
@@ -185,7 +187,7 @@ func UserProfile(c *RequestContext) ResponseData {
 		AdminSetOptionsUrl: hmnurl.BuildAdminSetUserOptions(),
 		AdminNukeUrl:       hmnurl.BuildAdminNukeUser(),
 
-		SnippetEdit: snippetEdit,
+		SnippetEditorConfig: snippetEditorConfig,
 	}, c.Perf)
 	return res
 }
@@ -271,7 +273,7 @@ func UserSettings(c *RequestContext) ResponseData {
 
 	templateUser := templates.UserToTemplate(c.CurrentUser)
 
-	baseData := getBaseData(c, templateUser.Name, nil)
+	baseData := getBaseTemplateData(c, templateUser.Name, nil)
 
 	res.MustWriteTemplate("user_settings.html", UserSettingsTemplateData{
 		BaseData:          baseData,
@@ -431,14 +433,14 @@ func UserSettingsSave(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to read image from form"))
 	}
 	var avatarUUID *uuid.UUID
-	if newAvatar.Exists {
+	if newAvatar.New {
 		avatarAsset, err := SaveFormImage(c, tx, newAvatar, &c.CurrentUser.ID)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to upload avatar"))
 		}
 		avatarUUID = &avatarAsset.ID
 	}
-	if newAvatar.Exists || newAvatar.Remove {
+	if newAvatar.New || newAvatar.Remove {
 		_, err := tx.Exec(c,
 			`
 			UPDATE hmn_user

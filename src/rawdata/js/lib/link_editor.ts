@@ -2,9 +2,17 @@ import { initReorderable } from "./reorderable";
 import { makeTemplateCloner } from "./templates";
 import { must } from "./utils";
 
+// NOTE(ben): Set on the window by our Go code.
+declare const parseKnownServicesForUrl:
+  | ((url: string) => { service: string, icon: string, username: string })
+  | null;
+
 export type LinkData = Array<{
   name: string,
   url: string,
+  serviceName: string | "", // NOTE(ben): Just a hint that they can be empty :)
+  username: string | "",
+  icon: string,
   primary: boolean,
 }>;
 
@@ -86,8 +94,10 @@ function ensurePlaceholders() {
   }
 }
 
+// Extracts data from the link editor. Requires our Go wasm in order to parse
+// links to extract icons and usernames.
 export function getLinkData(): LinkData {
-  const links = [];
+  const links: LinkData = [];
   let primary = true;
   for (const el of linksContainer.children) {
     if (el === secondaryLinksTitle) {
@@ -101,7 +111,18 @@ export function getLinkData(): LinkData {
       if (!url) {
         continue;
       }
-      links.push({ name, url, primary });
+
+      let serviceName = "";
+      let username = "";
+      let icon = "website";
+      if (parseKnownServicesForUrl) {
+        const guess = parseKnownServicesForUrl(url);
+        icon = guess.icon;
+        username = guess.username;
+        serviceName = guess.service;
+      }
+
+      links.push({ name, url, serviceName, username, icon, primary });
     }
   }
   return links;

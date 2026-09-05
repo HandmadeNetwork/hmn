@@ -8,8 +8,7 @@ import (
 	"math"
 	"strings"
 	"time"
-
-	"git.handmade.network/hmn/hmn/src/oops"
+	// NOTE(ben): Don't import extra packages here lest you bloat Wasm builds.
 )
 
 // We have this because otherwise passing a nil *SomeError through Must or
@@ -129,7 +128,12 @@ func RecoverPanicAsError(err *error) {
 			recoveredErr = fmt.Errorf("panic with value: %v", r)
 		}
 
-		*err = oops.New(errors.Join(existingError, recoveredErr), "panic recovered as error")
+		// NOTE(ben): This used to use an oops error, but because oops pulls in all
+		// of zerolog, I changed it to just a plain old error. Probably oops is all
+		// trash that should be replaced anyway, but if we turn out to want it
+		// back, we should maybe factor the zerolog-specific stuff into its own
+		// package so that the core of wrapping and stack-tracing can be preserved.
+		*err = fmt.Errorf("panic recovered as error: %w", errors.Join(existingError, recoveredErr))
 	}
 }
 
@@ -162,6 +166,34 @@ func Assert[T comparable](value T, msg ...any) {
 }
 
 // Because sometimes you just want a pointer to the thing.
+// TODO(ben): As of Go 1.whatever we can now do new(v) everywhere we would use
+// this function.
 func P[T any](value T) *T {
 	return &value
+}
+
+// Produces a new slice by applying the callback function to each element.
+//
+// NOTE(ben): As always, don't abuse this! :) For loops are still ok to use.
+// But sometimes it's just convenient to do this inline.
+func Map[S ~[]E1, E1, E2 any](s S, f func(E1) E2) []E2 {
+	if s == nil {
+		return nil
+	}
+	res := make([]E2, len(s))
+	for i, v := range s {
+		res[i] = f(v)
+	}
+	return res
+}
+
+func MapP[S ~[]E1, E1, E2 any](s S, f func(*E1) E2) []E2 {
+	if s == nil {
+		return nil
+	}
+	res := make([]E2, len(s))
+	for i := range s {
+		res[i] = f(&s[i])
+	}
+	return res
 }

@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/logging"
 	"git.handmade.network/hmn/hmn/src/models"
@@ -187,14 +188,16 @@ type RequestContext struct {
 	//             We sometimes need the original response object so that some functions of the http package can set connection-management flags on it.
 	Res http.ResponseWriter
 
-	Conn                  *pgxpool.Pool
-	CurrentProject        *models.Project
-	CurrentProjectLogoUrl string
-	CurrentUser           *models.User
-	CurrentSession        *models.Session
-	UrlContext            *hmnurl.UrlContext
+	Conn *pgxpool.Pool
 
-	CurrentUserCanEditCurrentProject bool
+	// NOTE(ben): These fields are never nil and can always be used in any route,
+	// including API routes.
+	CurrentProject       *models.Project
+	CurrentProjectExtras hmndata.ProjectAndStuff
+	UrlContext           *hmnurl.UrlContext
+
+	CurrentUser    *models.User
+	CurrentSession *models.Session
 
 	Perf          *perf.RequestPerf
 	PerfCollector *perf.PerfCollector
@@ -246,6 +249,13 @@ func (c *RequestContext) FullUrl() string {
 	}
 
 	return scheme + c.Req.Host + c.Req.URL.String()
+}
+
+func (c *RequestContext) CurrentUserCanEditCurrentProject() bool {
+	if c.CurrentProject.IsHMN() {
+		return false
+	}
+	return CanEditProject(c.CurrentUser, c.CurrentProjectExtras.Owners)
 }
 
 // NOTE(asaf): Assumes port is present (it should be for RemoteAddr according to the docs)
@@ -379,7 +389,7 @@ func (c *RequestContext) ErrorResponse(status int, errs ...error) ResponseData {
 		StatusCode: status,
 		Errors:     errs,
 	}
-	res.MustWriteTemplate("error.html", getBaseData(c, "", nil), c.Perf)
+	res.MustWriteTemplate("error.html", getBaseTemplateData(c, "", nil), c.Perf)
 	return res
 }
 
@@ -416,7 +426,7 @@ func (c *RequestContext) RejectRequest(reason string) ResponseData {
 
 	var res ResponseData
 	err := res.WriteTemplate("reject.html", RejectData{
-		BaseData:     getBaseData(c, "Rejected", nil),
+		BaseData:     getBaseTemplateData(c, "Rejected", nil),
 		RejectReason: reason,
 	}, c.Perf)
 	if err != nil {

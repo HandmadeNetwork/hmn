@@ -1,0 +1,62 @@
+<div class="w-100 w--project-sidebar flex-shrink-0 flex flex-column g2-ns">
+  <!-- Title card -->
+  <div class="bg1 pa3 flex flex-column-ns g3 link-normal">
+    <div class="w--project-logo w-100-ns">
+      {{ template "project_logo.html" .Project }}
+    </div>
+    <div class="flex flex-column g3">
+      <div class="flex flex-column g1">
+        <a href="{{ .Project.Url }}"><h2 class="f4">{{ .Project.Name }}</h2></a>
+        <div>{{ .Project.Blurb }}</div>
+      </div>
+      {{ if .Project.LifecycleString }}
+        <div>
+          <span class="badge {{ .Project.LifecycleBadgeClass }}">{{ .Project.LifecycleString }}</span>
+        </div>
+      {{ end }}
+      {{ with .Owners }}
+        <div class="flex flex-column g2">
+          {{ range . }}
+            <a class="flex g1 items-center b" href="{{ .ProfileUrl }}">
+              <img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}">
+              <span>{{ .Name }}</span>
+            </a>
+          {{ end }}
+        </div>
+      {{ end }}
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="bg1 pa2 flex flex-column g1 link-normal mb3 mb0-ns">
+    {{ range .NavLinks }}
+      <a class="ph2 pv1 {{ if .Active }}bg3 b{{ end }}" href="{{ .Url }}">{{ .Name }}</a>
+    {{ end }}
+  </div>
+
+  <div id="project-sidebar-before-links" class="hide-if-empty"></div>
+
+  <!-- Links -->
+  {{ with .Links }}
+    <div class="bg1 pa2 flex flex-column link-normal">
+      {{ $seenSecondary := false}}
+      {{ range . }}
+        {{ if and (not .Primary) (not $seenSecondary) }}
+          {{ $seenSecondary = true }}
+          <hr class="mv2">
+        {{ end }}
+        <a href="{{ .Url }}" class="ph2 pv1 flex items-center g1">
+          <span class="flex-shrink-0 flex items-center">
+            {{ svg (strjoin "logos/" .Icon) }}
+          </span>
+          {{ $name := or .Name .ServiceName }}
+          <span class="truncate" title="{{ $name }}">{{ $name }}</span>
+          <span class="flex-grow-1"></span>
+          <span class="svgicon f6 ml2">{{ svg "arrow-right-up" }}</span>
+        </a>
+      {{ end }}
+    </div>
+  {{ end }}
+
+  <div id="project-sidebar-after-links" class="hide-if-empty"></div>
+</div>

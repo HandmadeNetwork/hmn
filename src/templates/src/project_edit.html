@@ -6,7 +6,7 @@
 
 	<script>
 		const go = new Go();
-		WebAssembly.instantiateStreaming(fetch('{{ static "parsing.wasm" }}'), go.importObject)
+		WebAssembly.instantiateStreaming(fetch('{{ static "gowasm.wasm" }}'), go.importObject)
 			.then(result => {
 				go.run(result.instance); // don't await this; we want it to be continuously running
 				window.dispatchEvent(new Event("wasmready"));
@@ -18,12 +18,12 @@
 		import { init } from "{{ static "js/project_edit.js" }}";
 
 		init({
-			csrf: JSON.parse({{ csrftokenjs .Session }}),
+			csrf: {{ csrftokenjs .Session }},
 
 			{{ if .Editing }}
-				projectName: "new-project",
-			{{ else }}
 				projectName: "{{ .Project.Name }}",
+			{{ else }}
+				projectName: "new-project",
 			{{ end }}
 
 			{{ with .ProjectSettings.LinksJSON }}
@@ -33,45 +33,85 @@
 			{{ end }}
 
 			maxOwners: {{ .MaxOwners }},
-
-			logoUrl: "{{ asseturl .ProjectSettings.Logo }}",
-			logoFilename: "{{ assetfilename .ProjectSettings.Logo }}",
-			headerImageUrl: "{{ asseturl .ProjectSettings.HeaderImage }}",
-			headerImageFilename: "{{ assetfilename .ProjectSettings.HeaderImage }}",
-
+			maxScreenshots: {{ .MaxScreenshots }},
+			
 			logoMaxFileSize: {{ .LogoMaxFileSize }},
-			headerMaxFileSize: {{ .HeaderMaxFileSize }},
+			screenshotMaxFileSize: {{ .ScreenshotMaxFileSize }},
 			textMaxFileSize: {{ .TextEditor.MaxFileSize }},
-
+			
 			editorUploadUrl: {{ .TextEditor.UploadUrl }},
-			ownerCheckUrl: "{{ .APICheckUsernameUrl }}",
+			ownerCheckUrl: {{ .APICheckUsernameUrl }},
+
+			logo: {{ .ProjectSettings.Logo }},
+			headerImage: {{ .ProjectSettings.HeaderImage }},
+			screenshots: {{ .ProjectSettings.Screenshots }},
+
+			// TODO(ben): This is like 15.5k of JSON, which is frankly horrendous. It
+			// probably compresses ok but come on. Nasty. Terrible. Probably the best
+			// thing to do is just to shrink the actual data size somehow, because we
+			// only have like 16 icons and somehow we are spending about 1k on each?!
+			linkIcons: {{ .AllLogos }},
 		});
 	</script>
 
 	<style>
 		#desc_preview:empty::after {
 			content: 'A preview of your description will appear here.';
-			color: var(--dimmer-color);
 			font-style: italic;
+		}
+		h3:has(+ #ai_policy_preview:empty) {
+			display: none;
 		}
 
 		#full_description.drop {
 			box-shadow: inset 0px 0px 5px yellow;
 		}
 	</style>
+
+	<template id="owner_row">
+		<div class="owner_row flex flex-row items-center g2 bg3 pa2" data-tmpl="rootElement">
+			<input type="hidden" name="owners" data-tmpl="input" />
+			<div class="flex g1 items-center b">
+				<img data-tmpl="avatar" class="avatar avatar-user avatar-small" src="" />
+				<span data-tmpl="name"></span>
+			</div>
+			<a class="remove_owner svgicon f7 link-normal" href="javascript:;">{{ svg "close" }}</a>
+		</div>
+	</template>
+	<template id="link-preview">
+		<hr data-tmpl="divider" class="mv2" hidden>
+		<a data-tmpl="link" href="!href!" class="ph2 pv1 flex items-center g1">
+			<span data-tmpl="icon" class="flex-shrink-0 flex items-center"><!-- !icon svg! --></span>
+			<span data-tmpl="name" class="truncate" title="!name!"><!-- !name! --></span>
+			<span class="flex-grow-1"></span>
+			<span class="svgicon f6 ml2">{{ svg "arrow-right-up" }}</span>
+		</a>
+	</template>
+	<template id="owner_preview">
+		<div class="flex g1 items-center b">
+			<img data-tmpl="avatar" class="avatar avatar-user avatar-small"><!-- need src -->
+			<span data-tmpl="name"><!-- need name --></span>
+		</div>
+	</template>
+	<template id="screenshot">
+		<div data-tmpl="root" class="reorderable-item flex items-center pv3 pr3">
+			<span data-tmpl="grabHandle" class="flex-shrink-0 svgicon pa3 pointer grab no-touch">{{ svg "draggable" }}</span>
+			<span data-tmpl="selectorPlaceholder"></span>
+		</div>
+	</template>
 {{ end }}
 
 {{ define "content" }}
 	{{/*
-		NOTE(ben): Because we are using position: sticky for the preview, we
+		NOTE(ben): Because we are using position: sticky for preview boxes, we
 		CANNOT use overflow: hidden, scroll, auto, or overlay on any parent boxes
-		of the preview, because this creates a "scrolling mechanism", which then
+		of preview boxes, because this creates a "scrolling mechanism", which then
 		causes the sticky preview to stick to that instead of the page. The fact
 		that overflow: hidden creates a "scrolling mechanism" is obviously
 		bullshit, but here we are.
 	*/}}
 	<div class="grid grid-1p grid-2p-l bg1">
-		<form id="project_form" class="hmn-form pa3 pa4-ns" method="POST" enctype="multipart/form-data">
+		<form id="project_form" class="hmn-form pl3 pr3 pl4-l pr0-l pv3 pv4-l" method="POST" enctype="multipart/form-data">
 			{{ csrftoken .Session }}
 
 			<h1 class="f3">
@@ -86,12 +126,15 @@
 
 			<div class="mt3 flex f6 bb">
 				<a class="tab-button ph3 pv1 pointer" data-tab-button="info">Info</a>
-				<a class="tab-button ph3 pv1 pointer" data-tab-button="images">Images &amp; Links</a>
+				<a class="tab-button ph3 pv1 pointer" data-tab-button="images">Screenshots &amp; Links</a>
 				{{ if $showAdminProperties }}
 					<a class="tab-button ph3 pv1 pointer" data-tab-button="admin">Admin</a>
 				{{ end }}
 			</div>
 			<div class="pv3">
+				<!-------------------------------------------------------------------->
+				<!--                              INFO                              -->
+				<!-------------------------------------------------------------------->
 				<div data-tab="info" class="flex flex-column g3">
 					<div class="input-group">
 						<label>Project Title*</label>
@@ -116,19 +159,73 @@
 						<div class="f6">Plain text only. No links or markdown.</div>
 					</div>
 
+					<div class="fieldset">
+						<legend class="flex justify-between">
+							<span>Project Logo</span>
+							<a href="#" class="normal" id="logo-upload-button">+ Upload Project Logo</a>
+						</legend>
+						<div class="logo">
+							<div id="logo-selector-container" class="pa3">
+								<span id="project-logo-placeholder"></span>
+							</div>
+							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be square, and at least 256x256.</div>
+						</div>
+					</div>
+
+					{{ with .ProjectSettings.HeaderImage }}
+						<div class="f7 i tc ph3">
+							Project header images have been replaced by screenshots. <a href="{{ .Url }}" target="_blank" download>Here</a> is the header image you previously uploaded.
+						</div>
+					{{ end}}
+
 					<div class="input-group">
 						<label>Status</label>
-						<select name="lifecycle">
+						<select id="lifecycle-select" name="lifecycle">
 							<option value="active" {{ if eq .ProjectSettings.Lifecycle "active" }}selected{{ end }}>Active</option>
 							<option value="hiatus" {{ if eq .ProjectSettings.Lifecycle "hiatus" }}selected{{ end }}>On Hiatus</option>
 							<option value="done"   {{ if eq .ProjectSettings.Lifecycle "done"   }}selected{{ end }}>Completed</option>
 							<option value="dead"   {{ if eq .ProjectSettings.Lifecycle "dead"   }}selected{{ end }}>Abandoned</option>
 						</select>
 					</div>
+
+					<div id="owners" class="fieldset">
+						<legend>Owners</legend>
+						<div class="pa3">
+							<div class="flex">
+								<input id="owner_name" class="flex-grow-1 bl bt bb br-0" type="text" placeholder="Enter another owner's username" />
+								<button id="owner_add" class="flex no-padding pa3 bt br bb bl-0 also-focus"><span class="flex w1">{{ svg "add" }}</span></button>
+							</div>
+							<div id="owners_error" class="pt1 f6"></div>
+							<div id="owner_list" class="pt3 flex flex-wrap g3">
+								{{ range .ProjectSettings.Owners }}
+									<div class="owner_row flex flex-row items-center g2 bg3 pa2">
+										<input type="hidden" name="owners" value="{{ .Username }}" />
+										<div class="flex g1 items-center b">
+											<img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}" />
+											<span title="{{ .Username }}">{{ .Name }}</span>
+										</div>
+										{{ if (or $.User.IsStaff (ne .ID $.User.ID)) }}
+											<a class="remove_owner svgicon f7 link-normal" href="javascript:;">{{ svg "close" }}</a>
+										{{ end }}
+									</div>
+								{{ end }}
+							</div>
+						</div>
+					</div>
+
+					<div class="dn-l mh-n3 pa3 bt bb bg2 flex flex-column g2">
+						<div class="b">Preview</div>
+						<div id="card-preview-s" hidden></div>
+					</div>
 					
 					<div class="input-group">
-						<label>Long Description</label>
-						<textarea id="full_description" class="w-100 h5 minh-5 mono lh-copy" name="full_description">
+						<label>Long Description*</label>
+						<textarea
+							id="full_description"
+							name="full_description"
+							class="w-100 h5 minh-6 mono lh-copy"
+							required
+						>
 							{{- .ProjectSettings.Description -}}
 						</textarea>
 						<div class="flex justify-end items-center f6">
@@ -144,7 +241,23 @@
 						</div>
 					</div>
 
-					<div class="fieldset">
+					<div class="input-group">
+						<label>AI Policy*</label>
+						<textarea
+							id="ai_policy"
+							name="ai_policy"
+							class="w-100 h4 minh-4 mono lh-copy"
+							placeholder="This project does not use generative AI..."
+							required
+						>
+							{{- .ProjectSettings.AIPolicy -}}
+						</textarea>
+						<div class="f6">
+							If you use generative AI in any way while working on this project, describe it here in detail. If you do not use generative AI, say that :)
+						</div>
+					</div>
+
+					<div id="discord-tag" class="fieldset">
 						<legend>Discord Tag</legend>
 						<div class="pa3 input-group">
 							{{ if not .User.DiscordUser }}
@@ -163,41 +276,6 @@
 									Any Discord message with the tag "&amp;<span id="tag-preview"></span>" will automatically be associated with this project and shared on the website.
 								</div>
 								<div class="f6">Tags must be all lowercase, and can use hyphens to separate words.</div>
-							</div>
-						</div>
-					</div>
-
-					<div class="fieldset">
-						<legend>Owners</legend>
-						<div class="pa3">
-							<div class="flex">
-								<input class="flex-grow-1 bl bt bb br-0" id="owner_name" type="text" placeholder="Enter another owner's username" />
-								<button class="flex no-padding pa3 bt br bb bl-0 also-focus" id="owner_add"><span class="flex w1">{{ svg "add" }}</span></button>
-							</div>
-							<div id="owners_error" class="f6"></div>
-							<div id="owner_list" class="pt3 flex flex-wrap g3">
-								<template id="owner_row">
-									<div class="owner_row flex flex-row items-center g2 bg3 pa2" data-tmpl="rootElement">
-										<input type="hidden" name="owners" data-tmpl="input" />
-										<div class="flex g1 items-center b">
-											<img data-tmpl="avatar" class="avatar avatar-user avatar-small" src="" />
-											<span data-tmpl="name"></span>
-										</div>
-										<a class="remove_owner svgicon f7 link-normal" href="javascript:;">{{ svg "close" }}</a>
-									</div>
-								</template>
-								{{ range .ProjectSettings.Owners }}
-									<div class="owner_row flex flex-row items-center g2 bg3 pa2">
-										<input type="hidden" name="owners" value="{{ .Username }}" />
-										<div class="flex g1 items-center b">
-											<img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}" />
-											<span title="{{ .Username }}">{{ .Name }}</span>
-										</div>
-										{{ if (or $.User.IsStaff (ne .ID $.User.ID)) }}
-											<a class="remove_owner svgicon f7 link-normal" href="javascript:;">{{ svg "close" }}</a>
-										{{ end }}
-									</div>
-								{{ end }}
 							</div>
 						</div>
 					</div>
@@ -223,35 +301,38 @@
 						</div>
 					{{ end }}
 				</div>
+
+				<!-------------------------------------------------------------------->
+				<!--                      SCREENSHOTS & LINKS                       -->
+				<!-------------------------------------------------------------------->
 				<div data-tab="images" class="flex flex-column g3">
-					<div class="fieldset">
-						<legend class="flex justify-between">
-							<span>Project Logo</span>
-							<a href="#" class="normal" id="logo-upload-button">+ Upload Project Logo</a>
-						</legend>
-						<div class="logo">
-							<span id="project-logo-placeholder"></span>
-							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be square, and at least 256x256.</div>
-						</div>
-					</div>
-
-					<div class="fieldset">
-						<legend class="flex justify-between">
-							<span>Header Image</span>
-							<a href="#" class="normal" id="header-upload-button">+ Upload Header Image</a>
-						</legend>
-						<div class="header_image">
-							<span id="header-image-placeholder"></span>
-							<div class="show-when-sibling-hidden flex justify-center items-center f6 pa2">Images should be wide, and at least 900x300.</div>
-						</div>
-					</div>
-
 					{{ template "link_editor.html" }}
+
+					<div class="dn-l mh-n3 pa3 bt bb bg2">
+						<div id="links-preview-s" hidden></div>
+					</div>
+
+					<div class="fieldset">
+						<legend class="flex justify-between">
+							<span>Screenshots</span>
+							<button id="screenshot-upload-button" class="link-button">+ Upload Screenshot</button>
+						</legend>
+						<div>
+							<div id="screenshots" class="relative overflow-hidden"></div>
+							<div class="flex justify-center items-center f6 pv2 ph3 tc">
+								Images should ideally have a 16:9 aspect ratio, and be at least 1280x720. Make sure any text is big and readable!
+							</div>
+						</div>
+					</div>
 				</div>
+
+				<!-------------------------------------------------------------------->
+				<!--                             ADMIN                              -->
+				<!-------------------------------------------------------------------->
 				<div data-tab="admin" class="flex flex-column g3">
 					{{ if $showAdminProperties }}
 						<div class="fieldset">
-							<legend>Admin Properties</legend>
+							<legend>Official</legend>
 							<div class="pa3 flex flex-column g3">
 								<div class="flex flex-column g2">
 									<div>
@@ -261,10 +342,6 @@
 									<div>
 										<input id="hidden" type="checkbox" name="hidden" {{ if .ProjectSettings.Hidden }}checked{{ end }} />
 										<label for="hidden">Hide project</label>
-									</div>
-									<div>
-										<input id="featured" type="checkbox" name="featured" {{ if .ProjectSettings.Featured }}checked{{ end }} />
-										<label for="featured">Featured</label>
 									</div>
 								</div>
 								<div class="input-group">
@@ -278,17 +355,46 @@
 									<input type="text" id="slug_aliases" name="slug_aliases" class="textbox" value="{{ .ProjectSettings.SlugAliases }}">
 									<div class="f6">Add any alternate slugs for this project, separated by commas.</div>
 								</div>
-														<div class="input-group">
+							</div>
+						</div>
+
+						<div class="fieldset">
+							<legend>Featured</legend>
+							<div class="pa3 flex flex-column g3">
+								<div>
+									<input id="featured" type="checkbox" name="featured" {{ if .ProjectSettings.Featured }}checked{{ end }} />
+									<label for="featured">Featured</label>
+								</div>
+								<div class="input-group">
 									<label for="sort_score">Sort Score</label>
-																<input type="number" id="sort_score" name="sort_score" class="textbox" value="{{ .ProjectSettings.SortScore }}" />
+									<input type="number" id="sort_score" name="sort_score" class="textbox" value="{{ .ProjectSettings.SortScore }}" />
 									<div class="f6">Higher score sorts first. Only affects <b>featured</b> projects!</div>
-														</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="fieldset">
+							<legend>Gallery</legend>
+							<div class="pa3 flex flex-column g3">
+								<div>
+									<input id="gallery" type="checkbox" name="gallery" {{ if .ProjectSettings.Gallery }}checked{{ end }} />
+									<label for="gallery">Show in gallery</label>
+								</div>
+								<div class="input-group">
+									<label for="gallery_sort">Gallery Sort Index</label>
+									<input type="number" id="gallery_sort" name="gallery_sort" class="textbox" value="{{ .ProjectSettings.GallerySort }}" />
+									<div class="f6">Lower number sorts first.</div>
+								</div>
+								<div class="input-group">
+									<label for="gallery_desc">Gallery Description</label>
+									<textarea id="gallery_desc" name="gallery_desc">{{ .ProjectSettings.GalleryDesc }}</textarea>
+								</div>
 							</div>
 						</div>
 					{{ end }}
 				</div>
 			</div>
-			<div class="flex justify-end">
+			<div id="submit" class="flex justify-end">
 				{{ if .Editing }}
 					<input class="btn-primary" type="submit" value="Save" />
 				{{ else }}
@@ -296,80 +402,75 @@
 				{{ end }}
 			</div>
 		</form>
-		<div class="dn db-l pv4 pr4">
-			<div class="ba bg2 pa4 overflow-y-scroll sticky t4" style="height: calc(100vh - 2 * var(--spacing-4))">
-				<!-- Link / card templates -->
-				<template id="primary_link">
-					<!-- need href -->
-					<a data-tmpl="link" class="ph3 pv2 flex items-center"><span data-tmpl="name"></span><span class="svgicon f6 ml2">{{ svg "arrow-right-up" }}</span></a>
-				</template>
-				<template id="secondary_link">
-					<!-- need href and title -->
-					<a data-tmpl="link" class="ph2 flex"><!-- need icon --></a>
-				</template>
-				<template id="owner_preview">
-					<div class="flex g1 items-center b">
-						<img data-tmpl="avatar" class="avatar avatar-user avatar-small"><!-- need src -->
-						<span data-tmpl="name"><!-- need name --></span>
-					</div>
-				</template>
 
-				<div hidden>
-					{{ range .AllLogos }}
-						<span id="link-icon-{{ .Name }}">{{ .Svg }}</span>
-					{{ end }}
+		<!-------------------------------------------------------------------->
+		<!--                           PREVIEWS                             -->
+		<!-------------------------------------------------------------------->
+		<div id="preview-container" class="dn db-l relative mh4">
+			<!-- Project card preview -->
+			<div
+				id="card-preview-sticky-container"
+				class="stickinator absolute"
+				data-top="project_name"
+				data-bottom="owners"
+			>
+				<div id="card-preview-l" hidden></div>
+				<div
+					class="relocator w--project-sidebar sticky-l t4 ba-l bg1 bg2-l pa3 flex flex-column-l g3 link-normal"
+					data-relocate="card-preview-s"
+					data-relocate-l="card-preview-l"
+				>
+					<div class="w--project-logo w-100-l">
+						<div id="logo_preview" class="project-logo" style="--hue: {{ .Project.Flowsnake.Hue }}deg">
+						<img src="{{ .Project.Logo }}" class="aspect-ratio--object" alt="{{ .Project.Name }} logo">
+						<div id="logo_placeholder" class="project-logo-placeholder aspect-ratio--object">
+							{{ cat .Project.Name " " | trunc 1 | upper }}
+						</div>
+					</div>
+					</div>
+					<div class="flex flex-column g3">
+						<div class="flex flex-column g1">
+							<h2 id="name_preview" class="f4"></h2>
+							<div id="blurb_preview">{{ .Project.Blurb }}</div>
+						</div>
+						<div id="owners_preview" class="flex flex-column g2"></div>
+					</div>
 				</div>
+			</div>
 
-				<!--
-					NOTE(ben): This is a copy-paste from project_homepage.html right now.
-					We don't have a good story for sharing templates between Go and JS.
-				-->
-
-				<div class="flex flex-column items-center">
-					<!-- Header image / links -->
-					<div id="header_img_preview" class="project-header-img"><!-- Needs background-image -->
-						{{ with .Project.Flowsnake }}
-							<div id="flowsnake" class="flowsnake" style="
-								--hue: {{ .Hue }}deg;
-								--size: {{ .Size }}px;
-								--angle: {{ .Angle }}deg;
-							"></div>
-						{{ end }}
-						<div class="flex justify-end pa3 relative">
-							<div class="flex g3">
-								<div id="primary_links_preview" class="project-links hide-if-empty"></div>
-								<div id="secondary_links_preview" class="project-links ph1 hide-if-empty"></div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Card -->
-					<div class="project-homepage-card">
-						<div class="project-card-logo">
-							<div id="logo_preview" class="project-logo" style="--hue: {{ .Project.Flowsnake.Hue }}deg">
-								<img src="{{ .Project.Logo }}" class="aspect-ratio--object" alt="{{ .Project.Name }} logo">
-								<div id="logo_placeholder" class="project-logo-placeholder aspect-ratio--object">
-									{{ cat .Project.Name " " | trunc 1 | upper }}
-								</div>
-							</div>
-						</div>
-						<div class="details flex-grow-1">
-							<h3 id="name_preview" class="b mb2 f4"></h3>
-							<div id="blurb_preview" class="blurb"></div>
-							<div id="owners_preview_container">
-								<hr class="mv3">
-								<div id="owners_preview" class="flex flex-wrap g2">
-								</div>
-							</div>
-							<!-- TODO(redesign): Preview badges -->
+			<!-- Long description preview -->
+			<div
+				id="description-preview-sticky-container"
+				class="stickinator absolute w-100"
+				data-top="full_description"
+				data-bottom="submit"
+			>
+				<div id="longdesc-l" hidden></div>
+				<div class="sticky t4 dn db-l h-100" style="max-height: calc(100vh - calc(2 * var(--spacing-4)))">
+					<div class="ba bg2 pa4 overflow-y-scroll h-100">
+						<div class="flex flex-column post-content">
+							<div id="desc_preview" class="w-100 overflow-hidden"></div>
+							<h3>AI Policy</h3>
+							<div id="ai_policy_preview" class="i"></div>
 						</div>
 					</div>
 				</div>
+			</div>
 
-				<!-- Long description preview -->
-				<h3 class="pt4 f4">About <span id="longdesc_title">{{ .Project.Name }}</span></h3>
-				<hr class="mv3">
-				<div id="desc_preview" class="w-100 post-content overflow-hidden"></div>
+			<!-- Links preview -->
+			<div
+				id="links-preview-sticky-container"
+				class="stickinator absolute"
+				data-top="link-editor"
+				data-bottom="link-editor"
+			>
+				<div id="links-preview-l" hidden></div>
+				<div
+					id="links-preview"
+					class="relocator w--project-sidebar hide-if-empty ba-l bg1 bg2-l pa2 flex flex-column link-normal"
+					data-relocate="links-preview-s"
+					data-relocate-l="links-preview-l"
+				></div>
 			</div>
 		</div>
 	</div>

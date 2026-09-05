@@ -98,13 +98,13 @@ export function initLiveMarkdown({
   }
   markdownIds.push(inputEl.id);
 
-  previewWorker.onmessage = ({ data }) => {
+  previewWorker.addEventListener("message", ({ data }) => {
     const { elementID, html } = data;
     if (elementID === inputEl.id) {
       previewEl.innerHTML = html;
       MathJax.typeset?.();
     }
-  };
+  });
 
   function doMarkdown() {
     previewWorker.postMessage({

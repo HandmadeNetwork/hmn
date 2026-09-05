@@ -25,7 +25,7 @@ type FollowTimelineQuery struct {
 	Limit  int
 }
 
-func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User, lineageBuilder *models.SubforumLineageBuilder, q FollowTimelineQuery) ([]templates.TimelineItem, error) {
+func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *models.User, lineageBuilder *hmndata.SubforumLineageBuilder, q FollowTimelineQuery) ([]templates.TimelineItem, error) {
 	defer perf.StartBlock(ctx, "FOLLOW", "Assemble follow data").End()
 
 	following, err := db.Query[models.Follow](ctx, conn,
@@ -65,7 +65,7 @@ func FetchFollowTimelineForUser(ctx context.Context, conn db.ConnOrTx, user *mod
 	return timelineItems, err
 }
 
-func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, lineageBuilder *models.SubforumLineageBuilder, q hmndata.TimelineQuery) ([]templates.TimelineItem, error) {
+func FetchTimeline(ctx context.Context, conn db.ConnOrTx, currentUser *models.User, lineageBuilder *hmndata.SubforumLineageBuilder, q hmndata.TimelineQuery) ([]templates.TimelineItem, error) {
 	results, err := hmndata.FetchTimeline(ctx, conn, currentUser, q)
 	if err != nil {
 		logging.Error().Err(err).Msg("Fail")
@@ -167,7 +167,7 @@ var TimelineTypeTitleMap = map[models.ThreadType]TimelineTypeTitles{
 
 func PostToTimelineItem(
 	urlContext *hmnurl.UrlContext,
-	lineageBuilder *models.SubforumLineageBuilder,
+	lineageBuilder *hmndata.SubforumLineageBuilder,
 	post *models.Post,
 	thread *models.Thread,
 	threadOwner *models.User,
@@ -175,7 +175,7 @@ func PostToTimelineItem(
 ) templates.TimelineItem {
 	ownerTmpl := templates.UserToTemplate(owner)
 
-	var breadcrumbs []templates.Breadcrumb
+	var breadcrumbs []templates.BreadcrumbLink
 	breadcrumbs = GenericThreadBreadcrumbs(urlContext, lineageBuilder, thread, threadOwner)
 	item := templates.TimelineItem{
 		ID:          strconv.Itoa(post.ID),
@@ -393,11 +393,11 @@ func unknownMediaItem(asset *models.Asset) templates.TimelineItemMedia {
 	}
 }
 
-func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *models.SubforumLineageBuilder, editable bool) templates.TimelineItem {
+func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *hmndata.SubforumLineageBuilder, editable bool) templates.TimelineItem {
 	filterTitle := ""
 	typeTitle := ""
 	url := ""
-	var breadcrumbs []templates.Breadcrumb
+	var breadcrumbs []templates.BreadcrumbLink
 	switch item.Item.Type {
 	case models.TimelineItemTypeSnippet:
 		filterTitle = "Snippets"
@@ -414,7 +414,7 @@ func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *
 				typeTitle = "Blog comment"
 			}
 			url = urlContext.BuildBlogThreadWithPostHash(item.Item.ThreadID, item.Item.Title, item.Item.ID)
-			breadcrumbs = []templates.Breadcrumb{
+			breadcrumbs = []templates.BreadcrumbLink{
 				{
 					Name: urlContext.ProjectName,
 					Url:  urlContext.BuildHomepage(),
@@ -432,7 +432,7 @@ func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *
 				typeTitle = "Blog comment"
 			}
 			url = hmnurl.BuildPersonalBlogThreadWithPostHash(item.ThreadOwner.Username, item.Item.ThreadID, item.Item.Title, item.Item.ID)
-			breadcrumbs = []templates.Breadcrumb{
+			breadcrumbs = []templates.BreadcrumbLink{
 				{
 					Name: item.ThreadOwner.BestName(),
 					Url:  hmnurl.BuildUserProfile(item.ThreadOwner.Username),

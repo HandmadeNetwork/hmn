@@ -5,17 +5,15 @@ import (
 	"regexp"
 	"testing"
 
-	"git.handmade.network/hmn/hmn/src/config"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUrl(t *testing.T) {
-	defer func() {
-		SetGlobalBaseUrl(config.Config.BaseUrl)
-	}()
+func init() {
 	SetGlobalBaseUrl("http://handmade.test")
-	isTest = true
+	SetS3BaseUrl("http://fakes3.com/")
+}
 
+func TestUrl(t *testing.T) {
 	t.Run("no query", func(t *testing.T) {
 		result := Url("/test/foo", nil)
 		assert.Equal(t, "http://handmade.test/test/foo", result)

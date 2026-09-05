@@ -18,14 +18,12 @@ import (
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
-func BlogIndex(c *RequestContext) ResponseData {
-	type blogIndexData struct {
-		templates.BaseData
-		FirstPost  *templates.BlogIndexEntry
-		Posts      []templates.BlogIndexEntry
-		Pagination templates.Pagination
-	}
+type BlogIndexData struct {
+	FirstPost *templates.BlogIndexEntry
+	Posts     []templates.BlogIndexEntry
+}
 
+func BlogIndex(c *RequestContext) ResponseData {
 	const postsPerPage = 21
 
 	numThreads, err := hmndata.CountThreads(c, c.Conn, c.CurrentUser, hmndata.ThreadsQuery{
@@ -53,26 +51,7 @@ func BlogIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
 	}
 
-	var firstEntry *templates.BlogIndexEntry
-	var entries []templates.BlogIndexEntry
-	for _, thread := range threads {
-		entry := templates.BlogIndexEntry{
-			Title:   thread.Thread.Title,
-			Url:     c.UrlContext.BuildBlogThread(thread.Thread.ID, thread.Thread.Title),
-			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
-			Date:    thread.FirstPost.PostDate,
-			Content: template.HTML(thread.FirstPost.PreviewHTML),
-			Hilbert: templates.MakeHilbert(thread.Thread.ID),
-		}
-
-		if page == 1 && firstEntry == nil {
-			firstEntry = &entry
-		} else {
-			entries = append(entries, entry)
-		}
-	}
-
-	baseData := getBaseData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.Breadcrumb{BlogBreadcrumb(c.UrlContext)})
+	baseData := getBaseTemplateData(c, fmt.Sprintf("%s Blog", c.CurrentProject.Name), []templates.BreadcrumbLink{BlogBreadcrumb(c.UrlContext)})
 
 	canCreate := false
 	if c.CurrentProject.HasBlog() && c.CurrentUser != nil {
@@ -91,18 +70,25 @@ func BlogIndex(c *RequestContext) ResponseData {
 		canCreate = c.CurrentUser.IsStaff || isProjectOwner
 	}
 	if canCreate {
-		baseData.Header.Actions = append(baseData.Header.Actions, templates.Action{
+		baseData.Header.Actions = append(baseData.Header.Actions, templates.BreadcrumbAction{
 			Name: "Create Post",
 			Url:  c.UrlContext.BuildBlogNewThread(),
 			Icon: "add-small",
 		})
 	}
 
+	type tmpl struct {
+		templates.BaseData
+		BlogIndexData
+		Pagination templates.Pagination
+	}
+
 	var res ResponseData
-	res.MustWriteTemplate("blog_index.html", blogIndexData{
-		BaseData:  baseData,
-		FirstPost: firstEntry,
-		Posts:     entries,
+	res.MustWriteTemplate("blog_index.html", tmpl{
+		BaseData: baseData,
+		BlogIndexData: getBlogIndexData(c, page, threads, func(t *models.Thread) string {
+			return c.UrlContext.BuildBlogThread(t.ID, t.Title)
+		}),
 		Pagination: templates.Pagination{
 			Current: page,
 			Total:   numPages,
@@ -174,7 +160,7 @@ func BlogThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title, BlogThreadBreadcrumbs(c.UrlContext, &thread))
+	baseData := getBaseTemplateData(c, thread.Title, BlogThreadBreadcrumbs(c.UrlContext, &thread))
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    posts[0].Post.PreviewPlaintext,
@@ -183,7 +169,7 @@ func BlogThread(c *RequestContext) ResponseData {
 	mainPost := templatePosts[0]
 	canEdit := c.CurrentUser != nil && (mainPost.Author.ID == c.CurrentUser.ID || c.CurrentUser.IsStaff)
 	if canEdit {
-		baseData.Header.Actions = append(baseData.Header.Actions, []templates.Action{
+		baseData.Header.Actions = append(baseData.Header.Actions, []templates.BreadcrumbAction{
 			{
 				Name: "Edit",
 				Url:  mainPost.EditUrl,
@@ -235,7 +221,7 @@ func BlogPostRedirectToThread(c *RequestContext) ResponseData {
 }
 
 func BlogNewThread(c *RequestContext) ResponseData {
-	baseData := getBaseData(c, fmt.Sprintf("Create New Post | %s", c.CurrentProject.Name), nil)
+	baseData := getBaseTemplateData(c, fmt.Sprintf("Create New Post | %s", c.CurrentProject.Name), nil)
 
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
 	editData.SubmitUrl = c.UrlContext.BuildBlogNewThread()
@@ -306,14 +292,6 @@ func BlogPersonalIndex(c *RequestContext) ResponseData {
 	if !viewable || profileUser == nil {
 		return FourOhFour(c)
 	}
-	type blogIndexData struct {
-		templates.BaseData
-		Posts      []templates.BlogIndexEntry
-		Pagination templates.Pagination
-
-		CanCreatePost bool
-		NewPostUrl    string
-	}
 
 	const postsPerPage = 20
 
@@ -342,25 +320,26 @@ func BlogPersonalIndex(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch blog posts for index"))
 	}
 
-	var entries []templates.BlogIndexEntry
-	for _, thread := range threads {
-		entries = append(entries, templates.BlogIndexEntry{
-			Title:   thread.Thread.Title,
-			Url:     hmnurl.BuildPersonalBlogThread(profileUser.Username, thread.Thread.ID, thread.Thread.Title),
-			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
-			Date:    thread.FirstPost.PostDate,
-			Content: template.HTML(thread.FirstPost.PreviewHTML),
-		})
-	}
-
-	baseData := getBaseData(c, fmt.Sprintf("%s's Blog", profileUser.Username), nil)
+	baseData := getBaseTemplateData(c, fmt.Sprintf("%s's Blog", profileUser.Username), nil)
 
 	canCreate := (c.CurrentUser != nil && c.CurrentUser.ID == profileUser.ID)
 
+	type tmpl struct {
+		templates.BaseData
+		BlogIndexData
+
+		Pagination templates.Pagination
+
+		CanCreatePost bool
+		NewPostUrl    string
+	}
+
 	var res ResponseData
-	res.MustWriteTemplate("blog_index.html", blogIndexData{
+	res.MustWriteTemplate("blog_index.html", tmpl{
 		BaseData: baseData,
-		Posts:    entries,
+		BlogIndexData: getBlogIndexData(c, page, threads, func(t *models.Thread) string {
+			return hmnurl.BuildPersonalBlogThread(profileUser.Username, t.ID, t.Title)
+		}),
 		Pagination: templates.Pagination{
 			Current: page,
 			Total:   numPages,
@@ -449,7 +428,7 @@ func BlogPersonalThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title, nil)
+	baseData := getBaseTemplateData(c, thread.Title, nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    posts[0].Post.PreviewPlaintext,
@@ -474,7 +453,7 @@ func BlogPersonalNewThread(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.BuildPersonalBlogNewThread(c.CurrentUser.Username), http.StatusSeeOther)
 	}
 
-	baseData := getBaseData(c, "Create New Personal Post", nil)
+	baseData := getBaseTemplateData(c, "Create New Personal Post", nil)
 
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
 	editData.SubmitUrl = hmnurl.BuildPersonalBlogNewThread(c.CurrentUser.Username)
@@ -569,7 +548,7 @@ func BlogPostEdit(c *RequestContext) ResponseData {
 		title += fmt.Sprintf(" | %s's personal blog", post.ThreadOwner.BestName())
 	}
 
-	baseData := getBaseData(c, title, nil)
+	baseData := getBaseTemplateData(c, title, nil)
 
 	editData := getEditorDataForEdit(c.UrlContext, c.CurrentUser, baseData, post)
 	editData.SubmitUrl = c.UrlContext.BuildBlogPostEdit(cd.ThreadID, cd.PostID)
@@ -667,7 +646,7 @@ func BlogPostReply(c *RequestContext) ResponseData {
 	} else {
 		title = fmt.Sprintf("%s | %s", title, c.CurrentProject.Name)
 	}
-	baseData := getBaseData(c, title, nil)
+	baseData := getBaseTemplateData(c, title, nil)
 
 	replyPost := templates.PostToTemplate(&post.Post, post.Author)
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
@@ -758,7 +737,7 @@ func BlogPostDelete(c *RequestContext) ResponseData {
 	} else {
 		title = fmt.Sprintf("%s | %s", title, c.CurrentProject.Name)
 	}
-	baseData := getBaseData(c, title, nil)
+	baseData := getBaseTemplateData(c, title, nil)
 
 	templatePost := templates.PostToTemplate(&post.Post, post.Author)
 	templatePost.AddContentVersion(post.CurrentVersion, post.Editor)
@@ -896,6 +875,36 @@ func getCommonBlogData(c *RequestContext) (commonBlogData, bool) {
 	}
 
 	return res, true
+}
+
+func getBlogIndexData(
+	c *RequestContext,
+	page int,
+	threads []hmndata.ThreadAndStuff,
+	buildUrl func(*models.Thread) string, // NOTE(ben): Awkward, but we don't actually know here whether the blog is personal or not, nor who the user is if so.
+) BlogIndexData {
+	var firstEntry *templates.BlogIndexEntry
+	var entries []templates.BlogIndexEntry
+	for _, thread := range threads {
+		entry := templates.BlogIndexEntry{
+			Title:   thread.Thread.Title,
+			Url:     buildUrl(&thread.Thread),
+			Author:  templates.UserToTemplate(thread.FirstPostAuthor),
+			Date:    thread.FirstPost.PostDate,
+			Content: template.HTML(thread.FirstPost.PreviewHTML),
+			Hilbert: templates.MakeHilbert(thread.Thread.ID),
+		}
+
+		if page == 1 && firstEntry == nil {
+			firstEntry = &entry
+		} else {
+			entries = append(entries, entry)
+		}
+	}
+	return BlogIndexData{
+		FirstPost: firstEntry,
+		Posts:     entries,
+	}
 }
 
 func addBlogUrlsToPost(urlContext *hmnurl.UrlContext, p *templates.Post, thread *models.Thread, postId int) {

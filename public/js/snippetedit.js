@@ -81,7 +81,7 @@ function emptyElement(el) {
 }
 
 // src/rawdata/js/snippetedit.ts
-var snippetEditTemplate = makeTemplateCloner("snippet-edit");
+var snippetEditorTemplate = makeTemplateCloner("snippet-edit");
 var snippetEditProjectTemplate = makeTemplateCloner("snippet-edit-project");
 function readableByteSize(numBytes) {
   const scales = [
@@ -98,80 +98,73 @@ function readableByteSize(numBytes) {
   return new Intl.NumberFormat([], { maximumFractionDigits: scale > 0 ? 2 : 0 }).format(numBytes) + scales[scale];
 }
 function makeSnippetEdit({
-  maxFilesize,
-  availableProjects,
-  ownerName,
-  ownerAvatar,
-  ownerUrl,
-  date,
-  text,
-  attachmentElement,
-  projectIds,
-  stickyProjectId,
-  onDeleteRedirectUrl,
-  snippetId,
-  originalSnippetEl
+  config,
+  edit
 }) {
-  const snippetEdit = snippetEditTemplate();
-  let projectSelector = null;
-  let originalAttachment = null;
-  const originalText = text;
+  const snippetEditor = snippetEditorTemplate();
+  let projectSelector = document.createElement("select");
+  const originalAttachment = edit?.el.querySelector(".timeline-media")?.children[0]?.cloneNode(true);
+  const originalText = edit?.text ?? "";
   let attachmentChanged = false;
   let hasAttachment = false;
-  snippetEdit.redirect.value = location.href;
-  if (ownerAvatar) {
-    assert(ownerUrl);
-    snippetEdit.avatarImg.src = ownerAvatar;
-    snippetEdit.avatarLink.href = ownerUrl;
-    snippetEdit.avatarImg.hidden = false;
+  snippetEditor.root.action = config.submitUrl;
+  snippetEditor.redirect.value = location.href;
+  if (config.owner.avatarUrl) {
+    snippetEditor.avatarImg.src = config.owner.avatarUrl;
+    snippetEditor.avatarLink.href = config.owner.profileUrl;
+    snippetEditor.avatarImg.hidden = false;
   } else {
-    snippetEdit.avatarImg.hidden = true;
+    snippetEditor.avatarImg.hidden = true;
   }
-  snippetEdit.username.textContent = ownerName ?? "";
-  snippetEdit.username.href = ownerUrl ?? "";
-  snippetEdit.date.textContent = new Intl.DateTimeFormat([], { month: "2-digit", day: "2-digit", year: "numeric" }).format(date);
-  snippetEdit.text.value = text;
-  if (attachmentElement) {
-    originalAttachment = attachmentElement.cloneNode(true);
+  snippetEditor.username.textContent = config.owner.name;
+  snippetEditor.username.href = config.owner.profileUrl;
+  snippetEditor.date.textContent = new Intl.DateTimeFormat([], { month: "2-digit", day: "2-digit", year: "numeric" }).format(edit?.creationDate ?? /* @__PURE__ */ new Date());
+  snippetEditor.text.value = originalText;
+  if (originalAttachment) {
     clearAttachment(true);
   }
-  if (snippetId !== void 0 && snippetId !== null) {
-    snippetEdit.snippetId.value = snippetId;
+  if (edit) {
+    snippetEditor.snippetId.value = edit.id;
   } else {
-    snippetEdit.deleteButton.remove();
+    snippetEditor.deleteButton.remove();
   }
-  for (let i = 0; i < projectIds.length; ++i) {
-    let proj = null;
-    for (let j = 0; j < availableProjects.length; ++j) {
-      if (projectIds[i] == availableProjects[j].id) {
-        proj = availableProjects[j];
-        break;
-      }
+  if (config.requiredProjectID) {
+    const proj = must(
+      config.availableProjects.find((p) => p.id === config.requiredProjectID),
+      "the required project should always be in the list of available projects"
+    );
+    addProject(proj);
+  }
+  for (const projectID of edit?.projectIDs ?? []) {
+    if (projectID === config.requiredProjectID) {
+      continue;
     }
+    const proj = config.availableProjects.find((p) => p.id === projectID);
     if (proj) {
       addProject(proj);
     }
   }
   updateProjectSelector();
-  if (originalSnippetEl) {
-    snippetEdit.cancelLink.addEventListener("click", function() {
+  if (edit?.el) {
+    snippetEditor.cancelLink.addEventListener("click", function() {
       cancel();
     });
   } else {
-    snippetEdit.cancelLink.remove();
+    snippetEditor.cancelLink.remove();
   }
   function cancel() {
-    if (originalSnippetEl) {
-      snippetEdit.root.parentElement.insertBefore(originalSnippetEl, snippetEdit.root);
+    if (edit?.el) {
+      snippetEditor.root.parentElement.insertBefore(edit.el, snippetEditor.root);
     }
-    snippetEdit.root.remove();
+    snippetEditor.root.remove();
   }
   function addProject(proj) {
     let projEl = snippetEditProjectTemplate();
     projEl.projectId.value = `${proj.id}`;
     projEl.projectLogo.src = proj.logo;
+    projEl.projectLogo.hidden = !proj.logo;
     projEl.projectName.textContent = proj.name;
-    if (proj.id == stickyProjectId) {
+    if (proj.id === config.requiredProjectID) {
       projEl.removeButton.remove();
     } else {
       projEl.removeButton.addEventListener("click", function(ev) {
@@ -179,73 +172,67 @@ function makeSnippetEdit({
         updateProjectSelector();
       });
     }
-    snippetEdit.projectList.appendChild(projEl.root);
+    snippetEditor.projectList.appendChild(projEl.root);
   }
   function updateProjectSelector() {
-    if (projectSelector) {
-      projectSelector.remove();
-    }
-    let remainingProjects = [];
-    let projInputs = snippetEdit.projectList.querySelectorAll("input[name=project_id]");
-    let assignedIds = [];
-    for (let i = 0; i < projInputs.length; ++i) {
-      let id = parseInt(projInputs[i].value, 10);
+    projectSelector.remove();
+    const remainingProjects = [];
+    const projInputs = snippetEditor.projectList.querySelectorAll("input[name=project_id]");
+    const assignedIds = [];
+    for (const projInput of projInputs) {
+      let id = parseInt(projInput.value, 10);
       if (!isNaN(id)) {
         assignedIds.push(id);
       }
     }
-    for (let i = 0; i < availableProjects.length; ++i) {
-      let found = false;
-      for (let j = 0; j < assignedIds.length; ++j) {
-        if (assignedIds[j] == availableProjects[i].id) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        remainingProjects.push(availableProjects[i]);
+    for (const project of config.availableProjects) {
+      if (!assignedIds.find((id) => id === project.id)) {
+        remainingProjects.push(project);
       }
     }
-    if (remainingProjects.length > 0) {
-      projectSelector = document.createElement("select");
-      const option = document.createElement("option");
-      option.textContent = "Add to project...";
-      option.selected = true;
-      projectSelector.appendChild(option);
+    projectSelector = document.createElement("select");
+    projectSelector.hidden = remainingProjects.length === 0;
+    {
+      const defaultOption = document.createElement("option");
+      defaultOption.textContent = "Add to project...";
+      defaultOption.selected = true;
+      projectSelector.appendChild(defaultOption);
       for (let i = 0; i < remainingProjects.length; ++i) {
-        const option2 = document.createElement("option");
-        option2.value = `${remainingProjects[i].id}`;
-        option2.selected = false;
-        option2.textContent = remainingProjects[i].name;
-        projectSelector.appendChild(option2);
+        const option = document.createElement("option");
+        option.textContent = remainingProjects[i].name;
+        option.value = `${remainingProjects[i].id}`;
+        option.selected = false;
+        projectSelector.appendChild(option);
       }
       projectSelector.addEventListener("change", (ev) => {
-        assert(projectSelector);
-        if (projectSelector.selectedOptions.length > 0) {
-          let selected = projectSelector.selectedOptions[0];
-          if (selected.value != "") {
-            let id = parseInt(selected.value, 10);
-            if (!isNaN(id)) {
-              for (let i = 0; i < availableProjects.length; ++i) {
-                if (availableProjects[i].id == id) {
-                  addProject(availableProjects[i]);
-                  break;
-                }
-              }
-            }
-            updateProjectSelector();
+        if (projectSelector.selectedOptions.length === 0) {
+          return;
+        }
+        const selected = projectSelector.selectedOptions[0];
+        if (selected.value === "") {
+          return;
+        }
+        const selectedID = parseInt(selected.value, 10);
+        if (isNaN(selectedID)) {
+          return;
+        }
+        for (const proj of config.availableProjects) {
+          if (proj.id == selectedID) {
+            addProject(proj);
+            break;
           }
         }
+        updateProjectSelector();
       });
-      snippetEdit.projectList.appendChild(projectSelector);
     }
+    snippetEditor.projectList.appendChild(projectSelector);
   }
   function setFile(file) {
     let dt = new DataTransfer();
     dt.items.add(file);
-    snippetEdit.file.files = dt.files;
+    snippetEditor.file.files = dt.files;
     attachmentChanged = true;
-    snippetEdit.removeAttachment.value = "false";
+    snippetEditor.removeAttachment.value = "false";
     hasAttachment = true;
     let el = null;
     if (file.type.startsWith("image/")) {
@@ -271,18 +258,18 @@ function makeSnippetEdit({
     validate();
   }
   function clearAttachment(restoreOriginal) {
-    snippetEdit.file.value = "";
-    let el = null;
+    snippetEditor.file.value = "";
+    snippetEditor.removeAttachment.value = "false";
     attachmentChanged = false;
     hasAttachment = false;
-    snippetEdit.removeAttachment.value = "false";
+    let el = void 0;
     if (originalAttachment) {
       if (restoreOriginal) {
         hasAttachment = true;
         el = originalAttachment;
       } else {
         attachmentChanged = true;
-        snippetEdit.removeAttachment.value = "true";
+        snippetEditor.removeAttachment.value = "true";
       }
     }
     setPreview(el);
@@ -290,57 +277,57 @@ function makeSnippetEdit({
   }
   function setPreview(el) {
     if (el) {
-      snippetEdit.uploadBox.style.display = "none";
-      snippetEdit.previewBox.style.display = "block";
-      snippetEdit.uploadResetBox.style.display = "none";
-      snippetEdit.previewContent = emptyElement(snippetEdit.previewContent);
-      snippetEdit.previewContent.appendChild(el);
-      snippetEdit.resetLink.style.display = !originalAttachment || el == originalAttachment ? "none" : "inline-block";
+      snippetEditor.uploadBox.style.display = "none";
+      snippetEditor.previewBox.style.display = "block";
+      snippetEditor.uploadResetBox.style.display = "none";
+      snippetEditor.previewContent = emptyElement(snippetEditor.previewContent);
+      snippetEditor.previewContent.appendChild(el);
+      snippetEditor.resetLink.style.display = !originalAttachment || el == originalAttachment ? "none" : "inline-block";
     } else {
-      snippetEdit.uploadBox.style.display = "block";
-      snippetEdit.previewBox.style.display = "none";
+      snippetEditor.uploadBox.style.display = "block";
+      snippetEditor.previewBox.style.display = "none";
       if (originalAttachment) {
-        snippetEdit.uploadResetBox.style.display = "block";
+        snippetEditor.uploadResetBox.style.display = "block";
       }
     }
   }
   function validate() {
     let sizeGood = true;
-    if (snippetEdit.file.files.length > 0 && snippetEdit.file.files[0].size > maxFilesize) {
-      let readableSize = new Intl.NumberFormat([], { useGrouping: true }).format(maxFilesize);
-      snippetEdit.errors.textContent = "File is too big! Max filesize is " + readableSize + " bytes.";
+    if (snippetEditor.file.files.length > 0 && snippetEditor.file.files[0].size > config.assetMaxSize) {
+      let readableSize = new Intl.NumberFormat([], { useGrouping: true }).format(config.assetMaxSize);
+      snippetEditor.errors.textContent = "File is too big! Max filesize is " + readableSize + " bytes.";
       sizeGood = false;
     } else {
-      snippetEdit.errors.textContent = "";
+      snippetEditor.errors.textContent = "";
     }
-    let hasText = snippetEdit.text.value.trim().length > 0;
+    let hasText = snippetEditor.text.value.trim().length > 0;
     if ((hasText || hasAttachment) && sizeGood) {
-      snippetEdit.saveButton.disabled = false;
+      snippetEditor.saveButton.disabled = false;
     } else {
-      snippetEdit.saveButton.disabled = true;
+      snippetEditor.saveButton.disabled = true;
     }
   }
-  snippetEdit.uploadLink.addEventListener("click", () => {
-    snippetEdit.file.click();
+  snippetEditor.uploadLink.addEventListener("click", () => {
+    snippetEditor.file.click();
   });
-  snippetEdit.removeLink.addEventListener("click", () => {
+  snippetEditor.removeLink.addEventListener("click", () => {
     clearAttachment(false);
   });
-  snippetEdit.replaceLink.addEventListener("click", () => {
-    snippetEdit.file.click();
+  snippetEditor.replaceLink.addEventListener("click", () => {
+    snippetEditor.file.click();
   });
-  snippetEdit.resetLink.addEventListener("click", () => {
+  snippetEditor.resetLink.addEventListener("click", () => {
     clearAttachment(true);
   });
-  snippetEdit.uploadResetLink.addEventListener("click", () => {
+  snippetEditor.uploadResetLink.addEventListener("click", () => {
     clearAttachment(true);
   });
-  snippetEdit.file.addEventListener("change", () => {
-    if (snippetEdit.file.files.length > 0) {
-      setFile(snippetEdit.file.files[0]);
+  snippetEditor.file.addEventListener("change", () => {
+    if (snippetEditor.file.files.length > 0) {
+      setFile(snippetEditor.file.files[0]);
     }
   });
-  snippetEdit.root.addEventListener("dragover", (ev) => {
+  snippetEditor.root.addEventListener("dragover", (ev) => {
     assert(ev.dataTransfer);
     let effect = "none";
     for (let i = 0; i < ev.dataTransfer.items.length; ++i) {
@@ -353,43 +340,43 @@ function makeSnippetEdit({
     ev.preventDefault();
   });
   let enterCounter = 0;
-  snippetEdit.root.addEventListener("dragenter", (ev) => {
+  snippetEditor.root.addEventListener("dragenter", (ev) => {
     assert(ev.dataTransfer);
     enterCounter++;
     const droppable = Array.from(ev.dataTransfer.items).some(
       (item) => item.kind.toLowerCase() === "file"
     );
     if (droppable) {
-      snippetEdit.root.classList.add("drop");
+      snippetEditor.root.classList.add("drop");
     }
   });
-  snippetEdit.root.addEventListener("dragleave", (ev) => {
+  snippetEditor.root.addEventListener("dragleave", (ev) => {
     enterCounter--;
     if (enterCounter == 0) {
-      snippetEdit.root.classList.remove("drop");
+      snippetEditor.root.classList.remove("drop");
     }
   });
-  snippetEdit.root.addEventListener("drop", (ev) => {
+  snippetEditor.root.addEventListener("drop", (ev) => {
     enterCounter = 0;
-    snippetEdit.root.classList.remove("drop");
+    snippetEditor.root.classList.remove("drop");
     if (ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files.length > 0) {
       setFile(ev.dataTransfer.files[0]);
     }
     ev.preventDefault();
   });
-  snippetEdit.text.addEventListener("paste", (ev) => {
+  snippetEditor.text.addEventListener("paste", (ev) => {
     assert(ev.clipboardData);
     const files = ev.clipboardData.files ?? [];
     if (files.length > 0) {
       setFile(files[0]);
     }
   });
-  snippetEdit.text.addEventListener("input", () => {
+  snippetEditor.text.addEventListener("input", () => {
     validate();
   });
-  snippetEdit.saveButton.addEventListener("click", (ev) => {
+  snippetEditor.saveButton.addEventListener("click", (ev) => {
     let projectsChanged = false;
-    let projInputs = snippetEdit.projectList.querySelectorAll("input[name=project_id]");
+    let projInputs = snippetEditor.projectList.querySelectorAll("input[name=project_id]");
     let assignedIds = [];
     for (let i = 0; i < projInputs.length; ++i) {
       let id = parseInt(projInputs[i].value, 10);
@@ -397,13 +384,13 @@ function makeSnippetEdit({
         assignedIds.push(id);
       }
     }
-    if (projectIds.length != assignedIds.length) {
+    if (edit?.projectIDs.length != assignedIds.length) {
       projectsChanged = true;
     } else {
-      for (let i = 0; i < projectIds.length; ++i) {
+      for (let i = 0; i < edit?.projectIDs.length; ++i) {
         let found = false;
         for (let j = 0; j < assignedIds.length; ++j) {
-          if (projectIds[i] == assignedIds[j]) {
+          if (edit.projectIDs[i] == assignedIds[j]) {
             found = true;
           }
         }
@@ -413,56 +400,45 @@ function makeSnippetEdit({
         }
       }
     }
-    if (originalSnippetEl && (!attachmentChanged && originalText == snippetEdit.text.value.trim() && !projectsChanged)) {
+    if (edit && (!attachmentChanged && originalText == snippetEditor.text.value.trim() && !projectsChanged)) {
       ev.preventDefault();
       cancel();
     }
   });
-  snippetEdit.deleteButton.addEventListener("click", function(ev) {
+  snippetEditor.deleteButton.addEventListener("click", function(ev) {
     if (!window.confirm("Are you sure you want to delete this snippet?")) {
       ev.preventDefault();
       return;
     }
-    snippetEdit.redirect.value = onDeleteRedirectUrl ?? "";
-    snippetEdit.file.value = "";
+    snippetEditor.redirect.value = config.onDeleteRedirectUrl ?? "";
+    snippetEditor.file.value = "";
   });
   validate();
-  return snippetEdit;
+  return snippetEditor;
 }
-function editTimelineSnippet(timelineItemEl, {
-  maxFilesize,
-  availableProjects,
-  stickyProjectId,
-  onDeleteRedirectUrl
-}) {
-  const ownerName = timelineItemEl.querySelector(".user")?.textContent;
-  const ownerUrl = timelineItemEl.querySelector(".user")?.href;
-  const ownerAvatar = timelineItemEl.querySelector(".avatar")?.src;
+function editTimelineSnippet(timelineItemEl, config) {
+  config.owner.name = timelineItemEl.querySelector(".user").textContent;
+  config.owner.profileUrl = timelineItemEl.querySelector(".user").href;
+  config.owner.avatarUrl = timelineItemEl.querySelector(".avatar")?.src;
   const creationDate = new Date(must(timelineItemEl.querySelector("time")).dateTime);
   const rawDesc = must(timelineItemEl.querySelector(".rawdesc")).textContent;
-  const attachment = timelineItemEl.querySelector(".timeline-media")?.children?.[0];
-  const projectIds = [];
+  const projectIDs = [];
   const projectEls = timelineItemEl.querySelectorAll(".project-id-list > input");
-  for (let i = 0; i < projectEls.length; ++i) {
-    let projid = parseInt(projectEls[i].value, 10);
-    if (projid) {
-      projectIds.push(projid);
+  for (const projectEl of projectEls) {
+    let projID = parseInt(projectEl.value, 10);
+    if (projID) {
+      projectIDs.push(projID);
     }
   }
-  let snippetEdit = makeSnippetEdit({
-    maxFilesize,
-    availableProjects,
-    ownerName,
-    ownerAvatar,
-    ownerUrl,
-    date: creationDate,
-    text: rawDesc,
-    attachmentElement: attachment,
-    projectIds,
-    stickyProjectId,
-    onDeleteRedirectUrl,
-    snippetId: must(timelineItemEl.getAttribute("data-id")),
-    originalSnippetEl: timelineItemEl
+  const snippetEdit = makeSnippetEdit({
+    config,
+    edit: {
+      el: timelineItemEl,
+      id: must(timelineItemEl.getAttribute("data-id")),
+      creationDate,
+      text: rawDesc,
+      projectIDs
+    }
   });
   timelineItemEl.parentElement.insertBefore(snippetEdit.root, timelineItemEl);
   timelineItemEl.remove();
@@ -471,3 +447,4 @@ export {
   editTimelineSnippet,
   makeSnippetEdit
 };
+//# sourceMappingURL=snippetedit.js.map

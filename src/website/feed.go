@@ -63,7 +63,7 @@ func Feed(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch feed posts"))
 	}
 
-	baseData := getBaseData(c, "Feed", nil)
+	baseData := getBaseTemplateData(c, "Feed", nil)
 	baseData.BodyClasses = append(baseData.BodyClasses, "feed")
 
 	var res ResponseData
@@ -199,8 +199,8 @@ func fetchAllPosts(c *RequestContext, offset int, limit int) ([]templates.PostLi
 	if err != nil {
 		return nil, err
 	}
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	b := c.Perf.StartBlock("FEED", "Build post items")
 	var postItems []templates.PostListItem

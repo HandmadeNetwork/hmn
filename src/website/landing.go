@@ -17,8 +17,8 @@ func Index(c *RequestContext) ResponseData {
 	const maxPostsPerTab = 20
 	const maxNewsPosts = 10
 
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	type LandingTemplateData struct {
 		templates.BaseData
@@ -171,7 +171,7 @@ func Index(c *RequestContext) ResponseData {
 		showExpo = true
 	}
 
-	baseData := getBaseData(c, "", nil)
+	baseData := getBaseTemplateData(c, "", nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    "A community of low-level programmers with high-level goals, working to correct the course of the software industry.",

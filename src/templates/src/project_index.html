@@ -1,17 +1,81 @@
 {{ template "base-2024.html" . }}
 
+{{ define "extrahead" }}
+	<script type="module" src="{{ static "js/project_index.js" }}"></script>
+{{ end }}
+
 {{ define "content" }}
-<div class="flex justify-center">
-	<div class="pv3 ph3 ph0-ns mw-site flex flex-column g3">
-		<h2 class="f3">Featured Projects</h2>
-		<div class="post-content">
-			<p>Inspired by Handmade Hero, the Handmade Network community has produced a wide variety of fantastic projects, including apps, debuggers, editors, libraries, and even programming languages.</p>
-		</div>
-		<div class="grid grid-1 grid-2-ns g3">
-			{{ range .OfficialProjects }}
-				{{ template "project_card.html" . }}
-			{{ end }}
+	<!-- Gallery -->
+	<div class="bg1 pv3 ph3 flex justify-center">
+		<div class="w-100 mw-site">
+			<div class="gallery-container relative">
+				{{ range $i, $p := .GalleryProjects }}
+					<div class="gallery-project" {{ if gt $i 0 }}hidden{{ end }}>
+						<!-- Gallery image -->
+						<div class="aspect-ratio-real--16x9 bg2 relative">
+							<div
+								class="absolute absolute--fill cover bg-center"
+								{{ with $p.GalleryImage }}
+									style="background-image: url({{ .Url }})"
+								{{ end }}
+							>
+								<!-- Semitransparent cover to reduce intensity of screenshot -->
+								<div class="absolute absolute--fill bg2 o-20"></div>
+
+								<!-- Non-mobile project card -->
+								<a href="{{ $p.Url }}" class="dn flex-ns absolute b3 r3 pa3 bg-transparent w6 g3 link-normal">
+									<div class="w4 flex-shrink-0">
+										{{ template "project_logo.html" $p }}
+									</div>
+									<div class="flex flex-column g2">
+										<div class="f4 b">{{ .Name }}</div>
+										<div>{{ .GalleryDesc }}</div>
+									</div>
+								</a>
+							</div>
+
+							<!-- Gallery controls -->
+							<div class="gallery-controls absolute t-50 h2 w-100 ph3" style="margin-top: calc(var(--height-2) / -2)">
+								<div class="gallery-left bg-transparent pa2 pointer" style="transform: rotate(180deg)">{{ svg "arrow-right" }}</div>
+								<div class="gallery-right bg-transparent pa2 pointer">{{ svg "arrow-right" }}</div>
+							</div>
+						</div>
+
+						<!-- Mobile project card -->
+						<a href="{{ $p.Url }}" class="flex dn-ns link-normal flex-column g2 pa3 bg2">
+							<div class="f4 b">{{ .Name }}</div>
+							<div>{{ .GalleryDesc }}</div>
+						</a>
+					</div>
+				{{ end }}
+
+				<!-- Gallery countdown -->
+				<div class="gallery-countdown absolute t3 r3">
+					<div class="gallery-countdown-tick"></div>
+					<div class="gallery-countdown-tick"></div>
+					<div class="gallery-countdown-tick"></div>
+					<div class="gallery-countdown-tick"></div>
+					<div class="gallery-countdown-tick"></div>
+					<div class="gallery-countdown-tick"></div>
+					<div class="gallery-countdown-tick"></div>
+					<div class="gallery-countdown-tick"></div>
+				</div>
+			</div>
 		</div>
 	</div>
-</div>
+
+	<!-- Full project list -->
+	<div class="flex justify-center ph3">
+		<div class="pv3 mw-site flex flex-column g3">
+			<h2 class="f3">Featured Projects</h2>
+			<div class="post-content">
+				<p>Inspired by Handmade Hero, the Handmade Network community has produced a wide variety of fantastic projects, including apps, debuggers, editors, libraries, and even programming languages.</p>
+			</div>
+			<div class="grid grid-1 grid-2-ns g3">
+				{{ range .OfficialProjects }}
+					{{ template "project_card.html" . }}
+				{{ end }}
+			</div>
+		</div>
+	</div>
 {{ end }}

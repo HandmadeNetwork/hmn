@@ -2,11 +2,11 @@ package parsing
 
 import (
 	"bytes"
+	"fmt"
 	"regexp"
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/hmnurl"
-	"git.handmade.network/hmn/hmn/src/oops"
 	"github.com/alecthomas/chroma"
 	chromahtml "github.com/alecthomas/chroma/formatters/html"
 	"github.com/alecthomas/chroma/lexers"
@@ -132,7 +132,7 @@ func init() {
 
 		iterator, err := lexer.Tokenise(nil, text)
 		if err != nil {
-			panic(oops.New(err, "failed to tokenize bbcode"))
+			panic(fmt.Errorf("failed to tokenize bbcode: %w", err))
 		}
 
 		var result bytes.Buffer

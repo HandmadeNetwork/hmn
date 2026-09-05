@@ -101,14 +101,21 @@ func SampleSeed() {
 
 	users := []*models.User{alice, bob, charlie, spammer}
 
+	// Seed official projects
 	fmt.Println("Creating starter projects...")
 	hero := seedProject(ctx, tx, seedHandmadeHero, []*models.User{admin})
-	fourcoder := seedProject(ctx, tx, seed4coder, []*models.User{bob})
+	var officialProjects []*models.Project
+	possibleOwners := []*models.User{alice, bob, charlie}
+	for i, p := range seedProjects {
+		newProject := seedProject(ctx, tx, p, []*models.User{possibleOwners[i%len(possibleOwners)]})
+		officialProjects = append(officialProjects, newProject)
+	}
+
+	// Seed personal projects
 	for i := range 5 {
 		name := fmt.Sprintf("%s %s", lorem.Word(1, 10), lorem.Word(1, 10))
 		slug := strings.ReplaceAll(strings.ToLower(name), " ", "-")
 
-		possibleOwners := []*models.User{alice, bob, charlie}
 		var owners []*models.User
 		for ownerIdx, owner := range possibleOwners {
 			mask := (i % ((1 << len(possibleOwners)) - 1)) + 1
@@ -126,7 +133,8 @@ func SampleSeed() {
 			Personal: true,
 		}, owners)
 	}
-	// spam project!
+
+	// Spam project!
 	seedProject(ctx, tx, models.Project{
 		Slug:        "spam",
 		Name:        "Cheap abstraction enhancers",
@@ -138,7 +146,7 @@ func SampleSeed() {
 
 	fmt.Println("Creating some forum threads...")
 	for range 5 {
-		for _, project := range []*models.Project{hmn, hero, fourcoder} {
+		for _, project := range []*models.Project{hmn, hero} {
 			thread := seedThread(ctx, tx, project, models.Thread{})
 			populateThread(ctx, tx, thread, users, rand.Intn(5)+1)
 		}
@@ -149,7 +157,7 @@ func SampleSeed() {
 		populateThread(ctx, tx, thread, []*models.User{spammer}, 1)
 	}
 
-	fmt.Println("Creating news posts...")
+	fmt.Println("Creating blog posts...")
 	{
 		// Main site news posts
 		for range 3 {
@@ -157,10 +165,14 @@ func SampleSeed() {
 			populateThread(ctx, tx, thread, []*models.User{admin, alice, bob, charlie}, rand.Intn(5)+1)
 		}
 
-		// 4coder
-		for range 5 {
-			thread := seedThread(ctx, tx, fourcoder, models.Thread{Type: models.ThreadTypeProjectBlogPost})
-			populateThread(ctx, tx, thread, []*models.User{bob}, 1)
+		// Official projects (every other)
+		for i, p := range officialProjects {
+			if i%2 == 0 {
+				for range 5 {
+					thread := seedThread(ctx, tx, p, models.Thread{Type: models.ThreadTypeProjectBlogPost})
+					populateThread(ctx, tx, thread, []*models.User{bob}, 1)
+				}
+			}
 		}
 	}
 
@@ -333,10 +345,11 @@ func randomBool() bool {
 }
 
 var seedHMN = models.Project{
-	ID:    models.HMNProjectID,
-	Slug:  models.HMNProjectSlug,
-	Name:  "Handmade Network",
-	Blurb: "Changing the way software is written",
+	DateCreated: time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC),
+	ID:          models.HMNProjectID,
+	Slug:        models.HMNProjectSlug,
+	Name:        "Handmade Network",
+	Blurb:       "Changing the way software is written",
 	Description: `
 [project=hero]Originally inspired by Handmade Hero[/project], we're an offshoot of its community, hoping to change the way software is written. To this end we've circulated our [url=https://handmade.network/manifesto]manifesto[/url] and built this website, in the hopes of fostering this community. We invite others to host projects built with same goals in mind and build up or expand their community's reach in our little tree house and hope it proves vibrant soil for the exchange of ideas as well as code.
 	`,
@@ -344,14 +357,13 @@ var seedHMN = models.Project{
 	Color1: "ab4c47", Color2: "a5467d",
 	Hidden:       true,
 	ForumEnabled: true, BlogEnabled: true,
-
-	DateCreated: time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC),
 }
 
 var seedHandmadeHero = models.Project{
-	Slug:  "hero",
-	Name:  "Handmade Hero",
-	Blurb: "An ongoing project to create a complete, professional-quality game accompanied by videos that explain every single line of its source code.",
+	DateCreated: time.Date(2017, 1, 10, 0, 0, 0, 0, time.UTC),
+	Slug:        "hero",
+	Name:        "Handmade Hero",
+	Blurb:       "An ongoing project to create a complete, professional-quality game accompanied by videos that explain every single line of its source code.",
 	Description: `
 Handmade Hero is an ongoing project by [Casey Muratori](http://mollyrocket.com/casey) to create a complete, professional-quality game accompanied by videos that explain every single line of its source code.  The series began on November 17th, 2014, and is estimated to run for at least 600 episodes.  Programming sessions are limited to one hour per weekday so it remains manageable for people who practice coding along with the series at home.
 
@@ -361,15 +373,15 @@ For more information, see the official website at https://handmadehero.org
 	Color1: "19328a", Color2: "f1f0a2",
 	Featured:     true,
 	ForumEnabled: true, BlogEnabled: false,
-
-	DateCreated: time.Date(2017, 1, 10, 0, 0, 0, 0, time.UTC),
 }
 
-var seed4coder = models.Project{
-	Slug:  "4coder",
-	Name:  "4coder",
-	Blurb: "A programmable, cross platform, IDE template",
-	Description: `
+var seedProjects = []models.Project{
+	{
+		DateCreated: time.Date(2017, 1, 10, 0, 0, 0, 0, time.UTC),
+		Slug:        "4coder",
+		Name:        "4coder",
+		Blurb:       "A programmable, cross platform, IDE template",
+		Description: `
 4coder preview video: https://www.youtube.com/watch?v=Nop5UW2kV3I
 
 4coder differentiates from other editors by focusing on powerful C/C++ customization and extension, and ease of cross platform use.  This means that 4coder greatly reduces the cost of creating cross platform development tools such as debuggers, code intelligence systems.  It means that tools specialized to your particular needs can be programmed in C/C++ or any language that interfaces with C/C++, which is almost all of them.
@@ -379,8 +391,124 @@ In other words, 4coder is attempting to live in a space between an IDE and a pow
 Want to try it out? [url=https://4coder.itch.io/4coder]Get your alpha build now[/url]!	
 	`,
 
-	Color1: "002107", Color2: "cccccc",
-	ForumEnabled: true, BlogEnabled: true,
+		Color1: "002107", Color2: "cccccc",
+		ForumEnabled: true, BlogEnabled: true,
+	},
+	{
+		DateCreated: time.Date(2017, 1, 10, 21, 21, 42, 0, time.UTC),
+		Slug:        "odin",
+		Name:        "Odin",
+		Blurb:       "An open source systems programming language designed for the modern computer and programmer.",
+		Description: `The Odin programming language is designed with the intent of creating an alternative to C with the following goals:
+[ul]
+[li]simplicity[/li]
+[li]high performance[/li]
+[li]built for modern systems[/li]
+[li]joy of programming[/li]
+[/ul]
 
-	DateCreated: time.Date(2017, 1, 10, 0, 0, 0, 0, time.UTC),
+
+Website: [url=https://odin-lang.org/]https://odin-lang.org/[/url]
+
+Documentation:
+[ul]
+[li][url=https://odin.handmade.network/wiki/3329-odin_tutorial]Tutorial[/url][/li]
+[li][url=https://github.com/odin-lang/Odin/wiki/Frequently-Asked-Questions-(FAQ)]Frequently Asked Questions[/url][/li]
+[/ul]
+
+User Libraries:
+[ul]
+[li][url=https://github.com/odin-lang/Odin/wiki/Odin-Libs]Odin Libs[/url][/li]
+[/ul]
+
+[code]
+package main
+
+import "core:fmt"
+
+main :: proc() {
+	program := "+ + * 😃 - /";
+	accumulator := 0;
+
+	for token in program {
+		switch token {
+		case '+': accumulator += 1;
+		case '-': accumulator -= 1;
+		case '*': accumulator *= 2;
+		case '/': accumulator /= 2;
+		case '😃': accumulator *= accumulator;
+		case: // Ignore everything else
+		}
+	}
+
+	fmt.printf("The program \"%s\" calculates the value %d\n",
+	           program, accumulator);
+}
+[/code]
+
+Demonstrations:
+[ul]
+[li]First Talk & Demo[ul]
+	[li][url=https://youtu.be/TMCkT-uASaE?t=338]Talk[/url][/li]
+	[li][url=https://youtu.be/TMCkT-uASaE?t=1800]Demo[/url][/li]
+	[li][url=https://youtu.be/TMCkT-uASaE?t=5749]Q&A[/url][/li]
+	[/ul][/li]
+[li][url=https://www.youtube.com/watch?v=n1wemZfcbXM]Composition & Refactorability[/url][/li]
+[li][url=https://www.youtube.com/watch?v=UFq8rhWhx4s]Introspection, Modules, and Record Layout[/url][/li]
+[li][url=https://www.youtube.com/watch?v=f_LGVOAMb78]push_allocator & Minimal Dependency Building[/url][/li]
+[li][url=https://www.youtube.com/watch?v=OzeOekzyZK8]when, for & procedure overloading[/url][/li]
+[li][url=https://www.youtube.com/watch?v=CkHVwT1Qk-g]Context Types, Unexported Entities, Labelled Branches[/url][/li]
+[li][url=https://www.youtube.com/watch?v=NlTutcLyF64]Bit Fields, i128 & u128, Syntax Changes[/url][/li]
+[li][url=https://www.youtube.com/watc?v=-XQZE6S6zUU]Default and Named Arguments; Explicit Parametric Polymorphism[/url][/li]
+[li][url=https://www.youtube.com/watch?v=ar0vFMoMtrI]Loadsachanges[/url][/li]
+[li][url=https://youtu.be/b8bJbjiXZrQ]Packages, Bit Sets, cstring[/url][ul]
+	[li][url=https://youtu.be/5jmxyIfyyTk]Q&A[/url][/li]
+	[/ul]
+	[/li]
+[/ul]
+`,
+	},
+	{
+		DateCreated: time.Date(2017, 6, 14, 12, 37, 27, 0, time.UTC),
+		Slug:        "remedybg",
+		Name:        "RemedyBG",
+		Blurb:       "A Windows x64 debugger",
+		Description: "RemedyBG is a Windows debugger written using a minimal set of dependencies: the Dear ImGui library for its UI and Intel's XED library for decoding x64 instructions.",
+	},
+	{
+		DateCreated: time.Date(2021, 12, 13, 4, 4, 32, 0, time.UTC),
+		Slug:        "wcap",
+		Name:        "wcap",
+		Blurb:       "Simple and efficient screen recording utility for Windows",
+		Description: `wcap is simple and efficient screen recording utility for Windows.
+
+It uses [Windows.Graphics.Capture](https://blogs.windows.com/windowsdeveloper/2019/09/16/new-ways-to-do-screen-capture/) API available since **Windows 10 version 1903, May 2019 Update (19H1)** to capture contents of window or whole monitor. Captured texture is submitted to [Media Foundation](https://docs.microsoft.com/en-us/windows/win32/medfound/microsoft-media-foundation-sdk) to encode video to mp4 file with hardware accelerated codec. Using capture from compositor and hardware accelerated encoder allows it to consume very little CPU and memory.
+
+Get latest binary here: [wcap.exe](https://raw.githubusercontent.com/wiki/mmozeiko/wcap/wcap.exe) (**WARNING**: false positives may be reported from various AV vendors) 
+
+Get source code on github: https://github.com/mmozeiko/wcap
+
+# Features
+
+* press ` + "`Ctrl + PrintScreen`" + ` to start recording current monitor (where mouse cursor currently is positioned)
+* press ` + "`Ctrl + Win + PrintScreen`" + ` to start recording currently active window
+* press ` + "`Ctrl + Shift + PrintScreen`" + ` to select & record fixed position area on current monitor
+* press any of previous combinations to stop recording
+right or double-click on tray icon to change settings
+* video encoded using [H264/AVC](https://en.wikipedia.org/wiki/Advanced_Video_Coding) or [H265/HEVC](https://en.wikipedia.org/wiki/High_Efficiency_Video_Coding)
+* audio encoded using [AAC](https://en.wikipedia.org/wiki/Advanced_Audio_Coding) or [FLAC](https://en.wikipedia.org/wiki/FLAC)
+* for window capture record full window area (including title bar/borders) or just the client area
+window capture can record application local audio, no other system/process audio included
+* optionally exclude mouse cursor from capture
+* can limit recording length in seconds or file size in MB's
+* can limit max width, height or framerate - captured frames will be automatically downscaled
+`,
+	},
+	{
+		DateCreated: time.Date(2022, 11, 9, 7, 36, 48, 0, time.UTC),
+		Slug:        "spall",
+		Name:        "Spall",
+		Blurb:       "Spall is a fast, simple, portable profiler, made to make tracing large programs fast and easy.",
+		Description: `Spall is a fast, simple, portable profiler, made to make tracing large programs fast and easy.`,
+	},
 }

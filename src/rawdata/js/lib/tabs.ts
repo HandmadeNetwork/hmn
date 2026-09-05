@@ -1,15 +1,21 @@
 import { must } from "./utils";
 
 export type TabsOptions = {
+    /** A string identifying the tab to be automatically selected. */
     initialTab?: string,
-    onSelect?: (name: string) => void,
+    /** A function that is triggered when a new tab is selected. */
+    onSelect?: (name: string) => boolean,
+    /** Whether to fire onSelect when initializing. (Default: false) */
+    fireOnSelectForInitialTab?: boolean,
 };
 
 export type TabsFunctions = {
+    /** Selects a tab by name without clicking a button. */
     selectTab: (name: string, opts?: SelectTabOptions) => void,
 };
 
 export type SelectTabOptions = {
+    /** If false, suppress the call to `onSelect`. Default true. */
     sendEvent?: boolean,
 };
 
@@ -26,32 +32,21 @@ export type SelectTabOptions = {
  * The tab buttons will then show and hide the tab elements using the HTML
  * `hidden` attribute. The active tab button will also get the
  * `tab-button-active` class.
- * 
- * You can provide the following options in the second argument:
- * 
- *  - `initialTab`: A string identifying a tab to be automatically selected.
- *  - `onSelect`: A function of type `(name: string) => void` that is triggered
- *    when a new tab is selected.
- * 
- * Returns an object with the following:
- * 
- *  - `selectTab(name, options?: { sendEvent?: bool = true })`:
- *    A function that selects a tab by name without clicking a button. By
- *    setting `sendEvent` to false you can suppress the call to `onSelect`.
  */
 export function initTabs(container: ParentNode, {
     initialTab,
-    onSelect = () => { },
+    onSelect = () => true,
+    fireOnSelectForInitialTab = false,
 }: TabsOptions = {}): TabsFunctions {
     const buttons = Array.from(container.querySelectorAll("[data-tab-button]")) as HTMLElement[];
     const tabs = Array.from(container.querySelectorAll("[data-tab]")) as HTMLElement[];
 
     const firstTab = tabs[0].getAttribute("data-tab")!;
 
-    function selectTab(name: string, { sendEvent = true } = {}) {
+    function selectTab(name: string, { sendEvent = true }: SelectTabOptions = {}) {
         if (!container.querySelector(`[data-tab="${name}"]`)) {
-            console.warn("no tab found with name", name);
-            return selectTab(firstTab, { sendEvent });
+            console.error("no tab found with name", name);
+            return false;
         }
 
         for (const tab of tabs) {
@@ -64,8 +59,12 @@ export function initTabs(container: ParentNode, {
         if (sendEvent) {
             onSelect(name);
         }
+
+        return true;
     }
-    selectTab(initialTab || firstTab, { sendEvent: false });
+    if (!selectTab(initialTab || firstTab, { sendEvent: fireOnSelectForInitialTab })) {
+        selectTab(firstTab, { sendEvent: fireOnSelectForInitialTab });
+    }
 
     for (const button of buttons) {
         button.addEventListener("click", () => {
@@ -78,27 +77,23 @@ export function initTabs(container: ParentNode, {
     };
 }
 
-export type HashTabsOptions = {
-    initialTab?: string,
-};
-
 /**
  * A wrapper around `initTabs` that automatically uses the URL #hash.
  */
-export function initHashTabs(container: ParentNode, {
-    initialTab,
-}: HashTabsOptions = {}) {
+export function initHashTabs(container: ParentNode, opts: TabsOptions = {}) {
     const res = initTabs(container, {
-        initialTab: initialTab ?? document.location.hash.substring(1),
+        initialTab: opts.initialTab ?? document.location.hash.substring(1),
         onSelect(name) {
             document.location.hash = `#${name}`;
+            return opts.onSelect?.(name) ?? true;
         },
+        fireOnSelectForInitialTab: opts.fireOnSelectForInitialTab,
     });
     const { selectTab } = res;
     window.addEventListener("hashchange", e => {
         const tab = new URL(e.newURL).hash.substring(1);
         if (tab) {
-            selectTab(tab, { sendEvent: false });
+            selectTab(tab);
         }
     });
 

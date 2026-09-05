@@ -74,8 +74,8 @@ type Header struct {
 
 	Project *ProjectHeader
 
-	Breadcrumbs         []Breadcrumb
-	Actions             []Action
+	Breadcrumbs         []BreadcrumbLink
+	Actions             []BreadcrumbAction
 	SuppressBreadcrumbs bool
 
 	BannerEvent     *BannerEvent
@@ -167,11 +167,11 @@ type Project struct {
 	Url               string
 	Blurb             string
 	ParsedDescription template.HTML
+	ParsedAIPolicy    template.HTML
 	Owners            []User
 
-	Logo        string
-	HeaderImage string
-	Flowsnake   Flowsnake
+	Logo      string
+	Flowsnake Flowsnake
 
 	LifecycleBadgeClass string
 	LifecycleString     string
@@ -183,6 +183,15 @@ type Project struct {
 
 	UUID         string
 	DateApproved time.Time
+
+	Gallery      bool
+	GallerySort  int
+	GalleryDesc  string
+	GalleryImage *Asset
+
+	// NOTE(ben): Legacy; now we just have screenshots. We are keeping this
+	// around so project authors can retrieve their old header images.
+	HeaderImage string
 }
 
 type ProjectSettings struct {
@@ -200,11 +209,17 @@ type ProjectSettings struct {
 
 	Blurb       string
 	Description string
+	AIPolicy    string
 	LinksJSON   string
 	Owners      []User
 
 	Logo        *Asset
 	HeaderImage *Asset
+	Screenshots []*Asset
+
+	Gallery     bool
+	GallerySort int
+	GalleryDesc string
 }
 
 type Flowsnake struct {
@@ -220,13 +235,14 @@ const FlowsnakeMinSize = 2500   // px
 const FlowsnakeSizeRange = 1000 // px
 
 type Asset struct {
-	Url string
+	Url string `json:"url"`
 
-	ID            string
-	Filename      string
-	Size          int
-	MimeType      string
-	Width, Height int
+	ID       string `json:"id"`
+	Filename string `json:"filename"`
+	Size     int    `json:"size"`
+	MimeType string `json:"mimeType"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
 }
 
 type Follow struct {
@@ -240,40 +256,49 @@ type ProjectJamParticipation struct {
 	Participating bool
 }
 
-type SnippetEdit struct {
-	AvailableProjectsJSON string
-	SubmitUrl             string
-	OnDeleteRedirectUrl   string
-	AssetMaxSize          int
+type SnippetEditorConfig struct {
+	AssetMaxSize      int                  `json:"assetMaxSize"`
+	AvailableProjects []SnippetEditProject `json:"availableProjects"`
+	Owner             *User                `json:"owner"`
+	RequiredProjectID int                  `json:"requiredProjectID,omitempty"`
+
+	SubmitUrl           string `json:"submitUrl"`
+	OnDeleteRedirectUrl string `json:"onDeleteRedirectUrl,omitempty"`
+}
+
+type SnippetEditProject struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Logo string `json:"logo"`
 }
 
 type User struct {
-	ID       int
-	Username string
-	Email    string
-	IsStaff  bool
-	Status   int
-	Featured bool
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"-"`
+	IsStaff  bool   `json:"-"`
+	Status   int    `json:"-"`
+	Featured bool   `json:"-"`
 
-	Name       string
-	Blurb      string
-	Bio        string
-	Signature  string
-	DateJoined time.Time
-	Avatar     *Asset
-	AvatarUrl  string
-	ProfileUrl string
+	Name       string    `json:"name"`
+	Blurb      string    `json:"-"`
+	Bio        string    `json:"-"`
+	Signature  string    `json:"-"`
+	DateJoined time.Time `json:"-"`
+	Avatar     *Asset    `json:"avatar"`
+	AvatarUrl  string    `json:"avatarUrl,omitempty"`
+	ProfileUrl string    `json:"profileUrl"`
 
-	ShowEmail bool
-	Timezone  string
+	ShowEmail bool   `json:"-"`
+	Timezone  string `json:"-"`
 
-	DiscordSaveShowcase                 bool
-	DiscordDeleteSnippetOnMessageDelete bool
+	DiscordSaveShowcase                 bool `json:"-"`
+	DiscordDeleteSnippetOnMessageDelete bool `json:"-"`
 
-	IsEduTester bool
-	IsEduAuthor bool
+	IsEduTester bool `json:"-"`
+	IsEduAuthor bool `json:"-"`
 
-	DiscordUser *DiscordUser
+	DiscordUser *DiscordUser `json:"-"`
 }
 
 type Link struct {
@@ -356,7 +381,7 @@ type PostListItem struct {
 	Title       string
 	Url         string
 	UUID        string
-	Breadcrumbs []Breadcrumb
+	Breadcrumbs []BreadcrumbLink
 
 	PostType       PostType
 	PostTypePrefix string
@@ -391,7 +416,7 @@ type TimelineItem struct {
 	Title             string
 	TypeTitle         string
 	FilterTitle       string
-	Breadcrumbs       []Breadcrumb
+	Breadcrumbs       []BreadcrumbLink
 	Url               string
 	DiscordMessageUrl string
 
@@ -441,14 +466,22 @@ type ProjectCardData struct {
 	Classes string
 }
 
-type Breadcrumb struct {
+type BreadcrumbLink struct {
 	Name, Url string
 	Project   *Project
 }
 
-type Action struct {
+type BreadcrumbAction struct {
 	Name, Url string
 	Icon      string
+
+	// Optional; causes link to be wrapped in a form
+	PostData []BreadcrumbActionPostData
+}
+
+type BreadcrumbActionPostData struct {
+	Name  string
+	Value any
 }
 
 type Pagination struct {

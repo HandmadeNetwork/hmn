@@ -2,7 +2,7 @@ package website
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -27,29 +27,83 @@ import (
 
 const maxPersonalProjects = 20
 const maxProjectOwners = 5
+const maxProjectScreenshots = 15
 
 type ProjectTemplateData struct {
 	templates.BaseData
 
 	OfficialProjects []templates.Project
+	GalleryProjects  []templates.Project
 }
 
 func ProjectIndex(c *RequestContext) ResponseData {
-	officialProjects, err := getShuffledOfficialProjects(c)
-	if err != nil {
+	officialProjects, err1 := getShuffledOfficialProjects(c)
+	galleryProjects, err2 := getGalleryProjects(c)
+	if err := errors.Join(err1, err2); err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	baseData := getBaseData(c, "Projects", nil)
+	baseData := getBaseTemplateData(c, "Projects", nil)
 	tmpl := ProjectTemplateData{
 		BaseData: baseData,
 
 		OfficialProjects: officialProjects,
+		GalleryProjects:  galleryProjects,
 	}
 
 	var res ResponseData
 	res.MustWriteTemplate("project_index.html", tmpl, c.Perf)
 	return res
+}
+
+func getGalleryProjects(c *RequestContext) ([]templates.Project, error) {
+	galleryProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		Types:       hmndata.OfficialProjects,
+		GalleryOnly: true,
+		OrderBy:     "gallery_sort",
+	})
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch gallery projects")
+	}
+
+	galleryProjectIDs := utils.Map(galleryProjects, func(p hmndata.ProjectAndStuff) int {
+		return p.Project.ID
+	})
+	type screenshotRow struct {
+		ProjectID  int          `db:"project_screenshot.project_id"`
+		Screenshot models.Asset `db:"asset"`
+	}
+	screenshotAssets, err := db.Query[screenshotRow](c, c.Conn,
+		`
+		---- Fetching screenshots for gallery
+		SELECT $columns
+		FROM
+			project_screenshot
+			JOIN asset ON project_screenshot.asset_id = asset.id
+		WHERE
+			project_screenshot.project_id = ANY($1)
+		ORDER BY project_screenshot.project_id, project_screenshot.sort
+		`,
+		galleryProjectIDs,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch screenshots for gallery")
+	}
+
+	var templateProjects []templates.Project
+	for _, p := range galleryProjects {
+		tmpl := templates.ProjectAndStuffToTemplate(&p)
+		// NOTE(ben): Pick the first screenshot as the gallery image, if any
+		for _, screenshot := range screenshotAssets {
+			if screenshot.ProjectID == p.Project.ID {
+				tmpl.GalleryImage = templates.AssetToTemplate(&screenshot.Screenshot)
+				break
+			}
+		}
+		templateProjects = append(templateProjects, tmpl)
+	}
+
+	return templateProjects, nil
 }
 
 func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error) {
@@ -90,78 +144,48 @@ func getShuffledOfficialProjects(c *RequestContext) ([]templates.Project, error)
 	return projects, nil
 }
 
-func getPersonalProjects(c *RequestContext, jamSlug string) ([]templates.Project, error) {
-	var slugs []string
-	if jamSlug != "" {
-		slugs = []string{jamSlug}
-	}
-
-	projects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
-		Types:    hmndata.PersonalProjects,
-		JamSlugs: slugs,
-	})
-	if err != nil {
-		return nil, oops.New(err, "failed to fetch personal projects")
-	}
-
-	sort.Slice(projects, func(i, j int) bool {
-		p1 := projects[i].Project
-		p2 := projects[j].Project
-		return p2.AllLastUpdated.Before(p1.AllLastUpdated) // sort backwards - recent first
-	})
-
-	var personalProjects []templates.Project
-	for _, p := range projects {
-		templateProject := templates.ProjectAndStuffToTemplate(&p)
-		personalProjects = append(personalProjects, templateProject)
-	}
-
-	return personalProjects, nil
-}
-
-func jamLink(jamSlug string) string {
-	switch jamSlug {
-	case hmndata.WRJ2021.Slug:
-		return hmnurl.BuildJamIndex2021()
-	case hmndata.WRJ2022.Slug:
-		return hmnurl.BuildJamIndex2022()
-	case hmndata.WRJ2023.Slug:
-		return hmnurl.BuildJamIndex2023()
-	case hmndata.VJ2023.Slug:
-		return hmnurl.BuildJamIndex2023_Visibility()
-	default:
-		return ""
-	}
-}
-
-type ProjectHomepageData struct {
-	templates.BaseData
-	Project        templates.Project
-	Owners         []templates.User
-	Screenshots    []string
-	ProjectLinks   []templates.Link
-	Licenses       []templates.Link
-	RecentActivity []templates.TimelineItem
-	SnippetEdit    templates.SnippetEdit
+type ProjectPageBaseData struct {
+	Owners   []templates.User
+	Links    []templates.Link
+	NavLinks []ProjectPageNavLink
 
 	FollowUrl string
 	Following bool
 }
 
-func ProjectHomepage(c *RequestContext) ResponseData {
-	maxRecentActivity := 100
+type ProjectPageNavLink struct {
+	Name   string
+	Url    string
+	Active bool
+}
 
+func ProjectHomepage(c *RequestContext) ResponseData {
 	if c.CurrentProject == nil {
 		return FourOhFour(c)
 	}
 
-	// There are no further permission checks to do, because permissions are
-	// checked whatever way we fetch the project.
+	type ProjectHomepageData struct {
+		templates.BaseData
+		ProjectPageBaseData
 
-	owners, err := hmndata.FetchProjectOwners(c, c.Conn, c.CurrentProject.ID)
+		Screenshots []string
+
+		CanEdit bool
+		EditUrl string
+	}
+	var tmpl ProjectHomepageData
+
+	tmpl.BaseData = getBaseTemplateData(c, c.CurrentProject.Name, nil)
+	tmpl.BaseData.OpenGraphItems = append(tmpl.BaseData.OpenGraphItems, templates.OpenGraphItem{
+		Property: "og:description",
+		Value:    c.CurrentProject.Blurb,
+	})
+
+	projectBaseData, err := getProjectPageBaseData(c, &tmpl.BaseData, "Home")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
+	tmpl.ProjectPageBaseData = projectBaseData
 
 	screenshotAssets, err := db.Query[models.Asset](c, c.Conn,
 		`
@@ -178,63 +202,13 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch screenshots for project"))
 	}
+	tmpl.Screenshots = utils.Map(screenshotAssets, templates.AssetUrl)
 
-	projectLinks, err := db.Query[models.Link](c, c.Conn,
-		`
-		---- Fetching project links
-		SELECT $columns
-		FROM
-			link as link
-		WHERE
-			link.project_id = $1
-		ORDER BY link.ordering ASC
-		`,
-		c.CurrentProject.ID,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
-	}
-
-	type ProjectHomepageData struct {
-		templates.BaseData
-		Project                      templates.Project
-		Owners                       []templates.User
-		Screenshots                  []string
-		PrimaryLinks, SecondaryLinks []templates.Link
-		RecentActivity               []templates.TimelineItem
-		SnippetEdit                  templates.SnippetEdit
-
-		CanEdit bool
-		EditUrl string
-
-		FollowUrl string
-		Following bool
-	}
-
-	var templateData ProjectHomepageData
-
-	templateData.BaseData = getBaseData(c, c.CurrentProject.Name, nil)
-	templateData.BaseData.OpenGraphItems = append(templateData.BaseData.OpenGraphItems, templates.OpenGraphItem{
-		Property: "og:description",
-		Value:    c.CurrentProject.Blurb,
-	})
-
-	p, err := hmndata.FetchProject(c, c.Conn, c.CurrentUser, c.CurrentProject.ID, hmndata.ProjectsQuery{
-		Lifecycles:    models.AllProjectLifecycles,
-		IncludeHidden: true,
-	})
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project details"))
-	}
-	templateData.Project = templates.ProjectAndStuffToTemplate(&p)
-	for _, owner := range owners {
-		templateData.Owners = append(templateData.Owners, templates.UserToTemplate(owner))
-	}
-	templateData.CanEdit = c.CurrentUserCanEditCurrentProject
-	templateData.EditUrl = c.UrlContext.BuildProjectEdit("")
+	tmpl.CanEdit = c.CurrentUserCanEditCurrentProject()
+	tmpl.EditUrl = c.UrlContext.BuildProjectEdit("")
 
 	if c.CurrentProject.Hidden {
-		templateData.BaseData.AddImmediateNotice(
+		tmpl.BaseData.AddImmediateNotice(
 			"hidden",
 			"NOTICE: This project is hidden. It is currently visible only to owners and site admins.",
 		)
@@ -243,7 +217,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	if c.CurrentProject.Lifecycle != models.ProjectLifecycleActive {
 		switch c.CurrentProject.Lifecycle {
 		case models.ProjectLifecycleUnapproved:
-			templateData.BaseData.AddImmediateNotice(
+			tmpl.BaseData.AddImmediateNotice(
 				"unapproved",
 				fmt.Sprintf(
 					"NOTICE: This project has not yet been submitted for approval. It is only visible to owners. Please <a href=\"%s\">submit it for approval</a> when the project content is ready for review.",
@@ -251,96 +225,85 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 				),
 			)
 		case models.ProjectLifecycleApprovalRequired:
-			templateData.BaseData.AddImmediateNotice(
+			tmpl.BaseData.AddImmediateNotice(
 				"unapproved",
 				"NOTICE: This project is awaiting approval. It is only visible to owners and site admins.",
 			)
 		case models.ProjectLifecycleHiatus:
-			templateData.BaseData.AddImmediateNotice(
+			tmpl.BaseData.AddImmediateNotice(
 				"hiatus",
 				"NOTICE: This project is on hiatus and may not update for a while.",
 			)
 		case models.ProjectLifecycleDead:
-			templateData.BaseData.AddImmediateNotice(
+			tmpl.BaseData.AddImmediateNotice(
 				"dead",
 				"NOTICE: This project is has been marked dead and is only visible to owners and site admins.",
 			)
 		case models.ProjectLifecycleLTSRequired:
-			templateData.BaseData.AddImmediateNotice(
+			tmpl.BaseData.AddImmediateNotice(
 				"lts-reqd",
 				"NOTICE: This project is awaiting approval for maintenance-mode status.",
 			)
 		}
 	}
 
-	for _, screenshot := range screenshotAssets {
-		templateData.Screenshots = append(templateData.Screenshots, hmnurl.BuildS3Asset(screenshot.S3Key))
+	// NOTE(ben): Prepare breadcrumb actions
+	if c.CurrentUserCanEditCurrentProject() {
+		tmpl.Header.Actions = append(tmpl.Header.Actions, templates.BreadcrumbAction{
+			Name: "Edit Project",
+			Url:  c.UrlContext.BuildProjectEdit(""),
+			Icon: "edit-line",
+		})
 	}
 
-	if c.CurrentProject.HasBlog() {
-		canSeeBlogLink := false
-		if c.CurrentUser != nil {
-			if c.CurrentUser.IsStaff {
-				canSeeBlogLink = true
-			} else {
-				for _, owner := range owners {
-					if owner.ID == c.CurrentUser.ID {
-						canSeeBlogLink = true
-						break
-					}
-				}
-			}
-		}
+	var res ResponseData
+	err = res.WriteTemplate("project_homepage.html", tmpl, c.Perf)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render project homepage template"))
+	}
+	return res
+}
 
-		if !canSeeBlogLink {
-			hasBlogPosts, err := db.QueryOneScalar[bool](c, c.Conn,
-				`
-					SELECT COUNT(*) > 0
-					FROM thread
-					WHERE
-						type = $1
-						AND project_id = $2
-						AND deleted = false
-				`,
-				models.ThreadTypeProjectBlogPost,
-				c.CurrentProject.ID,
-			)
-			if err != nil {
-				return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project blogs"))
-			}
-
-			canSeeBlogLink = hasBlogPosts
-		}
-
-		if canSeeBlogLink {
-			templateData.PrimaryLinks = append(templateData.PrimaryLinks, templates.Link{
-				Name: "Project blog",
-				Url:  c.UrlContext.BuildBlog(1),
-			})
-		}
+func ProjectFeed(c *RequestContext) ResponseData {
+	if c.CurrentProject.IsHMN() {
+		return FourOhFour(c)
 	}
 
-	for _, link := range templates.LinksToTemplate(projectLinks) {
-		if link.Primary {
-			templateData.PrimaryLinks = append(templateData.PrimaryLinks, link)
-		} else {
-			templateData.SecondaryLinks = append(templateData.SecondaryLinks, link)
-		}
+	maxRecentActivity := 100
+
+	type ProjectFeedData struct {
+		templates.BaseData
+		ProjectPageBaseData
+
+		RecentActivity      []templates.TimelineItem
+		SnippetEditorConfig templates.SnippetEditorConfig
 	}
+	var tmpl ProjectFeedData
+	var err error
 
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
-
-	templateData.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
-		ProjectIDs: []int{c.CurrentProject.ID},
-		Limit:      maxRecentActivity,
+	tmpl.BaseData = getBaseTemplateData(c, "Feed", []templates.BreadcrumbLink{
+		{Name: "Feed", Url: c.UrlContext.BuildProjectFeed()},
 	})
+	projectBaseData, err := getProjectPageBaseData(c, &tmpl.BaseData, "Feed")
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
+	tmpl.ProjectPageBaseData = projectBaseData
 
-	followUrl := ""
-	following := false
+	// NOTE(ben): Get timeline activity
+	{
+		subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+		lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
+		tmpl.RecentActivity, err = FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
+			ProjectIDs: []int{c.CurrentProject.ID},
+			Limit:      maxRecentActivity,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, err)
+		}
+	}
+
+	// NOTE(ben): Prepare snippet (post) editor
 	if c.CurrentUser != nil {
 		userProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
 			OwnerIDs: []int{c.CurrentUser.ID},
@@ -349,7 +312,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch user projects"))
 		}
 		templateProjects := make([]templates.Project, 0, len(userProjects))
-		templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&p))
+		templateProjects = append(templateProjects, templates.ProjectAndStuffToTemplate(&c.CurrentProjectExtras))
 		for _, p := range userProjects {
 			if p.Project.ID == c.CurrentProject.ID {
 				continue
@@ -357,45 +320,155 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			templateProject := templates.ProjectAndStuffToTemplate(&p)
 			templateProjects = append(templateProjects, templateProject)
 		}
-		templateData.SnippetEdit = templates.SnippetEdit{
-			AvailableProjectsJSON: templates.SnippetEditProjectsToJSON(templateProjects),
-			SubmitUrl:             hmnurl.BuildSnippetSubmit(),
-			AssetMaxSize:          AssetMaxSize(c.CurrentUser),
-		}
+		tmpl.SnippetEditorConfig = templates.SnippetEditorConfig{
+			AssetMaxSize:      AssetMaxSize(c.CurrentUser),
+			AvailableProjects: utils.Map(templateProjects, templates.ProjectToSnippetEditProject),
+			Owner:             tmpl.User,
+			RequiredProjectID: c.CurrentProject.ID,
 
-		followUrl = hmnurl.BuildFollowProject()
-		following, err = db.QueryOneScalar[bool](c, c.Conn, `
-			SELECT COUNT(*) > 0
-			FROM follower
-			WHERE user_id = $1 AND following_project_id = $2
-		`, c.CurrentUser.ID, c.CurrentProject.ID)
-		if err != nil {
-			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch following status"))
-		}
-
-		if c.CurrentUserCanEditCurrentProject {
-			templateData.Header.Actions = []templates.Action{
-				{
-					Name: "Edit Project",
-					Url:  c.UrlContext.BuildProjectEdit(""),
-					Icon: "edit-line",
-				},
-			}
+			SubmitUrl: hmnurl.BuildSnippetSubmit(),
 		}
 	}
-	templateData.FollowUrl = followUrl
-	templateData.Following = following
 
 	var res ResponseData
-	err = res.WriteTemplate("project_homepage.html", templateData, c.Perf)
+	err = res.WriteTemplate("project_feed.html", tmpl, c.Perf)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to render project homepage template"))
 	}
 	return res
 }
 
+func getProjectPageBaseData(c *RequestContext, base *templates.BaseData, activeLinkName string) (ProjectPageBaseData, error) {
+	var res ProjectPageBaseData
+
+	// NOTE(ben): Get project owners
+	res.Owners = utils.Map(c.CurrentProjectExtras.Owners, templates.UserToTemplate)
+
+	// NOTE(ben): Get user-created links
+	{
+		projectLinks, err := db.Query[models.Link](c, c.Conn,
+			`
+			---- Fetching project links
+			SELECT $columns
+			FROM
+				link as link
+			WHERE
+				link.project_id = $1
+			ORDER BY link.ordering ASC
+			`,
+			c.CurrentProject.ID,
+		)
+		if err != nil {
+			return ProjectPageBaseData{}, oops.New(err, "failed to fetch project links")
+		}
+		res.Links = utils.Map(projectLinks, templates.LinkToTemplate)
+	}
+
+	// NOTE(ben): Get nav links
+	{
+		res.NavLinks = append(res.NavLinks, ProjectPageNavLink{
+			Name: "Home",
+			Url:  c.UrlContext.BuildHomepage(),
+		})
+		res.NavLinks = append(res.NavLinks, ProjectPageNavLink{
+			Name: "Feed",
+			Url:  c.UrlContext.BuildProjectFeed(),
+		})
+		if c.CurrentProject.HasBlog() {
+			canSeeBlogLink := false
+			if c.CurrentUser != nil {
+				if c.CurrentUser.IsStaff {
+					canSeeBlogLink = true
+				} else {
+					for _, owner := range c.CurrentProjectExtras.Owners {
+						if owner.ID == c.CurrentUser.ID {
+							canSeeBlogLink = true
+							break
+						}
+					}
+				}
+			}
+
+			if !canSeeBlogLink {
+				hasBlogPosts, err := db.QueryOneScalar[bool](c, c.Conn,
+					`
+					---- Check for blog posts
+					SELECT COUNT(*) > 0
+					FROM thread
+					WHERE
+						type = $1
+						AND project_id = $2
+						AND deleted = false
+					`,
+					models.ThreadTypeProjectBlogPost,
+					c.CurrentProject.ID,
+				)
+				if err != nil {
+					return ProjectPageBaseData{}, oops.New(err, "failed to fetch project blogs")
+				}
+
+				canSeeBlogLink = hasBlogPosts
+			}
+
+			if canSeeBlogLink {
+				res.NavLinks = append(res.NavLinks, ProjectPageNavLink{
+					Name: "Blog",
+					Url:  c.UrlContext.BuildBlog(1),
+				})
+			}
+		}
+
+		for i := range res.NavLinks {
+			if res.NavLinks[i].Name == activeLinkName {
+				res.NavLinks[i].Active = true
+			}
+		}
+	}
+
+	// NOTE(ben): Get header actions (follow/unfollow)
+	if c.CurrentUser != nil {
+		var err error
+		res.FollowUrl = hmnurl.BuildFollowProject()
+		res.Following, err = db.QueryOneScalar[bool](c, c.Conn, `
+			---- Check following
+			SELECT COUNT(*) > 0
+			FROM follower
+			WHERE user_id = $1 AND following_project_id = $2
+		`, c.CurrentUser.ID, c.CurrentProject.ID)
+		if err != nil {
+			return ProjectPageBaseData{}, oops.New(err, "failed to fetch following status")
+		}
+
+		if res.Following {
+			base.Header.Actions = append(base.Header.Actions, templates.BreadcrumbAction{
+				Name: "Unfollow",
+				Url:  res.FollowUrl,
+				Icon: "remove",
+
+				PostData: []templates.BreadcrumbActionPostData{
+					{"project_id", c.CurrentProject.ID},
+					{"redirect", c.FullUrl()},
+					{"unfollow", true},
+				},
+			})
+		} else {
+			base.Header.Actions = append(base.Header.Actions, templates.BreadcrumbAction{
+				Name: "Follow",
+				Url:  res.FollowUrl,
+				Icon: "add",
+
+				PostData: []templates.BreadcrumbActionPostData{
+					{"project_id", c.CurrentProject.ID},
+					{"redirect", c.FullUrl()},
+				},
+			})
+		}
+	}
+
+	return res, nil
+}
+
 var ProjectLogoMaxFileSize = 2 * 1024 * 1024
-var ProjectHeaderMaxFileSize = 2 * 1024 * 1024 // TODO(ben): Pick a real limit
 
 type ProjectEditData struct {
 	templates.BaseData
@@ -403,9 +476,11 @@ type ProjectEditData struct {
 	Editing         bool
 	ProjectSettings templates.ProjectSettings
 	MaxOwners       int
+	MaxScreenshots  int
 
-	APICheckUsernameUrl                string
-	LogoMaxFileSize, HeaderMaxFileSize int
+	APICheckUsernameUrl   string
+	LogoMaxFileSize       int
+	ScreenshotMaxFileSize int
 
 	AllLogos []templates.Icon
 
@@ -443,14 +518,15 @@ func ProjectNew(c *RequestContext) ResponseData {
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
-		BaseData:        getBaseData(c, "New Project", nil),
+		BaseData:        getBaseTemplateData(c, "New Project", nil),
 		Editing:         false,
 		ProjectSettings: project,
 		MaxOwners:       maxProjectOwners,
+		MaxScreenshots:  maxProjectScreenshots,
 
-		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
-		LogoMaxFileSize:     ProjectLogoMaxFileSize,
-		HeaderMaxFileSize:   ProjectHeaderMaxFileSize,
+		APICheckUsernameUrl:   hmnurl.BuildAPICheckUsername(),
+		LogoMaxFileSize:       ProjectLogoMaxFileSize,
+		ScreenshotMaxFileSize: AssetMaxSize(c.CurrentUser),
 
 		AllLogos: allLogos(),
 
@@ -465,7 +541,7 @@ func ProjectNew(c *RequestContext) ResponseData {
 }
 
 func ProjectNewSubmit(c *RequestContext) ResponseData {
-	formResult := ParseProjectEditForm(c)
+	formResult := parseProjectEditForm(c)
 	if formResult.Error != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, formResult.Error)
 	}
@@ -494,11 +570,13 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 	err = tx.QueryRow(c,
 		`
 		INSERT INTO project
-			(name, blurb, description, descparsed, lifecycle, date_created, all_last_updated)
+			(name, blurb, description, descparsed, ai_policy, ai_policy_parsed, lifecycle, date_created, all_last_updated)
 		VALUES
-			($1,   $2,    $3,          $4,         $5,        $6,           $6)
+			($1,   $2,    $3,          $4,         $5,        $6,               $7,        $8,           $8)
 		RETURNING id
 		`,
+		"",
+		"",
 		"",
 		"",
 		"",
@@ -529,7 +607,7 @@ func ProjectNewSubmit(c *RequestContext) ResponseData {
 }
 
 func ProjectEdit(c *RequestContext) ResponseData {
-	if !c.CurrentUserCanEditCurrentProject {
+	if !c.CurrentUserCanEditCurrentProject() {
 		return FourOhFour(c)
 	}
 
@@ -561,6 +639,24 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project links"))
 	}
 
+	projectScreenshots, err := db.Query[models.Asset](c, c.Conn,
+		`
+		---- Fetching project screenshots
+		SELECT $columns{asset}
+		FROM
+			project_screenshot
+			JOIN asset ON project_screenshot.asset_id = asset.id
+		WHERE
+			project_screenshot.project_id = $1
+		ORDER BY
+			project_screenshot.sort
+		`,
+		p.Project.ID,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project screenshots"))
+	}
+
 	projectJams, err := hmndata.FetchJamsForProject(c, c.Conn, c.CurrentUser, p.Project.ID)
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch jams for project"))
@@ -570,30 +666,23 @@ func ProjectEdit(c *RequestContext) ResponseData {
 		&p.Project,
 		p.Owners,
 		p.TagText(),
+		projectJams,
+		projectLinks,
 		p.LogoAsset, p.HeaderImage,
+		projectScreenshots,
 	)
-
-	projectSettings.LinksJSON = string(utils.Must1(json.Marshal(templates.LinksToTemplate(projectLinks))))
-
-	projectSettings.JamParticipation = make([]templates.ProjectJamParticipation, 0, len(projectJams))
-	for _, jam := range projectJams {
-		projectSettings.JamParticipation = append(projectSettings.JamParticipation, templates.ProjectJamParticipation{
-			JamName:       jam.JamName,
-			JamSlug:       jam.JamSlug,
-			Participating: jam.Participating,
-		})
-	}
 
 	var res ResponseData
 	res.MustWriteTemplate("project_edit.html", ProjectEditData{
-		BaseData:        getBaseData(c, "Edit Project", nil),
+		BaseData:        getBaseTemplateData(c, "Edit Project", nil),
 		Editing:         true,
 		ProjectSettings: projectSettings,
 		MaxOwners:       maxProjectOwners,
+		MaxScreenshots:  maxProjectScreenshots,
 
-		APICheckUsernameUrl: hmnurl.BuildAPICheckUsername(),
-		LogoMaxFileSize:     ProjectLogoMaxFileSize,
-		HeaderMaxFileSize:   ProjectHeaderMaxFileSize,
+		APICheckUsernameUrl:   hmnurl.BuildAPICheckUsername(),
+		LogoMaxFileSize:       ProjectLogoMaxFileSize,
+		ScreenshotMaxFileSize: AssetMaxSize(c.CurrentUser),
 
 		AllLogos: allLogos(),
 
@@ -608,10 +697,10 @@ func ProjectEdit(c *RequestContext) ResponseData {
 }
 
 func ProjectEditSubmit(c *RequestContext) ResponseData {
-	if !c.CurrentUserCanEditCurrentProject {
+	if !c.CurrentUserCanEditCurrentProject() {
 		return FourOhFour(c)
 	}
-	formResult := ParseProjectEditForm(c)
+	formResult := parseProjectEditForm(c)
 	if formResult.Error != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, formResult.Error)
 	}
@@ -651,11 +740,13 @@ type ProjectPayload struct {
 	Links                 []ParsedLink
 	Description           string
 	ParsedDescription     string
+	AIPolicy              string
+	ParsedAIPolicy        string
 	Lifecycle             models.ProjectLifecycle
 	Hidden                bool
 	OwnerUsernames        []string
 	Logo                  FormImage
-	HeaderImage           FormImage
+	Screenshots           []FormImage
 	Tag                   string
 	JamParticipationSlugs []string
 	JamHidden             bool
@@ -665,6 +756,10 @@ type ProjectPayload struct {
 	SlugAliases string // comma-separated
 	Featured    bool
 	Personal    bool
+
+	Gallery     bool
+	GallerySort int
+	GalleryDesc string
 }
 
 type ProjectEditFormResult struct {
@@ -673,9 +768,9 @@ type ProjectEditFormResult struct {
 	Error           error
 }
 
-func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
+func parseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	var res ProjectEditFormResult
-	maxBodySize := int64(ProjectLogoMaxFileSize + ProjectHeaderMaxFileSize + 1024*1024)
+	maxBodySize := int64(ProjectLogoMaxFileSize + 1024*1024)
 	c.Req.Body = http.MaxBytesReader(c.Res, c.Req.Body, maxBodySize)
 	err := c.Req.ParseMultipartForm(maxBodySize)
 	if err != nil {
@@ -696,8 +791,20 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		return res
 	}
 	links := ParseLinks(c.Req.Form.Get("links"))
-	description := c.Req.Form.Get("full_description")
+
+	description := strings.TrimSpace(c.Req.Form.Get("full_description"))
+	if description == "" {
+		res.RejectionReason = "Projects must have a long description"
+		return res
+	}
 	parsedDescription := parsing.ParseMarkdown(description, parsing.PostMarkdown)
+
+	aiPolicy := strings.TrimSpace(c.Req.Form.Get("ai_policy"))
+	if aiPolicy == "" {
+		res.RejectionReason = "Projects must have an AI policy"
+		return res
+	}
+	parsedAIPolicy := parsing.ParseMarkdown(aiPolicy, parsing.PostMarkdown)
 
 	lifecycleStr := c.Req.Form.Get("lifecycle")
 	lifecycle, found := templates.ProjectLifecycleFromValue(lifecycleStr)
@@ -720,9 +827,19 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		res.Error = oops.New(err, "Failed to read image from form")
 		return res
 	}
-	headerImage, err := GetFormImage(c, "header_image")
+	screenshots, err := GetFormImages(c, "screenshot")
 	if err != nil {
-		res.Error = oops.New(err, "Failed to read image from form")
+		res.Error = oops.New(err, "Failed to read screenshots from form")
+		return res
+	}
+	numNewOrExistingScreenshots := 0
+	for _, screenshot := range screenshots {
+		if screenshot.New || screenshot.Exists {
+			numNewOrExistingScreenshots += 1
+		}
+	}
+	if numNewOrExistingScreenshots > maxProjectScreenshots {
+		res.RejectionReason = "too many screenshots"
 		return res
 	}
 
@@ -750,17 +867,23 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 	sortScoreStr := c.Req.Form.Get("sort_score")
 	sortScore, _ := strconv.Atoi(sortScoreStr)
 
+	gallery := c.Req.Form.Get("gallery") != ""
+	gallerySort, _ := strconv.Atoi(c.Req.Form.Get("gallery_sort"))
+	galleryDesc := c.Req.Form.Get("gallery_desc")
+
 	res.Payload = ProjectPayload{
 		Name:                  projectName,
 		Blurb:                 shortDesc,
 		Links:                 links,
 		Description:           description,
 		ParsedDescription:     parsedDescription,
+		AIPolicy:              aiPolicy,
+		ParsedAIPolicy:        parsedAIPolicy,
 		Lifecycle:             lifecycle,
 		Hidden:                hidden,
 		OwnerUsernames:        owners,
 		Logo:                  logo,
-		HeaderImage:           headerImage,
+		Screenshots:           screenshots,
 		Tag:                   tag,
 		JamParticipationSlugs: jamParticipationSlugs,
 		JamHidden:             jamHidden,
@@ -769,33 +892,48 @@ func ParseProjectEditForm(c *RequestContext) ProjectEditFormResult {
 		Personal:              !official,
 		Featured:              featured,
 		SortScore:             sortScore,
+
+		Gallery:     gallery,
+		GallerySort: gallerySort,
+		GalleryDesc: galleryDesc,
 	}
 
 	return res
 }
 
+// NOTE(ben): Called for both new and edited projects to set lots of common
+// data after you know the project exists.
 func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *ProjectPayload) error {
+	numNewOrExistingScreenshots := 0
+	for _, screenshot := range payload.Screenshots {
+		if screenshot.New || screenshot.Exists {
+			numNewOrExistingScreenshots += 1
+		}
+	}
+
+	// NOTE(ben): Upload all new assets before proceeding with DB updates.
 	var logoUUID *uuid.UUID
-	if payload.Logo.Exists {
+	var newScreenshotUUIDs []uuid.UUID
+	if payload.Logo.New {
 		logoAsset, err := SaveFormImage(ctx, tx, payload.Logo, &user.ID)
 		if err != nil {
 			return oops.New(err, "Failed to save asset")
 		}
 		logoUUID = &logoAsset.ID
 	}
-
-	var headerImageUUID *uuid.UUID
-	if payload.HeaderImage.Exists {
-		headerImageAsset, err := SaveFormImage(ctx, tx, payload.HeaderImage, &user.ID)
-		if err != nil {
-			return oops.New(err, "Failed to save asset")
+	for _, screenshot := range payload.Screenshots {
+		if screenshot.New {
+			screenshotAsset, err := SaveFormImage(ctx, tx, screenshot, &user.ID)
+			if err != nil {
+				return oops.New(err, "Failed to save screenshot")
+			}
+			newScreenshotUUIDs = append(newScreenshotUUIDs, screenshotAsset.ID)
 		}
-		headerImageUUID = &headerImageAsset.ID
 	}
 
 	hasSelf := false
 	selfUsername := strings.ToLower(user.Username)
-	for i, _ := range payload.OwnerUsernames {
+	for i := range payload.OwnerUsernames {
 		payload.OwnerUsernames[i] = strings.ToLower(payload.OwnerUsernames[i])
 		if payload.OwnerUsernames[i] == selfUsername {
 			hasSelf = true
@@ -813,7 +951,9 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			blurb = $3,
 			description = $4,
 			descparsed = $5,
-			lifecycle = $6
+			ai_policy = $6,
+			ai_policy_parsed = $7,
+			lifecycle = $8
 		WHERE id = $1
 		`,
 		payload.ProjectID,
@@ -821,6 +961,8 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 		payload.Blurb,
 		payload.Description,
 		payload.ParsedDescription,
+		payload.AIPolicy,
+		payload.ParsedAIPolicy,
 		payload.Lifecycle,
 	)
 	if err != nil {
@@ -847,7 +989,10 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 				hidden = $5,
 				slug_aliases = $6,
 				jam_hidden = $7,
-				sort_score = $8
+				sort_score = $8,
+				gallery = $9,
+				gallery_sort = $10,
+				gallery_desc = $11
 			WHERE
 				id = $1
 			`,
@@ -859,43 +1004,105 @@ func updateProject(ctx context.Context, tx pgx.Tx, user *models.User, payload *P
 			slugAliases,
 			payload.JamHidden,
 			payload.SortScore,
+			payload.Gallery,
+			payload.GallerySort,
+			payload.GalleryDesc,
 		)
 		if err != nil {
 			return oops.New(err, "Failed to update project with admin fields")
 		}
 	}
 
-	if payload.Logo.Exists || payload.Logo.Remove {
-		_, err = tx.Exec(ctx,
-			`
-			UPDATE project
-			SET
-				logo_asset_id = $2
-			WHERE
-				id = $1
-			`,
-			payload.ProjectID,
-			logoUUID,
-		)
-		if err != nil {
-			return oops.New(err, "Failed to update project's logo")
-		}
-	}
+	// NOTE(ben): Update images and screenshots
+	{
+		var errs []error
 
-	if payload.HeaderImage.Exists || payload.HeaderImage.Remove {
-		_, err = tx.Exec(ctx,
+		if payload.Logo.New || payload.Logo.Remove {
+			_, err = tx.Exec(ctx,
+				`
+				UPDATE project
+				SET
+					logo_asset_id = $2
+				WHERE
+					id = $1
+				`,
+				payload.ProjectID,
+				logoUUID,
+			)
+			if err != nil {
+				errs = append(errs, oops.New(err, "Failed to update project's logo"))
+			}
+		}
+
+		currentNewScreenshot := 0
+		for sort, screenshot := range payload.Screenshots {
+			if screenshot.New || screenshot.Exists {
+				assetID := screenshot.AssetID
+				if screenshot.New {
+					// NOTE(ben): No bounds check necessary because newScreenshotUUIDs was
+					// generated from screenshot.New's above.
+					assetID = newScreenshotUUIDs[currentNewScreenshot].String()
+					currentNewScreenshot++
+				}
+
+				_, err := tx.Exec(ctx,
+					`
+					---- Upsert project screenshot
+					INSERT INTO project_screenshot (project_id, asset_id, sort)
+					VALUES ($1, $2, $3)
+					ON CONFLICT (project_id, asset_id) DO UPDATE
+						SET sort = $3
+					`,
+					payload.ProjectID, assetID, sort,
+				)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+			} else {
+				utils.Assert(screenshot.Remove)
+				utils.Assert(screenshot.AssetID)
+
+				res, err := tx.Exec(ctx,
+					`
+					---- Delete project screenshot
+					DELETE FROM project_screenshot
+					WHERE project_id = $1 AND asset_id = $2
+					`,
+					payload.ProjectID, screenshot.AssetID,
+				)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				if res.RowsAffected() != 1 {
+					errs = append(errs, errors.New("attempt to delete nonexistent screenshot"))
+					continue
+				}
+			}
+		}
+
+		if err := errors.Join(errs...); err != nil {
+			return oops.New(err, "failed to upload project images")
+		}
+
+		// NOTE(ben): Sanity check: After all this, we should have N project
+		// screenshots that all have different sorts.
+		type Sanity struct {
+			Total    int `db:"COUNT(*)"`
+			NumSorts int `db:"COUNT(DISTINCT sort)"`
+		}
+		sanity := utils.Must1(db.QueryOne[Sanity](ctx, tx,
 			`
-			UPDATE project
-			SET
-				header_asset_id = $2
-			WHERE
-				id = $1
+			---- Project screenshot sanity check
+			SELECT $columns FROM project_screenshot
+			WHERE project_id = $1
 			`,
 			payload.ProjectID,
-			headerImageUUID,
-		)
-		if err != nil {
-			return oops.New(err, "Failed to update project's header image")
+		))
+		sane := sanity.Total == numNewOrExistingScreenshots && sanity.NumSorts == sanity.Total
+		if !sane {
+			return fmt.Errorf("should have %d screenshots, but had %d with %d distinct sorts", numNewOrExistingScreenshots, sanity.Total, sanity.NumSorts)
 		}
 	}
 

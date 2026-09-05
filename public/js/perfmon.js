@@ -187,3 +187,4 @@ function init(perfRecordsJSON) {
 export {
   init
 };
+//# sourceMappingURL=perfmon.js.map

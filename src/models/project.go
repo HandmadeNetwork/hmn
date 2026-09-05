@@ -61,6 +61,8 @@ type Project struct {
 	Blurb             string   `db:"blurb"`
 	Description       string   `db:"description"`
 	ParsedDescription string   `db:"descparsed"`
+	AIPolicy          string   `db:"ai_policy"`
+	ParsedAIPolicy    string   `db:"ai_policy_parsed"`
 
 	Lifecycle ProjectLifecycle `db:"lifecycle"` // TODO(asaf): Ensure we only fetch projects in the correct lifecycle phase everywhere.
 
@@ -83,6 +85,10 @@ type Project struct {
 	ForumEnabled   bool `db:"forum_enabled"`
 	BlogEnabled    bool `db:"blog_enabled"`
 	LibraryEnabled bool `db:"library_enabled"` // TODO: Delete this field from the db
+
+	Gallery     bool   `db:"gallery"`
+	GallerySort int    `db:"gallery_sort"`
+	GalleryDesc string `db:"gallery_desc"`
 }
 
 func (p *Project) IsHMN() bool {

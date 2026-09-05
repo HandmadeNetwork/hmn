@@ -40,9 +40,9 @@ func PodcastIndex(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	canEdit := c.CurrentUserCanEditCurrentProject
+	canEdit := c.CurrentUserCanEditCurrentProject()
 
-	baseData := getBaseData(c, podcastResult.Podcast.Title, nil)
+	baseData := getBaseTemplateData(c, podcastResult.Podcast.Title, nil)
 
 	podcastIndexData := PodcastIndexData{
 		BaseData: baseData,
@@ -76,14 +76,14 @@ func PodcastEdit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	canEdit := c.CurrentUserCanEditCurrentProject
+	canEdit := c.CurrentUserCanEditCurrentProject()
 
 	if podcastResult.Podcast == nil || !canEdit {
 		return FourOhFour(c)
 	}
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.Image)
-	baseData := getBaseData(c, fmt.Sprintf("Edit %s", podcast.Title), nil)
+	baseData := getBaseTemplateData(c, fmt.Sprintf("Edit %s", podcast.Title), nil)
 	podcastEditData := PodcastEditData{
 		BaseData: baseData,
 		Podcast:  podcast,
@@ -103,7 +103,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	canEdit := c.CurrentUserCanEditCurrentProject
+	canEdit := c.CurrentUserCanEditCurrentProject()
 
 	if podcastResult.Podcast == nil || !canEdit {
 		return FourOhFour(c)
@@ -165,7 +165,7 @@ func PodcastEditSubmit(c *RequestContext) ResponseData {
 	if err != nil {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to read image from form"))
 	}
-	if image.Exists {
+	if image.New {
 		imageAsset, err := SaveFormImage(c, tx, image, &c.CurrentUser.ID)
 		if err != nil {
 			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save podcast image"))
@@ -209,7 +209,7 @@ func PodcastEpisode(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	canEdit := c.CurrentUserCanEditCurrentProject
+	canEdit := c.CurrentUserCanEditCurrentProject()
 
 	editUrl := ""
 	if canEdit {
@@ -218,7 +218,7 @@ func PodcastEpisode(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.Image)
 	episode := templates.PodcastEpisodeToTemplate(podcastResult.Episodes[0], podcastResult.Image, 0)
-	baseData := getBaseData(c, fmt.Sprintf("%s | %s", episode.Title, podcast.Title), nil)
+	baseData := getBaseTemplateData(c, fmt.Sprintf("%s | %s", episode.Title, podcast.Title), nil)
 
 	podcastEpisodeData := PodcastEpisodeData{
 		BaseData: baseData,
@@ -252,7 +252,7 @@ func PodcastEpisodeNew(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	canEdit := c.CurrentUserCanEditCurrentProject
+	canEdit := c.CurrentUserCanEditCurrentProject()
 
 	if podcastResult.Podcast == nil || !canEdit {
 		return FourOhFour(c)
@@ -265,7 +265,7 @@ func PodcastEpisodeNew(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.Image)
 	var res ResponseData
-	baseData := getBaseData(c, fmt.Sprintf("New episode | %s", podcast.Title), nil)
+	baseData := getBaseTemplateData(c, fmt.Sprintf("New episode | %s", podcast.Title), nil)
 	err = res.WriteTemplate("podcast_episode_edit.html", PodcastEpisodeEditData{
 		BaseData:     baseData,
 		IsEdit:       false,
@@ -288,7 +288,7 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	canEdit := c.CurrentUserCanEditCurrentProject
+	canEdit := c.CurrentUserCanEditCurrentProject()
 
 	if podcastResult.Podcast == nil || len(podcastResult.Episodes) == 0 || !canEdit {
 		return FourOhFour(c)
@@ -302,7 +302,7 @@ func PodcastEpisodeEdit(c *RequestContext) ResponseData {
 
 	podcast := templates.PodcastToTemplate(podcastResult.Podcast, podcastResult.Image)
 	podcastEpisode := templates.PodcastEpisodeToTemplate(episode, podcastResult.Image, 0)
-	baseData := getBaseData(c, fmt.Sprintf("Edit episode %s | %s", podcastEpisode.Title, podcast.Title), nil)
+	baseData := getBaseTemplateData(c, fmt.Sprintf("Edit episode %s | %s", podcastEpisode.Title, podcast.Title), nil)
 	podcastEpisodeEditData := PodcastEpisodeEditData{
 		BaseData:      baseData,
 		IsEdit:        true,
@@ -331,7 +331,7 @@ func PodcastEpisodeSubmit(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, err)
 	}
 
-	canEdit := c.CurrentUserCanEditCurrentProject
+	canEdit := c.CurrentUserCanEditCurrentProject()
 
 	if podcastResult.Podcast == nil || (isEdit && len(podcastResult.Episodes) == 0) || !canEdit {
 		return FourOhFour(c)

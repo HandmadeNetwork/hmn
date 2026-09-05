@@ -92,7 +92,7 @@ func EpisodeList(c *RequestContext) ResponseData {
 	}
 
 	var res ResponseData
-	baseData := getBaseData(c, "Episode Guide", nil)
+	baseData := getBaseTemplateData(c, "Episode Guide", nil)
 	res.MustWriteTemplate("episode_list.html", EpisodeListData{
 		BaseData:     baseData,
 		Content:      template.HTML(guide),
@@ -156,7 +156,7 @@ func Episode(c *RequestContext) ResponseData {
 	content := contentMatches[episodeContentRegex.SubexpIndex("content")]
 
 	var res ResponseData
-	baseData := getBaseData(c, title, nil)
+	baseData := getBaseTemplateData(c, title, nil)
 	res.MustWriteTemplate("episode.html", EpisodeData{
 		BaseData: baseData,
 		Content:  template.HTML(content),

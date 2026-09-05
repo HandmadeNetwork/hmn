@@ -1,5 +1,6 @@
 import { ImageSelector } from "./lib/image_selector";
 import { initLinkEditor } from "./lib/link_editor";
+import { Asset } from "./lib/models";
 import { initHashTabs } from "./lib/tabs";
 import { must } from "./lib/utils";
 
@@ -13,15 +14,13 @@ function lengthReporter(inputEl: HTMLInputElement, lengthEl: HTMLElement) {
 
 export type UserSettingsOptions = {
   avatarMaxFileSize: number,
-  avatarUrl: string | undefined,
-  avatarFilename: string | undefined,
+  avatar: Asset | null,
   linksJson: string,
 };
 
 export function init({
   avatarMaxFileSize,
-  avatarUrl,
-  avatarFilename,
+  avatar,
   linksJson,
 }: UserSettingsOptions) {
   lengthReporter(
@@ -33,8 +32,7 @@ export function init({
     "user_avatar",
     avatarMaxFileSize,
     {
-      originalUrl: avatarUrl,
-      originalFilename: avatarFilename,
+      original: avatar || undefined,
     },
   );
 

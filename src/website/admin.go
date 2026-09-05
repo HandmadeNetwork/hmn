@@ -69,8 +69,8 @@ func AdminAtomFeed(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch unapproved posts"))
 	}
 
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	for _, post := range unapprovedPosts {
 		postItem := MakePostListItem(
@@ -127,8 +127,8 @@ type unapprovedUserData struct {
 }
 
 func AdminApprovalQueue(c *RequestContext) ResponseData {
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	potentialUsers, err := db.QueryScalar[int](c, c.Conn,
 		`
@@ -261,7 +261,7 @@ func AdminApprovalQueue(c *RequestContext) ResponseData {
 	})
 
 	data := adminApprovalQueueData{
-		BaseData:        getBaseData(c, "Admin approval queue", nil),
+		BaseData:        getBaseTemplateData(c, "Admin approval queue", nil),
 		UnapprovedUsers: unapprovedUsers,
 		SubmitUrl:       hmnurl.BuildAdminApprovalQueue(),
 		ApprovalAction:  ApprovalQueueActionApprove,

@@ -10,7 +10,7 @@ func Manifesto(c *RequestContext) ResponseData {
 		templates.BaseData
 		ValuesUrl string
 	}
-	baseData := getBaseData(c, "Handmade Manifesto", nil)
+	baseData := getBaseTemplateData(c, "Handmade Manifesto", nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    "Computers are amazing. So why is software so terrible?",
@@ -29,7 +29,7 @@ func Values(c *RequestContext) ResponseData {
 		templates.BaseData
 		AboutUrl string
 	}
-	baseData := getBaseData(c, "Values", nil)
+	baseData := getBaseTemplateData(c, "Values", nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    "“What I cannot create, I do not understand.”",
@@ -45,12 +45,12 @@ func Values(c *RequestContext) ResponseData {
 
 func About(c *RequestContext) ResponseData {
 	var res ResponseData
-	res.MustWriteTemplate("about.html", getBaseData(c, "About", nil), c.Perf)
+	res.MustWriteTemplate("about.html", getBaseTemplateData(c, "About", nil), c.Perf)
 	return res
 }
 
 func CommunicationGuidelines(c *RequestContext) ResponseData {
-	baseData := getBaseData(c, "Communication Guidelines", nil)
+	baseData := getBaseTemplateData(c, "Communication Guidelines", nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    "The Handmade community strives to create an environment conducive to innovation, education, and constructive discussion. These are the principles we expect members to respect.",
@@ -63,6 +63,6 @@ func CommunicationGuidelines(c *RequestContext) ResponseData {
 
 func ContactPage(c *RequestContext) ResponseData {
 	var res ResponseData
-	res.MustWriteTemplate("contact.html", getBaseData(c, "Contact Us", nil), c.Perf)
+	res.MustWriteTemplate("contact.html", getBaseTemplateData(c, "Contact Us", nil), c.Perf)
 	return res
 }

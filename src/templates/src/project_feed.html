@@ -1,0 +1,51 @@
+{{ template "base-2024.html" . }}
+
+{{ define "extrahead" }}
+  {{ template "snippet_edit.html" . }}
+  <script type="module">
+    import { makeSnippetEdit } from '{{ static "js/snippetedit.js" }}';
+
+    document.querySelector("#add-post-button")?.addEventListener("click", function() {
+      const editor = makeSnippetEdit({
+        config: JSON.parse('{{ json .SnippetEditorConfig }}'),
+      });
+      document.querySelector(".timeline").insertBefore(
+        editor.root,
+        document.querySelector(".timeline").children[0],
+      );
+      document.querySelector("#add-post-button").remove();
+    });
+  </script>
+  <style>
+    .timeline .timeline-item {
+      --item-color: var(--c1);
+    }
+  </style>
+{{ end }}
+
+{{ define "content" }}
+  <div class="flex justify-center">
+    <div class="w-100 mw-site flex flex-column flex-row-ns pv2 pv3-l ph2 ph0-l g3">
+      <!-- Sidebar -->
+      {{ template "project_sidebar.html" . }}
+
+      <!-- Timeline -->
+      <div class="flex-grow-1 flex flex-column">
+        <div class="overflow-hidden">
+          <div class="flex flex-row items-center mb2">
+            <h2 id="recent">Recent Activity</h2>
+            <div class="flex-grow-1"></div>
+            {{ if .Header.Project.CanEdit }}
+              <a id="add-post-button" href="javascript:;">Add Post</a>
+            {{ end }}
+          </div>
+        </div>
+        <div class="timeline">
+          {{ range .RecentActivity }}
+            {{ template "timeline_item.html" . }}
+          {{ end }}
+        </div>
+      </div>
+    </div>
+  </div>
+{{ end }}

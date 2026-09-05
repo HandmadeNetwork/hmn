@@ -18,7 +18,7 @@ onmessage = ({ data }) => {
 }
 
 const go = new Go();
-WebAssembly.instantiateStreaming(fetch('{{ static "parsing.wasm" }}'), go.importObject)
+WebAssembly.instantiateStreaming(fetch('{{ static "gowasm.wasm" }}'), go.importObject)
     .then(result => {
         go.run(result.instance); // don't await this; we want it to be continuously running
         wasmLoaded = true;

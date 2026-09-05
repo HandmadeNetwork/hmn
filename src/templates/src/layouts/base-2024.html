@@ -5,90 +5,88 @@ style of this page no matter what future changes we make to the base.
 <!DOCTYPE html>
 <html lang="en-US" {{ if .OpenGraphItems }} prefix="og: http://ogp.me/ns#"{{ end }}>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ static "jams/learning-2024/favicon-16x16.png" }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ static "jams/learning-2024/favicon-32x32.png" }}">
+  
+  {{ if .CanonicalLink }}<link rel="canonical" href="{{ .CanonicalLink }}">{{ end }}
+  {{ range .OpenGraphItems -}}
+    {{ if .Property -}}
+      <meta property="{{ .Property }}" content="{{ .Value }}" />
+    {{- else -}}
+      <meta name="{{ .Name }}" content="{{ .Value }}" />
+    {{- end }}
+  {{ end }}
+  {{ if .Title }}
+    <title>{{ .Title }} | {{ or .SiteTitleOverride "Handmade Network" }}</title>
+  {{ else }}
+    <title>{{ or .SiteTitleOverride "Handmade Network" }}</title>
+  {{ end }}
+  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <link href='https://fonts.googleapis.com/css?family=Fira+Mono:300,400,500,700' rel="stylesheet" type="text/css">
+  <link rel="stylesheet" type="text/css" href="{{ static "style.css" }}">
+  {{ if .ForceLight }}
+    <link rel="stylesheet" type="text/css" href="{{ static "force-light.css" }}">
+  {{ end }}
+  {{ if .ForceDark }}
+    <link rel="stylesheet" type="text/css" href="{{ static "force-dark.css" }}">
+  {{ end }}
 
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ static "jams/learning-2024/favicon-16x16.png" }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ static "jams/learning-2024/favicon-32x32.png" }}">
-
-    {{ if .CanonicalLink }}<link rel="canonical" href="{{ .CanonicalLink }}">{{ end }}
-    {{ range .OpenGraphItems -}}
-        {{ if .Property -}}
-            <meta property="{{ .Property }}" content="{{ .Value }}" />
-        {{- else -}}
-            <meta name="{{ .Name }}" content="{{ .Value }}" />
-        {{- end }}
-    {{ end }}
-    {{ if .Title }}
-        <title>{{ .Title }} | {{ or .SiteTitleOverride "Handmade Network" }}</title>
-    {{ else }}
-        <title>{{ or .SiteTitleOverride "Handmade Network" }}</title>
-    {{ end }}
-
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-    <link href='https://fonts.googleapis.com/css?family=Fira+Mono:300,400,500,700' rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="{{ static "style.css" }}">
-    {{ if .ForceLight }}
-        <link rel="stylesheet" type="text/css" href="{{ static "force-light.css" }}">
-    {{ end }}
-    {{ if .ForceDark }}
-        <link rel="stylesheet" type="text/css" href="{{ static "force-dark.css" }}">
-    {{ end }}
-
-    <script src="{{ static "js/script.js" }}"></script>
-
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$']],
+        displayMath: [['$$', '$$']],
+      },
+      svg: {
+        fontCache: 'global',
+      }
+    };
+  </script>
+  <script async src="{{ static "mathjax.js" }}"></script>
+  
+  {{ if .EsBuildSSEUrl }}
     <script>
-        MathJax = {
-            tex: {
-                inlineMath: [['$', '$']],
-                displayMath: [['$$', '$$']],
-            },
-            svg: {
-                fontCache: 'global',
+      new EventSource("{{ .EsBuildSSEUrl }}").addEventListener('change', e => {
+        const { added, removed, updated } = JSON.parse(e.data)
+        
+        console.log("EsBuild", added, removed, updated);
+        for (const u of updated) {
+          if (u.endsWith(".js")) {
+            location.reload();
+          }
+          // NOTE(ben): Capture all the <link>s as an array first so that
+          // the iterator doesn't capture anything new we add.
+          for (const link of [...document.getElementsByTagName("link")]) {
+            const url = new URL(link.href);
+            if (url.host === location.host && url.pathname === u) {
+              const next = link.cloneNode();
+              next.href = u + '?' + Math.random().toString(36).slice(2);
+              next.onload = () => link.remove();
+              link.parentNode.insertBefore(next, link.nextSibling);
             }
-        };
+          }
+        }
+      })
     </script>
-    <script async src="{{ static "mathjax.js" }}"></script>
-
-    {{ if .EsBuildSSEUrl }}
-    <script>
-        new EventSource("{{ .EsBuildSSEUrl }}").addEventListener('change', e => {
-            const { added, removed, updated } = JSON.parse(e.data)
-            
-            console.log("EsBuild", added, removed, updated);
-            for (const u of updated) {
-                if (u.endsWith(".js")) {
-                    location.reload();
-                }
-                // NOTE(ben): Capture all the <link>s as an array first so that
-                // the iterator doesn't capture anything new we add.
-                for (const link of [...document.getElementsByTagName("link")]) {
-                    const url = new URL(link.href);
-                    if (url.host === location.host && url.pathname === u) {
-                        const next = link.cloneNode();
-                        next.href = u + '?' + Math.random().toString(36).slice(2);
-                        next.onload = () => link.remove();
-                        link.parentNode.insertBefore(next, link.nextSibling);
-                    }
-                }
-            }
-        })
-    </script>
-    {{ end }}
-
-    {{ template "extrahead" . }}
+  {{ end }}
+  
+  {{ template "extrahead" . }}
 </head>
 
 <body class="flex flex-column {{ join " " .BodyClasses }}">
-    <div class="content-top">
-        {{ template "header-2024.html" . }}
-        {{ block "content-top" . }}{{ end }}
-    </div>
-    <!-- TODO: Notices -->
-    <div class="flex-grow-1">
-        {{ block "content" . }}{{ end }}
-    </div>
-    {{ template "footer-2024.html" . }}
+  <div class="content-top">
+    {{ template "header-2024.html" . }}
+    {{ block "content-top" . }}{{ end }}
+  </div>
+  <!-- TODO: Notices -->
+  <div class="flex-grow-1">
+    {{ block "content" . }}{{ end }}
+  </div>
+  {{ template "footer-2024.html" . }}
 </body>
 
 </html>

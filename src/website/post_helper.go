@@ -18,7 +18,7 @@ type PostInfo struct {
 }
 
 // NOTE(asaf): Please don't use these if you already know the kind of the thread beforehand. Just call the appropriate build function.
-func UrlForGenericThread(urlContext *hmnurl.UrlContext, thread *models.Thread, lineageBuilder *models.SubforumLineageBuilder) string {
+func UrlForGenericThread(urlContext *hmnurl.UrlContext, thread *models.Thread, lineageBuilder *hmndata.SubforumLineageBuilder) string {
 	switch thread.Type {
 	case models.ThreadTypeProjectBlogPost:
 		return urlContext.BuildBlogThread(thread.ID, thread.Title)
@@ -29,7 +29,7 @@ func UrlForGenericThread(urlContext *hmnurl.UrlContext, thread *models.Thread, l
 	return urlContext.BuildHomepage()
 }
 
-func UrlForGenericPost(urlContext *hmnurl.UrlContext, thread *models.Thread, threadOwner *models.User, post *models.Post, lineageBuilder *models.SubforumLineageBuilder) string {
+func UrlForGenericPost(urlContext *hmnurl.UrlContext, thread *models.Thread, threadOwner *models.User, post *models.Post, lineageBuilder *hmndata.SubforumLineageBuilder) string {
 	switch post.ThreadType {
 	case models.ThreadTypePersonalBlogPost:
 		return hmnurl.BuildPersonalBlogThreadWithPostHash(threadOwner.Username, post.ThreadID, thread.Title, post.ID)
@@ -63,12 +63,12 @@ var ThreadTypeDisplayNames = map[models.ThreadType]string{
 	models.ThreadTypeForumPost:       "Forums",
 }
 
-func GenericThreadBreadcrumbs(urlContext *hmnurl.UrlContext, lineageBuilder *models.SubforumLineageBuilder, thread *models.Thread, threadOwner *models.User) []templates.Breadcrumb {
-	var result []templates.Breadcrumb
+func GenericThreadBreadcrumbs(urlContext *hmnurl.UrlContext, lineageBuilder *hmndata.SubforumLineageBuilder, thread *models.Thread, threadOwner *models.User) []templates.BreadcrumbLink {
+	var result []templates.BreadcrumbLink
 	if thread.Type == models.ThreadTypeForumPost {
 		result = SubforumBreadcrumbs(urlContext, lineageBuilder, *thread.SubforumID)
 	} else if thread.Type == models.ThreadTypePersonalBlogPost {
-		result = []templates.Breadcrumb{
+		result = []templates.BreadcrumbLink{
 			{
 				Name: threadOwner.BestName(),
 				Url:  hmnurl.BuildUserProfile(threadOwner.Username),
@@ -79,7 +79,7 @@ func GenericThreadBreadcrumbs(urlContext *hmnurl.UrlContext, lineageBuilder *mod
 			},
 		}
 	} else {
-		result = []templates.Breadcrumb{
+		result = []templates.BreadcrumbLink{
 			{
 				Name: urlContext.ProjectName,
 				Url:  urlContext.BuildHomepage(),
@@ -104,7 +104,7 @@ func BuildProjectRootResourceUrl(urlContext *hmnurl.UrlContext, kind models.Thre
 }
 
 func MakePostListItem(
-	lineageBuilder *models.SubforumLineageBuilder,
+	lineageBuilder *hmndata.SubforumLineageBuilder,
 	project *models.Project,
 	thread *models.Thread,
 	threadOwner *models.User,

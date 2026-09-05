@@ -1,16 +1,16 @@
 // src/rawdata/js/lib/tabs.ts
 function initTabs(container, {
   initialTab,
-  onSelect = () => {
-  }
+  onSelect = () => true,
+  fireOnSelectForInitialTab = false
 } = {}) {
   const buttons = Array.from(container.querySelectorAll("[data-tab-button]"));
   const tabs = Array.from(container.querySelectorAll("[data-tab]"));
   const firstTab = tabs[0].getAttribute("data-tab");
   function selectTab(name, { sendEvent = true } = {}) {
     if (!container.querySelector(`[data-tab="${name}"]`)) {
-      console.warn("no tab found with name", name);
-      return selectTab(firstTab, { sendEvent });
+      console.error("no tab found with name", name);
+      return false;
     }
     for (const tab of tabs) {
       tab.hidden = tab.getAttribute("data-tab") !== name;
@@ -21,8 +21,11 @@ function initTabs(container, {
     if (sendEvent) {
       onSelect(name);
     }
+    return true;
   }
-  selectTab(initialTab || firstTab, { sendEvent: false });
+  if (!selectTab(initialTab || firstTab, { sendEvent: fireOnSelectForInitialTab })) {
+    selectTab(firstTab, { sendEvent: fireOnSelectForInitialTab });
+  }
   for (const button of buttons) {
     button.addEventListener("click", () => {
       selectTab(button.getAttribute("data-tab-button"));
@@ -32,20 +35,20 @@ function initTabs(container, {
     selectTab
   };
 }
-function initHashTabs(container, {
-  initialTab
-} = {}) {
+function initHashTabs(container, opts = {}) {
   const res = initTabs(container, {
-    initialTab: initialTab ?? document.location.hash.substring(1),
+    initialTab: opts.initialTab ?? document.location.hash.substring(1),
     onSelect(name) {
       document.location.hash = `#${name}`;
-    }
+      return opts.onSelect?.(name) ?? true;
+    },
+    fireOnSelectForInitialTab: opts.fireOnSelectForInitialTab
   });
   const { selectTab } = res;
   window.addEventListener("hashchange", (e) => {
     const tab = new URL(e.newURL).hash.substring(1);
     if (tab) {
-      selectTab(tab, { sendEvent: false });
+      selectTab(tab);
     }
   });
   return res;
@@ -87,3 +90,4 @@ function hideLatestNewsIfClosedOrRead() {
   }
 }
 hideLatestNewsIfClosedOrRead();
+//# sourceMappingURL=landing.js.map

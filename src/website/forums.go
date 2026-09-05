@@ -180,7 +180,7 @@ func Forum(c *RequestContext) ResponseData {
 	// Template assembly
 	// ---------------------
 
-	baseData := getBaseData(c, fmt.Sprintf("%s Forums", c.CurrentProject.Name), SubforumBreadcrumbs(c.UrlContext, cd.LineageBuilder, cd.SubforumID))
+	baseData := getBaseTemplateData(c, fmt.Sprintf("%s Forums", c.CurrentProject.Name), SubforumBreadcrumbs(c.UrlContext, cd.LineageBuilder, cd.SubforumID))
 
 	var res ResponseData
 	res.MustWriteTemplate("forum.html", forumData{
@@ -203,8 +203,8 @@ func Forum(c *RequestContext) ResponseData {
 }
 
 func ForumMarkRead(c *RequestContext) ResponseData {
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	sfId, err := strconv.Atoi(c.PathParams["sfid"])
 	if err != nil {
@@ -419,7 +419,7 @@ func ForumThread(c *RequestContext) ResponseData {
 		}
 	}
 
-	baseData := getBaseData(c, thread.Title, ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &thread))
+	baseData := getBaseTemplateData(c, thread.Title, ForumThreadBreadcrumbs(c.UrlContext, cd.LineageBuilder, &thread))
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
 		Property: "og:description",
 		Value:    threadResult.FirstPost.PreviewPlaintext,
@@ -482,7 +482,7 @@ func ForumNewThread(c *RequestContext) ResponseData {
 		return FourOhFour(c)
 	}
 
-	baseData := getBaseData(c, "Create New Thread", nil)
+	baseData := getBaseTemplateData(c, "Create New Thread", nil)
 	editData := getEditorDataForNew(c.UrlContext, c.CurrentUser, baseData, nil)
 	editData.SubmitUrl = c.UrlContext.BuildForumNewThread(cd.LineageBuilder.GetSubforumLineageSlugs(cd.SubforumID), true)
 	editData.SubmitLabel = "Post New Thread"
@@ -574,7 +574,7 @@ func ForumPostReply(c *RequestContext) ResponseData {
 		return c.Redirect(correctUrl, http.StatusSeeOther)
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("Replying to post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name), nil)
+	baseData := getBaseTemplateData(c, fmt.Sprintf("Replying to post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name), nil)
 
 	replyPost := templates.PostToTemplate(&post.Post, post.Author)
 	replyPost.AddContentVersion(post.CurrentVersion, post.Editor)
@@ -665,7 +665,7 @@ func ForumPostEdit(c *RequestContext) ResponseData {
 	} else {
 		title = fmt.Sprintf("Editing Post | %s", cd.SubforumTree[*post.Thread.SubforumID].Name)
 	}
-	baseData := getBaseData(c, title, nil)
+	baseData := getBaseTemplateData(c, title, nil)
 
 	editData := getEditorDataForEdit(c.UrlContext, c.CurrentUser, baseData, post)
 	editData.SubmitUrl = c.UrlContext.BuildForumPostEdit(cd.LineageBuilder.GetSubforumLineageSlugs(*post.Thread.SubforumID), post.Thread.ID, post.Post.ID)
@@ -762,7 +762,7 @@ func ForumPostDelete(c *RequestContext) ResponseData {
 		return c.Redirect(correctUrl, http.StatusSeeOther)
 	}
 
-	baseData := getBaseData(c, fmt.Sprintf("Deleting post in \"%s\" | %s", post.Thread.Title, cd.SubforumTree[*post.Thread.SubforumID].Name), nil)
+	baseData := getBaseTemplateData(c, fmt.Sprintf("Deleting post in \"%s\" | %s", post.Thread.Title, cd.SubforumTree[*post.Thread.SubforumID].Name), nil)
 
 	templatePost := templates.PostToTemplate(&post.Post, post.Author)
 	templatePost.AddContentVersion(post.CurrentVersion, post.Editor)
@@ -833,8 +833,8 @@ func WikiArticleRedirect(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to look up wiki thread"))
 	}
 
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	dest := UrlForGenericThread(c.UrlContext, &thread.Thread, lineageBuilder)
 	return c.Redirect(dest, http.StatusFound)
@@ -847,8 +847,8 @@ type commonForumData struct {
 	ThreadID   int
 	PostID     int
 
-	SubforumTree   models.SubforumTree
-	LineageBuilder *models.SubforumLineageBuilder
+	SubforumTree   hmndata.SubforumTree
+	LineageBuilder *hmndata.SubforumLineageBuilder
 }
 
 /*
@@ -862,8 +862,8 @@ If this returns false, then something was malformed and you should 404.
 func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 	defer c.Perf.StartBlock("FORUMS", "Fetch common forum data").End()
 
-	subforumTree := models.GetFullSubforumTree(c, c.Conn)
-	lineageBuilder := models.MakeSubforumLineageBuilder(subforumTree)
+	subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+	lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
 
 	res := commonForumData{
 		c:              c,
@@ -898,7 +898,7 @@ func getCommonForumData(c *RequestContext) (commonForumData, bool) {
 	return res, true
 }
 
-func validateSubforums(lineageBuilder *models.SubforumLineageBuilder, project *models.Project, sfPath string) (int, bool) {
+func validateSubforums(lineageBuilder *hmndata.SubforumLineageBuilder, project *models.Project, sfPath string) (int, bool) {
 	if project.ForumID == nil {
 		return -1, false
 	}
