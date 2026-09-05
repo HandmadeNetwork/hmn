@@ -57,6 +57,8 @@ export function init({
 			card.hidden = name !== "info";
 			description.hidden = name !== "info";
 			links.hidden = name !== "images";
+
+			return true;
 		},
 		fireOnSelectForInitialTab: true,
 	});

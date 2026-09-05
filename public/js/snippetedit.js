@@ -103,7 +103,7 @@ function makeSnippetEdit({
 }) {
   const snippetEditor = snippetEditorTemplate();
   let projectSelector = document.createElement("select");
-  const originalAttachment = edit?.el.querySelector(".timeline-media")?.children?.[0].cloneNode(true);
+  const originalAttachment = edit?.el.querySelector(".timeline-media")?.children[0]?.cloneNode(true);
   const originalText = edit?.text ?? "";
   let attachmentChanged = false;
   let hasAttachment = false;

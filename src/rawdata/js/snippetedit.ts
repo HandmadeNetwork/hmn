@@ -81,7 +81,7 @@ export function makeSnippetEdit({
 
 	// NOTE(ben): The original media displayed on the snippet, which we need to
 	// be able to restore during editing.
-	const originalAttachment: Element | undefined = edit?.el.querySelector<HTMLElement>(".timeline-media")?.children?.[0].cloneNode(true) as Element;
+	const originalAttachment: Element | undefined = edit?.el.querySelector<HTMLElement>(".timeline-media")?.children[0]?.cloneNode(true) as Element;
 	const originalText = edit?.text ?? "";
 	let attachmentChanged = false;
 	let hasAttachment = false;
