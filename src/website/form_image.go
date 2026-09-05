@@ -180,8 +180,8 @@ func loadFormImage(file multipart.File, header *multipart.FileHeader) (FormImage
 		New: true,
 	}
 
-	file.Read(res.Content)
-	file.Seek(0, io.SeekStart)
+	utils.Must1(io.ReadFull(file, res.Content))
+	utils.Must1(file.Seek(0, io.SeekStart))
 
 	fileExtensionOverrides := []string{".svg"}
 	fileExt := strings.ToLower(path.Ext(res.Filename))
