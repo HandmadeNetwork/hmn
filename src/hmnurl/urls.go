@@ -350,6 +350,12 @@ func BuildPrivacyPolicy() string {
 	return Url("/privacy", nil)
 }
 
+var RegexAIPolicy = regexp.MustCompile("^/ai-policy$")
+
+func BuildAIPolicy() string {
+	return Url("/ai-policy", nil)
+}
+
 var RegexCommunicationGuidelines = regexp.MustCompile("^/communication-guidelines$")
 
 func BuildCommunicationGuidelines() string {

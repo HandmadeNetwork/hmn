@@ -51,6 +51,12 @@ func PrivacyPolicy(c *RequestContext) ResponseData {
 	return res
 }
 
+func AIPolicy(c *RequestContext) ResponseData {
+	var res ResponseData
+	res.MustWriteTemplate("ai_policy.html", getBaseTemplateData(c, "AI Policy", nil), c.Perf)
+	return res
+}
+
 func CommunicationGuidelines(c *RequestContext) ResponseData {
 	baseData := getBaseTemplateData(c, "Communication Guidelines", nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
