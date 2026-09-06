@@ -66,6 +66,7 @@ type Header struct {
 	CalendarUrl     string
 	ManifestoUrl    string
 	ValuesUrl       string
+	RulesUrl        string
 	AboutUrl        string
 
 	HSFUrl           string

@@ -45,6 +45,21 @@ func About(c *RequestContext) ResponseData {
 	return res
 }
 
+func Rules(c *RequestContext) ResponseData {
+	type tmpl struct {
+		templates.BaseData
+		AIPolicyUrl      string
+		PrivacyPolicyUrl string
+	}
+	var res ResponseData
+	res.MustWriteTemplate("rules.html", tmpl{
+		BaseData:         getBaseTemplateData(c, "Rules & Policies", nil),
+		AIPolicyUrl:      hmnurl.BuildAIPolicy(),
+		PrivacyPolicyUrl: hmnurl.BuildPrivacyPolicy(),
+	}, c.Perf)
+	return res
+}
+
 func PrivacyPolicy(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("privacy.html", getBaseTemplateData(c, "Privacy Policy", nil), c.Perf)
@@ -54,18 +69,6 @@ func PrivacyPolicy(c *RequestContext) ResponseData {
 func AIPolicy(c *RequestContext) ResponseData {
 	var res ResponseData
 	res.MustWriteTemplate("ai_policy.html", getBaseTemplateData(c, "AI Policy", nil), c.Perf)
-	return res
-}
-
-func CommunicationGuidelines(c *RequestContext) ResponseData {
-	baseData := getBaseTemplateData(c, "Communication Guidelines", nil)
-	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
-		Property: "og:description",
-		Value:    "The Handmade community strives to create an environment conducive to innovation, education, and constructive discussion. These are the principles we expect members to respect.",
-	})
-
-	var res ResponseData
-	res.MustWriteTemplate("communication_guidelines.html", baseData, c.Perf)
 	return res
 }
 

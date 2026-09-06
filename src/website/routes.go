@@ -108,10 +108,13 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexManifesto, Manifesto)
 	hmnOnly.GET(hmnurl.RegexValues, Values)
 	hmnOnly.GET(hmnurl.RegexAbout, About)
+	hmnOnly.GET(hmnurl.RegexRules, Rules)
 	hmnOnly.GET(hmnurl.RegexPrivacyPolicy, PrivacyPolicy)
 	hmnOnly.GET(hmnurl.RegexAIPolicy, AIPolicy)
-	hmnOnly.GET(hmnurl.RegexCommunicationGuidelines, CommunicationGuidelines)
 	hmnOnly.GET(hmnurl.RegexContactPage, ContactPage)
+	hmnOnly.GET(hmnurl.RegexOldCommunicationGuidelines, func(c *RequestContext) ResponseData {
+		return c.Redirect(hmnurl.BuildRules(), http.StatusFound)
+	})
 	hmnOnly.GET(hmnurl.RegexOldNewsletterSignup, func(c *RequestContext) ResponseData {
 		return c.Redirect(hmnurl.HMNProjectContext.BuildBlog(1), http.StatusFound)
 	})

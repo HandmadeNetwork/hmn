@@ -86,7 +86,7 @@ func TestStaticPages(t *testing.T) {
 	AssertRegexMatch(t, BuildManifesto(), RegexManifesto, nil)
 	AssertRegexMatch(t, BuildValues(), RegexValues, nil)
 	AssertRegexMatch(t, BuildAbout(), RegexAbout, nil)
-	AssertRegexMatch(t, BuildCommunicationGuidelines(), RegexCommunicationGuidelines, nil)
+	AssertRegexMatch(t, BuildCommunicationGuidelines(), RegexOldCommunicationGuidelines, nil)
 	AssertRegexMatch(t, BuildContactPage(), RegexContactPage, nil)
 }
 
