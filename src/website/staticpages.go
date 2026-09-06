@@ -27,18 +27,14 @@ func Manifesto(c *RequestContext) ResponseData {
 func Values(c *RequestContext) ResponseData {
 	type TemplateData struct {
 		templates.BaseData
-		AboutUrl string
+		ProjectsUrl string
 	}
 	baseData := getBaseTemplateData(c, "Values", nil)
-	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
-		Property: "og:description",
-		Value:    "“What I cannot create, I do not understand.”",
-	})
 
 	var res ResponseData
 	res.MustWriteTemplate("values.html", TemplateData{
-		BaseData: baseData,
-		AboutUrl: hmnurl.BuildAbout(),
+		BaseData:    baseData,
+		ProjectsUrl: hmnurl.BuildProjectIndex(),
 	}, c.Perf)
 	return res
 }
