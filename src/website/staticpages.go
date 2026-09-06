@@ -45,6 +45,12 @@ func About(c *RequestContext) ResponseData {
 	return res
 }
 
+func PrivacyPolicy(c *RequestContext) ResponseData {
+	var res ResponseData
+	res.MustWriteTemplate("privacy.html", getBaseTemplateData(c, "Privacy Policy", nil), c.Perf)
+	return res
+}
+
 func CommunicationGuidelines(c *RequestContext) ResponseData {
 	baseData := getBaseTemplateData(c, "Communication Guidelines", nil)
 	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{

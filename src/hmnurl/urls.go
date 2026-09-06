@@ -344,6 +344,12 @@ func BuildAbout() string {
 	return Url("/about", nil)
 }
 
+var RegexPrivacyPolicy = regexp.MustCompile("^/privacy$")
+
+func BuildPrivacyPolicy() string {
+	return Url("/privacy", nil)
+}
+
 var RegexCommunicationGuidelines = regexp.MustCompile("^/communication-guidelines$")
 
 func BuildCommunicationGuidelines() string {
