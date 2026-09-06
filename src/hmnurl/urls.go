@@ -344,7 +344,25 @@ func BuildAbout() string {
 	return Url("/about", nil)
 }
 
-var RegexCommunicationGuidelines = regexp.MustCompile("^/communication-guidelines$")
+var RegexRules = regexp.MustCompile("^/rules$")
+
+func BuildRules() string {
+	return Url("/rules", nil)
+}
+
+var RegexPrivacyPolicy = regexp.MustCompile("^/privacy$")
+
+func BuildPrivacyPolicy() string {
+	return Url("/privacy", nil)
+}
+
+var RegexAIPolicy = regexp.MustCompile("^/ai-policy$")
+
+func BuildAIPolicy() string {
+	return Url("/ai-policy", nil)
+}
+
+var RegexOldCommunicationGuidelines = regexp.MustCompile("^/communication-guidelines$")
 
 func BuildCommunicationGuidelines() string {
 	return Url("/communication-guidelines", nil)

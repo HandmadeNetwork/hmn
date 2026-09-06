@@ -27,18 +27,14 @@ func Manifesto(c *RequestContext) ResponseData {
 func Values(c *RequestContext) ResponseData {
 	type TemplateData struct {
 		templates.BaseData
-		AboutUrl string
+		ProjectsUrl string
 	}
 	baseData := getBaseTemplateData(c, "Values", nil)
-	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
-		Property: "og:description",
-		Value:    "“What I cannot create, I do not understand.”",
-	})
 
 	var res ResponseData
 	res.MustWriteTemplate("values.html", TemplateData{
-		BaseData: baseData,
-		AboutUrl: hmnurl.BuildAbout(),
+		BaseData:    baseData,
+		ProjectsUrl: hmnurl.BuildProjectIndex(),
 	}, c.Perf)
 	return res
 }
@@ -49,15 +45,30 @@ func About(c *RequestContext) ResponseData {
 	return res
 }
 
-func CommunicationGuidelines(c *RequestContext) ResponseData {
-	baseData := getBaseTemplateData(c, "Communication Guidelines", nil)
-	baseData.OpenGraphItems = append(baseData.OpenGraphItems, templates.OpenGraphItem{
-		Property: "og:description",
-		Value:    "The Handmade community strives to create an environment conducive to innovation, education, and constructive discussion. These are the principles we expect members to respect.",
-	})
-
+func Rules(c *RequestContext) ResponseData {
+	type tmpl struct {
+		templates.BaseData
+		AIPolicyUrl      string
+		PrivacyPolicyUrl string
+	}
 	var res ResponseData
-	res.MustWriteTemplate("communication_guidelines.html", baseData, c.Perf)
+	res.MustWriteTemplate("rules.html", tmpl{
+		BaseData:         getBaseTemplateData(c, "Rules & Policies", nil),
+		AIPolicyUrl:      hmnurl.BuildAIPolicy(),
+		PrivacyPolicyUrl: hmnurl.BuildPrivacyPolicy(),
+	}, c.Perf)
+	return res
+}
+
+func PrivacyPolicy(c *RequestContext) ResponseData {
+	var res ResponseData
+	res.MustWriteTemplate("privacy.html", getBaseTemplateData(c, "Privacy Policy", nil), c.Perf)
+	return res
+}
+
+func AIPolicy(c *RequestContext) ResponseData {
+	var res ResponseData
+	res.MustWriteTemplate("ai_policy.html", getBaseTemplateData(c, "AI Policy", nil), c.Perf)
 	return res
 }
 

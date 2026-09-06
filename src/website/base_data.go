@@ -99,6 +99,7 @@ func getBaseTemplateData(c *RequestContext, title string, breadcrumbs []template
 			CalendarUrl:     hmnurl.BuildCalendarIndex(),
 			ManifestoUrl:    hmnurl.BuildManifesto(),
 			ValuesUrl:       hmnurl.BuildValues(),
+			RulesUrl:        hmnurl.BuildRules(),
 			AboutUrl:        hmnurl.BuildAbout(),
 
 			HSFUrl:           hmnurl.BuildHSFLanding(),
