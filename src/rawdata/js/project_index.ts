@@ -12,6 +12,11 @@ const galleryCountdownTicks = Array.from(galleryCountdown.querySelectorAll<HTMLE
 
 assert(galleryCountdownTicks.length > 0);
 
+// NOTE(ben): Pre-decode images
+for (const img of galleryContainer.querySelectorAll("img")) {
+  img.decode();
+}
+
 function changeGalleryProject(n: number) {
   const indexOfCurrentProject = galleryProjects.findIndex(p => !p.hidden);
   const indexOfNextProject = (indexOfCurrentProject + n + galleryProjects.length) % galleryProjects.length;

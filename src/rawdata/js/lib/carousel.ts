@@ -81,6 +81,11 @@ export function initCarousel(
 
   activateCarousel(0, true);
 
+  // NOTE(ben): Pre-decode images
+  for (const img of container.querySelectorAll("img")) {
+    img.decode();
+  }
+
   return {
     next: activateNext,
     prev: activatePrev,

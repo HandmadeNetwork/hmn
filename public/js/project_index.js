@@ -23,6 +23,9 @@ var galleryRights = Array.from(document.querySelectorAll(".gallery-right"));
 var galleryCountdown = must(document.querySelector(".gallery-countdown"));
 var galleryCountdownTicks = Array.from(galleryCountdown.querySelectorAll(".gallery-countdown-tick"));
 assert(galleryCountdownTicks.length > 0);
+for (const img of galleryContainer.querySelectorAll("img")) {
+  img.decode();
+}
 function changeGalleryProject(n) {
   const indexOfCurrentProject = galleryProjects.findIndex((p) => !p.hidden);
   const indexOfNextProject = (indexOfCurrentProject + n + galleryProjects.length) % galleryProjects.length;

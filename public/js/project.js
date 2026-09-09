@@ -73,6 +73,9 @@ function initCarousel(container, options = {}) {
     buttonContainer.appendChild(button);
   }
   activateCarousel(0, true);
+  for (const img of container.querySelectorAll("img")) {
+    img.decode();
+  }
   return {
     next: activateNext,
     prev: activatePrev
