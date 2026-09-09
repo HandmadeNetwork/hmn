@@ -30,6 +30,11 @@ var Services = []Service{
 		Regex:    regexp.MustCompile(`^https?://bsky.app/profile/(?P<username>[\w.-]+)$`),
 	},
 	{
+		Name:     "Codeberg",
+		IconName: "codeberg",
+		Regex:    regexp.MustCompile(`^https?://codeberg\.org/(?P<username>[w/-]+)?`),
+	},
+	{
 		Name:     "Discord",
 		IconName: "discord",
 		Regex:    regexp.MustCompile(`^https?://discord\.gg`),
@@ -37,7 +42,7 @@ var Services = []Service{
 	{
 		Name:     "GitHub",
 		IconName: "github",
-		Regex:    regexp.MustCompile(`^https?://github\.com/(?P<username>[\w/-]+)`),
+		Regex:    regexp.MustCompile(`^https?://(\w+\.)?github\.com/(?P<username>[w/-]+)?`),
 	},
 	{
 		Name:     "GitLab",
@@ -50,9 +55,24 @@ var Services = []Service{
 		Regex:    regexp.MustCompile(`^https?://play\.google\.com`),
 	},
 	{
+		Name:     "Mastodon",
+		IconName: "mastodon",
+		Regex:    regexp.MustCompile(`^https?://[a-zA-Z0-9_\.-]*\b(mas\.?to|mstdn)[a-zA-Z0-9_\.-]*/(?P<username>@\w+)?`),
+	},
+	{
 		Name:     "Patreon",
 		IconName: "patreon",
-		Regex:    regexp.MustCompile(`^https?://patreon\.com/(?P<username>[\w-]+)`),
+		Regex:    regexp.MustCompile(`^https?://(www\.)?patreon\.com/(?P<username>[\w-]+)`),
+	},
+	{
+		Name:     "Steam",
+		IconName: "steam",
+		Regex:    regexp.MustCompile(`^https?://store\.steampowered\.com/`),
+	},
+	{
+		Name:     "Trello",
+		IconName: "trello",
+		Regex:    regexp.MustCompile(`^https?://trello\.com/b/`),
 	},
 	{
 		Name:     "Twitch",
@@ -60,8 +80,8 @@ var Services = []Service{
 		Regex:    regexp.MustCompile(`^https?://twitch\.tv/(?P<username>[\w/-]+)`),
 	},
 	{
-		Name:     "Twitter",
-		IconName: "twitter",
+		Name:     "X",
+		IconName: "twitter-x", // NOTE(ben): Still the worst rebrand of all time
 		Regex:    regexp.MustCompile(`^https?://(twitter|x)\.com/(?P<username>\w+)`),
 	},
 	{
@@ -72,7 +92,7 @@ var Services = []Service{
 	{
 		Name:     "YouTube",
 		IconName: "youtube",
-		Regex:    regexp.MustCompile(`youtube\.com/(c/)?(?P<username>[@\w/-]+)$`),
+		Regex:    regexp.MustCompile(`^https?://((www\.)?youtube\.com/(watch\?|(c/)?(?P<username>[@w/-]+))?|youtu\.be/)`),
 	},
 }
 
