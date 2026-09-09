@@ -196,6 +196,8 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 			JOIN asset ON project_screenshot.asset_id = asset.id
 		WHERE
 			project_screenshot.project_id = $1
+		ORDER BY
+			project_screenshot.sort
 		`,
 		c.CurrentProject.ID,
 	)
