@@ -213,6 +213,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.POST(hmnurl.RegexDiscordUnlink, needsAuth(csrfMiddleware(DiscordUnlink)))
 	hmnOnly.POST(hmnurl.RegexDiscordShowcaseBacklog, needsAuth(csrfMiddleware(DiscordShowcaseBacklog)))
 	hmnOnly.GET(hmnurl.RegexDiscordBotDebugPage, adminsOnly(DiscordBotDebugPage))
+	hmnOnly.POST(hmnurl.RegexDiscordBotDebugToggleRecordAll, adminsOnly(DiscordBotDebugToggleRecordAll))
 
 	hmnOnly.POST(hmnurl.RegexTwitchEventSubCallback, TwitchEventSubCallback)
 	hmnOnly.GET(hmnurl.RegexTwitchDebugPage, adminsOnly(TwitchDebugPage))

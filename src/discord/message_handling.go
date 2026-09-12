@@ -57,7 +57,7 @@ func shouldAutomaticallyCreateSnippet(interned *InternedMessage) bool {
 	}
 }
 
-func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, notifyUser bool) error {
+func HandleIncomingMessage(ctx context.Context, dbConn db.ConnOrTx, msg Message, notifyUser bool) error {
 	var deleted bool
 	var err error
 
@@ -96,7 +96,7 @@ var githubRegex = regexp.MustCompile(`^(https:\/\/)?(www\.|gist\.)?github.com`)
 var steampoweredRegex = regexp.MustCompile(`steampowered\.com`)
 var steamCutoffDate = time.Date(2026, 5, 10, 0, 0, 0, 0, time.UTC)
 
-func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
+func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg Message) (bool, error) {
 	if msg.ChannelID != config.Config.Discord.ShowcaseChannelID {
 		return false, nil
 	}
@@ -155,7 +155,7 @@ func cleanUpShowcase(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (boo
 	return false, nil
 }
 
-func cleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg *Message) (bool, error) {
+func cleanUpLibrary(ctx context.Context, dbConn db.ConnOrTx, msg Message) (bool, error) {
 	if msg.ChannelID != config.Config.Discord.LibraryChannelID {
 		return false, nil
 	}
@@ -191,7 +191,7 @@ record of the message itself.
 func TrackMessage(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
-	msg *Message,
+	msg Message,
 ) error {
 	if !msg.OriginalHasFields("author", "timestamp") {
 		return errNotEnoughInfo
@@ -257,7 +257,7 @@ func FetchInternedMessage(ctx context.Context, dbConn db.ConnOrTx, msgId string)
 func UpdateInternedMessage(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
-	msg *Message,
+	msg Message,
 	messageDeleted bool, // whether the message was deleted before this update, e.g. as part of showcase cleanup
 	canCreateSnippet bool, // if false, no snippet will be created for this message regardless of contents
 	notifyUser bool, // whether to notify the user of any problems with their message
@@ -363,7 +363,7 @@ func SaveMessageContents(
 	ctx context.Context,
 	dbConn db.ConnOrTx,
 	interned *InternedMessage,
-	msg *Message,
+	msg Message,
 	notifyUser bool,
 ) (contentChanged bool, err error) {
 	if interned.DiscordUser == nil {
@@ -1013,7 +1013,7 @@ func messageHasLinks(content string) bool {
 	return false
 }
 
-func messageIsSnippetable(msg *Message) bool {
+func messageIsSnippetable(msg Message) bool {
 	hasGoodContent := true
 	if msg.OriginalHasFields("content") && !messageHasLinks(msg.Content) {
 		hasGoodContent = false
@@ -1062,7 +1062,7 @@ func SendDM(ctx context.Context, dbConn db.ConnOrTx, authorID string, text strin
 	return nil
 }
 
-func RebukeMessage(ctx context.Context, dbConn db.ConnOrTx, msg *Message, noteToUser string) (deleted bool, err error) {
+func RebukeMessage(ctx context.Context, dbConn db.ConnOrTx, msg Message, noteToUser string) (deleted bool, err error) {
 	err = DeleteMessage(ctx, msg.ChannelID, msg.ID)
 	if err != nil {
 		return false, oops.New(err, "failed to delete message")
