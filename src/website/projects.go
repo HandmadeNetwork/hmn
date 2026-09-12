@@ -169,6 +169,7 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 		ProjectPageBaseData
 
 		Screenshots []string
+		LatestPost  *templates.TimelineItem
 
 		CanEdit bool
 		EditUrl string
@@ -187,24 +188,58 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 	}
 	tmpl.ProjectPageBaseData = projectBaseData
 
-	screenshotAssets, err := db.Query[models.Asset](c, c.Conn,
-		`
-		---- Fetching screenshots
-		SELECT $columns{asset}
-		FROM
-			project_screenshot
-			JOIN asset ON project_screenshot.asset_id = asset.id
-		WHERE
-			project_screenshot.project_id = $1
-		ORDER BY
-			project_screenshot.sort
-		`,
-		c.CurrentProject.ID,
-	)
-	if err != nil {
-		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch screenshots for project"))
+	// NOTE(ben): Fetch screenshots
+	{
+		screenshotAssets, err := db.Query[models.Asset](c, c.Conn,
+			`
+			---- Fetching screenshots
+			SELECT $columns{asset}
+			FROM
+				project_screenshot
+				JOIN asset ON project_screenshot.asset_id = asset.id
+			WHERE
+				project_screenshot.project_id = $1
+			ORDER BY
+				project_screenshot.sort
+			`,
+			c.CurrentProject.ID,
+		)
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch screenshots for project"))
+		}
+		tmpl.Screenshots = utils.Map(screenshotAssets, templates.AssetUrl)
 	}
-	tmpl.Screenshots = utils.Map(screenshotAssets, templates.AssetUrl)
+
+	// NOTE(ben): Get latest feed item
+	{
+		subforumTree := hmndata.GetFullSubforumTree(c, c.Conn)
+		lineageBuilder := hmndata.MakeSubforumLineageBuilder(subforumTree)
+		posts, err := FetchTimeline(c, c.Conn, c.CurrentUser, lineageBuilder, hmndata.TimelineQuery{
+			ProjectIDs: []int{c.CurrentProject.ID},
+			Limit:      1,
+		})
+		if err != nil {
+			return c.ErrorResponse(http.StatusInternalServerError, err)
+		}
+		if len(posts) > 0 {
+			post := posts[0]
+
+			if !post.ForumLayout {
+				post.Projects = nil
+				post.DescriptionMaxLines = 3
+				if len(post.Media) > 0 {
+					firstMedia := post.Media[0]
+					post.SmallImageUrl = firstMedia.ThumbnailUrl
+					post.SmallImageLinkUrl = c.UrlContext.BuildProjectFeed()
+				}
+				post.Media = nil
+				post.CTAText = "View full feed"
+				post.CTAUrl = c.UrlContext.BuildProjectFeed()
+				post.CTAIcon = "arrow-right"
+				tmpl.LatestPost = &post
+			}
+		}
+	}
 
 	tmpl.CanEdit = c.CurrentUserCanEditCurrentProject()
 	tmpl.EditUrl = c.UrlContext.BuildProjectEdit("")

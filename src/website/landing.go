@@ -133,10 +133,10 @@ func Index(c *RequestContext) ResponseData {
 	}
 	for _, t := range newsThreads {
 		item := PostToTimelineItem(c.UrlContext, lineageBuilder, &t.FirstPost, &t.Thread, t.ThreadOwner, t.FirstPostAuthor)
-		item.Breadcrumbs = nil
-		item.TypeTitle = ""
+		item.ForumBreadcrumbs = nil
+		item.ForumTypeTitle = ""
 		item.Description = template.HTML(t.FirstPost.PreviewHTML)
-		item.AllowTitleWrap = true
+		item.AllowForumTitleWrap = true
 		item.TruncateDescription = true
 		item.Unread = t.Unread
 		newsItems = append(newsItems, item)

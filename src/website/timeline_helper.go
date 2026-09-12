@@ -178,11 +178,11 @@ func PostToTimelineItem(
 	var breadcrumbs []templates.BreadcrumbLink
 	breadcrumbs = GenericThreadBreadcrumbs(urlContext, lineageBuilder, thread, threadOwner)
 	item := templates.TimelineItem{
-		ID:          strconv.Itoa(post.ID),
-		Date:        post.PostDate,
-		Title:       thread.Title,
-		Breadcrumbs: breadcrumbs,
-		Url:         UrlForGenericPost(urlContext, thread, threadOwner, post, lineageBuilder),
+		ID:               strconv.Itoa(post.ID),
+		Date:             post.PostDate,
+		ForumTitle:       thread.Title,
+		ForumBreadcrumbs: breadcrumbs,
+		Url:              UrlForGenericPost(urlContext, thread, threadOwner, post, lineageBuilder),
 
 		OwnerAvatarUrl: ownerTmpl.AvatarUrl,
 		OwnerName:      ownerTmpl.Name,
@@ -193,9 +193,9 @@ func PostToTimelineItem(
 
 	if typeTitles, ok := TimelineTypeTitleMap[post.ThreadType]; ok {
 		if thread.FirstID == post.ID {
-			item.TypeTitle = typeTitles.TypeTitleFirst
+			item.ForumTypeTitle = typeTitles.TypeTitleFirst
 		} else {
-			item.TypeTitle = typeTitles.TypeTitleNotFirst
+			item.ForumTypeTitle = typeTitles.TypeTitleNotFirst
 		}
 		item.FilterTitle = typeTitles.FilterTitle
 	} else {
@@ -231,7 +231,7 @@ func TwitchStreamToTimelineItem(
 		Date:        streamHistory.StartedAt,
 		FilterTitle: "Live streams",
 		Url:         url,
-		Title:       title,
+		ForumTitle:  title,
 		Description: template.HTML(desc),
 
 		OwnerAvatarUrl: ownerAvatarUrl,
@@ -459,10 +459,10 @@ func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *
 	ti := templates.TimelineItem{
 		ID:                strconv.Itoa(item.Item.ID),
 		Date:              item.Item.Date,
-		Title:             item.Item.Title,
-		TypeTitle:         typeTitle,
+		ForumTitle:        item.Item.Title,
+		ForumTypeTitle:    typeTitle,
 		FilterTitle:       filterTitle,
-		Breadcrumbs:       breadcrumbs,
+		ForumBreadcrumbs:  breadcrumbs,
 		Url:               url,
 		DiscordMessageUrl: "",
 
@@ -477,7 +477,7 @@ func TimelineItemToTemplate(item *hmndata.TimelineItemAndStuff, lineageBuilder *
 		Media: nil,
 
 		ForumLayout:         item.Item.Type == models.TimelineItemTypePost,
-		AllowTitleWrap:      false,
+		AllowForumTitleWrap: false,
 		TruncateDescription: false,
 		CanShowcase:         item.Item.Type == models.TimelineItemTypeSnippet,
 		Editable:            item.Item.Type == models.TimelineItemTypeSnippet && editable,

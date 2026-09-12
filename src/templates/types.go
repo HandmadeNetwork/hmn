@@ -414,10 +414,7 @@ type ThreadListItem struct {
 type TimelineItem struct {
 	ID                string
 	Date              time.Time
-	Title             string
-	TypeTitle         string
 	FilterTitle       string
-	Breadcrumbs       []BreadcrumbLink
 	Url               string
 	DiscordMessageUrl string
 
@@ -431,11 +428,24 @@ type TimelineItem struct {
 
 	Media []TimelineItemMedia
 
+	// NOTE(ben): Small left preview image
+	SmallImageUrl     string
+	SmallImageLinkUrl string
+
 	Unread bool
 
 	ForumLayout         bool
-	AllowTitleWrap      bool
-	TruncateDescription bool
+	ForumTitle          string
+	ForumTypeTitle      string
+	ForumBreadcrumbs    []BreadcrumbLink
+	AllowForumTitleWrap bool
+
+	CTAText string
+	CTAUrl  string
+	CTAIcon string
+
+	TruncateDescription bool // NOTE(ben): Adds a fade and a "Read More" button
+	DescriptionMaxLines int  // NOTE(ben): Chops the description after N lines using the CSS line-clamp property (or rather, our utility classes thereof)
 	CanShowcase         bool // whether this snippet can be shown in a showcase gallery
 	Editable            bool
 }

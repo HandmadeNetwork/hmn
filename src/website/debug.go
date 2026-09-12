@@ -21,13 +21,13 @@ func StyleTest(c *RequestContext) ResponseData {
 				OwnerName:      "Cool User",
 				OwnerAvatarUrl: templates.UserAvatarDefaultUrl("dark"),
 				Date:           time.Now().Add(-5 * time.Second),
-				Breadcrumbs: []templates.BreadcrumbLink{
+				ForumBreadcrumbs: []templates.BreadcrumbLink{
 					{Name: "Project"},
 					{Name: "Forums"},
 					{Name: "Subforum"},
 				},
-				TypeTitle: "New forum post",
-				Title:     "How can I a website?",
+				ForumTypeTitle: "New forum post",
+				ForumTitle:     "How can I a website?",
 			},
 			// Blog post
 			// Snippet with image
