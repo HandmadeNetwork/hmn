@@ -596,14 +596,14 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 	case "MESSAGE_CREATE":
 		newMessage := *MessageFromMap(msg.Data, "")
 
-		err := bot.messageCreateOrUpdate(ctx, &newMessage)
+		err := bot.messageCreateOrUpdate(ctx, newMessage)
 		if err != nil {
 			return oops.New(err, "error on new message")
 		}
 	case "MESSAGE_UPDATE":
 		newMessage := *MessageFromMap(msg.Data, "")
 
-		err := bot.messageCreateOrUpdate(ctx, &newMessage)
+		err := bot.messageCreateOrUpdate(ctx, newMessage)
 		if err != nil {
 			return oops.New(err, "error on updated message")
 		}
@@ -633,7 +633,7 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 }
 
 // Only return an error if we want to restart the bot.
-func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message) error {
+func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg Message) error {
 	if msg.OriginalHasFields("author") && msg.Author.ID == config.Config.Discord.BotUserID {
 		// Don't process your own messages
 		return nil
