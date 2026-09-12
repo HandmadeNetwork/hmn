@@ -236,6 +236,8 @@ func ProjectHomepage(c *RequestContext) ResponseData {
 				post.CTAText = "View full feed"
 				post.CTAUrl = c.UrlContext.BuildProjectFeed()
 				post.CTAIcon = "arrow-right"
+				post.DiscordMessageUrl = ""
+
 				tmpl.LatestPost = &post
 			}
 		}
