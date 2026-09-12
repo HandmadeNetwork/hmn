@@ -37,7 +37,7 @@ var Services = []Service{
 	{
 		Name:     "Discord",
 		IconName: "discord",
-		Regex:    regexp.MustCompile(`^https?://discord\.gg`),
+		Regex:    regexp.MustCompile(`^https?://discord\.(gg|com)`),
 	},
 	{
 		Name:     "GitHub",
