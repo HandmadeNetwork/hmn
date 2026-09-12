@@ -932,6 +932,12 @@ func BuildDiscordBotDebugPage() string {
 	return Url("/discord_bot_debug", nil)
 }
 
+var RegexDiscordBotDebugToggleRecordAll = regexp.MustCompile("^/discord_bot_debug/record_all$")
+
+func BuildDiscordBotDebugToggleRecordAll() string {
+	return Url("/discord_bot_debug/record_all", nil)
+}
+
 /*
 * API
  */

@@ -456,13 +456,23 @@ func DiscordBotDebugPage(c *RequestContext) ResponseData {
 	type DiscordBotDebugData struct {
 		templates.BaseData
 		BotEvents []discord.BotEvent
+
+		RecordingAll bool
+		ToggleUrl    string
 	}
 	botEvents := discord.GetBotEvents()
 	var res ResponseData
 	res.MustWriteTemplate("discord_bot_debug.html", DiscordBotDebugData{
 		BaseData: getBaseTemplateData(c, "", nil),
 
-		BotEvents: botEvents,
+		BotEvents:    botEvents,
+		RecordingAll: discord.RecordAllGatewayMessages,
+		ToggleUrl:    hmnurl.BuildDiscordBotDebugToggleRecordAll(),
 	}, c.Perf)
 	return res
+}
+
+func DiscordBotDebugToggleRecordAll(c *RequestContext) ResponseData {
+	discord.RecordAllGatewayMessages = !discord.RecordAllGatewayMessages
+	return c.Redirect(hmnurl.BuildDiscordBotDebugPage(), http.StatusSeeOther)
 }
