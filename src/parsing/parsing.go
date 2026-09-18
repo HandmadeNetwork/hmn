@@ -17,8 +17,9 @@ import (
 var PostPreviewMarkdown = makeGoldmark(
 	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
-		Previews: true,
-		Embeds:   false,
+		Previews:       true,
+		AssetEmbeds:    true,
+		ExternalEmbeds: false,
 	})...),
 )
 
@@ -26,8 +27,9 @@ var PostPreviewMarkdown = makeGoldmark(
 var PostEditPreviewMarkdown = makeGoldmark(
 	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
-		Previews: true,
-		Embeds:   true,
+		Previews:       true,
+		AssetEmbeds:    true,
+		ExternalEmbeds: true,
 	})...),
 )
 
@@ -35,8 +37,9 @@ var PostEditPreviewMarkdown = makeGoldmark(
 var PostMarkdown = makeGoldmark(
 	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
-		Previews: false,
-		Embeds:   true,
+		Previews:       false,
+		AssetEmbeds:    true,
+		ExternalEmbeds: true,
 	})...),
 )
 
@@ -44,8 +47,9 @@ var PostMarkdown = makeGoldmark(
 var PlaintextMarkdown = makeGoldmark(
 	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
-		Previews: false,
-		Embeds:   true,
+		Previews:       false,
+		AssetEmbeds:    false,
+		ExternalEmbeds: true,
 	})...),
 	goldmark.WithRenderer(plaintextRenderer{}),
 )
@@ -54,8 +58,9 @@ var PlaintextMarkdown = makeGoldmark(
 var DiscordMarkdown = makeGoldmark(
 	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
-		Previews: false,
-		Embeds:   false,
+		Previews:       false,
+		AssetEmbeds:    false,
+		ExternalEmbeds: false,
 	})...),
 	goldmark.WithRendererOptions(html.WithHardWraps()),
 )
@@ -63,8 +68,9 @@ var DiscordMarkdown = makeGoldmark(
 var DiscordTagMarkdown = makeGoldmark(
 	false,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
-		Previews: false,
-		Embeds:   false,
+		Previews:       false,
+		AssetEmbeds:    false,
+		ExternalEmbeds: false,
 	})...),
 	goldmark.WithRendererOptions(html.WithHardWraps()),
 	goldmark.WithRenderer(projectTagRenderer{}),
@@ -74,9 +80,10 @@ var DiscordTagMarkdown = makeGoldmark(
 var EducationPreviewMarkdown = makeGoldmark(
 	true,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
-		Previews:  true,
-		Embeds:    true,
-		Education: true,
+		Previews:       true,
+		AssetEmbeds:    true,
+		ExternalEmbeds: true,
+		Education:      true,
 	})...),
 	goldmark.WithRendererOptions(html.WithUnsafe()),
 )
@@ -85,9 +92,10 @@ var EducationPreviewMarkdown = makeGoldmark(
 var EducationRealMarkdown = makeGoldmark(
 	true,
 	goldmark.WithExtensions(makeGoldmarkExtensions(MarkdownOptions{
-		Previews:  false,
-		Embeds:    true,
-		Education: true,
+		Previews:       false,
+		AssetEmbeds:    true,
+		ExternalEmbeds: true,
+		Education:      true,
 	})...),
 	goldmark.WithRendererOptions(html.WithUnsafe()),
 )
@@ -102,9 +110,10 @@ func ParseMarkdown(source string, md goldmark.Markdown) string {
 }
 
 type MarkdownOptions struct {
-	Previews  bool
-	Embeds    bool
-	Education bool
+	Previews       bool
+	AssetEmbeds    bool
+	ExternalEmbeds bool
+	Education      bool
 }
 
 // modified from https://github.com/yuin/goldmark/blob/master/extension/linkify.go (urlRegexp)
@@ -162,9 +171,17 @@ func makeGoldmarkExtensions(opts MarkdownOptions) []goldmark.Extender {
 		SpoilerExtension{},
 	)
 
-	if opts.Embeds {
+	if opts.AssetEmbeds {
 		extenders = append(extenders,
-			EmbedExtension{
+			AssetEmbedExtension{
+				Preview: opts.Previews,
+			},
+		)
+	}
+
+	if opts.ExternalEmbeds {
+		extenders = append(extenders,
+			ExternalEmbedExtension{
 				Preview: opts.Previews,
 			},
 		)

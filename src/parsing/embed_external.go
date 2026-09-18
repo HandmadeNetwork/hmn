@@ -32,7 +32,7 @@ func htmlForURLEmbed(url string, preview bool) (string, []byte, bool) {
 	} else if match := extract(REYoutubeShort, []byte(url), "vid"); match != nil {
 		return makeYoutubeEmbed(string(match), preview), match, true
 	} else if match := extract(REVimeo, []byte(url), "vid"); match != nil {
-		return previewOrLegitEmbed("Vimeo", `
+		return previewOrLegitExternalEmbed("Vimeo", `
 			<div class="aspect-ratio aspect-ratio--16x9">
 				<iframe class="aspect-ratio--object" src="https://player.vimeo.com/video/`+string(match)+`" frameborder="0" allow="fullscreen; picture-in-picture" allowfullscreen></iframe>
 			</div>
@@ -46,43 +46,43 @@ func htmlForURLEmbed(url string, preview bool) (string, []byte, bool) {
 // Parser and delimiters
 // ----------------------
 
-type embedParser struct {
+type externalEmbedParser struct {
 	Preview bool
 }
 
-var _ parser.BlockParser = embedParser{}
+var _ parser.BlockParser = externalEmbedParser{}
 
-func (s embedParser) Trigger() []byte {
+func (s externalEmbedParser) Trigger() []byte {
 	return nil
 }
 
-func (s embedParser) Open(parent ast.Node, reader text.Reader, pc parser.Context) (ast.Node, parser.State) {
+func (s externalEmbedParser) Open(parent ast.Node, reader text.Reader, pc parser.Context) (ast.Node, parser.State) {
 	restOfLine, _ := reader.PeekLine()
 
 	if html, match, ok := htmlForURLEmbed(string(restOfLine), s.Preview); ok {
 		html = `<div class="mw6">` + html + `</div>`
 		reader.Advance(len(match))
-		return NewEmbed(html), parser.NoChildren
+		return NewExternalEmbed(html), parser.NoChildren
 	} else {
 		return nil, parser.NoChildren
 	}
 }
 
-func (s embedParser) Continue(node ast.Node, reader text.Reader, pc parser.Context) parser.State {
+func (s externalEmbedParser) Continue(node ast.Node, reader text.Reader, pc parser.Context) parser.State {
 	return parser.Close
 }
 
-func (s embedParser) Close(node ast.Node, reader text.Reader, pc parser.Context) {}
+func (s externalEmbedParser) Close(node ast.Node, reader text.Reader, pc parser.Context) {}
 
-func (s embedParser) CanInterruptParagraph() bool {
+func (s externalEmbedParser) CanInterruptParagraph() bool {
 	return true
 }
 
-func (s embedParser) CanAcceptIndentedLine() bool {
+func (s externalEmbedParser) CanAcceptIndentedLine() bool {
 	return false
 }
 
-func previewOrLegitEmbed(name, legitHTML string, preview bool) string {
+func previewOrLegitExternalEmbed(name, legitHTML string, preview bool) string {
 	if preview {
 		return `
 			<div class="aspect-ratio aspect-ratio--16x9">
@@ -112,23 +112,23 @@ func makeYoutubeEmbed(vid string, preview bool) string {
 // AST node
 // ----------------------
 
-type EmbedNode struct {
+type ExternalEmbedNode struct {
 	ast.BaseBlock
 	HTML string
 }
 
-func (n *EmbedNode) Dump(source []byte, level int) {
+func (n *ExternalEmbedNode) Dump(source []byte, level int) {
 	ast.DumpHelper(n, source, level, nil, nil)
 }
 
-var KindEmbed = ast.NewNodeKind("Embed")
+var KindExternalEmbed = ast.NewNodeKind("ExternalEmbed")
 
-func (n *EmbedNode) Kind() ast.NodeKind {
-	return KindEmbed
+func (n *ExternalEmbedNode) Kind() ast.NodeKind {
+	return KindExternalEmbed
 }
 
-func NewEmbed(HTML string) ast.Node {
-	return &EmbedNode{
+func NewExternalEmbed(HTML string) ast.Node {
+	return &ExternalEmbedNode{
 		HTML: HTML,
 	}
 }
@@ -137,12 +137,12 @@ func NewEmbed(HTML string) ast.Node {
 // Renderer
 // ----------------------
 
-type EmbedHTMLRenderer struct {
+type ExternalEmbedHTMLRenderer struct {
 	html.Config
 }
 
-func NewEmbedHTMLRenderer(opts ...html.Option) renderer.NodeRenderer {
-	r := &EmbedHTMLRenderer{
+func NewExternalEmbedHTMLRenderer(opts ...html.Option) renderer.NodeRenderer {
+	r := &ExternalEmbedHTMLRenderer{
 		Config: html.NewConfig(),
 	}
 	for _, opt := range opts {
@@ -151,13 +151,13 @@ func NewEmbedHTMLRenderer(opts ...html.Option) renderer.NodeRenderer {
 	return r
 }
 
-func (r *EmbedHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
-	reg.Register(KindEmbed, r.renderEmbed)
+func (r *ExternalEmbedHTMLRenderer) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
+	reg.Register(KindExternalEmbed, r.renderExternalEmbed)
 }
 
-func (r *EmbedHTMLRenderer) renderEmbed(w util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
+func (r *ExternalEmbedHTMLRenderer) renderExternalEmbed(w util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if entering {
-		w.WriteString(n.(*EmbedNode).HTML)
+		w.WriteString(n.(*ExternalEmbedNode).HTML)
 	}
 	return ast.WalkSkipChildren, nil
 }
@@ -166,15 +166,15 @@ func (r *EmbedHTMLRenderer) renderEmbed(w util.BufWriter, source []byte, n ast.N
 // Extension
 // ----------------------
 
-type EmbedExtension struct {
+type ExternalEmbedExtension struct {
 	Preview bool
 }
 
-func (e EmbedExtension) Extend(m goldmark.Markdown) {
+func (e ExternalEmbedExtension) Extend(m goldmark.Markdown) {
 	m.Parser().AddOptions(parser.WithBlockParsers(
-		util.Prioritized(embedParser{Preview: e.Preview}, 500),
+		util.Prioritized(externalEmbedParser{Preview: e.Preview}, 500),
 	))
 	m.Renderer().AddOptions(renderer.WithNodeRenderers(
-		util.Prioritized(NewEmbedHTMLRenderer(), 500),
+		util.Prioritized(NewExternalEmbedHTMLRenderer(), 500),
 	))
 }

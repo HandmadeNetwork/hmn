@@ -214,9 +214,12 @@ export function setupMarkdownUpload(
 		try {
 			if (currentXhr.status == 200 && currentXhr.response) {
 				if (currentXhr.response.url) {
-					let url = currentXhr.response.url;
+					let url = currentXhr.response.url as string;
 					let newString = `[${currentUpload.file.name}](${url})`;
-					if (currentXhr.response.mime.startsWith("image")) {
+
+					const isImage = currentXhr.response.mime.startsWith("image");
+					const isVideo = !![".mp4", ".webm", ".mov", ".m4v"].find(ext => url.toLowerCase().endsWith(ext))
+					if (isImage || isVideo) {
 						newString = "!" + newString;
 					}
 
