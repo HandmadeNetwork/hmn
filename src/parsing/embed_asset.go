@@ -18,7 +18,7 @@ var (
 	// NOTE(ben): If you update this regex, make sure to also update the file
 	// extensions recognized in markdown_upload.ts to ensure that uploaded files
 	// get the ![foo](url) syntax.
-	PlainVideoLinkOnly = `https?://(handmade\.network|beta-handmadenet\.work|handmade\.local(:\d+)?|assets\.media\.handmade\.network|hmn-assets-2\.ams3\.cdn\.digitaloceanspaces\.com|localhost(:\d+)?)/[^\s"'<>()]+?\.(mp4|webm|mov|m4v)`
+	PlainVideoLinkOnly = `https?://(handmade\.network|beta-handmadenet\.work|([^/.:]+\.)?handmade\.local(:\d+)?|assets\.media\.handmade\.network|hmn-assets-2\.ams3\.cdn\.digitaloceanspaces\.com|localhost(:\d+)?)/[^\s"'<>()]+?\.(mp4|webm|mov|m4v)`
 
 	REPlainVideoBareLink     = regexp.MustCompile(`(?i)^` + PlainVideoLinkOnly + `$`)
 	REPlainVideoMarkdownLink = regexp.MustCompile(`(?i)^!\[[^\]]*?\]\((?P<url>` + PlainVideoLinkOnly + `)\)$`)
