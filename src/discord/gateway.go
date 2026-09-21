@@ -31,8 +31,9 @@ type BotEvent struct {
 
 var botEvents = make([]BotEvent, 0, 1000)
 var botEventsMutex = sync.Mutex{}
+var RecordAllGatewayMessages bool
 
-func RecordBotEvent(name, extra string) {
+func recordBotEvent(name, extra string) {
 	botEventsMutex.Lock()
 	defer botEventsMutex.Unlock()
 	if len(botEvents) > 1000 {
@@ -87,7 +88,7 @@ func RunDiscordBot(dbConn *pgxpool.Pool) *jobs.Job {
 				if err != nil {
 					disconnectMessage = err.Error()
 				}
-				RecordBotEvent("Disconnected", disconnectMessage)
+				recordBotEvent("Disconnected", disconnectMessage)
 				if err != nil {
 					dur := boff.Duration()
 					log.Error().
@@ -192,16 +193,14 @@ func (bot *botInstance) Run(ctx context.Context) (err error) {
 
 	for {
 		msg, err := bot.receiveGatewayMessage(ctx)
-		if err != nil {
-			if errors.Is(err, net.ErrClosed) {
-				// If the connection is closed, that's our cue to shut down the bot. Any errors
-				// related to the closure will have been logged elsewhere anyway.
-				return nil
-			} else {
-				// NOTE(ben): I don't know what events we might get in the future that we might
-				// want to handle gracefully (like above). Keep an eye out.
-				return oops.New(err, "failed to receive message from the gateway")
-			}
+		if errors.Is(err, net.ErrClosed) {
+			// If the connection is closed, that's our cue to shut down the bot. Any errors
+			// related to the closure will have been logged elsewhere anyway.
+			return nil
+		} else if err != nil {
+			// NOTE(ben): I don't know what events we might get in the future that we might
+			// want to handle gracefully (like above). Keep an eye out.
+			return oops.New(err, "failed to receive message from the gateway")
 		}
 
 		// Update the sequence number in the db
@@ -227,7 +226,7 @@ func (bot *botInstance) Run(ctx context.Context) (err error) {
 			logging.ExtractLogger(ctx).Info().Msg("Discord asked us to reconnect to the gateway")
 			return nil
 		case OpcodeInvalidSession:
-			RecordBotEvent("Failed to resume - invalid session", "")
+			recordBotEvent("Failed to resume - invalid session", "")
 			// We tried to resume but the session was invalid.
 			// Delete the session and reconnect from scratch again.
 			_, err := bot.dbConn.Exec(ctx, `DELETE FROM discord_session`)
@@ -299,9 +298,9 @@ func (bot *botInstance) connect(ctx context.Context) error {
 		}
 	}
 
-	RecordBotEvent("Connected", "")
+	recordBotEvent("Connected", "")
 	if shouldResume {
-		RecordBotEvent("Resuming with session ID", session.ID)
+		recordBotEvent("Resuming with session ID", session.ID)
 		// Reconnect to the previous session
 		bot.resuming = true
 		err := bot.sendGatewayMessage(ctx, GatewayMessage{
@@ -551,6 +550,9 @@ func (bot *botInstance) receiveGatewayMessage(ctx context.Context) (*GatewayMess
 	if err != nil {
 		return nil, err
 	}
+	if RecordAllGatewayMessages {
+		recordBotEvent("Gateway message", string(msgBytes))
+	}
 
 	var msg GatewayMessage
 	err = json.Unmarshal(msgBytes, &msg)
@@ -583,7 +585,7 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 		if msg.EventName != nil {
 			name = *msg.EventName
 		}
-		RecordBotEvent("Got event while resuming", name)
+		recordBotEvent("Got event while resuming", name)
 	}
 	switch *msg.EventName {
 	case "RESUMED":
@@ -591,19 +593,19 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 		logging.ExtractLogger(ctx).Info().Msg("Finished resuming gateway session")
 
 		bot.resuming = false
-		RecordBotEvent("Done resuming", "")
+		recordBotEvent("Done resuming", "")
 		bot.createApplicationCommands(ctx)
 	case "MESSAGE_CREATE":
 		newMessage := *MessageFromMap(msg.Data, "")
 
-		err := bot.messageCreateOrUpdate(ctx, &newMessage)
+		err := bot.messageCreateOrUpdate(ctx, newMessage)
 		if err != nil {
 			return oops.New(err, "error on new message")
 		}
 	case "MESSAGE_UPDATE":
 		newMessage := *MessageFromMap(msg.Data, "")
 
-		err := bot.messageCreateOrUpdate(ctx, &newMessage)
+		err := bot.messageCreateOrUpdate(ctx, newMessage)
 		if err != nil {
 			return oops.New(err, "error on updated message")
 		}
@@ -633,7 +635,7 @@ func (bot *botInstance) processEventMsg(ctx context.Context, msg *GatewayMessage
 }
 
 // Only return an error if we want to restart the bot.
-func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg *Message) error {
+func (bot *botInstance) messageCreateOrUpdate(ctx context.Context, msg Message) error {
 	if msg.OriginalHasFields("author") && msg.Author.ID == config.Config.Discord.BotUserID {
 		// Don't process your own messages
 		return nil
