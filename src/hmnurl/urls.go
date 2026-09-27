@@ -110,6 +110,12 @@ func BuildBetaWeekCallForProjects() string {
 	return Url("/betaweek/2026/submit-project", nil)
 }
 
+var RegexBetaWeekCallForProjectsThanks = regexp.MustCompile("^/betaweek/2026/submit-project/thanks$")
+
+func BuildBetaWeekCallForProjectsThanks() string {
+	return Url("/betaweek/2026/submit-project/thanks", nil)
+}
+
 var RegexExpo = regexp.MustCompile("^/expo/(?P<urlslug>[^/]+)$")
 
 func BuildExpo(urlSlug string, status string) string {

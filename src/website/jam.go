@@ -305,13 +305,99 @@ func BetaWeekCallForProjects(c *RequestContext) ResponseData {
 	type Tmpl struct {
 		templates.BaseData
 		FetchProjectUrl string
+		SubmitUrl       string
 	}
 	tmpl := Tmpl{
 		BaseData:        getBaseTemplateData(c, "Submit a Project", nil),
 		FetchProjectUrl: hmnurl.BuildAPIProject(),
+		SubmitUrl:       hmnurl.BuildBetaWeekCallForProjects(),
 	}
 
 	res.MustWriteTemplate("betaweek_2026_submit_project.html", tmpl, c.Perf)
+	return res
+}
+
+func BetaWeekCallForProjectsSubmit(c *RequestContext) ResponseData {
+	err := c.Req.ParseForm()
+	if err != nil {
+		return c.ErrorResponse(http.StatusBadRequest, err)
+	}
+
+	projectIDStr := c.Req.Form.Get("project-id")
+	projectID, err := strconv.Atoi(projectIDStr)
+	if err != nil {
+		return c.RejectRequest("bad project ID")
+	}
+	projectStatus := strings.TrimSpace(c.Req.Form.Get("project-status"))
+	projectPlatforms := strings.TrimSpace(c.Req.Form.Get("project-platforms"))
+	projectInstructions := strings.TrimSpace(c.Req.Form.Get("project-instructions"))
+	authorAvailability := strings.TrimSpace(c.Req.Form.Get("author-availability"))
+	authorGoals := strings.TrimSpace(c.Req.Form.Get("author-goals"))
+	authorAcknowledgment := c.Req.Form.Get("author-acknowledgment")
+
+	projectOk := true
+	p, err := hmndata.FetchProject(c, c.Conn, c.CurrentUser, projectID, hmndata.ProjectsQuery{
+		Lifecycles:    models.AllProjectLifecycles,
+		IncludeHidden: true,
+	})
+	if err == db.NotFound {
+		projectOk = false
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project"))
+	} else {
+		validOwner := false
+		for _, owner := range p.Owners {
+			if owner.ID == c.CurrentUser.ID {
+				validOwner = true
+			}
+		}
+		if !validOwner {
+			projectOk = false
+		}
+	}
+	if !projectOk {
+		return c.RejectRequest("Either that project does not exist, or you do not have access to it.")
+	}
+
+	if projectStatus == "" || projectPlatforms == "" || projectInstructions == "" || authorAvailability == "" || authorGoals == "" || authorAcknowledgment == "" {
+		return c.RejectRequest("Some required fields are missing.")
+	}
+
+	_, err = c.Conn.Exec(c,
+		`
+		INSERT INTO betaweek_project_submission (
+			event_slug,
+			project_id, project_status, project_platforms, project_instructions,
+			author_availability, author_goals
+		) VALUES (
+			$1,
+			$2, $3, $4, $5,
+			$6, $7
+		)
+		`,
+		hmndata.BetaWeek2026.Slug,
+		projectID, projectStatus, projectPlatforms, projectInstructions,
+		authorAvailability, authorGoals,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save submission"))
+	}
+
+	return c.Redirect(hmnurl.BuildBetaWeekCallForProjectsThanks(), http.StatusSeeOther)
+}
+
+func BetaWeekCallForProjectsThanks(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	type Tmpl struct {
+		templates.BaseData
+		BetaWeekUrl string
+	}
+	tmpl := Tmpl{
+		BaseData:    getBaseTemplateData(c, "Submit a Project | Thanks", nil),
+		BetaWeekUrl: hmnurl.BuildBetaWeekIndex(),
+	}
+	res.MustWriteTemplate("betaweek_2026_submit_project_thanks.html", tmpl, c.Perf)
 	return res
 }
 
