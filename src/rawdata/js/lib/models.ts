@@ -16,6 +16,30 @@ export type Icon = {
   svg: string,
 };
 
+export type Flowsnake = {
+  angle: number,
+  hue: number,
+  size: number,
+}
+
+export type Project = {
+  id: number,
+  name: string,
+  subdomain: string,
+  color1: string,
+  color2: string,
+  url: string,
+  blurb: string,
+  description: string,
+  ai_policy: string,
+  owners: User[] | null,
+  logo: string,
+  flowsnake: Flowsnake,
+  lifecycle: string,
+  has_blog: boolean,
+  has_forum: boolean,
+};
+
 export type SnippetEditorConfig = {
   assetMaxSize: number,
   availableProjects: SnippetEditAvailableProject[],

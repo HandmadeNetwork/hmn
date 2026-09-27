@@ -30,7 +30,7 @@ func getBaseTemplateData(c *RequestContext, title string, breadcrumbs []template
 	notices := getNoticesFromCookie(c)
 
 	var loginUrl string
-	if hmnurl.URLMatchesRoute(c.URL(), *hmnurl.RegexLoginPage) || hmnurl.URLMatchesRoute(c.URL(), *hmnurl.RegexRegister) {
+	if hmnurl.URLPathMatchesRoute(c.URL(), hmnurl.RegexLoginPage) || hmnurl.URLPathMatchesRoute(c.URL(), hmnurl.RegexRegister) {
 		// NOTE(ben): If clicking the login button from the login or register page, don't try to redirect to the
 		// login page after login :)
 		loginUrl = hmnurl.BuildLoginPage(c.URL().Query().Get("destination"), c.URL().Query().Get("notice"))

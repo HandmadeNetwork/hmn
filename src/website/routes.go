@@ -132,7 +132,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexJamGenericFeed, JamGenericFeed)
 	hmnOnly.GET(hmnurl.RegexJamGenericGuidelines, JamGenericGuidelines)
 	hmnOnly.GET(hmnurl.RegexBetaWeekIndex, BetaWeekIndex)
-	hmnOnly.GET(hmnurl.RegexBetaWeekCallForProjects, BetaWeekCallForProjects)
+	hmnOnly.GET(hmnurl.RegexBetaWeekCallForProjects, needsAuth(BetaWeekCallForProjects))
 
 	hmnOnly.GET(hmnurl.RegexExpo, ExpoIndex)
 	hmnOnly.GET(hmnurl.RegexExpoTicketPurchaseSuccess, needsAuth(ExpoTicketPurchaseSuccess))
@@ -253,6 +253,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	// NOTE(asaf): CheckUsername requires a logged-in user, so it can't use the apiRoutes middleware.
 	hmnOnly.POST(hmnurl.RegexAPICheckUsername, needsAuth(csrfMiddleware(APICheckUsername)))
 	apiRoutes.POST(hmnurl.RegexAPINewsletterSignup, APINewsletterSignup)
+	apiRoutes.POST(hmnurl.RegexAPIProject, APIProject)
 	apiRoutes.POST(hmnurl.RegexStripeWebhook, StripeWebhook)
 
 	hmnOnly.GET(hmnurl.RegexLibraryAny, func(c *RequestContext) ResponseData {

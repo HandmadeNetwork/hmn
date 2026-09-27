@@ -26,6 +26,7 @@ import (
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/perf"
 	"git.handmade.network/hmn/hmn/src/templates"
+	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 )
@@ -391,6 +392,17 @@ func (c *RequestContext) ErrorResponse(status int, errs ...error) ResponseData {
 	}
 	res.MustWriteTemplate("error.html", getBaseTemplateData(c, "", nil), c.Perf)
 	return res
+}
+
+func (c *RequestContext) GetJSON[T any]() (T, error) {
+	bodyBytes := utils.Must1(io.ReadAll(c.Req.Body))
+	var input T
+	err := json.Unmarshal(bodyBytes, &input)
+	if err != nil {
+		var zero T
+		return zero, err
+	}
+	return input, nil
 }
 
 func (c *RequestContext) JSONResponse(status int, data any) ResponseData {

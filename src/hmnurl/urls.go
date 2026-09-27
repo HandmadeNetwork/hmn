@@ -954,6 +954,12 @@ func BuildAPINewsletterSignup() string {
 	return Url("/api/newsletter_signup", nil)
 }
 
+var RegexAPIProject = regexp.MustCompile("^/api/project$")
+
+func BuildAPIProject() string {
+	return Url("/api/project", nil)
+}
+
 /*
 * Twitch stuff
  */

@@ -302,7 +302,14 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 func BetaWeekCallForProjects(c *RequestContext) ResponseData {
 	var res ResponseData
 
-	tmpl := getBaseTemplateData(c, "Submit a Project", nil)
+	type Tmpl struct {
+		templates.BaseData
+		FetchProjectUrl string
+	}
+	tmpl := Tmpl{
+		BaseData:        getBaseTemplateData(c, "Submit a Project", nil),
+		FetchProjectUrl: hmnurl.BuildAPIProject(),
+	}
 
 	res.MustWriteTemplate("betaweek_2026_submit_project.html", tmpl, c.Perf)
 	return res

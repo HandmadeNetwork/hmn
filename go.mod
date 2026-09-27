@@ -1,6 +1,6 @@
 module git.handmade.network/hmn/hmn
 
-go 1.26
+go 1.27
 
 require (
 	github.com/HandmadeNetwork/golorem v0.0.0-20220507185207-414965a3a817
