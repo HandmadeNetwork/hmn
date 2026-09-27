@@ -19,8 +19,6 @@ import (
 )
 
 const JamRecentWindow = 14 * 24 * time.Hour
-const JamBannerGraceBefore = 30 * 24 * time.Hour
-const JamBannerGraceAfter = 14 * 24 * time.Hour
 
 func JamCurrentTime(c *RequestContext, ev hmndata.Event) time.Time {
 	t := time.Now()
@@ -141,7 +139,7 @@ func getJamGenericTemplateData(c *RequestContext, jam hmndata.Jam, baseData temp
 			return JamGenericTemplateData{}, oops.New(err, "failed to fetch current user's jam project")
 		}
 		if len(projects) > 0 {
-			submittedProject = utils.P(templates.ProjectAndStuffToTemplate(&projects[0]))
+			submittedProject = new(templates.ProjectAndStuffToTemplate(&projects[0]))
 		}
 	}
 
@@ -295,6 +293,22 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 		CallForProjectsUrl: hmnurl.BuildBetaWeekCallForProjects(),
 	}
 
+	opengraph := []templates.OpenGraphItem{
+		{Property: "og:title", Value: hmndata.BetaWeek2026.Name},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		// {Property: "og:image", Value: hmnurl.BuildPublic(assets.OpenGraphImage, true)},
+		{Property: "og:description", Value: hmndata.BetaWeek2026.Description},
+		{Property: "og:url", Value: hmndata.BetaWeek2026.Url},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		// {Name: "twitter:image", Value: hmnurl.BuildPublic(assets.TwitterCard, true)},
+	}
+
+	tmpl.OpenGraphItems = opengraph
+	tmpl.BodyClasses = append(tmpl.BodyClasses, "header-transparent")
+	tmpl.ForceDark = hmndata.BetaWeek2026.ForceDark
+	tmpl.Header.SuppressBanners = true
+
 	res.MustWriteTemplate("betaweek_2026_index.html", tmpl, c.Perf)
 	return res
 }
@@ -312,6 +326,7 @@ func BetaWeekCallForProjects(c *RequestContext) ResponseData {
 		FetchProjectUrl: hmnurl.BuildAPIProject(),
 		SubmitUrl:       hmnurl.BuildBetaWeekCallForProjects(),
 	}
+	tmpl.Header.SuppressBanners = true
 
 	res.MustWriteTemplate("betaweek_2026_submit_project.html", tmpl, c.Perf)
 	return res
@@ -397,6 +412,7 @@ func BetaWeekCallForProjectsThanks(c *RequestContext) ResponseData {
 		BaseData:    getBaseTemplateData(c, "Submit a Project | Thanks", nil),
 		BetaWeekUrl: hmnurl.BuildBetaWeekIndex(),
 	}
+	tmpl.Header.SuppressBanners = true
 	res.MustWriteTemplate("betaweek_2026_submit_project_thanks.html", tmpl, c.Perf)
 	return res
 }

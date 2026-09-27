@@ -67,7 +67,7 @@ func (bot *botInstance) createApplicationCommands(ctx context.Context) {
 		Type:         ApplicationCommandTypeChatInput,
 		Name:         SlashCommandHMHReplay,
 		Description:  "Join the Handmade Hero Replay",
-		DMPermission: utils.P(false),
+		DMPermission: new(false),
 		Options: []ApplicationCommandOption{
 			{
 				Type:        ApplicationCommandOptionTypeBoolean,
@@ -82,7 +82,7 @@ func (bot *botInstance) createApplicationCommands(ctx context.Context) {
 		Type:         ApplicationCommandTypeChatInput,
 		Name:         SlashCommandJoinJam,
 		Description:  "Join an upcoming jam",
-		DMPermission: utils.P(false),
+		DMPermission: new(false),
 	}))
 }
 

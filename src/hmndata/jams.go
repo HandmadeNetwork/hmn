@@ -7,6 +7,7 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
@@ -36,6 +37,7 @@ var WRJ2021 = Jam{
 		Name:      "Wheel Reinvention Jam 2021",
 		Slug:      "WRJ2021",
 		UrlSlug:   "2021",
+		Url:       hmnurl.BuildJamIndex2021(),
 	},
 }
 
@@ -46,6 +48,7 @@ var WRJ2022 = Jam{
 		Name:      "Wheel Reinvention Jam 2022",
 		Slug:      "WRJ2022",
 		UrlSlug:   "2022",
+		Url:       hmnurl.BuildJamIndex2022(),
 	},
 }
 
@@ -56,6 +59,7 @@ var VJ2023 = Jam{
 		Name:      "Visibility Jam 2023",
 		Slug:      "VJ2023",
 		UrlSlug:   "visibility-2023",
+		Url:       hmnurl.BuildJamIndex2023_Visibility(),
 	},
 }
 
@@ -66,6 +70,7 @@ var WRJ2023 = Jam{
 		Name:      "Wheel Reinvention Jam 2023",
 		Slug:      "WRJ2023",
 		UrlSlug:   "2023",
+		Url:       hmnurl.BuildJamIndex2023(),
 	},
 }
 
@@ -77,6 +82,7 @@ var LJ2024 = Jam{
 		Description: "A two-weekend jam where you dive deep into a topic, then share it with the rest of the community.",
 		Slug:        "LJ2024",
 		UrlSlug:     "learning-2024",
+		Url:         hmnurl.BuildJamGenericIndex("learning-2024"),
 	},
 	TemplateName: "2024_lj",
 	ForceDark:    true,
@@ -93,6 +99,7 @@ var VJ2024 = Jam{
 		Description: "See things in a new way. July 19 - 21.",
 		Slug:        "VJ2024",
 		UrlSlug:     "visibility-2024",
+		Url:         hmnurl.BuildJamGenericIndex("visibility-2024"),
 	},
 	TemplateName: "2024_vj",
 }
@@ -105,6 +112,7 @@ var WRJ2024 = Jam{
 		Description: "A one-week jam where we build software from scratch. September 23 - 29 on the Handmade Network.",
 		Slug:        "WRJ2024",
 		UrlSlug:     "wheel-reinvention-2024",
+		Url:         hmnurl.BuildJamGenericIndex("wheel-reinvention-2024"),
 	},
 	TemplateName: "2024_wrj",
 }
@@ -117,6 +125,7 @@ var XRay2025 = Jam{
 		Description: "A jam to find out how software works on the inside. June 9 - 15 on the Handmade Network.",
 		Slug:        "XRay2025",
 		UrlSlug:     "x-ray-2025",
+		Url:         hmnurl.BuildJamGenericIndex("x-ray-2025"),
 	},
 	TemplateName: "2025_xray",
 	ForceDark:    true,
@@ -130,6 +139,7 @@ var WRJ2025 = Jam{
 		Description: "A one-week jam to build software from scratch. September 22 - 28 on the Handmade Network.",
 		Slug:        "WRJ2025",
 		UrlSlug:     "wheel-reinvention-2025",
+		Url:         hmnurl.BuildJamGenericIndex("wheel-reinvention-2025"),
 	},
 	TemplateName: "2025_wrj",
 }
@@ -142,6 +152,7 @@ var Essentials2026 = Jam{
 		Description: "Build simple programs you would use every day, from scratch, by hand. April 13 - 19, 2026.",
 		Slug:        "Essentials2026",
 		UrlSlug:     "essentials",
+		Url:         hmnurl.BuildJamGenericIndex("essentials"),
 	},
 
 	TemplateName: "2026_essentials",
@@ -161,13 +172,17 @@ var Essentials2026 = Jam{
 // huge structural change.
 var BetaWeek2026 = Jam{
 	Event: Event{
-		StartTime:   time.Date(2026, 11, 16, 13, 0, 0, 0, time.UTC),
-		EndTime:     time.Date(2026, 11, 23, 5, 0, 0, 0, time.UTC),
+		StartTime:       time.Date(2026, 11, 16, 13, 0, 0, 0, time.UTC),
+		EndTime:         time.Date(2026, 11, 23, 5, 0, 0, 0, time.UTC),
+		BannerStartTime: time.Date(2026, 9, 27, 0, 0, 0, 0, time.UTC),
+		BannerEndTime:   time.Date(2026, 11, 23, 5, 0, 0, 0, time.UTC),
+
 		Name:        "Beta Week",
 		Description: "A focused week of testing Handmade software. November 16-22, 2026.",
 		Slug:        "BetaWeek2026",
 		// NOTE(ben): No URL slug for now, since it's not clear what the patterns will be.
 		// The URL is /betaweek/2026, for now.
+		Url: hmnurl.BuildBetaWeekIndex(),
 	},
 
 	TemplateName: "2026_betaweek",
