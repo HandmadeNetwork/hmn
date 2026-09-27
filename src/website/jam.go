@@ -218,7 +218,7 @@ func JamGenericIndex(c *RequestContext) ResponseData {
 	urlSlug := strings.ToLower(c.PathParams["urlslug"])
 
 	jam, found := findJamByUrlSlug(urlSlug)
-	if !found {
+	if !found || jam.IsBetaWeek { // HACK(ben): Just...don't let the beta week slip in here
 		return FourOhFour(c)
 	}
 
@@ -239,7 +239,7 @@ func JamGenericFeed(c *RequestContext) ResponseData {
 	urlSlug := strings.ToLower(c.PathParams["urlslug"])
 
 	jam, found := findJamByUrlSlug(urlSlug)
-	if !found {
+	if !found || jam.IsBetaWeek { // HACK(ben)
 		return FourOhFour(c)
 	}
 
@@ -263,7 +263,7 @@ func JamGenericGuidelines(c *RequestContext) ResponseData {
 	urlSlug := strings.ToLower(c.PathParams["urlslug"])
 
 	jam, found := findJamByUrlSlug(urlSlug)
-	if !found {
+	if !found || jam.IsBetaWeek { // HACK(ben)
 		return FourOhFour(c)
 	}
 
@@ -278,6 +278,33 @@ func JamGenericGuidelines(c *RequestContext) ResponseData {
 	}
 
 	res.MustWriteTemplate(templateName, templateData, c.Perf)
+	return res
+}
+
+func BetaWeekIndex(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	type Tmpl struct {
+		templates.BaseData
+		IndexUrl           string
+		CallForProjectsUrl string
+	}
+	tmpl := Tmpl{
+		BaseData:           getBaseTemplateData(c, "Submit a Project", nil),
+		IndexUrl:           hmnurl.BuildBetaWeekIndex(),
+		CallForProjectsUrl: hmnurl.BuildBetaWeekCallForProjects(),
+	}
+
+	res.MustWriteTemplate("betaweek_2026_index.html", tmpl, c.Perf)
+	return res
+}
+
+func BetaWeekCallForProjects(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	tmpl := getBaseTemplateData(c, "Submit a Project", nil)
+
+	res.MustWriteTemplate("betaweek_2026_submit_project.html", tmpl, c.Perf)
 	return res
 }
 

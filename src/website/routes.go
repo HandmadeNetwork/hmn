@@ -120,9 +120,6 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	})
 
 	hmnOnly.GET(hmnurl.RegexJamsIndex, JamsIndex)
-	hmnOnly.GET(hmnurl.RegexJamIndex, func(c *RequestContext) ResponseData {
-		return c.Redirect(hmnurl.BuildJamGenericIndex(hmndata.LatestJam.UrlSlug), http.StatusFound)
-	})
 	hmnOnly.GET(hmnurl.RegexJamIndex2021, JamIndex2021)
 	hmnOnly.GET(hmnurl.RegexJamIndex2022, JamIndex2022)
 	hmnOnly.GET(hmnurl.RegexJamFeed2022, JamFeed2022)
@@ -131,10 +128,11 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.GET(hmnurl.RegexJamRecap2023_Visibility, JamRecap2023_Visibility)
 	hmnOnly.GET(hmnurl.RegexJamIndex2023, JamIndex2023)
 	hmnOnly.GET(hmnurl.RegexJamFeed2023, JamFeed2023)
-
 	hmnOnly.GET(hmnurl.RegexJamGenericIndex, JamGenericIndex)
 	hmnOnly.GET(hmnurl.RegexJamGenericFeed, JamGenericFeed)
 	hmnOnly.GET(hmnurl.RegexJamGenericGuidelines, JamGenericGuidelines)
+	hmnOnly.GET(hmnurl.RegexBetaWeekIndex, BetaWeekIndex)
+	hmnOnly.GET(hmnurl.RegexBetaWeekCallForProjects, BetaWeekCallForProjects)
 
 	hmnOnly.GET(hmnurl.RegexExpo, ExpoIndex)
 	hmnOnly.GET(hmnurl.RegexExpoTicketPurchaseSuccess, needsAuth(ExpoTicketPurchaseSuccess))

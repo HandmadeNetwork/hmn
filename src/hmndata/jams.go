@@ -24,6 +24,9 @@ type Jam struct {
 
 	DiscordRoleIDs map[config.Environment]string
 	NagTime        time.Time
+
+	IsBetaWeek        bool // HACK(ben): Different routing for beta week
+	AdminApprovalOnly bool // NOTE(ben): Only admins will be able to tick the box to associate projects with this event
 }
 
 var WRJ2021 = Jam{
@@ -152,6 +155,31 @@ var Essentials2026 = Jam{
 	NagTime: time.Date(2026, 4, 11, 14, 0, 0, 0, time.UTC),
 }
 
+// NOTE(ben): For now we are considering Beta Week a Jam because mostly we
+// expect it to slot into many existing website systems related to jams. We
+// will probably rephrase things eventually but that will probably not be a
+// huge structural change.
+var BetaWeek2026 = Jam{
+	Event: Event{
+		StartTime:   time.Date(2026, 11, 16, 13, 0, 0, 0, time.UTC),
+		EndTime:     time.Date(2026, 11, 23, 5, 0, 0, 0, time.UTC),
+		Name:        "Beta Week",
+		Description: "A focused week of testing Handmade software. November 16-22, 2026.",
+		Slug:        "BetaWeek2026",
+		// NOTE(ben): No URL slug for now, since it's not clear what the patterns will be.
+		// The URL is /betaweek/2026, for now.
+	},
+
+	TemplateName: "2026_betaweek",
+	ForceDark:    true,
+
+	// TODO(betaweek): Discord roles?
+	// TODO(betaweek): Nag time?
+
+	IsBetaWeek:        true,
+	AdminApprovalOnly: true,
+}
+
 var AllJams = []Jam{
 	WRJ2021,
 	WRJ2022,
@@ -163,9 +191,10 @@ var AllJams = []Jam{
 	XRay2025,
 	WRJ2025,
 	Essentials2026,
+	BetaWeek2026,
 }
 
-var LatestJam = Essentials2026 // NOTE(asaf): The /jam route will redirect here
+var LatestJam = BetaWeek2026 // NOTE(ben): This is used for Discord integration, e.g. slash command and #jam channel activity
 
 func CurrentJam() *Jam {
 	now := time.Now()
