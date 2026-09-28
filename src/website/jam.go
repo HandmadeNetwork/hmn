@@ -99,7 +99,7 @@ type JamGenericTemplateData struct {
 	ShortFeed                  bool
 }
 
-func getJamAssets(jam hmndata.Jam) JamAssets {
+func getJamAssets(jam *hmndata.Jam) JamAssets {
 	return JamAssets{
 		Logo:           fmt.Sprintf("jams/%s/logo.svg", jam.UrlSlug),
 		TwitterCard:    fmt.Sprintf("jams/%s/TwitterCard.png", jam.UrlSlug),
@@ -107,7 +107,7 @@ func getJamAssets(jam hmndata.Jam) JamAssets {
 	}
 }
 
-func getJamGenericTemplateData(c *RequestContext, jam hmndata.Jam, baseData templates.BaseData, numTimelineItems int) (JamGenericTemplateData, error) {
+func getJamGenericTemplateData(c *RequestContext, jam *hmndata.Jam, baseData templates.BaseData, numTimelineItems int) (JamGenericTemplateData, error) {
 	now := JamCurrentTime(c, jam.Event)
 
 	assets := getJamAssets(jam)
@@ -200,14 +200,14 @@ func getJamGenericTemplateData(c *RequestContext, jam hmndata.Jam, baseData temp
 	return templateData, nil
 }
 
-func findJamByUrlSlug(urlSlug string) (hmndata.Jam, bool) {
+func findJamByUrlSlug(urlSlug string) (*hmndata.Jam, bool) {
 	for _, j := range hmndata.AllJams {
 		if strings.ToLower(j.UrlSlug) == urlSlug {
 			return j, true
 		}
 	}
 
-	return hmndata.Jam{}, false
+	return nil, false
 }
 
 func JamGenericIndex(c *RequestContext) ResponseData {
@@ -216,7 +216,7 @@ func JamGenericIndex(c *RequestContext) ResponseData {
 	urlSlug := strings.ToLower(c.PathParams["urlslug"])
 
 	jam, found := findJamByUrlSlug(urlSlug)
-	if !found || jam.IsBetaWeek { // HACK(ben): Just...don't let the beta week slip in here
+	if !found {
 		return FourOhFour(c)
 	}
 
@@ -237,7 +237,7 @@ func JamGenericFeed(c *RequestContext) ResponseData {
 	urlSlug := strings.ToLower(c.PathParams["urlslug"])
 
 	jam, found := findJamByUrlSlug(urlSlug)
-	if !found || jam.IsBetaWeek { // HACK(ben)
+	if !found {
 		return FourOhFour(c)
 	}
 
@@ -261,7 +261,7 @@ func JamGenericGuidelines(c *RequestContext) ResponseData {
 	urlSlug := strings.ToLower(c.PathParams["urlslug"])
 
 	jam, found := findJamByUrlSlug(urlSlug)
-	if !found || jam.IsBetaWeek { // HACK(ben)
+	if !found {
 		return FourOhFour(c)
 	}
 
@@ -288,7 +288,7 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 		CallForProjectsUrl string
 	}
 	tmpl := Tmpl{
-		BaseData:           getBaseTemplateData(c, "Submit a Project", nil),
+		BaseData:           getBaseTemplateData(c, "Beta Week", nil),
 		IndexUrl:           hmnurl.BuildBetaWeekIndex(),
 		CallForProjectsUrl: hmnurl.BuildBetaWeekCallForProjects(),
 	}
@@ -306,7 +306,7 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 
 	tmpl.OpenGraphItems = opengraph
 	tmpl.BodyClasses = append(tmpl.BodyClasses, "header-transparent")
-	tmpl.ForceDark = hmndata.BetaWeek2026.ForceDark
+	tmpl.ForceDark = true
 	tmpl.Header.SuppressBanners = true
 
 	res.MustWriteTemplate("betaweek_2026_index.html", tmpl, c.Perf)

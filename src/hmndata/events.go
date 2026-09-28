@@ -30,6 +30,14 @@ func (ev Event) Within(t time.Time) bool {
 }
 
 func (ev Event) WithinBanner(t time.Time) bool {
+	// NOTE(ben): This is kind of jank, but basically we assume that any event
+	// without an explicit banner start and end time is a jam and we use these
+	// common jam grace period variables for it, which is dumb but idk. We should
+	// probably just fill in all the banner things on existing jams and delete
+	// these constants.
+	if ev.BannerStartTime.IsZero() {
+		return ev.WithinGrace(t, JamBannerGraceBefore, JamBannerGraceAfter)
+	}
 	return ev.BannerStartTime.Before(t) && t.Before(ev.BannerEndTime)
 }
 

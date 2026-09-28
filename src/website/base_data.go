@@ -53,15 +53,9 @@ func getBaseTemplateData(c *RequestContext, title string, breadcrumbs []template
 	}
 
 	var bannerEvent *templates.BannerEvent
-	for _, jam := range hmndata.AllJams {
-		// NOTE(ben): This used to do some logic with variables named
-		// JamBannerGraceBefore and JamBannerGraceAfter. In retrospect, this is a
-		// lot more rigid and annoying than just throwing some BannerStart and
-		// BannerEnd variables on each event. So that's what we do now, but all the
-		// existing jams are missing that (since I can't be bothered to backfill
-		// them), and you will have to supply those variables for any future jams.
-		if jam.Event.WithinBanner(time.Now()) {
-			bannerEvent = new(templates.JamToBannerEvent(jam))
+	for _, event := range hmndata.AllEvents {
+		if event.WithinBanner(time.Now()) {
+			bannerEvent = new(templates.EventToBannerEvent(event))
 		}
 	}
 

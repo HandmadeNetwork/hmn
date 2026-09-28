@@ -14,6 +14,8 @@ import (
 )
 
 const JamProjectCreateGracePeriod = 14 * 24 * time.Hour
+const JamBannerGraceBefore = 30 * 24 * time.Hour
+const JamBannerGraceAfter = 14 * 24 * time.Hour
 
 type Jam struct {
 	Event
@@ -25,9 +27,6 @@ type Jam struct {
 
 	DiscordRoleIDs map[config.Environment]string
 	NagTime        time.Time
-
-	IsBetaWeek        bool // HACK(ben): Different routing for beta week
-	AdminApprovalOnly bool // NOTE(ben): Only admins will be able to tick the box to associate projects with this event
 }
 
 var WRJ2021 = Jam{
@@ -166,56 +165,54 @@ var Essentials2026 = Jam{
 	NagTime: time.Date(2026, 4, 11, 14, 0, 0, 0, time.UTC),
 }
 
-// NOTE(ben): For now we are considering Beta Week a Jam because mostly we
-// expect it to slot into many existing website systems related to jams. We
-// will probably rephrase things eventually but that will probably not be a
-// huge structural change.
-var BetaWeek2026 = Jam{
-	Event: Event{
-		StartTime:       time.Date(2026, 11, 16, 13, 0, 0, 0, time.UTC),
-		EndTime:         time.Date(2026, 11, 23, 5, 0, 0, 0, time.UTC),
-		BannerStartTime: time.Date(2026, 9, 27, 0, 0, 0, 0, time.UTC),
-		BannerEndTime:   time.Date(2026, 11, 23, 5, 0, 0, 0, time.UTC),
+var BetaWeek2026 = Event{
+	StartTime:       time.Date(2026, 11, 16, 13, 0, 0, 0, time.UTC),
+	EndTime:         time.Date(2026, 11, 23, 5, 0, 0, 0, time.UTC),
+	BannerStartTime: time.Date(2026, 9, 27, 0, 0, 0, 0, time.UTC),
+	BannerEndTime:   time.Date(2026, 11, 23, 5, 0, 0, 0, time.UTC),
 
-		Name:        "Beta Week",
-		Description: "A focused week of testing Handmade software. November 16-22, 2026.",
-		Slug:        "BetaWeek2026",
-		// NOTE(ben): No URL slug for now, since it's not clear what the patterns will be.
-		// The URL is /betaweek/2026, for now.
-		Url: hmnurl.BuildBetaWeekIndex(),
-	},
-
-	TemplateName: "2026_betaweek",
-	ForceDark:    true,
-
-	// TODO(betaweek): Discord roles?
-	// TODO(betaweek): Nag time?
-
-	IsBetaWeek:        true,
-	AdminApprovalOnly: true,
+	Name:        "Beta Week",
+	Description: "A focused week of testing Handmade software. November 16-22, 2026.",
+	Slug:        "BetaWeek2026",
+	// NOTE(ben): No URL slug for now, since it's not clear what the patterns will be.
+	// The URL is /betaweek/2026, for now.
+	Url: hmnurl.BuildBetaWeekIndex(),
 }
 
-var AllJams = []Jam{
-	WRJ2021,
-	WRJ2022,
-	VJ2023,
-	WRJ2023,
-	LJ2024,
-	VJ2024,
-	WRJ2024,
-	XRay2025,
-	WRJ2025,
-	Essentials2026,
-	BetaWeek2026,
+var AllJams = []*Jam{
+	&WRJ2021,
+	&WRJ2022,
+	&VJ2023,
+	&WRJ2023,
+	&LJ2024,
+	&VJ2024,
+	&WRJ2024,
+	&XRay2025,
+	&WRJ2025,
+	&Essentials2026,
 }
 
-var LatestJam = BetaWeek2026 // NOTE(ben): This is used for Discord integration, e.g. slash command and #jam channel activity
+var AllEvents = []*Event{
+	&WRJ2021.Event,
+	&WRJ2022.Event,
+	&VJ2023.Event,
+	&WRJ2023.Event,
+	&LJ2024.Event,
+	&VJ2024.Event,
+	&WRJ2024.Event,
+	&XRay2025.Event,
+	&WRJ2025.Event,
+	&Essentials2026.Event,
+	&BetaWeek2026,
+}
+
+var LatestJam *Jam = &Essentials2026 // NOTE(ben): This is used for Discord integration, e.g. slash command and #jam channel activity
 
 func CurrentJam() *Jam {
 	now := time.Now()
 	for i, jam := range AllJams {
 		if jam.Event.Within(now) {
-			return &AllJams[i]
+			return AllJams[i]
 		}
 	}
 	return nil
@@ -225,7 +222,7 @@ func UpcomingJam(window time.Duration) *Jam {
 	now := time.Now()
 	for i, jam := range AllJams {
 		if jam.Event.WithinGrace(now, window, 0) {
-			return &AllJams[i]
+			return AllJams[i]
 		}
 	}
 	return nil
@@ -235,19 +232,19 @@ func RecentJam(window time.Duration) *Jam {
 	now := time.Now()
 	for i, jam := range AllJams {
 		if jam.Event.WithinGrace(now, 0, window) {
-			return &AllJams[i]
+			return AllJams[i]
 		}
 	}
 	return nil
 }
 
-func JamBySlug(slug string) (Jam, bool) {
+func JamBySlug(slug string) (*Jam, bool) {
 	for _, jam := range AllJams {
 		if jam.Slug == slug {
 			return jam, true
 		}
 	}
-	return Jam{Event: Event{Slug: slug}}, false
+	return &Jam{Slug: slug}, false
 }
 
 func FetchJamsForProject(ctx context.Context, dbConn db.ConnOrTx, user *models.User, projectId int) ([]*models.JamProject, error) {

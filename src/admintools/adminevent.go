@@ -47,7 +47,7 @@ func addJamNagCommand(postCommand *cobra.Command) {
 				os.Exit(1)
 			}
 
-			nags, err := website.NagUsersToCreateJamProjects(ctx, conn, &jam)
+			nags, err := website.NagUsersToCreateJamProjects(ctx, conn, jam)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
 			} else {

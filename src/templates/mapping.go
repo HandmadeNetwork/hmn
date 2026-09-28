@@ -531,14 +531,14 @@ func CalendarEventToTemplate(ev *calendar.CalendarEvent) CalendarEvent {
 	}
 }
 
-func JamToBannerEvent(jam hmndata.Jam) BannerEvent {
+func EventToBannerEvent(event *hmndata.Event) BannerEvent {
 	return BannerEvent{
-		Slug:           jam.Slug,
-		DaysUntilStart: utils.DaysUntil(jam.StartTime),
-		DaysUntilEnd:   utils.DaysUntil(jam.EndTime),
-		StartTimeUnix:  jam.StartTime.Unix(),
-		EndTimeUnix:    jam.EndTime.Unix(),
-		Url:            jam.Url,
+		Slug:           event.Slug,
+		DaysUntilStart: utils.DaysUntil(event.StartTime),
+		DaysUntilEnd:   utils.DaysUntil(event.EndTime),
+		StartTimeUnix:  event.StartTime.Unix(),
+		EndTimeUnix:    event.EndTime.Unix(),
+		Url:            event.Url,
 	}
 }
 

@@ -37,7 +37,7 @@ func NagUsersToCreateJamProjectsJob(dbConn *pgxpool.Pool) *jobs.Job {
 			case now := <-t.C:
 				for _, jam := range hmndata.AllJams {
 					if utils.TimeIsBetween(lastTime, jam.NagTime, now) {
-						nags, err := NagUsersToCreateJamProjects(job.Ctx, dbConn, &jam)
+						nags, err := NagUsersToCreateJamProjects(job.Ctx, dbConn, jam)
 						if err != nil {
 							log.Error().Err(err).Msg("Failed to nag people about the jam")
 						} else {

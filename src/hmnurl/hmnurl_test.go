@@ -366,11 +366,6 @@ func TestJamsIndex(t *testing.T) {
 	AssertRegexMatch(t, BuildJamsIndex(), RegexJamsIndex, nil)
 }
 
-func TestJamIndex(t *testing.T) {
-	AssertRegexMatch(t, BuildJamIndex(), RegexJamIndex, nil)
-	AssertSubdomain(t, BuildJamIndex(), "")
-}
-
 func TestJamIndex2021(t *testing.T) {
 	AssertRegexMatch(t, BuildJamIndex2021(), RegexJamIndex2021, nil)
 	AssertSubdomain(t, BuildJamIndex2021(), "")
