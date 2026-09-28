@@ -24,6 +24,7 @@ function init({
   function clearProject() {
     projectPreviewContainer.hidden = true;
     projectPreviewContainer.innerHTML = "";
+    projectIDField.value = "";
   }
   async function loadProject() {
     const projectUrl = projectUrlField.value.trim();

@@ -107,7 +107,7 @@ func APIProject(c *RequestContext) ResponseData {
 		// NOTE(ben): Official project
 		project, err = hmndata.FetchProjectBySlug(c, c.Conn, c.CurrentUser, slug, hmndata.ProjectsQuery{
 			Lifecycles:    models.AllProjectLifecycles,
-			IncludeHidden: true, // NOTE(ben): Still filtered by user visibility rules
+			IncludeHidden: true,
 		})
 	} else if hmnurl.URLPathMatchesRoute(parsedUrl, hmnurl.RegexPersonalProject) {
 		projectIDStr := hmnurl.MatchURLPathAgainstRoute(parsedUrl, hmnurl.RegexPersonalProject)["projectid"]
