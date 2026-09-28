@@ -7,13 +7,15 @@ import (
 )
 
 type Event struct {
-	StartTime, EndTime time.Time
+	StartTime, EndTime             time.Time
+	BannerStartTime, BannerEndTime time.Time
 
 	Name        string
 	Description string // NOTE(asaf): Used by opengraph
 	Image       string // NOTE(ben): Used by opengraph
 	Slug        string
 	UrlSlug     string
+	Url         string
 
 	IndexUrl         string
 	TicketSuccessUrl string
@@ -25,6 +27,18 @@ type Event struct {
 
 func (ev Event) Within(t time.Time) bool {
 	return ev.WithinGrace(t, 0, 0)
+}
+
+func (ev Event) WithinBanner(t time.Time) bool {
+	// NOTE(ben): This is kind of jank, but basically we assume that any event
+	// without an explicit banner start and end time is a jam and we use these
+	// common jam grace period variables for it, which is dumb but idk. We should
+	// probably just fill in all the banner things on existing jams and delete
+	// these constants.
+	if ev.BannerStartTime.IsZero() {
+		return ev.WithinGrace(t, JamBannerGraceBefore, JamBannerGraceAfter)
+	}
+	return ev.BannerStartTime.Before(t) && t.Before(ev.BannerEndTime)
 }
 
 func (ev Event) WithinGrace(t time.Time, before, after time.Duration) bool {

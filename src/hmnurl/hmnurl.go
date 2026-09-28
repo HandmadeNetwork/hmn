@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"git.handmade.network/hmn/hmn/src/models"
+	"git.handmade.network/hmn/hmn/src/utils"
 	// NOTE(ben): Avoid importing oops to keep wasm builds smaller (thanks zerolog)
 )
 
@@ -101,9 +102,30 @@ func NormalizePath(path string) string {
 	return res
 }
 
-func URLMatchesRoute(url *url.URL, route regexp.Regexp) bool {
+// NOTE(ben): Does NOT check the host, only the path.
+func URLPathMatchesRoute(url *url.URL, route *regexp.Regexp) bool {
 	path := NormalizePath(url.Path)
 	return route.MatchString(path)
+}
+
+// NOTE(ben): Mirrors what routing does and matches a route regex, extracting
+// and returning the URL params. Panics if the route does not match. Like
+// [URLPathMatchesRoute], does not check the host.
+func MatchURLPathAgainstRoute(url *url.URL, route *regexp.Regexp) map[string]string {
+	path := NormalizePath(url.Path)
+	match := route.FindStringSubmatch(path)
+	utils.Assert(len(match) > 0)
+
+	res := make(map[string]string)
+	subexpNames := route.SubexpNames()
+	for i, param := range match {
+		paramName := subexpNames[i]
+		if paramName == "" {
+			continue
+		}
+		res[paramName] = param
+	}
+	return res
 }
 
 // Takes a project URL and rewrites it using the current URL context. This can be used

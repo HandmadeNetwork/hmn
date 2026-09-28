@@ -32,12 +32,6 @@ func BuildJamsIndex() string {
 	return Url("/jams", nil)
 }
 
-var RegexJamIndex = regexp.MustCompile("^/jam$")
-
-func BuildJamIndex() string {
-	return Url("/jam", nil)
-}
-
 var RegexJamIndex2021 = regexp.MustCompile("^/jam/2021$")
 
 func BuildJamIndex2021() string {
@@ -102,6 +96,24 @@ var RegexJamGenericGuidelines = regexp.MustCompile("^/jam/(?P<urlslug>[^/]+)/gui
 
 func BuildJamGenericGuidelines(urlSlug string) string {
 	return Url(fmt.Sprintf("/jam/%s/guidelines", urlSlug), nil)
+}
+
+var RegexBetaWeekIndex = regexp.MustCompile("^/betaweek/2026$")
+
+func BuildBetaWeekIndex() string {
+	return Url("/betaweek/2026", nil)
+}
+
+var RegexBetaWeekCallForProjects = regexp.MustCompile("^/betaweek/2026/submit-project$")
+
+func BuildBetaWeekCallForProjects() string {
+	return Url("/betaweek/2026/submit-project", nil)
+}
+
+var RegexBetaWeekCallForProjectsThanks = regexp.MustCompile("^/betaweek/2026/submit-project/thanks$")
+
+func BuildBetaWeekCallForProjectsThanks() string {
+	return Url("/betaweek/2026/submit-project/thanks", nil)
 }
 
 var RegexExpo = regexp.MustCompile("^/expo/(?P<urlslug>[^/]+)$")
@@ -946,6 +958,12 @@ var RegexAPINewsletterSignup = regexp.MustCompile("^/api/newsletter_signup$")
 
 func BuildAPINewsletterSignup() string {
 	return Url("/api/newsletter_signup", nil)
+}
+
+var RegexAPIProject = regexp.MustCompile("^/api/project$")
+
+func BuildAPIProject() string {
+	return Url("/api/project", nil)
 }
 
 /*

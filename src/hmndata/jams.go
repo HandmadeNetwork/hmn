@@ -7,12 +7,15 @@ import (
 
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
+	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 const JamProjectCreateGracePeriod = 14 * 24 * time.Hour
+const JamBannerGraceBefore = 30 * 24 * time.Hour
+const JamBannerGraceAfter = 14 * 24 * time.Hour
 
 type Jam struct {
 	Event
@@ -33,6 +36,7 @@ var WRJ2021 = Jam{
 		Name:      "Wheel Reinvention Jam 2021",
 		Slug:      "WRJ2021",
 		UrlSlug:   "2021",
+		Url:       hmnurl.BuildJamIndex2021(),
 	},
 }
 
@@ -43,6 +47,7 @@ var WRJ2022 = Jam{
 		Name:      "Wheel Reinvention Jam 2022",
 		Slug:      "WRJ2022",
 		UrlSlug:   "2022",
+		Url:       hmnurl.BuildJamIndex2022(),
 	},
 }
 
@@ -53,6 +58,7 @@ var VJ2023 = Jam{
 		Name:      "Visibility Jam 2023",
 		Slug:      "VJ2023",
 		UrlSlug:   "visibility-2023",
+		Url:       hmnurl.BuildJamIndex2023_Visibility(),
 	},
 }
 
@@ -63,6 +69,7 @@ var WRJ2023 = Jam{
 		Name:      "Wheel Reinvention Jam 2023",
 		Slug:      "WRJ2023",
 		UrlSlug:   "2023",
+		Url:       hmnurl.BuildJamIndex2023(),
 	},
 }
 
@@ -74,6 +81,7 @@ var LJ2024 = Jam{
 		Description: "A two-weekend jam where you dive deep into a topic, then share it with the rest of the community.",
 		Slug:        "LJ2024",
 		UrlSlug:     "learning-2024",
+		Url:         hmnurl.BuildJamGenericIndex("learning-2024"),
 	},
 	TemplateName: "2024_lj",
 	ForceDark:    true,
@@ -90,6 +98,7 @@ var VJ2024 = Jam{
 		Description: "See things in a new way. July 19 - 21.",
 		Slug:        "VJ2024",
 		UrlSlug:     "visibility-2024",
+		Url:         hmnurl.BuildJamGenericIndex("visibility-2024"),
 	},
 	TemplateName: "2024_vj",
 }
@@ -102,6 +111,7 @@ var WRJ2024 = Jam{
 		Description: "A one-week jam where we build software from scratch. September 23 - 29 on the Handmade Network.",
 		Slug:        "WRJ2024",
 		UrlSlug:     "wheel-reinvention-2024",
+		Url:         hmnurl.BuildJamGenericIndex("wheel-reinvention-2024"),
 	},
 	TemplateName: "2024_wrj",
 }
@@ -114,6 +124,7 @@ var XRay2025 = Jam{
 		Description: "A jam to find out how software works on the inside. June 9 - 15 on the Handmade Network.",
 		Slug:        "XRay2025",
 		UrlSlug:     "x-ray-2025",
+		Url:         hmnurl.BuildJamGenericIndex("x-ray-2025"),
 	},
 	TemplateName: "2025_xray",
 	ForceDark:    true,
@@ -127,6 +138,7 @@ var WRJ2025 = Jam{
 		Description: "A one-week jam to build software from scratch. September 22 - 28 on the Handmade Network.",
 		Slug:        "WRJ2025",
 		UrlSlug:     "wheel-reinvention-2025",
+		Url:         hmnurl.BuildJamGenericIndex("wheel-reinvention-2025"),
 	},
 	TemplateName: "2025_wrj",
 }
@@ -139,6 +151,7 @@ var Essentials2026 = Jam{
 		Description: "Build simple programs you would use every day, from scratch, by hand. April 13 - 19, 2026.",
 		Slug:        "Essentials2026",
 		UrlSlug:     "essentials",
+		Url:         hmnurl.BuildJamGenericIndex("essentials"),
 	},
 
 	TemplateName: "2026_essentials",
@@ -152,26 +165,54 @@ var Essentials2026 = Jam{
 	NagTime: time.Date(2026, 4, 11, 14, 0, 0, 0, time.UTC),
 }
 
-var AllJams = []Jam{
-	WRJ2021,
-	WRJ2022,
-	VJ2023,
-	WRJ2023,
-	LJ2024,
-	VJ2024,
-	WRJ2024,
-	XRay2025,
-	WRJ2025,
-	Essentials2026,
+var BetaWeek2026 = Event{
+	StartTime:       time.Date(2026, 11, 16, 13, 0, 0, 0, time.UTC),
+	EndTime:         time.Date(2026, 11, 23, 5, 0, 0, 0, time.UTC),
+	BannerStartTime: time.Date(2026, 9, 27, 0, 0, 0, 0, time.UTC),
+	BannerEndTime:   time.Date(2026, 11, 23, 5, 0, 0, 0, time.UTC),
+
+	Name:        "Beta Week",
+	Description: "A focused week of testing Handmade software. November 16-22, 2026.",
+	Slug:        "BetaWeek2026",
+	// NOTE(ben): No URL slug for now, since it's not clear what the patterns will be.
+	// The URL is /betaweek/2026, for now.
+	Url: hmnurl.BuildBetaWeekIndex(),
 }
 
-var LatestJam = Essentials2026 // NOTE(asaf): The /jam route will redirect here
+var AllJams = []*Jam{
+	&WRJ2021,
+	&WRJ2022,
+	&VJ2023,
+	&WRJ2023,
+	&LJ2024,
+	&VJ2024,
+	&WRJ2024,
+	&XRay2025,
+	&WRJ2025,
+	&Essentials2026,
+}
+
+var AllEvents = []*Event{
+	&WRJ2021.Event,
+	&WRJ2022.Event,
+	&VJ2023.Event,
+	&WRJ2023.Event,
+	&LJ2024.Event,
+	&VJ2024.Event,
+	&WRJ2024.Event,
+	&XRay2025.Event,
+	&WRJ2025.Event,
+	&Essentials2026.Event,
+	&BetaWeek2026,
+}
+
+var LatestJam *Jam = &Essentials2026 // NOTE(ben): This is used for Discord integration, e.g. slash command and #jam channel activity
 
 func CurrentJam() *Jam {
 	now := time.Now()
 	for i, jam := range AllJams {
 		if jam.Event.Within(now) {
-			return &AllJams[i]
+			return AllJams[i]
 		}
 	}
 	return nil
@@ -181,7 +222,7 @@ func UpcomingJam(window time.Duration) *Jam {
 	now := time.Now()
 	for i, jam := range AllJams {
 		if jam.Event.WithinGrace(now, window, 0) {
-			return &AllJams[i]
+			return AllJams[i]
 		}
 	}
 	return nil
@@ -191,19 +232,19 @@ func RecentJam(window time.Duration) *Jam {
 	now := time.Now()
 	for i, jam := range AllJams {
 		if jam.Event.WithinGrace(now, 0, window) {
-			return &AllJams[i]
+			return AllJams[i]
 		}
 	}
 	return nil
 }
 
-func JamBySlug(slug string) (Jam, bool) {
+func JamBySlug(slug string) (*Jam, bool) {
 	for _, jam := range AllJams {
 		if jam.Slug == slug {
 			return jam, true
 		}
 	}
-	return Jam{Event: Event{Slug: slug}}, false
+	return &Jam{Slug: slug}, false
 }
 
 func FetchJamsForProject(ctx context.Context, dbConn db.ConnOrTx, user *models.User, projectId int) ([]*models.JamProject, error) {

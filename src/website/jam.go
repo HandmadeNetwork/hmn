@@ -19,8 +19,6 @@ import (
 )
 
 const JamRecentWindow = 14 * 24 * time.Hour
-const JamBannerGraceBefore = 30 * 24 * time.Hour
-const JamBannerGraceAfter = 14 * 24 * time.Hour
 
 func JamCurrentTime(c *RequestContext, ev hmndata.Event) time.Time {
 	t := time.Now()
@@ -101,7 +99,7 @@ type JamGenericTemplateData struct {
 	ShortFeed                  bool
 }
 
-func getJamAssets(jam hmndata.Jam) JamAssets {
+func getJamAssets(jam *hmndata.Jam) JamAssets {
 	return JamAssets{
 		Logo:           fmt.Sprintf("jams/%s/logo.svg", jam.UrlSlug),
 		TwitterCard:    fmt.Sprintf("jams/%s/TwitterCard.png", jam.UrlSlug),
@@ -109,7 +107,7 @@ func getJamAssets(jam hmndata.Jam) JamAssets {
 	}
 }
 
-func getJamGenericTemplateData(c *RequestContext, jam hmndata.Jam, baseData templates.BaseData, numTimelineItems int) (JamGenericTemplateData, error) {
+func getJamGenericTemplateData(c *RequestContext, jam *hmndata.Jam, baseData templates.BaseData, numTimelineItems int) (JamGenericTemplateData, error) {
 	now := JamCurrentTime(c, jam.Event)
 
 	assets := getJamAssets(jam)
@@ -141,7 +139,7 @@ func getJamGenericTemplateData(c *RequestContext, jam hmndata.Jam, baseData temp
 			return JamGenericTemplateData{}, oops.New(err, "failed to fetch current user's jam project")
 		}
 		if len(projects) > 0 {
-			submittedProject = utils.P(templates.ProjectAndStuffToTemplate(&projects[0]))
+			submittedProject = new(templates.ProjectAndStuffToTemplate(&projects[0]))
 		}
 	}
 
@@ -202,14 +200,14 @@ func getJamGenericTemplateData(c *RequestContext, jam hmndata.Jam, baseData temp
 	return templateData, nil
 }
 
-func findJamByUrlSlug(urlSlug string) (hmndata.Jam, bool) {
+func findJamByUrlSlug(urlSlug string) (*hmndata.Jam, bool) {
 	for _, j := range hmndata.AllJams {
 		if strings.ToLower(j.UrlSlug) == urlSlug {
 			return j, true
 		}
 	}
 
-	return hmndata.Jam{}, false
+	return nil, false
 }
 
 func JamGenericIndex(c *RequestContext) ResponseData {
@@ -278,6 +276,144 @@ func JamGenericGuidelines(c *RequestContext) ResponseData {
 	}
 
 	res.MustWriteTemplate(templateName, templateData, c.Perf)
+	return res
+}
+
+func BetaWeekIndex(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	type Tmpl struct {
+		templates.BaseData
+		IndexUrl           string
+		CallForProjectsUrl string
+	}
+	tmpl := Tmpl{
+		BaseData:           getBaseTemplateData(c, "Beta Week", nil),
+		IndexUrl:           hmnurl.BuildBetaWeekIndex(),
+		CallForProjectsUrl: hmnurl.BuildBetaWeekCallForProjects(),
+	}
+
+	opengraph := []templates.OpenGraphItem{
+		{Property: "og:title", Value: hmndata.BetaWeek2026.Name},
+		{Property: "og:site_name", Value: "Handmade Network"},
+		{Property: "og:type", Value: "website"},
+		// {Property: "og:image", Value: hmnurl.BuildPublic(assets.OpenGraphImage, true)},
+		{Property: "og:description", Value: hmndata.BetaWeek2026.Description},
+		{Property: "og:url", Value: hmndata.BetaWeek2026.Url},
+		{Name: "twitter:card", Value: "summary_large_image"},
+		// {Name: "twitter:image", Value: hmnurl.BuildPublic(assets.TwitterCard, true)},
+	}
+
+	tmpl.OpenGraphItems = opengraph
+	tmpl.BodyClasses = append(tmpl.BodyClasses, "header-transparent")
+	tmpl.ForceDark = true
+	tmpl.Header.SuppressBanners = true
+
+	res.MustWriteTemplate("betaweek_2026_index.html", tmpl, c.Perf)
+	return res
+}
+
+func BetaWeekCallForProjects(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	type Tmpl struct {
+		templates.BaseData
+		FetchProjectUrl string
+		SubmitUrl       string
+	}
+	tmpl := Tmpl{
+		BaseData:        getBaseTemplateData(c, "Submit a Project", nil),
+		FetchProjectUrl: hmnurl.BuildAPIProject(),
+		SubmitUrl:       hmnurl.BuildBetaWeekCallForProjects(),
+	}
+	tmpl.Header.SuppressBanners = true
+
+	res.MustWriteTemplate("betaweek_2026_submit_project.html", tmpl, c.Perf)
+	return res
+}
+
+func BetaWeekCallForProjectsSubmit(c *RequestContext) ResponseData {
+	err := c.Req.ParseForm()
+	if err != nil {
+		return c.ErrorResponse(http.StatusBadRequest, err)
+	}
+
+	projectIDStr := c.Req.Form.Get("project-id")
+	projectID, err := strconv.Atoi(projectIDStr)
+	if err != nil {
+		return c.RejectRequest("bad project ID")
+	}
+	projectStatus := strings.TrimSpace(c.Req.Form.Get("project-status"))
+	projectPlatforms := strings.TrimSpace(c.Req.Form.Get("project-platforms"))
+	projectInstructions := strings.TrimSpace(c.Req.Form.Get("project-instructions"))
+	authorAvailability := strings.TrimSpace(c.Req.Form.Get("author-availability"))
+	authorGoals := strings.TrimSpace(c.Req.Form.Get("author-goals"))
+	authorAcknowledgment := c.Req.Form.Get("author-acknowledgment")
+
+	projectOk := true
+	p, err := hmndata.FetchProject(c, c.Conn, c.CurrentUser, projectID, hmndata.ProjectsQuery{
+		Lifecycles:    models.AllProjectLifecycles,
+		IncludeHidden: true,
+	})
+	if err == db.NotFound {
+		projectOk = false
+	} else if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch project"))
+	} else {
+		validOwner := false
+		for _, owner := range p.Owners {
+			if owner.ID == c.CurrentUser.ID {
+				validOwner = true
+			}
+		}
+		if !validOwner {
+			projectOk = false
+		}
+	}
+	if !projectOk {
+		return c.RejectRequest("Either that project does not exist, or you do not have access to it.")
+	}
+
+	if projectStatus == "" || projectPlatforms == "" || projectInstructions == "" || authorAvailability == "" || authorGoals == "" || authorAcknowledgment == "" {
+		return c.RejectRequest("Some required fields are missing.")
+	}
+
+	_, err = c.Conn.Exec(c,
+		`
+		INSERT INTO betaweek_project_submission (
+			event_slug,
+			project_id, project_status, project_platforms, project_instructions,
+			author_availability, author_goals
+		) VALUES (
+			$1,
+			$2, $3, $4, $5,
+			$6, $7
+		)
+		`,
+		hmndata.BetaWeek2026.Slug,
+		projectID, projectStatus, projectPlatforms, projectInstructions,
+		authorAvailability, authorGoals,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to save submission"))
+	}
+
+	return c.Redirect(hmnurl.BuildBetaWeekCallForProjectsThanks(), http.StatusSeeOther)
+}
+
+func BetaWeekCallForProjectsThanks(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	type Tmpl struct {
+		templates.BaseData
+		BetaWeekUrl string
+	}
+	tmpl := Tmpl{
+		BaseData:    getBaseTemplateData(c, "Submit a Project | Thanks", nil),
+		BetaWeekUrl: hmnurl.BuildBetaWeekIndex(),
+	}
+	tmpl.Header.SuppressBanners = true
+	res.MustWriteTemplate("betaweek_2026_submit_project_thanks.html", tmpl, c.Perf)
 	return res
 }
 

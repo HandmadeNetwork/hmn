@@ -160,39 +160,39 @@ type BlogIndexEntry struct {
 }
 
 type Project struct {
-	ID                int
-	Name              string
-	Subdomain         string
-	Color1            string
-	Color2            string
-	Url               string
-	Blurb             string
-	ParsedDescription template.HTML
-	ParsedAIPolicy    template.HTML
-	Owners            []User
+	ID                int           `json:"id"`
+	Name              string        `json:"name"`
+	Subdomain         string        `json:"subdomain"`
+	Color1            string        `json:"color1"`
+	Color2            string        `json:"color2"`
+	Url               string        `json:"url"`
+	Blurb             string        `json:"blurb"`
+	ParsedDescription template.HTML `json:"description"`
+	ParsedAIPolicy    template.HTML `json:"ai_policy"`
+	Owners            []User        `json:"owners"`
 
-	Logo      string
-	Flowsnake Flowsnake
+	Logo      string    `json:"logo"`
+	Flowsnake Flowsnake `json:"flowsnake"` // TODO(ben): Delete or rename this, please
 
-	LifecycleBadgeClass string
-	LifecycleString     string
+	LifecycleBadgeClass string `json:"-"`
+	LifecycleString     string `json:"lifecycle"`
 
-	IsHMN bool
+	IsHMN bool `json:"-"`
 
-	HasBlog  bool
-	HasForum bool
+	HasBlog  bool `json:"has_blog"`
+	HasForum bool `json:"has_forum"`
 
-	UUID         string
-	DateApproved time.Time
+	UUID         string    `json:"-"`
+	DateApproved time.Time `json:"-"`
 
-	Gallery      bool
-	GallerySort  int
-	GalleryDesc  string
-	GalleryImage *Asset
+	Gallery      bool   `json:"-"`
+	GallerySort  int    `json:"-"`
+	GalleryDesc  string `json:"-"`
+	GalleryImage *Asset `json:"-"`
 
 	// NOTE(ben): Legacy; now we just have screenshots. We are keeping this
 	// around so project authors can retrieve their old header images.
-	HeaderImage string
+	HeaderImage string `json:"-"`
 }
 
 type ProjectSettings struct {
@@ -224,7 +224,9 @@ type ProjectSettings struct {
 }
 
 type Flowsnake struct {
-	Angle, Hue, Size int
+	Angle int `json:"angle"`
+	Hue   int `json:"hue"`
+	Size  int `json:"size"`
 }
 
 type Hilbert struct {

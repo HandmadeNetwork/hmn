@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"bytes"
 	"embed"
 	"encoding/base64"
 	"encoding/json"
@@ -114,6 +115,22 @@ func GetTemplate(name string) (*template.Template, bool) {
 
 	template, hasTemplate := templates[name]
 	return template, hasTemplate
+}
+
+// NOTE(ben): Panics if the template is not found. Returns an error only for
+// errors that occur during template execution.
+func ExecuteTemplateByName(name string, data any) ([]byte, error) {
+	template, hasTemplate := GetTemplate(name)
+	if !hasTemplate {
+		panic(fmt.Sprintf("no template with name %s", name))
+	}
+
+	var w bytes.Buffer
+	err := template.Execute(&w, data)
+	if err != nil {
+		return nil, err
+	}
+	return w.Bytes(), nil
 }
 
 func hasSuffix(s string, suffixes ...string) bool {

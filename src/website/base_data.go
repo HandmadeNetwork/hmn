@@ -9,7 +9,6 @@ import (
 	"git.handmade.network/hmn/hmn/src/hmnurl"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/templates"
-	"git.handmade.network/hmn/hmn/src/utils"
 )
 
 // NOTE(asaf): If you set breadcrumbs, the breadcrumb for the current project will automatically be prepended when necessary.
@@ -30,7 +29,7 @@ func getBaseTemplateData(c *RequestContext, title string, breadcrumbs []template
 	notices := getNoticesFromCookie(c)
 
 	var loginUrl string
-	if hmnurl.URLMatchesRoute(c.URL(), *hmnurl.RegexLoginPage) || hmnurl.URLMatchesRoute(c.URL(), *hmnurl.RegexRegister) {
+	if hmnurl.URLPathMatchesRoute(c.URL(), hmnurl.RegexLoginPage) || hmnurl.URLPathMatchesRoute(c.URL(), hmnurl.RegexRegister) {
 		// NOTE(ben): If clicking the login button from the login or register page, don't try to redirect to the
 		// login page after login :)
 		loginUrl = hmnurl.BuildLoginPage(c.URL().Query().Get("destination"), c.URL().Query().Get("notice"))
@@ -54,9 +53,9 @@ func getBaseTemplateData(c *RequestContext, title string, breadcrumbs []template
 	}
 
 	var bannerEvent *templates.BannerEvent
-	for _, jam := range hmndata.AllJams {
-		if jam.Event.WithinGrace(time.Now(), JamBannerGraceBefore, JamBannerGraceAfter) {
-			bannerEvent = utils.P(templates.JamToBannerEvent(jam))
+	for _, event := range hmndata.AllEvents {
+		if event.WithinBanner(time.Now()) {
+			bannerEvent = new(templates.EventToBannerEvent(event))
 		}
 	}
 
