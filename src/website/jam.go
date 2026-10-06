@@ -417,6 +417,36 @@ func BetaWeekCallForProjectsThanks(c *RequestContext) ResponseData {
 	return res
 }
 
+func BetaWeekAdmin(c *RequestContext) ResponseData {
+	var res ResponseData
+
+	submissions := utils.Must1(db.Query[models.BetaWeekProjectSubmission](c, c.Conn,
+		`SELECT $columns FROM betaweek_project_submission`,
+	))
+	projects := utils.Must1(hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		ProjectIDs: utils.Map(submissions, func(s *models.BetaWeekProjectSubmission) int { return s.ProjectID }),
+	}))
+
+	templateProjects := make(map[int]templates.Project)
+	for _, p := range projects {
+		templateProjects[p.Project.ID] = templates.ProjectAndStuffToTemplate(&p)
+	}
+
+	type Tmpl struct {
+		templates.BaseData
+		Submissions []*models.BetaWeekProjectSubmission
+		Projects    map[int]templates.Project
+	}
+	tmpl := Tmpl{
+		BaseData:    getBaseTemplateData(c, "Submissions", nil),
+		Submissions: submissions,
+		Projects:    templateProjects,
+	}
+	tmpl.Header.SuppressBanners = true
+	res.MustWriteTemplate("betaweek_2026_submissions.html", tmpl, c.Perf)
+	return res
+}
+
 func getTwitchEmbedUrl(c *RequestContext) string {
 	twitchEmbedUrl := ""
 	twitchStatus, err := db.QueryOne[models.TwitchLatestStatus](c, c.Conn,
