@@ -129,9 +129,12 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch Discord user info"))
 	}
 
-	hmnMember, err := discord.GetGuildMember(c, config.Config.Discord.GuildID, user.ID)
-	if err != nil {
-		if err == discord.NotFound {
+	var hmnMember *discord.GuildMember
+	{
+		discordMember, err := discord.GetGuildMember(c, config.Config.Discord.GuildID, user.ID)
+		if err == nil {
+			hmnMember = &discordMember
+		} else if err == discord.NotFound {
 			// nothing, this is fine
 		} else {
 			c.Logger.Error().Err(err).Msg("failed to get HMN Discord member for Discord user")
@@ -311,7 +314,7 @@ func DiscordOAuthCallback(c *RequestContext) ResponseData {
 
 	// Add the role on Discord
 	if hmnMember != nil {
-		err = discord.AddGuildMemberRole(c, user.ID, config.Config.Discord.MemberRoleID)
+		err = discord.AddGuildMemberRole(c, user.ID, config.Config.Discord.MemberRoleID, "account auto-linked via OAuth")
 		if err != nil {
 			c.Logger.Error().Err(err).Msg("failed to add member role")
 		}
@@ -368,7 +371,7 @@ func DiscordUnlink(c *RequestContext) ResponseData {
 		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to commit Discord user delete"))
 	}
 
-	err = discord.RemoveGuildMemberRole(c, discordUser.UserID, config.Config.Discord.MemberRoleID)
+	err = discord.RemoveGuildMemberRole(c, discordUser.UserID, config.Config.Discord.MemberRoleID, "account unlinked")
 	if err != nil {
 		c.Logger.Warn().Err(err).Msg("failed to remove member role on unlink")
 	}
@@ -453,13 +456,23 @@ func DiscordBotDebugPage(c *RequestContext) ResponseData {
 	type DiscordBotDebugData struct {
 		templates.BaseData
 		BotEvents []discord.BotEvent
+
+		RecordingAll bool
+		ToggleUrl    string
 	}
 	botEvents := discord.GetBotEvents()
 	var res ResponseData
 	res.MustWriteTemplate("discord_bot_debug.html", DiscordBotDebugData{
 		BaseData: getBaseTemplateData(c, "", nil),
 
-		BotEvents: botEvents,
+		BotEvents:    botEvents,
+		RecordingAll: discord.RecordAllGatewayMessages,
+		ToggleUrl:    hmnurl.BuildDiscordBotDebugToggleRecordAll(),
 	}, c.Perf)
 	return res
+}
+
+func DiscordBotDebugToggleRecordAll(c *RequestContext) ResponseData {
+	discord.RecordAllGatewayMessages = !discord.RecordAllGatewayMessages
+	return c.Redirect(hmnurl.BuildDiscordBotDebugPage(), http.StatusSeeOther)
 }

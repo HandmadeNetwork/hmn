@@ -1,22 +1,41 @@
-{{ template "base.html" . }}
+{{ template "base-2024.html" . }}
+
+{{ define "extrahead" }}
+  <script>
+    function pretty(event) {
+      const details = event.target.closest("details");
+      const extra = details.querySelector("pre").innerText;
+      const pretty = details.querySelector(".pretty");
+
+      pretty.hidden = false;
+      event.target.hidden = true;
+      try {
+        pretty.innerText = JSON.stringify(JSON.parse(extra), null, 2);
+      } catch {
+        pretty.innerText = "Could not parse as JSON.";
+      }
+    }
+  </script>
+{{ end }}
 
 {{ define "content" }}
-	<table>
-	<thead>
-		<tr>
-			<td>Timestamp</td>
-			<td>Name</td>
-			<td>Extras</td>
-		</tr>
-	</thead>
-	<tbody>
-		{{ range .BotEvents }}
-			<tr>
-				<td>{{ rfc3339 .Timestamp }}</td>
-				<td>{{ .Name }}</td>
-				<td>{{ .Extra }}</td>
-			</tr>
-		{{ end }}
-	</tbody>
-	</table>
+  <div class="pa2 flex flex-column g2">
+    <form action="{{ .ToggleUrl }}" method="POST">
+      <input type="submit" value="{{ if .RecordingAll }}Stop Recording All Gateway Messages{{ else }}Record All Gateway Messages{{ end }}">
+    </form>
+    <div class="flex flex-column g2">
+      {{ range .BotEvents }}
+        <details class="flex flex-column g2">
+          <summary><b class="mr3">{{ rfc3339 .Timestamp }}</b> {{ .Name }}</summary>
+          <div class="pl3">
+            <div class="post-content">
+              <pre class="hmn-code">{{ .Extra }}</pre>
+              <pre class="pretty hmn-code" hidden>{{ .Extra }}</pre>
+            </div>
+            <button onclick="javascript:pretty(event)">Pretty-print</button>
+          </div>
+        </details>
+      {{ end }}
+    </div>
+  </div>
 {{ end }}

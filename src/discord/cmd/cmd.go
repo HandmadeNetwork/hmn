@@ -106,10 +106,11 @@ func init() {
 			}
 
 			guildMember, err := discord.GetGuildMember(ctx, config.Config.Discord.GuildID, message.Author.ID) // NOTE(asaf): We assume we're only working with one guild, because the discord API sucks and doesn't provide the guild in the message payload.
-			if err != nil {
+			if err == nil {
+				message.Member = &guildMember
+			} else {
 				logging.Error().Err(err).Msg("failed to get guild member for message while scraping")
 			}
-			message.Member = guildMember
 
 			err = discord.HandleIncomingMessage(ctx, conn, message, true)
 			if err != nil {

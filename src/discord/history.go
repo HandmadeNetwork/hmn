@@ -171,10 +171,10 @@ func ScrapeRecents(ctx context.Context, dbConn *pgxpool.Pool, channelID string, 
 				logging.Error().Err(err).Msg("failed to get guild member for message while scraping")
 				return false
 			}
-			msg.Member = guildMember
+			msg.Member = &guildMember
 
 			msg.Backfilled = true
-			err = HandleIncomingMessage(ctx, dbConn, &msg, false)
+			err = HandleIncomingMessage(ctx, dbConn, msg, false)
 
 			if err != nil {
 				errLog := logging.ExtractLogger(ctx).Error()
@@ -226,9 +226,9 @@ func ScrapeAll(ctx context.Context, dbConn *pgxpool.Pool, channelID string, earl
 			}
 
 			msg.Backfilled = true
-			err := TrackMessage(ctx, dbConn, &msg)
+			err := TrackMessage(ctx, dbConn, msg)
 			if err == nil {
-				err = UpdateInternedMessage(ctx, dbConn, &msg, false, false, false)
+				err = UpdateInternedMessage(ctx, dbConn, msg, false, false, false)
 			}
 
 			if err != nil {

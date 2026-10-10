@@ -126,7 +126,7 @@ func (bot *botInstance) doInteraction(ctx context.Context, i *Interaction) {
 
 		if join {
 			logging.ExtractLogger(ctx).Debug().Interface("interaction", i).Msg("Got hmh replay")
-			err := AddGuildMemberRole(ctx, i.Member.User.ID, config.Config.Discord.HMHReplayRoleID)
+			err := AddGuildMemberRole(ctx, i.Member.User.ID, config.Config.Discord.HMHReplayRoleID, "HMH Replay slash command")
 			if err != nil {
 				err = sendEphemeralMessageForInteraction(ctx, i, "We failed to set the role. Please inform an admin.")
 				if err != nil {
@@ -139,7 +139,7 @@ func (bot *botInstance) doInteraction(ctx context.Context, i *Interaction) {
 				}
 			}
 		} else {
-			err := RemoveGuildMemberRole(ctx, i.Member.User.ID, config.Config.Discord.HMHReplayRoleID)
+			err := RemoveGuildMemberRole(ctx, i.Member.User.ID, config.Config.Discord.HMHReplayRoleID, "HMH Replay slash command")
 			if err != nil {
 				err = sendEphemeralMessageForInteraction(ctx, i, "We failed to remove the role. Please inform an admin.")
 				if err != nil {
@@ -188,7 +188,7 @@ func (bot *botInstance) doInteraction(ctx context.Context, i *Interaction) {
 		// Give user the Discord role
 		roleID := hmndata.LatestJam.DiscordRoleIDs[config.Config.Env]
 		utils.Assert(roleID)
-		err = AddGuildMemberRole(ctx, i.Member.User.ID, roleID)
+		err = AddGuildMemberRole(ctx, i.Member.User.ID, roleID, "/joinjam slash command")
 		if err != nil {
 			log.Error().Err(err).Msg("failed to give user the jam role")
 			errOccurred = true
