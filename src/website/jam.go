@@ -282,15 +282,47 @@ func JamGenericGuidelines(c *RequestContext) ResponseData {
 func BetaWeekIndex(c *RequestContext) ResponseData {
 	var res ResponseData
 
+	approvedSubmissions, err := db.Query[models.BetaWeekProjectSubmission](c, c.Conn,
+		`
+		---- Fetch Beta Week project list
+		SELECT $columns FROM betaweek_project_submission
+		WHERE approved
+		`,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch beta week project submissions"))
+	}
+
+	approvedProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		ProjectIDs: utils.Map(approvedSubmissions, func(ap *models.BetaWeekProjectSubmission) int {
+			return ap.ProjectID
+		}),
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch beta week projects"))
+	}
+	projectsByID := utils.AsMap(approvedProjects, func(p hmndata.ProjectAndStuff) int {
+		return p.Project.ID
+	})
+
 	type Tmpl struct {
 		templates.BaseData
 		IndexUrl           string
 		CallForProjectsUrl string
+
+		Projects []templates.BetaWeekProjectSubmission
 	}
 	tmpl := Tmpl{
 		BaseData:           getBaseTemplateData(c, "Beta Week", nil),
 		IndexUrl:           hmnurl.BuildBetaWeekIndex(),
 		CallForProjectsUrl: hmnurl.BuildBetaWeekCallForProjects(),
+		Projects: utils.Map(approvedSubmissions, func(e *models.BetaWeekProjectSubmission) templates.BetaWeekProjectSubmission {
+			project := projectsByID[e.ProjectID]
+			return templates.BetaWeekProjectSubmissionToTemplate(
+				e,
+				new(templates.ProjectAndStuffToTemplate(&project)),
+			)
+		}),
 	}
 
 	opengraph := []templates.OpenGraphItem{

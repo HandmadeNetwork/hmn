@@ -10,4 +10,8 @@ type BetaWeekProjectSubmission struct {
 	ProjectInstructions string `db:"project_instructions"`
 	AuthorAvailability  string `db:"author_availability"`
 	AuthorGoals         string `db:"author_goals"`
+
+	Approved    bool   `db:"approved"`
+	Description string `db:"description"`
+	Sort        int    `db:"sort"`
 }

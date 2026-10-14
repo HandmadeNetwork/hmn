@@ -190,3 +190,11 @@ func MapP[S ~[]E1, E1, E2 any](s S, f func(*E1) E2) []E2 {
 	}
 	return res
 }
+
+func AsMap[S ~[]E1, E1 any, K comparable](s S, f func(E1) K) map[K]E1 {
+	res := make(map[K]E1, len(s))
+	for _, v := range s {
+		res[f(v)] = v
+	}
+	return res
+}

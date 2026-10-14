@@ -577,3 +577,8 @@ type Ticket struct {
 
 	OwnerProfileUrl string
 }
+
+type BetaWeekProjectSubmission struct {
+	Project     *Project
+	Description string
+}
