@@ -22,12 +22,15 @@ function init({
   fetchProjectUrl
 }) {
   function clearProject() {
+    projectUrlField.setCustomValidity("");
+    projectIDField.value = "";
     projectPreviewContainer.hidden = true;
     projectPreviewContainer.innerHTML = "";
-    projectIDField.value = "";
   }
   async function loadProject() {
+    projectUrlField.setCustomValidity("Please wait until the project info has loaded.");
     const projectUrl = projectUrlField.value.trim();
+    projectUrlField.value = projectUrl;
     if (!projectUrl) {
       return;
     }
@@ -41,19 +44,25 @@ function init({
       })
     });
     if (res.status == 404) {
+      projectUrlField.setCustomValidity("You must enter a valid project URL.");
+      projectIDField.value = "";
       projectPreviewContainer.hidden = false;
       projectPreviewContainer.innerText = "No project found.";
       return;
     } else if (res.status >= 400) {
       console.error(res);
+      projectUrlField.setCustomValidity("Somehow, an error occurred.");
       throw new Error("bad request");
     }
     const project = await res.json();
     if (!project.project.owners?.find((u) => u.id === currentUserID)) {
+      projectUrlField.setCustomValidity("You must enter a valid project URL.");
+      projectIDField.value = "";
       projectPreviewContainer.hidden = false;
       projectPreviewContainer.innerText = "You are not one of the owners of that project.";
       return;
     }
+    projectUrlField.setCustomValidity("");
     projectIDField.value = `${project.project.id}`;
     projectPreviewContainer.hidden = false;
     projectPreviewContainer.innerHTML = project.card;
