@@ -188,6 +188,7 @@ func ListImgsDir(dir string) []fs.DirEntry {
 }
 
 var controlCharRegex = regexp.MustCompile(`\p{Cc}`)
+var svgTitleRegex = regexp.MustCompile(`<title>.*?</title>`)
 
 var HMNTemplateFuncs = template.FuncMap{
 	"add": func(a int, b ...int) int {
@@ -290,8 +291,11 @@ var HMNTemplateFuncs = template.FuncMap{
 			return str(int(delta/Yearish), "year", int((delta%Yearish)/Monthish), "month")
 		}
 	},
-	"svg": func(name string) template.HTML {
+	"svg": func(name string, title ...string) template.HTML {
 		contents := GetImg(fmt.Sprintf("%s.svg", name))
+		if len(title) > 0 {
+			contents = svgTitleRegex.ReplaceAllLiteral(contents, []byte("<title>"+title[0]+"</title>"))
+		}
 		return template.HTML(contents)
 	},
 	"static": func(filepath string) string {

@@ -31,6 +31,7 @@ func (m BetaWeekUserSignups) Up(ctx context.Context, tx pgx.Tx) error {
 		ALTER TABLE betaweek_project_submission
 			ADD COLUMN approved BOOLEAN NOT NULL DEFAULT FALSE,
 			ADD COLUMN description TEXT NOT NULL DEFAULT '',
+			ADD COLUMN platform_list TEXT[] NOT NULL DEFAULT '{}',
 			ADD COLUMN sort INTEGER NOT NULL DEFAULT 0;
 
 		CREATE TABLE betaweek_testing_signup (
@@ -48,6 +49,7 @@ func (m BetaWeekUserSignups) Down(ctx context.Context, tx pgx.Tx) error {
 		ALTER TABLE betaweek_project_submission
 			DROP COLUMN approved,
 			DROP COLUMN description,
+			DROP COLUMN platform_list,
 			DROP COLUMN sort;
 	`)
 	return err

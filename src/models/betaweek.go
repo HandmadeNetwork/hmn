@@ -11,7 +11,8 @@ type BetaWeekProjectSubmission struct {
 	AuthorAvailability  string `db:"author_availability"`
 	AuthorGoals         string `db:"author_goals"`
 
-	Approved    bool   `db:"approved"`
-	Description string `db:"description"`
-	Sort        int    `db:"sort"`
+	Approved     bool     `db:"approved"`
+	Description  string   `db:"description"`
+	PlatformList []string `db:"platform_list"`
+	Sort         int      `db:"sort"`
 }

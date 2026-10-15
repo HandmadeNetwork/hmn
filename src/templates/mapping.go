@@ -570,17 +570,25 @@ func TicketToTemplate(t *models.Ticket) Ticket {
 }
 
 func BetaWeekProjectSubmissionToTemplate(s *models.BetaWeekProjectSubmission, project *Project) BetaWeekProjectSubmission {
+	// Remap platform names to icon names
+	var icons []BetaWeekPlatformIcon
+	for _, platform := range s.PlatformList {
+		switch platform {
+		case "windows":
+			icons = append(icons, BetaWeekPlatformIcon{Name: "logos/microsoft", Title: "Windows"})
+		case "mac":
+			icons = append(icons, BetaWeekPlatformIcon{Name: "logos/apple", Title: "macOS"})
+		case "linux":
+			icons = append(icons, BetaWeekPlatformIcon{Name: "logos/linux", Title: "Linux"})
+		case "web":
+			icons = append(icons, BetaWeekPlatformIcon{Name: "logos/website", Title: "Web"})
+		}
+	}
 	return BetaWeekProjectSubmission{
-		Project:     project,
-		Description: s.Description,
+		Project:       project,
+		Description:   s.Description,
+		PlatformIcons: icons,
 	}
-}
-
-func maybeString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }
 
 func maybeIp(ip *netip.Prefix) string {
