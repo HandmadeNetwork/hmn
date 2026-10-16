@@ -587,4 +587,5 @@ type BetaWeekProjectSubmission struct {
 	Project       *Project
 	Description   string
 	PlatformIcons []BetaWeekPlatformIcon
+	NeedsTesters  bool
 }

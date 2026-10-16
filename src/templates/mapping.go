@@ -569,7 +569,11 @@ func TicketToTemplate(t *models.Ticket) Ticket {
 	return res
 }
 
-func BetaWeekProjectSubmissionToTemplate(s *models.BetaWeekProjectSubmission, project *Project) BetaWeekProjectSubmission {
+func BetaWeekProjectSubmissionToTemplate(
+	s *models.BetaWeekProjectSubmission,
+	project *Project,
+	needsTesters bool,
+) BetaWeekProjectSubmission {
 	// Remap platform names to icon names
 	var icons []BetaWeekPlatformIcon
 	for _, platform := range s.PlatformList {
@@ -588,6 +592,7 @@ func BetaWeekProjectSubmissionToTemplate(s *models.BetaWeekProjectSubmission, pr
 		Project:       project,
 		Description:   s.Description,
 		PlatformIcons: icons,
+		NeedsTesters:  needsTesters,
 	}
 }
 

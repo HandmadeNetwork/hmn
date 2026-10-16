@@ -303,9 +303,11 @@ export function makeSnippetEdit({
 			// NOTE(asaf): Writing this out in bytes to make the limit exactly clear to the user.
 			let readableSize = new Intl.NumberFormat([], { useGrouping: true }).format(config.assetMaxSize);
 			snippetEditor.errors.textContent = "File is too big! Max filesize is " + readableSize + " bytes.";
+			snippetEditor.errors.hidden = false;
 			sizeGood = false;
 		} else {
 			snippetEditor.errors.textContent = "";
+			snippetEditor.errors.hidden = true;
 		}
 
 		let hasText = snippetEditor.text.value.trim().length > 0;

@@ -198,3 +198,10 @@ func AsMap[S ~[]E1, E1 any, K comparable](s S, f func(E1) K) map[K]E1 {
 	}
 	return res
 }
+
+func Btoi(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}

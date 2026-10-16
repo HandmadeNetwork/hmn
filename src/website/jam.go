@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -280,13 +281,23 @@ func JamGenericGuidelines(c *RequestContext) ResponseData {
 }
 
 func BetaWeekIndex(c *RequestContext) ResponseData {
+	const NeedsTestersThreshold = 3
+
 	var res ResponseData
+	type Tmpl struct {
+		templates.BaseData
+		IndexUrl           string
+		CallForProjectsUrl string
+
+		Projects []templates.BetaWeekProjectSubmission
+	}
 
 	approvedSubmissions, err := db.Query[models.BetaWeekProjectSubmission](c, c.Conn,
 		`
 		---- Fetch Beta Week project list
 		SELECT $columns FROM betaweek_project_submission
 		WHERE approved
+		ORDER BY sort
 		`,
 	)
 	if err != nil {
@@ -305,25 +316,37 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 		return p.Project.ID
 	})
 
-	type Tmpl struct {
-		templates.BaseData
-		IndexUrl           string
-		CallForProjectsUrl string
-
-		Projects []templates.BetaWeekProjectSubmission
+	testersPerProjectRows, err := db.Query[struct {
+		ProjectID  int `db:"project_id"`
+		NumTesters int `db:"num_testers"`
+	}](c, c.Conn,
+		`
+		---- Fetch number of testers per project
+		SELECT project_id, COUNT(*) AS num_testers FROM betaweek_testing_signup
+		GROUP BY project_id
+		`,
+	)
+	testersPerProject := make(map[int]int, len(testersPerProjectRows))
+	for _, row := range testersPerProjectRows {
+		testersPerProject[row.ProjectID] = row.NumTesters
 	}
+
 	tmpl := Tmpl{
 		BaseData:           getBaseTemplateData(c, "Beta Week", nil),
 		IndexUrl:           hmnurl.BuildBetaWeekIndex(),
 		CallForProjectsUrl: hmnurl.BuildBetaWeekCallForProjects(),
-		Projects: utils.Map(approvedSubmissions, func(e *models.BetaWeekProjectSubmission) templates.BetaWeekProjectSubmission {
-			project := projectsByID[e.ProjectID]
+		Projects: utils.Map(approvedSubmissions, func(ps *models.BetaWeekProjectSubmission) templates.BetaWeekProjectSubmission {
+			project := projectsByID[ps.ProjectID]
 			return templates.BetaWeekProjectSubmissionToTemplate(
-				e,
+				ps,
 				new(templates.ProjectAndStuffToTemplate(&project)),
+				testersPerProject[ps.ProjectID] < NeedsTestersThreshold,
 			)
 		}),
 	}
+	slices.SortStableFunc(tmpl.Projects, func(a, b templates.BetaWeekProjectSubmission) int {
+		return utils.Btoi(a.NeedsTesters) - utils.Btoi(b.NeedsTesters)
+	})
 
 	opengraph := []templates.OpenGraphItem{
 		{Property: "og:title", Value: hmndata.BetaWeek2026.Name},
